@@ -234,7 +234,7 @@ class CumulativeRelationCoverage {
           splitRow(b,stats);single=splitRow(a,stats);
           // Splitting may have introduced a sibling, and copying the whole
           // index also shares rows. Both cases require copy-on-write.
-          if(!single->second.unique()) {
+          if(single->second.use_count()!=1) {
             ++stats.row_copies;stats.copied_columns+=single->second->values.size();
             single->second=std::make_shared<Columns>(*single->second);
           }
@@ -323,8 +323,9 @@ class CumulativeRelationCoverage {
     for(auto a:dirty_rows_) {
       auto it=rows_.find(a);if(it==rows_.end())continue;
       auto next=std::next(it);const auto b=next==rows_.end()?left_extent_:next->first;
-      auto [u,fresh]=updates.try_emplace(it->second.get());
-      if(fresh)it->second->drain(right_extent_,active,stats,[&](auto x,auto y,auto p,auto e,auto labels){u->second.push_back({x,y,p,e,labels});});
+      auto inserted=updates.try_emplace(it->second.get());
+      auto u=inserted.first;
+      if(inserted.second)it->second->drain(right_extent_,active,stats,[&](auto x,auto y,auto p,auto e,auto labels){u->second.push_back({x,y,p,e,labels});});
       for(const auto& d:u->second)out.push_back({d.position,d.end,MemberRelation::Rectangle(
           MemberRange(left_extent_,a,b),MemberRange(right_extent_,d.a,d.b)),d.labels});
     }

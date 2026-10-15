@@ -418,7 +418,7 @@ void FamilyRelationQuery::propagate(std::vector<FamilyRelationBatch>& batch,bool
   ProfileScope final_partitions("memory.family.hb_cumulative_final_partitions");
   for(std::size_t i=0;i<used_scratch_;++i) {
     const auto count=scratch_[i].frontier.cellCount();
-    final_partitions.nodes+=count;final_partitions.edges=std::max(final_partitions.edges,count);
+    final_partitions.nodes+=count;final_partitions.edges=std::max<std::uint64_t>(final_partitions.edges,count);
   }
   stats_.member_enumerations+=frontier_stats.member_enumerations;
   stats_.history_candidates+=frontier_stats.candidates;
