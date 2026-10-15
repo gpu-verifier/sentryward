@@ -1,0 +1,91 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN18ada_blockwise_gemm23sm89_fp8_gemm_1d1d_implINS_22AdaBlockwiseGemmKernelINS_22AdaBlockwiseGemmTraitsIN7cutlass12float_e4m3_tENS3_10bfloat16_tEffLi3ELi32ELi128ELi128EEEEEEEvjjjPKvS9_PvPKfSC_",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      128,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "field": "M",
+      "value": 32
+    },
+    {
+      "field": "N",
+      "value": 128
+    },
+    {
+      "field": "K",
+      "value": 128
+    }
+  ],
+  "declarations": [
+    {
+      "name": "M",
+      "parameter": 0,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "N",
+      "parameter": 1,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "K",
+      "parameter": 2,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "type": "pointer",
+      "object": "A"
+    },
+    {
+      "parameter": 4,
+      "offset": 0,
+      "type": "pointer",
+      "object": "B"
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "type": "pointer",
+      "object": "D"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "type": "pointer",
+      "object": "scale_A"
+    },
+    {
+      "parameter": 7,
+      "offset": 0,
+      "type": "pointer",
+      "object": "scale_B"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

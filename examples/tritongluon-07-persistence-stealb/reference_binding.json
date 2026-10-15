@@ -1,0 +1,72 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A",
+      "6:global1:B": "6:global1:B"
+    },
+    "parameters": {}
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A",
+      "6:global1:B": "6:global1:B"
+    },
+    "parameters": {}
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:C",
+    "right_allocation": "6:global1:C",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      208,
+      416
+    ],
+    "left_strides_bytes": [
+      832,
+      2
+    ],
+    "right_strides_bytes": [
+      832,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "shape": [
+          208,
+          304
+        ],
+        "dtype": "float16",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "shape": [
+          304,
+          416
+        ],
+        "dtype": "float16",
+        "allocation": "6:global1:B"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tritongluon-07-persistence-stealb.ptx",
+    "optimized_input": "examples/tritongluon-07-persistence-stealb/input.json",
+    "optimized_input_sha256": "685463c976b485d4b45a4fb984dacd768edc7791e0df5430b25060305c79db31",
+    "ptx_sha256": "783be597c6cfa7c6008900e18406d000052d1c532962cc566a29b45599b34793",
+    "upstream": [
+      "https://github.com/triton-lang/triton/blob/c01b6774b1865984607d89d89d3a10833de92037/python/tutorials/gluon/07-persistence.py"
+    ],
+    "scope": "Existing configured M=208,N=416,K=304; original launch and assumptions retained. Reference specifies the FULL MxN output, not just visited tiles; incomplete kernel coverage must not be treated as equivalence.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

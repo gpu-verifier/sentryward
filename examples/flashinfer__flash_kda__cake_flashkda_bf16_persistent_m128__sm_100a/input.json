@@ -1,0 +1,156 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_flashkda_bf16_persistent_m128",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      1024,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 221696
+  },
+  "arguments": [
+    {
+      "parameter": 20,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 21,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 22,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 23,
+      "type": "f32",
+      "value": 0.08838834764831843
+    },
+    {
+      "parameter": 24,
+      "type": "f32",
+      "value": -5.0
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "q"
+    },
+    {
+      "parameter": 1,
+      "type": "tensor_map",
+      "object": "q_tma"
+    },
+    {
+      "parameter": 2,
+      "type": "pointer",
+      "object": "k"
+    },
+    {
+      "parameter": 3,
+      "type": "tensor_map",
+      "object": "k_tma"
+    },
+    {
+      "parameter": 4,
+      "type": "pointer",
+      "object": "v"
+    },
+    {
+      "parameter": 5,
+      "type": "tensor_map",
+      "object": "v_tma"
+    },
+    {
+      "parameter": 6,
+      "type": "pointer",
+      "object": "g"
+    },
+    {
+      "parameter": 7,
+      "type": "tensor_map",
+      "object": "g_tma"
+    },
+    {
+      "parameter": 8,
+      "type": "pointer",
+      "object": "beta"
+    },
+    {
+      "parameter": 9,
+      "type": "tensor_map",
+      "object": "beta_tma"
+    },
+    {
+      "parameter": 10,
+      "type": "pointer",
+      "object": "A_log"
+    },
+    {
+      "parameter": 11,
+      "type": "pointer",
+      "object": "dt_bias"
+    },
+    {
+      "parameter": 12,
+      "type": "pointer",
+      "object": "cu_seqlens"
+    },
+    {
+      "parameter": 13,
+      "type": "pointer",
+      "object": "seq_order"
+    },
+    {
+      "parameter": 14,
+      "type": "pointer",
+      "object": "task_ids"
+    },
+    {
+      "parameter": 15,
+      "type": "pointer",
+      "object": "task_offsets"
+    },
+    {
+      "parameter": 16,
+      "type": "pointer",
+      "object": "initial_state"
+    },
+    {
+      "parameter": 17,
+      "type": "pointer",
+      "object": "out"
+    },
+    {
+      "parameter": 18,
+      "type": "tensor_map",
+      "object": "out_tma"
+    },
+    {
+      "parameter": 19,
+      "type": "pointer",
+      "object": "final_state"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

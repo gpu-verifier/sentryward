@@ -1,0 +1,402 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global5:scale": "scale"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          128,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          32
+        ],
+        "source_strides_bytes": [
+          32,
+          1
+        ],
+        "target_strides_bytes": [
+          32,
+          1
+        ]
+      },
+      "6:global5:scale": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          1
+        ],
+        "source_strides_bytes": [
+          2,
+          2
+        ],
+        "target_strides_bytes": [
+          2,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global5:scale": "scale"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          128,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          32
+        ],
+        "source_strides_bytes": [
+          32,
+          1
+        ],
+        "target_strides_bytes": [
+          32,
+          1
+        ]
+      },
+      "6:global5:scale": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          1
+        ],
+        "source_strides_bytes": [
+          2,
+          256
+        ],
+        "target_strides_bytes": [
+          2,
+          2
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective28CollectiveMmaSm100WeightOnlyINS1_45MainloopSm100TmaUmmaWarpSpecializedMixedInputILi7ELi7ELi3ELi2ENS5_IJNS4_1CILi1EEESB_SB_EEEEENS5_IJNSA_ILi128EEESE_NSA_ILi64EEEEEENS5_IJNS_15integer_subbyteILi4ELb1EEENS_10bfloat16_tEEEENS5_IJNS5_IJlSB_lEEENS4_6LayoutINS5_IJNS5_IJSB_iEEENS5_IJSF_iEEEiEEENS5_IJNS5_IJNSA_ILi0EEESB_EEENS5_IJSQ_iEEEiEEEEEEEESJ_SL_NS4_8TiledMMAINS4_8MMA_AtomIJNS4_20SM100_MMA_F16BF16_TSISJ_SJ_fLi128ELi128ELNS4_4UMMA5MajorE0ELS10_0ELNSZ_7ScaleInE0ELS11_0ELNSZ_8SaturateE0EEEEEENSM_ISC_NS5_IJSQ_SQ_SQ_EEEEENS5_IJNS4_10UnderscoreES17_S17_EEEEENS4_13SM90_TMA_LOADENS7_6detail35CollectiveMmaEmulatedLayoutAtomTypeINS4_14ComposedLayoutINS4_7SwizzleILi1ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi4EEENSM_INS5_IJNSA_ILi8EEESF_EEENS5_IJSF_SB_EEEEEEENS1D_INS1E_ILi3ELi4ELi3EEENS1G_ILi16EEES1L_EEEENS1B_29CollectiveMmaEmulatedCopyTypeINS4_9Copy_AtomIJNS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEESI_EEENS4_5SM1004TMEM5STORE26SM100_TMEM_STORE_32dp32b8xEEENS4_8identityES1A_NS1C_IS1P_S1P_EENS1R_INS1S_IJS1U_SJ_EEES23_EES21_EENS_8epilogue10collective18CollectiveEpilogueINS26_23Sm100TmaWarpSpecializedILi4ELi2ELi32ELb1ELb0EEEJSG_NS5_IJNSM_ISE_SB_EENSM_INSA_ILi32EEESB_EEEEESJ_NS5_IJSB_llEEESJ_S2F_NS26_6fusion15FusionCallbacksIS2A_NS2G_17LinearCombinationISJ_fSJ_fLNS_15FloatRoundStyleE2EEESG_S2E_JEEENS1X_4LOAD26SM100_TMEM_LOAD_16dp256b4xES1A_NS1D_IS1N_S1O_NSM_INS5_IJSF_S1I_EEENS5_IJSB_SF_EEEEEEENS4_17SM75_U16x8_LDSM_TENS4_14SM90_TMA_STOREES2R_NS4_17SM90_U16x8_STSM_TES1U_EEEvvEEEEvNT_6ParamsE_param_0+1792": {
+        "type": "b32",
+        "literal": "0"
+      },
+      "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective28CollectiveMmaSm100WeightOnlyINS1_45MainloopSm100TmaUmmaWarpSpecializedMixedInputILi7ELi7ELi3ELi2ENS5_IJNS4_1CILi1EEESB_SB_EEEEENS5_IJNSA_ILi128EEESE_NSA_ILi64EEEEEENS5_IJNS_15integer_subbyteILi4ELb1EEENS_10bfloat16_tEEEENS5_IJNS5_IJlSB_lEEENS4_6LayoutINS5_IJNS5_IJSB_iEEENS5_IJSF_iEEEiEEENS5_IJNS5_IJNSA_ILi0EEESB_EEENS5_IJSQ_iEEEiEEEEEEEESJ_SL_NS4_8TiledMMAINS4_8MMA_AtomIJNS4_20SM100_MMA_F16BF16_TSISJ_SJ_fLi128ELi128ELNS4_4UMMA5MajorE0ELS10_0ELNSZ_7ScaleInE0ELS11_0ELNSZ_8SaturateE0EEEEEENSM_ISC_NS5_IJSQ_SQ_SQ_EEEEENS5_IJNS4_10UnderscoreES17_S17_EEEEENS4_13SM90_TMA_LOADENS7_6detail35CollectiveMmaEmulatedLayoutAtomTypeINS4_14ComposedLayoutINS4_7SwizzleILi1ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi4EEENSM_INS5_IJNSA_ILi8EEESF_EEENS5_IJSF_SB_EEEEEEENS1D_INS1E_ILi3ELi4ELi3EEENS1G_ILi16EEES1L_EEEENS1B_29CollectiveMmaEmulatedCopyTypeINS4_9Copy_AtomIJNS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEESI_EEENS4_5SM1004TMEM5STORE26SM100_TMEM_STORE_32dp32b8xEEENS4_8identityES1A_NS1C_IS1P_S1P_EENS1R_INS1S_IJS1U_SJ_EEES23_EES21_EENS_8epilogue10collective18CollectiveEpilogueINS26_23Sm100TmaWarpSpecializedILi4ELi2ELi32ELb1ELb0EEEJSG_NS5_IJNSM_ISE_SB_EENSM_INSA_ILi32EEESB_EEEEESJ_NS5_IJSB_llEEESJ_S2F_NS26_6fusion15FusionCallbacksIS2A_NS2G_17LinearCombinationISJ_fSJ_fLNS_15FloatRoundStyleE2EEESG_S2E_JEEENS1X_4LOAD26SM100_TMEM_LOAD_16dp256b4xES1A_NS1D_IS1N_S1O_NSM_INS5_IJSF_S1I_EEENS5_IJSB_SF_EEEEEEENS4_17SM75_U16x8_LDSM_TENS4_14SM90_TMA_STOREES2R_NS4_17SM90_U16x8_STSM_TES1U_EEEvvEEEEvNT_6ParamsE_param_0+1824": {
+        "type": "b32",
+        "literal": "1065353216"
+      }
+    }
+  },
+  "provenance": {
+    "optimized_input_sha256": "70fb410562276c6c23a496175e0b8a28ac9102b9a6451e3ae2c9888ada91fcb0",
+    "weight_layout": "ColumnMajor signed int4[n,k], contiguous k, two nibbles per byte; source initialization/launcher reviewed.",
+    "source_interface": {
+      "name": "tensorrt_llm__cutlass_mixed_runner_bf16_int4_gemm_fg_scaleonly__sm_100f",
+      "family": "int4",
+      "source": "references/tensorrt_llm__cutlass_mixed_runner_bf16_int4_gemm_fg_scaleonly__sm_100f/reference.cu",
+      "ptx": "references/tensorrt_llm__cutlass_mixed_runner_bf16_int4_gemm_fg_scaleonly__sm_100f/reference.ptx",
+      "entry": "reference",
+      "upstream": [
+        "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/cutlass_kernels/fpA_intB_gemm/launchers/fpA_intB_launcher_sm100.inl",
+        "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/cutlass_extensions/include/cutlass_extensions/gemm/collective/sm100_mma_warpspecialized_mixed_input.hpp"
+      ],
+      "parameters": [
+        {
+          "name": "A",
+          "type": "bf16",
+          "shape": [
+            128,
+            64
+          ],
+          "role": "input",
+          "source": "logical activation A",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "B",
+          "type": "uint8_t",
+          "shape": [
+            128,
+            32
+          ],
+          "role": "input",
+          "source": "logical weight B; reference rows are output channels",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "D",
+          "type": "bf16",
+          "shape": [
+            128,
+            128
+          ],
+          "role": "output",
+          "source": "D",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "scale",
+          "type": "bf16",
+          "shape": [
+            128,
+            1
+          ],
+          "role": "input",
+          "source": "per-output-channel, per-K-group weight scale",
+          "layout": "row-major logical tensor"
+        }
+      ],
+      "attributes": {
+        "M": 128,
+        "N": 128,
+        "K": 64,
+        "input_type": "bf16",
+        "output_type": "bf16",
+        "scale_group": 64
+      },
+      "work_items": 16384,
+      "launch": {
+        "grid_dim": [
+          128,
+          1,
+          1
+        ],
+        "block_dim": [
+          128,
+          1,
+          1
+        ]
+      },
+      "optimized_input": "examples/tensorrt_llm__cutlass_mixed_runner_bf16_int4_gemm_fg_scaleonly__sm_100f/input.json",
+      "optimized_input_sha256": "b9d8183a0a3a3a0b265a23d7291e509584eb4c79deb8f73d2054e80de14da882",
+      "optimized_scope_branch_choices": [],
+      "optimized_objects": {
+        "tma_descriptors": [
+          {
+            "parameter": 0,
+            "offset": 640,
+            "object": "B",
+            "element_type": "u8",
+            "global_shape": [
+              32,
+              128,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              1,
+              32,
+              4096
+            ],
+            "box_shape": [
+              32,
+              128,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "swizzle": "32B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 0,
+            "offset": 128,
+            "object": "scale",
+            "element_type": "bf16",
+            "global_shape": [
+              128,
+              1,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              256,
+              256
+            ],
+            "box_shape": [
+              128,
+              1,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "swizzle": "none",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 0,
+            "offset": 896,
+            "object": "A",
+            "element_type": "bf16",
+            "global_shape": [
+              64,
+              128,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              128,
+              16384
+            ],
+            "box_shape": [
+              64,
+              128,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 0,
+            "offset": 2176,
+            "object": "D",
+            "element_type": "bf16",
+            "global_shape": [
+              128,
+              128,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              256,
+              32768
+            ],
+            "box_shape": [
+              64,
+              32,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          }
+        ],
+        "pointer_declarations": [
+          {
+            "name": "beta.pointer",
+            "parameter": 0,
+            "offset": 1800,
+            "type": "pointer"
+          },
+          {
+            "name": "alpha.pointer",
+            "parameter": 0,
+            "offset": 1832,
+            "type": "pointer"
+          }
+        ]
+      },
+      "comparison_domain": "ideal mathematical computation; no bitwise-equivalence claim",
+      "logical_layout_adapter": "required when optimized storage differs from reference row-major layout",
+      "equivalence_status": "not_checked"
+    },
+    "historical_paths": {
+      "interface": "references/tensorrt_llm__cutlass_mixed_runner_bf16_int4_gemm_fg_scaleonly__sm_100f/interface.json",
+      "mapping": "references/tensorrt_llm__cutlass_mixed_runner_bf16_int4_gemm_fg_scaleonly__sm_100f/mapping.md"
+    },
+    "mapping_notes": "# tensorrt_llm__cutlass_mixed_runner_bf16_int4_gemm_fg_scaleonly__sm_100f\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in interface.json.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| A | bf16 | 128 x 64 | input | logical activation A |\n| B | uint8_t | 128 x 32 | input | logical weight B; reference rows are output channels |\n| D | bf16 | 128 x 128 | output | D |\n| scale | bf16 | 128 x 1 | input | per-output-channel, per-K-group weight scale |\n\n## Computation and mapping\n\nThe reference uses A[m,k], B[n,k], and D[m,n]; B is stored with output-channel first.\nB is canonical signed INT4: even k in the low nibble, odd k in the high nibble.\nweight[n,k] = signed_int4(B[n,k]) * scale[n,k/64].\nD[m,n] = sum_k A[m,k] * weight[n,k]. No zero-point is used.\nThe selected SM100 source uses signed int4 with contiguous K coordinates.\nThe byte mapping preserves the two adjacent nibbles; signed decoding remains\npart of the expressions. No host-side weight permutation is applied by this mapping.\nScale layout [n,k_group] is the transpose of source [k_group,n] storage.\nThe optimized mainloop swaps/transposes operands. The reference restores\nactivation-first GEMM; its M/N names are the public mathematical M/N names.\nThe saved epilogue uses alpha=1 and beta=0; C is not read.\n\n## Validation boundary\n\nCompiled to PTX and numerically checked on CPU. Not compared against an optimized\nGPU execution or proven equivalent. Precision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/cutlass_kernels/fpA_intB_gemm/launchers/fpA_intB_launcher_sm100.inl\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/cutlass_extensions/include/cutlass_extensions/gemm/collective/sm100_mma_warpspecialized_mixed_input.hpp\n"
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      128,
+      128
+    ],
+    "left_strides_bytes": [
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      256,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "uint8",
+        "allocation": "6:global1:B"
+      },
+      {
+        "name": "scale",
+        "dtype": "bfloat16",
+        "allocation": "6:global5:scale"
+      }
+    ]
+  }
+}

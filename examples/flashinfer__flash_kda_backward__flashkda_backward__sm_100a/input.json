@@ -1,0 +1,181 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_flashkda_backward_local_c32_tcgen",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      384,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 155136
+  },
+  "arguments": [
+    {
+      "parameter": 27,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 28,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 29,
+      "type": "f32",
+      "value": -5.0
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "do_"
+    },
+    {
+      "parameter": 1,
+      "type": "pointer",
+      "object": "beta_active"
+    },
+    {
+      "parameter": 2,
+      "type": "pointer",
+      "object": "cu_seqlens"
+    },
+    {
+      "parameter": 3,
+      "type": "pointer",
+      "object": "consumer_chunk_order"
+    },
+    {
+      "parameter": 4,
+      "type": "pointer",
+      "object": "chunk_sequence"
+    },
+    {
+      "parameter": 5,
+      "type": "pointer",
+      "object": "chunk_index"
+    },
+    {
+      "parameter": 6,
+      "type": "pointer",
+      "object": "chunk_state"
+    },
+    {
+      "parameter": 7,
+      "type": "pointer",
+      "object": "state_checkpoint_needed"
+    },
+    {
+      "parameter": 8,
+      "type": "pointer",
+      "object": "initial_state"
+    },
+    {
+      "parameter": 9,
+      "type": "pointer",
+      "object": "tape_qd"
+    },
+    {
+      "parameter": 10,
+      "type": "pointer",
+      "object": "tape_kd"
+    },
+    {
+      "parameter": 11,
+      "type": "pointer",
+      "object": "tape_kr"
+    },
+    {
+      "parameter": 12,
+      "type": "pointer",
+      "object": "tape_j"
+    },
+    {
+      "parameter": 13,
+      "type": "pointer",
+      "object": "tape_restore_factor"
+    },
+    {
+      "parameter": 14,
+      "type": "pointer",
+      "object": "tape_e"
+    },
+    {
+      "parameter": 15,
+      "type": "pointer",
+      "object": "tape_x"
+    },
+    {
+      "parameter": 16,
+      "type": "pointer",
+      "object": "tape_r"
+    },
+    {
+      "parameter": 17,
+      "type": "pointer",
+      "object": "chunk_dh"
+    },
+    {
+      "parameter": 18,
+      "type": "pointer",
+      "object": "chunk_dr"
+    },
+    {
+      "parameter": 19,
+      "type": "pointer",
+      "object": "chunk_dx"
+    },
+    {
+      "parameter": 20,
+      "type": "pointer",
+      "object": "boundary_ready"
+    },
+    {
+      "parameter": 21,
+      "type": "pointer",
+      "object": "grad_qd"
+    },
+    {
+      "parameter": 22,
+      "type": "pointer",
+      "object": "grad_kd"
+    },
+    {
+      "parameter": 23,
+      "type": "pointer",
+      "object": "grad_ki"
+    },
+    {
+      "parameter": 24,
+      "type": "pointer",
+      "object": "dlog_decay"
+    },
+    {
+      "parameter": 25,
+      "type": "pointer",
+      "object": "dbeta_active"
+    },
+    {
+      "parameter": 26,
+      "type": "pointer",
+      "object": "dv"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

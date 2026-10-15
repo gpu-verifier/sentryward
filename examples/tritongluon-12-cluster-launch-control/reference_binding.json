@@ -1,0 +1,72 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A",
+      "6:global1:B": "6:global1:B"
+    },
+    "parameters": {}
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A",
+      "6:global1:B": "6:global1:B"
+    },
+    "parameters": {}
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:C",
+    "right_allocation": "6:global1:C",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      1000,
+      1000
+    ],
+    "left_strides_bytes": [
+      2000,
+      2
+    ],
+    "right_strides_bytes": [
+      2000,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "shape": [
+          1000,
+          1000
+        ],
+        "dtype": "float16",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "shape": [
+          1000,
+          1000
+        ],
+        "dtype": "float16",
+        "allocation": "6:global1:B"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tritongluon-12-cluster-launch-control.ptx",
+    "optimized_input": "examples/tritongluon-12-cluster-launch-control/input.json",
+    "optimized_input_sha256": "671c4bb551b352fb55fefd9d5277ae75f4e6f6ae4192ebddbc3bff342994d7f3",
+    "ptx_sha256": "ef16bf5760c85f9121fa036c5dcb50c0cf0301e2ac952ce1a759a389ce31382e",
+    "upstream": [
+      "https://github.com/triton-lang/triton/blob/c01b6774b1865984607d89d89d3a10833de92037/python/tutorials/gluon/12-cluster-launch-control.py"
+    ],
+    "scope": "Existing configured M=1000,N=1000,K=1000; original launch and assumptions retained. Reference specifies the FULL MxN output, not just visited tiles; incomplete kernel coverage must not be treated as equivalence.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

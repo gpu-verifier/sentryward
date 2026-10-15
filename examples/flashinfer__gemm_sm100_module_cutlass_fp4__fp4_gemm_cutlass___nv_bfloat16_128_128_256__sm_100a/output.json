@@ -1,0 +1,2872 @@
+{
+  "address_model": {
+    "address_invariants": [],
+    "kind": "symbolic",
+    "layers": [
+      0,
+      2
+    ],
+    "solver": "z3",
+    "solver_timeout_ms": 100
+  },
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    }
+  ],
+  "checks": {
+    "equivalence": "passed",
+    "memory": "passed",
+    "synchronization": "passed"
+  },
+  "counts": {
+    "edges": 671800,
+    "events": 279871,
+    "instructions": 51782,
+    "memory_accesses": 183592,
+    "threads": 256
+  },
+  "diagnostics": [],
+  "equivalence": {
+    "access_validity": "no_unresolved_symbolic_byte_reads",
+    "arena_nodes": 17161,
+    "checks": {
+      "equivalence": "passed",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "comparison_elapsed_seconds": 0.200019976,
+    "context_declaration": {
+      "assumptions": [
+        {
+          "finite": true,
+          "input": "scale_a",
+          "interpretation": "e4m3",
+          "kind": "input_elements",
+          "reason": "Additional decoded finite-scale premise explicitly authorized by user 2026-10-09; exact e4m3 interpretation, not generic uint8 finiteness."
+        },
+        {
+          "finite": true,
+          "input": "scale_b",
+          "interpretation": "e4m3",
+          "kind": "input_elements",
+          "reason": "Additional decoded finite-scale premise explicitly authorized by user 2026-10-09; exact e4m3 interpretation, not generic uint8 finiteness."
+        }
+      ],
+      "fixed_inputs": [],
+      "inputs": [],
+      "predicate_nodes": []
+    },
+    "context_policy": "explicit native caller premises; no implied provenance certification",
+    "counters": {
+      "add_term_visits": 78674,
+      "affine_coordinate_captures": 320,
+      "affine_state_banks": 1,
+      "call_definition_node_visits": 68,
+      "canonical_factor_visits": 1904,
+      "canonical_node_visits": 8108,
+      "canonical_sum_factor_pulls": 136,
+      "canonical_sum_initials": 102,
+      "certified_state_pattern_decline_nonplain_pattern": 18,
+      "certified_state_pattern_decline_slot_domain": 16,
+      "certified_state_pattern_work": 306,
+      "coefficient_normalizations": 1,
+      "coordinate_sum_constraints_checked": 440,
+      "coverage_polynomial_peak": 8,
+      "coverage_polynomial_visits": 2142,
+      "derived_coordinate_structural_fallbacks": 16,
+      "ep_body_anchor_edges": 24518,
+      "ep_body_anchor_nodes": 23867,
+      "ep_body_bound_read_exact_hits": 336,
+      "ep_body_bound_read_matcher_fallbacks": 96,
+      "ep_body_coordinate_rebuilds": 1472,
+      "ep_body_deferred_call_anchors": 2592,
+      "ep_body_deferred_unmatched_anchors": 2592,
+      "ep_body_fold_scope_boundaries": 544,
+      "ep_body_instance_cache_entries": 512,
+      "ep_body_instance_cache_hits": 272,
+      "ep_body_obligations": 272,
+      "ep_body_pattern_anchor_cache_hits": 6004,
+      "ep_body_payload_admission_rejections": 80,
+      "ep_body_payload_summary_nodes": 800,
+      "ep_body_predicate_rebuilds": 544,
+      "ep_body_proofs": 272,
+      "ep_body_read_anchor_rejections": 3558,
+      "ep_body_read_match_cache_entries": 896,
+      "ep_body_read_match_cache_hits": 704,
+      "ep_body_select_rebuilds": 544,
+      "ep_body_target_anchor_cache_hits": 2913,
+      "ep_identity_proofs": 306,
+      "ep_reduction_outer_obligations": 34,
+      "ep_scalar_attempts": 340,
+      "ep_scalar_proofs": 306,
+      "exact_e2m1_decodes": 544,
+      "exact_proof_reuse_certificates": 34,
+      "finite_bilinear_banks": 1,
+      "finite_e4m3_nan_branches_eliminated": 68,
+      "finite_state_reuse_banks": 1,
+      "fold_alpha_signature_edges": 3637,
+      "fold_alpha_signatures": 1960,
+      "fold_alpha_states": 6160,
+      "fp4_reference_boundary_templates": 2,
+      "fp_idiom_power_constructions": 0,
+      "fp_idiom_rm_producers": 0,
+      "ideal_additive_compiler_exp_sequences": 0,
+      "ideal_compiler_exp_sequences": 0,
+      "ideal_compiler_log2_polynomials": 0,
+      "ideal_compiler_lse_sequences": 0,
+      "ideal_single_constant_exp_sequences": 0,
+      "imported_context_nodes": 10128,
+      "importer_scope_banks": 2,
+      "importer_scope_binder_hits": 170,
+      "importer_scope_binders_created": 170,
+      "importer_scope_leaf_lookups": 340,
+      "importer_scope_nested_body_fallbacks": 272,
+      "input_index_radix_quotients": 243,
+      "instantiated_coordinate_patterns": 1024,
+      "intern_requests": 215424,
+      "known_bits_cache_hits": 2890,
+      "known_bits_edges": 1258,
+      "known_bits_nodes": 1870,
+      "linear_reduction_closed_groups": 34,
+      "linear_reduction_distributed_products": 136,
+      "linear_reduction_pattern_attempts": 34,
+      "linear_reduction_pattern_proofs": 34,
+      "linear_reduction_preserved_partial_groups": 0,
+      "linear_reduction_weighted_add_edges": 272,
+      "linear_reduction_weighted_states": 1020,
+      "local_pattern_candidates": 5324,
+      "masked_sum_prefix_queries": 442,
+      "normalization_cache_context_changes": 34,
+      "normalization_node_visits": 7450,
+      "packed_decoder_candidates": 68,
+      "packed_decoder_pattern_cache_hits": 67,
+      "packed_decoder_replacements": 68,
+      "packed_decoder_truth_tables": 1,
+      "packed_radix_probes": 357,
+      "packed_radix_rewrites": 243,
+      "packed_slice_identity_mappings": 680,
+      "packed_transport_visits": 2924,
+      "parameter_anchored_reduction_axes": 128,
+      "parameterized_affine_coordinate_captures": 576,
+      "parametric_state_attempts": 0,
+      "pattern_branch_states": 544,
+      "pattern_build_peak_nodes": 34,
+      "pattern_build_unique_nodes": 1530,
+      "pattern_node_visits": 24710,
+      "predicate_integer_affine_normalizations": 68,
+      "proved_select_arms_imported": 68,
+      "select_complementary_polarities": 68,
+      "select_max_probe_ancestor_nodes": 0,
+      "select_max_probe_calls": 1768,
+      "select_max_probe_temporary_nodes": 0,
+      "summary_bind_nodes": 272,
+      "summary_concat_nodes": 238,
+      "symbolic_byte_reads_without_extent_proof": 0,
+      "typed_e2m1_canonical_decodes": 544,
+      "typed_ue4m3_initial_decodes": 272,
+      "unary_reduction_composition_attempts": 34,
+      "unary_reduction_composition_context_changes": 34
+    },
+    "definedness": {
+      "partial_equivalence_families": 0,
+      "proved_families": 34,
+      "status": "proved"
+    },
+    "diagnostics": [],
+    "elapsed_s": 0.19101585,
+    "engine": "reference_guided_cpp",
+    "ep_profile": {
+      "body_instantiation_s": 0.0,
+      "body_scalar_s": 0.0,
+      "candidate_discovery_and_bookkeeping_s": 0.0,
+      "cross_product_s": 0.0,
+      "enabled": false,
+      "equal_s": 0.0,
+      "fraction": {
+        "computations": 0,
+        "previously_completed": 0,
+        "repeated_across_queries": 0,
+        "requests": 0,
+        "shared_hits": 0,
+        "unique_query_nodes": 0
+      },
+      "fraction_witness_s": 0.0,
+      "match_total_s": 0.0,
+      "normal": {
+        "computations": 0,
+        "previously_completed": 0,
+        "repeated_across_queries": 0,
+        "requests": 0,
+        "shared_hits": 0,
+        "unique_query_nodes": 0
+      },
+      "ordinary_polynomial_s": 0.0,
+      "polynomial": {
+        "computations": 0,
+        "previously_completed": 0,
+        "repeated_across_queries": 0,
+        "requests": 0,
+        "shared_hits": 0,
+        "unique_query_nodes": 0
+      },
+      "query_count": 340,
+      "reset_s": 0.0,
+      "reuse_cache": false,
+      "shared_evictions": 0
+    },
+    "equivalence_context": {
+      "applied_predicates": 0,
+      "element_assumptions": 2,
+      "fixed_input_elements": 0,
+      "scoped_predicates": 0
+    },
+    "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+    "equivalent_families": 34,
+    "finished_families": 34,
+    "idealizations_applied": [],
+    "input_contract": [
+      {
+        "element_type": "e4m3",
+        "finite": true,
+        "object": "scale_a",
+        "region": "whole_object",
+        "source": "Additional decoded finite-scale premise explicitly authorized by user 2026-10-09; exact e4m3 interpretation, not generic uint8 finiteness."
+      },
+      {
+        "element_type": "e4m3",
+        "finite": true,
+        "object": "scale_b",
+        "region": "whole_object",
+        "source": "Additional decoded finite-scale premise explicitly authorized by user 2026-10-09; exact e4m3 interpretation, not generic uint8 finiteness."
+      }
+    ],
+    "input_contract_applied_reads": [
+      {
+        "element_type": "e4m3",
+        "object": "scale_a",
+        "side": "left"
+      },
+      {
+        "element_type": "e4m3",
+        "object": "scale_b",
+        "side": "left"
+      },
+      {
+        "element_type": "e4m3",
+        "object": "scale_a",
+        "side": "right"
+      },
+      {
+        "element_type": "e4m3",
+        "object": "scale_b",
+        "side": "right"
+      }
+    ],
+    "legacy_scalar_fallback": false,
+    "mapping_input_memory_constraints": {},
+    "native_context": null,
+    "normalized_reachable_nodes": 6047,
+    "numerical_result": "verified",
+    "pattern_nodes": 398,
+    "peak_rss_kib": 388944,
+    "peak_rss_scope": "process_lifetime_not_comparison_delta",
+    "piece_nodes": 782,
+    "piece_union": {
+      "abstract_optimized_replacements": 0,
+      "abstract_reference_replacements": 0,
+      "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+      "collected_pieces": 0,
+      "late_certificates": "accepted_until_each_schema_is_complete",
+      "method": "complete_output_equalities_with_finite_piece_union",
+      "replacements": 0,
+      "schemas": [],
+      "stored_dag_work": 0,
+      "work_limit": 2000000
+    },
+    "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+    "raw_nodes": [
+      241,
+      1440
+    ],
+    "reference_term_patterns": 66,
+    "result": "verified",
+    "rows": [
+      {
+        "affine_state_pattern_s": 7.1699999999999195e-06,
+        "cumulative_elapsed_s": 0.005209185,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 0,
+        "left_import_s": 0.0008351019999999999,
+        "left_normalize_s": 0.00021401100000000006,
+        "parametric_state_s": 6.300000000001617e-07,
+        "piece_union_record_s": 2.1000000000048757e-07,
+        "piece_union_seal_s": 4.5999999999987023e-07,
+        "right_import_s": 0.000639302,
+        "right_normalize_s": 0.001228463,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 0
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0015961239999999995,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 2.1499999999998083e-06
+      },
+      {
+        "affine_state_pattern_s": 2.4100000000004326e-06,
+        "cumulative_elapsed_s": 0.011024192,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 1,
+        "left_import_s": 0.0008057430000000003,
+        "left_normalize_s": 0.00022378100000000015,
+        "parametric_state_s": 2.8000000000007186e-07,
+        "piece_union_record_s": 7.99999999995249e-08,
+        "piece_union_seal_s": 5.999999999964367e-08,
+        "right_import_s": 0.0007414420000000001,
+        "right_normalize_s": 0.0014177339999999995,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 1
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.002458557,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.4300000000001811e-06
+      },
+      {
+        "affine_state_pattern_s": 2.130000000001228e-06,
+        "cumulative_elapsed_s": 0.016841329,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 2,
+        "left_import_s": 0.0008027729999999997,
+        "left_normalize_s": 0.00022669999999999982,
+        "parametric_state_s": 2.6000000000019063e-07,
+        "piece_union_record_s": 7.000000000131901e-08,
+        "piece_union_seal_s": 4.999999999970306e-08,
+        "right_import_s": 0.0007347120000000002,
+        "right_normalize_s": 0.0014178149999999994,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 2
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.002469576999999999,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.1199999999985527e-06
+      },
+      {
+        "affine_state_pattern_s": 2.1000000000014063e-06,
+        "cumulative_elapsed_s": 0.022609166,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 3,
+        "left_import_s": 0.0007579030000000007,
+        "left_normalize_s": 0.0002128900000000003,
+        "parametric_state_s": 2.4000000000204413e-07,
+        "piece_union_record_s": 7.000000000131901e-08,
+        "piece_union_seal_s": 2.999999999808711e-08,
+        "right_import_s": 0.0007455120000000003,
+        "right_normalize_s": 0.0014292250000000027,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 3
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0024571170000000017,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.0500000000024379e-06
+      },
+      {
+        "affine_state_pattern_s": 1.9999999999985307e-06,
+        "cumulative_elapsed_s": 0.028466903000000002,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 4,
+        "left_import_s": 0.0007658120000000011,
+        "left_normalize_s": 0.00021860000000000282,
+        "parametric_state_s": 2.399999999985747e-07,
+        "piece_union_record_s": 8.999999999773078e-08,
+        "piece_union_seal_s": 5.000000000143778e-08,
+        "right_import_s": 0.0007778130000000022,
+        "right_normalize_s": 0.0014442549999999985,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 4
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.002479216999999999,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.0600000000006438e-06
+      },
+      {
+        "affine_state_pattern_s": 2.0300000000000873e-06,
+        "cumulative_elapsed_s": 0.032923886,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 5,
+        "left_import_s": 0.0007845029999999989,
+        "left_normalize_s": 0.0002122809999999982,
+        "parametric_state_s": 3.000000000016878e-07,
+        "piece_union_record_s": 9.000000000120023e-08,
+        "piece_union_seal_s": 2.999999999808711e-08,
+        "right_import_s": 0.0007425520000000005,
+        "right_normalize_s": 0.0011153730000000028,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 5
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0014396640000000002,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.0900000000022003e-06
+      },
+      {
+        "affine_state_pattern_s": 1.980999999998123e-06,
+        "cumulative_elapsed_s": 0.039033884,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 6,
+        "left_import_s": 0.0008983830000000026,
+        "left_normalize_s": 0.00027873999999999954,
+        "parametric_state_s": 2.8000000000527603e-07,
+        "piece_union_record_s": 7.99999999995249e-08,
+        "piece_union_seal_s": 5.000000000143778e-08,
+        "right_import_s": 0.0007785719999999982,
+        "right_normalize_s": 0.0013005840000000005,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 6
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0026825369999999987,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.0809999999999986e-06
+      },
+      {
+        "affine_state_pattern_s": 2.3400000000034504e-06,
+        "cumulative_elapsed_s": 0.045165662,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 7,
+        "left_import_s": 0.0009059230000000029,
+        "left_normalize_s": 0.00026746100000000356,
+        "parametric_state_s": 2.3000000000383825e-07,
+        "piece_union_record_s": 7.99999999995249e-08,
+        "piece_union_seal_s": 5.000000000143778e-08,
+        "right_import_s": 0.000819911999999999,
+        "right_normalize_s": 0.0012913540000000015,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 9
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.002676906999999999,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.0900000000022003e-06
+      },
+      {
+        "affine_state_pattern_s": 1.9500000000005624e-06,
+        "cumulative_elapsed_s": 0.05125692,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 8,
+        "left_import_s": 0.0009007030000000027,
+        "left_normalize_s": 0.00026567100000000204,
+        "parametric_state_s": 2.700000000036007e-07,
+        "piece_union_record_s": 6.999999999784956e-08,
+        "piece_union_seal_s": 6.000000000311312e-08,
+        "right_import_s": 0.0008003720000000006,
+        "right_normalize_s": 0.0012882540000000026,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 12
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0026718380000000028,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.0099999999957365e-06
+      },
+      {
+        "affine_state_pattern_s": 2.109999999999612e-06,
+        "cumulative_elapsed_s": 0.057436538,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 9,
+        "left_import_s": 0.0009022029999999973,
+        "left_normalize_s": 0.00026821099999999737,
+        "parametric_state_s": 2.699999999966618e-07,
+        "piece_union_record_s": 7.000000000478845e-08,
+        "piece_union_seal_s": 6.000000000311312e-08,
+        "right_import_s": 0.0008365119999999976,
+        "right_normalize_s": 0.0013229139999999945,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 15
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0026755369999999987,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.0599999999971743e-06
+      },
+      {
+        "affine_state_pattern_s": 1.9800000000055884e-06,
+        "cumulative_elapsed_s": 0.062090122,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 10,
+        "left_import_s": 0.0008849930000000006,
+        "left_normalize_s": 0.00022475099999999526,
+        "parametric_state_s": 2.7999999999833713e-07,
+        "piece_union_record_s": 9.000000000120023e-08,
+        "piece_union_seal_s": 5.000000000143778e-08,
+        "right_import_s": 0.0007499519999999982,
+        "right_normalize_s": 0.001133343000000002,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 18
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0014794340000000017,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.1499999999983745e-06
+      },
+      {
+        "affine_state_pattern_s": 1.8800000000096517e-06,
+        "cumulative_elapsed_s": 0.066479955,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 11,
+        "left_import_s": 0.0007593019999999964,
+        "left_normalize_s": 0.0002193409999999979,
+        "parametric_state_s": 2.699999999966618e-07,
+        "piece_union_record_s": 8.999999999426134e-08,
+        "piece_union_seal_s": 5.999999999617422e-08,
+        "right_import_s": 0.0007173419999999958,
+        "right_normalize_s": 0.0011119930000000056,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 19
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0014185840000000005,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.2699999999976619e-06
+      },
+      {
+        "affine_state_pattern_s": 2.000000000002e-06,
+        "cumulative_elapsed_s": 0.072566763,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 12,
+        "left_import_s": 0.0009175130000000087,
+        "left_normalize_s": 0.0002640410000000065,
+        "parametric_state_s": 2.699999999966618e-07,
+        "piece_union_record_s": 7.000000000478845e-08,
+        "piece_union_seal_s": 5.999999999617422e-08,
+        "right_import_s": 0.0007955720000000083,
+        "right_normalize_s": 0.0013042840000000028,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 20
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0026467379999999957,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.0400000000077014e-06
+      },
+      {
+        "affine_state_pattern_s": 2.2799999999933984e-06,
+        "cumulative_elapsed_s": 0.07857802,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 13,
+        "left_import_s": 0.0008775219999999917,
+        "left_normalize_s": 0.00025833000000000106,
+        "parametric_state_s": 2.6000000000192536e-07,
+        "piece_union_record_s": 7.000000000478845e-08,
+        "piece_union_seal_s": 4.000000000670134e-08,
+        "right_import_s": 0.0007698730000000042,
+        "right_normalize_s": 0.001297274000000001,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 23
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.002651368000000001,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.0299999999990872e-06
+      },
+      {
+        "affine_state_pattern_s": 1.970000000003913e-06,
+        "cumulative_elapsed_s": 0.084616318,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 14,
+        "left_import_s": 0.0008784929999999941,
+        "left_normalize_s": 0.00025973099999999916,
+        "parametric_state_s": 2.699999999966618e-07,
+        "piece_union_record_s": 7.000000000478845e-08,
+        "piece_union_seal_s": 3.9999999992823554e-08,
+        "right_import_s": 0.0007963920000000069,
+        "right_normalize_s": 0.0012945239999999913,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 26
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.002650148000000005,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 9.499999999995623e-07
+      },
+      {
+        "affine_state_pattern_s": 1.799999999996249e-06,
+        "cumulative_elapsed_s": 0.090656136,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 15,
+        "left_import_s": 0.000875752999999993,
+        "left_normalize_s": 0.00025988100000000347,
+        "parametric_state_s": 2.9000000000001247e-07,
+        "piece_union_record_s": 7.99999999995249e-08,
+        "piece_union_seal_s": 3.9999999992823554e-08,
+        "right_import_s": 0.0007970320000000031,
+        "right_normalize_s": 0.001291823999999997,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 29
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0026578079999999976,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.0399999999938236e-06
+      },
+      {
+        "affine_state_pattern_s": 2.1999999999938735e-06,
+        "cumulative_elapsed_s": 0.095171539,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 16,
+        "left_import_s": 0.0007914319999999947,
+        "left_normalize_s": 0.00022064100000000753,
+        "parametric_state_s": 2.500000000071889e-07,
+        "piece_union_record_s": 6.000000001005201e-08,
+        "piece_union_seal_s": 5.999999999617422e-08,
+        "right_import_s": 0.0007436820000000094,
+        "right_normalize_s": 0.0011294929999999953,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 32
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0014649140000000116,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 8.900000000033881e-07
+      },
+      {
+        "affine_state_pattern_s": 1.989999999993386e-06,
+        "cumulative_elapsed_s": 0.099548822,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 17,
+        "left_import_s": 0.0007519120000000074,
+        "left_normalize_s": 0.0002106410000000114,
+        "parametric_state_s": 2.4999999999331113e-07,
+        "piece_union_record_s": 7.000000000478845e-08,
+        "piece_union_seal_s": 4.9999999987559995e-08,
+        "right_import_s": 0.0007275119999999996,
+        "right_normalize_s": 0.0011056629999999928,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 33
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0014213240000000016,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 8.899999999895103e-07
+      },
+      {
+        "affine_state_pattern_s": 1.9900000000072637e-06,
+        "cumulative_elapsed_s": 0.105574539,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 18,
+        "left_import_s": 0.0008793119999999932,
+        "left_normalize_s": 0.0002607800000000021,
+        "parametric_state_s": 2.699999999966618e-07,
+        "piece_union_record_s": 7.99999999995249e-08,
+        "piece_union_seal_s": 3.9999999992823554e-08,
+        "right_import_s": 0.0007880129999999902,
+        "right_normalize_s": 0.0012848739999999914,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 34
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0026571469999999986,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 9.900000000062636e-07
+      },
+      {
+        "affine_state_pattern_s": 2.189999999999137e-06,
+        "cumulative_elapsed_s": 0.111650177,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 19,
+        "left_import_s": 0.0008670830000000046,
+        "left_normalize_s": 0.00025707999999999287,
+        "parametric_state_s": 2.6000000000192536e-07,
+        "piece_union_record_s": 8.999999999426134e-08,
+        "piece_union_seal_s": 5.999999999617422e-08,
+        "right_import_s": 0.0008293929999999977,
+        "right_normalize_s": 0.0013045240000000013,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 37
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.002661218000000007,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 8.999999999981245e-07
+      },
+      {
+        "affine_state_pattern_s": 2.459999999995799e-06,
+        "cumulative_elapsed_s": 0.117836095,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 20,
+        "left_import_s": 0.0008939230000000048,
+        "left_normalize_s": 0.0002703000000000011,
+        "parametric_state_s": 2.6000000000192536e-07,
+        "piece_union_record_s": 7.000000000478845e-08,
+        "piece_union_seal_s": 2.999999999808711e-08,
+        "right_import_s": 0.0008954530000000044,
+        "right_normalize_s": 0.0013007940000000079,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 40
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0026686270000000067,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.0400000000077014e-06
+      },
+      {
+        "affine_state_pattern_s": 1.8700000000010375e-06,
+        "cumulative_elapsed_s": 0.123949483,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 21,
+        "left_import_s": 0.0008794329999999989,
+        "left_normalize_s": 0.00027119100000000396,
+        "parametric_state_s": 2.6000000000192536e-07,
+        "piece_union_record_s": 5.999999999617422e-08,
+        "piece_union_seal_s": 3.9999999992823554e-08,
+        "right_import_s": 0.0007805320000000004,
+        "right_normalize_s": 0.0013637839999999929,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 43
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.002661197000000004,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 9.710000000023866e-07
+      },
+      {
+        "affine_state_pattern_s": 1.8999999999991246e-06,
+        "cumulative_elapsed_s": 0.128492637,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 22,
+        "left_import_s": 0.0008193130000000021,
+        "left_normalize_s": 0.0002301909999999907,
+        "parametric_state_s": 2.599999999741698e-07,
+        "piece_union_record_s": 7.999999998564711e-08,
+        "piece_union_seal_s": 5.000000000143778e-08,
+        "right_import_s": 0.0007275719999999819,
+        "right_normalize_s": 0.0011310630000000155,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 46
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0014821749999999745,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 9.900000000062636e-07
+      },
+      {
+        "affine_state_pattern_s": 2.0799999999876473e-06,
+        "cumulative_elapsed_s": 0.132875619,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 23,
+        "left_import_s": 0.0007576119999999908,
+        "left_normalize_s": 0.00020962099999999317,
+        "parametric_state_s": 2.6000000000192536e-07,
+        "piece_union_record_s": 8.000000001340268e-08,
+        "piece_union_seal_s": 5.000000000143778e-08,
+        "right_import_s": 0.000721302000000007,
+        "right_normalize_s": 0.0011054530000000062,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 47
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0014267540000000023,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 9.89999999978508e-07
+      },
+      {
+        "affine_state_pattern_s": 1.9500000000005624e-06,
+        "cumulative_elapsed_s": 0.138898657,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 24,
+        "left_import_s": 0.0008850230000000125,
+        "left_normalize_s": 0.000269541000000012,
+        "parametric_state_s": 3.1000000000336314e-07,
+        "piece_union_record_s": 7.999999998564711e-08,
+        "piece_union_seal_s": 4.000000000670134e-08,
+        "right_import_s": 0.0007717220000000025,
+        "right_normalize_s": 0.0012821939999999865,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 48
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0026499479999999853,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 9.699999999890352e-07
+      },
+      {
+        "affine_state_pattern_s": 2.1000000000048757e-06,
+        "cumulative_elapsed_s": 0.144989315,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 25,
+        "left_import_s": 0.0008847130000000092,
+        "left_normalize_s": 0.00027044100000001015,
+        "parametric_state_s": 2.6000000000192536e-07,
+        "piece_union_record_s": 1.599999999990498e-07,
+        "piece_union_seal_s": 5.000000000143778e-08,
+        "right_import_s": 0.000779711999999988,
+        "right_normalize_s": 0.0013337139999999859,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 51
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.002662018000000016,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 9.800000000115272e-07
+      },
+      {
+        "affine_state_pattern_s": 1.8999999999991246e-06,
+        "cumulative_elapsed_s": 0.151029053,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 26,
+        "left_import_s": 0.0008852129999999958,
+        "left_normalize_s": 0.00026007099999997285,
+        "parametric_state_s": 2.7999999999139824e-07,
+        "piece_union_record_s": 7.000000001866624e-08,
+        "piece_union_seal_s": 7.000000001866624e-08,
+        "right_import_s": 0.0007850219999999963,
+        "right_normalize_s": 0.0012915129999999941,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 54
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0026595279999999943,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 9.400000000048259e-07
+      },
+      {
+        "affine_state_pattern_s": 1.9500000000005624e-06,
+        "cumulative_elapsed_s": 0.15704253,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 27,
+        "left_import_s": 0.0008873319999999907,
+        "left_normalize_s": 0.0002609500000000098,
+        "parametric_state_s": 2.400000000124525e-07,
+        "piece_union_record_s": 8.999999998038355e-08,
+        "piece_union_seal_s": 4.000000000670134e-08,
+        "right_import_s": 0.0007656629999999998,
+        "right_normalize_s": 0.001285174,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 57
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.002659557000000007,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 9.900000000062636e-07
+      },
+      {
+        "affine_state_pattern_s": 1.9300000000110895e-06,
+        "cumulative_elapsed_s": 0.161658904,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 28,
+        "left_import_s": 0.0009009729999999994,
+        "left_normalize_s": 0.00022201100000002194,
+        "parametric_state_s": 2.4999999997943334e-07,
+        "piece_union_record_s": 5.999999999617422e-08,
+        "piece_union_seal_s": 5.000000000143778e-08,
+        "right_import_s": 0.0007299119999999992,
+        "right_normalize_s": 0.0011282329999999785,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 60
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0014782140000000055,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 9.300000000100894e-07
+      },
+      {
+        "affine_state_pattern_s": 2.740000000001075e-06,
+        "cumulative_elapsed_s": 0.166526578,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 29,
+        "left_import_s": 0.000660061999999989,
+        "left_normalize_s": 0.00018966000000000816,
+        "parametric_state_s": 2.699999999966618e-07,
+        "piece_union_record_s": 6.999999999091067e-08,
+        "piece_union_seal_s": 5.999999999617422e-08,
+        "right_import_s": 0.0006439120000000242,
+        "right_normalize_s": 0.0013986039999999977,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 61
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0018104250000000044,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 1.0099999999957365e-06
+      },
+      {
+        "affine_state_pattern_s": 1.8799999999818962e-06,
+        "cumulative_elapsed_s": 0.172452336,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 30,
+        "left_import_s": 0.0008391429999999866,
+        "left_normalize_s": 0.0002258510000000269,
+        "parametric_state_s": 2.500000000071889e-07,
+        "piece_union_record_s": 6.999999999091067e-08,
+        "piece_union_seal_s": 5.000000000143778e-08,
+        "right_import_s": 0.0007240920000000095,
+        "right_normalize_s": 0.0014508239999999895,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 62
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0025251579999999996,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 9.20000000015353e-07
+      },
+      {
+        "affine_state_pattern_s": 1.8900000000043882e-06,
+        "cumulative_elapsed_s": 0.178354953,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 31,
+        "left_import_s": 0.0008091519999999797,
+        "left_normalize_s": 0.00022268100000000235,
+        "parametric_state_s": 2.6000000000192536e-07,
+        "piece_union_record_s": 9.000000000813912e-08,
+        "piece_union_seal_s": 5.000000000143778e-08,
+        "right_import_s": 0.0007250220000000196,
+        "right_normalize_s": 0.001461353999999998,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 63
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0025258079999999905,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 8.999999999981245e-07
+      },
+      {
+        "affine_state_pattern_s": 2.000000000002e-06,
+        "cumulative_elapsed_s": 0.18426005,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 32,
+        "left_import_s": 0.0008115120000000142,
+        "left_normalize_s": 0.0002226310000000009,
+        "parametric_state_s": 2.7999999999139824e-07,
+        "piece_union_record_s": 7.999999998564711e-08,
+        "piece_union_seal_s": 4.000000000670134e-08,
+        "right_import_s": 0.0007233120000000037,
+        "right_normalize_s": 0.0014574440000000022,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 64
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0025266870000000274,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 8.900000000033881e-07
+      },
+      {
+        "affine_state_pattern_s": 2.230000000019716e-06,
+        "cumulative_elapsed_s": 0.190197008,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 33,
+        "left_import_s": 0.0008078030000000236,
+        "left_normalize_s": 0.00022233999999998755,
+        "parametric_state_s": 2.500000000071889e-07,
+        "piece_union_record_s": 7.000000001866624e-08,
+        "piece_union_seal_s": 4.000000000670134e-08,
+        "right_import_s": 0.0007524120000000079,
+        "right_normalize_s": 0.0014574850000000084,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "state_pattern_proof": {
+          "closures": [
+            {
+              "coefficient": "1",
+              "count": "256",
+              "spec": 65
+            }
+          ],
+          "contribution_pieces": 23,
+          "coverage": "exact_multiplicity_one_per_closed_group",
+          "factor_choices": 0,
+          "method": "linear_reduction_combination_certificate",
+          "output_polynomial_terms": 0,
+          "polynomial_work": 0,
+          "preserved_partial_groups": 0,
+          "visited_nodes": 210,
+          "weighted_add_edges": 8,
+          "witness_nodes": 23
+        },
+        "state_pattern_s": 0.0025291679999999983,
+        "status": "equivalent",
+        "total_definedness": "proved",
+        "unary_reduction_s": 8.800000000086516e-07
+      }
+    ],
+    "scalar_engine": "mandatory_exponential_polynomial",
+    "scope": {
+      "kind": "mapped_expression_equivalence",
+      "operation": "equivalence"
+    },
+    "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+    "stages_s": {
+      "affine_state_pattern_s": 7.538100000001671e-05,
+      "exponential_polynomial_s": 0.0,
+      "left_import_s": 0.02856356999999999,
+      "left_normalize_s": 0.008171043000000062,
+      "parametric_state_s": 9.359999999974337e-06,
+      "piece_union_record_s": 2.809999999995455e-06,
+      "piece_union_reuse_s": 0.0,
+      "piece_union_seal_s": 2.0600000000059807e-06,
+      "proof_reuse_s": 0.0,
+      "right_import_s": 0.025857104000000054,
+      "right_normalize_s": 0.04396139999999994,
+      "state_pattern_s": 0.07758102200000003
+    },
+    "timings": {
+      "load_and_scope_analysis": 0.000511771
+    },
+    "total_output_families": 34,
+    "transport": "in_memory_cpp_objects",
+    "unmatched_reasons": {}
+  },
+  "frontend": {
+    "address_value_bridge": {
+      "diagnostics": [],
+      "first_unavailable_reason": "",
+      "queries": 0,
+      "resolved": 0,
+      "source": "value_lowering",
+      "unavailable": 0,
+      "value_view_complete": true
+    },
+    "cluster_completion_joins": 0,
+    "cta_count": 1,
+    "dependency_compression": {
+      "bulk_read_wait": {
+        "consumers": 128,
+        "emitted_references": 96,
+        "original_references": 192,
+        "prefix_effects": 0
+      },
+      "tcgen_commit": {
+        "consumers": 2,
+        "emitted_references": 15,
+        "original_references": 24,
+        "prefix_effects": 2
+      },
+      "tcgen_load_wait": {
+        "consumers": 128,
+        "emitted_references": 512,
+        "original_references": 512,
+        "prefix_effects": 0
+      }
+    },
+    "diagnostic_sample_count": 0,
+    "discharged_codes": [
+      "tcgen_cp_memory_effect_refinement",
+      "mma_memory_effect_refinement",
+      "tcgen_pipeline_effect_refinement",
+      "tcgen_commit_notification_order_refinement"
+    ],
+    "executed_records": 118510,
+    "frontend_assumptions": {
+      "assertion_failure_forms": [
+        "trap",
+        "__assertfail"
+      ],
+      "assertion_uses": 641,
+      "bounded_loop_uses": 0,
+      "clc_failure": true,
+      "clc_uses": 225,
+      "data_branch_decisions": [],
+      "election_policy": {
+        "fallback": "lowest_member",
+        "preferred_lane": 0,
+        "strategy": "preferred_member"
+      },
+      "election_uses": 1248,
+      "fixed_election": true,
+      "isolated_launch": true,
+      "noalias_unbounded": false,
+      "opaque_compute_regions": [],
+      "pointer_contract": {
+        "aliasing": "distinct_objects_noalias",
+        "extent_bytes": "unbounded"
+      },
+      "representative_branch_uses": 0,
+      "trap_only_equality_assertions_hold": true
+    },
+    "implementation": "cpp",
+    "input_objects": [],
+    "lowered_instruction_count": 51782,
+    "mma_refinement": {
+      "blocked": [],
+      "discharged": 4
+    },
+    "reached_opcodes": {
+      "add.s32": 6523,
+      "add.s64": 1699,
+      "and.b16": 1024,
+      "and.b32": 3136,
+      "and.pred": 256,
+      "bar.arrive": 32,
+      "bar.sync": 1664,
+      "bar.warp.sync": 64,
+      "bra": 5845,
+      "bra.uni": 128,
+      "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128": 224,
+      "clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128": 1,
+      "cp.async.bulk.commit_group": 128,
+      "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group": 128,
+      "cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 2,
+      "cp.async.bulk.tensor.4d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 2,
+      "cp.async.bulk.wait_group.read": 128,
+      "cvt.rn.bf16x2.f32": 8192,
+      "cvt.u16.u32": 2592,
+      "cvt.u32.u16": 1024,
+      "cvt.u32.u64": 130,
+      "cvt.u64.u16": 32,
+      "cvt.u64.u32": 128,
+      "cvta.param.u64": 261,
+      "cvta.to.shared.u64": 128,
+      "div.s32": 1024,
+      "div.u32": 256,
+      "elect.sync": 1248,
+      "fence.mbarrier_init.release.cluster": 1536,
+      "fence.proxy.async.shared::cta": 736,
+      "griddepcontrol.launch_dependents": 32,
+      "griddepcontrol.wait": 64,
+      "ld.param.b32": 1856,
+      "ld.param.b64": 768,
+      "ld.param.v4.b32": 416,
+      "ld.shared.b128": 224,
+      "ld.shared.b32": 160,
+      "mad.lo.s32": 864,
+      "mapa.shared::cluster.u32": 385,
+      "max.s32": 32,
+      "mbarrier.arrive.expect_tx.shared::cluster.b64": 1,
+      "mbarrier.arrive.expect_tx.shared::cta.b64": 1,
+      "mbarrier.arrive.shared::cluster.b64": 384,
+      "mbarrier.arrive.shared::cta.b64": 32,
+      "mbarrier.init.shared::cta.b64": 32,
+      "mbarrier.test_wait.parity.shared::cta.b64": 64,
+      "mbarrier.try_wait.parity.shared::cta.b64": 1088,
+      "min.u32": 32,
+      "mov.b16": 288,
+      "mov.b32": 10333,
+      "mov.b64": 796,
+      "mov.s32": 1287,
+      "mov.u32": 3904,
+      "mul.f32": 16384,
+      "mul.hi.u32": 832,
+      "mul.lo.s32": 1793,
+      "mul.wide.s32": 1,
+      "neg.s32": 288,
+      "or.b16": 1312,
+      "or.b32": 291,
+      "or.b64": 129,
+      "or.pred": 1280,
+      "prefetch.tensormap": 6,
+      "rem.u32": 256,
+      "ret": 256,
+      "selp.b16": 64,
+      "selp.b32": 3232,
+      "selp.b64": 1024,
+      "selp.u32": 224,
+      "setp.eq.b16": 2,
+      "setp.eq.b32": 4960,
+      "setp.eq.b64": 384,
+      "setp.eq.u32": 96,
+      "setp.le.s32": 32,
+      "setp.lt.s32": 1472,
+      "setp.lt.u32": 96,
+      "setp.ne.b32": 4905,
+      "setp.ne.b64": 256,
+      "shfl.sync.idx.b32": 2304,
+      "shl.b16": 512,
+      "shl.b32": 4709,
+      "shr.s32": 128,
+      "shr.u32": 4160,
+      "shr.u64": 2,
+      "st.shared.v4.b32": 2048,
+      "sub.s32": 1760,
+      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 32,
+      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 1,
+      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 1,
+      "tcgen05.cp.cta_group::1.32x128b.warpx4": 8,
+      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 32,
+      "tcgen05.ld.sync.aligned.32x32b.x32.b32": 512,
+      "tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16": 4,
+      "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 32,
+      "tcgen05.wait::ld.sync.aligned": 128,
+      "xor.b32": 1248
+    },
+    "shared_constant_propagation": {
+      "read_from_dependencies": 0,
+      "representation": "sparse_known_bytes",
+      "validation": "pending_backend"
+    },
+    "source_binding_storage": {
+      "binding_templates": 17,
+      "generated_address_rows": 0,
+      "generated_body_rows": 0,
+      "generated_memory_instances": 0,
+      "logical_instructions": 51782,
+      "stored_bindings": 4509
+    },
+    "source_edge_storage": {
+      "binding_templates": 290,
+      "logical_edges": 51526,
+      "stored_bindings": 290
+    },
+    "tcgen_copy_refinement": {
+      "blocked": [],
+      "discharged": 8
+    },
+    "tcgen_history_refinement": {
+      "blocked": [],
+      "notifications": 2,
+      "operations": 12
+    },
+    "thread_count": 256,
+    "unsupported_occurrence_counts": {},
+    "user_branch_decisions": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 641,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 225,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 1248,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "trap_only_equality_assertions_hold": true
+  },
+  "hb_queries": {
+    "memory": {
+      "algorithm": "not-built",
+      "batches": 0,
+      "cache_hits": 0,
+      "dfs_queries": 0,
+      "edge_visits": 0,
+      "filtered_queries": 0,
+      "queries": 0,
+      "shared_peak_index_bytes": 0
+    },
+    "required_orders": {
+      "algorithm": "member-relations",
+      "batches": 1,
+      "edge_visits": 45114,
+      "member_enumerations": 0,
+      "request_construction": {
+        "concrete_pair_materializations": 0,
+        "endpoint_reads": 2080,
+        "family_requests": 128,
+        "logical_orders": 17408,
+        "owner_bindings": 1088,
+        "stored_orders": 544
+      }
+    }
+  },
+  "implementation": "cpp",
+  "memory_analysis": {
+    "address_candidates": 945828,
+    "address_model": {
+      "cache_hits": 0,
+      "ground_disjoint": 0,
+      "ground_overlap": 0,
+      "layer0_disjoint": 0,
+      "refined_pairs": 0,
+      "solver_queries": 0,
+      "solver_sat": 0,
+      "solver_unknown": 0,
+      "solver_unsat": 0
+    },
+    "candidate_generation_fallback": false,
+    "exhaustive": false,
+    "family_analysis": {
+      "access_families": 30257,
+      "affine_member_rows": 2800,
+      "candidate_relations": 132968,
+      "hb_frontier_pieces": 3151,
+      "hb_member_enumerations": 0,
+      "logical_accesses": 183592
+    },
+    "hb_algorithm": "member-relations",
+    "hb_batches": 95,
+    "hb_cache_hits": 0,
+    "hb_dfs_queries": 0,
+    "hb_edge_visits": 438055,
+    "hb_filtered_queries": 0,
+    "hb_peak_index_bytes": 0,
+    "hb_queries": 945828,
+    "hb_query_seconds": 0.07323606099999996,
+    "overlap_queries": 43648,
+    "strategy": "conflict-family",
+    "unordered_candidates_examined": 43648
+  },
+  "memory_analysis_complete": true,
+  "mma_operand_ordering": {},
+  "mode": "verify",
+  "peak_footprint_mib": 345.48046875,
+  "peak_rss_mib": 379.828125,
+  "pipeline_elapsed_seconds": 3.809943749,
+  "race_count": 0,
+  "race_samples_truncated": false,
+  "races": [],
+  "required_order_domains": 544,
+  "required_orders": 17408,
+  "result": "verified",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "search_complete": true,
+  "semantic_assumptions": {
+    "bounded_computation_loops": false,
+    "clc_always_fails": true,
+    "duplicate_tma_store_benign": true,
+    "representative_branches": false,
+    "representative_election": true
+  },
+  "semantic_program": {
+    "binding_diagnostic_count": 0,
+    "binding_diagnostics": [],
+    "execution_cohorts": 27,
+    "mapping_complete": true,
+    "memory_binding_stored_rows": 41566,
+    "memory_binding_templates": 2844,
+    "memory_bindings": 126406,
+    "memory_linking_templates_used": true,
+    "synchronization_groups": 2147,
+    "synchronization_groups_materialized": true,
+    "synthetic_synchronization_nodes": 17,
+    "thread_prefix_groups": 34844,
+    "value_diagnostic_count": 0,
+    "value_diagnostics": []
+  },
+  "source_violations": [],
+  "synchronization_input": {
+    "compute_access_binding": "after_happens_before",
+    "kind": "ordering_endpoints",
+    "memory_address_payloads": false
+  },
+  "template_execution": {
+    "completed_ctas": 1,
+    "coordinate_bindings": 0,
+    "logical_thread_steps": 122039,
+    "path_entries": 6465,
+    "record_bindings": 5285,
+    "record_nodes": 5431,
+    "splits": 13,
+    "template_steps": 5570,
+    "thread_memberships": 256,
+    "value_nodes": 1160
+  },
+  "thread_record_compression": {
+    "completed_ctas": 1,
+    "enabled": true,
+    "estimated_pool_bytes_sum": 0,
+    "intern_calls": 0,
+    "logical_records": 118510,
+    "record_handle_bytes": 32,
+    "templates": 0,
+    "unique_bindings": 0
+  },
+  "unresolved_count": 0,
+  "value_analysis": {
+    "checks": {
+      "equivalence": "not_requested",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "diagnostics": [],
+    "duplicate_write_value_checks": 43648,
+    "equivalence_check": "equivalent",
+    "initial_memory_regions": 1378,
+    "initial_read_families": 1378,
+    "memory_action_storage": {
+      "logical_actions": 126406,
+      "stored_runs": 83806
+    },
+    "output_region_families": 0,
+    "output_regions": 1408,
+    "passes": [
+      {
+        "name": "packing",
+        "rewritten_instances": 16424,
+        "rewritten_nodes": 808,
+        "semantics": "exact_fixed_width"
+      },
+      {
+        "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+        "name": "software_exp2",
+        "rewritten_instances": 0,
+        "rewritten_nodes": 0,
+        "semantics": "ideal_exp2"
+      },
+      {
+        "converted_instances": 98969,
+        "name": "type_edges",
+        "removed_nodes": 5019
+      },
+      {
+        "name": "memory_elimination"
+      },
+      {
+        "elements": 0,
+        "identities": 23,
+        "layouts": 2832,
+        "mapping_blocks": 3496,
+        "name": "view_normalization",
+        "original_pieces": 39808,
+        "reused_initial_reads": 1378,
+        "reused_views": 1408,
+        "segmented": 8,
+        "slices": 512,
+        "stored_mapping_blocks": 2088,
+        "typed_output_pieces": 0,
+        "typed_output_regions": 0
+      }
+    ],
+    "processed_memory_actions": 126406,
+    "processed_memory_families": 0,
+    "read_substitutions": 47357,
+    "result": "verified",
+    "scalar_fold": {
+      "checks": {
+        "equivalence": "not_requested",
+        "memory": "not_requested",
+        "synchronization": "not_requested"
+      },
+      "construction_collections": 0,
+      "diagnostics": [],
+      "output_count": 16384,
+      "output_families_merged": 2,
+      "output_family_count": 34,
+      "output_root_count": 34,
+      "peak_construction_nodes": 6860,
+      "result": "verified",
+      "scope": {
+        "operation": "scalar_fold"
+      },
+      "shared_view_projection_hits": 5812,
+      "source_outputs": 1408,
+      "spatial_families_projected": 1,
+      "spatial_outputs_projected": 16384,
+      "spatial_template_operations": 0,
+      "statistics": {
+        "constants": 50,
+        "edges": 2636,
+        "folds": 272,
+        "indices": 4,
+        "initial_cells": 136,
+        "logical_iterations": 1632,
+        "logical_iterations_overflow": false,
+        "max_fold_nesting": 2,
+        "nodes": 1440,
+        "nodes_before_final_collection": 6860,
+        "nodes_reclaimed": 5420,
+        "operations": 978,
+        "parameters": 0,
+        "range_descriptions": 272,
+        "storage_nodes": 1440,
+        "unique_fold_bodies": 272
+      }
+    },
+    "scope": {
+      "operation": "value_analysis"
+    },
+    "serialization": {
+      "action_patterns": 83806,
+      "binding_patterns": 41566,
+      "domain_refinements": 154596,
+      "elapsed_seconds": 1.307858545,
+      "event_families": 63891,
+      "expanded_event_records": 0,
+      "largest_batch_members": 62,
+      "logical_actions": 126406,
+      "logical_events": 749409,
+      "peak_rss_mib_at_completion": 379.828125,
+      "reachability_queries": 0,
+      "relations": 226565,
+      "rss_mib_at_completion": 322.55078125,
+      "scheduled_batches": 63891,
+      "singleton_batches": 41137,
+      "value_families": 25936
+    },
+    "shared_read_families": 1420,
+    "shared_read_instances": 42604,
+    "stored_read_substitutions": 4753
+  },
+  "value_ir_instance_count": 310162,
+  "value_ir_node_count": 23348,
+  "value_view_complete": true,
+  "verification_elapsed_seconds": 1.594356574,
+  "verification_limitations": [],
+  "verification_result": "race_free",
+  "warning_count": 698368,
+  "warning_samples_truncated": true,
+  "warnings": [
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 129,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 49133,
+        "instruction": 12557,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 130,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 53112,
+        "instruction": 12879,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 131,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 57091,
+        "instruction": 13201,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 132,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 61070,
+        "instruction": 13523,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 133,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 65049,
+        "instruction": 13845,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 134,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 69028,
+        "instruction": 14167,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 135,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 73007,
+        "instruction": 14489,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 136,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 76986,
+        "instruction": 14811,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 137,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 80965,
+        "instruction": 15133,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 138,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 84944,
+        "instruction": 15455,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 139,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 88923,
+        "instruction": 15777,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 140,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 92902,
+        "instruction": 16099,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 141,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 96881,
+        "instruction": 16421,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 142,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 100860,
+        "instruction": 16743,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 143,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 104839,
+        "instruction": 17065,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 45154,
+        "instruction": 12235,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 64,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 144,
+        "bytes": 64,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 7463,
+          "kind": "memory"
+        },
+        "event": 108818,
+        "instruction": 17387,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a.ptx",
+          "line": 2874
+        },
+        "mode": "write"
+      }
+    }
+  ],
+  "wellsync_timeout_seconds": 500.0,
+  "whole_pipeline_timeout_seconds": 498.407
+}

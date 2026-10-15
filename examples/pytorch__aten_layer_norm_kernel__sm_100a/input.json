@@ -1,0 +1,77 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN2at6native53_GLOBAL__N__fbe44717_20_layer_norm_kernel_cu_9c5ada8a39layer_norm_grad_input_kernel_vectorizedIN3c108BFloat16EfLb0EEEvPKT_S7_PKT0_SA_S7_PS5_i",
+  "launch": {
+    "grid_dim": [
+      2,
+      1,
+      1
+    ],
+    "block_dim": [
+      128,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 16
+  },
+  "arguments": [
+    {
+      "parameter": 6,
+      "type": "u32",
+      "value": 1024
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "dY",
+      "name": "dY"
+    },
+    {
+      "parameter": 1,
+      "type": "pointer",
+      "object": "X",
+      "name": "X"
+    },
+    {
+      "parameter": 2,
+      "type": "pointer",
+      "object": "mean",
+      "name": "mean"
+    },
+    {
+      "parameter": 3,
+      "type": "pointer",
+      "object": "rstd",
+      "name": "rstd"
+    },
+    {
+      "parameter": 4,
+      "type": "pointer",
+      "object": "gamma",
+      "name": "gamma"
+    },
+    {
+      "parameter": 5,
+      "type": "pointer",
+      "object": "dX",
+      "name": "dX"
+    },
+    {
+      "parameter": 6,
+      "type": "u32",
+      "name": "N"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

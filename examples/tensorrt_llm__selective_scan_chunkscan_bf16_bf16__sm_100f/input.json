@@ -1,0 +1,131 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN12tensorrt_llm3_v17kernels17chunk_scan_kernelILi256ELi64ELi32ELi32ELi4ELi1ELi2ELi1ELi1ELi1E13__nv_bfloat16S3_EENSt9enable_ifIXooL_ZSt9is_same_vEL_ZSt9is_same_vEEvE4typeEiiiiiiPvPKvS9_S9_S9_S9_S9_S9_bPKi",
+  "launch": {
+    "grid_dim": [
+      4,
+      1,
+      1
+    ],
+    "block_dim": [
+      32,
+      1,
+      4
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 14336
+  },
+  "arguments": [
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 1,
+      "type": "u32",
+      "value": 256
+    },
+    {
+      "parameter": 2,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 3,
+      "type": "u32",
+      "value": 32
+    },
+    {
+      "parameter": 4,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 5,
+      "type": "u32",
+      "value": 128
+    },
+    {
+      "parameter": 14,
+      "type": "u8",
+      "value": 0
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 6,
+      "type": "pointer",
+      "space": "global",
+      "object": "Y"
+    },
+    {
+      "parameter": 7,
+      "type": "pointer",
+      "space": "global",
+      "object": "Os"
+    },
+    {
+      "parameter": 8,
+      "type": "pointer",
+      "space": "global",
+      "object": "dc"
+    },
+    {
+      "parameter": 9,
+      "type": "pointer",
+      "space": "global",
+      "object": "dA"
+    },
+    {
+      "parameter": 10,
+      "type": "pointer",
+      "space": "global",
+      "object": "CB"
+    },
+    {
+      "parameter": 11,
+      "type": "pointer",
+      "space": "global",
+      "object": "D"
+    },
+    {
+      "parameter": 12,
+      "type": "pointer",
+      "space": "global",
+      "object": "X"
+    },
+    {
+      "parameter": 13,
+      "type": "pointer",
+      "space": "global",
+      "object": "Z"
+    },
+    {
+      "parameter": 15,
+      "type": "pointer",
+      "space": "global",
+      "object": "last_token_ids"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  },
+  "shape_arrays": [
+    {
+      "parameter": 15,
+      "element_type": "s32",
+      "shapes": [
+        [
+          256
+        ]
+      ]
+    }
+  ]
+}

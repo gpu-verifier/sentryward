@@ -1,0 +1,615 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN7cutlass13device_kernelIN2at4cuda6detail25enable_3x_kernel_for_sm10INS_4gemm6kernel13GemmUniversalINS5_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS5_10collective13CollectiveMmaINS5_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi4ELi8ELi2ENSA_IJNS9_1CILi2EEENSG_ILi1EEESI_EEENS_4arch5Sm100EEENSA_IJNSG_ILi128EEENSG_ILi256EEENSG_ILi64EEEEEENS_10bfloat16_tEPNSA_IJlSI_NSG_ILi0EEEEEESR_SU_NS9_8TiledMMAINS9_8MMA_AtomIJNS9_20SM100_MMA_F16BF16_SSISR_SR_fLi128ELi256ELNS9_4UMMA5MajorE0ELSZ_0ELNSY_7ScaleInE0ELS10_0EEEEEENS9_6LayoutINSA_IJSI_SI_SI_EEENSA_IJSS_SS_SS_EEEEENSA_IJNS9_10UnderscoreES17_S17_EEEEENS9_13SM90_TMA_LOADENS9_14ComposedLayoutINS9_7SwizzleILi3ELi4ELi3EEENS9_18smem_ptr_flag_bitsILi16EEENS13_INSA_IJNSG_ILi8EEESP_EEENSA_IJSP_SI_EEEEEEEvNS9_8identityENS9_23SM90_TMA_LOAD_MULTICASTES1K_vS1L_EENS_8epilogue10collective18CollectiveEpilogueINS1O_31Sm100PtrArrayTmaWarpSpecializedILi4ELi2ELi32ELb0ELb0EEEJSQ_NSA_IJNS13_ISN_SI_EENS13_INSG_ILi32EEESI_EEEEEvSU_SR_SU_NS1O_6fusion15FusionCallbacksIS1S_NS1X_17LinearCombinationISR_fSR_fLNS_15FloatRoundStyleE2EEESQ_S1W_JEEENS9_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xES1A_NS1B_INS1C_ILi2ELi4ELi3EEES1F_NS13_INSA_IJS1G_S1U_EEENSA_IJS1U_SI_EEEEEEENS9_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS9_14SM90_TMA_STOREES2B_S2D_S2D_EEEvvEEEEEEvNT_6ParamsE",
+  "launch": {
+    "grid_dim": [
+      4,
+      1,
+      1
+    ],
+    "block_dim": [
+      384,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      2,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 217088
+  },
+  "arguments": [
+    {
+      "field": "mode",
+      "value": 4
+    },
+    {
+      "field": "problem_shape.num_groups",
+      "value": 2
+    },
+    {
+      "field": "problem_shape.host_problem_shapes",
+      "value": null
+    },
+    {
+      "field": "epilogue.thread.beta",
+      "value": 0.0
+    },
+    {
+      "field": "epilogue.thread.beta_ptr",
+      "value": null
+    },
+    {
+      "field": "epilogue.thread.beta_ptr_array",
+      "value": null
+    },
+    {
+      "field": "epilogue.thread.dBeta.batch",
+      "value": 0
+    },
+    {
+      "field": "epilogue.thread.alpha",
+      "value": 1.0
+    },
+    {
+      "field": "epilogue.thread.alpha_ptr",
+      "value": null
+    },
+    {
+      "field": "epilogue.thread.alpha_ptr_array",
+      "value": null
+    },
+    {
+      "field": "epilogue.thread.dAlpha.batch",
+      "value": 0
+    },
+    {
+      "field": "epilogue.ptr_C",
+      "value": null
+    },
+    {
+      "field": "scheduler.cluster_major.divisor",
+      "value": 2
+    },
+    {
+      "field": "scheduler.cluster_major.shift_right",
+      "value": 1
+    },
+    {
+      "field": "scheduler.cluster_minor.divisor",
+      "value": 1
+    },
+    {
+      "field": "scheduler.cluster_minor.shift_right",
+      "value": 0
+    },
+    {
+      "field": "scheduler.cta_m.divisor",
+      "value": 128
+    },
+    {
+      "field": "scheduler.cta_m.multiplier",
+      "value": 0
+    },
+    {
+      "field": "scheduler.cta_m.shift_right",
+      "value": 7
+    },
+    {
+      "field": "scheduler.cta_m.round_up",
+      "value": 0
+    },
+    {
+      "field": "scheduler.cta_n.divisor",
+      "value": 256
+    },
+    {
+      "field": "scheduler.cta_n.multiplier",
+      "value": 0
+    },
+    {
+      "field": "scheduler.cta_n.shift_right",
+      "value": 8
+    },
+    {
+      "field": "scheduler.cta_n.round_up",
+      "value": 0
+    },
+    {
+      "field": "scheduler.blocks_across_problem",
+      "value": 4
+    },
+    {
+      "field": "scheduler.pre_processed_problem_shapes",
+      "value": false
+    },
+    {
+      "field": "scheduler.max_swizzle_size",
+      "value": 1
+    },
+    {
+      "field": "scheduler.raster_order",
+      "value": 0
+    },
+    {
+      "field": "scheduler.problem_shapes.num_groups",
+      "value": 2
+    },
+    {
+      "field": "scheduler.problem_shapes.host_problem_shapes",
+      "value": null
+    },
+    {
+      "field": "scheduler.cta_shape.m",
+      "value": 128
+    },
+    {
+      "field": "scheduler.cta_shape.n",
+      "value": 256
+    },
+    {
+      "field": "scheduler.cta_shape.k",
+      "value": 64
+    },
+    {
+      "field": "scheduler.cluster_shape.m",
+      "value": 2
+    },
+    {
+      "field": "scheduler.cluster_shape.n",
+      "value": 1
+    },
+    {
+      "field": "scheduler.cluster_shape.k",
+      "value": 1
+    },
+    {
+      "field": "hw_info.device_id",
+      "value": 0
+    },
+    {
+      "field": "hw_info.sm_count",
+      "value": 4
+    },
+    {
+      "field": "hw_info.max_active_clusters",
+      "value": 0
+    },
+    {
+      "field": "scheduler.problem_shapes.padding",
+      "value": 0
+    }
+  ],
+  "declarations": [
+    {
+      "name": "mode",
+      "parameter": 0,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "problem_shape.num_groups",
+      "parameter": 0,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "problem_shape.problem_shapes",
+      "parameter": 0,
+      "offset": 16,
+      "type": "pointer",
+      "object": "problem_sizes"
+    },
+    {
+      "name": "problem_shape.host_problem_shapes",
+      "parameter": 0,
+      "offset": 24,
+      "type": "pointer"
+    },
+    {
+      "name": "mainloop.tensormaps",
+      "parameter": 0,
+      "offset": 1184,
+      "type": "pointer",
+      "object": "mainloop.tensormaps"
+    },
+    {
+      "name": "mainloop.ptr_A",
+      "parameter": 0,
+      "offset": 1192,
+      "type": "pointer",
+      "object": "A_ptrs"
+    },
+    {
+      "name": "mainloop.dA",
+      "parameter": 0,
+      "offset": 1200,
+      "type": "pointer",
+      "object": "stride_A"
+    },
+    {
+      "name": "mainloop.ptr_B",
+      "parameter": 0,
+      "offset": 1208,
+      "type": "pointer",
+      "object": "B_ptrs"
+    },
+    {
+      "name": "mainloop.dB",
+      "parameter": 0,
+      "offset": 1216,
+      "type": "pointer",
+      "object": "stride_B"
+    },
+    {
+      "name": "epilogue.thread.beta",
+      "parameter": 0,
+      "offset": 1280,
+      "type": "f32"
+    },
+    {
+      "name": "epilogue.thread.beta_ptr",
+      "parameter": 0,
+      "offset": 1288,
+      "type": "pointer"
+    },
+    {
+      "name": "epilogue.thread.beta_ptr_array",
+      "parameter": 0,
+      "offset": 1296,
+      "type": "pointer"
+    },
+    {
+      "name": "epilogue.thread.dBeta.batch",
+      "parameter": 0,
+      "offset": 1304,
+      "type": "s64"
+    },
+    {
+      "name": "epilogue.thread.alpha",
+      "parameter": 0,
+      "offset": 1320,
+      "type": "f32"
+    },
+    {
+      "name": "epilogue.thread.alpha_ptr",
+      "parameter": 0,
+      "offset": 1328,
+      "type": "pointer"
+    },
+    {
+      "name": "epilogue.thread.alpha_ptr_array",
+      "parameter": 0,
+      "offset": 1336,
+      "type": "pointer"
+    },
+    {
+      "name": "epilogue.thread.dAlpha.batch",
+      "parameter": 0,
+      "offset": 1344,
+      "type": "s64"
+    },
+    {
+      "name": "epilogue.tensormaps",
+      "parameter": 0,
+      "offset": 1920,
+      "type": "pointer",
+      "object": "epilogue.tensormaps"
+    },
+    {
+      "name": "epilogue.ptr_C",
+      "parameter": 0,
+      "offset": 1928,
+      "type": "pointer"
+    },
+    {
+      "name": "epilogue.dC",
+      "parameter": 0,
+      "offset": 1936,
+      "type": "pointer",
+      "object": "stride_output.dC"
+    },
+    {
+      "name": "epilogue.ptr_D",
+      "parameter": 0,
+      "offset": 1944,
+      "type": "pointer",
+      "object": "output_ptrs"
+    },
+    {
+      "name": "epilogue.dD",
+      "parameter": 0,
+      "offset": 1952,
+      "type": "pointer",
+      "object": "stride_output"
+    },
+    {
+      "name": "scheduler.cluster_major.divisor",
+      "parameter": 0,
+      "offset": 2048,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.cluster_major.shift_right",
+      "parameter": 0,
+      "offset": 2056,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.cluster_minor.divisor",
+      "parameter": 0,
+      "offset": 2064,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.cluster_minor.shift_right",
+      "parameter": 0,
+      "offset": 2072,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.cta_m.divisor",
+      "parameter": 0,
+      "offset": 2080,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.cta_m.multiplier",
+      "parameter": 0,
+      "offset": 2088,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.cta_m.shift_right",
+      "parameter": 0,
+      "offset": 2096,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.cta_m.round_up",
+      "parameter": 0,
+      "offset": 2100,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.cta_n.divisor",
+      "parameter": 0,
+      "offset": 2104,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.cta_n.multiplier",
+      "parameter": 0,
+      "offset": 2112,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.cta_n.shift_right",
+      "parameter": 0,
+      "offset": 2120,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.cta_n.round_up",
+      "parameter": 0,
+      "offset": 2124,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.blocks_across_problem",
+      "parameter": 0,
+      "offset": 2128,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.pre_processed_problem_shapes",
+      "parameter": 0,
+      "offset": 2136,
+      "type": "bool"
+    },
+    {
+      "name": "scheduler.max_swizzle_size",
+      "parameter": 0,
+      "offset": 2140,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.raster_order",
+      "parameter": 0,
+      "offset": 2144,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.problem_shapes.num_groups",
+      "parameter": 0,
+      "offset": 2152,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.problem_shapes.problem_shapes",
+      "parameter": 0,
+      "offset": 2160,
+      "type": "pointer",
+      "object": "scheduler.problem_sizes"
+    },
+    {
+      "name": "scheduler.problem_shapes.host_problem_shapes",
+      "parameter": 0,
+      "offset": 2168,
+      "type": "pointer"
+    },
+    {
+      "name": "scheduler.cta_shape.m",
+      "parameter": 0,
+      "offset": 2176,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.cta_shape.n",
+      "parameter": 0,
+      "offset": 2180,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.cta_shape.k",
+      "parameter": 0,
+      "offset": 2184,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.cluster_shape.m",
+      "parameter": 0,
+      "offset": 2188,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.cluster_shape.n",
+      "parameter": 0,
+      "offset": 2192,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.cluster_shape.k",
+      "parameter": 0,
+      "offset": 2196,
+      "type": "s32"
+    },
+    {
+      "name": "hw_info.device_id",
+      "parameter": 0,
+      "offset": 2200,
+      "type": "s32"
+    },
+    {
+      "name": "hw_info.sm_count",
+      "parameter": 0,
+      "offset": 2204,
+      "type": "s32"
+    },
+    {
+      "name": "hw_info.max_active_clusters",
+      "parameter": 0,
+      "offset": 2208,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.problem_shapes.padding",
+      "parameter": 0,
+      "offset": 2156,
+      "type": "u32"
+    }
+  ],
+  "shape_arrays": [
+    {
+      "parameter": 0,
+      "offset": 16,
+      "element_type": "s32",
+      "shapes": [
+        [
+          256,
+          128,
+          64
+        ],
+        [
+          256,
+          128,
+          64
+        ]
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 2160,
+      "element_type": "s32",
+      "shapes": [
+        [
+          256,
+          128,
+          64
+        ],
+        [
+          256,
+          128,
+          64
+        ]
+      ]
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "offset": 128,
+      "element_type": "bf16",
+      "global_shape": [
+        1,
+        1
+      ],
+      "global_strides_bytes": [
+        0
+      ],
+      "box_shape": [
+        64,
+        128
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 384,
+      "element_type": "bf16",
+      "global_shape": [
+        1,
+        1
+      ],
+      "global_strides_bytes": [
+        0
+      ],
+      "box_shape": [
+        64,
+        128
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 1664,
+      "element_type": "bf16",
+      "global_shape": [
+        1,
+        1
+      ],
+      "global_strides_bytes": [
+        0
+      ],
+      "box_shape": [
+        32,
+        128
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "64B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_flashinfer_vsa_blk64_persistent_per_head_m64n256_ws_sm100",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      512,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "parameter": 8,
+      "type": "u32",
+      "value": 8
+    },
+    {
+      "parameter": 9,
+      "type": "u32",
+      "value": 64
+    },
+    {
+      "parameter": 10,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 11,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 12,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 13,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 14,
+      "type": "f32",
+      "value": 0.12751743082459868
+    },
+    {
+      "parameter": 15,
+      "type": "u32",
+      "value": 0
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "tensor_map",
+      "object": "q"
+    },
+    {
+      "parameter": 1,
+      "type": "tensor_map",
+      "object": "k"
+    },
+    {
+      "parameter": 2,
+      "type": "tensor_map",
+      "object": "v"
+    },
+    {
+      "parameter": 3,
+      "type": "tensor_map",
+      "object": "out"
+    },
+    {
+      "parameter": 4,
+      "type": "pointer",
+      "object": "lse"
+    },
+    {
+      "parameter": 5,
+      "type": "pointer",
+      "object": "q2k_indices"
+    },
+    {
+      "parameter": 6,
+      "type": "pointer",
+      "object": "q2k_num"
+    },
+    {
+      "parameter": 7,
+      "type": "pointer",
+      "object": "kv_block_lens"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

@@ -1,0 +1,183 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN7cutlass13device_kernelINS_4fmha6kernel36Sm100FmhaMlaKernelTmaWarpspecializedIN4cute5tupleIJNS4_1CILi128EEES7_NS5_IJNS6_ILi512EEENS6_ILi64EEEEEEEEENS_6half_tEfSC_fNS2_31Sm100MlaPersistentTileSchedulerELb0EEEEEvNT_6ParamsE",
+  "launch": {
+    "grid_dim": [
+      2,
+      1,
+      1
+    ],
+    "block_dim": [
+      256,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      2,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "field": "max_sequence",
+      "value": 128
+    },
+    {
+      "field": "batch",
+      "value": 1
+    },
+    {
+      "field": "scheduler.num_blocks",
+      "value": 2
+    },
+    {
+      "field": "split_kv",
+      "value": 1
+    },
+    {
+      "field": "split_kv_array",
+      "value": null
+    },
+    {
+      "field": "scheduler.cluster.divisor",
+      "value": 2
+    },
+    {
+      "field": "scheduler.cluster.multiplier",
+      "value": 2147483648
+    },
+    {
+      "field": "scheduler.cluster.shift_right",
+      "value": 0
+    },
+    {
+      "field": "scheduler.batch.divisor",
+      "value": 1
+    },
+    {
+      "field": "scheduler.batch.multiplier",
+      "value": 0
+    },
+    {
+      "field": "scheduler.batch.shift_right",
+      "value": 0
+    },
+    {
+      "field": "scheduler.split.divisor",
+      "value": 1
+    },
+    {
+      "field": "scheduler.split.multiplier",
+      "value": 0
+    },
+    {
+      "field": "scheduler.split.shift_right",
+      "value": 0
+    }
+  ],
+  "declarations": [
+    {
+      "name": "max_sequence",
+      "parameter": 0,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "batch",
+      "parameter": 0,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.num_blocks",
+      "parameter": 0,
+      "offset": 1536,
+      "type": "s32"
+    },
+    {
+      "name": "split_kv",
+      "parameter": 0,
+      "offset": 1612,
+      "type": "s32"
+    },
+    {
+      "name": "split_kv_array",
+      "parameter": 0,
+      "offset": 1616,
+      "type": "pointer"
+    },
+    {
+      "name": "scheduler.cluster.divisor",
+      "parameter": 0,
+      "offset": 1540,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.cluster.multiplier",
+      "parameter": 0,
+      "offset": 1544,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.cluster.shift_right",
+      "parameter": 0,
+      "offset": 1548,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.batch.divisor",
+      "parameter": 0,
+      "offset": 1552,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.batch.multiplier",
+      "parameter": 0,
+      "offset": 1556,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.batch.shift_right",
+      "parameter": 0,
+      "offset": 1560,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.split.divisor",
+      "parameter": 0,
+      "offset": 1564,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.split.multiplier",
+      "parameter": 0,
+      "offset": 1568,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.split.shift_right",
+      "parameter": 0,
+      "offset": 1572,
+      "type": "u32"
+    },
+    {
+      "parameter": 0,
+      "offset": 112,
+      "type": "pointer",
+      "object": "sequence_lengths"
+    },
+    {
+      "parameter": 0,
+      "offset": 120,
+      "type": "pointer",
+      "object": "page_table"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

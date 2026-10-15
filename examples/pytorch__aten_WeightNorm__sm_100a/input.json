@@ -1,0 +1,65 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN2at6native46_GLOBAL__N__ce93b007_13_WeightNorm_cu_b3893b6b32weight_norm_fwd_first_dim_kernelIN3c108BFloat16EfEEvPT_PT0_PKS5_SA_i",
+  "launch": {
+    "grid_dim": [
+      2,
+      1,
+      1
+    ],
+    "block_dim": [
+      256,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 1024
+  },
+  "arguments": [
+    {
+      "parameter": 4,
+      "type": "u32",
+      "value": 1024
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "w",
+      "name": "w"
+    },
+    {
+      "parameter": 1,
+      "type": "pointer",
+      "object": "norms",
+      "name": "norms"
+    },
+    {
+      "parameter": 2,
+      "type": "pointer",
+      "object": "v",
+      "name": "v"
+    },
+    {
+      "parameter": 3,
+      "type": "pointer",
+      "object": "g",
+      "name": "g"
+    },
+    {
+      "parameter": 4,
+      "type": "u32",
+      "name": "rowSize"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

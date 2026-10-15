@@ -1,0 +1,131 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A",
+      "6:global1:C": "6:global1:C"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      },
+      "6:global1:C": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A",
+      "6:global1:C": "6:global1:C"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      },
+      "6:global1:C": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:B",
+    "right_allocation": "6:global1:B",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      1,
+      128
+    ],
+    "left_strides_bytes": [
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      256,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "X",
+        "dtype": "float16",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "weight",
+        "dtype": "float16",
+        "allocation": "6:global1:C"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tirx-basic-rmsnorm.ptx",
+    "optimized_input": "examples/tirx-basic-rmsnorm/input.json",
+    "upstream": [
+      "https://github.com/mlc-ai/TIRx-kernels/blob/01130e3bb1cf8a009fc1e7e6db2a860cd51df9ed/tirx_kernels/norm/rmsnorm.py"
+    ],
+    "scope": "hidden_size=128, batch_size=1; first CONFIGS entry. Persistent launch 152 CTAs, 32 threads. PTX parameter order differs from current source: input=A, output=B, weights=C.",
+    "evidence": "PTX row stride shift 7, normalization denominator 128, epsilon 0f358637BD, row step 152; parameter 1 is the store base and parameter 2 the weight-load base.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [],
+    "dynamic_shared_allocation": "576 bytes: 128 FP32 staging elements plus the FP32 reduction cell at byte512; rounded up to the declared 64-byte alignment.",
+    "historical_source_status": "Recorded historical revision 532949266f42ee23211e2dbd6d26dbe9c7a6ca3f is unavailable (GitHub 422; raw404). Current pinned source is corroborating evidence, not claimed to be the exact PTX generator. PTX ABI remains authoritative."
+  }
+}

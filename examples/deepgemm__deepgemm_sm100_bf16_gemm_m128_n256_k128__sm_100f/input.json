@@ -1,0 +1,126 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN9deep_gemm20sm100_bf16_gemm_implILN4cute4UMMA5MajorE0ELS3_0ELj0ELj256ELj128ELj16ELj128ELj64ELj1ELj128ELj128ELj128ELj12ELj128ELj128ELj2ELb1ELj148ELj128ELb1ELb1ELNS_8GemmTypeE0ELb0EN7cutlass10bfloat16_tELm100EEEvPijjj14CUtensorMap_stS8_S8_",
+  "launch": {
+    "grid_dim": [
+      148,
+      1,
+      1
+    ],
+    "block_dim": [
+      256,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      2,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 217900
+  },
+  "arguments": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 1,
+      "type": "u32",
+      "value": 128
+    },
+    {
+      "parameter": 2,
+      "type": "u32",
+      "value": 256
+    },
+    {
+      "parameter": 3,
+      "type": "u32",
+      "value": 128
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 4,
+      "offset": 0,
+      "object": "A",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        128
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256
+      ],
+      "box_shape": [
+        64,
+        8
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "object": "B",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256
+      ],
+      "box_shape": [
+        64,
+        128
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "object": "D",
+      "element_type": "bf16",
+      "global_shape": [
+        256,
+        128
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        512
+      ],
+      "box_shape": [
+        64,
+        16
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

@@ -1,0 +1,389 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global5:scale": "scale"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          256,
+          64
+        ],
+        "source_strides_bytes": [
+          64,
+          1
+        ],
+        "target_strides_bytes": [
+          64,
+          1
+        ]
+      },
+      "6:global5:scale": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          256,
+          1
+        ],
+        "source_strides_bytes": [
+          2,
+          2
+        ],
+        "target_strides_bytes": [
+          2,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:a": "A",
+      "6:global7:quant_b": "B",
+      "6:global5:scale": "scale"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      },
+      "6:global7:quant_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          256,
+          64
+        ],
+        "source_strides_bytes": [
+          64,
+          1
+        ],
+        "target_strides_bytes": [
+          64,
+          1
+        ]
+      },
+      "6:global5:scale": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          256,
+          1
+        ],
+        "source_strides_bytes": [
+          2,
+          512
+        ],
+        "target_strides_bytes": [
+          2,
+          2
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_45MainloopSm100TmaUmmaWarpSpecializedMixedInputILi5ELi4ELi3ELi2ENS5_IJNS4_1CILi2EEENSA_ILi1EEESC_EEENS_4arch5Sm100EEENS5_IJNSA_ILi256EEENSA_ILi128EEESI_EEENS5_IJNS_15integer_subbyteILi4ELb1EEENS_10bfloat16_tEEEENS5_IJNS5_IJlSC_lEEENS4_6LayoutINS5_IJNS5_IJSC_iEEENS5_IJSI_iEEEiEEENS5_IJNS5_IJNSA_ILi0EEESC_EEENS5_IJST_iEEEiEEEEEEEESM_SO_NS4_8TiledMMAINS4_8MMA_AtomIJNS4_26SM100_MMA_F16BF16_2x1SM_TSISM_SM_fLi256ELi128ELNS4_4UMMA5MajorE0ELS13_0ELNS12_7ScaleInE0ELS14_0ELNS12_8SaturateE0EEEEEENSP_INS5_IJSC_SC_SC_EEENS5_IJST_ST_ST_EEEEENS5_IJNS4_10UnderscoreES1B_S1B_EEEEENS4_13SM90_TMA_LOADENS7_6detail35CollectiveMmaEmulatedLayoutAtomTypeINS4_14ComposedLayoutINS4_7SwizzleILi2ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi4EEENSP_INS5_IJNSA_ILi8EEESI_EEENS5_IJSI_SC_EEEEEEENS1H_INS1I_ILi3ELi4ELi3EEENS1K_ILi16EEENSP_INS5_IJS1M_NSA_ILi64EEEEEENS5_IJS1T_SC_EEEEEEEEENS1F_29CollectiveMmaEmulatedCopyTypeINS4_9Copy_AtomIJNS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEESL_EEENS4_5SM1004TMEM5STORE26SM100_TMEM_STORE_32dp32b8xEEENS4_8identityENS4_18SM100_TMA_2SM_LOADENS1G_IS1X_S1X_EENS1Z_INS20_IJS22_SM_EEES2C_EES29_EENS_8epilogue10collective18CollectiveEpilogueINS2F_23Sm100TmaWarpSpecializedILi4ELi2ELi32ELb1ELb0EEEJNS5_IJSI_SI_SI_EEENS5_IJNSP_ISI_SC_EENSP_INSA_ILi32EEESC_EEEEESM_NS5_IJSC_llEEESM_S2P_NS2F_6fusion15FusionCallbacksIS2J_NS2Q_17LinearCombinationISM_fSM_fLNS_15FloatRoundStyleE2EEES2K_S2O_JEEENS25_4LOAD26SM100_TMEM_LOAD_16dp256b4xES1E_NS1H_IS1R_S1S_NSP_INS5_IJS1T_S1M_EEENS5_IJSC_S1T_EEEEEEENS4_17SM75_U16x8_LDSM_TENS4_14SM90_TMA_STOREES31_NS4_17SM90_U16x8_STSM_TES22_EEEvvEEEEvNT_6ParamsE_param_0+1792": {
+        "type": "b32",
+        "literal": "0"
+      },
+      "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_45MainloopSm100TmaUmmaWarpSpecializedMixedInputILi5ELi4ELi3ELi2ENS5_IJNS4_1CILi2EEENSA_ILi1EEESC_EEENS_4arch5Sm100EEENS5_IJNSA_ILi256EEENSA_ILi128EEESI_EEENS5_IJNS_15integer_subbyteILi4ELb1EEENS_10bfloat16_tEEEENS5_IJNS5_IJlSC_lEEENS4_6LayoutINS5_IJNS5_IJSC_iEEENS5_IJSI_iEEEiEEENS5_IJNS5_IJNSA_ILi0EEESC_EEENS5_IJST_iEEEiEEEEEEEESM_SO_NS4_8TiledMMAINS4_8MMA_AtomIJNS4_26SM100_MMA_F16BF16_2x1SM_TSISM_SM_fLi256ELi128ELNS4_4UMMA5MajorE0ELS13_0ELNS12_7ScaleInE0ELS14_0ELNS12_8SaturateE0EEEEEENSP_INS5_IJSC_SC_SC_EEENS5_IJST_ST_ST_EEEEENS5_IJNS4_10UnderscoreES1B_S1B_EEEEENS4_13SM90_TMA_LOADENS7_6detail35CollectiveMmaEmulatedLayoutAtomTypeINS4_14ComposedLayoutINS4_7SwizzleILi2ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi4EEENSP_INS5_IJNSA_ILi8EEESI_EEENS5_IJSI_SC_EEEEEEENS1H_INS1I_ILi3ELi4ELi3EEENS1K_ILi16EEENSP_INS5_IJS1M_NSA_ILi64EEEEEENS5_IJS1T_SC_EEEEEEEEENS1F_29CollectiveMmaEmulatedCopyTypeINS4_9Copy_AtomIJNS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEESL_EEENS4_5SM1004TMEM5STORE26SM100_TMEM_STORE_32dp32b8xEEENS4_8identityENS4_18SM100_TMA_2SM_LOADENS1G_IS1X_S1X_EENS1Z_INS20_IJS22_SM_EEES2C_EES29_EENS_8epilogue10collective18CollectiveEpilogueINS2F_23Sm100TmaWarpSpecializedILi4ELi2ELi32ELb1ELb0EEEJNS5_IJSI_SI_SI_EEENS5_IJNSP_ISI_SC_EENSP_INSA_ILi32EEESC_EEEEESM_NS5_IJSC_llEEESM_S2P_NS2F_6fusion15FusionCallbacksIS2J_NS2Q_17LinearCombinationISM_fSM_fLNS_15FloatRoundStyleE2EEES2K_S2O_JEEENS25_4LOAD26SM100_TMEM_LOAD_16dp256b4xES1E_NS1H_IS1R_S1S_NSP_INS5_IJS1T_S1M_EEENS5_IJSC_S1T_EEEEEEENS4_17SM75_U16x8_LDSM_TENS4_14SM90_TMA_STOREES31_NS4_17SM90_U16x8_STSM_TES22_EEEvvEEEEvNT_6ParamsE_param_0+1824": {
+        "type": "b32",
+        "literal": "1065353216"
+      }
+    }
+  },
+  "provenance": {
+    "optimized_input_sha256": "573e8cc2bd2908e7e6b91a0796ae2e95d49140b0bfad0350d17655cbe416d959",
+    "weight_layout": "ColumnMajor signed int4[n,k], contiguous k, two nibbles per byte; source initialization/launcher reviewed.",
+    "source_interface": {
+      "name": "cutlass86_blackwell_mixed_dtype_gemm.compute_100a",
+      "family": "int4",
+      "source": "references/cutlass86_blackwell_mixed_dtype_gemm.compute_100a/reference.cu",
+      "ptx": "references/cutlass86_blackwell_mixed_dtype_gemm.compute_100a/reference.ptx",
+      "entry": "reference",
+      "upstream": [
+        "https://github.com/NVIDIA/cutlass/blob/e64a9136dd929639e5f7c969fe5af3bf7415cd4f/examples/86_blackwell_mixed_dtype_gemm/86_blackwell_mixed_dtype.cu",
+        "https://github.com/NVIDIA/cutlass/blob/e64a9136dd929639e5f7c969fe5af3bf7415cd4f/include/cutlass/gemm/kernel/sm100_gemm_tma_warpspecialized_mixed_input_transform.hpp"
+      ],
+      "parameters": [
+        {
+          "name": "A",
+          "type": "bf16",
+          "shape": [
+            128,
+            128
+          ],
+          "role": "input",
+          "source": "logical activation A",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "B",
+          "type": "uint8_t",
+          "shape": [
+            256,
+            64
+          ],
+          "role": "input",
+          "source": "logical weight B; reference rows are output channels",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "D",
+          "type": "bf16",
+          "shape": [
+            128,
+            256
+          ],
+          "role": "output",
+          "source": "D",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "scale",
+          "type": "bf16",
+          "shape": [
+            256,
+            1
+          ],
+          "role": "input",
+          "source": "per-output-channel, per-K-group weight scale",
+          "layout": "row-major logical tensor"
+        }
+      ],
+      "attributes": {
+        "M": 128,
+        "N": 256,
+        "K": 128,
+        "input_type": "bf16",
+        "output_type": "bf16",
+        "scale_group": 128
+      },
+      "work_items": 32768,
+      "launch": {
+        "grid_dim": [
+          256,
+          1,
+          1
+        ],
+        "block_dim": [
+          128,
+          1,
+          1
+        ]
+      },
+      "optimized_input": "examples/cutlass86_blackwell_mixed_dtype_gemm.compute_100a/input.json",
+      "optimized_input_sha256": "e04b3d9f110ecf5f13fa1513c809a77b61efe1c358f3a730693fadbc9efe383b",
+      "optimized_scope_branch_choices": [],
+      "optimized_objects": {
+        "tma_descriptors": [
+          {
+            "parameter": 0,
+            "offset": 640,
+            "object": "quant_b",
+            "element_type": "u8",
+            "global_shape": [
+              64,
+              256,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              1,
+              64,
+              16384
+            ],
+            "box_shape": [
+              64,
+              128,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "interleave": "none",
+            "swizzle": "64B",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 0,
+            "offset": 128,
+            "object": "scale",
+            "element_type": "bf16",
+            "global_shape": [
+              256,
+              1,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              512,
+              512
+            ],
+            "box_shape": [
+              128,
+              1,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "interleave": "none",
+            "swizzle": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 0,
+            "offset": 896,
+            "object": "a",
+            "element_type": "bf16",
+            "global_shape": [
+              128,
+              128,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              256,
+              32768
+            ],
+            "box_shape": [
+              64,
+              64,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "interleave": "none",
+            "swizzle": "128B",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 0,
+            "offset": 2176,
+            "object": "d",
+            "element_type": "bf16",
+            "global_shape": [
+              256,
+              128,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              512,
+              65536
+            ],
+            "box_shape": [
+              64,
+              32,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "interleave": "none",
+            "swizzle": "128B",
+            "oob_fill": "zero"
+          }
+        ],
+        "pointer_declarations": []
+      },
+      "comparison_domain": "ideal mathematical computation; no bitwise-equivalence claim",
+      "logical_layout_adapter": "required when optimized storage differs from reference row-major layout",
+      "equivalence_status": "not_checked"
+    },
+    "historical_paths": {
+      "interface": "references/cutlass86_blackwell_mixed_dtype_gemm.compute_100a/interface.json",
+      "mapping": "references/cutlass86_blackwell_mixed_dtype_gemm.compute_100a/mapping.md"
+    },
+    "mapping_notes": "# cutlass86_blackwell_mixed_dtype_gemm.compute_100a\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in interface.json.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| A | bf16 | 128 x 128 | input | logical activation A |\n| B | uint8_t | 256 x 64 | input | logical weight B; reference rows are output channels |\n| D | bf16 | 128 x 256 | output | D |\n| scale | bf16 | 256 x 1 | input | per-output-channel, per-K-group weight scale |\n\n## Computation and mapping\n\nThe reference uses A[m,k], B[n,k], and D[m,n]; B is stored with output-channel first.\nB is canonical signed INT4: even k in the low nibble, odd k in the high nibble.\nweight[n,k] = signed_int4(B[n,k]) * scale[n,k/128].\nD[m,n] = sum_k A[m,k] * weight[n,k]. No zero-point is used.\nThe selected SM100 source uses signed int4 with contiguous K coordinates.\nThe byte mapping preserves the two adjacent nibbles; signed decoding remains\npart of the expressions. No host-side weight permutation is applied by this mapping.\nScale layout [n,k_group] is the transpose of source [k_group,n] storage.\nThe optimized mainloop swaps/transposes operands. The reference restores\nactivation-first GEMM; its M/N names are the public mathematical M/N names.\nThe saved epilogue uses alpha=1 and beta=0; C is not read.\n\n## Validation boundary\n\nCompiled to PTX and numerically checked on CPU. The alternative PyTorch reference\nis in `pytorch/reference.py`, with explicit argument bindings in `reference_binding.json`.\nIt shares this directory's `reference_binding.json`: BF16 activation A, packed signed\nINT4 B, BF16 scale, and the full 128 x 256 BF16 output. The scale-only scenario has\nK=128 and one scale per channel. The optimized input configuration is unchanged.\n\nThe 2026-09-25 comparison against the compact indexed-view expression returned\n`not_proven`, reason `saturated`; this is not an inequivalence counterexample.\nThe reference has 50 nodes and its reduction has 128 terms. The optimized artifact\nhas 10,725 nodes and retains a chain of sixteen 8-term folds plus packed INT4\ndecoding operations (`PtxBytePermute`, `PtxLogic3`, `ExtractBits`). The output mapper\nconstructed 128 domains covering all 32,768 output elements; the checker stopped\nat the first unproved domain (zero domains proved).\n\nNo new approximation or kernel-specific equivalence rule was added. Tests check\nall 256 packed byte values, signed nibble order, scaling, output orientation,\ncompact symbolic capture, and extracted values against direct PyTorch evaluation.\nThis is not a comparison against a GPU execution. Arithmetic uses the ideal-real\ncontract; precision differences are not checked bitwise.\n\nRun the registered reference with:\n\n```sh\nsentryward corpus/cutlass86_blackwell_mixed_dtype_gemm.compute_100a.ptx \\\n  --input examples/cutlass86_blackwell_mixed_dtype_gemm.compute_100a/input.json \\\n  --reference references/cutlass86_blackwell_mixed_dtype_gemm.compute_100a/pytorch/reference.py \\\n  --reference-binding references/cutlass86_blackwell_mixed_dtype_gemm.compute_100a/reference_binding.json \\\n  --timeout 1200 > output.json\n```\n\nThis runs verification and reference equivalence together on the saved input.\n\n## Upstream\n\n- https://github.com/NVIDIA/cutlass/blob/e64a9136dd929639e5f7c969fe5af3bf7415cd4f/examples/86_blackwell_mixed_dtype_gemm/86_blackwell_mixed_dtype.cu\n- https://github.com/NVIDIA/cutlass/blob/e64a9136dd929639e5f7c969fe5af3bf7415cd4f/include/cutlass/gemm/kernel/sm100_gemm_tma_warpspecialized_mixed_input_transform.hpp\n"
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:d",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      128,
+      256
+    ],
+    "left_strides_bytes": [
+      512,
+      2
+    ],
+    "right_strides_bytes": [
+      512,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "uint8",
+        "allocation": "6:global1:B"
+      },
+      {
+        "name": "scale",
+        "dtype": "bfloat16",
+        "allocation": "6:global5:scale"
+      }
+    ]
+  }
+}

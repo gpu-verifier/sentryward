@@ -1,0 +1,811 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_cutlass_kernel_flash_attncuteflash_bwd_sm100FlashAttentionBackwardSm100_object_at__tensor0000o11101213_None_tensor0000o11101213_None_tensor0000o11101213_tensorptrf32gmemalign16o1i6_0",
+  "launch": {
+    "grid_dim": [
+      2,
+      1,
+      1
+    ],
+    "block_dim": [
+      512,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "field": "softmax_scale",
+      "value": 0.125
+    },
+    {
+      "field": "softmax_scale_log2",
+      "value": 0.18033688011112042
+    },
+    {
+      "field": "tensor0.dim0",
+      "value": 256
+    },
+    {
+      "field": "tensor0.dim1",
+      "value": 64
+    },
+    {
+      "field": "tensor0.dim2",
+      "value": 1
+    },
+    {
+      "field": "tensor0.dim3",
+      "value": 1
+    },
+    {
+      "field": "tensor1.dim0",
+      "value": 256
+    },
+    {
+      "field": "tensor1.dim1",
+      "value": 64
+    },
+    {
+      "field": "tensor1.dim2",
+      "value": 1
+    },
+    {
+      "field": "tensor1.dim3",
+      "value": 1
+    },
+    {
+      "field": "tensor2.dim0",
+      "value": 256
+    },
+    {
+      "field": "tensor2.dim1",
+      "value": 64
+    },
+    {
+      "field": "tensor2.dim2",
+      "value": 1
+    },
+    {
+      "field": "tensor2.dim3",
+      "value": 1
+    },
+    {
+      "field": "tensor5.dim0",
+      "value": 64
+    },
+    {
+      "field": "tensor5.dim1",
+      "value": 256
+    },
+    {
+      "field": "tensor5.dim2",
+      "value": 1
+    },
+    {
+      "field": "tensor5.dim3",
+      "value": 1
+    },
+    {
+      "field": "tensor9.dim0",
+      "value": 256
+    },
+    {
+      "field": "tensor9.dim1",
+      "value": 64
+    },
+    {
+      "field": "tensor9.dim2",
+      "value": 1
+    },
+    {
+      "field": "tensor9.dim3",
+      "value": 1
+    },
+    {
+      "field": "tensor10.dim0",
+      "value": 256
+    },
+    {
+      "field": "tensor10.dim1",
+      "value": 64
+    },
+    {
+      "field": "tensor10.dim2",
+      "value": 1
+    },
+    {
+      "field": "tensor10.dim3",
+      "value": 1
+    },
+    {
+      "field": "tensor3.dim0",
+      "value": 256
+    },
+    {
+      "field": "tensor3.dim1",
+      "value": 1
+    },
+    {
+      "field": "tensor3.dim2",
+      "value": 1
+    },
+    {
+      "field": "tensor3.stride_head",
+      "value": 256
+    },
+    {
+      "field": "tensor3.stride_batch",
+      "value": 256
+    },
+    {
+      "field": "tensor4.dim0",
+      "value": 256
+    },
+    {
+      "field": "tensor4.dim1",
+      "value": 1
+    },
+    {
+      "field": "tensor4.dim2",
+      "value": 1
+    },
+    {
+      "field": "tensor4.stride_head",
+      "value": 256
+    },
+    {
+      "field": "tensor4.stride_batch",
+      "value": 256
+    },
+    {
+      "field": "tensor8.dim0",
+      "value": 16384
+    },
+    {
+      "field": "tensor8.dim1",
+      "value": 1
+    },
+    {
+      "field": "tensor8.dim2",
+      "value": 1
+    },
+    {
+      "field": "tensor8.stride_head",
+      "value": 16384
+    },
+    {
+      "field": "tensor8.stride_batch",
+      "value": 16384
+    },
+    {
+      "field": "tensor6.dim0",
+      "value": 256
+    },
+    {
+      "field": "tensor6.dim1",
+      "value": 64
+    },
+    {
+      "field": "tensor6.dim2",
+      "value": 1
+    },
+    {
+      "field": "tensor6.dim3",
+      "value": 1
+    },
+    {
+      "field": "tensor6.stride0",
+      "value": 64
+    },
+    {
+      "field": "tensor6.stride1",
+      "value": 64
+    },
+    {
+      "field": "tensor6.stride2",
+      "value": 16384
+    },
+    {
+      "field": "tensor7.dim0",
+      "value": 256
+    },
+    {
+      "field": "tensor7.dim1",
+      "value": 64
+    },
+    {
+      "field": "tensor7.dim2",
+      "value": 1
+    },
+    {
+      "field": "tensor7.dim3",
+      "value": 1
+    },
+    {
+      "field": "tensor7.stride0",
+      "value": 64
+    },
+    {
+      "field": "tensor7.stride1",
+      "value": 64
+    },
+    {
+      "field": "tensor7.stride2",
+      "value": 16384
+    }
+  ],
+  "declarations": [
+    {
+      "name": "softmax_scale",
+      "parameter": 22,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "softmax_scale_log2",
+      "parameter": 23,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "tensor0.dim0",
+      "parameter": 0,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "tensor0.dim1",
+      "parameter": 0,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "tensor0.dim2",
+      "parameter": 0,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "tensor0.dim3",
+      "parameter": 0,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "tensor1.dim0",
+      "parameter": 1,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "tensor1.dim1",
+      "parameter": 1,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "tensor1.dim2",
+      "parameter": 1,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "tensor1.dim3",
+      "parameter": 1,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "tensor2.dim0",
+      "parameter": 2,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "tensor2.dim1",
+      "parameter": 2,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "tensor2.dim2",
+      "parameter": 2,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "tensor2.dim3",
+      "parameter": 2,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "tensor5.dim0",
+      "parameter": 5,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "tensor5.dim1",
+      "parameter": 5,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "tensor5.dim2",
+      "parameter": 5,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "tensor5.dim3",
+      "parameter": 5,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "tensor9.dim0",
+      "parameter": 9,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "tensor9.dim1",
+      "parameter": 9,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "tensor9.dim2",
+      "parameter": 9,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "tensor9.dim3",
+      "parameter": 9,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "tensor10.dim0",
+      "parameter": 10,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "tensor10.dim1",
+      "parameter": 10,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "tensor10.dim2",
+      "parameter": 10,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "tensor10.dim3",
+      "parameter": 10,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "tensor3.dim0",
+      "parameter": 3,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "tensor3.dim1",
+      "parameter": 3,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "tensor3.dim2",
+      "parameter": 3,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "tensor3.stride_head",
+      "parameter": 3,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "tensor3.stride_batch",
+      "parameter": 3,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "tensor4.dim0",
+      "parameter": 4,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "tensor4.dim1",
+      "parameter": 4,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "tensor4.dim2",
+      "parameter": 4,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "tensor4.stride_head",
+      "parameter": 4,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "tensor4.stride_batch",
+      "parameter": 4,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "tensor8.dim0",
+      "parameter": 8,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "tensor8.dim1",
+      "parameter": 8,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "tensor8.dim2",
+      "parameter": 8,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "tensor8.stride_head",
+      "parameter": 8,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "tensor8.stride_batch",
+      "parameter": 8,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "tensor6.dim0",
+      "parameter": 6,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "tensor6.dim1",
+      "parameter": 6,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "tensor6.dim2",
+      "parameter": 6,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "tensor6.dim3",
+      "parameter": 6,
+      "offset": 20,
+      "type": "s32"
+    },
+    {
+      "name": "tensor6.stride0",
+      "parameter": 6,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "tensor6.stride1",
+      "parameter": 6,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "tensor6.stride2",
+      "parameter": 6,
+      "offset": 40,
+      "type": "s64"
+    },
+    {
+      "name": "tensor7.dim0",
+      "parameter": 7,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "tensor7.dim1",
+      "parameter": 7,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "tensor7.dim2",
+      "parameter": 7,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "tensor7.dim3",
+      "parameter": 7,
+      "offset": 20,
+      "type": "s32"
+    },
+    {
+      "name": "tensor7.stride0",
+      "parameter": 7,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "tensor7.stride1",
+      "parameter": 7,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "tensor7.stride2",
+      "parameter": 7,
+      "offset": 40,
+      "type": "s64"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "type": "pointer",
+      "object": "LSE"
+    },
+    {
+      "parameter": 4,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dPsum"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dV"
+    },
+    {
+      "parameter": 7,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dK"
+    },
+    {
+      "parameter": 8,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dQaccum"
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 11,
+      "offset": 0,
+      "object": "Q",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        256,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        128,
+        32768
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 12,
+      "offset": 0,
+      "object": "K",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        256,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        128,
+        32768
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 13,
+      "offset": 0,
+      "object": "V",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        256,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        128,
+        32768
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 14,
+      "offset": 0,
+      "object": "dO",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        256,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        128,
+        32768
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 15,
+      "offset": 0,
+      "object": "dV",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        256,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        128,
+        32768
+      ],
+      "box_shape": [
+        32,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "64B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 16,
+      "offset": 0,
+      "object": "dK",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        256,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        128,
+        32768
+      ],
+      "box_shape": [
+        32,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "64B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

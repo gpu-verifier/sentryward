@@ -1,0 +1,484 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_cutlass_kernel_flash_attncutesm100_hd256_2cta_fmha_forwardBlackwellFusedMultiHeadAttentionForward_object_at__TiledMMA_ThrLayoutVMNK21111000_PermutationMNK____MMAAtom_ThrID21_ShapeM_0",
+  "launch": {
+    "grid_dim": [
+      2,
+      1,
+      1
+    ],
+    "block_dim": [
+      384,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      2,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "field": "mma.0.accumulate",
+      "value": 0
+    },
+    {
+      "field": "mma.0.negate_a",
+      "value": 0
+    },
+    {
+      "field": "mma.0.negate_b",
+      "value": 0
+    },
+    {
+      "field": "mma.1.accumulate",
+      "value": 0
+    },
+    {
+      "field": "mma.1.negate_a",
+      "value": 0
+    },
+    {
+      "field": "mma.1.negate_b",
+      "value": 0
+    },
+    {
+      "field": "shape.3.sequence",
+      "value": 256
+    },
+    {
+      "field": "shape.3.D",
+      "value": 256
+    },
+    {
+      "field": "shape.3.head_ratio",
+      "value": 1
+    },
+    {
+      "field": "shape.3.kv_heads",
+      "value": 1
+    },
+    {
+      "field": "shape.3.batch",
+      "value": 1
+    },
+    {
+      "field": "shape.5.sequence",
+      "value": 256
+    },
+    {
+      "field": "shape.5.D",
+      "value": 256
+    },
+    {
+      "field": "shape.5.head_ratio",
+      "value": 1
+    },
+    {
+      "field": "shape.5.kv_heads",
+      "value": 1
+    },
+    {
+      "field": "shape.5.batch",
+      "value": 1
+    },
+    {
+      "field": "shape.V.D",
+      "value": 256
+    },
+    {
+      "field": "shape.V.sequence",
+      "value": 256
+    },
+    {
+      "field": "shape.V.head_ratio",
+      "value": 1
+    },
+    {
+      "field": "shape.V.kv_heads",
+      "value": 1
+    },
+    {
+      "field": "shape.V.batch",
+      "value": 1
+    },
+    {
+      "field": "shape.O.sequence",
+      "value": 256
+    },
+    {
+      "field": "shape.O.D",
+      "value": 256
+    },
+    {
+      "field": "shape.O.head_ratio",
+      "value": 1
+    },
+    {
+      "field": "shape.O.kv_heads",
+      "value": 1
+    },
+    {
+      "field": "shape.O.batch",
+      "value": 1
+    },
+    {
+      "field": "stride.O.sequence",
+      "value": 256
+    },
+    {
+      "field": "stride.O.head_ratio",
+      "value": 256
+    },
+    {
+      "field": "stride.O.kv_heads",
+      "value": 256
+    },
+    {
+      "field": "stride.O.batch",
+      "value": 65536
+    },
+    {
+      "field": "scale_log2",
+      "value": 0.09016844005556021
+    },
+    {
+      "field": "scale",
+      "value": 0.0625
+    },
+    {
+      "field": "scale_output",
+      "value": 1
+    }
+  ],
+  "declarations": [
+    {
+      "name": "mma.0.accumulate",
+      "parameter": 0,
+      "offset": 0,
+      "type": "u8"
+    },
+    {
+      "name": "mma.0.negate_a",
+      "parameter": 0,
+      "offset": 1,
+      "type": "u8"
+    },
+    {
+      "name": "mma.0.negate_b",
+      "parameter": 0,
+      "offset": 2,
+      "type": "u8"
+    },
+    {
+      "name": "mma.1.accumulate",
+      "parameter": 1,
+      "offset": 0,
+      "type": "u8"
+    },
+    {
+      "name": "mma.1.negate_a",
+      "parameter": 1,
+      "offset": 1,
+      "type": "u8"
+    },
+    {
+      "name": "mma.1.negate_b",
+      "parameter": 1,
+      "offset": 2,
+      "type": "u8"
+    },
+    {
+      "name": "shape.3.sequence",
+      "parameter": 3,
+      "offset": 0,
+      "type": "s64"
+    },
+    {
+      "name": "shape.3.D",
+      "parameter": 3,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.3.head_ratio",
+      "parameter": 3,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.3.kv_heads",
+      "parameter": 3,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "shape.3.batch",
+      "parameter": 3,
+      "offset": 20,
+      "type": "s32"
+    },
+    {
+      "name": "shape.5.sequence",
+      "parameter": 5,
+      "offset": 0,
+      "type": "s64"
+    },
+    {
+      "name": "shape.5.D",
+      "parameter": 5,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.5.head_ratio",
+      "parameter": 5,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.5.kv_heads",
+      "parameter": 5,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "shape.5.batch",
+      "parameter": 5,
+      "offset": 20,
+      "type": "s32"
+    },
+    {
+      "name": "shape.V.D",
+      "parameter": 7,
+      "offset": 0,
+      "type": "s64"
+    },
+    {
+      "name": "shape.V.sequence",
+      "parameter": 7,
+      "offset": 8,
+      "type": "s64"
+    },
+    {
+      "name": "shape.V.head_ratio",
+      "parameter": 7,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "shape.V.kv_heads",
+      "parameter": 7,
+      "offset": 20,
+      "type": "s32"
+    },
+    {
+      "name": "shape.V.batch",
+      "parameter": 7,
+      "offset": 24,
+      "type": "s32"
+    },
+    {
+      "name": "shape.O.sequence",
+      "parameter": 8,
+      "offset": 8,
+      "type": "s64"
+    },
+    {
+      "name": "shape.O.D",
+      "parameter": 8,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "shape.O.head_ratio",
+      "parameter": 8,
+      "offset": 20,
+      "type": "s32"
+    },
+    {
+      "name": "shape.O.kv_heads",
+      "parameter": 8,
+      "offset": 24,
+      "type": "s32"
+    },
+    {
+      "name": "shape.O.batch",
+      "parameter": 8,
+      "offset": 28,
+      "type": "s32"
+    },
+    {
+      "name": "stride.O.sequence",
+      "parameter": 8,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "stride.O.head_ratio",
+      "parameter": 8,
+      "offset": 40,
+      "type": "s64"
+    },
+    {
+      "name": "stride.O.kv_heads",
+      "parameter": 8,
+      "offset": 48,
+      "type": "s64"
+    },
+    {
+      "name": "stride.O.batch",
+      "parameter": 8,
+      "offset": 56,
+      "type": "s64"
+    },
+    {
+      "name": "scale_log2",
+      "parameter": 9,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "scale",
+      "parameter": 10,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "scale_output",
+      "parameter": 11,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "parameter": 2,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 4,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 6,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 8,
+      "offset": 0,
+      "type": "pointer",
+      "object": "O"
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 2,
+      "offset": 0,
+      "object": "Q",
+      "element_type": "bf16",
+      "global_shape": [
+        256,
+        256,
+        1,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        512,
+        512,
+        512,
+        131072
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 4,
+      "offset": 0,
+      "object": "K",
+      "element_type": "bf16",
+      "global_shape": [
+        256,
+        256,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        512,
+        512,
+        131072
+      ],
+      "box_shape": [
+        64,
+        64,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "object": "V",
+      "element_type": "bf16",
+      "global_shape": [
+        256,
+        256,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        512,
+        512,
+        131072
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

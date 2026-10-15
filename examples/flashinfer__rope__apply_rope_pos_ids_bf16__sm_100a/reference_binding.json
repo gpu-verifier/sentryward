@@ -1,0 +1,248 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:q": "q",
+      "6:global1:k": "k",
+      "6:global7:pos_ids": "pos_ids"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          8,
+          4,
+          128
+        ],
+        "source_strides_bytes": [
+          1024,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          256,
+          2
+        ]
+      },
+      "6:global1:k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          8,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global7:pos_ids": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "parameter_constants": {
+      "_ZN10flashinfer45BatchQKApplyRotaryPosIdsHeadParallelismKernelILb0ELj128ELj8ELj16E13__nv_bfloat16iEEvPT3_S3_S3_S3_PT4_jjjjmmmmmmmmffff_param_8+0": {
+        "type": "u32",
+        "literal": "128"
+      },
+      "_ZN10flashinfer45BatchQKApplyRotaryPosIdsHeadParallelismKernelILb0ELj128ELj8ELj16E13__nv_bfloat16iEEvPT3_S3_S3_S3_PT4_jjjjmmmmmmmmffff_param_17+0": {
+        "type": "f32",
+        "literal": "0.0"
+      },
+      "_ZN10flashinfer45BatchQKApplyRotaryPosIdsHeadParallelismKernelILb0ELj128ELj8ELj16E13__nv_bfloat16iEEvPT3_S3_S3_S3_PT4_jjjjmmmmmmmmffff_param_18+0": {
+        "type": "f32",
+        "literal": "0.0"
+      },
+      "_ZN10flashinfer45BatchQKApplyRotaryPosIdsHeadParallelismKernelILb0ELj128ELj8ELj16E13__nv_bfloat16iEEvPT3_S3_S3_S3_PT4_jjjjmmmmmmmmffff_param_19+0": {
+        "type": "f32",
+        "literal": "1.0"
+      },
+      "_ZN10flashinfer45BatchQKApplyRotaryPosIdsHeadParallelismKernelILb0ELj128ELj8ELj16E13__nv_bfloat16iEEvPT3_S3_S3_S3_PT4_jjjjmmmmmmmmffff_param_20+0": {
+        "type": "f32",
+        "literal": "0.0001"
+      }
+    },
+    "allocations": {
+      "6:global1:q": "q",
+      "6:global1:k": "k",
+      "6:global7:pos_ids": "pos_ids"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          8,
+          4,
+          128
+        ],
+        "source_strides_bytes": [
+          1024,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          256,
+          2
+        ]
+      },
+      "6:global1:k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          8,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global7:pos_ids": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global6:q_rope",
+        "right_allocation": "6:global6:q_rope",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          8,
+          4,
+          128
+        ],
+        "left_strides_bytes": [
+          1024,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          1024,
+          256,
+          2
+        ]
+      },
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global6:k_rope",
+        "right_allocation": "6:global6:k_rope",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          8,
+          1,
+          128
+        ],
+        "left_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      }
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "q",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:q"
+      },
+      {
+        "name": "k",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:k"
+      },
+      {
+        "name": "pos_ids",
+        "dtype": "int32",
+        "allocation": "6:global7:pos_ids"
+      },
+      {
+        "name": "reciprocal_theta",
+        "value": 0.0001
+      },
+      {
+        "name": "reciprocal_scale",
+        "value": 1
+      }
+    ]
+  },
+  "provenance": {
+    "evidence": "BatchQKApplyRotaryPosIdsHeadParallelismKernel interleave=false, rotary_dim=128, smooth_a=smooth_b=0. Runtime position IDs remain explicit tensor input.",
+    "ptx": "corpus/flashinfer__rope__apply_rope_pos_ids_bf16__sm_100a.ptx",
+    "optimized_input": "examples/flashinfer__rope__apply_rope_pos_ids_bf16__sm_100a/input.json",
+    "semantics": "Fixed saved configuration; ideal-real tensor arithmetic; all written mathematical outputs.",
+    "optimized_input_sha256": "61cc0e2d31fb684ff909f036f08b319a0ea6f1cdb1bc93a7a9669ceedde71491",
+    "ptx_sha256": "e15894fc3f7c41f2ac7174bc381614998eec290a3152fb88293cc7d9d746e872",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/pos_enc.cuh",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/csrc/rope.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/vec_dtypes.cuh",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/layout.cuh"
+    ],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

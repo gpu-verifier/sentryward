@@ -1,0 +1,227 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:scale_a": "scale_a",
+      "6:global7:scale_b": "scale_b"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global7:scale_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          1024
+        ],
+        "source_strides_bytes": [
+          1
+        ],
+        "target_strides_bytes": [
+          1
+        ]
+      },
+      "6:global7:scale_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          1024
+        ],
+        "source_strides_bytes": [
+          1
+        ],
+        "target_strides_bytes": [
+          1
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:scale_a": "scale_a",
+      "6:global7:scale_b": "scale_b"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global7:scale_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          1024
+        ],
+        "source_strides_bytes": [
+          1
+        ],
+        "target_strides_bytes": [
+          1
+        ]
+      },
+      "6:global7:scale_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          1024
+        ],
+        "source_strides_bytes": [
+          1
+        ],
+        "target_strides_bytes": [
+          1
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+      128,
+      128
+    ],
+    "left_strides_bytes": [
+      512,
+      4
+    ],
+    "right_strides_bytes": [
+      512,
+      4
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "checker_context": {
+    "input_contract": [
+      {
+        "object": "scale_a",
+        "element_type": "e8m0",
+        "region": "whole_object",
+        "finite": true,
+        "source": "Additional decoded finite-scale premise explicitly authorized by user 2026-10-09; exact e8m0 interpretation, not generic uint8 finiteness."
+      },
+      {
+        "object": "scale_b",
+        "element_type": "e8m0",
+        "region": "whole_object",
+        "finite": true,
+        "source": "Additional decoded finite-scale premise explicitly authorized by user 2026-10-09; exact e8m0 interpretation, not generic uint8 finiteness."
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "float8_e5m2",
+        "allocation": "6:global1:B"
+      },
+      {
+        "name": "scale_a",
+        "dtype": "uint8",
+        "allocation": "6:global7:scale_a"
+      },
+      {
+        "name": "scale_b",
+        "dtype": "uint8",
+        "allocation": "6:global7:scale_b"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/cutlass__block-scaled-gemm-mixed-8-bit__sm_100a.ptx",
+    "optimized_input": "examples/cutlass__block-scaled-gemm-mixed-8-bit__sm_100a/input.json",
+    "layout_source": "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cutlass/detail/sm100_blockscaled_layout.hpp",
+    "evidence": "Original packed A/B and physical scale storage; 32-element scale blocks; UE8M0 scale encoding. Output is row major (the compiled CUTLASS layout uses N as the fast coordinate). Saved descriptor pitches are preserved. ",
+    "semantics": "ideal_real tensor arithmetic; FP4 nibble decoding and scale indexing retained",
+    "optimized_input_sha256": "3ab37e4349b0b261105a827d8add47850a064df103c61cc0efd8ab0e86b34020",
+    "ptx_sha256": "d30c96e68cabb6242276fa9aa009686d5cd3cb7c395d35b515c7f0f5367d4829",
+    "upstream": [
+      "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cutlass/gemm/kernel/sm100_gemm_tma_warpspecialized.hpp",
+      "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/python/cutlass_library/generator.py"
+    ],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

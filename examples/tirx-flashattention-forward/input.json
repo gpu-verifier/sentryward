@@ -1,0 +1,275 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "flash_attention4_kernel",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      512,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "declarations": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 4,
+      "offset": 0,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "type": "tensor_map"
+    }
+  ],
+  "arguments": [],
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "object": "K",
+      "element_type": "f16",
+      "rank": 3,
+      "box_shape": [
+        64,
+        128,
+        2
+      ],
+      "global_shape": [
+        64,
+        1024,
+        8
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "global_strides_bytes": [
+        1024,
+        128
+      ],
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 1,
+      "object": "V",
+      "element_type": "f16",
+      "rank": 3,
+      "box_shape": [
+        64,
+        128,
+        2
+      ],
+      "global_shape": [
+        64,
+        1024,
+        8
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "global_strides_bytes": [
+        1024,
+        128
+      ],
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 2,
+      "object": "O",
+      "element_type": "f16",
+      "rank": 4,
+      "box_shape": [
+        64,
+        8,
+        16,
+        2
+      ],
+      "global_shape": [
+        64,
+        32,
+        1024,
+        2
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "global_strides_bytes": [
+        256,
+        8192,
+        128
+      ],
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 3,
+      "object": "Q",
+      "element_type": "f16",
+      "rank": 4,
+      "box_shape": [
+        64,
+        8,
+        16,
+        2
+      ],
+      "global_shape": [
+        64,
+        32,
+        1024,
+        2
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "global_strides_bytes": [
+        256,
+        8192,
+        128
+      ],
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 4,
+      "object": "Q",
+      "element_type": "f16",
+      "rank": 4,
+      "box_shape": [
+        64,
+        8,
+        16,
+        2
+      ],
+      "global_shape": [
+        64,
+        32,
+        1024,
+        2
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "global_strides_bytes": [
+        256,
+        8192,
+        128
+      ],
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 5,
+      "object": "K",
+      "element_type": "f16",
+      "rank": 3,
+      "box_shape": [
+        64,
+        128,
+        2
+      ],
+      "global_shape": [
+        64,
+        1024,
+        8
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "global_strides_bytes": [
+        1024,
+        128
+      ],
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 6,
+      "object": "V",
+      "element_type": "f16",
+      "rank": 3,
+      "box_shape": [
+        64,
+        128,
+        2
+      ],
+      "global_shape": [
+        64,
+        1024,
+        8
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "global_strides_bytes": [
+        1024,
+        128
+      ],
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

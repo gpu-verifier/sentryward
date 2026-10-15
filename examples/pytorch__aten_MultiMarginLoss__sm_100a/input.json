@@ -1,0 +1,133 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN2at6native51_GLOBAL__N__60938855_18_MultiMarginLoss_cu_b86932df31MultiMarginLoss_backward_kernelILi1EfEEvPT0_PKS3_S6_PKlS6_iibS3_b",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      128,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "arguments": [
+    {
+      "parameter": 4,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 5,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 6,
+      "type": "u32",
+      "value": 8
+    },
+    {
+      "parameter": 7,
+      "type": "u8",
+      "value": 1
+    },
+    {
+      "parameter": 8,
+      "type": "f32",
+      "value": 1.0
+    },
+    {
+      "parameter": 9,
+      "type": "u8",
+      "value": 1
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "gradInput",
+      "name": "gradInput"
+    },
+    {
+      "parameter": 1,
+      "type": "pointer",
+      "object": "gradOutput",
+      "name": "gradOutput"
+    },
+    {
+      "parameter": 2,
+      "type": "pointer",
+      "object": "input",
+      "name": "input"
+    },
+    {
+      "parameter": 3,
+      "type": "pointer",
+      "object": "target",
+      "name": "target"
+    },
+    {
+      "parameter": 4,
+      "type": "pointer",
+      "name": "weights"
+    },
+    {
+      "parameter": 5,
+      "type": "u32",
+      "name": "nframe"
+    },
+    {
+      "parameter": 6,
+      "type": "u32",
+      "name": "dim"
+    },
+    {
+      "parameter": 7,
+      "type": "u8",
+      "name": "sizeAverage"
+    },
+    {
+      "parameter": 8,
+      "type": "f32",
+      "name": "margin"
+    },
+    {
+      "parameter": 9,
+      "type": "u8",
+      "name": "reduce"
+    }
+  ],
+  "shape_arrays": [
+    {
+      "parameter": 3,
+      "element_type": "s64",
+      "shapes": [
+        [
+          5
+        ]
+      ]
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  },
+  "branch_decisions": [
+    {
+      "line": 115,
+      "taken": true,
+      "note": "MultiMarginLoss backward: the margin term z = margin - input[target] + input[i] is positive for every class i (all margins violated), so the gradient path is executed. User-authorized scenario for the race example."
+    }
+  ]
+}

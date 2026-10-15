@@ -1,0 +1,494 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          2,
+          8,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          131072,
+          16384,
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          131072,
+          16384,
+          128,
+          1
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          2,
+          8,
+          256,
+          128
+        ],
+        "source_strides_bytes": [
+          262144,
+          32768,
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          262144,
+          32768,
+          128,
+          1
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          2,
+          8,
+          256,
+          128
+        ],
+        "source_strides_bytes": [
+          262144,
+          32768,
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          262144,
+          32768,
+          128,
+          1
+        ]
+      }
+    },
+    "parameter_constants": {
+      "reference_param_4+0": {
+        "type": "b32",
+        "literal": "1040356334"
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          2,
+          8,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          131072,
+          128,
+          1024,
+          1
+        ],
+        "target_strides_bytes": [
+          131072,
+          16384,
+          128,
+          1
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          2,
+          8,
+          256,
+          128
+        ],
+        "source_strides_bytes": [
+          262144,
+          128,
+          1024,
+          1
+        ],
+        "target_strides_bytes": [
+          262144,
+          32768,
+          128,
+          1
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          2,
+          8,
+          256,
+          128
+        ],
+        "source_strides_bytes": [
+          262144,
+          128,
+          1024,
+          1
+        ],
+        "target_strides_bytes": [
+          262144,
+          32768,
+          128,
+          1
+        ]
+      }
+    },
+    "parameter_constants": {
+      "kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor0000o11101213_tensor0000o11101213_tensor0000o10111213_tensor0000o11101213_None_None_None_Non_0_param_8+0": {
+        "type": "b32",
+        "literal": "1040356334"
+      }
+    }
+  },
+  "provenance": {
+    "optimized_input_sha256": "715bb65b15c7ce2515c3a4aa206f6f75eab3408434b52372a0c99096383db030",
+    "upstream": [
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_fwd_sm100.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/interface.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/tile_scheduler.py"
+    ],
+    "derived_from": "references/flash_attention__fwd_fp8_h128__sm_100a/reference.cu",
+    "scope_branch_choices": [
+      {
+        "line": 3970,
+        "taken": false,
+        "note": "Always execute softmax correction; do not jump over the TMEM rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+      }
+    ],
+    "semantics": "ideal_real; fixed saved configuration; all declared output tensors",
+    "ptx_sha256": "fcd6153b234a8ab021529457c04d4ee9a2923856117aea98084c07921a988297",
+    "scope_shape_arrays": [],
+    "source_interface": {
+      "name": "flash_attention__fwd_fp8_h128__sm_100a",
+      "family": "attention",
+      "source": "references/flash_attention__fwd_fp8_h128__sm_100a/reference.cu",
+      "ptx": "references/flash_attention__fwd_fp8_h128__sm_100a/reference.ptx",
+      "entry": "reference",
+      "upstream": [
+        "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_fwd_sm100.py",
+        "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/interface.py",
+        "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/tile_scheduler.py"
+      ],
+      "parameters": [
+        {
+          "name": "Q",
+          "type": "e4m3",
+          "shape": [
+            2,
+            8,
+            128,
+            128
+          ],
+          "role": "input",
+          "source": "Q",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "K",
+          "type": "e4m3",
+          "shape": [
+            2,
+            8,
+            256,
+            128
+          ],
+          "role": "input",
+          "source": "K",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "V",
+          "type": "e4m3",
+          "shape": [
+            2,
+            8,
+            256,
+            128
+          ],
+          "role": "input",
+          "source": "V",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "O",
+          "type": "bf16",
+          "shape": [
+            2,
+            8,
+            128,
+            128
+          ],
+          "role": "output",
+          "source": "O",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "scale_log2",
+          "type": "float",
+          "value": 0.12751743082459868,
+          "role": "input"
+        }
+      ],
+      "attributes": {
+        "batch": 2,
+        "query_heads": 8,
+        "kv_heads": 8,
+        "M": 128,
+        "N": 256,
+        "D": 128,
+        "DV": 128,
+        "splits": 1,
+        "causal": false,
+        "input_type": "e4m3",
+        "output_type": "bf16"
+      },
+      "work_items": 2048,
+      "launch": {
+        "grid_dim": [
+          16,
+          1,
+          1
+        ],
+        "block_dim": [
+          128,
+          1,
+          1
+        ]
+      },
+      "optimized_input": "examples/flash_attention__fwd_fp8_h128__sm_100a/input.json",
+      "optimized_input_sha256": "f6a88da526251ef2b9f51ae65b7d9e37113669dc95c414ffc181b23b2cd18ad8",
+      "optimized_scope_branch_choices": [
+        {
+          "line": 3970,
+          "taken": false,
+          "note": "Always execute softmax correction; do not jump over the TMEM rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+        }
+      ],
+      "optimized_objects": {
+        "tma_descriptors": [
+          {
+            "parameter": 4,
+            "offset": 0,
+            "object": "Q",
+            "element_type": "e4m3",
+            "global_shape": [
+              128,
+              128,
+              8,
+              2
+            ],
+            "coordinate_strides_bytes": [
+              1,
+              1024,
+              128,
+              131072
+            ],
+            "box_shape": [
+              128,
+              128,
+              1,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 5,
+            "offset": 0,
+            "object": "K",
+            "element_type": "e4m3",
+            "global_shape": [
+              128,
+              256,
+              8,
+              2
+            ],
+            "coordinate_strides_bytes": [
+              1,
+              1024,
+              128,
+              262144
+            ],
+            "box_shape": [
+              128,
+              128,
+              1,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 6,
+            "offset": 0,
+            "object": "V",
+            "element_type": "e4m3",
+            "global_shape": [
+              128,
+              256,
+              8,
+              2
+            ],
+            "coordinate_strides_bytes": [
+              1,
+              1024,
+              128,
+              262144
+            ],
+            "box_shape": [
+              128,
+              128,
+              1,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 7,
+            "offset": 0,
+            "object": "O",
+            "element_type": "bf16",
+            "global_shape": [
+              128,
+              128,
+              8,
+              2
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              2048,
+              256,
+              262144
+            ],
+            "box_shape": [
+              64,
+              128,
+              1,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          }
+        ],
+        "pointer_declarations": []
+      },
+      "comparison_domain": "ideal mathematical computation; no bitwise-equivalence claim",
+      "logical_layout_adapter": "required when optimized storage differs from reference row-major layout",
+      "equivalence_status": "not_checked"
+    },
+    "historical_paths": {
+      "interface": "references/flash_attention__fwd_fp8_h128__sm_100a/interface.json",
+      "mapping": "references/flash_attention__fwd_fp8_h128__sm_100a/mapping.md"
+    },
+    "mapping_notes": "# flash_attention__fwd_fp8_h128__sm_100a\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in interface.json.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| Q | e4m3 | 2 x 8 x 128 x 128 | input | Q |\n| K | e4m3 | 2 x 8 x 256 x 128 | input | K |\n| V | e4m3 | 2 x 8 x 256 x 128 | input | V |\n| O | bf16 | 2 x 8 x 128 x 128 | output | O |\n| scale_log2 | float | 0.12751743082459868 | input | scale_log2 |\n\n## Computation and mapping\n\nQ[b,h,q,d], K[b,kh,k,d], and V[b,kh,k,v] are the logical tensors.\nkh = floor(h / (query_heads / kv_heads)).\nscore[k] = scale_log2 * sum_d Q[b,h,q,d] * K[b,kh,k,d].\nO = sum_k 2^(score[k]-max(score)) * V[k] / sum_k 2^(score[k]-max(score)).\nThe selected FP8 example has no Q/K/V descale tensors; no extra scale is invented.\nQ/O descriptor coordinates are [d,q,h,b]; K/V use [d,k,kh,b].\nThe selected entry has no LSE output pointer, so the reference does not invent one.\n\n## Validation boundary\n\nCompiled to PTX and numerically checked on CPU. Not compared against an optimized\nGPU execution or proven equivalent. Precision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_fwd_sm100.py\n- https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/interface.py\n- https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/tile_scheduler.py\n"
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:O",
+    "right_allocation": "6:global1:O",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      2,
+      8,
+      128,
+      128
+    ],
+    "left_strides_bytes": [
+      262144,
+      32768,
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      262144,
+      256,
+      2048,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "Q",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:Q"
+      },
+      {
+        "name": "K",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:K"
+      },
+      {
+        "name": "V",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:V"
+      },
+      {
+        "name": "scale_log2",
+        "value": 0.12751743082459868
+      }
+    ]
+  }
+}

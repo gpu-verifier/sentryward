@@ -1,0 +1,73 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A",
+      "6:global1:B": "6:global1:B"
+    },
+    "parameters": {}
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A",
+      "6:global1:B": "6:global1:B"
+    },
+    "parameters": {}
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:C",
+    "right_allocation": "6:global1:C",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+      1000,
+      2000
+    ],
+    "left_strides_bytes": [
+      8000,
+      4
+    ],
+    "right_strides_bytes": [
+      8000,
+      4
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "shape": [
+          1000,
+          2000
+        ],
+        "dtype": "float32",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "shape": [
+          1000,
+          2000
+        ],
+        "dtype": "float32",
+        "allocation": "6:global1:B"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tritongluon-03-async-pipelined.ptx",
+    "optimized_input": "examples/tritongluon-03-async-pipelined/input.json",
+    "upstream": [
+      "https://github.com/triton-lang/triton/blob/c01b6774b1865984607d89d89d3a10833de92037/python/tutorials/gluon/03-async-copy.py"
+    ],
+    "scope": "Upstream test xnumel=1000,ynumel=2000; XBLOCK=32,YBLOCK=64; dense row strides 2000 and column strides 1; grid=32, 128 threads.",
+    "evidence": "PTX parameters3/4 are rows/columns and5/6/7 row strides. Unit column strides are specialized out. Retain the compiled pipeline depth; no PTX changes.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [],
+    "dynamic_shared_allocation": "49152 bytes: two tensors x three buffers x 32 rows x 64 columns x 4 bytes. PTX wait_group sequence 2,1,0 confirms three buffers.",
+    "historical_source_status": "Pinned tutorial inspected; PTX instruction semantics and specialized constants cross-checked."
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          256,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          256,
+          128
+        ],
+        "source_strides_bytes": [
+          2,
+          512
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      256,
+      128
+    ],
+    "left_strides_bytes": [
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      2,
+      512
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float16",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "float16",
+        "allocation": "6:global1:B"
+      }
+    ]
+  },
+  "provenance": {
+    "upstream": [
+      "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cutlass/gemm/kernel/sm100_gemm_tma_warpspecialized.hpp",
+      "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/python/cutlass_library/generator.py"
+    ],
+    "derived_from": "references/cutlass__dense-gemm-f16-tma-2sm__sm_100a/reference.cu",
+    "optimized_input_sha256": "e26d02098cd884de67f92dfc1e7e3c3b2d3d28c63a5e89fe65e220cd2b3c63e7",
+    "scope_branch_choices": [],
+    "semantics": "ideal_real; fixed saved configuration; all declared output tensors",
+    "ptx_sha256": "bd27dcd0299e7bef0ca8692d62e4837596206cdcda82994f77f69f825bf41943",
+    "scope_shape_arrays": []
+  }
+}

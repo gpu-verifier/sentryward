@@ -1,0 +1,276 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_flashinfer_blackwell_vsa_ultrasparse_bsr_sm100",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      512,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 135424
+  },
+  "arguments": [
+    {
+      "field": "mb",
+      "value": 1
+    },
+    {
+      "field": "nb",
+      "value": 8
+    },
+    {
+      "field": "selected_blocks",
+      "value": 6
+    },
+    {
+      "field": "total_tiles",
+      "value": 1
+    },
+    {
+      "field": "num_q_heads",
+      "value": 1
+    },
+    {
+      "field": "num_kv_heads",
+      "value": 1
+    },
+    {
+      "field": "return_softmax_lse",
+      "value": 0
+    },
+    {
+      "field": "return_temperature_lse",
+      "value": 0
+    },
+    {
+      "field": "scale_log2",
+      "value": 0.12751743082459868
+    },
+    {
+      "field": "lse_temperature_scale",
+      "value": 1.0
+    }
+  ],
+  "declarations": [
+    {
+      "name": "mb",
+      "parameter": 7,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "nb",
+      "parameter": 8,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "selected_blocks",
+      "parameter": 9,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "total_tiles",
+      "parameter": 10,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "num_q_heads",
+      "parameter": 11,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "num_kv_heads",
+      "parameter": 12,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "return_softmax_lse",
+      "parameter": 15,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "return_temperature_lse",
+      "parameter": 16,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scale_log2",
+      "parameter": 13,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "lse_temperature_scale",
+      "parameter": 14,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "parameter": 0,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 1,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 2,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "type": "pointer",
+      "object": "out"
+    },
+    {
+      "parameter": 4,
+      "offset": 0,
+      "type": "pointer",
+      "object": "lse"
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "type": "pointer",
+      "object": "temperature_lse"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "type": "pointer",
+      "object": "bsr_indices"
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "object": "Q",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        128,
+        1,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        256,
+        128
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        2
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "object": "K",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        1024,
+        2,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        128,
+        256
+      ],
+      "box_shape": [
+        64,
+        64,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "object": "V",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        1024,
+        2,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        128,
+        256
+      ],
+      "box_shape": [
+        64,
+        64,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "branch_decisions": [
+    {
+      "line": 2713,
+      "taken": "random",
+      "seed": 0,
+      "note": "User-selected scenario: reproducible random selection of the softmax rescaling branch. This samples branch choices; it does not verify all choices. Revisit when dynamic branches are supported."
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

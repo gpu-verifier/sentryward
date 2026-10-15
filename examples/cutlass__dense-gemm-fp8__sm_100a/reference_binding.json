@@ -1,0 +1,164 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          64,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          64,
+          128
+        ],
+        "source_strides_bytes": [
+          1,
+          64
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN7cutlass13device_kernelI86cutlass3x_sm100_tensorop_gemm_e4m3_e4m3_f32_f16_f16_64x128x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0+1312": {
+        "type": "b32",
+        "literal": "1065353216"
+      },
+      "_ZN7cutlass13device_kernelI86cutlass3x_sm100_tensorop_gemm_e4m3_e4m3_f32_f16_f16_64x128x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0+1280": {
+        "type": "b32",
+        "literal": "0"
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      64,
+      128
+    ],
+    "left_strides_bytes": [
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      2,
+      128
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "parameter_constant_sources": [
+    {
+      "symbol": "_ZN7cutlass13device_kernelI86cutlass3x_sm100_tensorop_gemm_e4m3_e4m3_f32_f16_f16_64x128x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0+1312",
+      "declaration": {
+        "name": "alpha",
+        "parameter": 0,
+        "offset": 1312,
+        "type": "f32"
+      },
+      "argument": {
+        "field": "alpha",
+        "value": 1
+      },
+      "input": "examples/cutlass__dense-gemm-fp8__sm_100a/input.json"
+    },
+    {
+      "symbol": "_ZN7cutlass13device_kernelI86cutlass3x_sm100_tensorop_gemm_e4m3_e4m3_f32_f16_f16_64x128x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0+1280",
+      "declaration": {
+        "name": "beta",
+        "parameter": 0,
+        "offset": 1280,
+        "type": "f32"
+      },
+      "argument": {
+        "field": "beta",
+        "value": 0
+      },
+      "input": "examples/cutlass__dense-gemm-fp8__sm_100a/input.json"
+    }
+  ],
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:B"
+      }
+    ]
+  }
+}

@@ -1,0 +1,330 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global8:in_scale": "in_scale",
+      "6:global13:out_scale_inv": "out_scale_inv"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          1,
+          5120
+        ],
+        "source_strides_bytes": [
+          5120,
+          1
+        ],
+        "target_strides_bytes": [
+          5120,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4,
+          5120
+        ],
+        "source_strides_bytes": [
+          5120,
+          1
+        ],
+        "target_strides_bytes": [
+          5120,
+          1
+        ]
+      },
+      "6:global8:in_scale": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global13:out_scale_inv": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global8:in_scale": "in_scale",
+      "6:global13:out_scale_inv": "out_scale_inv"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          1,
+          5120
+        ],
+        "source_strides_bytes": [
+          5120,
+          1
+        ],
+        "target_strides_bytes": [
+          5120,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4,
+          5120
+        ],
+        "source_strides_bytes": [
+          5120,
+          1
+        ],
+        "target_strides_bytes": [
+          5120,
+          1
+        ]
+      },
+      "6:global8:in_scale": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global13:out_scale_inv": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "provenance": {
+    "optimized_input_sha256": "e7abbbf8ceaf3bfbfb728c3337ccbb93cfafa4b99aec07a85b3cb99bb1728dbd",
+    "source_interface": {
+      "name": "tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f",
+      "family": "swiglu",
+      "source": "references/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/reference.cu",
+      "ptx": "references/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/reference.ptx",
+      "entry": "reference",
+      "upstream": [
+        "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Fp8Fp8GemmSwiGLU.cu",
+        "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Utils.cuh",
+        "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Fp8Fp8GemmSwiGLUPerBlockTemplate.cuh"
+      ],
+      "parameters": [
+        {
+          "name": "A",
+          "type": "e4m3",
+          "shape": [
+            1,
+            5120
+          ],
+          "role": "input",
+          "source": "logical activation A",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "B",
+          "type": "e4m3",
+          "shape": [
+            4,
+            5120
+          ],
+          "role": "input",
+          "source": "logical weight B; reference rows are output channels",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "D",
+          "type": "e4m3",
+          "shape": [
+            1,
+            2
+          ],
+          "role": "output",
+          "source": "D",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "in_scale",
+          "type": "float",
+          "shape": [
+            1
+          ],
+          "role": "input",
+          "source": "in_scale",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "out_scale_inv",
+          "type": "float",
+          "shape": [
+            1
+          ],
+          "role": "input",
+          "source": "out_scale_inv",
+          "layout": "row-major logical tensor"
+        }
+      ],
+      "attributes": {
+        "M": 1,
+        "N": 2,
+        "K": 5120,
+        "input_type": "e4m3",
+        "output_type": "e4m3"
+      },
+      "work_items": 2,
+      "launch": {
+        "grid_dim": [
+          1,
+          1,
+          1
+        ],
+        "block_dim": [
+          128,
+          1,
+          1
+        ]
+      },
+      "optimized_input": "examples/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/input.json",
+      "optimized_input_sha256": "ce1aa33b24a8589922d068fa781c07f23f360589a8e7c60e574009191c74a104",
+      "optimized_scope_branch_choices": [],
+      "optimized_objects": {
+        "tma_descriptors": [],
+        "pointer_declarations": [
+          {
+            "parameter": 0,
+            "offset": 0,
+            "type": "pointer",
+            "object": "A"
+          },
+          {
+            "parameter": 1,
+            "offset": 0,
+            "type": "pointer",
+            "object": "B"
+          },
+          {
+            "parameter": 2,
+            "offset": 0,
+            "type": "pointer",
+            "object": "C"
+          },
+          {
+            "parameter": 3,
+            "offset": 0,
+            "type": "pointer",
+            "object": "in_scale"
+          },
+          {
+            "parameter": 4,
+            "offset": 0,
+            "type": "pointer",
+            "object": "out_scale_inv"
+          }
+        ]
+      },
+      "comparison_domain": "ideal mathematical computation; no bitwise-equivalence claim",
+      "logical_layout_adapter": "required when optimized storage differs from reference row-major layout",
+      "equivalence_status": "not_checked"
+    },
+    "historical_paths": {
+      "interface": "references/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/interface.json",
+      "mapping": "references/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/mapping.md"
+    },
+    "mapping_notes": "# tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in interface.json.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| A | e4m3 | 1 x 5120 | input | logical activation A |\n| B | e4m3 | 4 x 5120 | input | logical weight B; reference rows are output channels |\n| D | e4m3 | 1 x 2 | output | D |\n| in_scale | float | 1 | input | in_scale |\n| out_scale_inv | float | 1 | input | out_scale_inv |\n\n## Computation and mapping\n\nThe reference uses A[m,k], B[n,k], and D[m,n]; B is stored with output-channel first.\nB[0:N,:] are gate weights; B[N:2*N,:] are linear weights.\ngate = (A*B_gate^T)*in_scale[0]; linear = (A*B_linear^T)*in_scale[0].\nD = FP8(SiLU(gate)*linear*out_scale_inv[0]).\n\n## Validation boundary\n\nCompiled to PTX and numerically checked on CPU. Not compared against an optimized\nGPU execution or proven equivalent. Precision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Fp8Fp8GemmSwiGLU.cu\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Utils.cuh\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Fp8Fp8GemmSwiGLUPerBlockTemplate.cuh\n"
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:C",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 1,
+    "shape": [
+      1,
+      2
+    ],
+    "left_strides_bytes": [
+      2,
+      1
+    ],
+    "right_strides_bytes": [
+      2,
+      1
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:B"
+      },
+      {
+        "name": "in_scale",
+        "dtype": "float32",
+        "allocation": "6:global8:in_scale"
+      },
+      {
+        "name": "out_scale_inv",
+        "dtype": "float32",
+        "allocation": "6:global13:out_scale_inv"
+      }
+    ]
+  }
+}

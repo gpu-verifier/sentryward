@@ -1,0 +1,79 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN9deep_gemm16sm100_mqa_logitsILj8ELj64ELb0ELb0ELj16ELj256ELj3ELj5ELj148ELj128ELj256EN7cutlass12float_e4m3_tENS1_10bfloat16_tEfLj2EEEvjjjPKjS5_PT11_14CUtensorMap_stS8_S8_S8_S8_",
+  "launch": {
+    "grid_dim": [
+      148,
+      1,
+      1
+    ],
+    "block_dim": [
+      384,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "u32",
+      "value": 128
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "type": "u32",
+      "value": 512
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "type": "u32",
+      "value": 512
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 6,
+      "offset": 0,
+      "type": "tensor_map",
+      "object": "Q_tensor_map"
+    },
+    {
+      "parameter": 7,
+      "offset": 0,
+      "type": "tensor_map",
+      "object": "SFQ_tensor_map"
+    },
+    {
+      "parameter": 8,
+      "offset": 0,
+      "type": "tensor_map",
+      "object": "KV_tensor_map"
+    },
+    {
+      "parameter": 9,
+      "offset": 0,
+      "type": "tensor_map",
+      "object": "SFKV_tensor_map"
+    },
+    {
+      "parameter": 10,
+      "offset": 0,
+      "type": "tensor_map",
+      "object": "weights_tensor_map"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

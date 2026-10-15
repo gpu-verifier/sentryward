@@ -1,0 +1,279 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_cutlass_kernel_flash_attncuteflash_bwd_mla_dk_sm100dKGemmKernel_object_at__TiledMMA_ThrLayoutVMNK11110000_PermutationMNK____MMAAtom_ThrID10_ShapeMNK1286416_TVLayoutA1128161281128_T_0",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      224,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "field": "dS.batch",
+      "value": 1
+    },
+    {
+      "field": "dS.sequence",
+      "value": 1
+    },
+    {
+      "field": "Q.batch",
+      "value": 1
+    },
+    {
+      "field": "Q.sequence",
+      "value": 1
+    },
+    {
+      "field": "dK.batch",
+      "value": 1
+    },
+    {
+      "field": "dK.sequence",
+      "value": 256
+    },
+    {
+      "field": "dK.batch_stride",
+      "value": 16384
+    },
+    {
+      "field": "dK.sequence_stride",
+      "value": 64
+    },
+    {
+      "field": "I.batch",
+      "value": 1
+    },
+    {
+      "field": "I.sequence",
+      "value": 1
+    },
+    {
+      "field": "I.batch_stride",
+      "value": 128
+    },
+    {
+      "field": "I.sequence_stride",
+      "value": 128
+    },
+    {
+      "field": "batch_divisor",
+      "value": 1
+    },
+    {
+      "field": "batch_multiplier",
+      "value": 0
+    },
+    {
+      "field": "batch_shift1",
+      "value": 0
+    },
+    {
+      "field": "batch_shift2",
+      "value": 0
+    }
+  ],
+  "declarations": [
+    {
+      "name": "dS.batch",
+      "parameter": 2,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "dS.sequence",
+      "parameter": 2,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "Q.batch",
+      "parameter": 4,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "Q.sequence",
+      "parameter": 4,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "dK.batch",
+      "parameter": 5,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "dK.sequence",
+      "parameter": 5,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "dK.batch_stride",
+      "parameter": 5,
+      "offset": 16,
+      "type": "s64"
+    },
+    {
+      "name": "dK.sequence_stride",
+      "parameter": 5,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "I.batch",
+      "parameter": 6,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "I.sequence",
+      "parameter": 6,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "I.batch_stride",
+      "parameter": 6,
+      "offset": 16,
+      "type": "s64"
+    },
+    {
+      "name": "I.sequence_stride",
+      "parameter": 6,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "batch_divisor",
+      "parameter": 7,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "batch_multiplier",
+      "parameter": 7,
+      "offset": 4,
+      "type": "u32"
+    },
+    {
+      "name": "batch_shift1",
+      "parameter": 7,
+      "offset": 8,
+      "type": "u8"
+    },
+    {
+      "name": "batch_shift2",
+      "parameter": 7,
+      "offset": 9,
+      "type": "u8"
+    },
+    {
+      "parameter": 1,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 3,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dKaccum"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "type": "pointer",
+      "object": "I"
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 1,
+      "offset": 0,
+      "object": "dS",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        128,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        32768,
+        32768
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "object": "Q",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        16384,
+        16384
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

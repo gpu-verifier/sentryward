@@ -1,0 +1,691 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor00000o41112101314_tensor0000o11101213_tensor0000o10111213_tensor00000o41112101314_None_None__0",
+  "launch": {
+    "grid_dim": [
+      8,
+      1,
+      1
+    ],
+    "block_dim": [
+      512,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "field": "shape.0.0",
+      "value": 128
+    },
+    {
+      "field": "shape.0.1",
+      "value": 128
+    },
+    {
+      "field": "shape.0.2",
+      "value": 2
+    },
+    {
+      "field": "shape.0.3",
+      "value": 2
+    },
+    {
+      "field": "shape.1.0",
+      "value": 256
+    },
+    {
+      "field": "shape.1.1",
+      "value": 128
+    },
+    {
+      "field": "shape.1.2",
+      "value": 2
+    },
+    {
+      "field": "shape.1.3",
+      "value": 2
+    },
+    {
+      "field": "shape.2.0",
+      "value": 128
+    },
+    {
+      "field": "shape.2.1",
+      "value": 256
+    },
+    {
+      "field": "shape.2.2",
+      "value": 2
+    },
+    {
+      "field": "shape.2.3",
+      "value": 2
+    },
+    {
+      "field": "shape.3.0",
+      "value": 128
+    },
+    {
+      "field": "shape.3.1",
+      "value": 128
+    },
+    {
+      "field": "shape.3.2",
+      "value": 2
+    },
+    {
+      "field": "shape.3.3",
+      "value": 2
+    },
+    {
+      "field": "scale_log2",
+      "value": 0.12751743082459868
+    },
+    {
+      "field": "scheduler.11.total_blocks",
+      "value": 8
+    },
+    {
+      "field": "scheduler.12.num_splits",
+      "value": 1
+    },
+    {
+      "field": "scheduler.13.num_block",
+      "value": 2
+    },
+    {
+      "field": "scheduler.14.num_head",
+      "value": 2
+    },
+    {
+      "field": "scheduler.15.num_batch",
+      "value": 2
+    },
+    {
+      "field": "scheduler.16.l2_minor",
+      "value": 256
+    },
+    {
+      "field": "scheduler.21.num_hb_quotient",
+      "value": 0
+    },
+    {
+      "field": "scheduler.23.num_splits",
+      "value": 1
+    },
+    {
+      "field": "div.17.divisor",
+      "value": 2
+    },
+    {
+      "field": "div.17.multiplier",
+      "value": 0
+    },
+    {
+      "field": "div.17.shift1",
+      "value": 0
+    },
+    {
+      "field": "div.17.shift2",
+      "value": 1
+    },
+    {
+      "field": "div.18.divisor",
+      "value": 256
+    },
+    {
+      "field": "div.18.multiplier",
+      "value": 0
+    },
+    {
+      "field": "div.18.shift1",
+      "value": 0
+    },
+    {
+      "field": "div.18.shift2",
+      "value": 8
+    },
+    {
+      "field": "div.19.divisor",
+      "value": 512
+    },
+    {
+      "field": "div.19.multiplier",
+      "value": 0
+    },
+    {
+      "field": "div.19.shift1",
+      "value": 0
+    },
+    {
+      "field": "div.19.shift2",
+      "value": 9
+    },
+    {
+      "field": "div.20.divisor",
+      "value": 4
+    },
+    {
+      "field": "div.20.multiplier",
+      "value": 0
+    },
+    {
+      "field": "div.20.shift1",
+      "value": 0
+    },
+    {
+      "field": "div.20.shift2",
+      "value": 2
+    },
+    {
+      "field": "div.22.divisor",
+      "value": 1
+    },
+    {
+      "field": "div.22.multiplier",
+      "value": 0
+    },
+    {
+      "field": "div.22.shift1",
+      "value": 0
+    },
+    {
+      "field": "div.22.shift2",
+      "value": 0
+    },
+    {
+      "field": "div.24.divisor",
+      "value": 4
+    },
+    {
+      "field": "div.24.multiplier",
+      "value": 0
+    },
+    {
+      "field": "div.24.shift1",
+      "value": 0
+    },
+    {
+      "field": "div.24.shift2",
+      "value": 2
+    }
+  ],
+  "declarations": [
+    {
+      "name": "shape.0.0",
+      "parameter": 0,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "shape.0.1",
+      "parameter": 0,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "shape.0.2",
+      "parameter": 0,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.0.3",
+      "parameter": 0,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.1.0",
+      "parameter": 1,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "shape.1.1",
+      "parameter": 1,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "shape.1.2",
+      "parameter": 1,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.1.3",
+      "parameter": 1,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.2.0",
+      "parameter": 2,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "shape.2.1",
+      "parameter": 2,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "shape.2.2",
+      "parameter": 2,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.2.3",
+      "parameter": 2,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.3.0",
+      "parameter": 3,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "shape.3.1",
+      "parameter": 3,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "shape.3.2",
+      "parameter": 3,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.3.3",
+      "parameter": 3,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "scale_log2",
+      "parameter": 8,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "scheduler.11.total_blocks",
+      "parameter": 11,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.12.num_splits",
+      "parameter": 12,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.13.num_block",
+      "parameter": 13,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.14.num_head",
+      "parameter": 14,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.15.num_batch",
+      "parameter": 15,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.16.l2_minor",
+      "parameter": 16,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.21.num_hb_quotient",
+      "parameter": 21,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.23.num_splits",
+      "parameter": 23,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "div.17.divisor",
+      "parameter": 17,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "div.17.multiplier",
+      "parameter": 17,
+      "offset": 4,
+      "type": "u32"
+    },
+    {
+      "name": "div.17.shift1",
+      "parameter": 17,
+      "offset": 8,
+      "type": "u8"
+    },
+    {
+      "name": "div.17.shift2",
+      "parameter": 17,
+      "offset": 9,
+      "type": "u8"
+    },
+    {
+      "name": "div.18.divisor",
+      "parameter": 18,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "div.18.multiplier",
+      "parameter": 18,
+      "offset": 4,
+      "type": "u32"
+    },
+    {
+      "name": "div.18.shift1",
+      "parameter": 18,
+      "offset": 8,
+      "type": "u8"
+    },
+    {
+      "name": "div.18.shift2",
+      "parameter": 18,
+      "offset": 9,
+      "type": "u8"
+    },
+    {
+      "name": "div.19.divisor",
+      "parameter": 19,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "div.19.multiplier",
+      "parameter": 19,
+      "offset": 4,
+      "type": "u32"
+    },
+    {
+      "name": "div.19.shift1",
+      "parameter": 19,
+      "offset": 8,
+      "type": "u8"
+    },
+    {
+      "name": "div.19.shift2",
+      "parameter": 19,
+      "offset": 9,
+      "type": "u8"
+    },
+    {
+      "name": "div.20.divisor",
+      "parameter": 20,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "div.20.multiplier",
+      "parameter": 20,
+      "offset": 4,
+      "type": "u32"
+    },
+    {
+      "name": "div.20.shift1",
+      "parameter": 20,
+      "offset": 8,
+      "type": "u8"
+    },
+    {
+      "name": "div.20.shift2",
+      "parameter": 20,
+      "offset": 9,
+      "type": "u8"
+    },
+    {
+      "name": "div.22.divisor",
+      "parameter": 22,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "div.22.multiplier",
+      "parameter": 22,
+      "offset": 4,
+      "type": "u32"
+    },
+    {
+      "name": "div.22.shift1",
+      "parameter": 22,
+      "offset": 8,
+      "type": "u8"
+    },
+    {
+      "name": "div.22.shift2",
+      "parameter": 22,
+      "offset": 9,
+      "type": "u8"
+    },
+    {
+      "name": "div.24.divisor",
+      "parameter": 24,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "div.24.multiplier",
+      "parameter": 24,
+      "offset": 4,
+      "type": "u32"
+    },
+    {
+      "name": "div.24.shift1",
+      "parameter": 24,
+      "offset": 8,
+      "type": "u8"
+    },
+    {
+      "name": "div.24.shift2",
+      "parameter": 24,
+      "offset": 9,
+      "type": "u8"
+    },
+    {
+      "parameter": 4,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 5,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 6,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 7,
+      "type": "tensor_map"
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 4,
+      "offset": 0,
+      "object": "Q",
+      "element_type": "f16",
+      "global_shape": [
+        128,
+        4,
+        128,
+        2,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        2048,
+        1024,
+        262144
+      ],
+      "box_shape": [
+        64,
+        4,
+        32,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 7,
+      "offset": 0,
+      "object": "O",
+      "element_type": "f16",
+      "global_shape": [
+        128,
+        4,
+        128,
+        2,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        2048,
+        1024,
+        262144
+      ],
+      "box_shape": [
+        64,
+        4,
+        32,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "object": "K",
+      "element_type": "f16",
+      "global_shape": [
+        128,
+        256,
+        2,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        512,
+        256,
+        131072
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "object": "V",
+      "element_type": "f16",
+      "global_shape": [
+        128,
+        256,
+        2,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        512,
+        256,
+        131072
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  },
+  "branch_decisions": [
+    {
+      "line": 5861,
+      "taken": false,
+      "note": "Always execute softmax correction; do not jump over the TMEM rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+    },
+    {
+      "line": 6081,
+      "taken": false,
+      "note": "Always execute softmax correction; do not jump over the TMEM rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+    }
+  ]
+}

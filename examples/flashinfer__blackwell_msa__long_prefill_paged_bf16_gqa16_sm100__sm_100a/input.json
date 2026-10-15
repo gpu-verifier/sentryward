@@ -1,0 +1,216 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_minimax_sparse_reverse_prefill_paged_bf16_gqa4_qload4_nobar_sm100",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      512,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 148480
+  },
+  "arguments": [
+    {
+      "parameter": 23,
+      "type": "u32",
+      "value": 128
+    },
+    {
+      "parameter": 24,
+      "type": "u32",
+      "value": 16
+    },
+    {
+      "parameter": 25,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 26,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 27,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 28,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 29,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 30,
+      "type": "u32",
+      "value": 4
+    },
+    {
+      "parameter": 31,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 32,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 33,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 34,
+      "type": "f32",
+      "value": 0.12751743082459868
+    },
+    {
+      "parameter": 35,
+      "type": "f32",
+      "value": 1.0
+    },
+    {
+      "parameter": 36,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 16,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 17,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 18,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 19,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 20,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 21,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 22,
+      "type": "u32",
+      "value": 0
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "tensor_map",
+      "object": "q"
+    },
+    {
+      "parameter": 1,
+      "type": "tensor_map",
+      "object": "k"
+    },
+    {
+      "parameter": 2,
+      "type": "tensor_map",
+      "object": "v"
+    },
+    {
+      "parameter": 3,
+      "type": "pointer",
+      "object": "scheduler_metadata"
+    },
+    {
+      "parameter": 4,
+      "type": "pointer",
+      "object": "k2q_row_ptr"
+    },
+    {
+      "parameter": 5,
+      "type": "pointer",
+      "object": "k2q_qsplit_indices"
+    },
+    {
+      "parameter": 6,
+      "type": "pointer",
+      "object": "partial_o"
+    },
+    {
+      "parameter": 7,
+      "type": "pointer",
+      "object": "partial_scale"
+    },
+    {
+      "parameter": 8,
+      "type": "pointer",
+      "object": "partial_lse"
+    },
+    {
+      "parameter": 9,
+      "type": "pointer",
+      "object": "partial_temperature_lse"
+    },
+    {
+      "parameter": 10,
+      "type": "pointer",
+      "object": "out"
+    },
+    {
+      "parameter": 11,
+      "type": "pointer",
+      "object": "cu_seqlens_q"
+    },
+    {
+      "parameter": 12,
+      "type": "pointer",
+      "object": "cu_seqlens_k"
+    },
+    {
+      "parameter": 13,
+      "type": "pointer",
+      "object": "q_offsets"
+    },
+    {
+      "parameter": 14,
+      "type": "pointer",
+      "object": "kv_lens"
+    },
+    {
+      "parameter": 15,
+      "type": "pointer",
+      "object": "page_table"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

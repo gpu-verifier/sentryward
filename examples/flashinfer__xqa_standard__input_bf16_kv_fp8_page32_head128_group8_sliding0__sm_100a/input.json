@@ -1,0 +1,130 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_Z10kernel_mhajfPKfP3VecI13__nv_bfloat16Lj128EEPKS3_S0_11KVCacheListILb1EEjfS0_jjjPjPv",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      128,
+      1,
+      2
+    ],
+    "dynamic_shared_bytes": 112256
+  },
+  "arguments": [
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 1,
+      "type": "f32",
+      "value": 0.08838834764831843
+    },
+    {
+      "parameter": 6,
+      "type": "u32",
+      "value": 1,
+      "offset": 32
+    },
+    {
+      "parameter": 7,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 8,
+      "type": "f32",
+      "value": 1.0
+    },
+    {
+      "parameter": 10,
+      "type": "u32",
+      "value": 32
+    },
+    {
+      "parameter": 11,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 12,
+      "type": "u32",
+      "value": 1
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 2,
+      "type": "pointer",
+      "object": "qScalePtr"
+    },
+    {
+      "parameter": 3,
+      "type": "pointer",
+      "object": "output"
+    },
+    {
+      "parameter": 4,
+      "type": "pointer",
+      "object": "q"
+    },
+    {
+      "parameter": 5,
+      "type": "pointer",
+      "object": "attentionSinks"
+    },
+    {
+      "parameter": 6,
+      "type": "pointer",
+      "object": "kCacheVLLM"
+    },
+    {
+      "parameter": 6,
+      "type": "pointer",
+      "object": "vCacheVLLM",
+      "offset": 8
+    },
+    {
+      "parameter": 6,
+      "type": "pointer",
+      "object": "kvCachePageList",
+      "offset": 16
+    },
+    {
+      "parameter": 6,
+      "type": "pointer",
+      "object": "seqLenList",
+      "offset": 24
+    },
+    {
+      "parameter": 9,
+      "type": "pointer",
+      "object": "kvScalePtr"
+    },
+    {
+      "parameter": 13,
+      "type": "pointer",
+      "object": "semaphores"
+    },
+    {
+      "parameter": 14,
+      "type": "pointer",
+      "object": "scratch"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

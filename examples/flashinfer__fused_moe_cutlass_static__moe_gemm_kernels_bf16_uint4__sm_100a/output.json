@@ -1,0 +1,307 @@
+{
+  "active_stage": "verification.memory",
+  "checks": {
+    "equivalence": "not_run",
+    "memory": "not_run",
+    "synchronization": "not_run"
+  },
+  "diagnostics": [
+    {
+      "code": "timeout",
+      "details": {
+        "resource": {
+          "kind": "time",
+          "limit": 500.0,
+          "origin": "configured_budget",
+          "unit": "seconds"
+        }
+      },
+      "stage": "memory_check"
+    }
+  ],
+  "elapsed_seconds": 500.08059429,
+  "equivalence": {
+    "checks": {
+      "equivalence": "not_run",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "diagnostics": [
+      {
+        "code": "prerequisite_check_not_passed",
+        "details": {
+          "prerequisite_checks": {
+            "equivalence": "not_run",
+            "memory": "not_run",
+            "synchronization": "not_run"
+          },
+          "prerequisite_diagnostics": [
+            {
+              "code": "timeout",
+              "details": {
+                "resource": {
+                  "kind": "time",
+                  "limit": 500.0,
+                  "origin": "configured_budget",
+                  "unit": "seconds"
+                }
+              },
+              "stage": "memory_check"
+            }
+          ],
+          "prerequisite_result": "timeout",
+          "prerequisite_status": "timeout"
+        },
+        "stage": "memory_check"
+      }
+    ],
+    "prerequisite_status": "timeout",
+    "result": "timeout",
+    "scope": {
+      "operation": "equivalence"
+    },
+    "stage": "verification.memory"
+  },
+  "frontend": {
+    "address_value_bridge": {
+      "diagnostics": [
+        {
+          "code": "unsupported_operation",
+          "details": {
+            "cta": 0,
+            "instruction": "vote.sync.ballot.b32 \t%r115, %p23, %r114;",
+            "instruction_index": 141,
+            "location": {
+              "file": "corpus/flashinfer__fused_moe_cutlass_static__moe_gemm_kernels_bf16_uint4__sm_100a.ptx",
+              "line": 767
+            },
+            "occurrence": 0,
+            "thread": 21
+          },
+          "message": "No exact per-thread value model for compute operation 'vote'",
+          "stage": "value_lowering"
+        }
+      ],
+      "first_unavailable_reason": "",
+      "queries": 0,
+      "resolved": 0,
+      "source": "value_lowering",
+      "unavailable": 0,
+      "value_view_complete": false
+    },
+    "cluster_completion_joins": 0,
+    "cta_count": 1,
+    "dependency_compression": {
+      "cp_async_wait": {
+        "consumers": 24576,
+        "emitted_references": 49152,
+        "original_references": 4767744,
+        "prefix_effects": 0
+      }
+    },
+    "diagnostic_sample_count": 0,
+    "executed_records": 6967328,
+    "frontend_assumptions": {
+      "assertion_failure_forms": [
+        "trap",
+        "__assertfail"
+      ],
+      "assertion_uses": 0,
+      "bounded_loop_uses": 0,
+      "clc_failure": true,
+      "clc_uses": 0,
+      "data_branch_decisions": [],
+      "election_policy": {
+        "fallback": "lowest_member",
+        "preferred_lane": 0,
+        "strategy": "preferred_member"
+      },
+      "election_uses": 0,
+      "fixed_election": true,
+      "isolated_launch": true,
+      "noalias_unbounded": false,
+      "opaque_compute_regions": [],
+      "pointer_contract": {
+        "aliasing": "distinct_objects_noalias",
+        "extent_bytes": "unbounded"
+      },
+      "representative_branch_uses": 0,
+      "shape_input_contract": {
+        "kind": "fixed_read_only",
+        "origin": "shape_arrays",
+        "regions": [
+          {
+            "allocation": "last_row_for_problem",
+            "byte_offset": 0,
+            "bytes": 32,
+            "resource": "input.arg0.0"
+          }
+        ],
+        "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+      },
+      "trap_only_equality_assertions_hold": true
+    },
+    "implementation": "cpp",
+    "input_objects": [
+      {
+        "bytes": 8,
+        "object": "last_row_for_problem",
+        "offset": 0,
+        "parameter": "_ZN7cutlass6KernelINS_4gemm6kernel9MoeFCGemmINS1_11threadblock15DqMmaMultistageINS1_9GemmShapeILi16ELi128ELi64EEENS_9transform11threadblock28PredicatedTileAccessIteratorINS_11MatrixShapeILi16ELi64EEENS_10bfloat16_tENS_6layout8RowMajorELi1ENS8_29PitchLinearWarpRakedThreadMapINS_16PitchLinearShapeILi64ELi16EEELi128ENSH_ILi8ELi4EEELi8EEENS_5ArrayISD_Li8ELb0EEELb0ENSE_9NoPermuteEEENS9_25RegularTileAccessIteratorISC_SD_NSE_37RowMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi0ESK_Li16EEELNS_4arch14CacheOperation4KindE1ENSA_INSB_ILi256ELi32EEENS_15integer_subbyteILi4ELb0EEENSE_11ColumnMajorELi0ENSG_INSH_ILi256ELi32EEELi128ESJ_Li32EEENSL_ISY_Li32ELb0EEELb0ESN_EENSP_INSB_ILi64ELi128EEESY_NSE_40ColumnMajorTensorOpMultiplicandCrosswiseILi4ELi64EEELi1ENSG_INSH_ILi64ELi128EEELi128ENSH_ILi2ELi16EEELi32EEELi16EEELSV_1ENS9_22PredicatedTileIteratorINSB_ILi1ELi128EEESD_SF_Li0ENS8_30PitchLinearStripminedThreadMapINSH_ILi128ELi1EEELi16ELi8EEELi8ELb0ESN_EES1G_fSF_NS4_9MmaPolicyINS1_4warp26MmaTensorOpComputeBWithF16INS6_ILi16ELi32ELi64EEESD_SR_SY_S16_fSF_NS1I_17MmaTensorOpPolicyINST_3MmaINS6_ILi16ELi8ELi16EEELi32ESD_SF_SD_SZ_fSF_NST_13OpMultiplyAddEEENSB_ILi1ELi1EEEEENS6_ILi16ELi8ELi32EEELi1ELb0EbEENSB_ILi0ELi0EEES1U_Li1EEELi2ENS_45FastInterleavedAndBiasedNumericArrayConverterISD_SY_Li32EEELNS_17WeightOnlyQuantOpE1ELNS1_23SharedMemoryClearOptionE0EvEENS_8epilogue11threadblock8EpilogueIS7_S1T_Li1ENS22_22PredicatedTileIteratorINS22_26OutputTileOptimalThreadMapINS22_15OutputTileShapeILi128ELi8ELi1ELi1ELi1EEENS26_ILi1ELi2ELi1ELi1ELi2EEELi128ELi8ELi16EEESD_Lb0ESN_Lb0EEENS21_4warp24FragmentIteratorTensorOpIS1K_S1N_fNSL_IfLi4ELb1EEESF_EENS2B_20TileIteratorTensorOpIS1K_S1N_fSF_EENS22_18SharedLoadIteratorINS29_18CompactedThreadMapEfLi32EEENS21_6thread21LinearCombinationReluISD_Li8EffLNS2K_9ScaleType4KindE0ELNS_15FloatRoundStyleE2EEENSB_ILi0ELi8EEELi1ELi1EEENS4_37GemmBatchedIdentityThreadblockSwizzleENST_4Sm80ELNS2_17GroupScheduleModeE0EEEEEvNT_6ParamsE_param_0",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "activations",
+        "offset": 96,
+        "parameter": "_ZN7cutlass6KernelINS_4gemm6kernel9MoeFCGemmINS1_11threadblock15DqMmaMultistageINS1_9GemmShapeILi16ELi128ELi64EEENS_9transform11threadblock28PredicatedTileAccessIteratorINS_11MatrixShapeILi16ELi64EEENS_10bfloat16_tENS_6layout8RowMajorELi1ENS8_29PitchLinearWarpRakedThreadMapINS_16PitchLinearShapeILi64ELi16EEELi128ENSH_ILi8ELi4EEELi8EEENS_5ArrayISD_Li8ELb0EEELb0ENSE_9NoPermuteEEENS9_25RegularTileAccessIteratorISC_SD_NSE_37RowMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi0ESK_Li16EEELNS_4arch14CacheOperation4KindE1ENSA_INSB_ILi256ELi32EEENS_15integer_subbyteILi4ELb0EEENSE_11ColumnMajorELi0ENSG_INSH_ILi256ELi32EEELi128ESJ_Li32EEENSL_ISY_Li32ELb0EEELb0ESN_EENSP_INSB_ILi64ELi128EEESY_NSE_40ColumnMajorTensorOpMultiplicandCrosswiseILi4ELi64EEELi1ENSG_INSH_ILi64ELi128EEELi128ENSH_ILi2ELi16EEELi32EEELi16EEELSV_1ENS9_22PredicatedTileIteratorINSB_ILi1ELi128EEESD_SF_Li0ENS8_30PitchLinearStripminedThreadMapINSH_ILi128ELi1EEELi16ELi8EEELi8ELb0ESN_EES1G_fSF_NS4_9MmaPolicyINS1_4warp26MmaTensorOpComputeBWithF16INS6_ILi16ELi32ELi64EEESD_SR_SY_S16_fSF_NS1I_17MmaTensorOpPolicyINST_3MmaINS6_ILi16ELi8ELi16EEELi32ESD_SF_SD_SZ_fSF_NST_13OpMultiplyAddEEENSB_ILi1ELi1EEEEENS6_ILi16ELi8ELi32EEELi1ELb0EbEENSB_ILi0ELi0EEES1U_Li1EEELi2ENS_45FastInterleavedAndBiasedNumericArrayConverterISD_SY_Li32EEELNS_17WeightOnlyQuantOpE1ELNS1_23SharedMemoryClearOptionE0EvEENS_8epilogue11threadblock8EpilogueIS7_S1T_Li1ENS22_22PredicatedTileIteratorINS22_26OutputTileOptimalThreadMapINS22_15OutputTileShapeILi128ELi8ELi1ELi1ELi1EEENS26_ILi1ELi2ELi1ELi1ELi2EEELi128ELi8ELi16EEESD_Lb0ESN_Lb0EEENS21_4warp24FragmentIteratorTensorOpIS1K_S1N_fNSL_IfLi4ELb1EEESF_EENS2B_20TileIteratorTensorOpIS1K_S1N_fSF_EENS22_18SharedLoadIteratorINS29_18CompactedThreadMapEfLi32EEENS21_6thread21LinearCombinationReluISD_Li8EffLNS2K_9ScaleType4KindE0ELNS_15FloatRoundStyleE2EEENSB_ILi0ELi8EEELi1ELi1EEENS4_37GemmBatchedIdentityThreadblockSwizzleENST_4Sm80ELNS2_17GroupScheduleModeE0EEEEEvNT_6ParamsE_param_0",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "expert_weights",
+        "offset": 104,
+        "parameter": "_ZN7cutlass6KernelINS_4gemm6kernel9MoeFCGemmINS1_11threadblock15DqMmaMultistageINS1_9GemmShapeILi16ELi128ELi64EEENS_9transform11threadblock28PredicatedTileAccessIteratorINS_11MatrixShapeILi16ELi64EEENS_10bfloat16_tENS_6layout8RowMajorELi1ENS8_29PitchLinearWarpRakedThreadMapINS_16PitchLinearShapeILi64ELi16EEELi128ENSH_ILi8ELi4EEELi8EEENS_5ArrayISD_Li8ELb0EEELb0ENSE_9NoPermuteEEENS9_25RegularTileAccessIteratorISC_SD_NSE_37RowMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi0ESK_Li16EEELNS_4arch14CacheOperation4KindE1ENSA_INSB_ILi256ELi32EEENS_15integer_subbyteILi4ELb0EEENSE_11ColumnMajorELi0ENSG_INSH_ILi256ELi32EEELi128ESJ_Li32EEENSL_ISY_Li32ELb0EEELb0ESN_EENSP_INSB_ILi64ELi128EEESY_NSE_40ColumnMajorTensorOpMultiplicandCrosswiseILi4ELi64EEELi1ENSG_INSH_ILi64ELi128EEELi128ENSH_ILi2ELi16EEELi32EEELi16EEELSV_1ENS9_22PredicatedTileIteratorINSB_ILi1ELi128EEESD_SF_Li0ENS8_30PitchLinearStripminedThreadMapINSH_ILi128ELi1EEELi16ELi8EEELi8ELb0ESN_EES1G_fSF_NS4_9MmaPolicyINS1_4warp26MmaTensorOpComputeBWithF16INS6_ILi16ELi32ELi64EEESD_SR_SY_S16_fSF_NS1I_17MmaTensorOpPolicyINST_3MmaINS6_ILi16ELi8ELi16EEELi32ESD_SF_SD_SZ_fSF_NST_13OpMultiplyAddEEENSB_ILi1ELi1EEEEENS6_ILi16ELi8ELi32EEELi1ELb0EbEENSB_ILi0ELi0EEES1U_Li1EEELi2ENS_45FastInterleavedAndBiasedNumericArrayConverterISD_SY_Li32EEELNS_17WeightOnlyQuantOpE1ELNS1_23SharedMemoryClearOptionE0EvEENS_8epilogue11threadblock8EpilogueIS7_S1T_Li1ENS22_22PredicatedTileIteratorINS22_26OutputTileOptimalThreadMapINS22_15OutputTileShapeILi128ELi8ELi1ELi1ELi1EEENS26_ILi1ELi2ELi1ELi1ELi2EEELi128ELi8ELi16EEESD_Lb0ESN_Lb0EEENS21_4warp24FragmentIteratorTensorOpIS1K_S1N_fNSL_IfLi4ELb1EEESF_EENS2B_20TileIteratorTensorOpIS1K_S1N_fSF_EENS22_18SharedLoadIteratorINS29_18CompactedThreadMapEfLi32EEENS21_6thread21LinearCombinationReluISD_Li8EffLNS2K_9ScaleType4KindE0ELNS_15FloatRoundStyleE2EEENSB_ILi0ELi8EEELi1ELi1EEENS4_37GemmBatchedIdentityThreadblockSwizzleENST_4Sm80ELNS2_17GroupScheduleModeE0EEEEEvNT_6ParamsE_param_0",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "weight_scales",
+        "offset": 112,
+        "parameter": "_ZN7cutlass6KernelINS_4gemm6kernel9MoeFCGemmINS1_11threadblock15DqMmaMultistageINS1_9GemmShapeILi16ELi128ELi64EEENS_9transform11threadblock28PredicatedTileAccessIteratorINS_11MatrixShapeILi16ELi64EEENS_10bfloat16_tENS_6layout8RowMajorELi1ENS8_29PitchLinearWarpRakedThreadMapINS_16PitchLinearShapeILi64ELi16EEELi128ENSH_ILi8ELi4EEELi8EEENS_5ArrayISD_Li8ELb0EEELb0ENSE_9NoPermuteEEENS9_25RegularTileAccessIteratorISC_SD_NSE_37RowMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi0ESK_Li16EEELNS_4arch14CacheOperation4KindE1ENSA_INSB_ILi256ELi32EEENS_15integer_subbyteILi4ELb0EEENSE_11ColumnMajorELi0ENSG_INSH_ILi256ELi32EEELi128ESJ_Li32EEENSL_ISY_Li32ELb0EEELb0ESN_EENSP_INSB_ILi64ELi128EEESY_NSE_40ColumnMajorTensorOpMultiplicandCrosswiseILi4ELi64EEELi1ENSG_INSH_ILi64ELi128EEELi128ENSH_ILi2ELi16EEELi32EEELi16EEELSV_1ENS9_22PredicatedTileIteratorINSB_ILi1ELi128EEESD_SF_Li0ENS8_30PitchLinearStripminedThreadMapINSH_ILi128ELi1EEELi16ELi8EEELi8ELb0ESN_EES1G_fSF_NS4_9MmaPolicyINS1_4warp26MmaTensorOpComputeBWithF16INS6_ILi16ELi32ELi64EEESD_SR_SY_S16_fSF_NS1I_17MmaTensorOpPolicyINST_3MmaINS6_ILi16ELi8ELi16EEELi32ESD_SF_SD_SZ_fSF_NST_13OpMultiplyAddEEENSB_ILi1ELi1EEEEENS6_ILi16ELi8ELi32EEELi1ELb0EbEENSB_ILi0ELi0EEES1U_Li1EEELi2ENS_45FastInterleavedAndBiasedNumericArrayConverterISD_SY_Li32EEELNS_17WeightOnlyQuantOpE1ELNS1_23SharedMemoryClearOptionE0EvEENS_8epilogue11threadblock8EpilogueIS7_S1T_Li1ENS22_22PredicatedTileIteratorINS22_26OutputTileOptimalThreadMapINS22_15OutputTileShapeILi128ELi8ELi1ELi1ELi1EEENS26_ILi1ELi2ELi1ELi1ELi2EEELi128ELi8ELi16EEESD_Lb0ESN_Lb0EEENS21_4warp24FragmentIteratorTensorOpIS1K_S1N_fNSL_IfLi4ELb1EEESF_EENS2B_20TileIteratorTensorOpIS1K_S1N_fSF_EENS22_18SharedLoadIteratorINS29_18CompactedThreadMapEfLi32EEENS21_6thread21LinearCombinationReluISD_Li8EffLNS2K_9ScaleType4KindE0ELNS_15FloatRoundStyleE2EEENSB_ILi0ELi8EEELi1ELi1EEENS4_37GemmBatchedIdentityThreadblockSwizzleENST_4Sm80ELNS2_17GroupScheduleModeE0EEEEEvNT_6ParamsE_param_0",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "output",
+        "offset": 136,
+        "parameter": "_ZN7cutlass6KernelINS_4gemm6kernel9MoeFCGemmINS1_11threadblock15DqMmaMultistageINS1_9GemmShapeILi16ELi128ELi64EEENS_9transform11threadblock28PredicatedTileAccessIteratorINS_11MatrixShapeILi16ELi64EEENS_10bfloat16_tENS_6layout8RowMajorELi1ENS8_29PitchLinearWarpRakedThreadMapINS_16PitchLinearShapeILi64ELi16EEELi128ENSH_ILi8ELi4EEELi8EEENS_5ArrayISD_Li8ELb0EEELb0ENSE_9NoPermuteEEENS9_25RegularTileAccessIteratorISC_SD_NSE_37RowMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi0ESK_Li16EEELNS_4arch14CacheOperation4KindE1ENSA_INSB_ILi256ELi32EEENS_15integer_subbyteILi4ELb0EEENSE_11ColumnMajorELi0ENSG_INSH_ILi256ELi32EEELi128ESJ_Li32EEENSL_ISY_Li32ELb0EEELb0ESN_EENSP_INSB_ILi64ELi128EEESY_NSE_40ColumnMajorTensorOpMultiplicandCrosswiseILi4ELi64EEELi1ENSG_INSH_ILi64ELi128EEELi128ENSH_ILi2ELi16EEELi32EEELi16EEELSV_1ENS9_22PredicatedTileIteratorINSB_ILi1ELi128EEESD_SF_Li0ENS8_30PitchLinearStripminedThreadMapINSH_ILi128ELi1EEELi16ELi8EEELi8ELb0ESN_EES1G_fSF_NS4_9MmaPolicyINS1_4warp26MmaTensorOpComputeBWithF16INS6_ILi16ELi32ELi64EEESD_SR_SY_S16_fSF_NS1I_17MmaTensorOpPolicyINST_3MmaINS6_ILi16ELi8ELi16EEELi32ESD_SF_SD_SZ_fSF_NST_13OpMultiplyAddEEENSB_ILi1ELi1EEEEENS6_ILi16ELi8ELi32EEELi1ELb0EbEENSB_ILi0ELi0EEES1U_Li1EEELi2ENS_45FastInterleavedAndBiasedNumericArrayConverterISD_SY_Li32EEELNS_17WeightOnlyQuantOpE1ELNS1_23SharedMemoryClearOptionE0EvEENS_8epilogue11threadblock8EpilogueIS7_S1T_Li1ENS22_22PredicatedTileIteratorINS22_26OutputTileOptimalThreadMapINS22_15OutputTileShapeILi128ELi8ELi1ELi1ELi1EEENS26_ILi1ELi2ELi1ELi1ELi2EEELi128ELi8ELi16EEESD_Lb0ESN_Lb0EEENS21_4warp24FragmentIteratorTensorOpIS1K_S1N_fNSL_IfLi4ELb1EEESF_EENS2B_20TileIteratorTensorOpIS1K_S1N_fSF_EENS22_18SharedLoadIteratorINS29_18CompactedThreadMapEfLi32EEENS21_6thread21LinearCombinationReluISD_Li8EffLNS2K_9ScaleType4KindE0ELNS_15FloatRoundStyleE2EEENSB_ILi0ELi8EEELi1ELi1EEENS4_37GemmBatchedIdentityThreadblockSwizzleENST_4Sm80ELNS2_17GroupScheduleModeE0EEEEEvNT_6ParamsE_param_0",
+        "source": "declaration"
+      }
+    ],
+    "lowered_instruction_count": 660892,
+    "reached_opcodes": {
+      "add.s32": 569376,
+      "add.s64": 180400,
+      "and.b32": 174848,
+      "and.b64": 16384,
+      "and.pred": 57344,
+      "bar.sync": 65536,
+      "bra": 68852,
+      "bra.uni": 16384,
+      "cp.async.cg.shared.global.L2::128B": 49152,
+      "cp.async.commit_group": 24576,
+      "cp.async.wait_all": 24576,
+      "cvt.rn.bf16x2.f32": 65536,
+      "cvt.s64.s32": 49168,
+      "cvt.u32.u64": 57632,
+      "cvt.u64.u32": 32784,
+      "div.s32": 8192,
+      "div.u32": 8192,
+      "fma.rn.bf16x2": 524288,
+      "ld.b64": 20508,
+      "ld.global.L2::128B.v4.u32": 1024,
+      "ld.param.b32": 24832,
+      "ld.param.b64": 66048,
+      "ld.param.b8": 8192,
+      "ld.param.s32": 8192,
+      "ld.shared.b16": 32768,
+      "ld.shared.v4.b32": 32768,
+      "ldmatrix.sync.aligned.x4.m8n8.shared.b16": 114688,
+      "lop3.b32": 1048576,
+      "mad.lo.s32": 16384,
+      "mad.lo.s64": 24576,
+      "max.NaN.f32": 131072,
+      "min.s32": 16384,
+      "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32": 262144,
+      "mov.b32": 453248,
+      "mov.b64": 24720,
+      "mov.pred": 8192,
+      "mov.u32": 8448,
+      "mul.bf16x2": 524288,
+      "mul.f32": 131072,
+      "mul.lo.s32": 16400,
+      "mul.lo.s64": 57472,
+      "mul.wide.s32": 16384,
+      "not.pred": 16384,
+      "or.b32": 117120,
+      "or.b64": 8192,
+      "popc.b32": 512,
+      "ret": 128,
+      "selp.b32": 180864,
+      "selp.b64": 8192,
+      "setp.eq.b16": 8192,
+      "setp.eq.b32": 49808,
+      "setp.eq.b64": 24576,
+      "setp.eq.f32": 8192,
+      "setp.ge.s32": 128,
+      "setp.gt.s32": 17280,
+      "setp.gt.u32": 8192,
+      "setp.le.s32": 640,
+      "setp.lt.s32": 90240,
+      "setp.lt.u32": 16896,
+      "setp.ne.b32": 98304,
+      "setp.ne.b64": 24576,
+      "shfl.sync.idx.b32": 17664,
+      "shfl.sync.up.b32": 640,
+      "shl.b32": 208384,
+      "shl.b64": 114832,
+      "shr.s32": 98976,
+      "shr.s64": 33024,
+      "shr.u32": 517520,
+      "shr.u64": 128,
+      "st.global.v4.u32": 16384,
+      "st.shared.v2.b32": 65536,
+      "st.shared.v4.b32": 1024,
+      "sub.s32": 57488,
+      "vote.sync.ballot.b32": 512,
+      "xor.b32": 115200
+    },
+    "shared_constant_propagation": {
+      "read_from_dependencies": 0,
+      "representation": "sparse_known_bytes",
+      "validation": "pending_backend"
+    },
+    "source_binding_storage": {
+      "binding_templates": 69,
+      "generated_address_rows": 0,
+      "generated_body_rows": 0,
+      "generated_memory_instances": 0,
+      "logical_instructions": 660892,
+      "stored_bindings": 390220
+    },
+    "source_edge_storage": {
+      "binding_templates": 6272,
+      "logical_edges": 660764,
+      "stored_bindings": 6272
+    },
+    "thread_count": 128,
+    "unsupported_occurrence_counts": {},
+    "user_branch_decisions": []
+  },
+  "frontend_source_violations": [],
+  "implementation": "cpp",
+  "memory_analysis": {
+    "candidate_generation_fallback": false,
+    "strategy": "conflict-family"
+  },
+  "memory_analysis_complete": false,
+  "memory_analysis_entered": true,
+  "peak_footprint_mib": 5959.4296875,
+  "peak_rss_mib": 5959.4296875,
+  "resource": {
+    "kind": "time",
+    "limit": 500.0,
+    "origin": "configured_budget",
+    "unit": "seconds"
+  },
+  "result": "timeout",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-ptx-run/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "timeout_scope": "whole_pipeline",
+  "verification_limitations": [],
+  "warnings_complete": false
+}

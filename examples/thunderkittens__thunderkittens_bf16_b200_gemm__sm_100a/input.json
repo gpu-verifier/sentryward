@@ -1,0 +1,198 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_Z6kernelI6configILi256ELi64ELi128ELi4ELb1ELi5ELi2EEEv7globalsIT_E",
+  "launch": {
+    "grid_dim": [
+      2,
+      1,
+      1
+    ],
+    "block_dim": [
+      256,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      2,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 222208
+  },
+  "arguments": [
+    {
+      "parameter": 0,
+      "offset": 16,
+      "type": "u64",
+      "value": 256
+    },
+    {
+      "parameter": 0,
+      "offset": 24,
+      "type": "u64",
+      "value": 128
+    },
+    {
+      "parameter": 0,
+      "offset": 400,
+      "type": "u64",
+      "value": 64
+    },
+    {
+      "parameter": 0,
+      "offset": 408,
+      "type": "u64",
+      "value": 128
+    },
+    {
+      "parameter": 0,
+      "offset": 784,
+      "type": "u64",
+      "value": 256
+    },
+    {
+      "parameter": 0,
+      "offset": 792,
+      "type": "u64",
+      "value": 64
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "pointer",
+      "object": "A"
+    },
+    {
+      "parameter": 0,
+      "offset": 384,
+      "type": "pointer",
+      "object": "B"
+    },
+    {
+      "parameter": 0,
+      "offset": 768,
+      "type": "pointer",
+      "object": "D"
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "offset": 128,
+      "object": "A",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        256,
+        2,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        128,
+        65536,
+        65536
+      ],
+      "box_shape": [
+        64,
+        128,
+        2,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 512,
+      "object": "B",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        64,
+        2,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        128,
+        16384,
+        16384
+      ],
+      "box_shape": [
+        64,
+        32,
+        2,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 896,
+      "object": "D",
+      "element_type": "bf16",
+      "global_shape": [
+        32,
+        256,
+        2,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        64,
+        32768,
+        32768
+      ],
+      "box_shape": [
+        32,
+        128,
+        1,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "64B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

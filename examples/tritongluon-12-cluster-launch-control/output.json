@@ -1,0 +1,600 @@
+{
+  "address_model": {
+    "address_invariants": [],
+    "kind": "symbolic",
+    "layers": [
+      0,
+      2
+    ],
+    "solver": "z3",
+    "solver_timeout_ms": 100
+  },
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    }
+  ],
+  "checks": {
+    "equivalence": "incomplete",
+    "memory": "passed",
+    "synchronization": "passed"
+  },
+  "counts": {
+    "edges": 725682,
+    "events": 267542,
+    "instructions": 45388,
+    "memory_accesses": 180334,
+    "threads": 128
+  },
+  "diagnostics": [
+    {
+      "code": "scalar_fold_cross_element",
+      "stage": "value_analysis.scalar_fold"
+    }
+  ],
+  "equivalence": {
+    "checks": {
+      "equivalence": "incomplete",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "diagnostics": [
+      {
+        "code": "scalar_fold_cross_element",
+        "stage": "value_analysis.scalar_fold"
+      }
+    ],
+    "expression_diagnostic": {
+      "checks": {
+        "equivalence": "not_requested",
+        "memory": "not_requested",
+        "synchronization": "not_requested"
+      },
+      "construction_collections": 0,
+      "diagnostic": {
+        "code": "scalar_fold_cross_element",
+        "instance": 0,
+        "instruction": "@%p30 cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes [%r120], [%rd4, {%r852, %r79}], [%r119];",
+        "line": 1734,
+        "message": "scalar projection crosses producer element boundaries",
+        "value_node": 134589
+      },
+      "diagnostics": [
+        {
+          "code": "scalar_fold_cross_element",
+          "details": {
+            "instance": 0,
+            "instruction": "@%p30 cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes [%r120], [%rd4, {%r852, %r79}], [%r119];",
+            "line": 1734,
+            "value_node": 134589
+          },
+          "message": "scalar projection crosses producer element boundaries",
+          "stage": "pipeline"
+        }
+      ],
+      "partial_node_count": 587,
+      "partial_output_count": 0,
+      "peak_construction_nodes": 587,
+      "result": "unsupported",
+      "scope": {
+        "operation": "expression_diagnostic"
+      },
+      "shared_view_projection_hits": 63,
+      "source_outputs": 2752
+    },
+    "result": "unsupported",
+    "scope": {
+      "operation": "equivalence"
+    },
+    "stage": "value_analysis.scalar_fold"
+  },
+  "frontend": {
+    "address_value_bridge": {
+      "diagnostics": [],
+      "first_unavailable_reason": "",
+      "queries": 0,
+      "resolved": 0,
+      "source": "value_lowering",
+      "unavailable": 0,
+      "value_view_complete": true
+    },
+    "cluster_completion_joins": 0,
+    "cta_count": 1,
+    "dependency_compression": {
+      "bulk_read_wait": {
+        "consumers": 128,
+        "emitted_references": 4,
+        "original_references": 4,
+        "prefix_effects": 0
+      },
+      "tcgen_commit": {
+        "consumers": 16,
+        "emitted_references": 95,
+        "original_references": 544,
+        "prefix_effects": 16
+      },
+      "tcgen_load_wait": {
+        "consumers": 128,
+        "emitted_references": 512,
+        "original_references": 512,
+        "prefix_effects": 0
+      }
+    },
+    "diagnostic_sample_count": 0,
+    "discharged_codes": [
+      "mma_memory_effect_refinement",
+      "tcgen_pipeline_effect_refinement",
+      "tcgen_commit_notification_order_refinement"
+    ],
+    "executed_records": 166971,
+    "frontend_assumptions": {
+      "assertion_failure_forms": [
+        "trap",
+        "__assertfail"
+      ],
+      "assertion_uses": 0,
+      "bounded_loop_uses": 0,
+      "clc_failure": true,
+      "clc_uses": 257,
+      "data_branch_decisions": [],
+      "election_policy": {
+        "fallback": "lowest_member",
+        "preferred_lane": 0,
+        "strategy": "preferred_member"
+      },
+      "election_uses": 7552,
+      "fixed_election": true,
+      "isolated_launch": true,
+      "noalias_unbounded": false,
+      "opaque_compute_regions": [],
+      "pointer_contract": {
+        "aliasing": "distinct_objects_noalias",
+        "extent_bytes": "unbounded"
+      },
+      "representative_branch_uses": 0,
+      "trap_only_equality_assertions_hold": true
+    },
+    "implementation": "cpp",
+    "input_objects": [
+      {
+        "bytes": 8,
+        "object": "A",
+        "offset": 0,
+        "parameter": "persistent_matmul_kernel_param_15",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "B",
+        "offset": 0,
+        "parameter": "persistent_matmul_kernel_param_16",
+        "source": "declaration"
+      }
+    ],
+    "lowered_instruction_count": 45388,
+    "mma_refinement": {
+      "blocked": [],
+      "discharged": 64
+    },
+    "reached_opcodes": {
+      "add.s32": 35008,
+      "add.s64": 3072,
+      "and.b32": 4608,
+      "and.pred": 4864,
+      "bar.sync": 11392,
+      "bfe.u32": 1024,
+      "bra": 1728,
+      "bra.uni": 736,
+      "clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128": 128,
+      "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128": 128,
+      "clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.b128": 1,
+      "cp.async.bulk.commit_group": 128,
+      "cp.async.bulk.tensor.2d.global.shared::cta.bulk_group": 4,
+      "cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes": 80,
+      "cp.async.bulk.wait_group.read": 128,
+      "cvt.rn.f16x2.f32": 16384,
+      "cvt.u64.u32": 1024,
+      "cvta.param.u64": 384,
+      "div.s32": 256,
+      "elect.sync": 7552,
+      "fence.proxy.async.shared::cta": 256,
+      "ld.param.b32": 384,
+      "ld.shared.b32": 128,
+      "ld.shared.v2.b64": 128,
+      "mad.lo.s32": 2688,
+      "mbarrier.arrive.expect_tx.shared::cta.b64": 17,
+      "mbarrier.init.shared::cta.b64": 5,
+      "mbarrier.try_wait.parity.shared::cta.b64": 4352,
+      "min.s32": 128,
+      "mov.b128": 128,
+      "mov.b32": 1664,
+      "mov.b64": 33152,
+      "mov.pred": 544,
+      "mov.u32": 256,
+      "mul.hi.s32": 4096,
+      "mul.lo.s32": 2432,
+      "not.b32": 1920,
+      "or.b32": 256,
+      "or.b64": 1024,
+      "rem.s32": 128,
+      "ret": 128,
+      "setp.eq.b32": 256,
+      "setp.gt.s32": 32,
+      "setp.lt.s32": 1920,
+      "setp.lt.u32": 384,
+      "setp.ne.b32": 128,
+      "shfl.sync.idx.b32": 128,
+      "shl.b32": 8064,
+      "shr.s32": 512,
+      "shr.u32": 4480,
+      "st.shared::cta.v4.b32": 4096,
+      "sub.s32": 2560,
+      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 32,
+      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 16,
+      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 32,
+      "tcgen05.ld.sync.aligned.32x32b.x64.b32": 512,
+      "tcgen05.mma.cta_group::1.kind::f16": 64,
+      "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 32,
+      "tcgen05.wait::ld.sync.aligned": 128,
+      "xor.b32": 1152
+    },
+    "shared_constant_propagation": {
+      "read_from_dependencies": 0,
+      "representation": "sparse_known_bytes",
+      "validation": "pending_backend"
+    },
+    "source_binding_storage": {
+      "binding_templates": 9,
+      "generated_address_rows": 0,
+      "generated_body_rows": 0,
+      "generated_memory_instances": 0,
+      "logical_instructions": 45388,
+      "stored_bindings": 5183
+    },
+    "source_edge_storage": {
+      "binding_templates": 153,
+      "logical_edges": 45260,
+      "stored_bindings": 153
+    },
+    "tcgen_history_refinement": {
+      "blocked": [],
+      "notifications": 16,
+      "operations": 64
+    },
+    "thread_count": 128,
+    "unsupported_occurrence_counts": {},
+    "user_branch_decisions": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 257,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 7552,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "trap_only_equality_assertions_hold": true
+  },
+  "hb_queries": {
+    "memory": {
+      "algorithm": "not-built",
+      "batches": 0,
+      "cache_hits": 0,
+      "dfs_queries": 0,
+      "edge_visits": 0,
+      "filtered_queries": 0,
+      "queries": 0,
+      "shared_peak_index_bytes": 0
+    },
+    "required_orders": {
+      "algorithm": "member-relations",
+      "batches": 2,
+      "edge_visits": 860062,
+      "member_enumerations": 0,
+      "request_construction": {
+        "concrete_pair_materializations": 0,
+        "endpoint_reads": 3375,
+        "family_requests": 206,
+        "logical_orders": 14816,
+        "owner_bindings": 926,
+        "stored_orders": 463
+      }
+    }
+  },
+  "implementation": "cpp",
+  "memory_analysis": {
+    "address_candidates": 3274272,
+    "address_model": {
+      "cache_hits": 0,
+      "ground_disjoint": 0,
+      "ground_overlap": 0,
+      "layer0_disjoint": 0,
+      "refined_pairs": 0,
+      "solver_queries": 0,
+      "solver_sat": 0,
+      "solver_unknown": 0,
+      "solver_unsat": 0
+    },
+    "candidate_generation_fallback": false,
+    "exhaustive": false,
+    "family_analysis": {
+      "access_families": 117614,
+      "affine_member_rows": 12739,
+      "candidate_relations": 3216970,
+      "hb_frontier_pieces": 337743,
+      "hb_member_enumerations": 0,
+      "logical_accesses": 180334
+    },
+    "hb_algorithm": "member-relations",
+    "hb_batches": 1125,
+    "hb_cache_hits": 0,
+    "hb_dfs_queries": 0,
+    "hb_edge_visits": 104982391,
+    "hb_filtered_queries": 0,
+    "hb_peak_index_bytes": 0,
+    "hb_queries": 3274272,
+    "hb_query_seconds": 12.786434198000014,
+    "overlap_queries": 0,
+    "strategy": "conflict-family",
+    "unordered_candidates_examined": 0
+  },
+  "memory_analysis_complete": true,
+  "mma_operand_ordering": {},
+  "mode": "verify",
+  "peak_footprint_mib": 1175.234375,
+  "peak_rss_mib": 1206.40234375,
+  "pipeline_elapsed_seconds": 19.528077161,
+  "race_count": 0,
+  "race_samples_truncated": false,
+  "races": [],
+  "required_order_domains": 463,
+  "required_orders": 14816,
+  "result": "unsupported",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "search_complete": true,
+  "semantic_assumptions": {
+    "bounded_computation_loops": false,
+    "clc_always_fails": true,
+    "duplicate_tma_store_benign": true,
+    "representative_branches": false,
+    "representative_election": true
+  },
+  "semantic_program": {
+    "binding_diagnostic_count": 0,
+    "binding_diagnostics": [],
+    "execution_cohorts": 7,
+    "mapping_complete": true,
+    "memory_binding_stored_rows": 181366,
+    "memory_binding_templates": 32853,
+    "memory_bindings": 411102,
+    "memory_linking_templates_used": true,
+    "synchronization_groups": 1570,
+    "synchronization_groups_materialized": true,
+    "synthetic_synchronization_nodes": 17,
+    "thread_prefix_groups": 167532,
+    "value_diagnostic_count": 0,
+    "value_diagnostics": []
+  },
+  "source_violations": [],
+  "synchronization_input": {
+    "compute_access_binding": "after_happens_before",
+    "kind": "ordering_endpoints",
+    "memory_address_payloads": false
+  },
+  "template_execution": {
+    "completed_ctas": 1,
+    "coordinate_bindings": 0,
+    "logical_thread_steps": 180832,
+    "path_entries": 5649,
+    "record_bindings": 9799,
+    "record_nodes": 5467,
+    "splits": 3,
+    "template_steps": 5817,
+    "thread_memberships": 128,
+    "value_nodes": 4182
+  },
+  "thread_record_compression": {
+    "completed_ctas": 1,
+    "enabled": true,
+    "estimated_pool_bytes_sum": 0,
+    "intern_calls": 0,
+    "logical_records": 166971,
+    "record_handle_bytes": 32,
+    "templates": 0,
+    "unique_bindings": 0
+  },
+  "unresolved_count": 0,
+  "value_analysis": {
+    "checks": {
+      "equivalence": "not_requested",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "diagnostics": [],
+    "duplicate_write_value_checks": 0,
+    "equivalence_check": "unsupported",
+    "initial_memory_regions": 32284,
+    "initial_read_families": 32284,
+    "memory_action_storage": {
+      "logical_actions": 411102,
+      "stored_runs": 181366
+    },
+    "output_region_families": 0,
+    "output_regions": 2752,
+    "passes": [
+      {
+        "name": "packing",
+        "rewritten_instances": 32768,
+        "rewritten_nodes": 1536,
+        "semantics": "exact_fixed_width"
+      },
+      {
+        "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+        "name": "software_exp2",
+        "rewritten_instances": 0,
+        "rewritten_nodes": 0,
+        "semantics": "ideal_exp2"
+      },
+      {
+        "converted_instances": 151268,
+        "name": "type_edges",
+        "removed_nodes": 8062
+      },
+      {
+        "name": "memory_elimination"
+      },
+      {
+        "elements": 0,
+        "identities": 67,
+        "layouts": 2876,
+        "mapping_blocks": 10248,
+        "name": "view_normalization",
+        "original_pieces": 331712,
+        "reused_initial_reads": 32284,
+        "reused_views": 10,
+        "segmented": 4,
+        "slices": 524,
+        "stored_mapping_blocks": 10238,
+        "typed_output_pieces": 0,
+        "typed_output_regions": 0
+      }
+    ],
+    "processed_memory_actions": 411102,
+    "processed_memory_families": 0,
+    "read_substitutions": 36123,
+    "result": "verified",
+    "scalar_fold": {
+      "checks": {
+        "equivalence": "not_requested",
+        "memory": "not_requested",
+        "synchronization": "not_requested"
+      },
+      "construction_collections": 0,
+      "diagnostic": {
+        "code": "scalar_fold_cross_element",
+        "instance": 0,
+        "instruction": "@%p30 cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes [%r120], [%rd4, {%r852, %r79}], [%r119];",
+        "line": 1734,
+        "message": "scalar projection crosses producer element boundaries",
+        "value_node": 134589
+      },
+      "diagnostics": [
+        {
+          "code": "scalar_fold_cross_element",
+          "details": {
+            "instance": 0,
+            "instruction": "@%p30 cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes [%r120], [%rd4, {%r852, %r79}], [%r119];",
+            "line": 1734,
+            "value_node": 134589
+          },
+          "message": "scalar projection crosses producer element boundaries",
+          "stage": "pipeline"
+        }
+      ],
+      "partial_node_count": 587,
+      "partial_output_count": 0,
+      "peak_construction_nodes": 587,
+      "result": "unsupported",
+      "scope": {
+        "operation": "scalar_fold"
+      },
+      "shared_view_projection_hits": 63,
+      "source_outputs": 2752
+    },
+    "scope": {
+      "operation": "value_analysis"
+    },
+    "serialization": {
+      "action_patterns": 181366,
+      "binding_patterns": 181366,
+      "domain_refinements": 203624,
+      "elapsed_seconds": 1.268402694,
+      "event_families": 336381,
+      "expanded_event_records": 0,
+      "largest_batch_members": 93,
+      "logical_actions": 411102,
+      "logical_events": 784555,
+      "peak_rss_mib_at_completion": 1206.40234375,
+      "reachability_queries": 0,
+      "relations": 853464,
+      "rss_mib_at_completion": 889.3125,
+      "scheduled_batches": 336381,
+      "singleton_batches": 326008,
+      "value_families": 157550
+    },
+    "shared_read_families": 7,
+    "shared_read_instances": 368,
+    "stored_read_substitutions": 35755
+  },
+  "value_ir_instance_count": 284777,
+  "value_ir_node_count": 151595,
+  "value_view_complete": true,
+  "verification_elapsed_seconds": 16.488305723,
+  "verification_limitations": [],
+  "verification_result": "race_free",
+  "warning_count": 0,
+  "warning_samples_truncated": false,
+  "warnings": [],
+  "wellsync_timeout_seconds": 500.0,
+  "whole_pipeline_timeout_seconds": 498.564
+}

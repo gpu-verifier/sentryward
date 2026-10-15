@@ -1,0 +1,277 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global5:query": "query",
+      "6:global3:key": "key",
+      "6:global9:positions": "positions",
+      "6:global13:cos_sin_cache": "cos_sin_cache"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:query": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          4,
+          128
+        ],
+        "source_strides_bytes": [
+          1024,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          256,
+          2
+        ]
+      },
+      "6:global3:key": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global9:positions": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          4
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global13:cos_sin_cache": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          12,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global5:query": "query",
+      "6:global3:key": "key",
+      "6:global9:positions": "positions",
+      "6:global13:cos_sin_cache": "cos_sin_cache"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:query": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          4,
+          128
+        ],
+        "source_strides_bytes": [
+          1024,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          256,
+          2
+        ]
+      },
+      "6:global3:key": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global9:positions": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          4
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global13:cos_sin_cache": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          12,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global5:query",
+        "right_allocation": "6:global5:query",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          4,
+          128
+        ],
+        "left_strides_bytes": [
+          1024,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          1024,
+          256,
+          2
+        ]
+      },
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global3:key",
+        "right_allocation": "6:global3:key",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          1,
+          128
+        ],
+        "left_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      }
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "query",
+        "dtype": "bfloat16",
+        "allocation": "6:global5:query"
+      },
+      {
+        "name": "key",
+        "dtype": "bfloat16",
+        "allocation": "6:global3:key"
+      },
+      {
+        "name": "positions",
+        "dtype": "int64",
+        "allocation": "6:global9:positions"
+      },
+      {
+        "name": "cos_sin_cache",
+        "dtype": "bfloat16",
+        "allocation": "6:global13:cos_sin_cache"
+      }
+    ]
+  },
+  "provenance": {
+    "evidence": "rotary_embedding_kernel BFloat16/BFloat16 IS_NEOX=true; inverse=false; offset=0. Cache covers positions 3,7,11,5 from saved input. Index values remain explicit in the reference.",
+    "ptx": "corpus/vllm__pos_encoding_rotary_embedding__sm_100a.ptx",
+    "optimized_input": "examples/vllm__pos_encoding_rotary_embedding__sm_100a/input.json",
+    "semantics": "Fixed saved configuration; ideal-real tensor arithmetic; all written mathematical outputs.",
+    "optimized_input_sha256": "280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533",
+    "ptx_sha256": "a51200fdff8bc21f750ddf52b8b2159228f53f9067660463a86738f8cd5912e9",
+    "upstream": [
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/pos_encoding_kernels.cu",
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/cuda_compat.h",
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/dispatch_utils.h"
+    ],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [
+      {
+        "parameter": 0,
+        "element_type": "s64",
+        "shapes": [
+          [
+            3
+          ],
+          [
+            7
+          ],
+          [
+            11
+          ],
+          [
+            5
+          ]
+        ]
+      }
+    ]
+  }
+}

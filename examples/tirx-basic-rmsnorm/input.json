@@ -1,0 +1,60 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "rmsnorm_kernel",
+  "launch": {
+    "grid_dim": [
+      152,
+      1,
+      1
+    ],
+    "block_dim": [
+      32,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 576
+  },
+  "declarations": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "pointer",
+      "object": "A"
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "type": "pointer",
+      "object": "B"
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "type": "pointer",
+      "object": "C"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "type": "u32"
+    }
+  ],
+  "arguments": [
+    {
+      "parameter": 3,
+      "type": "u32",
+      "value": 1
+    }
+  ],
+  "tma_descriptors": [],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

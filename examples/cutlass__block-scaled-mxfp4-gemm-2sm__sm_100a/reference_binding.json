@@ -1,0 +1,229 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:scale_a": "scale_a",
+      "6:global7:scale_b": "scale_b"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          256,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global7:scale_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          2048
+        ],
+        "source_strides_bytes": [
+          1
+        ],
+        "target_strides_bytes": [
+          1
+        ]
+      },
+      "6:global7:scale_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          1024
+        ],
+        "source_strides_bytes": [
+          1
+        ],
+        "target_strides_bytes": [
+          1
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:scale_a": "scale_a",
+      "6:global7:scale_b": "scale_b"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          256,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global7:scale_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          2048
+        ],
+        "source_strides_bytes": [
+          1
+        ],
+        "target_strides_bytes": [
+          1
+        ]
+      },
+      "6:global7:scale_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          1024
+        ],
+        "source_strides_bytes": [
+          1
+        ],
+        "target_strides_bytes": [
+          1
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+      256,
+      128
+    ],
+    "left_strides_bytes": [
+      512,
+      4
+    ],
+    "right_strides_bytes": [
+      512,
+      4
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "checker_context": {
+    "input_contract": [
+      {
+        "object": "scale_a",
+        "element_type": "e8m0",
+        "region": "whole_object",
+        "finite": true,
+        "source": "Decoded UE8M0 finite-scale premise explicitly authorized for this 2SM case by user 2026-10-10; not generic uint8 finiteness."
+      },
+      {
+        "object": "scale_b",
+        "element_type": "e8m0",
+        "region": "whole_object",
+        "finite": true,
+        "source": "Decoded UE8M0 finite-scale premise explicitly authorized for this 2SM case by user 2026-10-10; not generic uint8 finiteness."
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "uint8",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "uint8",
+        "allocation": "6:global1:B"
+      },
+      {
+        "name": "scale_a",
+        "dtype": "uint8",
+        "allocation": "6:global7:scale_a"
+      },
+      {
+        "name": "scale_b",
+        "dtype": "uint8",
+        "allocation": "6:global7:scale_b"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/cutlass__block-scaled-mxfp4-gemm-2sm__sm_100a.ptx",
+    "optimized_input": "examples/cutlass__block-scaled-mxfp4-gemm-2sm__sm_100a/input.json",
+    "layout_source": "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cutlass/detail/sm100_blockscaled_layout.hpp",
+    "evidence": "Original packed A/B and physical scale storage; 32-element scale blocks; UE8M0 scale encoding. Output is row major (N is the fast coordinate). The upstream collective get_tma_store_d builds the D tensor from problem_shape_mnl and args.dD. For M=256,N=128 and packed row-major f32 D, the TMA dimensions are [128,256,1], with coordinate strides [4,512,131072] bytes. User authorized correcting the previous transposed descriptor; output remains the full 256x128 tensor.",
+    "semantics": "ideal_real tensor arithmetic; FP4 nibble decoding and scale indexing retained",
+    "optimized_input_sha256": "2ac1e2316c637d73a1d5e1c4dadc1d01b880dd1d973c91d984de78a4fe90dc75",
+    "ptx_sha256": "257ec70b0c6b32b9037edbe6753c436ab7ea74414c103fd1e92901c8c3432b57",
+    "upstream": [
+      "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cutlass/gemm/kernel/sm100_gemm_tma_warpspecialized.hpp",
+      "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/python/cutlass_library/generator.py",
+      "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cutlass/epilogue/collective/sm100_epilogue_tma_warpspecialized.hpp#L278-L281"
+    ],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [],
+    "binding_warning": "Historical input used D dimensions [256,128,1] and row pitch 1024, clipping the actual 256-row output. Corrected on 2026-10-10 with user authorization; reference shape and branch scope unchanged."
+  }
+}

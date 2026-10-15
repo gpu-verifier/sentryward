@@ -1,0 +1,327 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_cutlass_kernel_flash_attncuteflash_fwd_mla_sm100FlashAttentionMLAForwardSm100_object_at__tensor0000_o_1281111210013_tensor0000o1281111210013_tensorptrbf16_gmem_align16_o_i64_div81i_0",
+  "launch": {
+    "grid_dim": [
+      2,
+      1,
+      1
+    ],
+    "block_dim": [
+      512,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      2,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "field": "topk",
+      "value": 128
+    },
+    {
+      "field": "scale",
+      "value": 0.125
+    },
+    {
+      "field": "scale_log2",
+      "value": 0.1803368801
+    },
+    {
+      "field": "tensor2.sequence",
+      "value": 256
+    },
+    {
+      "field": "tensor2.heads",
+      "value": 1
+    },
+    {
+      "field": "tensor2.batch",
+      "value": 1
+    },
+    {
+      "field": "tensor2.sequence_stride",
+      "value": 64
+    },
+    {
+      "field": "tensor2.head_stride",
+      "value": 64
+    },
+    {
+      "field": "tensor2.batch_stride",
+      "value": 16384
+    },
+    {
+      "field": "tensor3.sequence",
+      "value": 256
+    },
+    {
+      "field": "tensor3.heads",
+      "value": 1
+    },
+    {
+      "field": "tensor3.batch",
+      "value": 1
+    },
+    {
+      "field": "tensor3.sequence_stride",
+      "value": 512
+    },
+    {
+      "field": "tensor3.head_stride",
+      "value": 512
+    },
+    {
+      "field": "tensor3.batch_stride",
+      "value": 131072
+    },
+    {
+      "field": "tensor4.sequence",
+      "value": 256
+    },
+    {
+      "field": "tensor4.heads",
+      "value": 1
+    },
+    {
+      "field": "tensor4.batch",
+      "value": 1
+    },
+    {
+      "field": "tensor4.sequence_stride",
+      "value": 512
+    },
+    {
+      "field": "tensor4.head_stride",
+      "value": 512
+    },
+    {
+      "field": "tensor4.batch_stride",
+      "value": 131072
+    },
+    {
+      "field": "index.topk",
+      "value": 128
+    },
+    {
+      "field": "index.sequence",
+      "value": 1
+    },
+    {
+      "field": "index.batch",
+      "value": 1
+    },
+    {
+      "field": "index.sequence_stride",
+      "value": 128
+    },
+    {
+      "field": "index.batch_stride",
+      "value": 128
+    }
+  ],
+  "declarations": [
+    {
+      "name": "topk",
+      "parameter": 15,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scale",
+      "parameter": 13,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "scale_log2",
+      "parameter": 14,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "tensor2.sequence",
+      "parameter": 2,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "tensor2.heads",
+      "parameter": 2,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "tensor2.batch",
+      "parameter": 2,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "tensor2.sequence_stride",
+      "parameter": 2,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "tensor2.head_stride",
+      "parameter": 2,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "tensor2.batch_stride",
+      "parameter": 2,
+      "offset": 40,
+      "type": "s64"
+    },
+    {
+      "name": "tensor3.sequence",
+      "parameter": 3,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "tensor3.heads",
+      "parameter": 3,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "tensor3.batch",
+      "parameter": 3,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "tensor3.sequence_stride",
+      "parameter": 3,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "tensor3.head_stride",
+      "parameter": 3,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "tensor3.batch_stride",
+      "parameter": 3,
+      "offset": 40,
+      "type": "s64"
+    },
+    {
+      "name": "tensor4.sequence",
+      "parameter": 4,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "tensor4.heads",
+      "parameter": 4,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "tensor4.batch",
+      "parameter": 4,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "tensor4.sequence_stride",
+      "parameter": 4,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "tensor4.head_stride",
+      "parameter": 4,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "tensor4.batch_stride",
+      "parameter": 4,
+      "offset": 40,
+      "type": "s64"
+    },
+    {
+      "name": "index.topk",
+      "parameter": 6,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "index.sequence",
+      "parameter": 6,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "index.batch",
+      "parameter": 6,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "index.sequence_stride",
+      "parameter": 6,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "index.batch_stride",
+      "parameter": 6,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "parameter": 7,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 8,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 9,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "type": "pointer",
+      "object": "K"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "type": "pointer",
+      "object": "V"
+    },
+    {
+      "parameter": 4,
+      "offset": 0,
+      "type": "pointer",
+      "object": "V"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "type": "pointer",
+      "object": "topk_indices"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

@@ -1,0 +1,124 @@
+[build-system]
+requires = ["scikit-build-core>=0.10"]
+build-backend = "scikit_build_core.build"
+
+[project]
+# The distribution, import package, and CLI share the sentryward name.
+name = "sentryward"
+version = "0.1.0"
+description = "Static verifier for synchronization, memory lifetime, and memory races in PTX kernels"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "Zhihao Jia" }]
+keywords = ["verification", "static-analysis", "data-race", "synchronization", "gpu-kernels"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: C++",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Testing",
+]
+# The CLI and process interfaces use only the standard library.
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/gpu-verifier/sentryward"
+Issues = "https://github.com/gpu-verifier/sentryward/issues"
+
+[project.optional-dependencies]
+reference = ["torch>=2.5"]
+# Streaming summaries for the saved-example regression runner (tools/).
+dev = ["ijson>=3.5,<4"]
+
+[project.scripts]
+sentryward = "sentryward.__main__:main"
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+cmake.version = ">=3.27"
+cmake.build-type = "Release"
+build-dir = "build/skbuild/{wheel_tag}"
+# The wheel holds executables, not extension modules: one wheel per platform
+# serves every supported Python version.
+wheel.py-api = "py3"
+wheel.packages = ["sentryward"]
+wheel.exclude = ["**/__pycache__", "**/*.pyc"]
+# Anchored: an unanchored "cpp/" would also match tests/cpp/.
+sdist.include = [
+  "/CMakeLists.txt",
+  "/README.md",
+  "/assets/",
+  "/LICENSE",
+  "/docs/assumptions.md",
+  "/pyproject.toml",
+  "/config/",
+  "/docs/input-json.md",
+  "/docs/reference-binding-json.md",
+  "/docs/output-json.md",
+  "/cpp/",
+  "/sentryward/",
+  "/vendor/nlohmann_json/",
+]
+sdist.exclude = [
+  ".github/",
+  "build/",
+  "docs/history/",
+  "docs/checkpoints/",
+  "docs/value-expressions.md",
+  "docs/development.md",
+  "corpus/",
+  "examples/",
+  "references/",
+  "skills/",
+  "tests/",
+  "tools/",
+  "Makefile",
+]
+
+[tool.scikit-build.cmake.define]
+SENTRYWARD_BUILD_INTERNAL_TOOLS = "OFF"
+SENTRYWARD_BUILD_TESTS = "OFF"
+SENTRYWARD_ENABLE_DEVELOPMENT_DIAGNOSTICS = "OFF"
+SENTRYWARD_ENABLE_COMPRESSION_AUDIT = "OFF"
+# Users' compilers differ from the development toolchain.
+SENTRYWARD_WARNINGS_AS_ERRORS = "OFF"
+
+[tool.cibuildwheel]
+# Wheels are tagged py3-none-<platform>; build each platform once.
+build = "cp312-*"
+skip = "*-musllinux_* *_i686"
+# Exercise the installed CLI, native executable, and reference capture.
+test-requires = ["torch>=2.5"]
+test-command = """
+sentryward {project}/corpus/pytorch__aten_MultiMarginLoss__sm_100a.ptx --input {project}/examples/pytorch__aten_MultiMarginLoss__sm_100a/input.json --reference {project}/examples/pytorch__aten_MultiMarginLoss__sm_100a/reference.py --reference-binding {project}/examples/pytorch__aten_MultiMarginLoss__sm_100a/reference_binding.json --timeout 120 > wheel-smoke-output.json &&
+python -c "import json; r=json.load(open('wheel-smoke-output.json')); assert r['result']=='verified', r; assert all(r['checks'][k]=='passed' for k in ('synchronization','memory','equivalence')), r"
+"""
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+# The distribution's Boost predates C++20; use current headers instead.
+# Z3 comes from the z3-solver distribution (a binary wheel on x86_64, built from
+# its sdist on aarch64), which ships libz3.so without the soname link that the
+# linker records; auditwheel then copies the library into the wheel.
+before-all = [
+  "dnf install -y openssl-devel",
+  "curl -sSL https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.gz | tar xz -C /opt boost_1_86_0/boost",
+  "/opt/python/cp312-cp312/bin/pip install --no-deps --target /opt/z3-solver z3-solver==5.1.0.0",
+  "soname=$(patchelf --print-soname /opt/z3-solver/z3/lib/libz3.so) && (test -e /opt/z3-solver/z3/lib/$soname || ln -s libz3.so /opt/z3-solver/z3/lib/$soname)",
+]
+environment = { CMAKE_INCLUDE_PATH = "/opt/boost_1_86_0:/opt/z3-solver/z3/include", CMAKE_LIBRARY_PATH = "/opt/z3-solver/z3/lib", LD_LIBRARY_PATH = "/opt/z3-solver/z3/lib:$LD_LIBRARY_PATH" }
+
+[tool.cibuildwheel.macos]
+# delocate copies Homebrew's libz3 into the wheel.
+before-all = "brew install boost openssl@3 z3"
+environment = { CMAKE_PREFIX_PATH = "$(brew --prefix)", OPENSSL_ROOT_DIR = "$(brew --prefix openssl@3)" }
+# Link libcrypto statically so the executables do not depend on Homebrew.
+config-settings = { "cmake.define.OPENSSL_USE_STATIC_LIBS" = "ON" }

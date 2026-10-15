@@ -1,0 +1,268 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global5:input": "input",
+      "6:global6:target": "target",
+      "6:global10:gradOutput": "gradOutput"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global6:target": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global10:gradOutput": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          8
+        ],
+        "source_strides_bytes": [
+          32,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "parameter_constants": {
+      "_ZN2at6native51_GLOBAL__N__60938855_18_MultiMarginLoss_cu_b86932df31MultiMarginLoss_backward_kernelILi1EfEEvPT0_PKS3_S6_PKlS6_iibS3_b_param_5+0": {
+        "type": "u32",
+        "literal": "1"
+      },
+      "_ZN2at6native51_GLOBAL__N__60938855_18_MultiMarginLoss_cu_b86932df31MultiMarginLoss_backward_kernelILi1EfEEvPT0_PKS3_S6_PKlS6_iibS3_b_param_6+0": {
+        "type": "u32",
+        "literal": "8"
+      }
+    },
+    "allocations": {
+      "6:global5:input": "input",
+      "6:global6:target": "target",
+      "6:global10:gradOutput": "gradOutput"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global6:target": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global10:gradOutput": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          8
+        ],
+        "source_strides_bytes": [
+          32,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global9:gradInput",
+    "right_allocation": "6:global9:gradInput",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+      1,
+      8
+    ],
+    "left_strides_bytes": [
+      32,
+      4
+    ],
+    "right_strides_bytes": [
+      32,
+      4
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "checker_context": {
+    "predicates": [
+      {
+        "source": "User-authorized existing all-positive-margin branch scenario, confirmed 2026-10-09: forall i in [0,7], 1-input[0,5]+input[0,i]>0. Fixed target comes separately from verified input.",
+        "binders": [
+          {
+            "min_inclusive": 0,
+            "max_inclusive": 7
+          }
+        ],
+        "nodes": [
+          {
+            "op": "constant",
+            "value": 0
+          },
+          {
+            "op": "constant",
+            "value": 5
+          },
+          {
+            "op": "constant",
+            "value": 1
+          },
+          {
+            "op": "index",
+            "binder": 0
+          },
+          {
+            "op": "read",
+            "object": "input",
+            "element_type": "f32",
+            "coordinates": [
+              0,
+              1
+            ]
+          },
+          {
+            "op": "read",
+            "object": "input",
+            "element_type": "f32",
+            "coordinates": [
+              0,
+              3
+            ]
+          },
+          {
+            "op": "subtract",
+            "args": [
+              2,
+              4
+            ]
+          },
+          {
+            "op": "add",
+            "args": [
+              6,
+              5
+            ]
+          },
+          {
+            "op": "compare",
+            "predicate": "gt",
+            "args": [
+              7,
+              0
+            ]
+          }
+        ],
+        "root": 8
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "input",
+        "dtype": "float32",
+        "allocation": "6:global5:input"
+      },
+      {
+        "name": "target",
+        "dtype": "int64",
+        "allocation": "6:global6:target"
+      },
+      {
+        "name": "gradOutput",
+        "dtype": "float32",
+        "allocation": "6:global10:gradOutput"
+      },
+      {
+        "name": "margin",
+        "parameter": 8
+      }
+    ]
+  },
+  "provenance": {
+    "sha256": "1e56f33cca605a1164b35ed65f6c7aed98198b7e8a882d3667615809e560fbff",
+    "source": "// Source: https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/MultiMarginLoss.cu",
+    "scope": "Current fixed launch and input JSON; all mathematical outputs retained.",
+    "notes": "P=1, weights=null, mean reduction; saved shape_arrays specializes target[0]=5; reference retains target as explicit input.",
+    "optimized_input_sha256": "1e56f33cca605a1164b35ed65f6c7aed98198b7e8a882d3667615809e560fbff",
+    "ptx_sha256": "149349f2c99a1dcefe1fa96de5833cb19c9c94b16d5dbbc0dcf1d47df3ed495e",
+    "upstream": [
+      "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/MultiMarginLoss.cu"
+    ],
+    "scope_branch_choices": [
+      {
+        "line": 115,
+        "taken": true,
+        "note": "MultiMarginLoss backward: the margin term z = margin - input[target] + input[i] is positive for every class i (all margins violated), so the gradient path is executed. User-authorized scenario for the race example."
+      }
+    ],
+    "scope_shape_arrays": [
+      {
+        "parameter": 3,
+        "element_type": "s64",
+        "shapes": [
+          [
+            5
+          ]
+        ]
+      }
+    ]
+  }
+}

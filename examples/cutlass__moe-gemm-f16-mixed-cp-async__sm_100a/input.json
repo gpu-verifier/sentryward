@@ -1,0 +1,457 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN7cutlass13device_kernelI100cutlass3x_sm100_tensorop_moe_gemm_f16_f16_f16_f16_f16_64x128x64_1x1x1_0_tnn_align8_mixed_cpasync_1smEEvNT_6ParamsE",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      384,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "field": "mode",
+      "value": 0
+    },
+    {
+      "field": "moe.8.max_m",
+      "value": 64
+    },
+    {
+      "field": "moe.8.max_n",
+      "value": 128
+    },
+    {
+      "field": "moe.8.max_k",
+      "value": 128
+    },
+    {
+      "field": "moe.8.groups",
+      "value": 4
+    },
+    {
+      "field": "moe.8.host_counts",
+      "value": null
+    },
+    {
+      "field": "moe.1296.max_m",
+      "value": 64
+    },
+    {
+      "field": "moe.1296.max_n",
+      "value": 128
+    },
+    {
+      "field": "moe.1296.max_k",
+      "value": 128
+    },
+    {
+      "field": "moe.1296.groups",
+      "value": 4
+    },
+    {
+      "field": "moe.1296.host_counts",
+      "value": null
+    },
+    {
+      "field": "shape.M",
+      "value": 64
+    },
+    {
+      "field": "shape.N",
+      "value": 128
+    },
+    {
+      "field": "shape.K",
+      "value": 128
+    },
+    {
+      "field": "shape.L",
+      "value": 4
+    },
+    {
+      "field": "beta",
+      "value": 0.0
+    },
+    {
+      "field": "beta.pointer",
+      "value": null
+    },
+    {
+      "field": "beta.stride",
+      "value": 0
+    },
+    {
+      "field": "alpha",
+      "value": 1.0
+    },
+    {
+      "field": "alpha.pointer",
+      "value": null
+    },
+    {
+      "field": "alpha.stride",
+      "value": 0
+    },
+    {
+      "field": "scheduler.cluster_major.divisor",
+      "value": 1
+    },
+    {
+      "field": "scheduler.cluster_major.shift_right",
+      "value": 0
+    },
+    {
+      "field": "scheduler.cluster_minor.divisor",
+      "value": 1
+    },
+    {
+      "field": "scheduler.cluster_minor.shift_right",
+      "value": 0
+    },
+    {
+      "field": "scheduler.tile_m.divisor",
+      "value": 64
+    },
+    {
+      "field": "scheduler.tile_m.multiplier",
+      "value": 0
+    },
+    {
+      "field": "scheduler.tile_m.shift_right",
+      "value": 6
+    },
+    {
+      "field": "scheduler.tile_m.round_up",
+      "value": 0
+    },
+    {
+      "field": "scheduler.tile_n.divisor",
+      "value": 128
+    },
+    {
+      "field": "scheduler.tile_n.multiplier",
+      "value": 0
+    },
+    {
+      "field": "scheduler.tile_n.shift_right",
+      "value": 7
+    },
+    {
+      "field": "scheduler.tile_n.round_up",
+      "value": 0
+    },
+    {
+      "field": "scheduler.preprocessed_shapes",
+      "value": false
+    },
+    {
+      "field": "scheduler.max_swizzle_size",
+      "value": 1
+    },
+    {
+      "field": "scheduler.raster_order",
+      "value": 1
+    },
+    {
+      "field": "scheduler.tile.m",
+      "value": 64
+    },
+    {
+      "field": "scheduler.tile.n",
+      "value": 128
+    },
+    {
+      "field": "scheduler.tile.k",
+      "value": 64
+    },
+    {
+      "field": "scheduler.cluster.m",
+      "value": 1
+    },
+    {
+      "field": "scheduler.cluster.n",
+      "value": 1
+    },
+    {
+      "field": "scheduler.cluster.k",
+      "value": 1
+    }
+  ],
+  "declarations": [
+    {
+      "name": "mode",
+      "parameter": 0,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "moe.8.max_m",
+      "parameter": 0,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "moe.8.max_n",
+      "parameter": 0,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "moe.8.max_k",
+      "parameter": 0,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "moe.8.groups",
+      "parameter": 0,
+      "offset": 20,
+      "type": "s32"
+    },
+    {
+      "name": "moe.8.host_counts",
+      "parameter": 0,
+      "offset": 32,
+      "type": "pointer"
+    },
+    {
+      "name": "moe.1296.max_m",
+      "parameter": 0,
+      "offset": 1296,
+      "type": "s32"
+    },
+    {
+      "name": "moe.1296.max_n",
+      "parameter": 0,
+      "offset": 1300,
+      "type": "s32"
+    },
+    {
+      "name": "moe.1296.max_k",
+      "parameter": 0,
+      "offset": 1304,
+      "type": "s32"
+    },
+    {
+      "name": "moe.1296.groups",
+      "parameter": 0,
+      "offset": 1308,
+      "type": "s32"
+    },
+    {
+      "name": "moe.1296.host_counts",
+      "parameter": 0,
+      "offset": 1320,
+      "type": "pointer"
+    },
+    {
+      "name": "shape.M",
+      "parameter": 0,
+      "offset": 40,
+      "type": "s32"
+    },
+    {
+      "name": "shape.N",
+      "parameter": 0,
+      "offset": 44,
+      "type": "s32"
+    },
+    {
+      "name": "shape.K",
+      "parameter": 0,
+      "offset": 48,
+      "type": "s32"
+    },
+    {
+      "name": "shape.L",
+      "parameter": 0,
+      "offset": 52,
+      "type": "s32"
+    },
+    {
+      "name": "beta",
+      "parameter": 0,
+      "offset": 512,
+      "type": "f16"
+    },
+    {
+      "name": "beta.pointer",
+      "parameter": 0,
+      "offset": 520,
+      "type": "pointer"
+    },
+    {
+      "name": "beta.stride",
+      "parameter": 0,
+      "offset": 528,
+      "type": "s64"
+    },
+    {
+      "name": "alpha",
+      "parameter": 0,
+      "offset": 544,
+      "type": "f16"
+    },
+    {
+      "name": "alpha.pointer",
+      "parameter": 0,
+      "offset": 552,
+      "type": "pointer"
+    },
+    {
+      "name": "alpha.stride",
+      "parameter": 0,
+      "offset": 560,
+      "type": "s64"
+    },
+    {
+      "name": "scheduler.cluster_major.divisor",
+      "parameter": 0,
+      "offset": 1192,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.cluster_major.shift_right",
+      "parameter": 0,
+      "offset": 1200,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.cluster_minor.divisor",
+      "parameter": 0,
+      "offset": 1208,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.cluster_minor.shift_right",
+      "parameter": 0,
+      "offset": 1216,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.tile_m.divisor",
+      "parameter": 0,
+      "offset": 1224,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.tile_m.multiplier",
+      "parameter": 0,
+      "offset": 1232,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.tile_m.shift_right",
+      "parameter": 0,
+      "offset": 1240,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.tile_m.round_up",
+      "parameter": 0,
+      "offset": 1244,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.tile_n.divisor",
+      "parameter": 0,
+      "offset": 1248,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.tile_n.multiplier",
+      "parameter": 0,
+      "offset": 1256,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.tile_n.shift_right",
+      "parameter": 0,
+      "offset": 1264,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.tile_n.round_up",
+      "parameter": 0,
+      "offset": 1268,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.preprocessed_shapes",
+      "parameter": 0,
+      "offset": 1280,
+      "type": "bool"
+    },
+    {
+      "name": "scheduler.max_swizzle_size",
+      "parameter": 0,
+      "offset": 1284,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.raster_order",
+      "parameter": 0,
+      "offset": 1288,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.tile.m",
+      "parameter": 0,
+      "offset": 1328,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.tile.n",
+      "parameter": 0,
+      "offset": 1332,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.tile.k",
+      "parameter": 0,
+      "offset": 1336,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.cluster.m",
+      "parameter": 0,
+      "offset": 1340,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.cluster.n",
+      "parameter": 0,
+      "offset": 1344,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.cluster.k",
+      "parameter": 0,
+      "offset": 1348,
+      "type": "s32"
+    },
+    {
+      "parameter": 0,
+      "offset": 1312,
+      "type": "pointer",
+      "object": "tokens_per_expert"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

@@ -1,0 +1,240 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      16
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      32,
+      4,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "arguments": [
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 1,
+      "offset": 4
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 64,
+      "offset": 8
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 128,
+      "offset": 12
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 1,
+      "offset": 16
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 1,
+      "offset": 20
+    },
+    {
+      "parameter": 0,
+      "type": "s32",
+      "value": -1,
+      "offset": 24
+    },
+    {
+      "parameter": 0,
+      "type": "s64",
+      "value": 64,
+      "offset": 32
+    },
+    {
+      "parameter": 0,
+      "type": "s64",
+      "value": 1,
+      "offset": 40
+    },
+    {
+      "parameter": 0,
+      "type": "s64",
+      "value": 128,
+      "offset": 48
+    },
+    {
+      "parameter": 0,
+      "type": "s64",
+      "value": 128,
+      "offset": 56
+    },
+    {
+      "parameter": 0,
+      "type": "s64",
+      "value": 64,
+      "offset": 64
+    },
+    {
+      "parameter": 0,
+      "type": "s64",
+      "value": 64,
+      "offset": 72
+    },
+    {
+      "parameter": 0,
+      "type": "s64",
+      "value": 8192,
+      "offset": 80
+    },
+    {
+      "parameter": 0,
+      "type": "s64",
+      "value": 64,
+      "offset": 88
+    },
+    {
+      "parameter": 0,
+      "type": "s64",
+      "value": 1,
+      "offset": 200
+    },
+    {
+      "parameter": 0,
+      "type": "s64",
+      "value": 0,
+      "offset": 208
+    },
+    {
+      "parameter": 0,
+      "type": "s64",
+      "value": 1,
+      "offset": 216
+    },
+    {
+      "parameter": 0,
+      "type": "s64",
+      "value": 0,
+      "offset": 224
+    },
+    {
+      "parameter": 0,
+      "type": "bool",
+      "value": true,
+      "offset": 232
+    },
+    {
+      "parameter": 0,
+      "type": "bool",
+      "value": true,
+      "offset": 233
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "state",
+      "offset": 96
+    },
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "x",
+      "offset": 104
+    },
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "dt",
+      "offset": 112
+    },
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "dt_bias",
+      "offset": 120
+    },
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "A",
+      "offset": 128
+    },
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "B",
+      "offset": 136
+    },
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "C",
+      "offset": 144
+    },
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "D",
+      "offset": 152
+    },
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "z",
+      "offset": 160
+    },
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "output",
+      "offset": 168
+    },
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "state_batch_indices",
+      "offset": 176
+    },
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "state_scale",
+      "offset": 184
+    },
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "dst_state_batch_indices",
+      "offset": 192
+    },
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "rand_seed",
+      "offset": 240
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

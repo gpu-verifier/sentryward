@@ -1,0 +1,239 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN10flashinfer29SingleDecodeWithKVCacheKernelILNS_15PosEncodingModeE0ELj2ELj8ELj8ELj16ELj1ELj8ENS_16DefaultAttentionILb0ELb0ELb0ELb0EEE6ParamsEEvT7_",
+  "launch": {
+    "grid_dim": [
+      1,
+      8,
+      1
+    ],
+    "block_dim": [
+      16,
+      1,
+      8
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 65600
+  },
+  "arguments": [
+    {
+      "parameter": 0,
+      "offset": 32,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 40,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "type": "f64",
+      "value": 0.0,
+      "offset": 48
+    },
+    {
+      "parameter": 0,
+      "type": "f64",
+      "value": 0.08838834764831845,
+      "offset": 56
+    },
+    {
+      "parameter": 0,
+      "type": "f64",
+      "value": 1.0,
+      "offset": 64
+    },
+    {
+      "parameter": 0,
+      "type": "f64",
+      "value": 0.0001,
+      "offset": 72
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 64,
+      "offset": 80
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 8,
+      "offset": 84
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 8,
+      "offset": 88
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 1024,
+      "offset": 92
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 128,
+      "offset": 96
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 1024,
+      "offset": 100
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 128,
+      "offset": 104
+    },
+    {
+      "parameter": 0,
+      "type": "s32",
+      "value": -1,
+      "offset": 108
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 64,
+      "offset": 112
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "pointer",
+      "object": "q",
+      "name": "q"
+    },
+    {
+      "parameter": 0,
+      "offset": 8,
+      "type": "pointer",
+      "object": "k",
+      "name": "k"
+    },
+    {
+      "parameter": 0,
+      "offset": 16,
+      "type": "pointer",
+      "object": "v",
+      "name": "v"
+    },
+    {
+      "parameter": 0,
+      "offset": 24,
+      "type": "pointer",
+      "object": "o",
+      "name": "o"
+    },
+    {
+      "parameter": 0,
+      "offset": 32,
+      "type": "pointer",
+      "name": "lse"
+    },
+    {
+      "parameter": 0,
+      "offset": 40,
+      "type": "pointer",
+      "name": "maybe_alibi_slopes"
+    },
+    {
+      "parameter": 0,
+      "type": "f64",
+      "name": "logits_soft_cap",
+      "offset": 48
+    },
+    {
+      "parameter": 0,
+      "type": "f64",
+      "name": "sm_scale",
+      "offset": 56
+    },
+    {
+      "parameter": 0,
+      "type": "f64",
+      "name": "rope_rcp_scale",
+      "offset": 64
+    },
+    {
+      "parameter": 0,
+      "type": "f64",
+      "name": "rope_rcp_theta",
+      "offset": 72
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "name": "kv_len",
+      "offset": 80
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "name": "num_qo_heads",
+      "offset": 84
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "name": "num_kv_heads",
+      "offset": 88
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "name": "q_stride_n",
+      "offset": 92
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "name": "q_stride_h",
+      "offset": 96
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "name": "kv_stride_n",
+      "offset": 100
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "name": "kv_stride_h",
+      "offset": 104
+    },
+    {
+      "parameter": 0,
+      "type": "s32",
+      "name": "window_left",
+      "offset": 108
+    },
+    {
+      "parameter": 0,
+      "type": "u32",
+      "name": "kv_chunk_size",
+      "offset": 112
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

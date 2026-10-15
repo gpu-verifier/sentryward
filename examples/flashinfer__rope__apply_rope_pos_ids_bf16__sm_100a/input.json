@@ -1,0 +1,221 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN10flashinfer45BatchQKApplyRotaryPosIdsHeadParallelismKernelILb0ELj128ELj8ELj16E13__nv_bfloat16iEEvPT3_S3_S3_S3_PT4_jjjjmmmmmmmmffff",
+  "launch": {
+    "grid_dim": [
+      1,
+      5,
+      1
+    ],
+    "block_dim": [
+      16,
+      8,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "arguments": [
+    {
+      "parameter": 5,
+      "type": "u32",
+      "value": 8
+    },
+    {
+      "parameter": 6,
+      "type": "u32",
+      "value": 4
+    },
+    {
+      "parameter": 7,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 8,
+      "type": "u32",
+      "value": 128
+    },
+    {
+      "parameter": 9,
+      "type": "u64",
+      "value": 512
+    },
+    {
+      "parameter": 10,
+      "type": "u64",
+      "value": 128
+    },
+    {
+      "parameter": 11,
+      "type": "u64",
+      "value": 128
+    },
+    {
+      "parameter": 12,
+      "type": "u64",
+      "value": 128
+    },
+    {
+      "parameter": 13,
+      "type": "u64",
+      "value": 512
+    },
+    {
+      "parameter": 14,
+      "type": "u64",
+      "value": 128
+    },
+    {
+      "parameter": 15,
+      "type": "u64",
+      "value": 128
+    },
+    {
+      "parameter": 16,
+      "type": "u64",
+      "value": 128
+    },
+    {
+      "parameter": 17,
+      "type": "f32",
+      "value": 0.0
+    },
+    {
+      "parameter": 18,
+      "type": "f32",
+      "value": 0.0
+    },
+    {
+      "parameter": 19,
+      "type": "f32",
+      "value": 1.0
+    },
+    {
+      "parameter": 20,
+      "type": "f32",
+      "value": 0.0001
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "q",
+      "name": "q"
+    },
+    {
+      "parameter": 1,
+      "type": "pointer",
+      "object": "k",
+      "name": "k"
+    },
+    {
+      "parameter": 2,
+      "type": "pointer",
+      "object": "q_rope",
+      "name": "q_rope"
+    },
+    {
+      "parameter": 3,
+      "type": "pointer",
+      "object": "k_rope",
+      "name": "k_rope"
+    },
+    {
+      "parameter": 4,
+      "type": "pointer",
+      "object": "pos_ids",
+      "name": "pos_ids"
+    },
+    {
+      "parameter": 5,
+      "type": "u32",
+      "name": "nnz"
+    },
+    {
+      "parameter": 6,
+      "type": "u32",
+      "name": "num_qo_heads"
+    },
+    {
+      "parameter": 7,
+      "type": "u32",
+      "name": "num_kv_heads"
+    },
+    {
+      "parameter": 8,
+      "type": "u32",
+      "name": "rotary_dim"
+    },
+    {
+      "parameter": 9,
+      "type": "u64",
+      "name": "q_stride_n"
+    },
+    {
+      "parameter": 10,
+      "type": "u64",
+      "name": "q_stride_h"
+    },
+    {
+      "parameter": 11,
+      "type": "u64",
+      "name": "k_stride_n"
+    },
+    {
+      "parameter": 12,
+      "type": "u64",
+      "name": "k_stride_h"
+    },
+    {
+      "parameter": 13,
+      "type": "u64",
+      "name": "q_rope_stride_n"
+    },
+    {
+      "parameter": 14,
+      "type": "u64",
+      "name": "q_rope_stride_h"
+    },
+    {
+      "parameter": 15,
+      "type": "u64",
+      "name": "k_rope_stride_n"
+    },
+    {
+      "parameter": 16,
+      "type": "u64",
+      "name": "k_rope_stride_h"
+    },
+    {
+      "parameter": 17,
+      "type": "f32",
+      "name": "smooth_a"
+    },
+    {
+      "parameter": 18,
+      "type": "f32",
+      "name": "smooth_b"
+    },
+    {
+      "parameter": 19,
+      "type": "f32",
+      "name": "rope_rcp_scale"
+    },
+    {
+      "parameter": 20,
+      "type": "f32",
+      "name": "rope_rcp_theta"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

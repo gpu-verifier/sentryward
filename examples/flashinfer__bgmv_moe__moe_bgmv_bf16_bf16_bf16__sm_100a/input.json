@@ -1,0 +1,86 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_Z29moe_bgmv_shrink_sliced_kernelILi384ELi8ELi8ELi4ELi3ELm4ELm8ELm8ELi32ELi4E13__nv_bfloat16S0_S0_Lb0EEvPT10_PKT9_PPT11_PKlSA_SA_llllf",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      32,
+      4,
+      1
+    ],
+    "dynamic_shared_bytes": 111104
+  },
+  "arguments": [
+    {
+      "parameter": 6,
+      "type": "u64",
+      "value": 1
+    },
+    {
+      "parameter": 7,
+      "type": "u64",
+      "value": 1
+    },
+    {
+      "parameter": 8,
+      "type": "u64",
+      "value": 1
+    },
+    {
+      "parameter": 9,
+      "type": "u64",
+      "value": 3072
+    },
+    {
+      "parameter": 10,
+      "type": "f32",
+      "value": 0.08838834764831843
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "Y"
+    },
+    {
+      "parameter": 1,
+      "type": "pointer",
+      "object": "X"
+    },
+    {
+      "parameter": 2,
+      "type": "pointer",
+      "object": "w_ptr"
+    },
+    {
+      "parameter": 3,
+      "type": "pointer",
+      "object": "sorted_token_ids"
+    },
+    {
+      "parameter": 4,
+      "type": "pointer",
+      "object": "expert_ids"
+    },
+    {
+      "parameter": 5,
+      "type": "pointer",
+      "object": "lora_indices"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

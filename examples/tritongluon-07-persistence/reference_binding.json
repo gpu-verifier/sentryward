@@ -1,0 +1,73 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A",
+      "6:global1:B": "6:global1:B"
+    },
+    "parameters": {}
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A",
+      "6:global1:B": "6:global1:B"
+    },
+    "parameters": {}
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:C",
+    "right_allocation": "6:global1:C",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      2000,
+      1000
+    ],
+    "left_strides_bytes": [
+      2000,
+      2
+    ],
+    "right_strides_bytes": [
+      2000,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "shape": [
+          2000,
+          2000
+        ],
+        "dtype": "float16",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "shape": [
+          2000,
+          1000
+        ],
+        "dtype": "float16",
+        "allocation": "6:global1:B"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tritongluon-07-persistence.ptx",
+    "optimized_input": "examples/tritongluon-07-persistence/input.json",
+    "upstream": [
+      "https://github.com/triton-lang/triton/blob/c01b6774b1865984607d89d89d3a10833de92037/python/tutorials/gluon/07-persistence.py"
+    ],
+    "scope": "Upstream test M=2000,N=1000,K=2000,BLOCK_M=128,BLOCK_N=256,BLOCK_K=64; 64 output tiles, grid64 on target with >=64 SMs, 128 threads.",
+    "evidence": "PTX scheduler uses ceil(M/128)*ceil(N/256). Warp-specific N offsets are 64*warp; each warp issues a 64-column B/C TMA. A transfer 64x128x2=16384 bytes, four B transfers 64x64x2 total32768, matching expect_tx=49152. Descriptor dimensions are fastest-first; element_strides are traversal steps [1,1], not row-major strides.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [],
+    "dynamic_shared_allocation": "147504 bytes: three A/B buffers consume147456 bytes; TMA barriers at147456/147464/147472 and MMA barrier at147488 require through147496; rounded to16-byte alignment.",
+    "historical_source_status": "Pinned tutorial inspected; PTX instruction semantics and specialized constants cross-checked."
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          64,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          64,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN7cutlass13device_kernelI101cutlass3x_sm100_tensorop_gemm_f16_f16_f16_f16_f16_64x128x64_1x1x1_0_tnn_align2_cpasync_1sm_epi_nosmemEEvNT_6ParamsE_param_0+120": {
+        "type": "b16",
+        "literal": "15360"
+      },
+      "_ZN7cutlass13device_kernelI101cutlass3x_sm100_tensorop_gemm_f16_f16_f16_f16_f16_64x128x64_1x1x1_0_tnn_align2_cpasync_1sm_epi_nosmemEEvNT_6ParamsE_param_0+88": {
+        "type": "b16",
+        "literal": "0"
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      64,
+      128
+    ],
+    "left_strides_bytes": [
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      2,
+      128
+    ]
+  },
+  "parameter_constant_sources": [
+    {
+      "symbol": "_ZN7cutlass13device_kernelI101cutlass3x_sm100_tensorop_gemm_f16_f16_f16_f16_f16_64x128x64_1x1x1_0_tnn_align2_cpasync_1sm_epi_nosmemEEvNT_6ParamsE_param_0+120",
+      "input": "examples/cutlass__dense-gemm-f16-cp-async-alignment-fallback__sm_100a/input.json",
+      "argument": {
+        "field": "alpha",
+        "value": 1.0
+      },
+      "declaration": {
+        "parameter": 0,
+        "offset": 120,
+        "type": "f16"
+      }
+    },
+    {
+      "symbol": "_ZN7cutlass13device_kernelI101cutlass3x_sm100_tensorop_gemm_f16_f16_f16_f16_f16_64x128x64_1x1x1_0_tnn_align2_cpasync_1sm_epi_nosmemEEvNT_6ParamsE_param_0+88",
+      "input": "examples/cutlass__dense-gemm-f16-cp-async-alignment-fallback__sm_100a/input.json",
+      "argument": {
+        "field": "beta",
+        "value": 0.0
+      },
+      "declaration": {
+        "parameter": 0,
+        "offset": 88,
+        "type": "f16"
+      }
+    }
+  ],
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float16",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "float16",
+        "allocation": "6:global1:B"
+      }
+    ]
+  }
+}

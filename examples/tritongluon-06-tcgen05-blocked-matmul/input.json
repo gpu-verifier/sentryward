@@ -1,0 +1,197 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "blocked_matmul_kernel",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      128,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "declarations": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "type": "u64"
+    },
+    {
+      "parameter": 4,
+      "offset": 0,
+      "type": "u64"
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "parameter": 7,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "parameter": 8,
+      "offset": 0,
+      "type": "u64"
+    },
+    {
+      "parameter": 9,
+      "offset": 0,
+      "type": "u64"
+    },
+    {
+      "parameter": 10,
+      "offset": 0,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 11,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "parameter": 12,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "parameter": 13,
+      "offset": 0,
+      "type": "u64"
+    },
+    {
+      "parameter": 14,
+      "offset": 0,
+      "type": "u64"
+    },
+    {
+      "parameter": 15,
+      "offset": 0,
+      "type": "pointer",
+      "object": "A"
+    },
+    {
+      "parameter": 16,
+      "offset": 0,
+      "type": "pointer",
+      "object": "B"
+    }
+  ],
+  "arguments": [
+    {
+      "parameter": 2,
+      "type": "u32",
+      "value": 304
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "object": "A",
+      "element_type": "f16",
+      "rank": 2,
+      "box_shape": [
+        64,
+        64
+      ],
+      "global_shape": [
+        304,
+        208
+      ],
+      "global_strides_bytes": [
+        608
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 5,
+      "object": "B",
+      "element_type": "f16",
+      "rank": 2,
+      "box_shape": [
+        64,
+        64
+      ],
+      "global_shape": [
+        416,
+        304
+      ],
+      "global_strides_bytes": [
+        832
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 10,
+      "object": "C",
+      "element_type": "f16",
+      "rank": 2,
+      "box_shape": [
+        64,
+        64
+      ],
+      "global_shape": [
+        416,
+        208
+      ],
+      "global_strides_bytes": [
+        832
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

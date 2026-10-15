@@ -1,0 +1,264 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:scale_a": "scale_a",
+      "6:global7:scale_b": "scale_b",
+      "6:global5:alpha": "alpha"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          256,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          256,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global7:scale_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4096
+        ],
+        "source_strides_bytes": [
+          1
+        ],
+        "target_strides_bytes": [
+          1
+        ]
+      },
+      "6:global7:scale_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4096
+        ],
+        "source_strides_bytes": [
+          1
+        ],
+        "target_strides_bytes": [
+          1
+        ]
+      },
+      "6:global5:alpha": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:scale_a": "scale_a",
+      "6:global7:scale_b": "scale_b",
+      "6:global5:alpha": "alpha"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          256,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          256,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global7:scale_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4096
+        ],
+        "source_strides_bytes": [
+          1
+        ],
+        "target_strides_bytes": [
+          1
+        ]
+      },
+      "6:global7:scale_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4096
+        ],
+        "source_strides_bytes": [
+          1
+        ],
+        "target_strides_bytes": [
+          1
+        ]
+      },
+      "6:global5:alpha": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      256,
+      256
+    ],
+    "left_strides_bytes": [
+      512,
+      2
+    ],
+    "right_strides_bytes": [
+      512,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "checker_context": {
+    "input_contract": [
+      {
+        "object": "scale_a",
+        "element_type": "e4m3",
+        "region": "whole_object",
+        "finite": true,
+        "source": "User-authorized decoded E4M3 scale finiteness, confirmed 2026-10-09; excludes NaN, not a bound on raw byte bits."
+      },
+      {
+        "object": "scale_b",
+        "element_type": "e4m3",
+        "region": "whole_object",
+        "finite": true,
+        "source": "User-authorized decoded E4M3 scale finiteness, confirmed 2026-10-09; excludes NaN, not a bound on raw byte bits."
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "uint8",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "uint8",
+        "allocation": "6:global1:B"
+      },
+      {
+        "name": "scale_a",
+        "dtype": "uint8",
+        "allocation": "6:global7:scale_a"
+      },
+      {
+        "name": "scale_b",
+        "dtype": "uint8",
+        "allocation": "6:global7:scale_b"
+      },
+      {
+        "name": "alpha",
+        "dtype": "float32",
+        "allocation": "6:global5:alpha"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/vllm__nvfp4_scaled_mm_kernels__sm_100f.ptx",
+    "optimized_input": "examples/vllm__nvfp4_scaled_mm_kernels__sm_100f/input.json",
+    "layout_source": "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cutlass/detail/sm100_blockscaled_layout.hpp",
+    "evidence": "Original packed A/B and physical scale storage; 16-element scale blocks; UE4M3 nonnegative E4M3 storage scale encoding. Output is row major. ",
+    "semantics": "ideal_real tensor arithmetic; FP4 nibble decoding and scale indexing retained",
+    "optimized_input_sha256": "a25ce25d0372c309913d50b30db68dda4e3ef865896c764be6cafd794837eb8c",
+    "ptx_sha256": "0f073f8d1a690e4bffb7258d959d856f094740a1b14c5b49c0969824b04a1af9",
+    "upstream": [
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/quantization/fp4/nvfp4_scaled_mm_kernels.cu",
+      "https://github.com/NVIDIA/cutlass/blob/cb4247394dd82148787aed73e5dc7cef33cbf862/include/cutlass/device_kernel.h",
+      "https://github.com/NVIDIA/cutlass/blob/cb4247394dd82148787aed73e5dc7cef33cbf862/include/cutlass/arch/arch.h",
+      "https://github.com/NVIDIA/cutlass/blob/cb4247394dd82148787aed73e5dc7cef33cbf862/include/cutlass/gemm/kernel/sm100_gemm_tma_warpspecialized.hpp"
+    ],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

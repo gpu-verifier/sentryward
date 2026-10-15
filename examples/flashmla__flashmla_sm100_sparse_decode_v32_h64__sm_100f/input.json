@@ -1,0 +1,181 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0_",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      384,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "s32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 4,
+      "type": "s32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 8,
+      "type": "s32",
+      "value": 64
+    },
+    {
+      "parameter": 0,
+      "offset": 12,
+      "type": "s32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 16,
+      "type": "s32",
+      "value": 576
+    },
+    {
+      "parameter": 0,
+      "offset": 20,
+      "type": "s32",
+      "value": 512
+    },
+    {
+      "parameter": 0,
+      "offset": 32,
+      "type": "s32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 36,
+      "type": "s32",
+      "value": 64
+    },
+    {
+      "parameter": 0,
+      "offset": 40,
+      "type": "s32",
+      "value": 64
+    },
+    {
+      "parameter": 0,
+      "offset": 44,
+      "type": "s32",
+      "value": 0
+    },
+    {
+      "parameter": 0,
+      "offset": 104,
+      "type": "s32",
+      "value": 0
+    },
+    {
+      "parameter": 0,
+      "offset": 108,
+      "type": "s32",
+      "value": 64
+    },
+    {
+      "parameter": 0,
+      "offset": 112,
+      "type": "s32",
+      "value": 0
+    },
+    {
+      "parameter": 0,
+      "offset": 272,
+      "type": "s32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 24,
+      "type": "f32",
+      "value": 0.041666666666666664
+    },
+    {
+      "parameter": 0,
+      "offset": 28,
+      "type": "f32",
+      "value": 0.06011229337037347
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "offset": 48,
+      "type": "pointer",
+      "object": "Q"
+    },
+    {
+      "parameter": 0,
+      "offset": 56,
+      "type": "pointer",
+      "object": "KV"
+    },
+    {
+      "parameter": 0,
+      "offset": 64,
+      "type": "pointer",
+      "object": "indices"
+    },
+    {
+      "parameter": 0,
+      "offset": 88,
+      "type": "pointer",
+      "object": "LSE"
+    },
+    {
+      "parameter": 0,
+      "offset": 96,
+      "type": "pointer",
+      "object": "O"
+    },
+    {
+      "parameter": 0,
+      "offset": 216,
+      "type": "pointer",
+      "object": "LSE_accum"
+    },
+    {
+      "parameter": 0,
+      "offset": 224,
+      "type": "pointer",
+      "object": "O_accum"
+    },
+    {
+      "parameter": 0,
+      "offset": 256,
+      "type": "pointer",
+      "object": "scheduler_metadata"
+    },
+    {
+      "parameter": 0,
+      "offset": 264,
+      "type": "pointer",
+      "object": "num_splits"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

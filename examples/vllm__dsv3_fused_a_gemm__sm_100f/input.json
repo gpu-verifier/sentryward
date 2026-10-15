@@ -1,0 +1,59 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_Z19fused_a_gemm_kernelILi1ELi1536ELi7168ELi16ELi8ELi256ELi16EEvP13__nv_bfloat16PKS0_S3_i",
+  "launch": {
+    "grid_dim": [
+      96,
+      1,
+      1
+    ],
+    "block_dim": [
+      256,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 197632
+  },
+  "arguments": [
+    {
+      "field": "num_tokens",
+      "value": 4
+    }
+  ],
+  "declarations": [
+    {
+      "name": "num_tokens",
+      "parameter": 3,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "pointer",
+      "object": "output"
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "type": "pointer",
+      "object": "weight"
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "type": "pointer",
+      "object": "activation"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

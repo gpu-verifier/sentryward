@@ -1,0 +1,499 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_mamba_ssd_q_tmem_alias_bf16_batched",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      512,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 231936
+  },
+  "arguments": [
+    {
+      "field": "nheads",
+      "value": 1
+    },
+    {
+      "field": "ngroups",
+      "value": 1
+    },
+    {
+      "field": "batch",
+      "value": 1
+    },
+    {
+      "field": "seqlen",
+      "value": 256
+    },
+    {
+      "field": "nchunks",
+      "value": 2
+    },
+    {
+      "field": "sequence_count",
+      "value": 1
+    },
+    {
+      "field": "num_logical_chunks",
+      "value": 2
+    },
+    {
+      "field": "mode_varlen",
+      "value": 0
+    },
+    {
+      "field": "has_seq_chunk_cumsum",
+      "value": 0
+    },
+    {
+      "field": "seq_idx_int64",
+      "value": 0
+    },
+    {
+      "field": "D_mode",
+      "value": 0
+    },
+    {
+      "field": "has_z",
+      "value": 0
+    },
+    {
+      "field": "has_initial",
+      "value": 0
+    },
+    {
+      "field": "dt_softplus",
+      "value": 1
+    },
+    {
+      "field": "dt_min",
+      "value": 0.0
+    },
+    {
+      "field": "dt_max",
+      "value": 1.0
+    },
+    {
+      "field": "write_final_states",
+      "value": 1
+    },
+    {
+      "field": "checkpoint_state_count",
+      "value": 0
+    }
+  ],
+  "declarations": [
+    {
+      "name": "nheads",
+      "parameter": 25,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "ngroups",
+      "parameter": 26,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "batch",
+      "parameter": 27,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "seqlen",
+      "parameter": 28,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "nchunks",
+      "parameter": 29,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "sequence_count",
+      "parameter": 30,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "num_logical_chunks",
+      "parameter": 31,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "mode_varlen",
+      "parameter": 32,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "has_seq_chunk_cumsum",
+      "parameter": 33,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "seq_idx_int64",
+      "parameter": 34,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "D_mode",
+      "parameter": 35,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "has_z",
+      "parameter": 36,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "has_initial",
+      "parameter": 37,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "dt_softplus",
+      "parameter": 38,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "dt_min",
+      "parameter": 39,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "dt_max",
+      "parameter": 40,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "write_final_states",
+      "parameter": 41,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "checkpoint_state_count",
+      "parameter": 42,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "parameter": 0,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 1,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 2,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 3,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 4,
+      "offset": 0,
+      "type": "pointer",
+      "object": "x"
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dt"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "type": "pointer",
+      "object": "delta_precomputed"
+    },
+    {
+      "parameter": 7,
+      "offset": 0,
+      "type": "pointer",
+      "object": "cumsum_precomputed"
+    },
+    {
+      "parameter": 8,
+      "offset": 0,
+      "type": "pointer",
+      "object": "A"
+    },
+    {
+      "parameter": 9,
+      "offset": 0,
+      "type": "pointer",
+      "object": "B"
+    },
+    {
+      "parameter": 10,
+      "offset": 0,
+      "type": "pointer",
+      "object": "C"
+    },
+    {
+      "parameter": 11,
+      "offset": 0,
+      "type": "pointer",
+      "object": "D"
+    },
+    {
+      "parameter": 12,
+      "offset": 0,
+      "type": "pointer",
+      "object": "z"
+    },
+    {
+      "parameter": 13,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dt_bias"
+    },
+    {
+      "parameter": 14,
+      "offset": 0,
+      "type": "pointer",
+      "object": "initial_states"
+    },
+    {
+      "parameter": 15,
+      "offset": 0,
+      "type": "pointer",
+      "object": "final_states"
+    },
+    {
+      "parameter": 16,
+      "offset": 0,
+      "type": "pointer",
+      "object": "checkpoint_states"
+    },
+    {
+      "parameter": 17,
+      "offset": 0,
+      "type": "pointer",
+      "object": "checkpoint_token_indices"
+    },
+    {
+      "parameter": 18,
+      "offset": 0,
+      "type": "pointer",
+      "object": "checkpoint_state_slots"
+    },
+    {
+      "parameter": 19,
+      "offset": 0,
+      "type": "pointer",
+      "object": "seq_idx_i32"
+    },
+    {
+      "parameter": 20,
+      "offset": 0,
+      "type": "pointer",
+      "object": "seq_idx_i64"
+    },
+    {
+      "parameter": 21,
+      "offset": 0,
+      "type": "pointer",
+      "object": "chunk_indices"
+    },
+    {
+      "parameter": 22,
+      "offset": 0,
+      "type": "pointer",
+      "object": "chunk_offsets"
+    },
+    {
+      "parameter": 23,
+      "offset": 0,
+      "type": "pointer",
+      "object": "seq_chunk_cumsum"
+    },
+    {
+      "parameter": 24,
+      "offset": 0,
+      "type": "pointer",
+      "object": "out_native"
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "object": "x",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        1,
+        256,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        128,
+        32768
+      ],
+      "box_shape": [
+        64,
+        1,
+        128,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "object": "B",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        2,
+        1,
+        256,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        256,
+        256,
+        65536
+      ],
+      "box_shape": [
+        64,
+        1,
+        1,
+        128,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "object": "C",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        2,
+        1,
+        256,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        256,
+        256,
+        65536
+      ],
+      "box_shape": [
+        64,
+        1,
+        1,
+        128,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "object": "out_native",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        2,
+        64,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        512,
+        32768,
+        32768
+      ],
+      "box_shape": [
+        64,
+        1,
+        64,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

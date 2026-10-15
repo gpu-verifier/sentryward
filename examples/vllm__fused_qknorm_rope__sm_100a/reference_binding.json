@@ -1,0 +1,298 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global3:qkv": "qkv",
+      "6:global8:q_weight": "q_weight",
+      "6:global8:k_weight": "k_weight",
+      "6:global12:position_ids": "position_ids",
+      "6:global13:cos_sin_cache": "cos_sin_cache"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global3:qkv": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          8,
+          5,
+          128
+        ],
+        "source_strides_bytes": [
+          1280,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          1280,
+          256,
+          2
+        ]
+      },
+      "6:global8:q_weight": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      },
+      "6:global8:k_weight": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      },
+      "6:global12:position_ids": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          8
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global13:cos_sin_cache": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "parameter_constants": {
+      "_ZN12tensorrt_llm7kernels21fusedQKNormRopeKernelIN3c108BFloat16ES3_Li128ELb0EEEvPviiifPKvS6_S6_PKlii_param_10+0": {
+        "type": "u32",
+        "literal": "128"
+      },
+      "_ZN12tensorrt_llm7kernels21fusedQKNormRopeKernelIN3c108BFloat16ES3_Li128ELb0EEEvPviiifPKvS6_S6_PKlii_param_4+0": {
+        "type": "f32",
+        "literal": "0.000001"
+      }
+    },
+    "allocations": {
+      "6:global3:qkv": "qkv",
+      "6:global8:q_weight": "q_weight",
+      "6:global8:k_weight": "k_weight",
+      "6:global12:position_ids": "position_ids",
+      "6:global13:cos_sin_cache": "cos_sin_cache"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global3:qkv": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          8,
+          5,
+          128
+        ],
+        "source_strides_bytes": [
+          1280,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          1280,
+          256,
+          2
+        ]
+      },
+      "6:global8:q_weight": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      },
+      "6:global8:k_weight": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      },
+      "6:global12:position_ids": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          8
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global13:cos_sin_cache": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global3:qkv",
+    "right_allocation": "6:global3:qkv",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      8,
+      4,
+      128
+    ],
+    "left_strides_bytes": [
+      1024,
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      1280,
+      256,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "qkv",
+        "dtype": "bfloat16",
+        "allocation": "6:global3:qkv"
+      },
+      {
+        "name": "q_weight",
+        "dtype": "bfloat16",
+        "allocation": "6:global8:q_weight"
+      },
+      {
+        "name": "k_weight",
+        "dtype": "bfloat16",
+        "allocation": "6:global8:k_weight"
+      },
+      {
+        "name": "position_ids",
+        "dtype": "int64",
+        "allocation": "6:global12:position_ids"
+      },
+      {
+        "name": "cos_sin_cache",
+        "dtype": "bfloat16",
+        "allocation": "6:global13:cos_sin_cache"
+      },
+      {
+        "name": "epsilon",
+        "value": 1e-06
+      }
+    ]
+  },
+  "provenance": {
+    "evidence": "fusedQKNormRopeKernel<bf16,bf16,128,false>; Q=3,K=1,V=1; 32 warps cover8 tokens. Only Q/K written. Reference output is packed Q/K; right output row stride retains untouched V gap.",
+    "ptx": "corpus/vllm__fused_qknorm_rope__sm_100a.ptx",
+    "optimized_input": "examples/vllm__fused_qknorm_rope__sm_100a/input.json",
+    "semantics": "Fixed saved configuration; ideal-real arithmetic; all written mathematical outputs.",
+    "optimized_input_sha256": "df980f9c9a71ec48a905f7be54cda1df3b789d8577724b668d5aa6111de3d4dd",
+    "ptx_sha256": "12ecd100c9acc9662c13284bf77c54b269f58c5bf32e0a17e37d330d0fd9d693",
+    "upstream": [
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/fused_qknorm_rope_kernel.cu",
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/type_convert.cuh",
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/cuda_compat.h"
+    ],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [
+      {
+        "parameter": 8,
+        "element_type": "s64",
+        "shapes": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            5
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ]
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,210 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:scale_a": "scale_a",
+      "6:global7:scale_b": "scale_b"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          64,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          32,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global7:scale_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          64
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global7:scale_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          32
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:scale_a": "scale_a",
+      "6:global7:scale_b": "scale_b"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          64,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          32,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global7:scale_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          64
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global7:scale_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          32
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      64,
+      32
+    ],
+    "left_strides_bytes": [
+      64,
+      2
+    ],
+    "right_strides_bytes": [
+      64,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:B"
+      },
+      {
+        "name": "scale_a",
+        "dtype": "float32",
+        "allocation": "6:global7:scale_a"
+      },
+      {
+        "name": "scale_b",
+        "dtype": "float32",
+        "allocation": "6:global7:scale_b"
+      }
+    ]
+  },
+  "provenance": {
+    "evidence": "prepareGemmArgsSm100: column scale_d0 and row scale_d1; bias unused by this specialization.",
+    "ptx": "corpus/tensorrt_llm__cutlass_fp8_rowwise_gemm_bf16__sm_100f.ptx",
+    "optimized_input": "examples/tensorrt_llm__cutlass_fp8_rowwise_gemm_bf16__sm_100f/input.json",
+    "semantics": "Fixed saved configuration; ideal-real tensor arithmetic; all written mathematical outputs.",
+    "optimized_input_sha256": "d05147fb7e08921fd58400d25f003024731091b727b17d90d939bc9971a5b0fb",
+    "ptx_sha256": "ef08e52376dfa56c06833c0cbe9a6b7ac4ad6434c8dd7f783afc1214ae427c97",
+    "upstream": [
+      "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/cutlass_kernels/fp8_rowwise_gemm/fp8_rowwise_gemm_bf16.cu",
+      "https://github.com/NVIDIA/cutlass/blob/da5e086dab31d63815acafdac9a9c5893b1c69e2/include/cutlass/device_kernel.h",
+      "https://github.com/NVIDIA/cutlass/blob/da5e086dab31d63815acafdac9a9c5893b1c69e2/include/cutlass/arch/arch.h",
+      "https://github.com/NVIDIA/cutlass/blob/da5e086dab31d63815acafdac9a9c5893b1c69e2/include/cutlass/gemm/kernel/sm100_gemm_tma_warpspecialized.hpp"
+    ],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

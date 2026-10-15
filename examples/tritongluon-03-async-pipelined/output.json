@@ -1,0 +1,241 @@
+{
+  "active_stage": "verification.memory",
+  "checks": {
+    "equivalence": "not_run",
+    "memory": "not_run",
+    "synchronization": "not_run"
+  },
+  "diagnostics": [
+    {
+      "code": "timeout",
+      "details": {
+        "resource": {
+          "kind": "time",
+          "limit": 498.585,
+          "origin": "configured_budget",
+          "unit": "seconds"
+        }
+      },
+      "stage": "memory_check"
+    }
+  ],
+  "elapsed_seconds": 498.681199698,
+  "equivalence": {
+    "checks": {
+      "equivalence": "not_run",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "diagnostics": [
+      {
+        "code": "prerequisite_check_not_passed",
+        "details": {
+          "prerequisite_checks": {
+            "equivalence": "not_run",
+            "memory": "not_run",
+            "synchronization": "not_run"
+          },
+          "prerequisite_diagnostics": [
+            {
+              "code": "timeout",
+              "details": {
+                "resource": {
+                  "kind": "time",
+                  "limit": 498.585,
+                  "origin": "configured_budget",
+                  "unit": "seconds"
+                }
+              },
+              "stage": "memory_check"
+            }
+          ],
+          "prerequisite_result": "timeout",
+          "prerequisite_status": "timeout"
+        },
+        "stage": "memory_check"
+      }
+    ],
+    "prerequisite_status": "timeout",
+    "result": "timeout",
+    "scope": {
+      "operation": "equivalence"
+    },
+    "stage": "verification.memory"
+  },
+  "frontend": {
+    "address_value_bridge": {
+      "diagnostics": [],
+      "first_unavailable_reason": "",
+      "queries": 0,
+      "resolved": 0,
+      "source": "value_lowering",
+      "unavailable": 0,
+      "value_view_complete": true
+    },
+    "cluster_completion_joins": 0,
+    "cta_count": 32,
+    "dependency_compression": {
+      "cp_async_wait": {
+        "consumers": 131072,
+        "emitted_references": 4194304,
+        "original_references": 69206016,
+        "prefix_effects": 0
+      }
+    },
+    "diagnostic_sample_count": 0,
+    "executed_records": 54678656,
+    "frontend_assumptions": {
+      "assertion_failure_forms": [
+        "trap",
+        "__assertfail"
+      ],
+      "assertion_uses": 0,
+      "bounded_loop_uses": 0,
+      "clc_failure": true,
+      "clc_uses": 0,
+      "data_branch_decisions": [],
+      "election_policy": {
+        "fallback": "lowest_member",
+        "preferred_lane": 0,
+        "strategy": "preferred_member"
+      },
+      "election_uses": 0,
+      "fixed_election": true,
+      "isolated_launch": true,
+      "noalias_unbounded": false,
+      "opaque_compute_regions": [],
+      "pointer_contract": {
+        "aliasing": "distinct_objects_noalias",
+        "extent_bytes": "unbounded"
+      },
+      "representative_branch_uses": 0,
+      "trap_only_equality_assertions_hold": true
+    },
+    "implementation": "cpp",
+    "input_objects": [
+      {
+        "bytes": 8,
+        "object": "A",
+        "offset": 0,
+        "parameter": "elementwise_add_pipelined_kernel_param_0",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "B",
+        "offset": 0,
+        "parameter": "elementwise_add_pipelined_kernel_param_1",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "C",
+        "offset": 0,
+        "parameter": "elementwise_add_pipelined_kernel_param_2",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "D",
+        "offset": 0,
+        "parameter": "elementwise_add_pipelined_kernel_param_8",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "ptr4",
+        "offset": 0,
+        "parameter": "elementwise_add_pipelined_kernel_param_9",
+        "source": "declaration"
+      }
+    ],
+    "lowered_instruction_count": 10974336,
+    "reached_opcodes": {
+      "add.f32": 4194304,
+      "add.s32": 13074432,
+      "add.s64": 14241792,
+      "and.b32": 20480,
+      "and.pred": 4587520,
+      "bar.sync": 258048,
+      "bra": 118784,
+      "bra.uni": 4096,
+      "cp.async.ca.shared.global": 4194304,
+      "cp.async.commit_group": 131072,
+      "cp.async.wait_group": 131072,
+      "cvt.s64.s32": 380928,
+      "cvt.u32.u64": 4096,
+      "cvt.u64.u32": 8192,
+      "ld.param.b32": 20480,
+      "ld.param.b64": 12288,
+      "ldmatrix.sync.aligned.m8n8.x4.shared.b16": 2097152,
+      "mad.lo.s32": 319488,
+      "mad.wide.s32": 380928,
+      "mov.b32": 16384,
+      "mov.b64": 8192,
+      "mov.u32": 8192,
+      "mul.hi.u32": 253952,
+      "mul.lo.s32": 266240,
+      "mul.wide.s32": 12288,
+      "mul.wide.u32": 16384,
+      "or.b32": 237568,
+      "ret": 4096,
+      "selp.b32": 4325376,
+      "setp.eq.b32": 4096,
+      "setp.gt.s32": 4096,
+      "setp.lt.s32": 147456,
+      "setp.lt.s64": 245760,
+      "setp.ne.b64": 122880,
+      "shl.b32": 86016,
+      "shl.b64": 385024,
+      "shr.u32": 258048,
+      "st.global.b32": 2000000,
+      "sub.s32": 2097152
+    },
+    "shared_constant_propagation": {
+      "read_from_dependencies": 0,
+      "representation": "sparse_known_bytes",
+      "validation": "pending_backend"
+    },
+    "source_binding_storage": {
+      "binding_templates": 128,
+      "generated_address_rows": 0,
+      "generated_body_rows": 0,
+      "generated_memory_instances": 0,
+      "logical_instructions": 10974336,
+      "stored_bindings": 452024
+    },
+    "source_edge_storage": {
+      "binding_templates": 77728,
+      "logical_edges": 10970240,
+      "stored_bindings": 77728
+    },
+    "thread_count": 4096,
+    "unsupported_occurrence_counts": {},
+    "user_branch_decisions": []
+  },
+  "frontend_source_violations": [],
+  "implementation": "cpp",
+  "memory_analysis": {
+    "candidate_generation_fallback": false,
+    "strategy": "conflict-family"
+  },
+  "memory_analysis_complete": false,
+  "memory_analysis_entered": true,
+  "peak_footprint_mib": 18170.8046875,
+  "peak_rss_mib": 18170.8046875,
+  "resource": {
+    "kind": "time",
+    "limit": 498.585,
+    "origin": "configured_budget",
+    "unit": "seconds"
+  },
+  "result": "timeout",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-ptx-run/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "timeout_scope": "whole_pipeline",
+  "verification_limitations": [],
+  "warnings_complete": false
+}

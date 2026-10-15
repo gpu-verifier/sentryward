@@ -1,0 +1,405 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN7cutlass13device_kernelI104cutlass3x_sm100_tensorop_gemm_e4m3_e4m3_f32_f16_f16_64x128x128_1x1x1_0_tnn_align8_cpasync_1sm_epi_nosmemEEvNT_6ParamsE",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      384,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "field": "mode",
+      "value": 0
+    },
+    {
+      "field": "M",
+      "value": 64
+    },
+    {
+      "field": "N",
+      "value": 128
+    },
+    {
+      "field": "K",
+      "value": 128
+    },
+    {
+      "field": "L",
+      "value": 1
+    },
+    {
+      "field": "beta",
+      "value": 0.0
+    },
+    {
+      "field": "beta.pointer",
+      "value": null
+    },
+    {
+      "field": "beta.pointer_array",
+      "value": null
+    },
+    {
+      "field": "beta.stride",
+      "value": 0
+    },
+    {
+      "field": "alpha",
+      "value": 1.0
+    },
+    {
+      "field": "alpha.pointer",
+      "value": null
+    },
+    {
+      "field": "alpha.pointer_array",
+      "value": null
+    },
+    {
+      "field": "alpha.stride",
+      "value": 0
+    },
+    {
+      "field": "A.leading",
+      "value": 128
+    },
+    {
+      "field": "A.batch",
+      "value": 0
+    },
+    {
+      "field": "B.leading",
+      "value": 128
+    },
+    {
+      "field": "B.batch",
+      "value": 0
+    },
+    {
+      "field": "C.leading",
+      "value": 64
+    },
+    {
+      "field": "C.batch",
+      "value": 0
+    },
+    {
+      "field": "D.leading",
+      "value": 64
+    },
+    {
+      "field": "D.batch",
+      "value": 0
+    },
+    {
+      "field": "problem_tiles_m",
+      "value": 1
+    },
+    {
+      "field": "problem_tiles_n",
+      "value": 1
+    },
+    {
+      "field": "problem_tiles_l",
+      "value": 1
+    },
+    {
+      "field": "cluster_m.divisor",
+      "value": 1
+    },
+    {
+      "field": "cluster_m.multiplier",
+      "value": 0
+    },
+    {
+      "field": "cluster_m.shift_right",
+      "value": 0
+    },
+    {
+      "field": "cluster_n.divisor",
+      "value": 1
+    },
+    {
+      "field": "cluster_n.multiplier",
+      "value": 0
+    },
+    {
+      "field": "cluster_n.shift_right",
+      "value": 0
+    },
+    {
+      "field": "swizzle.divisor",
+      "value": 0
+    },
+    {
+      "field": "swizzle.multiplier",
+      "value": 0
+    },
+    {
+      "field": "swizzle.shift_right",
+      "value": 0
+    },
+    {
+      "field": "raster_order",
+      "value": 1
+    },
+    {
+      "field": "log_swizzle_size",
+      "value": 0
+    }
+  ],
+  "declarations": [
+    {
+      "name": "mode",
+      "parameter": 0,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "M",
+      "parameter": 0,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "N",
+      "parameter": 0,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "K",
+      "parameter": 0,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "L",
+      "parameter": 0,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "beta",
+      "parameter": 0,
+      "offset": 88,
+      "type": "f32"
+    },
+    {
+      "name": "beta.pointer",
+      "parameter": 0,
+      "offset": 96,
+      "type": "pointer"
+    },
+    {
+      "name": "beta.pointer_array",
+      "parameter": 0,
+      "offset": 104,
+      "type": "pointer"
+    },
+    {
+      "name": "beta.stride",
+      "parameter": 0,
+      "offset": 112,
+      "type": "s64"
+    },
+    {
+      "name": "alpha",
+      "parameter": 0,
+      "offset": 120,
+      "type": "f32"
+    },
+    {
+      "name": "alpha.pointer",
+      "parameter": 0,
+      "offset": 128,
+      "type": "pointer"
+    },
+    {
+      "name": "alpha.pointer_array",
+      "parameter": 0,
+      "offset": 136,
+      "type": "pointer"
+    },
+    {
+      "name": "alpha.stride",
+      "parameter": 0,
+      "offset": 144,
+      "type": "s64"
+    },
+    {
+      "name": "A.leading",
+      "parameter": 0,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "A.batch",
+      "parameter": 0,
+      "offset": 40,
+      "type": "s64"
+    },
+    {
+      "name": "B.leading",
+      "parameter": 0,
+      "offset": 56,
+      "type": "s64"
+    },
+    {
+      "name": "B.batch",
+      "parameter": 0,
+      "offset": 64,
+      "type": "s64"
+    },
+    {
+      "name": "C.leading",
+      "parameter": 0,
+      "offset": 168,
+      "type": "s64"
+    },
+    {
+      "name": "C.batch",
+      "parameter": 0,
+      "offset": 176,
+      "type": "s64"
+    },
+    {
+      "name": "D.leading",
+      "parameter": 0,
+      "offset": 192,
+      "type": "s64"
+    },
+    {
+      "name": "D.batch",
+      "parameter": 0,
+      "offset": 200,
+      "type": "s64"
+    },
+    {
+      "name": "problem_tiles_m",
+      "parameter": 0,
+      "offset": 244,
+      "type": "u32"
+    },
+    {
+      "name": "problem_tiles_n",
+      "parameter": 0,
+      "offset": 248,
+      "type": "u32"
+    },
+    {
+      "name": "problem_tiles_l",
+      "parameter": 0,
+      "offset": 252,
+      "type": "u32"
+    },
+    {
+      "name": "cluster_m.divisor",
+      "parameter": 0,
+      "offset": 256,
+      "type": "s32"
+    },
+    {
+      "name": "cluster_m.multiplier",
+      "parameter": 0,
+      "offset": 260,
+      "type": "u32"
+    },
+    {
+      "name": "cluster_m.shift_right",
+      "parameter": 0,
+      "offset": 264,
+      "type": "u32"
+    },
+    {
+      "name": "cluster_n.divisor",
+      "parameter": 0,
+      "offset": 268,
+      "type": "s32"
+    },
+    {
+      "name": "cluster_n.multiplier",
+      "parameter": 0,
+      "offset": 272,
+      "type": "u32"
+    },
+    {
+      "name": "cluster_n.shift_right",
+      "parameter": 0,
+      "offset": 276,
+      "type": "u32"
+    },
+    {
+      "name": "swizzle.divisor",
+      "parameter": 0,
+      "offset": 280,
+      "type": "s32"
+    },
+    {
+      "name": "swizzle.multiplier",
+      "parameter": 0,
+      "offset": 284,
+      "type": "u32"
+    },
+    {
+      "name": "swizzle.shift_right",
+      "parameter": 0,
+      "offset": 288,
+      "type": "u32"
+    },
+    {
+      "name": "raster_order",
+      "parameter": 0,
+      "offset": 292,
+      "type": "s32"
+    },
+    {
+      "name": "log_swizzle_size",
+      "parameter": 0,
+      "offset": 296,
+      "type": "s32"
+    },
+    {
+      "parameter": 0,
+      "offset": 24,
+      "type": "pointer",
+      "object": "A"
+    },
+    {
+      "parameter": 0,
+      "offset": 48,
+      "type": "pointer",
+      "object": "B"
+    },
+    {
+      "parameter": 0,
+      "offset": 160,
+      "type": "pointer",
+      "object": "C"
+    },
+    {
+      "parameter": 0,
+      "offset": 184,
+      "type": "pointer",
+      "object": "D"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

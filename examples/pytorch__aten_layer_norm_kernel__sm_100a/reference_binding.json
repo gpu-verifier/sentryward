@@ -1,0 +1,249 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global2:dY": "dY",
+      "6:global1:X": "X",
+      "6:global4:mean": "mean",
+      "6:global4:rstd": "rstd",
+      "6:global5:gamma": "gamma"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global2:dY": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      "6:global1:X": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      "6:global4:mean": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global4:rstd": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global5:gamma": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1024
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global2:dY": "dY",
+      "6:global1:X": "X",
+      "6:global4:mean": "mean",
+      "6:global4:rstd": "rstd",
+      "6:global5:gamma": "gamma"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global2:dY": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      "6:global1:X": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      "6:global4:mean": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global4:rstd": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global5:gamma": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1024
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN2at6native53_GLOBAL__N__fbe44717_20_layer_norm_kernel_cu_9c5ada8a39layer_norm_grad_input_kernel_vectorizedIN3c108BFloat16EfLb0EEEvPKT_S7_PKT0_SA_S7_PS5_i_param_6+0": {
+        "type": "u32",
+        "literal": "1024"
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global2:dX",
+    "right_allocation": "6:global2:dX",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      2,
+      1024
+    ],
+    "left_strides_bytes": [
+      2048,
+      2
+    ],
+    "right_strides_bytes": [
+      2048,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "dY",
+        "dtype": "bfloat16",
+        "allocation": "6:global2:dY"
+      },
+      {
+        "name": "X",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:X"
+      },
+      {
+        "name": "mean",
+        "dtype": "float32",
+        "allocation": "6:global4:mean"
+      },
+      {
+        "name": "rstd",
+        "dtype": "float32",
+        "allocation": "6:global4:rstd"
+      },
+      {
+        "name": "gamma",
+        "dtype": "bfloat16",
+        "allocation": "6:global5:gamma"
+      }
+    ]
+  },
+  "provenance": {
+    "sha256": "ae48e2ffa3f869c7900722b690a483de64d93abab439fc63f9c64fcc0dfaed15",
+    "source": "// Source: https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/layer_norm_kernel.cu ; https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/block_reduce.cuh ; https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/SharedReduceOps.h",
+    "scope": "Current fixed launch and input JSON; all mathematical outputs retained.",
+    "optimized_input_sha256": "ae48e2ffa3f869c7900722b690a483de64d93abab439fc63f9c64fcc0dfaed15",
+    "ptx_sha256": "366f5e67bdeedc302bf5c388d086f72a0d51cbdad3cc707b3679f5e813f91e76",
+    "upstream": [
+      "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/layer_norm_kernel.cu",
+      "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/block_reduce.cuh",
+      "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/SharedReduceOps.h"
+    ],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

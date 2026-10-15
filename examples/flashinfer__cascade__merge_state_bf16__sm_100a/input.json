@@ -1,0 +1,87 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN10flashinfer16MergeStateKernelILj8E13__nv_bfloat16S1_EEvPT0_PfS3_S4_PT1_S4_jj",
+  "launch": {
+    "grid_dim": [
+      4,
+      1,
+      1
+    ],
+    "block_dim": [
+      16,
+      4,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "arguments": [
+    {
+      "parameter": 6,
+      "type": "u32",
+      "value": 4
+    },
+    {
+      "parameter": 7,
+      "type": "u32",
+      "value": 128
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "v_a",
+      "name": "v_a"
+    },
+    {
+      "parameter": 1,
+      "type": "pointer",
+      "object": "s_a",
+      "name": "s_a"
+    },
+    {
+      "parameter": 2,
+      "type": "pointer",
+      "object": "v_b",
+      "name": "v_b"
+    },
+    {
+      "parameter": 3,
+      "type": "pointer",
+      "object": "s_b",
+      "name": "s_b"
+    },
+    {
+      "parameter": 4,
+      "type": "pointer",
+      "object": "v_merged",
+      "name": "v_merged"
+    },
+    {
+      "parameter": 5,
+      "type": "pointer",
+      "object": "s_merged",
+      "name": "s_merged"
+    },
+    {
+      "parameter": 6,
+      "type": "u32",
+      "name": "num_heads"
+    },
+    {
+      "parameter": 7,
+      "type": "u32",
+      "name": "head_dim"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

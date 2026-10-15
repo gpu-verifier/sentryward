@@ -1,0 +1,772 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:X": "X",
+      "6:global1:B": "B",
+      "6:global1:C": "C",
+      "6:global5:delta": "delta",
+      "6:global6:cumsum": "cumsum"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:X": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          64
+        ],
+        "source_strides_bytes": [
+          32768,
+          128,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          32768,
+          128,
+          128,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global1:C": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global5:delta": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          512,
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          512,
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global6:cumsum": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          2,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          1024,
+          512,
+          512,
+          4
+        ],
+        "target_strides_bytes": [
+          1024,
+          512,
+          512,
+          4
+        ]
+      }
+    },
+    "parameter_constants": {}
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:x": "X",
+      "6:global1:B": "B",
+      "6:global1:C": "C",
+      "6:global17:delta_precomputed": "delta",
+      "6:global18:cumsum_precomputed": "cumsum"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:x": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          64
+        ],
+        "source_strides_bytes": [
+          32768,
+          128,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          32768,
+          128,
+          128,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global1:C": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global17:delta_precomputed": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          512,
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          512,
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global18:cumsum_precomputed": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          2,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          1024,
+          512,
+          512,
+          4
+        ],
+        "target_strides_bytes": [
+          1024,
+          512,
+          512,
+          4
+        ]
+      }
+    },
+    "parameter_constants": {}
+  },
+  "provenance": {
+    "optimized_input_sha256": "092f7659e74e27f8e5a41a4f9e9b607e62bec93b2ebfc200dcbaeb7e04160c0e",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_mamba_ssd_combined/generated/device/sm_100a/mamba_ssd_q_tmem_alias_bf16_batched_152ad01e4f.cu"
+    ],
+    "derived_from": "references/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/reference.cu",
+    "scope_branch_choices": [],
+    "semantics": "ideal_real; fixed saved configuration; all declared output tensors",
+    "ptx_sha256": "4a4f5711c4a9c1eb832a447d292b6fc2cf22effd23370ec25f9100214723e7dd",
+    "scope_shape_arrays": [],
+    "source_interface": {
+      "name": "flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a",
+      "family": "mamba",
+      "source": "references/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/reference.cu",
+      "ptx": "references/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/reference.ptx",
+      "entry": "reference",
+      "upstream": [
+        "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_mamba_ssd_combined/generated/device/sm_100a/mamba_ssd_q_tmem_alias_bf16_batched_152ad01e4f.cu"
+      ],
+      "parameters": [
+        {
+          "name": "X",
+          "type": "bf16",
+          "shape": [
+            1,
+            256,
+            1,
+            64
+          ],
+          "role": "input",
+          "source": "x",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "B",
+          "type": "bf16",
+          "shape": [
+            1,
+            256,
+            1,
+            128
+          ],
+          "role": "input",
+          "source": "B",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "C",
+          "type": "bf16",
+          "shape": [
+            1,
+            256,
+            1,
+            128
+          ],
+          "role": "input",
+          "source": "C",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "delta",
+          "type": "bf16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ],
+          "role": "input",
+          "source": "delta_precomputed",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "cumsum",
+          "type": "float",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ],
+          "role": "input",
+          "source": "cumsum_precomputed",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "O",
+          "type": "bf16",
+          "shape": [
+            1,
+            256,
+            1,
+            64
+          ],
+          "role": "output",
+          "source": "out_map / out_native",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "final_state",
+          "type": "bf16",
+          "shape": [
+            1,
+            1,
+            64,
+            128
+          ],
+          "role": "output",
+          "source": "final_states",
+          "layout": "row-major logical tensor"
+        }
+      ],
+      "attributes": {
+        "batch": 1,
+        "heads": 1,
+        "groups": 1,
+        "sequence": 256,
+        "head_dim": 64,
+        "state_dim": 128,
+        "chunk": 128,
+        "initial_state": "zero",
+        "D_mode": 0,
+        "has_z": false,
+        "checkpoint_state_count": 0,
+        "output_type": "bf16"
+      },
+      "work_items": 64,
+      "launch": {
+        "grid_dim": [
+          1,
+          1,
+          1
+        ],
+        "block_dim": [
+          128,
+          1,
+          1
+        ]
+      },
+      "optimized_input": "examples/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/input.json",
+      "optimized_input_sha256": "e2fb79c700d498a7a3a71262a27746efde54f0d13a16cd6b4b0ad8a4bd5c53af",
+      "optimized_scope_branch_choices": [],
+      "optimized_objects": {
+        "tma_descriptors": [
+          {
+            "parameter": 0,
+            "offset": 0,
+            "object": "x",
+            "element_type": "bf16",
+            "global_shape": [
+              64,
+              1,
+              256,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              128,
+              128,
+              32768
+            ],
+            "box_shape": [
+              64,
+              1,
+              128,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 1,
+            "offset": 0,
+            "object": "B",
+            "element_type": "bf16",
+            "global_shape": [
+              64,
+              2,
+              1,
+              256,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              128,
+              256,
+              256,
+              65536
+            ],
+            "box_shape": [
+              64,
+              1,
+              1,
+              128,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 2,
+            "offset": 0,
+            "object": "C",
+            "element_type": "bf16",
+            "global_shape": [
+              64,
+              2,
+              1,
+              256,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              128,
+              256,
+              256,
+              65536
+            ],
+            "box_shape": [
+              64,
+              1,
+              1,
+              128,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 3,
+            "offset": 0,
+            "object": "out_native",
+            "element_type": "bf16",
+            "global_shape": [
+              128,
+              2,
+              64,
+              1,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              256,
+              512,
+              32768,
+              32768
+            ],
+            "box_shape": [
+              64,
+              1,
+              64,
+              1,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          }
+        ],
+        "pointer_declarations": [
+          {
+            "parameter": 4,
+            "offset": 0,
+            "type": "pointer",
+            "object": "x"
+          },
+          {
+            "parameter": 5,
+            "offset": 0,
+            "type": "pointer",
+            "object": "dt"
+          },
+          {
+            "parameter": 6,
+            "offset": 0,
+            "type": "pointer",
+            "object": "delta_precomputed"
+          },
+          {
+            "parameter": 7,
+            "offset": 0,
+            "type": "pointer",
+            "object": "cumsum_precomputed"
+          },
+          {
+            "parameter": 8,
+            "offset": 0,
+            "type": "pointer",
+            "object": "A"
+          },
+          {
+            "parameter": 9,
+            "offset": 0,
+            "type": "pointer",
+            "object": "B"
+          },
+          {
+            "parameter": 10,
+            "offset": 0,
+            "type": "pointer",
+            "object": "C"
+          },
+          {
+            "parameter": 11,
+            "offset": 0,
+            "type": "pointer",
+            "object": "D"
+          },
+          {
+            "parameter": 12,
+            "offset": 0,
+            "type": "pointer",
+            "object": "z"
+          },
+          {
+            "parameter": 13,
+            "offset": 0,
+            "type": "pointer",
+            "object": "dt_bias"
+          },
+          {
+            "parameter": 14,
+            "offset": 0,
+            "type": "pointer",
+            "object": "initial_states"
+          },
+          {
+            "parameter": 15,
+            "offset": 0,
+            "type": "pointer",
+            "object": "final_states"
+          },
+          {
+            "parameter": 16,
+            "offset": 0,
+            "type": "pointer",
+            "object": "checkpoint_states"
+          },
+          {
+            "parameter": 17,
+            "offset": 0,
+            "type": "pointer",
+            "object": "checkpoint_token_indices"
+          },
+          {
+            "parameter": 18,
+            "offset": 0,
+            "type": "pointer",
+            "object": "checkpoint_state_slots"
+          },
+          {
+            "parameter": 19,
+            "offset": 0,
+            "type": "pointer",
+            "object": "seq_idx_i32"
+          },
+          {
+            "parameter": 20,
+            "offset": 0,
+            "type": "pointer",
+            "object": "seq_idx_i64"
+          },
+          {
+            "parameter": 21,
+            "offset": 0,
+            "type": "pointer",
+            "object": "chunk_indices"
+          },
+          {
+            "parameter": 22,
+            "offset": 0,
+            "type": "pointer",
+            "object": "chunk_offsets"
+          },
+          {
+            "parameter": 23,
+            "offset": 0,
+            "type": "pointer",
+            "object": "seq_chunk_cumsum"
+          },
+          {
+            "parameter": 24,
+            "offset": 0,
+            "type": "pointer",
+            "object": "out_native"
+          }
+        ]
+      },
+      "comparison_domain": "ideal mathematical computation; no bitwise-equivalence claim",
+      "logical_layout_adapter": "required when optimized storage differs from reference row-major layout",
+      "equivalence_status": "not_checked"
+    },
+    "historical_paths": {
+      "interface": "references/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/interface.json",
+      "mapping": "references/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/mapping.md"
+    },
+    "mapping_notes": "# flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in interface.json.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| X | bf16 | 1 x 256 x 1 x 64 | input | x |\n| B | bf16 | 1 x 256 x 1 x 128 | input | B |\n| C | bf16 | 1 x 256 x 1 x 128 | input | C |\n| delta | bf16 | 1 x 2 x 1 x 128 | input | delta_precomputed |\n| cumsum | float | 1 x 2 x 1 x 128 | input | cumsum_precomputed |\n| O | bf16 | 1 x 256 x 1 x 64 | output | out_map / out_native |\n| final_state | bf16 | 1 x 1 x 64 x 128 | output | final_states |\n\n## Computation and mapping\n\nX, B, C, delta, and cumsum map to x, B_tensor, C, delta_precomputed, and cumsum_precomputed.\nFor each value dimension d, initialize state[s] = 0.\nFor token t, a = exp(cumsum[t] - cumsum[t-1]); at each 128-token\nchunk boundary the previous local cumsum is zero.\nstate[s] = a*state[s] + delta[t]*X[t,d]*B[t,s]; O[t,d] = sum_s state[s]*C[t,s].\nAfter token 255, write final_states[d,s]. O is the out_map/out_native logical output.\nThe saved case has no initial state, D residual, z gate, or checkpoints.\nThe device entry consumes precomputed factors; dt, A, and dt_bias are not\nrecomputed by this reference. Their preprocessing is a different kernel.\nIntermediate BF16 state/tile rounding in the optimized chunk algorithm is abstracted.\n\n## Validation boundary\n\nCompiled to PTX and numerically checked on CPU. Not compared against an optimized\nGPU execution or proven equivalent. Precision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_mamba_ssd_combined/generated/device/sm_100a/mamba_ssd_q_tmem_alias_bf16_batched_152ad01e4f.cu\n"
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "left_allocation": "6:global1:O",
+        "right_allocation": "6:global10:out_native",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          64
+        ],
+        "left_strides_bytes": [
+          32768,
+          128,
+          128,
+          2
+        ],
+        "right_strides_bytes": [
+          32768,
+          2,
+          32768,
+          512
+        ]
+      },
+      {
+        "left_allocation": "6:global11:final_state",
+        "right_allocation": "6:global12:final_states",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          1,
+          64,
+          128
+        ],
+        "left_strides_bytes": [
+          16384,
+          16384,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          16384,
+          16384,
+          256,
+          2
+        ]
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "X",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:X"
+      },
+      {
+        "name": "B",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:B"
+      },
+      {
+        "name": "C",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:C"
+      },
+      {
+        "name": "delta",
+        "dtype": "bfloat16",
+        "allocation": "6:global5:delta"
+      },
+      {
+        "name": "cumsum",
+        "dtype": "float32",
+        "allocation": "6:global6:cumsum"
+      }
+    ]
+  }
+}

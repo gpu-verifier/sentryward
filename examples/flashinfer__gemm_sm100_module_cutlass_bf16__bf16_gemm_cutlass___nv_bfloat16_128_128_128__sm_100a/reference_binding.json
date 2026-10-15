@@ -1,0 +1,162 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_35MainloopSm100TmaUmmaWarpSpecializedILi3ELi2ELi4ENS5_IJNS4_1CILi1EEESB_SB_EEENS_4arch5Sm100EEENS5_IJNSA_ILi128EEESG_SG_EEENS_10bfloat16_tENS5_IJlSB_lEEESI_SJ_NS4_8TiledMMAINS4_8MMA_AtomIJNS4_20SM100_MMA_F16BF16_SSISI_SI_fLi128ELi128ELNS4_4UMMA5MajorE0ELSO_0ELNSN_7ScaleInE0ELSP_0EEEEEENS4_6LayoutISC_NS5_IJNSA_ILi0EEEST_ST_EEEEENS5_IJNS4_10UnderscoreESW_SW_EEEEENS4_13SM90_TMA_LOADENS4_14ComposedLayoutINS4_7SwizzleILi3ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi16EEENSS_INS5_IJNSA_ILi8EEENSA_ILi64EEEEEENS5_IJS16_SB_EEEEEEEvNS4_8identityESZ_S1A_vS1B_EENS_8epilogue10collective18CollectiveEpilogueINS1D_23Sm100TmaWarpSpecializedILi4ELi2ELi32ELb1ELb0EEEJSH_NS5_IJNSS_ISG_SB_EENSS_INSA_ILi32EEESB_EEEEESI_NS5_IJSB_llEEESI_S1M_NS1D_6fusion15FusionCallbacksIS1H_NS1N_17LinearCombinationISI_fSI_fLNS_15FloatRoundStyleE2EEESH_S1L_JEEENS4_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xESZ_NS10_IS12_S14_NSS_INS5_IJS16_S15_EEENS5_IJSB_S16_EEEEEEENS4_17SM75_U16x8_LDSM_TENS4_14SM90_TMA_STOREES20_NS4_17SM90_U16x8_STSM_TENS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEEEEEvvEEEEvNT_6ParamsE_param_0+1312": {
+        "type": "b32",
+        "literal": "1065353216"
+      },
+      "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_35MainloopSm100TmaUmmaWarpSpecializedILi3ELi2ELi4ENS5_IJNS4_1CILi1EEESB_SB_EEENS_4arch5Sm100EEENS5_IJNSA_ILi128EEESG_SG_EEENS_10bfloat16_tENS5_IJlSB_lEEESI_SJ_NS4_8TiledMMAINS4_8MMA_AtomIJNS4_20SM100_MMA_F16BF16_SSISI_SI_fLi128ELi128ELNS4_4UMMA5MajorE0ELSO_0ELNSN_7ScaleInE0ELSP_0EEEEEENS4_6LayoutISC_NS5_IJNSA_ILi0EEEST_ST_EEEEENS5_IJNS4_10UnderscoreESW_SW_EEEEENS4_13SM90_TMA_LOADENS4_14ComposedLayoutINS4_7SwizzleILi3ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi16EEENSS_INS5_IJNSA_ILi8EEENSA_ILi64EEEEEENS5_IJS16_SB_EEEEEEEvNS4_8identityESZ_S1A_vS1B_EENS_8epilogue10collective18CollectiveEpilogueINS1D_23Sm100TmaWarpSpecializedILi4ELi2ELi32ELb1ELb0EEEJSH_NS5_IJNSS_ISG_SB_EENSS_INSA_ILi32EEESB_EEEEESI_NS5_IJSB_llEEESI_S1M_NS1D_6fusion15FusionCallbacksIS1H_NS1N_17LinearCombinationISI_fSI_fLNS_15FloatRoundStyleE2EEESH_S1L_JEEENS4_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xESZ_NS10_IS12_S14_NSS_INS5_IJS16_S15_EEENS5_IJSB_S16_EEEEEEENS4_17SM75_U16x8_LDSM_TENS4_14SM90_TMA_STOREES20_NS4_17SM90_U16x8_STSM_TENS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEEEEEvvEEEEvNT_6ParamsE_param_0+1280": {
+        "type": "b32",
+        "literal": "0"
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      128,
+      128
+    ],
+    "left_strides_bytes": [
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      2,
+      256
+    ]
+  },
+  "parameter_constant_sources": [
+    {
+      "symbol": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_35MainloopSm100TmaUmmaWarpSpecializedILi3ELi2ELi4ENS5_IJNS4_1CILi1EEESB_SB_EEENS_4arch5Sm100EEENS5_IJNSA_ILi128EEESG_SG_EEENS_10bfloat16_tENS5_IJlSB_lEEESI_SJ_NS4_8TiledMMAINS4_8MMA_AtomIJNS4_20SM100_MMA_F16BF16_SSISI_SI_fLi128ELi128ELNS4_4UMMA5MajorE0ELSO_0ELNSN_7ScaleInE0ELSP_0EEEEEENS4_6LayoutISC_NS5_IJNSA_ILi0EEEST_ST_EEEEENS5_IJNS4_10UnderscoreESW_SW_EEEEENS4_13SM90_TMA_LOADENS4_14ComposedLayoutINS4_7SwizzleILi3ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi16EEENSS_INS5_IJNSA_ILi8EEENSA_ILi64EEEEEENS5_IJS16_SB_EEEEEEEvNS4_8identityESZ_S1A_vS1B_EENS_8epilogue10collective18CollectiveEpilogueINS1D_23Sm100TmaWarpSpecializedILi4ELi2ELi32ELb1ELb0EEEJSH_NS5_IJNSS_ISG_SB_EENSS_INSA_ILi32EEESB_EEEEESI_NS5_IJSB_llEEESI_S1M_NS1D_6fusion15FusionCallbacksIS1H_NS1N_17LinearCombinationISI_fSI_fLNS_15FloatRoundStyleE2EEESH_S1L_JEEENS4_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xESZ_NS10_IS12_S14_NSS_INS5_IJS16_S15_EEENS5_IJSB_S16_EEEEEEENS4_17SM75_U16x8_LDSM_TENS4_14SM90_TMA_STOREES20_NS4_17SM90_U16x8_STSM_TENS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEEEEEvvEEEEvNT_6ParamsE_param_0+1312",
+      "input": "examples/flashinfer__gemm_sm100_module_cutlass_bf16__bf16_gemm_cutlass___nv_bfloat16_128_128_128__sm_100a/input.json",
+      "argument": {
+        "field": "alpha",
+        "value": 1.0
+      },
+      "declaration": {
+        "parameter": 0,
+        "offset": 1312,
+        "type": "f32"
+      }
+    },
+    {
+      "symbol": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_35MainloopSm100TmaUmmaWarpSpecializedILi3ELi2ELi4ENS5_IJNS4_1CILi1EEESB_SB_EEENS_4arch5Sm100EEENS5_IJNSA_ILi128EEESG_SG_EEENS_10bfloat16_tENS5_IJlSB_lEEESI_SJ_NS4_8TiledMMAINS4_8MMA_AtomIJNS4_20SM100_MMA_F16BF16_SSISI_SI_fLi128ELi128ELNS4_4UMMA5MajorE0ELSO_0ELNSN_7ScaleInE0ELSP_0EEEEEENS4_6LayoutISC_NS5_IJNSA_ILi0EEEST_ST_EEEEENS5_IJNS4_10UnderscoreESW_SW_EEEEENS4_13SM90_TMA_LOADENS4_14ComposedLayoutINS4_7SwizzleILi3ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi16EEENSS_INS5_IJNSA_ILi8EEENSA_ILi64EEEEEENS5_IJS16_SB_EEEEEEEvNS4_8identityESZ_S1A_vS1B_EENS_8epilogue10collective18CollectiveEpilogueINS1D_23Sm100TmaWarpSpecializedILi4ELi2ELi32ELb1ELb0EEEJSH_NS5_IJNSS_ISG_SB_EENSS_INSA_ILi32EEESB_EEEEESI_NS5_IJSB_llEEESI_S1M_NS1D_6fusion15FusionCallbacksIS1H_NS1N_17LinearCombinationISI_fSI_fLNS_15FloatRoundStyleE2EEESH_S1L_JEEENS4_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xESZ_NS10_IS12_S14_NSS_INS5_IJS16_S15_EEENS5_IJSB_S16_EEEEEEENS4_17SM75_U16x8_LDSM_TENS4_14SM90_TMA_STOREES20_NS4_17SM90_U16x8_STSM_TENS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEEEEEvvEEEEvNT_6ParamsE_param_0+1280",
+      "input": "examples/flashinfer__gemm_sm100_module_cutlass_bf16__bf16_gemm_cutlass___nv_bfloat16_128_128_128__sm_100a/input.json",
+      "argument": {
+        "field": "beta",
+        "value": 0.0
+      },
+      "declaration": {
+        "parameter": 0,
+        "offset": 1280,
+        "type": "f32"
+      }
+    }
+  ],
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:B"
+      }
+    ]
+  }
+}

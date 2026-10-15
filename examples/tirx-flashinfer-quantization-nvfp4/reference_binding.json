@@ -1,0 +1,151 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16
+        ],
+        "source_strides_bytes": [
+          32,
+          2
+        ],
+        "target_strides_bytes": [
+          32,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16
+        ],
+        "source_strides_bytes": [
+          32,
+          2
+        ],
+        "target_strides_bytes": [
+          32,
+          2
+        ]
+      }
+    }
+  },
+  "output_value_semantics": "ideal_real",
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "left_allocation": "6:global1:C",
+        "right_allocation": "6:global1:C",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          1,
+          8
+        ],
+        "left_strides_bytes": [
+          8,
+          1
+        ],
+        "right_strides_bytes": [
+          8,
+          1
+        ]
+      },
+      {
+        "left_allocation": "6:global1:D",
+        "right_allocation": "6:global1:D",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          1
+        ],
+        "left_strides_bytes": [
+          1
+        ],
+        "right_strides_bytes": [
+          1
+        ]
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float32",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "float16",
+        "allocation": "6:global1:B"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tirx-flashinfer-quantization-nvfp4.ptx",
+    "optimized_input": "examples/tirx-flashinfer-quantization-nvfp4/input.json",
+    "upstream": [
+      "https://github.com/mlc-ai/TIRx-kernels/blob/01130e3bb1cf8a009fc1e7e6db2a860cd51df9ed/tirx_kernels/ported/flashinfer/quantization/nvfp4_quantize.py"
+    ],
+    "scope": "First CONFIGS entry: float16, m=1, k=16, linear scale layout; 1 SF block, grid 1, block 512.",
+    "evidence": "PTX parameter0=A is scalar global_scale, parameter1=B is 16 FP16 inputs; C stores 8 packed bytes, D stores one E4M3 scale byte. Compiled grid stride is 8192 SF blocks, immaterial for this one-block case.",
+    "reference_status": "nonempty reference captured and compared; not_proven/saturated (20261008T224142509326Z), no counterexample",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [],
+    "historical_source_status": "Recorded historical revision 532949266f42ee23211e2dbd6d26dbe9c7a6ca3f is unavailable (GitHub 422; raw404). Current pinned source is corroborating evidence, not claimed to be the exact PTX generator. PTX ABI remains authoritative."
+  }
+}

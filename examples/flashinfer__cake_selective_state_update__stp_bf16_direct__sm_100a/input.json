@@ -1,0 +1,196 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_cake_selective_state_update_stp_bf16_direct",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      288,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 34432
+  },
+  "arguments": [
+    {
+      "field": "nheads",
+      "value": 4
+    },
+    {
+      "field": "ngroups",
+      "value": 1
+    },
+    {
+      "field": "head_tiles",
+      "value": 1
+    },
+    {
+      "field": "dt_softplus",
+      "value": 1
+    },
+    {
+      "field": "has_z",
+      "value": 0
+    },
+    {
+      "field": "disable_state_update",
+      "value": 0
+    }
+  ],
+  "declarations": [
+    {
+      "name": "nheads",
+      "parameter": 12,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "ngroups",
+      "parameter": 13,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "head_tiles",
+      "parameter": 14,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "dt_softplus",
+      "parameter": 15,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "has_z",
+      "parameter": 16,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "disable_state_update",
+      "parameter": 17,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "parameter": 0,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "type": "pointer",
+      "object": "x"
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dt"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "type": "pointer",
+      "object": "A"
+    },
+    {
+      "parameter": 4,
+      "offset": 0,
+      "type": "pointer",
+      "object": "B"
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "type": "pointer",
+      "object": "C"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "type": "pointer",
+      "object": "D"
+    },
+    {
+      "parameter": 7,
+      "offset": 0,
+      "type": "pointer",
+      "object": "z"
+    },
+    {
+      "parameter": 8,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dt_bias"
+    },
+    {
+      "parameter": 9,
+      "offset": 0,
+      "type": "pointer",
+      "object": "output"
+    },
+    {
+      "parameter": 10,
+      "offset": 0,
+      "type": "pointer",
+      "object": "state_batch_indices"
+    },
+    {
+      "parameter": 11,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dst_state_batch_indices"
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "object": "state",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        128,
+        4,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        32768,
+        131072
+      ],
+      "box_shape": [
+        32,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "none",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

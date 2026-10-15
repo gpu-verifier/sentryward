@@ -1,0 +1,87 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1000
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1000
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:B",
+    "right_allocation": "6:global1:B",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+      1000
+    ],
+    "left_strides_bytes": [
+      4
+    ],
+    "right_strides_bytes": [
+      4
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "X",
+        "dtype": "float32",
+        "allocation": "6:global1:A"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tritongluon-03-async-copy.ptx",
+    "optimized_input": "examples/tritongluon-03-async-copy/input.json",
+    "upstream": [
+      "https://github.com/triton-lang/triton/blob/c01b6774b1865984607d89d89d3a10833de92037/python/tutorials/gluon/03-async-copy.py"
+    ],
+    "scope": "Upstream test (xnumel,XBLOCK)=(1000,256); grid=ceil(1000/256)=4; 128 threads.",
+    "evidence": "Wrapper default XBLOCK=8192 is not the compiled specialization. PTX ctaid.x << 8 and per-lane offsets t and t+128 establish XBLOCK=256.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [],
+    "dynamic_shared_allocation": "1024 bytes: 256 FP32 staging elements.",
+    "historical_source_status": "Pinned tutorial inspected; PTX instruction semantics and specialized constants cross-checked."
+  }
+}

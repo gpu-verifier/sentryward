@@ -1,0 +1,165 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN4vllm23rotary_embedding_kernelIN3c108BFloat16ES2_Lb1EEEvPKlPT_S6_PKT0_illliiilb",
+  "launch": {
+    "grid_dim": [
+      4,
+      1,
+      1
+    ],
+    "block_dim": [
+      256,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "arguments": [
+    {
+      "parameter": 4,
+      "type": "u32",
+      "value": 128
+    },
+    {
+      "parameter": 5,
+      "type": "u64",
+      "value": 512
+    },
+    {
+      "parameter": 6,
+      "type": "u64",
+      "value": 128
+    },
+    {
+      "parameter": 7,
+      "type": "u64",
+      "value": 128
+    },
+    {
+      "parameter": 8,
+      "type": "u32",
+      "value": 4
+    },
+    {
+      "parameter": 9,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 10,
+      "type": "u32",
+      "value": 128
+    },
+    {
+      "parameter": 11,
+      "type": "u64",
+      "value": 0
+    },
+    {
+      "parameter": 12,
+      "type": "u8",
+      "value": 0
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "positions",
+      "name": "positions"
+    },
+    {
+      "parameter": 1,
+      "type": "pointer",
+      "object": "query",
+      "name": "query"
+    },
+    {
+      "parameter": 2,
+      "type": "pointer",
+      "object": "key",
+      "name": "key"
+    },
+    {
+      "parameter": 3,
+      "type": "pointer",
+      "object": "cos_sin_cache",
+      "name": "cos_sin_cache"
+    },
+    {
+      "parameter": 4,
+      "type": "u32",
+      "name": "rot_dim"
+    },
+    {
+      "parameter": 5,
+      "type": "u64",
+      "name": "query_stride"
+    },
+    {
+      "parameter": 6,
+      "type": "u64",
+      "name": "key_stride"
+    },
+    {
+      "parameter": 7,
+      "type": "u64",
+      "name": "head_stride"
+    },
+    {
+      "parameter": 8,
+      "type": "u32",
+      "name": "num_heads"
+    },
+    {
+      "parameter": 9,
+      "type": "u32",
+      "name": "num_kv_heads"
+    },
+    {
+      "parameter": 10,
+      "type": "u32",
+      "name": "head_size"
+    },
+    {
+      "parameter": 11,
+      "type": "u64",
+      "name": "rope_dim_offset"
+    },
+    {
+      "parameter": 12,
+      "type": "u8",
+      "name": "inverse"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  },
+  "shape_arrays": [
+    {
+      "parameter": 0,
+      "element_type": "s64",
+      "shapes": [
+        [
+          3
+        ],
+        [
+          7
+        ],
+        [
+          11
+        ],
+        [
+          5
+        ]
+      ]
+    }
+  ]
+}

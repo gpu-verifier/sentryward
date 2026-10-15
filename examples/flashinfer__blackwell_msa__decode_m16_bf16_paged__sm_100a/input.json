@@ -1,0 +1,246 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_minimax_sparse_decode_m16_paged_sm100",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      512,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 150144
+  },
+  "arguments": [
+    {
+      "parameter": 30,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 31,
+      "type": "u32",
+      "value": 16
+    },
+    {
+      "parameter": 32,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 33,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 34,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 35,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 36,
+      "type": "f32",
+      "value": 0.12751743082459868
+    },
+    {
+      "parameter": 37,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 38,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 39,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 40,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 41,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 42,
+      "type": "u32",
+      "value": 0
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "tensor_map",
+      "object": "Q"
+    },
+    {
+      "parameter": 1,
+      "type": "tensor_map",
+      "object": "Q_prefill"
+    },
+    {
+      "parameter": 2,
+      "type": "pointer",
+      "object": "Q_prefill_raw"
+    },
+    {
+      "parameter": 3,
+      "type": "tensor_map",
+      "object": "K"
+    },
+    {
+      "parameter": 4,
+      "type": "tensor_map",
+      "object": "K_prefill_pair"
+    },
+    {
+      "parameter": 5,
+      "type": "tensor_map",
+      "object": "V"
+    },
+    {
+      "parameter": 6,
+      "type": "tensor_map",
+      "object": "V_prefill_pair"
+    },
+    {
+      "parameter": 7,
+      "type": "tensor_map",
+      "object": "KV"
+    },
+    {
+      "parameter": 8,
+      "type": "pointer",
+      "object": "O"
+    },
+    {
+      "parameter": 9,
+      "type": "pointer",
+      "object": "partial_O"
+    },
+    {
+      "parameter": 10,
+      "type": "pointer",
+      "object": "partial_M"
+    },
+    {
+      "parameter": 11,
+      "type": "pointer",
+      "object": "partial_D"
+    },
+    {
+      "parameter": 12,
+      "type": "pointer",
+      "object": "split_completion"
+    },
+    {
+      "parameter": 13,
+      "type": "pointer",
+      "object": "msa_lse"
+    },
+    {
+      "parameter": 14,
+      "type": "pointer",
+      "object": "kv_indices"
+    },
+    {
+      "parameter": 15,
+      "type": "pointer",
+      "object": "qo_indptr"
+    },
+    {
+      "parameter": 16,
+      "type": "pointer",
+      "object": "kv_indptr"
+    },
+    {
+      "parameter": 17,
+      "type": "pointer",
+      "object": "kv_len_arr"
+    },
+    {
+      "parameter": 18,
+      "type": "pointer",
+      "object": "task_kind"
+    },
+    {
+      "parameter": 19,
+      "type": "pointer",
+      "object": "task_request"
+    },
+    {
+      "parameter": 20,
+      "type": "pointer",
+      "object": "task_kv_head"
+    },
+    {
+      "parameter": 21,
+      "type": "pointer",
+      "object": "task_q_tile"
+    },
+    {
+      "parameter": 22,
+      "type": "pointer",
+      "object": "task_split"
+    },
+    {
+      "parameter": 23,
+      "type": "pointer",
+      "object": "task_kv_tile_begin"
+    },
+    {
+      "parameter": 24,
+      "type": "pointer",
+      "object": "task_kv_tile_end"
+    },
+    {
+      "parameter": 25,
+      "type": "pointer",
+      "object": "task_qo_begin"
+    },
+    {
+      "parameter": 26,
+      "type": "pointer",
+      "object": "task_qo_end"
+    },
+    {
+      "parameter": 27,
+      "type": "pointer",
+      "object": "task_page_begin"
+    },
+    {
+      "parameter": 28,
+      "type": "pointer",
+      "object": "task_page_end"
+    },
+    {
+      "parameter": 29,
+      "type": "pointer",
+      "object": "status"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

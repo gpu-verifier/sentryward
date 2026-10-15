@@ -1,0 +1,205 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN7cutlass6KernelINS_4gemm6kernel9MoeFCGemmINS1_11threadblock13MmaMultistageINS1_9GemmShapeILi16ELi128ELi64EEENS_9transform11threadblock28PredicatedTileAccessIteratorINS_11MatrixShapeILi16ELi64EEENS_10bfloat16_tENS_6layout8RowMajorELi1ENS8_29PitchLinearWarpRakedThreadMapINS_16PitchLinearShapeILi64ELi16EEELi128ENSH_ILi8ELi4EEELi8EEENS_5ArrayISD_Li8ELb0EEELb0ENSE_9NoPermuteEEENS9_25RegularTileAccessIteratorISC_SD_NSE_37RowMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi0ESK_Li16EEELNS_4arch14CacheOperation4KindE1ENSA_INSB_ILi64ELi128EEESD_NSE_11ColumnMajorELi0ENSG_INSH_ILi64ELi128EEELi128ESJ_Li8EEESM_Lb0ESN_EENSP_ISW_SD_NSE_40ColumnMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi1ESZ_Li16EEELSV_1EfSF_NS4_9MmaPolicyINS1_4warp11MmaTensorOpINS6_ILi16ELi32ELi64EEESD_SR_SD_S12_fSF_NS15_17MmaTensorOpPolicyINST_3MmaINS6_ILi16ELi8ELi16EEELi32ESD_SF_SD_SX_fSF_NST_13OpMultiplyAddEEENSB_ILi1ELi1EEEEELi1ELb0EbEENSB_ILi0ELi0EEES1G_Li1EEELi2ELNS1_23SharedMemoryClearOptionE0EbEENS_8epilogue11threadblock8EpilogueIS7_S1F_Li1ENS1L_22PredicatedTileIteratorINS1L_26OutputTileOptimalThreadMapINS1L_15OutputTileShapeILi128ELi8ELi1ELi1ELi1EEENS1P_ILi1ELi2ELi1ELi1ELi2EEELi128ELi8ELi16EEESD_Lb0ESN_Lb0EEENS1K_4warp24FragmentIteratorTensorOpIS17_S1A_fNSL_IfLi4ELb1EEESF_EENS1U_20TileIteratorTensorOpIS17_S1A_fSF_EENS1L_18SharedLoadIteratorINS1S_18CompactedThreadMapEfLi32EEENS1K_6thread21LinearCombinationReluISD_Li8EffLNS23_9ScaleType4KindE0ELNS_15FloatRoundStyleE2EEENSB_ILi0ELi8EEELi1ELi1EEENS4_37GemmBatchedIdentityThreadblockSwizzleENST_4Sm80ELNS2_17GroupScheduleModeE0EEEEEvNT_6ParamsE",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      128,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "field": "gemm_n",
+      "value": 256
+    },
+    {
+      "field": "gemm_k",
+      "value": 128
+    },
+    {
+      "field": "problem_count",
+      "value": 4
+    },
+    {
+      "parameter": 0,
+      "offset": 64,
+      "type": "f32",
+      "value": 1.0
+    },
+    {
+      "parameter": 0,
+      "offset": 68,
+      "type": "f32",
+      "value": 0.0
+    },
+    {
+      "parameter": 0,
+      "offset": 72,
+      "type": "f32",
+      "value": 0.0
+    },
+    {
+      "parameter": 0,
+      "offset": 80,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 88,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 128,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 32,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 40,
+      "type": "s32",
+      "value": 0
+    },
+    {
+      "parameter": 0,
+      "offset": 48,
+      "type": "s32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 52,
+      "type": "s32",
+      "value": 128
+    },
+    {
+      "parameter": 0,
+      "offset": 56,
+      "type": "bool",
+      "value": true
+    },
+    {
+      "parameter": 0,
+      "offset": 120,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 144,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 152,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 160,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 112,
+      "type": "pointer",
+      "value": null
+    }
+  ],
+  "declarations": [
+    {
+      "name": "gemm_n",
+      "parameter": 0,
+      "offset": 8,
+      "type": "s64"
+    },
+    {
+      "name": "gemm_k",
+      "parameter": 0,
+      "offset": 16,
+      "type": "s64"
+    },
+    {
+      "name": "problem_count",
+      "parameter": 0,
+      "offset": 24,
+      "type": "s32"
+    },
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "pointer",
+      "object": "last_row_for_problem"
+    },
+    {
+      "parameter": 0,
+      "offset": 96,
+      "type": "pointer",
+      "space": "global",
+      "object": "activations"
+    },
+    {
+      "parameter": 0,
+      "offset": 104,
+      "type": "pointer",
+      "space": "global",
+      "object": "expert_weights"
+    },
+    {
+      "parameter": 0,
+      "offset": 136,
+      "type": "pointer",
+      "space": "global",
+      "object": "output"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  },
+  "shape_arrays": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "element_type": "s64",
+      "shapes": [
+        [
+          128
+        ],
+        [
+          256
+        ],
+        [
+          384
+        ],
+        [
+          512
+        ]
+      ]
+    }
+  ]
+}

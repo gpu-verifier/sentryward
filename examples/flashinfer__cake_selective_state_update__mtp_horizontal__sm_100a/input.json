@@ -1,0 +1,255 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_cake_selective_state_update_mtp_horizontal",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      288,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 49408
+  },
+  "arguments": [
+    {
+      "parameter": 12,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 13,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 14,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 15,
+      "type": "u64",
+      "value": 49152
+    },
+    {
+      "parameter": 16,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 17,
+      "type": "u32",
+      "value": 0
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "tensor_map",
+      "object": "state_tma"
+    },
+    {
+      "parameter": 1,
+      "type": "tensor_map",
+      "object": "x_tma"
+    },
+    {
+      "parameter": 2,
+      "type": "tensor_map",
+      "object": "b_tma"
+    },
+    {
+      "parameter": 3,
+      "type": "tensor_map",
+      "object": "c_tma"
+    },
+    {
+      "parameter": 4,
+      "type": "pointer",
+      "object": "dt"
+    },
+    {
+      "parameter": 5,
+      "type": "pointer",
+      "object": "A"
+    },
+    {
+      "parameter": 6,
+      "type": "pointer",
+      "object": "D"
+    },
+    {
+      "parameter": 7,
+      "type": "pointer",
+      "object": "dt_bias"
+    },
+    {
+      "parameter": 8,
+      "type": "pointer",
+      "object": "output"
+    },
+    {
+      "parameter": 9,
+      "type": "pointer",
+      "object": "state_batch_indices"
+    },
+    {
+      "parameter": 10,
+      "type": "pointer",
+      "object": "intermediate_state"
+    },
+    {
+      "parameter": 11,
+      "type": "pointer",
+      "object": "intermediate_state_indices"
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "object": "state",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        64,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        16384,
+        16384
+      ],
+      "box_shape": [
+        128,
+        32,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "none",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "object": "x",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        1,
+        6,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        128,
+        768
+      ],
+      "box_shape": [
+        64,
+        1,
+        6,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "none",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "object": "B",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        1,
+        6,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        256,
+        1536
+      ],
+      "box_shape": [
+        128,
+        1,
+        6,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "none",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "object": "C",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        1,
+        6,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        256,
+        1536
+      ],
+      "box_shape": [
+        128,
+        1,
+        6,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "none",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

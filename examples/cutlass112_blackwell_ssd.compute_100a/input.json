@@ -1,0 +1,357 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN7cutlass13device_kernelINS_3ssd6kernel27SsdKernelTmaWarpSpecializedINS1_10collective29SsdMainloopTmaWarpSpecializedINS_10bfloat16_tEffS6_N4cute5tupleIJNS7_1CILi128EEENS9_ILi64EEESA_EEELi2ELi2ENS7_8TiledMMAINS7_8MMA_AtomIJNS7_20SM100_MMA_F16BF16_SSIS6_S6_fLi128ELi128ELNS7_4UMMA5MajorE1ELSH_1ELNSG_7ScaleInE0ELSI_0EEEEEENS7_6LayoutINS8_IJNS9_ILi1EEESM_SM_EEENS8_IJNS9_ILi0EEESO_SO_EEEEENS8_IJNS7_10UnderscoreESR_SR_EEEEENSD_INSE_IJNS7_20SM100_MMA_F16BF16_TSIS6_S6_fLi128ELi64ELSH_0ELSH_0ELSI_0ELSI_0ELNSG_8SaturateE0EEEEEESQ_SS_EESY_NSD_INSE_IJNSF_IS6_S6_fLi128ELi64ELSH_1ELSH_0ELSI_0ELSI_0EEEEEESQ_SS_EENS7_14ComposedLayoutINS7_7SwizzleILi3ELi4ELi3EEENS7_18smem_ptr_flag_bitsILi16EEENSL_INS8_IJNS8_IJNS8_IJNS9_ILi8EEES17_EEENS9_ILi16EEEEEESM_NS8_IJNS9_ILi4EEENS9_ILi2EEEEEENS8_IJSM_S1C_EEEEEENS8_IJNS8_IJNS8_IJSB_NS9_ILi1024EEEEEESM_EEESO_NS8_IJS19_NS9_ILi512EEEEEENS8_IJSO_NS9_ILi8192EEEEEEEEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJNS8_IJSB_S1C_EEES19_EEESM_S17_S1E_EEENS8_IJNS8_IJNS8_IJSM_S1L_EEESB_EEESO_S1G_NS8_IJSO_NS9_ILi16384EEEEEEEEEEEEES1Z_NS12_IS14_S16_NSL_INS8_IJS1A_SM_S1D_NS8_IJSM_SM_EEEEEENS8_IJS1I_SO_S1K_NS8_IJSO_SO_EEEEEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJSA_S19_EEESM_S1D_S1E_EEENS8_IJNS8_IJSB_SM_EEESO_NS8_IJS19_S1L_EEES1W_EEEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_S18_S20_EEENS8_IJNS8_IJSM_S1J_EEES1H_S22_EEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJNS8_IJS17_S19_EEES19_EEESM_S1D_S1E_EEENS8_IJS1I_SO_S1K_S1W_EEEEEEENS12_IS14_S16_NSL_INS8_IJS2J_SM_S1D_S20_EEES23_EEEES2Q_EENS4_11SsdEpilogueIfS6_fSC_NS8_IJSA_NS9_ILi32EEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_NS8_IJS17_S1B_EEES1E_EEENS8_IJNS8_IJSM_NS9_ILi2048EEEEEENS8_IJSB_S1J_EEENS8_IJSO_NS9_ILi4096EEEEEEEEEEEEENS12_IS14_S16_NSL_INS8_IJS18_S1Q_S20_EEENS8_IJS1H_S2E_S22_EEEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_S18_S1E_EEENS8_IJS2E_S1H_S1M_EEEEEEELi2ELi2ELb1ELb1EEENS2_23PersistentTileSchedulerEEEEEvNT_6ParamsE",
+  "launch": {
+    "dynamic_shared_bytes": 199296,
+    "block_dim": [
+      384,
+      1,
+      1
+    ],
+    "grid_dim": [
+      12,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ]
+  },
+  "arguments": [
+    {
+      "field": "delta.batch_stride",
+      "value": 1024
+    },
+    {
+      "field": "delta_a.batch_stride",
+      "value": 1024
+    },
+    {
+      "field": "scheduler.num_blocks",
+      "value": 12
+    },
+    {
+      "field": "scheduler.num_groups",
+      "value": 1
+    },
+    {
+      "field": "scheduler.divmod_eh.divisor",
+      "value": 4
+    },
+    {
+      "field": "scheduler.divmod_eh.multiplier",
+      "value": 2147483648
+    },
+    {
+      "field": "scheduler.divmod_eh.shift_right",
+      "value": 1
+    },
+    {
+      "field": "scheduler.divmod_ngroup_ratio.divisor",
+      "value": 4
+    },
+    {
+      "field": "scheduler.divmod_ngroup_ratio.multiplier",
+      "value": 2147483648
+    },
+    {
+      "field": "scheduler.divmod_ngroup_ratio.shift_right",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "s32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 4,
+      "type": "s32",
+      "value": 3
+    },
+    {
+      "parameter": 0,
+      "offset": 8,
+      "type": "s32",
+      "value": 4
+    },
+    {
+      "parameter": 0,
+      "offset": 12,
+      "type": "s32",
+      "value": 8
+    },
+    {
+      "parameter": 0,
+      "offset": 16,
+      "type": "s32",
+      "value": 128
+    },
+    {
+      "parameter": 0,
+      "offset": 20,
+      "type": "s32",
+      "value": 64
+    },
+    {
+      "parameter": 0,
+      "offset": 24,
+      "type": "s32",
+      "value": 128
+    }
+  ],
+  "declarations": [
+    {
+      "name": "delta.batch_stride",
+      "parameter": 0,
+      "offset": 904,
+      "type": "s32"
+    },
+    {
+      "name": "delta_a.batch_stride",
+      "parameter": 0,
+      "offset": 928,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.num_blocks",
+      "parameter": 0,
+      "offset": 1664,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.num_groups",
+      "parameter": 0,
+      "offset": 1668,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.divmod_eh.divisor",
+      "parameter": 0,
+      "offset": 1672,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.divmod_eh.multiplier",
+      "parameter": 0,
+      "offset": 1676,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.divmod_eh.shift_right",
+      "parameter": 0,
+      "offset": 1680,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.divmod_ngroup_ratio.divisor",
+      "parameter": 0,
+      "offset": 1684,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.divmod_ngroup_ratio.multiplier",
+      "parameter": 0,
+      "offset": 1688,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.divmod_ngroup_ratio.shift_right",
+      "parameter": 0,
+      "offset": 1692,
+      "type": "u32"
+    },
+    {
+      "parameter": 0,
+      "offset": 912,
+      "type": "pointer",
+      "space": "global",
+      "object": "delta"
+    },
+    {
+      "parameter": 0,
+      "offset": 936,
+      "type": "pointer",
+      "space": "global",
+      "object": "delta_a_cumsum"
+    },
+    {
+      "parameter": 0,
+      "offset": 1544,
+      "type": "pointer",
+      "space": "global",
+      "object": "d"
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "offset": 128,
+      "object": "x",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        64,
+        8,
+        12
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256,
+        131072
+      ],
+      "box_shape": [
+        64,
+        8,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "interleave": "none",
+      "swizzle": "128B",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 384,
+      "object": "b",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        128,
+        8,
+        3
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256,
+        262144
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "interleave": "none",
+      "swizzle": "128B",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 640,
+      "object": "c",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        128,
+        8,
+        3
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256,
+        262144
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "interleave": "none",
+      "swizzle": "128B",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 1024,
+      "object": "y",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        64,
+        8,
+        12
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256,
+        131072
+      ],
+      "box_shape": [
+        64,
+        32,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "interleave": "none",
+      "swizzle": "128B",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 1280,
+      "object": "p",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        64,
+        12
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        16384
+      ],
+      "box_shape": [
+        64,
+        8,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "interleave": "none",
+      "swizzle": "128B",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

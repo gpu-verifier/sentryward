@@ -1,0 +1,214 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global5:input": "input",
+      "6:global8:residual": "residual",
+      "6:global6:weight": "weight"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      "6:global8:residual": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      "6:global6:weight": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1024
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global5:input": "input",
+      "6:global8:residual": "residual",
+      "6:global6:weight": "weight"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      "6:global8:residual": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      "6:global6:weight": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1024
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN4vllm25fused_add_rms_norm_kernelIN3c108BFloat16ELi8ELb1EEENSt9enable_ifIXaagtT0_Li0Esr4vllm12_typeConvertIT_EE6existsEvE4typeEPS4_lS7_PKS4_fiil_param_4+0": {
+        "type": "f32",
+        "literal": "1e-06"
+      },
+      "_ZN4vllm25fused_add_rms_norm_kernelIN3c108BFloat16ELi8ELb1EEENSt9enable_ifIXaagtT0_Li0Esr4vllm12_typeConvertIT_EE6existsEvE4typeEPS4_lS7_PKS4_fiil_param_6+0": {
+        "type": "u32",
+        "literal": "1024"
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global5:input",
+        "right_allocation": "6:global5:input",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "left_strides_bytes": [
+          2048,
+          2
+        ],
+        "right_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global8:residual",
+        "right_allocation": "6:global8:residual",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "left_strides_bytes": [
+          2048,
+          2
+        ],
+        "right_strides_bytes": [
+          2048,
+          2
+        ]
+      }
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "input",
+        "dtype": "bfloat16",
+        "allocation": "6:global5:input"
+      },
+      {
+        "name": "residual",
+        "dtype": "bfloat16",
+        "allocation": "6:global8:residual"
+      },
+      {
+        "name": "weight",
+        "dtype": "bfloat16",
+        "allocation": "6:global6:weight"
+      },
+      {
+        "name": "epsilon",
+        "parameter": 4
+      }
+    ]
+  },
+  "provenance": {
+    "sha256": "49dcb7210ea6ec2135ec4270d2acec81377f67cb970572d509fd06f4e6273154",
+    "source": "// Source: https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/layernorm_kernels.cu ; https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/type_convert.cuh ; https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/cub_helpers.h ; https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/quantization/vectorization_utils.cuh ; https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/dispatch_utils.h",
+    "scope": "Current fixed launch and input JSON; all mathematical outputs retained.",
+    "optimized_input_sha256": "49dcb7210ea6ec2135ec4270d2acec81377f67cb970572d509fd06f4e6273154",
+    "ptx_sha256": "b4e83796a33ed9bcc2fa08ee827bb1c46893297804369812138b8330e034e630",
+    "upstream": [
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/layernorm_kernels.cu",
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/type_convert.cuh",
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/cub_helpers.h",
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/quantization/vectorization_utils.cuh",
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/dispatch_utils.h"
+    ],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

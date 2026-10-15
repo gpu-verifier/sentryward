@@ -1,0 +1,2178 @@
+{
+  "address_model": {
+    "address_invariants": [],
+    "kind": "symbolic",
+    "layers": [
+      0,
+      2
+    ],
+    "solver": "z3",
+    "solver_timeout_ms": 100
+  },
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    }
+  ],
+  "checks": {
+    "equivalence": "passed",
+    "memory": "passed",
+    "synchronization": "passed"
+  },
+  "counts": {
+    "edges": 206887,
+    "events": 110654,
+    "instructions": 32987,
+    "memory_accesses": 35776,
+    "threads": 384
+  },
+  "diagnostics": [],
+  "equivalence": {
+    "access_validity": "no_unresolved_symbolic_byte_reads",
+    "arena_nodes": 387,
+    "checks": {
+      "equivalence": "passed",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "comparison_elapsed_seconds": 0.004956234,
+    "context_declaration": {
+      "assumptions": [],
+      "fixed_inputs": [],
+      "inputs": [],
+      "predicate_nodes": []
+    },
+    "context_policy": "explicit native caller premises; no implied provenance certification",
+    "counters": {
+      "add_term_visits": 662,
+      "affine_output_decline_singleton_projection_ambiguous": 16,
+      "affine_state_banks": 1,
+      "call_definition_node_visits": 144,
+      "canonical_factor_visits": 128,
+      "canonical_node_visits": 225,
+      "certified_state_pattern_cache_hits": 15,
+      "certified_state_pattern_decline_no_certified_state": 1,
+      "certified_state_pattern_work": 12,
+      "coefficient_normalizations": 1,
+      "completed_reductions": 16,
+      "constant_binary32_bitcasts": 16,
+      "coverage_polynomial_peak": 4,
+      "coverage_polynomial_visits": 96,
+      "coverage_stored_piece_visits": 16,
+      "ep_body_anchor_edges": 66,
+      "ep_body_anchor_nodes": 100,
+      "ep_body_call_rebuilds": 16,
+      "ep_body_deferred_call_anchors": 32,
+      "ep_body_deferred_unmatched_anchors": 32,
+      "ep_body_instance_cache_entries": 16,
+      "ep_body_obligations": 32,
+      "ep_body_pattern_anchor_cache_hits": 46,
+      "ep_body_proofs": 32,
+      "ep_body_read_anchor_rejections": 16,
+      "ep_body_target_anchor_cache_hits": 16,
+      "ep_identity_proofs": 48,
+      "ep_scalar_attempts": 48,
+      "ep_scalar_proofs": 48,
+      "finite_bilinear_banks": 1,
+      "finite_bilinear_fusions": 0,
+      "finite_bilinear_masks": 0,
+      "finite_bilinear_singleton_sums": 0,
+      "finite_bilinear_swaps": 0,
+      "finite_bilinear_work": 912,
+      "finite_state_reuse_banks": 1,
+      "fp_idiom_power_constructions": 0,
+      "fp_idiom_rm_producers": 0,
+      "ideal_additive_compiler_exp_sequences": 0,
+      "ideal_compiler_exp_sequences": 0,
+      "ideal_compiler_log2_polynomials": 0,
+      "ideal_compiler_lse_sequences": 0,
+      "ideal_single_constant_exp_sequences": 0,
+      "imported_context_nodes": 479,
+      "importer_scope_banks": 2,
+      "importer_scope_binder_hits": 32,
+      "importer_scope_binders_created": 32,
+      "importer_scope_leaf_lookups": 64,
+      "importer_scope_nested_body_fallbacks": 32,
+      "intern_requests": 3005,
+      "local_pattern_candidates": 80,
+      "masked_sum_prefix_queries": 48,
+      "normalization_cache_context_changes": 1,
+      "normalization_node_visits": 272,
+      "parametric_state_attempts": 0,
+      "pattern_build_peak_nodes": 3,
+      "pattern_build_unique_nodes": 48,
+      "pattern_node_visits": 208,
+      "select_max_probe_ancestor_nodes": 0,
+      "select_max_probe_temporary_nodes": 0,
+      "summary_bind_nodes": 32,
+      "symbolic_byte_reads_without_extent_proof": 0
+    },
+    "definedness": {
+      "partial_equivalence_families": 0,
+      "proved_families": 16,
+      "status": "proved"
+    },
+    "diagnostics": [],
+    "elapsed_s": 0.003409509,
+    "engine": "reference_guided_cpp",
+    "ep_profile": {
+      "body_instantiation_s": 0.0,
+      "body_scalar_s": 0.0,
+      "candidate_discovery_and_bookkeeping_s": 0.0,
+      "cross_product_s": 0.0,
+      "enabled": false,
+      "equal_s": 0.0,
+      "fraction": {
+        "computations": 0,
+        "previously_completed": 0,
+        "repeated_across_queries": 0,
+        "requests": 0,
+        "shared_hits": 0,
+        "unique_query_nodes": 0
+      },
+      "fraction_witness_s": 0.0,
+      "match_total_s": 0.0,
+      "normal": {
+        "computations": 0,
+        "previously_completed": 0,
+        "repeated_across_queries": 0,
+        "requests": 0,
+        "shared_hits": 0,
+        "unique_query_nodes": 0
+      },
+      "ordinary_polynomial_s": 0.0,
+      "polynomial": {
+        "computations": 0,
+        "previously_completed": 0,
+        "repeated_across_queries": 0,
+        "requests": 0,
+        "shared_hits": 0,
+        "unique_query_nodes": 0
+      },
+      "query_count": 48,
+      "reset_s": 0.0,
+      "reuse_cache": false,
+      "shared_evictions": 0
+    },
+    "equivalence_context": {
+      "applied_predicates": 0,
+      "element_assumptions": 0,
+      "fixed_input_elements": 0,
+      "scoped_predicates": 0
+    },
+    "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+    "equivalent_families": 16,
+    "finished_families": 16,
+    "idealizations_applied": [],
+    "input_contract_applied_reads": [],
+    "legacy_scalar_fallback": false,
+    "mapping_input_memory_constraints": {},
+    "native_context": null,
+    "normalized_reachable_nodes": 33,
+    "numerical_result": "verified",
+    "pattern_nodes": 58,
+    "peak_rss_kib": 477360,
+    "peak_rss_scope": "process_lifetime_not_comparison_delta",
+    "piece_nodes": 64,
+    "piece_union": {
+      "abstract_optimized_replacements": 0,
+      "abstract_reference_replacements": 0,
+      "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+      "collected_pieces": 0,
+      "late_certificates": "accepted_until_each_schema_is_complete",
+      "method": "complete_output_equalities_with_finite_piece_union",
+      "replacements": 0,
+      "schemas": [],
+      "stored_dag_work": 0,
+      "work_limit": 2000000
+    },
+    "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+    "raw_nodes": [
+      51,
+      158
+    ],
+    "reference_term_patterns": 2,
+    "result": "verified",
+    "rows": [
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 4.566999999999999e-05,
+        "cumulative_elapsed_s": 0.000656152,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 0,
+        "left_import_s": 0.00014635000000000003,
+        "left_normalize_s": 5.498100000000006e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 4.799999999999683e-07,
+        "piece_union_record_s": 2.0000000000000486e-07,
+        "piece_union_seal_s": 4.000000000000097e-07,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 0.00010072999999999999,
+        "right_normalize_s": 8.416000000000001e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 1.4400000000000025e-05,
+        "cumulative_elapsed_s": 0.000868082,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 1,
+        "left_import_s": 5.455e-05,
+        "left_normalize_s": 1.776000000000002e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 2.100000000000539e-07,
+        "piece_union_record_s": 5.000000000002832e-08,
+        "piece_union_seal_s": 2.9999999999930256e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 7.888999999999997e-05,
+        "right_normalize_s": 4.217000000000001e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 1.1580000000000184e-05,
+        "cumulative_elapsed_s": 0.001066473,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 2,
+        "left_import_s": 5.0960999999999975e-05,
+        "left_normalize_s": 1.5120000000000194e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 1.1999999999993786e-07,
+        "piece_union_record_s": 3.999999999997929e-08,
+        "piece_union_seal_s": 3.0000000000038676e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 7.943999999999985e-05,
+        "right_normalize_s": 3.830000000000001e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 1.1080000000000118e-05,
+        "cumulative_elapsed_s": 0.001250303,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 3,
+        "left_import_s": 4.648e-05,
+        "left_normalize_s": 1.3420000000000099e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 8.999999999989919e-08,
+        "piece_union_record_s": 2.9999999999821836e-08,
+        "piece_union_seal_s": 3.0000000000038676e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 7.40300000000001e-05,
+        "right_normalize_s": 3.6149999999999984e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 1.0470000000000054e-05,
+        "cumulative_elapsed_s": 0.001430784,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 4,
+        "left_import_s": 4.538099999999994e-05,
+        "left_normalize_s": 1.338000000000012e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 1.0000000000005664e-07,
+        "piece_union_record_s": 3.0000000000038676e-08,
+        "piece_union_seal_s": 1.9999999999881224e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 7.426000000000004e-05,
+        "right_normalize_s": 3.439000000000003e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 1.102000000000004e-05,
+        "cumulative_elapsed_s": 0.001623514,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 5,
+        "left_import_s": 5.793000000000009e-05,
+        "left_normalize_s": 1.3020000000000089e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 1.1999999999993786e-07,
+        "piece_union_record_s": 3.0000000000038676e-08,
+        "piece_union_seal_s": 2.0000000000098064e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 7.170000000000006e-05,
+        "right_normalize_s": 3.634999999999988e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 1.0079999999999985e-05,
+        "cumulative_elapsed_s": 0.001800075,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 6,
+        "left_import_s": 4.555100000000001e-05,
+        "left_normalize_s": 1.2320000000000126e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 7.999999999995858e-08,
+        "piece_union_record_s": 1.9999999999881224e-08,
+        "piece_union_seal_s": 3.0000000000038676e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 7.295000000000001e-05,
+        "right_normalize_s": 3.3370000000000014e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 1.0129999999999905e-05,
+        "cumulative_elapsed_s": 0.001970845,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 7,
+        "left_import_s": 4.3530000000000174e-05,
+        "left_normalize_s": 1.106000000000002e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 8.000000000017542e-08,
+        "piece_union_record_s": 3.000000000025552e-08,
+        "piece_union_seal_s": 3.0000000000038676e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 7.299999999999993e-05,
+        "right_normalize_s": 3.0930000000000193e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 9.100000000000167e-06,
+        "cumulative_elapsed_s": 0.002141816,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 8,
+        "left_import_s": 4.4690999999999915e-05,
+        "left_normalize_s": 1.1199999999999839e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 1.1999999999972102e-07,
+        "piece_union_record_s": 3.999999999976245e-08,
+        "piece_union_seal_s": 2.9999999999821836e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 7.282999999999986e-05,
+        "right_normalize_s": 3.0940000000000134e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 9.639999999999996e-06,
+        "cumulative_elapsed_s": 0.002311726,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 9,
+        "left_import_s": 4.5389999999999753e-05,
+        "left_normalize_s": 1.1949999999999721e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 7.999999999995858e-08,
+        "piece_union_record_s": 2.9999999999821836e-08,
+        "piece_union_seal_s": 2.9999999999821836e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 7.010000000000002e-05,
+        "right_normalize_s": 3.057999999999967e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 9.990000000000086e-06,
+        "cumulative_elapsed_s": 0.002497237,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 10,
+        "left_import_s": 4.5401000000000035e-05,
+        "left_normalize_s": 1.1839999999999941e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 8.999999999989919e-08,
+        "piece_union_record_s": 4.000000000019613e-08,
+        "piece_union_seal_s": 1.9999999999881224e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 8.454000000000014e-05,
+        "right_normalize_s": 3.160000000000012e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 9.480000000000079e-06,
+        "cumulative_elapsed_s": 0.002665327,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 11,
+        "left_import_s": 4.3840000000000285e-05,
+        "left_normalize_s": 1.1399999999999952e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 8.999999999989919e-08,
+        "piece_union_record_s": 4.000000000019613e-08,
+        "piece_union_seal_s": 2.0000000000314905e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 7.087000000000022e-05,
+        "right_normalize_s": 3.0179999999999877e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 9.420000000000001e-06,
+        "cumulative_elapsed_s": 0.002835248,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 12,
+        "left_import_s": 4.470999999999989e-05,
+        "left_normalize_s": 1.1490000000000285e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 7.999999999995858e-08,
+        "piece_union_record_s": 2.9999999999821836e-08,
+        "piece_union_seal_s": 2.9999999999821836e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 7.172100000000028e-05,
+        "right_normalize_s": 3.047999999999983e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 1.3290000000000003e-05,
+        "cumulative_elapsed_s": 0.003009068,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 13,
+        "left_import_s": 4.304999999999977e-05,
+        "left_normalize_s": 1.2320000000000126e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 7.999999999995858e-08,
+        "piece_union_record_s": 2.9999999999821836e-08,
+        "piece_union_seal_s": 1.9999999999881224e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 7.18899999999998e-05,
+        "right_normalize_s": 3.108000000000017e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 9.829999999999735e-06,
+        "cumulative_elapsed_s": 0.003182669,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 14,
+        "left_import_s": 4.537999999999981e-05,
+        "left_normalize_s": 1.1989999999999917e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 7.999999999995858e-08,
+        "piece_union_record_s": 2.9999999999821836e-08,
+        "piece_union_seal_s": 1.9999999999881224e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 7.318099999999985e-05,
+        "right_normalize_s": 3.128000000000028e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_decline": "singleton_projection_ambiguous",
+        "affine_state_pattern_s": 9.459999999999764e-06,
+        "cumulative_elapsed_s": 0.0033495590000000002,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 15,
+        "left_import_s": 4.239000000000022e-05,
+        "left_normalize_s": 1.0589999999999992e-05,
+        "optimized_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 33,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "parametric_state_s": 7.999999999995858e-08,
+        "piece_union_record_s": 2.9999999999821836e-08,
+        "piece_union_seal_s": 3.000000000025552e-08,
+        "reference_bilinear_proof": {
+          "coverage": "required_by_subsequent_native_reduction_check",
+          "fusions": 0,
+          "invariant_factor_pulls": 0,
+          "method": "finite_distributivity_and_sum_interchange",
+          "projection_axis": 4294967295,
+          "projection_read": 4294967295,
+          "singleton_sums": 0,
+          "stored_work": 24,
+          "swaps": 0,
+          "zero_masks": 0
+        },
+        "right_import_s": 7.273000000000002e-05,
+        "right_normalize_s": 2.9869999999999983e-05,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      }
+    ],
+    "scalar_engine": "mandatory_exponential_polynomial",
+    "scope": {
+      "kind": "mapped_expression_equivalence",
+      "operation": "equivalence"
+    },
+    "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+    "stages_s": {
+      "affine_state_pattern_s": 0.00020464000000000013,
+      "exponential_polynomial_s": 0.0,
+      "left_import_s": 0.0008455849999999999,
+      "left_normalize_s": 0.0002438410000000005,
+      "parametric_state_s": 1.9799999999993e-06,
+      "piece_union_record_s": 6.999999999993123e-07,
+      "piece_union_reuse_s": 0.0,
+      "piece_union_seal_s": 7.899999999997536e-07,
+      "proof_reuse_s": 0.0,
+      "right_import_s": 0.001212862,
+      "right_normalize_s": 0.0005818300000000002,
+      "state_pattern_s": 0.0
+    },
+    "timings": {
+      "load_and_scope_analysis": 0.00021126
+    },
+    "total_output_families": 16,
+    "transport": "in_memory_cpp_objects",
+    "unmatched_reasons": {}
+  },
+  "frontend": {
+    "address_value_bridge": {
+      "diagnostics": [],
+      "first_unavailable_reason": "",
+      "queries": 0,
+      "resolved": 0,
+      "source": "value_lowering",
+      "unavailable": 0,
+      "value_view_complete": true
+    },
+    "cluster_completion_joins": 0,
+    "cta_count": 1,
+    "dependency_compression": {
+      "bulk_read_wait": {
+        "consumers": 32,
+        "emitted_references": 64,
+        "original_references": 64,
+        "prefix_effects": 0
+      },
+      "cp_async_mbarrier": {
+        "consumers": 128,
+        "emitted_references": 256,
+        "original_references": 128,
+        "prefix_effects": 128
+      },
+      "tcgen_commit": {
+        "consumers": 3,
+        "emitted_references": 9,
+        "original_references": 12,
+        "prefix_effects": 3
+      },
+      "tcgen_load_wait": {
+        "consumers": 128,
+        "emitted_references": 256,
+        "original_references": 256,
+        "prefix_effects": 0
+      }
+    },
+    "diagnostic_sample_count": 0,
+    "discharged_codes": [
+      "mma_memory_effect_refinement",
+      "tcgen_pipeline_effect_refinement",
+      "tcgen_commit_notification_order_refinement"
+    ],
+    "executed_records": 125162,
+    "frontend_assumptions": {
+      "assertion_failure_forms": [
+        "trap",
+        "__assertfail"
+      ],
+      "assertion_uses": 0,
+      "bounded_loop_uses": 0,
+      "clc_failure": true,
+      "clc_uses": 353,
+      "data_branch_decisions": [],
+      "election_policy": {
+        "fallback": "lowest_member",
+        "preferred_lane": 0,
+        "strategy": "preferred_member"
+      },
+      "election_uses": 1600,
+      "fixed_election": true,
+      "isolated_launch": true,
+      "noalias_unbounded": false,
+      "opaque_compute_regions": [],
+      "pointer_contract": {
+        "aliasing": "distinct_objects_noalias",
+        "extent_bytes": "unbounded"
+      },
+      "representative_branch_uses": 0,
+      "trap_only_equality_assertions_hold": true
+    },
+    "implementation": "cpp",
+    "input_objects": [
+      {
+        "bytes": 8,
+        "object": "b",
+        "offset": 384,
+        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_47MainloopSm100UmmaMixedTmaCpAsyncWarpSpecializedILi12ELi3ELi2ENS5_IJNS4_1CILi1EEESB_SB_EEENS_4arch5Sm100EEENS5_IJNSA_ILi128EEENSA_ILi16EEESG_EEENS_12float_e4m3_tENS5_IJlSB_lEEESJ_SK_NS4_8TiledMMAINS4_8MMA_AtomIJNS4_19SM100_MMA_F8F6F4_SSISJ_SJ_fLi128ELi16ELNS4_4UMMA5MajorE0ELSP_0ELNSO_7ScaleInE0ELSQ_0EEEEEENS4_6LayoutISC_NS5_IJNSA_ILi0EEESU_SU_EEEEENS5_IJNS4_10UnderscoreESX_SX_EEEEENS4_13SM90_TMA_LOADENS4_14ComposedLayoutINS4_7SwizzleILi3ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi8EEENST_INS5_IJNSA_ILi8EEESG_EEENS5_IJSG_SB_EEEEEEEvNS4_8identityENS4_9TiledCopyINS4_9Copy_AtomIJNS4_31SM80_CP_ASYNC_CACHEGLOBAL_ZFILLINS_9uint128_tES1F_EESJ_EEENST_INS5_IJNS5_IJS16_SH_EEESH_EEENS5_IJNS5_IJNSA_ILi256EEESB_EEESH_EEEEENS5_IJSH_SG_EEEEES1A_vS1B_EENS_8epilogue10collective18CollectiveEpilogueINS1R_23Sm100TmaWarpSpecializedILi2ELi1ELi16ELb1ELb0EEEJSI_NS5_IJNST_ISG_SB_EENST_ISH_SB_EEEEENS_6half_tENS5_IJSB_llEEES1Z_S20_NS1R_6fusion15FusionCallbacksIS1V_NS21_17LinearCombinationIS1Z_fS1Z_fLNS_15FloatRoundStyleE2EEESI_S1Y_JEEENS4_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b2xES10_NS11_IS13_NS14_ILi16EEENST_INS5_IJNSA_ILi64EEES16_EEENS5_IJSB_S2C_EEEEEEENS4_17SM75_U16x8_LDSM_TENS4_14SM90_TMA_STOREES2G_NS4_17SM90_U16x8_STSM_TENS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEEEEEvvEEEEvNT_6ParamsE_param_0",
+        "source": "declaration"
+      }
+    ],
+    "lowered_instruction_count": 32987,
+    "mma_refinement": {
+      "blocked": [],
+      "discharged": 4
+    },
+    "reached_opcodes": {
+      "add.s32": 12937,
+      "add.s64": 1056,
+      "and.b16": 128,
+      "and.b32": 2240,
+      "and.b64": 128,
+      "and.pred": 512,
+      "bar.arrive": 32,
+      "bar.sync": 1152,
+      "bar.warp.sync": 192,
+      "bra": 6256,
+      "bra.uni": 224,
+      "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128": 352,
+      "clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128": 1,
+      "cp.async.bulk.commit_group": 32,
+      "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group": 64,
+      "cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 1,
+      "cp.async.bulk.wait_group.read": 32,
+      "cp.async.cg.shared.global.L2::128B": 128,
+      "cp.async.mbarrier.arrive.shared::cta.b64": 128,
+      "cvt.f32.f16": 2048,
+      "cvt.rn.f16x2.f32": 1024,
+      "cvt.s64.s32": 128,
+      "cvt.u32.u64": 256,
+      "cvt.u64.u32": 448,
+      "cvta.param.u64": 160,
+      "cvta.shared.u64": 128,
+      "cvta.to.shared.u64": 128,
+      "elect.sync": 1600,
+      "fence.mbarrier_init.release.cluster": 1920,
+      "fence.proxy.async.shared::cta": 480,
+      "fma.rn.f32": 2048,
+      "griddepcontrol.wait": 64,
+      "ld.param.b32": 1984,
+      "ld.param.b64": 2048,
+      "ld.param.v2.b32": 1184,
+      "ld.param.v4.b32": 672,
+      "ld.shared.b128": 352,
+      "ld.shared.b32": 160,
+      "mad.lo.s32": 1184,
+      "mapa.shared::cluster.u32": 481,
+      "mbarrier.arrive.expect_tx.shared::cluster.b64": 1,
+      "mbarrier.arrive.expect_tx.shared::cta.b64": 1,
+      "mbarrier.arrive.shared::cluster.b64": 480,
+      "mbarrier.arrive.shared::cta.b64": 128,
+      "mbarrier.init.shared::cta.b64": 63,
+      "mbarrier.test_wait.parity.shared::cta.b64": 96,
+      "mbarrier.try_wait.parity.shared::cta.b64": 3040,
+      "mov.b16": 768,
+      "mov.b32": 14205,
+      "mov.b64": 593,
+      "mov.pred": 1024,
+      "mov.s32": 1650,
+      "mov.u32": 7136,
+      "mul.f32": 2048,
+      "mul.hi.u32": 1344,
+      "mul.lo.s32": 128,
+      "mul.lo.s64": 128,
+      "mul.wide.s32": 384,
+      "mul.wide.u32": 256,
+      "neg.s32": 256,
+      "not.pred": 640,
+      "or.b32": 672,
+      "or.b64": 192,
+      "or.pred": 2016,
+      "ret": 384,
+      "selp.b32": 8576,
+      "selp.u32": 352,
+      "setp.eq.b16": 128,
+      "setp.eq.b32": 6208,
+      "setp.eq.b64": 2048,
+      "setp.eq.f32": 640,
+      "setp.eq.u32": 128,
+      "setp.gt.s32": 512,
+      "setp.lt.s32": 1376,
+      "setp.ne.b16": 128,
+      "setp.ne.b32": 6116,
+      "setp.ne.b64": 1408,
+      "shfl.sync.idx.b32": 3072,
+      "shl.b32": 4802,
+      "shr.s32": 384,
+      "shr.u32": 2368,
+      "shr.u64": 128,
+      "stmatrix.sync.aligned.x4.trans.m8n8.shared.b16": 256,
+      "sub.s32": 1184,
+      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 32,
+      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 3,
+      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 32,
+      "tcgen05.ld.sync.aligned.16x256b.x2.b32": 256,
+      "tcgen05.mma.cta_group::1.kind::f8f6f4": 4,
+      "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 32,
+      "tcgen05.wait::ld.sync.aligned": 128,
+      "xor.b32": 3008,
+      "xor.b64": 128
+    },
+    "shared_constant_propagation": {
+      "read_from_dependencies": 0,
+      "representation": "sparse_known_bytes",
+      "validation": "pending_backend"
+    },
+    "source_binding_storage": {
+      "binding_templates": 25,
+      "generated_address_rows": 0,
+      "generated_body_rows": 0,
+      "generated_memory_instances": 0,
+      "logical_instructions": 32987,
+      "stored_bindings": 2396
+    },
+    "source_edge_storage": {
+      "binding_templates": 418,
+      "logical_edges": 32603,
+      "stored_bindings": 418
+    },
+    "tcgen_history_refinement": {
+      "blocked": [],
+      "notifications": 3,
+      "operations": 4
+    },
+    "thread_count": 384,
+    "unsupported_occurrence_counts": {},
+    "user_branch_decisions": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 353,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 1600,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "trap_only_equality_assertions_hold": true
+  },
+  "hb_queries": {
+    "memory": {
+      "algorithm": "not-built",
+      "batches": 0,
+      "cache_hits": 0,
+      "dfs_queries": 0,
+      "edge_visits": 0,
+      "filtered_queries": 0,
+      "queries": 0,
+      "shared_peak_index_bytes": 0
+    },
+    "required_orders": {
+      "algorithm": "member-relations",
+      "batches": 1,
+      "edge_visits": 9118,
+      "member_enumerations": 0,
+      "request_construction": {
+        "concrete_pair_materializations": 0,
+        "endpoint_reads": 1040,
+        "family_requests": 64,
+        "logical_orders": 8704,
+        "owner_bindings": 544,
+        "stored_orders": 272
+      }
+    }
+  },
+  "implementation": "cpp",
+  "memory_analysis": {
+    "address_candidates": 177522,
+    "address_model": {
+      "cache_hits": 0,
+      "ground_disjoint": 0,
+      "ground_overlap": 0,
+      "layer0_disjoint": 0,
+      "refined_pairs": 0,
+      "solver_queries": 0,
+      "solver_sat": 0,
+      "solver_unknown": 0,
+      "solver_unsat": 0
+    },
+    "candidate_generation_fallback": false,
+    "exhaustive": false,
+    "family_analysis": {
+      "access_families": 6572,
+      "affine_member_rows": 72470,
+      "candidate_relations": 19256,
+      "hb_frontier_pieces": 70,
+      "hb_member_enumerations": 0,
+      "logical_accesses": 35776
+    },
+    "hb_algorithm": "member-relations",
+    "hb_batches": 32,
+    "hb_cache_hits": 0,
+    "hb_dfs_queries": 0,
+    "hb_edge_visits": 46889,
+    "hb_filtered_queries": 0,
+    "hb_peak_index_bytes": 0,
+    "hb_queries": 177522,
+    "hb_query_seconds": 0.009708199000000002,
+    "overlap_queries": 5332,
+    "strategy": "conflict-family",
+    "unordered_candidates_examined": 5332
+  },
+  "memory_analysis_complete": true,
+  "mma_operand_ordering": {},
+  "mode": "verify",
+  "peak_footprint_mib": 156.9609375,
+  "peak_rss_mib": 466.171875,
+  "pipeline_elapsed_seconds": 1.015967177,
+  "race_count": 0,
+  "race_samples_truncated": false,
+  "races": [],
+  "required_order_domains": 272,
+  "required_orders": 8704,
+  "result": "verified",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "search_complete": true,
+  "semantic_assumptions": {
+    "bounded_computation_loops": false,
+    "clc_always_fails": true,
+    "duplicate_tma_store_benign": true,
+    "representative_branches": false,
+    "representative_election": true
+  },
+  "semantic_program": {
+    "binding_diagnostic_count": 0,
+    "binding_diagnostics": [],
+    "execution_cohorts": 27,
+    "mapping_complete": true,
+    "memory_binding_stored_rows": 10566,
+    "memory_binding_templates": 2157,
+    "memory_bindings": 19010,
+    "memory_linking_templates_used": true,
+    "synchronization_groups": 649,
+    "synchronization_groups_materialized": true,
+    "synthetic_synchronization_nodes": 17,
+    "thread_prefix_groups": 17099,
+    "value_diagnostic_count": 0,
+    "value_diagnostics": []
+  },
+  "source_violations": [],
+  "synchronization_input": {
+    "compute_access_binding": "after_happens_before",
+    "kind": "ordering_endpoints",
+    "memory_address_payloads": false
+  },
+  "template_execution": {
+    "completed_ctas": 1,
+    "coordinate_bindings": 0,
+    "logical_thread_steps": 131430,
+    "path_entries": 4425,
+    "record_bindings": 3493,
+    "record_nodes": 2912,
+    "splits": 13,
+    "template_steps": 3047,
+    "thread_memberships": 384,
+    "value_nodes": 912
+  },
+  "thread_record_compression": {
+    "completed_ctas": 1,
+    "enabled": true,
+    "estimated_pool_bytes_sum": 0,
+    "intern_calls": 0,
+    "logical_records": 125162,
+    "record_handle_bytes": 32,
+    "templates": 0,
+    "unique_bindings": 0
+  },
+  "unresolved_count": 0,
+  "value_analysis": {
+    "checks": {
+      "equivalence": "not_requested",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "diagnostics": [],
+    "duplicate_write_value_checks": 5332,
+    "equivalence_check": "equivalent",
+    "initial_memory_regions": 816,
+    "initial_read_families": 697,
+    "memory_action_storage": {
+      "logical_actions": 19010,
+      "stored_runs": 14522
+    },
+    "output_region_families": 0,
+    "output_regions": 172,
+    "passes": [
+      {
+        "name": "packing",
+        "rewritten_instances": 16,
+        "rewritten_nodes": 16,
+        "semantics": "exact_fixed_width"
+      },
+      {
+        "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+        "name": "software_exp2",
+        "rewritten_instances": 0,
+        "rewritten_nodes": 0,
+        "semantics": "ideal_exp2"
+      },
+      {
+        "converted_instances": 41902,
+        "name": "type_edges",
+        "removed_nodes": 1554
+      },
+      {
+        "name": "memory_elimination"
+      },
+      {
+        "elements": 0,
+        "identities": 21,
+        "layouts": 696,
+        "mapping_blocks": 1208,
+        "name": "view_normalization",
+        "original_pieces": 7424,
+        "reused_initial_reads": 816,
+        "reused_views": 516,
+        "segmented": 256,
+        "slices": 0,
+        "stored_mapping_blocks": 692,
+        "typed_output_pieces": 0,
+        "typed_output_regions": 0
+      }
+    ],
+    "processed_memory_actions": 19010,
+    "processed_memory_families": 0,
+    "read_substitutions": 7099,
+    "result": "verified",
+    "scalar_fold": {
+      "checks": {
+        "equivalence": "not_requested",
+        "memory": "not_requested",
+        "synchronization": "not_requested"
+      },
+      "construction_collections": 0,
+      "diagnostics": [],
+      "output_count": 2048,
+      "output_families_merged": 0,
+      "output_family_count": 16,
+      "output_root_count": 16,
+      "peak_construction_nodes": 538,
+      "result": "verified",
+      "scope": {
+        "operation": "scalar_fold"
+      },
+      "shared_view_projection_hits": 60,
+      "source_outputs": 172,
+      "spatial_families_projected": 16,
+      "spatial_outputs_projected": 2048,
+      "spatial_template_operations": 0,
+      "statistics": {
+        "constants": 21,
+        "edges": 265,
+        "folds": 32,
+        "indices": 3,
+        "initial_cells": 17,
+        "logical_iterations": 576,
+        "logical_iterations_overflow": false,
+        "max_fold_nesting": 2,
+        "nodes": 157,
+        "nodes_before_final_collection": 538,
+        "nodes_reclaimed": 381,
+        "operations": 84,
+        "parameters": 0,
+        "range_descriptions": 32,
+        "storage_nodes": 157,
+        "unique_fold_bodies": 32
+      }
+    },
+    "scope": {
+      "operation": "value_analysis"
+    },
+    "serialization": {
+      "action_patterns": 14522,
+      "binding_patterns": 10566,
+      "domain_refinements": 87878,
+      "elapsed_seconds": 0.115553475,
+      "event_families": 22154,
+      "expanded_event_records": 0,
+      "largest_batch_members": 124,
+      "logical_actions": 19010,
+      "logical_events": 222928,
+      "peak_rss_mib_at_completion": 466.171875,
+      "reachability_queries": 0,
+      "relations": 83885,
+      "rss_mib_at_completion": 145.33984375,
+      "scheduled_batches": 22154,
+      "singleton_batches": 13112,
+      "value_families": 9580
+    },
+    "shared_read_families": 528,
+    "shared_read_instances": 5310,
+    "stored_read_substitutions": 1789
+  },
+  "value_ir_instance_count": 124323,
+  "value_ir_node_count": 10593,
+  "value_view_complete": true,
+  "verification_elapsed_seconds": 0.698031133,
+  "verification_limitations": [],
+  "verification_result": "race_free",
+  "warning_count": 85312,
+  "warning_samples_truncated": true,
+  "warnings": [
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 129,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35666,
+        "instruction": 11761,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 130,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 36297,
+        "instruction": 11847,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 131,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 36928,
+        "instruction": 11933,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 132,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 37559,
+        "instruction": 12019,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 133,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 38190,
+        "instruction": 12105,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 134,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 38821,
+        "instruction": 12191,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 135,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 39452,
+        "instruction": 12277,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 136,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 40083,
+        "instruction": 12363,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 137,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 40714,
+        "instruction": 12449,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 138,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 41345,
+        "instruction": 12535,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 139,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 41976,
+        "instruction": 12621,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 140,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 42607,
+        "instruction": 12707,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 141,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 43238,
+        "instruction": 12793,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 142,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 43869,
+        "instruction": 12879,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 143,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 44500,
+        "instruction": 12965,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 35035,
+        "instruction": 11675,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "d",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 144,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 1675,
+          "kind": "memory"
+        },
+        "event": 45131,
+        "instruction": 13051,
+        "location": {
+          "column": 1,
+          "file": "corpus/cutlass92_blackwell_moe_gemm_regular.compute_100a.ptx",
+          "line": 9500
+        },
+        "mode": "write"
+      }
+    }
+  ],
+  "wellsync_timeout_seconds": 500.0,
+  "whole_pipeline_timeout_seconds": 496.673
+}

@@ -1,0 +1,59 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN12tensorrt_llm3_v17kernels18llama4_min_latency21llama4_bf16_bf16_gemm28llama4_bf16_bf16_gemm_kernelEiPK13__nv_bfloat16S6_PS4_",
+  "launch": {
+    "grid_dim": [
+      128,
+      1,
+      1
+    ],
+    "block_dim": [
+      256,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "arguments": [
+    {
+      "field": "num_tokens",
+      "value": 1
+    }
+  ],
+  "declarations": [
+    {
+      "name": "num_tokens",
+      "parameter": 0,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "type": "pointer",
+      "object": "A"
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "type": "pointer",
+      "object": "B"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "type": "pointer",
+      "object": "C"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

@@ -1,0 +1,860 @@
+{
+  "address_model": {
+    "address_invariants": [],
+    "kind": "symbolic",
+    "layers": [
+      0,
+      2
+    ],
+    "solver": "z3",
+    "solver_timeout_ms": 100
+  },
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    }
+  ],
+  "checks": {
+    "equivalence": "passed",
+    "memory": "passed",
+    "synchronization": "passed"
+  },
+  "counts": {
+    "edges": 4298151,
+    "events": 1592236,
+    "instructions": 342384,
+    "memory_accesses": 1056962,
+    "threads": 768
+  },
+  "diagnostics": [],
+  "equivalence": {
+    "access_validity": "no_unresolved_symbolic_byte_reads",
+    "arena_nodes": 32608,
+    "checks": {
+      "equivalence": "passed",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "comparison_elapsed_seconds": 0.379067546,
+    "context_declaration": {
+      "assumptions": [],
+      "fixed_inputs": [],
+      "inputs": [],
+      "predicate_nodes": []
+    },
+    "context_policy": "explicit native caller premises; no implied provenance certification",
+    "counters": {
+      "add_term_visits": 135387,
+      "affine_state_banks": 1,
+      "call_definition_node_visits": 5612,
+      "canonical_factor_visits": 9520,
+      "canonical_node_visits": 14764,
+      "canonical_sum_initials": 8,
+      "certified_state_pattern_cache_hits": 13,
+      "certified_state_pattern_decline_no_certified_state": 3,
+      "certified_state_pattern_work": 48,
+      "coefficient_normalizations": 13,
+      "completed_reductions": 3164,
+      "constant_binary32_bitcasts": 40,
+      "coverage_polynomial_peak": 4,
+      "coverage_polynomial_visits": 22188,
+      "coverage_stored_piece_visits": 30260,
+      "ep_body_anchor_edges": 15856,
+      "ep_body_anchor_limited": 54,
+      "ep_body_anchor_nodes": 15912,
+      "ep_body_call_rebuilds": 2783,
+      "ep_body_deferred_call_anchors": 15696,
+      "ep_body_deferred_unmatched_anchors": 15696,
+      "ep_body_fold_scope_boundaries": 36,
+      "ep_body_instance_cache_entries": 1576,
+      "ep_body_obligations": 4359,
+      "ep_body_pattern_anchor_cache_hits": 20935,
+      "ep_body_payload_summary_nodes": 308,
+      "ep_body_proofs": 2452,
+      "ep_body_read_anchor_rejections": 5028,
+      "ep_body_target_anchor_cache_hits": 17083,
+      "ep_cross_products": 7,
+      "ep_identity_proofs": 2456,
+      "ep_scalar_attempts": 4363,
+      "ep_scalar_proofs": 2456,
+      "finite_bilinear_banks": 1,
+      "finite_state_reuse_banks": 1,
+      "fold_alpha_root_cache_hits": 8937,
+      "fold_alpha_signature_edges": 1998,
+      "fold_alpha_signatures": 1117,
+      "fold_alpha_states": 2439,
+      "fp_idiom_power_constructions": 0,
+      "fp_idiom_rm_producers": 0,
+      "ideal_additive_compiler_exp_sequences": 0,
+      "ideal_compiler_exp_sequences": 0,
+      "ideal_compiler_log2_polynomials": 0,
+      "ideal_compiler_lse_sequences": 0,
+      "ideal_single_constant_exp_sequences": 0,
+      "imported_context_nodes": 24590,
+      "importer_scope_banks": 2,
+      "importer_scope_binder_hits": 1584,
+      "importer_scope_binders_created": 1584,
+      "importer_scope_leaf_lookups": 3168,
+      "importer_scope_nested_body_fallbacks": 3264,
+      "input_index_radix_quotients": 20,
+      "intern_requests": 433120,
+      "local_pattern_candidates": 48776,
+      "masked_sum_prefix_queries": 3272,
+      "normalization_cache_context_changes": 4,
+      "normalization_node_visits": 29783,
+      "packed_radix_probes": 20,
+      "packed_radix_rewrites": 20,
+      "parametric_state_attempts": 0,
+      "pattern_build_peak_nodes": 5,
+      "pattern_build_unique_nodes": 56,
+      "pattern_node_visits": 55957,
+      "proved_select_arms_imported": 14,
+      "reciprocal_exponential_factors": 4,
+      "select_max_probe_ancestor_nodes": 0,
+      "select_max_probe_temporary_nodes": 0,
+      "sum_positive_coordinate_witnesses": 4,
+      "summary_bind_nodes": 6368,
+      "summary_concat_nodes": 3124,
+      "symbolic_byte_reads_without_extent_proof": 0
+    },
+    "definedness": {
+      "partial_equivalence_families": 0,
+      "proved_families": 4,
+      "status": "proved"
+    },
+    "diagnostics": [],
+    "elapsed_s": 0.3577177,
+    "engine": "reference_guided_cpp",
+    "ep_profile": {
+      "body_instantiation_s": 0.0,
+      "body_scalar_s": 0.0,
+      "candidate_discovery_and_bookkeeping_s": 0.0,
+      "cross_product_s": 0.0,
+      "enabled": false,
+      "equal_s": 0.0,
+      "fraction": {
+        "computations": 0,
+        "previously_completed": 0,
+        "repeated_across_queries": 0,
+        "requests": 0,
+        "shared_hits": 0,
+        "unique_query_nodes": 0
+      },
+      "fraction_witness_s": 0.0,
+      "match_total_s": 0.0,
+      "normal": {
+        "computations": 0,
+        "previously_completed": 0,
+        "repeated_across_queries": 0,
+        "requests": 0,
+        "shared_hits": 0,
+        "unique_query_nodes": 0
+      },
+      "ordinary_polynomial_s": 0.0,
+      "polynomial": {
+        "computations": 0,
+        "previously_completed": 0,
+        "repeated_across_queries": 0,
+        "requests": 0,
+        "shared_hits": 0,
+        "unique_query_nodes": 0
+      },
+      "query_count": 4363,
+      "reset_s": 0.0,
+      "reuse_cache": false,
+      "shared_evictions": 0
+    },
+    "equivalence_context": {
+      "applied_predicates": 0,
+      "element_assumptions": 0,
+      "fixed_input_elements": 0,
+      "scoped_predicates": 0
+    },
+    "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+    "equivalent_families": 4,
+    "finished_families": 4,
+    "idealizations_applied": [],
+    "input_contract_applied_reads": [],
+    "legacy_scalar_fallback": false,
+    "mapping_input_memory_constraints": {},
+    "native_context": null,
+    "normalized_reachable_nodes": 18,
+    "numerical_result": "verified",
+    "pattern_nodes": 1192,
+    "peak_rss_kib": 1863760,
+    "peak_rss_scope": "process_lifetime_not_comparison_delta",
+    "piece_nodes": 17432,
+    "piece_union": {
+      "abstract_optimized_replacements": 0,
+      "abstract_reference_replacements": 0,
+      "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+      "collected_pieces": 0,
+      "late_certificates": "accepted_until_each_schema_is_complete",
+      "method": "complete_output_equalities_with_finite_piece_union",
+      "replacements": 0,
+      "schemas": [],
+      "stored_dag_work": 0,
+      "work_limit": 2000000
+    },
+    "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+    "raw_nodes": [
+      77,
+      9190
+    ],
+    "reference_term_patterns": 8,
+    "result": "verified",
+    "rows": [
+      {
+        "affine_state_pattern_s": 5.579999999991148e-06,
+        "cumulative_elapsed_s": 0.155354792,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 0,
+        "left_import_s": 0.000517682,
+        "left_normalize_s": 0.00012881000000000697,
+        "parametric_state_s": 6.40000000010077e-07,
+        "piece_union_record_s": 2.1999999999522402e-07,
+        "piece_union_seal_s": 3.1000000000336314e-07,
+        "right_import_s": 0.11033178199999999,
+        "right_normalize_s": 0.04313469399999999,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_pattern_s": 1.5200000000048508e-06,
+        "cumulative_elapsed_s": 0.17470575,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 1,
+        "left_import_s": 0.0004106809999999961,
+        "left_normalize_s": 7.972000000000534e-05,
+        "parametric_state_s": 3.29999999992836e-07,
+        "piece_union_record_s": 3.499999999823089e-07,
+        "piece_union_seal_s": 1.8999999998325912e-07,
+        "right_import_s": 0.0005975519999999734,
+        "right_normalize_s": 0.018253575000000022,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_pattern_s": 1.6300000000302184e-06,
+        "cumulative_elapsed_s": 0.336727066,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 2,
+        "left_import_s": 0.0004548620000000003,
+        "left_normalize_s": 8.521999999999696e-05,
+        "parametric_state_s": 5.299999999985872e-07,
+        "piece_union_record_s": 1.6000000002680537e-07,
+        "piece_union_seal_s": 1.3999999998182133e-07,
+        "right_import_s": 0.12325802799999999,
+        "right_normalize_s": 0.03821357599999997,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      },
+      {
+        "affine_state_pattern_s": 1.6500000000196913e-06,
+        "cumulative_elapsed_s": 0.354715689,
+        "equivalence_contract": "existing_total_value_proof",
+        "family": 3,
+        "left_import_s": 0.0004797910000000072,
+        "left_normalize_s": 7.676000000000904e-05,
+        "parametric_state_s": 2.700000000244174e-07,
+        "piece_union_record_s": 1.5000000003206893e-07,
+        "piece_union_seal_s": 1.4000000003733248e-07,
+        "right_import_s": 0.0006351529999999994,
+        "right_normalize_s": 0.01678586900000001,
+        "scalar_engine": "mandatory_exponential_polynomial",
+        "status": "equivalent",
+        "total_definedness": "proved"
+      }
+    ],
+    "scalar_engine": "mandatory_exponential_polynomial",
+    "scope": {
+      "kind": "mapped_expression_equivalence",
+      "operation": "equivalence"
+    },
+    "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+    "stages_s": {
+      "affine_state_pattern_s": 1.0380000000045908e-05,
+      "exponential_polynomial_s": 0.0,
+      "left_import_s": 0.0018630160000000036,
+      "left_normalize_s": 0.0003705100000000183,
+      "parametric_state_s": 1.7700000000259175e-06,
+      "piece_union_record_s": 8.800000000364072e-07,
+      "piece_union_reuse_s": 0.0,
+      "piece_union_seal_s": 7.800000000057761e-07,
+      "proof_reuse_s": 0.0,
+      "right_import_s": 0.23482251499999995,
+      "right_normalize_s": 0.11638771399999999,
+      "state_pattern_s": 0.0
+    },
+    "timings": {
+      "load_and_scope_analysis": 0.001225254
+    },
+    "total_output_families": 4,
+    "transport": "in_memory_cpp_objects",
+    "unmatched_reasons": {
+      "binder_in_fixed_parameter_or_factor": 8
+    }
+  },
+  "frontend": {
+    "address_value_bridge": {
+      "diagnostics": [],
+      "first_unavailable_reason": "",
+      "queries": 0,
+      "resolved": 0,
+      "source": "value_lowering",
+      "unavailable": 0,
+      "value_view_complete": true
+    },
+    "cluster_completion_joins": 2,
+    "cta_count": 2,
+    "dependency_compression": {
+      "tcgen_commit": {
+        "consumers": 16,
+        "emitted_references": 111,
+        "original_references": 1232,
+        "prefix_effects": 16
+      },
+      "tcgen_load_wait": {
+        "consumers": 512,
+        "emitted_references": 2048,
+        "original_references": 3072,
+        "prefix_effects": 0
+      },
+      "tcgen_store_wait": {
+        "consumers": 1280,
+        "emitted_references": 5632,
+        "original_references": 7680,
+        "prefix_effects": 0
+      }
+    },
+    "diagnostic_sample_count": 0,
+    "discharged_codes": [
+      "mma_memory_effect_refinement",
+      "tcgen_pipeline_effect_refinement",
+      "tcgen_commit_notification_order_refinement"
+    ],
+    "executed_records": 1312499,
+    "frontend_assumptions": {
+      "assertion_failure_forms": [
+        "trap",
+        "__assertfail"
+      ],
+      "assertion_uses": 0,
+      "bounded_loop_uses": 0,
+      "clc_failure": true,
+      "clc_uses": 0,
+      "data_branch_decisions": [],
+      "election_policy": {
+        "fallback": "lowest_member",
+        "preferred_lane": 0,
+        "strategy": "preferred_member"
+      },
+      "election_uses": 4864,
+      "fixed_election": true,
+      "isolated_launch": true,
+      "noalias_unbounded": false,
+      "opaque_compute_regions": [],
+      "pointer_contract": {
+        "aliasing": "distinct_objects_noalias",
+        "extent_bytes": "unbounded"
+      },
+      "representative_branch_uses": 0,
+      "trap_only_equality_assertions_hold": true
+    },
+    "group2_progress": {
+      "blocked": [],
+      "checked_pairs": 3,
+      "premises": [
+        "Baseline synchronization and asynchronous work must independently make progress.",
+        "Resident peer CTAs must be scheduled fairly and have admitted TMEM capacity.",
+        "Allocation placement and retirement RequiredOrders are separate obligations.",
+        "Source references, actor ordering, and collective participation must be validated."
+      ]
+    },
+    "implementation": "cpp",
+    "input_objects": [
+      {
+        "bytes": 8,
+        "object": "O",
+        "offset": 0,
+        "parameter": "kernel_cutlass_kernel_flash_attncutesm100_hd256_2cta_fmha_forwardBlackwellFusedMultiHeadAttentionForward_object_at__TiledMMA_ThrLayoutVMNK21111000_PermutationMNK____MMAAtom_ThrID21_ShapeM_0_param_8",
+        "source": "declaration"
+      }
+    ],
+    "lowered_instruction_count": 342384,
+    "mma_refinement": {
+      "blocked": [],
+      "discharged": 64
+    },
+    "reached_opcodes": {
+      "add.f32": 512,
+      "add.rm.f32x2": 9216,
+      "add.rn.f32x2": 34304,
+      "add.s32": 91382,
+      "add.s64": 1280,
+      "and.b16": 3072,
+      "and.b32": 8072,
+      "and.pred": 1664,
+      "bar.sync": 768,
+      "barrier.cluster.arrive": 768,
+      "barrier.cluster.arrive.relaxed": 768,
+      "barrier.cluster.wait": 1536,
+      "bra": 20392,
+      "bra.uni": 65,
+      "cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.L2::cache_hint.cta_group::2": 24,
+      "cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.L2::cache_hint.cta_group::2": 8,
+      "cvt.rn.bf16.f32": 65536,
+      "cvt.rn.bf16x2.f32": 32768,
+      "cvt.s64.s32": 256,
+      "cvt.u16.u32": 10,
+      "cvt.u32.u64": 1544,
+      "cvt.u64.u32": 1536,
+      "cvta.param.u64": 224,
+      "cvta.shared.u64": 392,
+      "cvta.to.shared::cluster.u64": 392,
+      "div.rn.f32": 256,
+      "div.s32": 448,
+      "elect.sync": 4864,
+      "ex2.approx.ftz.f32": 47872,
+      "fence.mbarrier_init.release.cluster": 1536,
+      "fence.proxy.async.shared::cta": 512,
+      "fma.rn.f32x2": 60416,
+      "ld.param.b32": 768,
+      "ld.param.b64": 5376,
+      "ld.param.b8": 1536,
+      "ld.param.v2.b32": 3072,
+      "ld.param.v2.b8": 1536,
+      "ld.shared.b32": 1024,
+      "mad.lo.s32": 1536,
+      "mad.lo.s64": 512,
+      "mapa.shared::cluster.u32": 1600,
+      "max.NaN.f32": 33280,
+      "max.f32": 18432,
+      "max.s32": 256,
+      "mbarrier.arrive.expect_tx.shared.b64": 10,
+      "mbarrier.arrive.shared.b64": 1536,
+      "mbarrier.arrive.shared::cluster.b64": 1600,
+      "mbarrier.init.shared.b64": 58,
+      "mbarrier.try_wait.parity.shared.b64": 5760,
+      "mov.b16": 38,
+      "mov.b32": 71090,
+      "mov.b64": 397312,
+      "mov.pred": 4184,
+      "mov.u32": 7496,
+      "mul.f32": 2304,
+      "mul.lo.s32": 64,
+      "mul.lo.s64": 512,
+      "mul.rn.f32x2": 65536,
+      "mul.wide.u32": 256,
+      "neg.s32": 256,
+      "not.pred": 5376,
+      "or.b32": 1866,
+      "or.b64": 256,
+      "prefetch.tensormap": 192,
+      "rem.s32": 256,
+      "ret": 768,
+      "selp.b32": 8704,
+      "selp.b64": 65024,
+      "selp.f32": 768,
+      "setmaxnreg.dec.sync.aligned.u32": 640,
+      "setmaxnreg.inc.sync.aligned.u32": 256,
+      "setp.eq.b32": 4512,
+      "setp.eq.f32": 512,
+      "setp.ge.s32": 34816,
+      "setp.gt.s32": 640,
+      "setp.gt.u32": 768,
+      "setp.lt.s32": 2432,
+      "setp.ne.b16": 3072,
+      "setp.ne.b32": 17280,
+      "setp.ne.f32": 256,
+      "shfl.sync.idx.b32": 3648,
+      "shl.b32": 27402,
+      "shl.b64": 512,
+      "shr.s32": 1280,
+      "shr.u32": 4672,
+      "st.global.b16": 65536,
+      "st.shared.b32": 256,
+      "sub.f32": 1280,
+      "sub.rn.f32x2": 18432,
+      "sub.s32": 1664,
+      "tcgen05.alloc.cta_group::2.sync.aligned.shared::cta.b32": 64,
+      "tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 16,
+      "tcgen05.dealloc.cta_group::2.sync.aligned.b32": 64,
+      "tcgen05.ld.sync.aligned.32x32b.x16.b32": 4096,
+      "tcgen05.ld.sync.aligned.32x32b.x2.b32": 256,
+      "tcgen05.ld.sync.aligned.32x32b.x32.b32": 4096,
+      "tcgen05.mma.cta_group::2.kind::f16": 64,
+      "tcgen05.relinquish_alloc_permit.cta_group::2.sync.aligned": 64,
+      "tcgen05.st.sync.aligned.32x32b.x16.b32": 4096,
+      "tcgen05.st.sync.aligned.32x32b.x2.b32": 512,
+      "tcgen05.st.sync.aligned.32x32b.x32.b32": 1024,
+      "tcgen05.wait::ld.sync.aligned": 512,
+      "tcgen05.wait::st.sync.aligned": 1280,
+      "xor.b32": 3946
+    },
+    "shared_constant_propagation": {
+      "read_from_dependencies": 0,
+      "representation": "sparse_known_bytes",
+      "validation": "pending_backend"
+    },
+    "source_binding_storage": {
+      "binding_templates": 25,
+      "generated_address_rows": 0,
+      "generated_body_rows": 0,
+      "generated_memory_instances": 0,
+      "logical_instructions": 342384,
+      "stored_bindings": 10004
+    },
+    "source_edge_storage": {
+      "binding_templates": 1645,
+      "logical_edges": 341616,
+      "stored_bindings": 1648
+    },
+    "tcgen_history_refinement": {
+      "blocked": [],
+      "notifications": 16,
+      "operations": 64
+    },
+    "thread_count": 768,
+    "unsupported_occurrence_counts": {},
+    "user_branch_decisions": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 4864,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "trap_only_equality_assertions_hold": true
+  },
+  "hb_queries": {
+    "memory": {
+      "algorithm": "not-built",
+      "batches": 0,
+      "cache_hits": 0,
+      "dfs_queries": 0,
+      "edge_visits": 0,
+      "filtered_queries": 0,
+      "queries": 0,
+      "shared_peak_index_bytes": 0
+    },
+    "required_orders": {
+      "algorithm": "member-relations",
+      "batches": 56,
+      "edge_visits": 6313051,
+      "member_enumerations": 0,
+      "request_construction": {
+        "concrete_pair_materializations": 0,
+        "endpoint_reads": 318268,
+        "family_requests": 14389,
+        "logical_orders": 1337280,
+        "owner_bindings": 872797,
+        "stored_orders": 27708
+      }
+    }
+  },
+  "implementation": "cpp",
+  "memory_analysis": {
+    "address_candidates": 7522242,
+    "address_model": {
+      "cache_hits": 0,
+      "ground_disjoint": 0,
+      "ground_overlap": 0,
+      "layer0_disjoint": 0,
+      "refined_pairs": 0,
+      "solver_queries": 0,
+      "solver_sat": 0,
+      "solver_unknown": 0,
+      "solver_unsat": 0
+    },
+    "candidate_generation_fallback": false,
+    "exhaustive": false,
+    "family_analysis": {
+      "access_families": 107839,
+      "affine_member_rows": 0,
+      "candidate_relations": 6869131,
+      "hb_frontier_pieces": 1499204,
+      "hb_member_enumerations": 0,
+      "logical_accesses": 1056962
+    },
+    "hb_algorithm": "member-relations",
+    "hb_batches": 862,
+    "hb_cache_hits": 0,
+    "hb_dfs_queries": 0,
+    "hb_edge_visits": 36460289,
+    "hb_filtered_queries": 0,
+    "hb_peak_index_bytes": 0,
+    "hb_queries": 7522242,
+    "hb_query_seconds": 8.179133413999992,
+    "overlap_queries": 0,
+    "strategy": "conflict-family",
+    "unordered_candidates_examined": 0
+  },
+  "memory_analysis_complete": true,
+  "mma_operand_ordering": {},
+  "mode": "verify",
+  "peak_footprint_mib": 1801.01171875,
+  "peak_rss_mib": 1820.078125,
+  "pipeline_elapsed_seconds": 43.219330524,
+  "race_count": 0,
+  "race_samples_truncated": false,
+  "races": [],
+  "required_order_domains": 27708,
+  "required_orders": 1337280,
+  "result": "verified",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "search_complete": true,
+  "semantic_assumptions": {
+    "bounded_computation_loops": false,
+    "clc_always_fails": true,
+    "duplicate_tma_store_benign": true,
+    "representative_branches": false,
+    "representative_election": true
+  },
+  "semantic_program": {
+    "binding_diagnostic_count": 0,
+    "binding_diagnostics": [],
+    "execution_cohorts": 44,
+    "mapping_complete": true,
+    "memory_binding_stored_rows": 461621,
+    "memory_binding_templates": 8276,
+    "memory_bindings": 520194,
+    "memory_linking_templates_used": true,
+    "synchronization_groups": 8502,
+    "synchronization_groups_materialized": true,
+    "synthetic_synchronization_nodes": 444,
+    "thread_prefix_groups": 195282,
+    "value_diagnostic_count": 0,
+    "value_diagnostics": []
+  },
+  "source_violations": [],
+  "synchronization_input": {
+    "compute_access_binding": "after_happens_before",
+    "kind": "ordering_endpoints",
+    "memory_address_payloads": false
+  },
+  "template_execution": {
+    "completed_ctas": 2,
+    "coordinate_bindings": 0,
+    "logical_thread_steps": 1319947,
+    "path_entries": 34017,
+    "record_bindings": 65968,
+    "record_nodes": 32141,
+    "splits": 21,
+    "template_steps": 32527,
+    "thread_memberships": 768,
+    "value_nodes": 34436
+  },
+  "thread_record_compression": {
+    "completed_ctas": 2,
+    "enabled": true,
+    "estimated_pool_bytes_sum": 0,
+    "intern_calls": 0,
+    "logical_records": 1312499,
+    "record_handle_bytes": 32,
+    "templates": 0,
+    "unique_bindings": 0
+  },
+  "unresolved_count": 0,
+  "value_analysis": {
+    "checks": {
+      "equivalence": "not_requested",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "diagnostics": [],
+    "duplicate_write_value_checks": 0,
+    "equivalence_check": "equivalent",
+    "initial_memory_regions": 16512,
+    "initial_read_families": 16512,
+    "memory_action_storage": {
+      "logical_actions": 520194,
+      "stored_runs": 461621
+    },
+    "output_region_families": 0,
+    "output_regions": 65536,
+    "passes": [
+      {
+        "name": "packing",
+        "rewritten_instances": 228544,
+        "rewritten_nodes": 5544,
+        "semantics": "exact_fixed_width"
+      },
+      {
+        "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+        "name": "software_exp2",
+        "rewritten_instances": 36864,
+        "rewritten_nodes": 864,
+        "semantics": "ideal_exp2"
+      },
+      {
+        "converted_instances": 1924129,
+        "name": "type_edges",
+        "removed_nodes": 46424
+      },
+      {
+        "name": "memory_elimination"
+      },
+      {
+        "elements": 0,
+        "identities": 337,
+        "layouts": 130,
+        "mapping_blocks": 8834,
+        "name": "view_normalization",
+        "original_pieces": 388096,
+        "reused_initial_reads": 16512,
+        "reused_views": 32,
+        "segmented": 256,
+        "slices": 8192,
+        "stored_mapping_blocks": 8802,
+        "typed_output_pieces": 0,
+        "typed_output_regions": 0
+      }
+    ],
+    "processed_memory_actions": 520194,
+    "processed_memory_families": 0,
+    "read_substitutions": 26172,
+    "result": "verified",
+    "scalar_fold": {
+      "checks": {
+        "equivalence": "not_requested",
+        "memory": "not_requested",
+        "synchronization": "not_requested"
+      },
+      "construction_collections": 0,
+      "diagnostics": [],
+      "output_count": 65536,
+      "output_families_merged": 0,
+      "output_family_count": 4,
+      "output_root_count": 4,
+      "peak_construction_nodes": 83048,
+      "result": "verified",
+      "scope": {
+        "operation": "scalar_fold"
+      },
+      "shared_view_projection_hits": 36546,
+      "source_outputs": 65536,
+      "spatial_families_projected": 4,
+      "spatial_outputs_projected": 65536,
+      "spatial_template_operations": 0,
+      "statistics": {
+        "constants": 267,
+        "edges": 17034,
+        "folds": 3192,
+        "indices": 6,
+        "initial_cells": 796,
+        "logical_iterations": 51008,
+        "logical_iterations_overflow": false,
+        "max_fold_nesting": 4,
+        "nodes": 9190,
+        "nodes_before_final_collection": 83048,
+        "nodes_reclaimed": 73858,
+        "operations": 4929,
+        "parameters": 0,
+        "range_descriptions": 3192,
+        "storage_nodes": 9190,
+        "unique_fold_bodies": 3192
+      }
+    },
+    "scope": {
+      "operation": "value_analysis"
+    },
+    "serialization": {
+      "action_patterns": 461621,
+      "binding_patterns": 461621,
+      "domain_refinements": 1595496,
+      "elapsed_seconds": 2.316217987,
+      "event_families": 328900,
+      "expanded_event_records": 0,
+      "largest_batch_members": 96,
+      "logical_actions": 520194,
+      "logical_events": 5679615,
+      "peak_rss_mib_at_completion": 1820.078125,
+      "reachability_queries": 0,
+      "relations": 1641866,
+      "rss_mib_at_completion": 1244.54296875,
+      "scheduled_batches": 328900,
+      "singleton_batches": 242085,
+      "value_families": 157315
+    },
+    "shared_read_families": 16,
+    "shared_read_instances": 745,
+    "stored_read_substitutions": 25427
+  },
+  "value_ir_instance_count": 2023205,
+  "value_ir_node_count": 114820,
+  "value_view_complete": true,
+  "verification_elapsed_seconds": 25.389246331,
+  "verification_limitations": [],
+  "verification_result": "race_free",
+  "warning_count": 0,
+  "warning_samples_truncated": false,
+  "warnings": [],
+  "wellsync_timeout_seconds": 500.0,
+  "whole_pipeline_timeout_seconds": 498.528
+}

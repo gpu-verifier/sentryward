@@ -1,0 +1,464 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:scale_a": "scale_a",
+      "6:global7:scale_b": "scale_b"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global7:scale_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128,
+          2
+        ],
+        "source_strides_bytes": [
+          8,
+          4
+        ],
+        "target_strides_bytes": [
+          8,
+          4
+        ]
+      },
+      "6:global7:scale_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          2
+        ],
+        "source_strides_bytes": [
+          8,
+          4
+        ],
+        "target_strides_bytes": [
+          8,
+          4
+        ]
+      }
+    },
+    "parameter_constants": {}
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global15:input.arg0.1184": "scale_a",
+      "6:global15:input.arg0.1216": "scale_b"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global15:input.arg0.1184": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128,
+          2
+        ],
+        "source_strides_bytes": [
+          4,
+          512
+        ],
+        "target_strides_bytes": [
+          8,
+          4
+        ]
+      },
+      "6:global15:input.arg0.1216": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          2
+        ],
+        "source_strides_bytes": [
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          8,
+          4
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100TmaUmmaWarpSpecializedBlockwiseScalingILi5ELi5ELi4ENS5_IJNS4_1CILi1EEESB_SB_EEENS_4arch5Sm100EEENS5_IJNSA_ILi128EEESG_SG_EEENS_12float_e4m3_tENS5_IJNS5_IJlSB_lEEENS4_6LayoutINS5_IJNS5_IJSB_iEEENS5_IJSG_iEEEiEEENS5_IJNS5_IJNSA_ILi0EEESB_EEENS5_IJSO_iEEEiEEEEEEEESI_NS5_IJSJ_NSK_INS5_IJSM_SM_iEEESR_EEEEENS4_8TiledMMAINS4_8MMA_AtomIJNS4_10MMA_TraitsINS4_19SM100_MMA_F8F6F4_SSEJSI_SI_fSG_SG_NS4_17integral_constantINS4_4UMMA5MajorELS13_0EEES14_NS11_INS12_7ScaleInELS15_0EEES16_EEEEEENSK_ISC_NS5_IJSO_SO_SO_EEEEENS5_IJNS4_10UnderscoreES1B_S1B_EEEEENS5_IJNS4_13SM90_TMA_LOADENS4_9TiledCopyINS4_9Copy_AtomIJNS4_25SM80_CP_ASYNC_CACHEALWAYSINS_9uint128_tES1I_EEfEEENSK_INS5_IJNSA_ILi32EEENSA_ILi4EEEEEENS5_IJS1M_SB_EEEEENS5_IJSG_EEEEEEEENS4_14ComposedLayoutINS4_7SwizzleILi3ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi8EEENSK_INS5_IJNSA_ILi8EEESG_EEENS5_IJSG_SB_EEEEEEEvNS4_8identityENS5_IJS1E_NS1F_INS1G_IJNS1H_IffEEfEEENSK_INS5_IJSB_SB_EEENS5_IJSO_SO_EEEEENS5_IJSB_EEEEEEEES22_vS23_EENS_8epilogue10collective18CollectiveEpilogueINS2D_23Sm100TmaWarpSpecializedILi4ELi2ELi32ELb1ELb0EEEJSH_NS5_IJNSK_ISG_SB_EENSK_IS1L_SB_EEEEENS_10bfloat16_tESJ_S2L_SJ_NS2D_6fusion15FusionCallbacksIS2H_NS2M_17LinearCombinationIS2L_fS2L_fLNS_15FloatRoundStyleE2EEESH_S2K_JEEENS4_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xES1E_NS1T_INS1U_ILi2ELi4ELi3EEENS1W_ILi16EEENSK_INS5_IJS1Y_S1L_EEENS5_IJS1L_SB_EEEEEEENS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS4_14SM90_TMA_STOREES31_S33_S33_EEEvvEEEEvNT_6ParamsE_param_0+1280": {
+        "type": "b32",
+        "literal": "0"
+      },
+      "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100TmaUmmaWarpSpecializedBlockwiseScalingILi5ELi5ELi4ENS5_IJNS4_1CILi1EEESB_SB_EEENS_4arch5Sm100EEENS5_IJNSA_ILi128EEESG_SG_EEENS_12float_e4m3_tENS5_IJNS5_IJlSB_lEEENS4_6LayoutINS5_IJNS5_IJSB_iEEENS5_IJSG_iEEEiEEENS5_IJNS5_IJNSA_ILi0EEESB_EEENS5_IJSO_iEEEiEEEEEEEESI_NS5_IJSJ_NSK_INS5_IJSM_SM_iEEESR_EEEEENS4_8TiledMMAINS4_8MMA_AtomIJNS4_10MMA_TraitsINS4_19SM100_MMA_F8F6F4_SSEJSI_SI_fSG_SG_NS4_17integral_constantINS4_4UMMA5MajorELS13_0EEES14_NS11_INS12_7ScaleInELS15_0EEES16_EEEEEENSK_ISC_NS5_IJSO_SO_SO_EEEEENS5_IJNS4_10UnderscoreES1B_S1B_EEEEENS5_IJNS4_13SM90_TMA_LOADENS4_9TiledCopyINS4_9Copy_AtomIJNS4_25SM80_CP_ASYNC_CACHEALWAYSINS_9uint128_tES1I_EEfEEENSK_INS5_IJNSA_ILi32EEENSA_ILi4EEEEEENS5_IJS1M_SB_EEEEENS5_IJSG_EEEEEEEENS4_14ComposedLayoutINS4_7SwizzleILi3ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi8EEENSK_INS5_IJNSA_ILi8EEESG_EEENS5_IJSG_SB_EEEEEEEvNS4_8identityENS5_IJS1E_NS1F_INS1G_IJNS1H_IffEEfEEENSK_INS5_IJSB_SB_EEENS5_IJSO_SO_EEEEENS5_IJSB_EEEEEEEES22_vS23_EENS_8epilogue10collective18CollectiveEpilogueINS2D_23Sm100TmaWarpSpecializedILi4ELi2ELi32ELb1ELb0EEEJSH_NS5_IJNSK_ISG_SB_EENSK_IS1L_SB_EEEEENS_10bfloat16_tESJ_S2L_SJ_NS2D_6fusion15FusionCallbacksIS2H_NS2M_17LinearCombinationIS2L_fS2L_fLNS_15FloatRoundStyleE2EEESH_S2K_JEEENS4_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xES1E_NS1T_INS1U_ILi2ELi4ELi3EEENS1W_ILi16EEENSK_INS5_IJS1Y_S1L_EEENS5_IJS1L_SB_EEEEEEENS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS4_14SM90_TMA_STOREES31_S33_S33_EEEvvEEEEvNT_6ParamsE_param_0+1312": {
+        "type": "b32",
+        "literal": "1065353216"
+      }
+    }
+  },
+  "provenance": {
+    "optimized_input_sha256": "8a6272c647af1de4a4446fe5f0b47d92c3359326f216bd61150ccec406cf3ba0",
+    "pointer_bindings": {
+      "source": "https://github.com/flashinfer-ai/flashinfer/blob/main/include/flashinfer/gemm/gemm_groupwise_sm100.cuh",
+      "evidence": "CUTLASS mainloop Params stores ptr_SFA/layout_SFA then ptr_SFB/layout_SFB. PTX loads these consecutive pointer/layout records at 1184/1192 and 1216/1224; scale copies consume them. Only equivalence object identities are renamed; verifier input is unchanged."
+    },
+    "source_interface": {
+      "name": "flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma1_sm100__sm_100a",
+      "family": "block",
+      "source": "references/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma1_sm100__sm_100a/reference.cu",
+      "ptx": "references/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma1_sm100__sm_100a/reference.ptx",
+      "entry": "reference",
+      "upstream": [
+        "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/gemm_groupwise_sm100_kernel_inst.jinja",
+        "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/include/flashinfer/gemm/gemm_groupwise_sm100.cuh",
+        "https://github.com/NVIDIA/cutlass/blob/b46b16d003484063bca4ed365e44095c4c6ed633/include/cutlass/gemm/kernel/sm100_gemm_tma_warpspecialized.hpp",
+        "https://github.com/NVIDIA/cutlass/blob/b46b16d003484063bca4ed365e44095c4c6ed633/include/cutlass/gemm/device/gemm_universal_adapter.h"
+      ],
+      "parameters": [
+        {
+          "name": "A",
+          "type": "e4m3",
+          "shape": [
+            128,
+            256
+          ],
+          "role": "input",
+          "source": "logical activation A",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "B",
+          "type": "e4m3",
+          "shape": [
+            128,
+            256
+          ],
+          "role": "input",
+          "source": "logical weight B; reference rows are output channels",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "D",
+          "type": "bf16",
+          "shape": [
+            128,
+            128
+          ],
+          "role": "output",
+          "source": "D",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "scale_a",
+          "type": "float",
+          "shape": [
+            128,
+            2
+          ],
+          "role": "input",
+          "source": "scale_a",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "scale_b",
+          "type": "float",
+          "shape": [
+            1,
+            2
+          ],
+          "role": "input",
+          "source": "scale_b",
+          "layout": "row-major logical tensor"
+        }
+      ],
+      "attributes": {
+        "M": 128,
+        "N": 128,
+        "K": 256,
+        "input_type": "e4m3",
+        "output_type": "bf16",
+        "scale_block": [
+          1,
+          128,
+          128
+        ]
+      },
+      "work_items": 16384,
+      "launch": {
+        "grid_dim": [
+          128,
+          1,
+          1
+        ],
+        "block_dim": [
+          128,
+          1,
+          1
+        ]
+      },
+      "optimized_input": "examples/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma1_sm100__sm_100a/input.json",
+      "optimized_input_sha256": "fd9a18646d2a202d3d93cc9544759816215ce3bf83903e44bf323eedbc26a4c6",
+      "optimized_scope_branch_choices": [],
+      "optimized_objects": {
+        "tma_descriptors": [
+          {
+            "parameter": 0,
+            "offset": 128,
+            "object": "A",
+            "element_type": "e4m3",
+            "global_shape": [
+              256,
+              128,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              1,
+              256,
+              32768
+            ],
+            "box_shape": [
+              128,
+              128,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 0,
+            "offset": 384,
+            "object": "B",
+            "element_type": "e4m3",
+            "global_shape": [
+              256,
+              128,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              1,
+              256,
+              32768
+            ],
+            "box_shape": [
+              128,
+              128,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 0,
+            "offset": 1408,
+            "object": "C",
+            "element_type": "bf16",
+            "global_shape": [
+              128,
+              128,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              256,
+              32768
+            ],
+            "box_shape": [
+              32,
+              128,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "swizzle": "64B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 0,
+            "offset": 1664,
+            "object": "D",
+            "element_type": "bf16",
+            "global_shape": [
+              128,
+              128,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              256,
+              32768
+            ],
+            "box_shape": [
+              32,
+              128,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "swizzle": "64B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          }
+        ],
+        "pointer_declarations": [
+          {
+            "name": "beta.pointer",
+            "parameter": 0,
+            "offset": 1288,
+            "type": "pointer"
+          },
+          {
+            "name": "alpha.pointer",
+            "parameter": 0,
+            "offset": 1320,
+            "type": "pointer"
+          }
+        ]
+      },
+      "comparison_domain": "ideal mathematical computation; no bitwise-equivalence claim",
+      "logical_layout_adapter": "required when optimized storage differs from reference row-major layout",
+      "equivalence_status": "not_checked"
+    },
+    "historical_paths": {
+      "interface": "references/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma1_sm100__sm_100a/interface.json",
+      "mapping": "references/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma1_sm100__sm_100a/mapping.md"
+    },
+    "mapping_notes": "# flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma1_sm100__sm_100a\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in interface.json.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| A | e4m3 | 128 x 256 | input | logical activation A |\n| B | e4m3 | 128 x 256 | input | logical weight B; reference rows are output channels |\n| D | bf16 | 128 x 128 | output | D |\n| scale_a | float | 128 x 2 | input | scale_a |\n| scale_b | float | 1 x 2 | input | scale_b |\n\n## Computation and mapping\n\nThe reference uses A[m,k], B[n,k], and D[m,n]; B is stored with output-channel first.\nFor each 128-element K block kb, accumulate its dot product, then multiply\nby scale_a[m/1,kb] * scale_b[n/128,kb] and add to D.\nScale arrays are exposed with axes [row-group,K-group]. Reindex the\noptimized scale layouts using the corresponding source layout/stride fields.\nOptimized A element offset: m*K + k.\nOptimized B element offset: n*K + k.\nOptimized D element offset: m*N + n.\nReferences always store D at m*N+n; compare logical elements after this reindexing.\nThe saved epilogue uses alpha=1 and beta=0; C is not read.\n\n## Validation boundary\n\nCompiled to PTX and numerically checked on CPU. Not compared against an optimized\nGPU execution or proven equivalent. Precision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/gemm_groupwise_sm100_kernel_inst.jinja\n- https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/include/flashinfer/gemm/gemm_groupwise_sm100.cuh\n- https://github.com/NVIDIA/cutlass/blob/b46b16d003484063bca4ed365e44095c4c6ed633/include/cutlass/gemm/kernel/sm100_gemm_tma_warpspecialized.hpp\n- https://github.com/NVIDIA/cutlass/blob/b46b16d003484063bca4ed365e44095c4c6ed633/include/cutlass/gemm/device/gemm_universal_adapter.h\n"
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      128,
+      128
+    ],
+    "left_strides_bytes": [
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      256,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:B"
+      },
+      {
+        "name": "scale_a",
+        "dtype": "float32",
+        "allocation": "6:global7:scale_a"
+      },
+      {
+        "name": "scale_b",
+        "dtype": "float32",
+        "allocation": "6:global7:scale_b"
+      }
+    ]
+  }
+}

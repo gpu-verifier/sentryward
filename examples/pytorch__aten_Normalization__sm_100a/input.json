@@ -1,0 +1,192 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN2at6native36batch_norm_collect_statistics_kernelINS0_6InvStdEN3c108BFloat16ES4_fiEEvN5torch10headeronly6detail27GenericPackedTensorAccessorINS7_14TensorAccessorINS3_8ArrayRefIlEEKT0_Lm2ENS6_17RestrictPtrTraitsET3_EENS_6detail16IndexBoundsCheckILm3ESF_EESD_Lm3ESE_SF_EET2_SL_NS8_INS9_ISB_SL_Lm0ESE_SF_EENSI_ILm1ESF_EESL_Lm1ESE_SF_EESO_",
+  "launch": {
+    "grid_dim": [
+      2,
+      1,
+      1
+    ],
+    "block_dim": [
+      128,
+      4,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "arguments": [
+    {
+      "parameter": 0,
+      "offset": 8,
+      "type": "s32",
+      "value": 2
+    },
+    {
+      "parameter": 0,
+      "offset": 12,
+      "type": "s32",
+      "value": 2
+    },
+    {
+      "parameter": 0,
+      "offset": 16,
+      "type": "s32",
+      "value": 128
+    },
+    {
+      "parameter": 0,
+      "offset": 20,
+      "type": "s32",
+      "value": 256
+    },
+    {
+      "parameter": 0,
+      "offset": 24,
+      "type": "s32",
+      "value": 128
+    },
+    {
+      "parameter": 0,
+      "offset": 28,
+      "type": "s32",
+      "value": 1
+    },
+    {
+      "parameter": 1,
+      "type": "f32",
+      "value": 1e-05
+    },
+    {
+      "parameter": 2,
+      "type": "f32",
+      "value": 0.0
+    },
+    {
+      "parameter": 3,
+      "offset": 8,
+      "type": "s32",
+      "value": 2
+    },
+    {
+      "parameter": 3,
+      "offset": 12,
+      "type": "s32",
+      "value": 1
+    },
+    {
+      "parameter": 4,
+      "offset": 8,
+      "type": "s32",
+      "value": 2
+    },
+    {
+      "parameter": 4,
+      "offset": 12,
+      "type": "s32",
+      "value": 1
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "pointer",
+      "object": "input",
+      "name": "input.data"
+    },
+    {
+      "parameter": 0,
+      "offset": 8,
+      "type": "s32",
+      "name": "input.sizes[0]"
+    },
+    {
+      "parameter": 0,
+      "offset": 12,
+      "type": "s32",
+      "name": "input.sizes[1]"
+    },
+    {
+      "parameter": 0,
+      "offset": 16,
+      "type": "s32",
+      "name": "input.sizes[2]"
+    },
+    {
+      "parameter": 0,
+      "offset": 20,
+      "type": "s32",
+      "name": "input.strides[0]"
+    },
+    {
+      "parameter": 0,
+      "offset": 24,
+      "type": "s32",
+      "name": "input.strides[1]"
+    },
+    {
+      "parameter": 0,
+      "offset": 28,
+      "type": "s32",
+      "name": "input.strides[2]"
+    },
+    {
+      "parameter": 1,
+      "type": "f32",
+      "name": "epsilon"
+    },
+    {
+      "parameter": 2,
+      "type": "f32",
+      "name": "momentum"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "type": "pointer",
+      "object": "save_mean",
+      "name": "save_mean.data"
+    },
+    {
+      "parameter": 3,
+      "offset": 8,
+      "type": "s32",
+      "name": "save_mean.sizes[0]"
+    },
+    {
+      "parameter": 3,
+      "offset": 12,
+      "type": "s32",
+      "name": "save_mean.strides[0]"
+    },
+    {
+      "parameter": 4,
+      "offset": 0,
+      "type": "pointer",
+      "object": "save_transformed_var",
+      "name": "save_transformed_var.data"
+    },
+    {
+      "parameter": 4,
+      "offset": 8,
+      "type": "s32",
+      "name": "save_transformed_var.sizes[0]"
+    },
+    {
+      "parameter": 4,
+      "offset": 12,
+      "type": "s32",
+      "name": "save_transformed_var.strides[0]"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_cutlass_kernel_flash_attncuteflash_bwd_sm100FlashAttentionBackwardSm100_object_at__tensor000o111012_tensor000_o_101112_tensor000o111012_tensor000_o_101112_tensor000o111012_tensorpt_0",
+  "launch": {
+    "grid_dim": [
+      48,
+      1,
+      1
+    ],
+    "block_dim": [
+      512,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      2,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "field": "scheduler.total_k",
+      "value": 320
+    },
+    {
+      "field": "scheduler.heads",
+      "value": 8
+    },
+    {
+      "field": "scheduler.batch",
+      "value": 2
+    },
+    {
+      "field": "scheduler.splits",
+      "value": 1
+    },
+    {
+      "field": "scheduler.cu_k.length",
+      "value": 3
+    },
+    {
+      "field": "cu_q.length",
+      "value": 3
+    },
+    {
+      "field": "cu_k.length",
+      "value": 3
+    },
+    {
+      "field": "softmax_scale",
+      "value": 0.08838834764831845
+    },
+    {
+      "field": "softmax_scale_log2",
+      "value": 0.12751743082459868
+    }
+  ],
+  "declarations": [
+    {
+      "name": "scheduler.total_k",
+      "parameter": 30,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.heads",
+      "parameter": 31,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.batch",
+      "parameter": 32,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.splits",
+      "parameter": 33,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.cu_k.length",
+      "parameter": 34,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "cu_q.length",
+      "parameter": 14,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "cu_k.length",
+      "parameter": 15,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "softmax_scale",
+      "parameter": 28,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "softmax_scale_log2",
+      "parameter": 29,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "parameter": 16,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 17,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 18,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 19,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 20,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 21,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 22,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 34,
+      "offset": 0,
+      "type": "pointer",
+      "object": "scheduler_cu_seqlens_k"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global5:input": "input"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          2,
+          128
+        ],
+        "source_strides_bytes": [
+          512,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          512,
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global5:input": "input"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          2,
+          128
+        ],
+        "source_strides_bytes": [
+          512,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          512,
+          256,
+          2
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN2at6native36batch_norm_collect_statistics_kernelINS0_6InvStdEN3c108BFloat16ES4_fiEEvN5torch10headeronly6detail27GenericPackedTensorAccessorINS7_14TensorAccessorINS3_8ArrayRefIlEEKT0_Lm2ENS6_17RestrictPtrTraitsET3_EENS_6detail16IndexBoundsCheckILm3ESF_EESD_Lm3ESE_SF_EET2_SL_NS8_INS9_ISB_SL_Lm0ESE_SF_EENSI_ILm1ESF_EESL_Lm1ESE_SF_EESO__param_1+0": {
+        "type": "f32",
+        "literal": "1e-05"
+      },
+      "_ZN2at6native36batch_norm_collect_statistics_kernelINS0_6InvStdEN3c108BFloat16ES4_fiEEvN5torch10headeronly6detail27GenericPackedTensorAccessorINS7_14TensorAccessorINS3_8ArrayRefIlEEKT0_Lm2ENS6_17RestrictPtrTraitsET3_EENS_6detail16IndexBoundsCheckILm3ESF_EESD_Lm3ESE_SF_EET2_SL_NS8_INS9_ISB_SL_Lm0ESE_SF_EENSI_ILm1ESF_EESL_Lm1ESE_SF_EESO__param_0+16": {
+        "type": "u32",
+        "literal": "128"
+      },
+      "_ZN2at6native36batch_norm_collect_statistics_kernelINS0_6InvStdEN3c108BFloat16ES4_fiEEvN5torch10headeronly6detail27GenericPackedTensorAccessorINS7_14TensorAccessorINS3_8ArrayRefIlEEKT0_Lm2ENS6_17RestrictPtrTraitsET3_EENS_6detail16IndexBoundsCheckILm3ESF_EESD_Lm3ESE_SF_EET2_SL_NS8_INS9_ISB_SL_Lm0ESE_SF_EENSI_ILm1ESF_EESL_Lm1ESE_SF_EESO__param_0+8": {
+        "type": "u32",
+        "literal": "2"
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global9:save_mean",
+        "right_allocation": "6:global9:save_mean",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2
+        ],
+        "left_strides_bytes": [
+          4
+        ],
+        "right_strides_bytes": [
+          4
+        ]
+      },
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global20:save_transformed_var",
+        "right_allocation": "6:global20:save_transformed_var",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2
+        ],
+        "left_strides_bytes": [
+          4
+        ],
+        "right_strides_bytes": [
+          4
+        ]
+      }
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "input",
+        "dtype": "bfloat16",
+        "allocation": "6:global5:input"
+      },
+      {
+        "name": "epsilon",
+        "parameter": 1
+      }
+    ]
+  },
+  "provenance": {
+    "sha256": "accea49621a773b0a56ada91c7c3c453db15f78db940744f126e4c9097953440",
+    "source": "// Source: https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/Normalization.cu ; https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/Normalization.cuh ; https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/torch/headeronly/core/TensorAccessor.h",
+    "scope": "Current fixed launch and input JSON; all mathematical outputs retained.",
+    "optimized_input_sha256": "accea49621a773b0a56ada91c7c3c453db15f78db940744f126e4c9097953440",
+    "ptx_sha256": "7da845b4114279a86b0ce881047aec959003c8fc37ed76f1439308ab311a7f99",
+    "upstream": [
+      "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/Normalization.cu",
+      "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/Normalization.cuh",
+      "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/torch/headeronly/core/TensorAccessor.h"
+    ],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

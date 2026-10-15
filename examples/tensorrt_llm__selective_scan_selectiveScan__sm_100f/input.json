@@ -1,0 +1,205 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN12tensorrt_llm3_v17kernels26selective_scan_loop_kernelIffLi16ELi128ELi12ELi6EEEvNS1_13SSMParamsBaseE",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      128,
+      2,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "arguments": [
+    {
+      "parameter": 0,
+      "type": "s32",
+      "value": 1,
+      "offset": 0
+    },
+    {
+      "parameter": 0,
+      "type": "s32",
+      "value": 128,
+      "offset": 4
+    },
+    {
+      "parameter": 0,
+      "type": "s32",
+      "value": 16,
+      "offset": 8
+    },
+    {
+      "parameter": 0,
+      "type": "s32",
+      "value": 16,
+      "offset": 12
+    },
+    {
+      "parameter": 0,
+      "type": "s32",
+      "value": 1,
+      "offset": 16
+    },
+    {
+      "parameter": 0,
+      "type": "s32",
+      "value": 1,
+      "offset": 20
+    },
+    {
+      "parameter": 0,
+      "type": "s32",
+      "value": 256,
+      "offset": 24
+    },
+    {
+      "parameter": 0,
+      "type": "s32",
+      "value": 4,
+      "offset": 28
+    },
+    {
+      "parameter": 0,
+      "type": "s32",
+      "value": 4,
+      "offset": 32
+    },
+    {
+      "parameter": 0,
+      "type": "bool",
+      "value": false,
+      "offset": 36
+    },
+    {
+      "parameter": 0,
+      "type": "bool",
+      "value": true,
+      "offset": 37
+    },
+    {
+      "parameter": 0,
+      "type": "bool",
+      "value": false,
+      "offset": 38
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "offset": 40,
+      "type": "pointer",
+      "object": "A"
+    },
+    {
+      "parameter": 0,
+      "offset": 48,
+      "type": "pointer",
+      "object": "BC"
+    },
+    {
+      "parameter": 0,
+      "offset": 56,
+      "type": "pointer",
+      "object": "D"
+    },
+    {
+      "parameter": 0,
+      "offset": 64,
+      "type": "pointer",
+      "object": "u"
+    },
+    {
+      "parameter": 0,
+      "offset": 72,
+      "type": "pointer",
+      "object": "delta"
+    },
+    {
+      "parameter": 0,
+      "offset": 80,
+      "type": "pointer",
+      "object": "delta_bias"
+    },
+    {
+      "parameter": 0,
+      "offset": 88,
+      "type": "pointer",
+      "object": "out"
+    },
+    {
+      "parameter": 0,
+      "offset": 96,
+      "type": "pointer",
+      "object": "x"
+    },
+    {
+      "parameter": 0,
+      "offset": 104,
+      "type": "pointer",
+      "object": "z"
+    },
+    {
+      "parameter": 0,
+      "offset": 112,
+      "type": "pointer",
+      "object": "Os"
+    },
+    {
+      "parameter": 0,
+      "offset": 120,
+      "type": "pointer",
+      "object": "St"
+    },
+    {
+      "parameter": 0,
+      "offset": 128,
+      "type": "pointer",
+      "object": "dc"
+    },
+    {
+      "parameter": 0,
+      "offset": 136,
+      "type": "pointer",
+      "object": "dA"
+    },
+    {
+      "parameter": 0,
+      "offset": 144,
+      "type": "pointer",
+      "object": "CB"
+    },
+    {
+      "parameter": 0,
+      "offset": 152,
+      "type": "pointer",
+      "object": "desc"
+    },
+    {
+      "parameter": 0,
+      "offset": 160,
+      "type": "pointer",
+      "object": "last_token_ids"
+    },
+    {
+      "parameter": 0,
+      "offset": 168,
+      "type": "pointer",
+      "object": "slot_mapping"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

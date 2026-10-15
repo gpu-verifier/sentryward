@@ -1,0 +1,270 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V",
+      "6:global10:page_table": "page_table"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          8,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          262144,
+          32768,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          262144,
+          32768,
+          256,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          128,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          262144,
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          262144,
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          128,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          262144,
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          262144,
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global10:page_table": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          2
+        ],
+        "source_strides_bytes": [
+          8,
+          4
+        ],
+        "target_strides_bytes": [
+          8,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V",
+      "6:global10:page_table": "page_table"
+    },
+    "parameters": {},
+    "parameter_constants": {
+      "kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor0000o11101213_tensorptrbf16gmemalign16oi64div81i64div8i64div8_tensorptrbf16gmemalign16o1i64d_0_param_7+0": {
+        "type": "f32",
+        "literal": "0.12751743082459868"
+      }
+    },
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          8,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          262144,
+          256,
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          262144,
+          32768,
+          256,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          128,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          262144,
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          262144,
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          128,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          262144,
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          262144,
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global10:page_table": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          2
+        ],
+        "source_strides_bytes": [
+          8,
+          4
+        ],
+        "target_strides_bytes": [
+          8,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:O",
+    "right_allocation": "6:global1:O",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      2,
+      8,
+      128,
+      128
+    ],
+    "left_strides_bytes": [
+      262144,
+      32768,
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      262144,
+      256,
+      2048,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "checker_context": {
+    "input_contract": [
+      {
+        "object": "page_table",
+        "element_type": "s32",
+        "region": "whole_object",
+        "min_inclusive": 0,
+        "max_inclusive": 3,
+        "source": "User-authorized current four-physical-page scenario, confirmed 2026-10-09."
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "Q",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:Q"
+      },
+      {
+        "name": "K",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:K"
+      },
+      {
+        "name": "V",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:V"
+      },
+      {
+        "name": "page_table",
+        "dtype": "int32",
+        "allocation": "6:global10:page_table"
+      },
+      {
+        "name": "scale_log2",
+        "value": 0.12751743082459868
+      }
+    ]
+  }
+}

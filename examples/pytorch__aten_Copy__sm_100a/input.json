@@ -1,0 +1,187 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN2at6native18elementwise_kernelILi128ELi2EZNS0_22gpu_kernel_impl_nocastIZZZNS0_23direct_copy_kernel_cudaERNS_18TensorIteratorBaseEENKUlvE1_clEvENKUlvE5_clEvEUlfE_EEvS4_RKT_EUliE_EEviT1_",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      128,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "arguments": [
+    {
+      "parameter": 0,
+      "type": "u32",
+      "value": 6
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "type": "s32",
+      "value": 2
+    },
+    {
+      "parameter": 1,
+      "offset": 4,
+      "type": "u32",
+      "value": 3
+    },
+    {
+      "parameter": 1,
+      "offset": 8,
+      "type": "u32",
+      "value": 1431655766
+    },
+    {
+      "parameter": 1,
+      "offset": 12,
+      "type": "u32",
+      "value": 2
+    },
+    {
+      "parameter": 1,
+      "offset": 16,
+      "type": "u32",
+      "value": 2
+    },
+    {
+      "parameter": 1,
+      "offset": 20,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 1,
+      "offset": 24,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 1,
+      "offset": 304,
+      "type": "u32",
+      "value": 4
+    },
+    {
+      "parameter": 1,
+      "offset": 308,
+      "type": "u32",
+      "value": 4
+    },
+    {
+      "parameter": 1,
+      "offset": 312,
+      "type": "u32",
+      "value": 4
+    },
+    {
+      "parameter": 1,
+      "offset": 316,
+      "type": "u32",
+      "value": 12
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "u32",
+      "name": "N"
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "type": "s32",
+      "name": "f.offset_calc.dims"
+    },
+    {
+      "parameter": 1,
+      "offset": 4,
+      "type": "u32",
+      "name": "f.offset_calc.sizes_[0].divisor"
+    },
+    {
+      "parameter": 1,
+      "offset": 8,
+      "type": "u32",
+      "name": "f.offset_calc.sizes_[0].m1"
+    },
+    {
+      "parameter": 1,
+      "offset": 12,
+      "type": "u32",
+      "name": "f.offset_calc.sizes_[0].shift"
+    },
+    {
+      "parameter": 1,
+      "offset": 16,
+      "type": "u32",
+      "name": "f.offset_calc.sizes_[1].divisor"
+    },
+    {
+      "parameter": 1,
+      "offset": 20,
+      "type": "u32",
+      "name": "f.offset_calc.sizes_[1].m1"
+    },
+    {
+      "parameter": 1,
+      "offset": 24,
+      "type": "u32",
+      "name": "f.offset_calc.sizes_[1].shift"
+    },
+    {
+      "parameter": 1,
+      "offset": 304,
+      "type": "u32",
+      "name": "f.offset_calc.strides_[0][0]"
+    },
+    {
+      "parameter": 1,
+      "offset": 308,
+      "type": "u32",
+      "name": "f.offset_calc.strides_[0][1]"
+    },
+    {
+      "parameter": 1,
+      "offset": 312,
+      "type": "u32",
+      "name": "f.offset_calc.strides_[1][0]"
+    },
+    {
+      "parameter": 1,
+      "offset": 316,
+      "type": "u32",
+      "name": "f.offset_calc.strides_[1][1]"
+    },
+    {
+      "parameter": 1,
+      "offset": 504,
+      "type": "pointer",
+      "object": "out",
+      "name": "f.data[0]"
+    },
+    {
+      "parameter": 1,
+      "offset": 512,
+      "type": "pointer",
+      "object": "in",
+      "name": "f.data[1]"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

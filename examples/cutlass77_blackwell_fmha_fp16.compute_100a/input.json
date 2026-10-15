@@ -1,0 +1,310 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN7cutlass13device_kernelINS_4fmha6kernel36Sm100FmhaFwdKernelTmaWarpspecializedIN4cute5tupleIJiiiNS5_IJNS5_IJiiEEEiEEEEEENS1_10collective38Sm100FmhaFwdMainloopTmaWarpspecializedINS_6half_tEffNS5_IJNS4_1CILi256EEENSC_ILi128EEENSC_ILi64EEEEEENS5_IJiNSC_ILi1EEES7_EEENS5_IJiSH_NS5_IJNS5_IJNSC_ILi0EEEiEEEiEEEEEESM_NS9_6NoMaskENS5_IJNSC_ILi2EEESH_SH_EEENSC_ILb0EEEEENS9_38Sm100FmhaFwdEpilogueTmaWarpspecializedISB_fNS5_IJSE_SF_SE_EEESI_NS5_IJSH_S7_EEESQ_EENS2_23IndividualTileSchedulerENS2_41Sm100FmhaCtxKernelWarpspecializedScheduleEEEEEvNT_6ParamsE",
+  "launch": {
+    "dynamic_shared_bytes": 232448,
+    "block_dim": [
+      512,
+      1,
+      1
+    ],
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ]
+  },
+  "arguments": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "s32",
+      "value": 256
+    },
+    {
+      "parameter": 0,
+      "offset": 4,
+      "type": "s32",
+      "value": 256
+    },
+    {
+      "parameter": 0,
+      "offset": 8,
+      "type": "s32",
+      "value": 64
+    },
+    {
+      "parameter": 0,
+      "offset": 12,
+      "type": "s32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 16,
+      "type": "s32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 20,
+      "type": "s32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 1288,
+      "type": "s32",
+      "value": 256
+    },
+    {
+      "parameter": 0,
+      "offset": 1292,
+      "type": "s32",
+      "value": 256
+    },
+    {
+      "parameter": 0,
+      "offset": 1296,
+      "type": "s32",
+      "value": 256
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "offset": 128,
+      "type": "tensor_map",
+      "object": "tma.q"
+    },
+    {
+      "parameter": 0,
+      "offset": 384,
+      "type": "tensor_map",
+      "object": "tma.k"
+    },
+    {
+      "parameter": 0,
+      "offset": 640,
+      "type": "tensor_map",
+      "object": "tma.v"
+    },
+    {
+      "parameter": 0,
+      "offset": 1024,
+      "type": "tensor_map",
+      "object": "tma.o"
+    },
+    {
+      "parameter": 0,
+      "offset": 1280,
+      "type": "pointer",
+      "space": "global",
+      "object": "softmax_lse"
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "offset": 128,
+      "object": "q",
+      "element_type": "f16",
+      "global_shape": [
+        64,
+        256,
+        1,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        128,
+        128,
+        32768
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "interleave": "none",
+      "swizzle": "128B",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 384,
+      "object": "k",
+      "element_type": "f16",
+      "global_shape": [
+        64,
+        256,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        128,
+        32768
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "interleave": "none",
+      "swizzle": "128B",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 640,
+      "object": "v",
+      "element_type": "f16",
+      "global_shape": [
+        64,
+        256,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        128,
+        32768
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "interleave": "none",
+      "swizzle": "128B",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 1024,
+      "object": "o",
+      "element_type": "f16",
+      "global_shape": [
+        64,
+        256,
+        1,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        128,
+        128,
+        32768
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "interleave": "none",
+      "swizzle": "128B",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  },
+  "branch_decisions": [
+    {
+      "line": 313216,
+      "taken": false,
+      "note": "Always execute softmax correction; do not jump over the TMEM rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+    },
+    {
+      "line": 313227,
+      "taken": false,
+      "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+    },
+    {
+      "line": 313286,
+      "taken": false,
+      "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+    },
+    {
+      "line": 313345,
+      "taken": false,
+      "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+    },
+    {
+      "line": 313400,
+      "taken": false,
+      "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+    },
+    {
+      "line": 313519,
+      "taken": false,
+      "note": "Always execute softmax correction; do not jump over the TMEM rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+    },
+    {
+      "line": 313530,
+      "taken": false,
+      "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+    },
+    {
+      "line": 313589,
+      "taken": false,
+      "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+    },
+    {
+      "line": 313648,
+      "taken": false,
+      "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+    },
+    {
+      "line": 313703,
+      "taken": false,
+      "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+    }
+  ]
+}

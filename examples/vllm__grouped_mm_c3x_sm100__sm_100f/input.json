@@ -1,0 +1,548 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN7cutlass13device_kernelIN56_GLOBAL__N__1b4edaac_23_grouped_mm_c3x_sm100_cu_4019a3ca21cutlass_3x_group_gemmINS_12float_e4m3_tENS_10bfloat16_tENS_4arch5Sm100EN4vllm3c3x19ScaledEpilogueArrayEN4cute5tupleIJNSA_1CILi128EEENSC_ILi16EEESD_EEENSB_IJNSC_ILi1EEESG_SG_EEENS_4gemm40KernelPtrArrayTmaWarpSpecialized1SmSm100ENS_8epilogue29PtrArrayTmaWarpSpecialized1SmELb1EE10GemmKernelEEEvNT_6ParamsE",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      384,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "field": "scheduler.cluster_major.divisor",
+      "value": 1
+    },
+    {
+      "field": "scheduler.cluster_major.shift_right",
+      "value": 0
+    },
+    {
+      "field": "scheduler.cluster_minor.divisor",
+      "value": 1
+    },
+    {
+      "field": "scheduler.cluster_minor.shift_right",
+      "value": 0
+    },
+    {
+      "field": "scheduler.tile_m.divisor",
+      "value": 128
+    },
+    {
+      "field": "scheduler.tile_m.multiplier",
+      "value": 0
+    },
+    {
+      "field": "scheduler.tile_m.shift_right",
+      "value": 7
+    },
+    {
+      "field": "scheduler.tile_m.round_up",
+      "value": 0
+    },
+    {
+      "field": "scheduler.tile_n.divisor",
+      "value": 16
+    },
+    {
+      "field": "scheduler.tile_n.multiplier",
+      "value": 0
+    },
+    {
+      "field": "scheduler.tile_n.shift_right",
+      "value": 4
+    },
+    {
+      "field": "scheduler.tile_n.round_up",
+      "value": 0
+    },
+    {
+      "field": "scheduler.preprocessed_shapes",
+      "value": false
+    },
+    {
+      "field": "scheduler.max_swizzle_size",
+      "value": 1
+    },
+    {
+      "field": "scheduler.raster_order",
+      "value": 1
+    },
+    {
+      "field": "scheduler.groups",
+      "value": 4
+    },
+    {
+      "field": "scheduler.host_shapes",
+      "value": null
+    },
+    {
+      "field": "scheduler.tile.m",
+      "value": 128
+    },
+    {
+      "field": "scheduler.tile.n",
+      "value": 16
+    },
+    {
+      "field": "scheduler.tile.k",
+      "value": 128
+    },
+    {
+      "field": "scheduler.cluster.m",
+      "value": 1
+    },
+    {
+      "field": "scheduler.cluster.n",
+      "value": 1
+    },
+    {
+      "field": "scheduler.cluster.k",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 1288,
+      "type": "bool",
+      "value": false
+    },
+    {
+      "parameter": 0,
+      "offset": 1304,
+      "type": "bool",
+      "value": false
+    },
+    {
+      "parameter": 0,
+      "offset": 1928,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 1152,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 1156,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 1160,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 2128,
+      "type": "u64",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 2204,
+      "type": "s32",
+      "value": 148
+    }
+  ],
+  "declarations": [
+    {
+      "name": "scheduler.cluster_major.divisor",
+      "parameter": 0,
+      "offset": 2048,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.cluster_major.shift_right",
+      "parameter": 0,
+      "offset": 2056,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.cluster_minor.divisor",
+      "parameter": 0,
+      "offset": 2064,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.cluster_minor.shift_right",
+      "parameter": 0,
+      "offset": 2072,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.tile_m.divisor",
+      "parameter": 0,
+      "offset": 2080,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.tile_m.multiplier",
+      "parameter": 0,
+      "offset": 2088,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.tile_m.shift_right",
+      "parameter": 0,
+      "offset": 2096,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.tile_m.round_up",
+      "parameter": 0,
+      "offset": 2100,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.tile_n.divisor",
+      "parameter": 0,
+      "offset": 2104,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.tile_n.multiplier",
+      "parameter": 0,
+      "offset": 2112,
+      "type": "u64"
+    },
+    {
+      "name": "scheduler.tile_n.shift_right",
+      "parameter": 0,
+      "offset": 2120,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.tile_n.round_up",
+      "parameter": 0,
+      "offset": 2124,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.preprocessed_shapes",
+      "parameter": 0,
+      "offset": 2136,
+      "type": "bool"
+    },
+    {
+      "name": "scheduler.max_swizzle_size",
+      "parameter": 0,
+      "offset": 2140,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.raster_order",
+      "parameter": 0,
+      "offset": 2144,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.groups",
+      "parameter": 0,
+      "offset": 2152,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.host_shapes",
+      "parameter": 0,
+      "offset": 2168,
+      "type": "pointer"
+    },
+    {
+      "name": "scheduler.tile.m",
+      "parameter": 0,
+      "offset": 2176,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.tile.n",
+      "parameter": 0,
+      "offset": 2180,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.tile.k",
+      "parameter": 0,
+      "offset": 2184,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.cluster.m",
+      "parameter": 0,
+      "offset": 2188,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.cluster.n",
+      "parameter": 0,
+      "offset": 2192,
+      "type": "s32"
+    },
+    {
+      "name": "scheduler.cluster.k",
+      "parameter": 0,
+      "offset": 2196,
+      "type": "s32"
+    },
+    {
+      "parameter": 0,
+      "offset": 1280,
+      "type": "pointer",
+      "object": "b_scales_ptrs"
+    },
+    {
+      "parameter": 0,
+      "offset": 1296,
+      "type": "pointer",
+      "object": "a_scales_ptrs"
+    },
+    {
+      "parameter": 0,
+      "offset": 1192,
+      "type": "pointer",
+      "object": "mainloop.ptr_A.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1208,
+      "type": "pointer",
+      "object": "mainloop.ptr_B.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1944,
+      "type": "pointer",
+      "object": "epilogue.ptr_D.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1200,
+      "type": "pointer",
+      "object": "mainloop.dA.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1216,
+      "type": "pointer",
+      "object": "mainloop.dB.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1936,
+      "type": "pointer",
+      "object": "c_strides"
+    },
+    {
+      "parameter": 0,
+      "offset": 1952,
+      "type": "pointer",
+      "object": "c_strides.param1952"
+    },
+    {
+      "parameter": 0,
+      "offset": 1184,
+      "type": "pointer",
+      "object": "mainloop.tensormaps"
+    },
+    {
+      "parameter": 0,
+      "offset": 1920,
+      "type": "pointer",
+      "object": "epilogue.tensormaps"
+    }
+  ],
+  "shape_arrays": [
+    {
+      "parameter": 0,
+      "offset": 16,
+      "element_type": "s32",
+      "shapes": [
+        [
+          128,
+          128,
+          128
+        ],
+        [
+          256,
+          128,
+          128
+        ],
+        [
+          128,
+          256,
+          256
+        ],
+        [
+          256,
+          256,
+          128
+        ]
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 2160,
+      "element_type": "s32",
+      "shapes": [
+        [
+          128,
+          128,
+          128
+        ],
+        [
+          256,
+          128,
+          128
+        ],
+        [
+          128,
+          256,
+          256
+        ],
+        [
+          256,
+          256,
+          128
+        ]
+      ]
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  },
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "offset": 128,
+      "element_type": "u8",
+      "global_shape": [
+        1,
+        1
+      ],
+      "box_shape": [
+        128,
+        128
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero",
+      "global_strides_bytes": [
+        0
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 384,
+      "element_type": "u8",
+      "global_shape": [
+        1,
+        1
+      ],
+      "box_shape": [
+        128,
+        16
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero",
+      "global_strides_bytes": [
+        0
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 640,
+      "element_type": "u8",
+      "global_shape": [
+        1,
+        1
+      ],
+      "box_shape": [
+        128,
+        128
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero",
+      "global_strides_bytes": [
+        0
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 896,
+      "element_type": "u8",
+      "global_shape": [
+        1,
+        1
+      ],
+      "box_shape": [
+        128,
+        16
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero",
+      "global_strides_bytes": [
+        0
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1664,
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        16
+      ],
+      "box_shape": [
+        64,
+        16
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero",
+      "global_strides_bytes": [
+        0
+      ]
+    }
+  ]
+}

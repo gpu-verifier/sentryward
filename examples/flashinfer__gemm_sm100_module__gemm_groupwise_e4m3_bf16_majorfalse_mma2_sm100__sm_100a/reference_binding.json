@@ -1,0 +1,472 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:scale_a": "scale_a",
+      "6:global7:scale_b": "scale_b"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          256,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global7:scale_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          256,
+          2
+        ],
+        "source_strides_bytes": [
+          8,
+          4
+        ],
+        "target_strides_bytes": [
+          8,
+          4
+        ]
+      },
+      "6:global7:scale_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          2
+        ],
+        "source_strides_bytes": [
+          8,
+          4
+        ],
+        "target_strides_bytes": [
+          8,
+          4
+        ]
+      }
+    },
+    "parameter_constants": {}
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:scale_a": "scale_a",
+      "6:global7:scale_b": "scale_b"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          256,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global7:scale_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          256,
+          2
+        ],
+        "source_strides_bytes": [
+          4,
+          1024
+        ],
+        "target_strides_bytes": [
+          8,
+          4
+        ]
+      },
+      "6:global7:scale_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          2
+        ],
+        "source_strides_bytes": [
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          8,
+          4
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100TmaUmmaWarpSpecializedBlockwiseScalingILi7ELi5ELi4ENS5_IJNS4_1CILi2EEENSA_ILi1EEESC_EEENS_4arch5Sm100EEENS5_IJNSA_ILi256EEENSA_ILi128EEESI_EEENS_12float_e4m3_tENS5_IJNS5_IJlSC_lEEENS4_6LayoutINS5_IJNS5_IJSC_iEEENS5_IJSI_iEEEiEEENS5_IJNS5_IJNSA_ILi0EEESC_EEENS5_IJSQ_iEEEiEEEEEEEESK_NS5_IJSL_NSM_INS5_IJSO_SO_iEEEST_EEEEENS4_8TiledMMAINS4_8MMA_AtomIJNS4_10MMA_TraitsINS4_25SM100_MMA_F8F6F4_2x1SM_SSEJSK_SK_fSH_SI_NS4_17integral_constantINS4_4UMMA5MajorELS15_0EEES16_NS13_INS14_7ScaleInELS17_0EEES18_EEEEEENSM_INS5_IJSC_SC_SC_EEENS5_IJSQ_SQ_SQ_EEEEENS5_IJNS4_10UnderscoreES1E_S1E_EEEEENS5_IJNS4_18SM100_TMA_2SM_LOADENS4_9TiledCopyINS4_9Copy_AtomIJNS4_25SM80_CP_ASYNC_CACHEALWAYSINS_9uint128_tES1L_EEfEEENSM_INS5_IJNSA_ILi32EEENSA_ILi4EEEEEENS5_IJS1P_SC_EEEEENS5_IJSI_EEEEEEEENS4_14ComposedLayoutINS4_7SwizzleILi3ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi8EEENSM_INS5_IJNSA_ILi8EEESI_EEENS5_IJSI_SC_EEEEEEEvNS4_8identityENS5_IJS1H_NS1I_INS1J_IJNS1K_IffEEfEEENSM_INS5_IJSC_SC_EEENS5_IJSQ_SQ_EEEEENS5_IJSC_EEEEEEEES25_vS26_EENS_8epilogue10collective18CollectiveEpilogueINS2G_23Sm100TmaWarpSpecializedILi4ELi2ELi32ELb1ELb0EEEJNS5_IJSI_SI_SI_EEENS5_IJNSM_ISI_SC_EENSM_IS1O_SC_EEEEENS_10bfloat16_tESL_S2P_SL_NS2G_6fusion15FusionCallbacksIS2K_NS2Q_17LinearCombinationIS2P_fS2P_fLNS_15FloatRoundStyleE2EEES2L_S2O_JEEENS4_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS4_13SM90_TMA_LOADENS1W_INS1X_ILi2ELi4ELi3EEENS1Z_ILi16EEENSM_INS5_IJS21_S1O_EEENS5_IJS1O_SC_EEEEEEENS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS4_14SM90_TMA_STOREES36_S38_S38_EEEvvEEEEvNT_6ParamsE_param_0+1280": {
+        "type": "b32",
+        "literal": "0"
+      },
+      "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100TmaUmmaWarpSpecializedBlockwiseScalingILi7ELi5ELi4ENS5_IJNS4_1CILi2EEENSA_ILi1EEESC_EEENS_4arch5Sm100EEENS5_IJNSA_ILi256EEENSA_ILi128EEESI_EEENS_12float_e4m3_tENS5_IJNS5_IJlSC_lEEENS4_6LayoutINS5_IJNS5_IJSC_iEEENS5_IJSI_iEEEiEEENS5_IJNS5_IJNSA_ILi0EEESC_EEENS5_IJSQ_iEEEiEEEEEEEESK_NS5_IJSL_NSM_INS5_IJSO_SO_iEEEST_EEEEENS4_8TiledMMAINS4_8MMA_AtomIJNS4_10MMA_TraitsINS4_25SM100_MMA_F8F6F4_2x1SM_SSEJSK_SK_fSH_SI_NS4_17integral_constantINS4_4UMMA5MajorELS15_0EEES16_NS13_INS14_7ScaleInELS17_0EEES18_EEEEEENSM_INS5_IJSC_SC_SC_EEENS5_IJSQ_SQ_SQ_EEEEENS5_IJNS4_10UnderscoreES1E_S1E_EEEEENS5_IJNS4_18SM100_TMA_2SM_LOADENS4_9TiledCopyINS4_9Copy_AtomIJNS4_25SM80_CP_ASYNC_CACHEALWAYSINS_9uint128_tES1L_EEfEEENSM_INS5_IJNSA_ILi32EEENSA_ILi4EEEEEENS5_IJS1P_SC_EEEEENS5_IJSI_EEEEEEEENS4_14ComposedLayoutINS4_7SwizzleILi3ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi8EEENSM_INS5_IJNSA_ILi8EEESI_EEENS5_IJSI_SC_EEEEEEEvNS4_8identityENS5_IJS1H_NS1I_INS1J_IJNS1K_IffEEfEEENSM_INS5_IJSC_SC_EEENS5_IJSQ_SQ_EEEEENS5_IJSC_EEEEEEEES25_vS26_EENS_8epilogue10collective18CollectiveEpilogueINS2G_23Sm100TmaWarpSpecializedILi4ELi2ELi32ELb1ELb0EEEJNS5_IJSI_SI_SI_EEENS5_IJNSM_ISI_SC_EENSM_IS1O_SC_EEEEENS_10bfloat16_tESL_S2P_SL_NS2G_6fusion15FusionCallbacksIS2K_NS2Q_17LinearCombinationIS2P_fS2P_fLNS_15FloatRoundStyleE2EEES2L_S2O_JEEENS4_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS4_13SM90_TMA_LOADENS1W_INS1X_ILi2ELi4ELi3EEENS1Z_ILi16EEENSM_INS5_IJS21_S1O_EEENS5_IJS1O_SC_EEEEEEENS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS4_14SM90_TMA_STOREES36_S38_S38_EEEvvEEEEvNT_6ParamsE_param_0+1312": {
+        "type": "b32",
+        "literal": "1065353216"
+      }
+    }
+  },
+  "provenance": {
+    "optimized_input_sha256": "b441a1331bc3fc3c5d9355e751ca8f4fff6629686d433b303d169697e6320a77",
+    "source_interface": {
+      "name": "flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma2_sm100__sm_100a",
+      "family": "block",
+      "source": "references/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma2_sm100__sm_100a/reference.cu",
+      "ptx": "references/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma2_sm100__sm_100a/reference.ptx",
+      "entry": "reference",
+      "upstream": [
+        "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/gemm_groupwise_sm100_kernel_inst.jinja",
+        "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/include/flashinfer/gemm/gemm_groupwise_sm100.cuh",
+        "https://github.com/NVIDIA/cutlass/blob/b46b16d003484063bca4ed365e44095c4c6ed633/include/cutlass/gemm/kernel/sm100_gemm_tma_warpspecialized.hpp",
+        "https://github.com/NVIDIA/cutlass/blob/b46b16d003484063bca4ed365e44095c4c6ed633/include/cutlass/gemm/device/gemm_universal_adapter.h"
+      ],
+      "parameters": [
+        {
+          "name": "A",
+          "type": "e4m3",
+          "shape": [
+            256,
+            256
+          ],
+          "role": "input",
+          "source": "logical activation A",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "B",
+          "type": "e4m3",
+          "shape": [
+            128,
+            256
+          ],
+          "role": "input",
+          "source": "logical weight B; reference rows are output channels",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "D",
+          "type": "bf16",
+          "shape": [
+            256,
+            128
+          ],
+          "role": "output",
+          "source": "D",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "scale_a",
+          "type": "float",
+          "shape": [
+            256,
+            2
+          ],
+          "role": "input",
+          "source": "scale_a",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "scale_b",
+          "type": "float",
+          "shape": [
+            1,
+            2
+          ],
+          "role": "input",
+          "source": "scale_b",
+          "layout": "row-major logical tensor"
+        }
+      ],
+      "attributes": {
+        "M": 256,
+        "N": 128,
+        "K": 256,
+        "input_type": "e4m3",
+        "output_type": "bf16",
+        "scale_block": [
+          1,
+          128,
+          128
+        ]
+      },
+      "work_items": 32768,
+      "launch": {
+        "grid_dim": [
+          256,
+          1,
+          1
+        ],
+        "block_dim": [
+          128,
+          1,
+          1
+        ]
+      },
+      "optimized_input": "examples/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma2_sm100__sm_100a/input.json",
+      "optimized_input_sha256": "1fd435998371c814b012104f461ee3022c077c9721cbf184fddb98568a9adf27",
+      "optimized_scope_branch_choices": [],
+      "optimized_objects": {
+        "tma_descriptors": [
+          {
+            "parameter": 0,
+            "offset": 128,
+            "object": "A",
+            "element_type": "e4m3",
+            "global_shape": [
+              256,
+              256,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              1,
+              256,
+              65536
+            ],
+            "box_shape": [
+              128,
+              128,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 0,
+            "offset": 384,
+            "object": "B",
+            "element_type": "e4m3",
+            "global_shape": [
+              256,
+              128,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              1,
+              256,
+              32768
+            ],
+            "box_shape": [
+              128,
+              64,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 0,
+            "offset": 1408,
+            "object": "C",
+            "element_type": "bf16",
+            "global_shape": [
+              128,
+              256,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              256,
+              65536
+            ],
+            "box_shape": [
+              32,
+              128,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "swizzle": "64B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 0,
+            "offset": 1664,
+            "object": "D",
+            "element_type": "bf16",
+            "global_shape": [
+              128,
+              256,
+              1
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              256,
+              65536
+            ],
+            "box_shape": [
+              32,
+              128,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1
+            ],
+            "swizzle": "64B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          }
+        ],
+        "pointer_declarations": [
+          {
+            "name": "beta.pointer",
+            "parameter": 0,
+            "offset": 1288,
+            "type": "pointer"
+          },
+          {
+            "name": "alpha.pointer",
+            "parameter": 0,
+            "offset": 1320,
+            "type": "pointer"
+          },
+          {
+            "parameter": 0,
+            "offset": 1184,
+            "type": "pointer",
+            "object": "scale_a"
+          },
+          {
+            "parameter": 0,
+            "offset": 1216,
+            "type": "pointer",
+            "object": "scale_b"
+          }
+        ]
+      },
+      "comparison_domain": "ideal mathematical computation; no bitwise-equivalence claim",
+      "logical_layout_adapter": "required when optimized storage differs from reference row-major layout",
+      "equivalence_status": "not_checked"
+    },
+    "historical_paths": {
+      "interface": "references/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma2_sm100__sm_100a/interface.json",
+      "mapping": "references/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma2_sm100__sm_100a/mapping.md"
+    },
+    "mapping_notes": "# flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma2_sm100__sm_100a\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in interface.json.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| A | e4m3 | 256 x 256 | input | logical activation A |\n| B | e4m3 | 128 x 256 | input | logical weight B; reference rows are output channels |\n| D | bf16 | 256 x 128 | output | D |\n| scale_a | float | 256 x 2 | input | scale_a |\n| scale_b | float | 1 x 2 | input | scale_b |\n\n## Computation and mapping\n\nThe reference uses A[m,k], B[n,k], and D[m,n]; B is stored with output-channel first.\nFor each 128-element K block kb, accumulate its dot product, then multiply\nby scale_a[m/1,kb] * scale_b[n/128,kb] and add to D.\nScale arrays are exposed with axes [row-group,K-group]. Reindex the\noptimized scale layouts using the corresponding source layout/stride fields.\nOptimized A element offset: m*K + k.\nOptimized B element offset: n*K + k.\nOptimized D element offset: m*N + n.\nReferences always store D at m*N+n; compare logical elements after this reindexing.\nThe saved epilogue uses alpha=1 and beta=0; C is not read.\n\n## Validation boundary\n\nCompiled to PTX and numerically checked on CPU. Not compared against an optimized\nGPU execution or proven equivalent. Precision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/gemm_groupwise_sm100_kernel_inst.jinja\n- https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/include/flashinfer/gemm/gemm_groupwise_sm100.cuh\n- https://github.com/NVIDIA/cutlass/blob/b46b16d003484063bca4ed365e44095c4c6ed633/include/cutlass/gemm/kernel/sm100_gemm_tma_warpspecialized.hpp\n- https://github.com/NVIDIA/cutlass/blob/b46b16d003484063bca4ed365e44095c4c6ed633/include/cutlass/gemm/device/gemm_universal_adapter.h\n"
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      256,
+      128
+    ],
+    "left_strides_bytes": [
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      256,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:B"
+      },
+      {
+        "name": "scale_a",
+        "dtype": "float32",
+        "allocation": "6:global7:scale_a"
+      },
+      {
+        "name": "scale_b",
+        "dtype": "float32",
+        "allocation": "6:global7:scale_b"
+      }
+    ]
+  }
+}

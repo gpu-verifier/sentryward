@@ -1,0 +1,569 @@
+{
+  "address_model": {
+    "address_invariants": [],
+    "kind": "symbolic",
+    "layers": [
+      0,
+      2
+    ],
+    "solver": "z3",
+    "solver_timeout_ms": 100
+  },
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    }
+  ],
+  "checks": {
+    "equivalence": "not_run",
+    "memory": "failed",
+    "synchronization": "passed"
+  },
+  "counts": {
+    "edges": 1196800,
+    "events": 406464,
+    "instructions": 70080,
+    "memory_accesses": 236544,
+    "threads": 128
+  },
+  "diagnostics": [
+    {
+      "code": "conflicting_accesses_unordered",
+      "details": {
+        "count": 1,
+        "witnesses_path": "races"
+      },
+      "message": "Conflicting accesses have no proven required ordering",
+      "stage": "memory_check"
+    }
+  ],
+  "equivalence": {
+    "checks": {
+      "equivalence": "not_run",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "diagnostics": [
+      {
+        "code": "prerequisite_check_not_passed",
+        "details": {
+          "prerequisite_checks": {
+            "equivalence": "not_run",
+            "memory": "failed",
+            "synchronization": "passed"
+          },
+          "prerequisite_diagnostics": [
+            {
+              "code": "conflicting_accesses_unordered",
+              "details": {
+                "count": 1,
+                "witnesses_path": "races"
+              },
+              "message": "Conflicting accesses have no proven required ordering",
+              "stage": "memory_check"
+            }
+          ],
+          "prerequisite_result": "potential_race"
+        },
+        "stage": "pipeline"
+      }
+    ],
+    "result": "unsupported",
+    "scope": {
+      "operation": "equivalence"
+    }
+  },
+  "frontend": {
+    "address_value_bridge": {
+      "diagnostics": [
+        {
+          "code": "missing_definition",
+          "details": {
+            "cta": 0,
+            "instruction": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 {%f2298,  _,  %f2299,  _},{%r1449,  %r1450,  %r1451,  %r1452},{%r1528,  %r1528},{%f2300,  0.,  %f2301,  0.};",
+            "instruction_index": 1742,
+            "location": {
+              "file": "corpus/flashinfer__single_prefill_fa2__bf16_hd128_causal__sm_100a.ptx",
+              "line": 2787
+            },
+            "occurrence": 0,
+            "thread": 32
+          },
+          "message": "No recorded definition for operand '0.' in scope /",
+          "stage": "value_lowering"
+        }
+      ],
+      "first_unavailable_reason": "",
+      "queries": 0,
+      "resolved": 0,
+      "source": "value_lowering",
+      "unavailable": 0,
+      "value_view_complete": false
+    },
+    "cluster_completion_joins": 0,
+    "cta_count": 1,
+    "dependency_compression": {
+      "cp_async_wait": {
+        "consumers": 640,
+        "emitted_references": 7168,
+        "original_references": 25600,
+        "prefix_effects": 0
+      }
+    },
+    "diagnostic_sample_count": 0,
+    "executed_records": 543488,
+    "frontend_assumptions": {
+      "assertion_failure_forms": [
+        "trap",
+        "__assertfail"
+      ],
+      "assertion_uses": 0,
+      "bounded_loop_uses": 0,
+      "clc_failure": true,
+      "clc_uses": 0,
+      "data_branch_decisions": [],
+      "election_policy": {
+        "fallback": "lowest_member",
+        "preferred_lane": 0,
+        "strategy": "preferred_member"
+      },
+      "election_uses": 0,
+      "fixed_election": true,
+      "isolated_launch": true,
+      "noalias_unbounded": false,
+      "opaque_compute_regions": [],
+      "pointer_contract": {
+        "aliasing": "distinct_objects_noalias",
+        "extent_bytes": "unbounded"
+      },
+      "representative_branch_uses": 0,
+      "trap_only_equality_assertions_hold": true
+    },
+    "implementation": "cpp",
+    "input_objects": [
+      {
+        "bytes": 8,
+        "object": "q",
+        "offset": 0,
+        "parameter": "_ZN10flashinfer30SinglePrefillWithKVCacheKernelINS_12KernelTraitsILNS_8MaskModeE1ELj128ELj2ELj4ELj8ELj8ELj4ELj1ELNS_15PosEncodingModeE0E13__nv_bfloat16S4_S4_fiNS_16DefaultAttentionILb0ELb0ELb0ELb0EEELb1EEE6ParamsEEvT0__param_0",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "k",
+        "offset": 8,
+        "parameter": "_ZN10flashinfer30SinglePrefillWithKVCacheKernelINS_12KernelTraitsILNS_8MaskModeE1ELj128ELj2ELj4ELj8ELj8ELj4ELj1ELNS_15PosEncodingModeE0E13__nv_bfloat16S4_S4_fiNS_16DefaultAttentionILb0ELb0ELb0ELb0EEELb1EEE6ParamsEEvT0__param_0",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "v",
+        "offset": 16,
+        "parameter": "_ZN10flashinfer30SinglePrefillWithKVCacheKernelINS_12KernelTraitsILNS_8MaskModeE1ELj128ELj2ELj4ELj8ELj8ELj4ELj1ELNS_15PosEncodingModeE0E13__nv_bfloat16S4_S4_fiNS_16DefaultAttentionILb0ELb0ELb0ELb0EEELb1EEE6ParamsEEvT0__param_0",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "o",
+        "offset": 24,
+        "parameter": "_ZN10flashinfer30SinglePrefillWithKVCacheKernelINS_12KernelTraitsILNS_8MaskModeE1ELj128ELj2ELj4ELj8ELj8ELj4ELj1ELNS_15PosEncodingModeE0E13__nv_bfloat16S4_S4_fiNS_16DefaultAttentionILb0ELb0ELb0ELb0EEELb1EEE6ParamsEEvT0__param_0",
+        "source": "declaration"
+      }
+    ],
+    "lowered_instruction_count": 70080,
+    "reached_opcodes": {
+      "add.s32": 57472,
+      "add.s64": 15104,
+      "and.b32": 3840,
+      "and.pred": 384,
+      "barrier.sync": 1280,
+      "bra": 16896,
+      "cp.async.cg.shared.global.L2::128B": 7168,
+      "cp.async.commit_group": 896,
+      "cp.async.wait_group": 640,
+      "cvt.rn.bf16x2.f32": 16384,
+      "cvt.rn.f32.f64": 384,
+      "cvt.u64.u32": 5120,
+      "cvta.to.global.u64": 128,
+      "ex2.approx.ftz.f32": 17408,
+      "ld.param.f64": 384,
+      "ld.param.u32": 2432,
+      "ld.param.u64": 640,
+      "ld.param.u8": 256,
+      "ld.param.v2.u32": 1024,
+      "ld.shared.v4.u32": 2048,
+      "ldmatrix.sync.aligned.m8n8.x4.shared.b16": 12288,
+      "ldmatrix.sync.aligned.trans.m8n8.x4.shared.b16": 8192,
+      "max.f32": 19456,
+      "max.u32": 384,
+      "min.u32": 384,
+      "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32": 67584,
+      "mov.b32": 896,
+      "mov.b64": 128,
+      "mov.f32": 35840,
+      "mov.u32": 4224,
+      "mov.u64": 896,
+      "mul.f32": 69120,
+      "mul.f64": 384,
+      "mul.hi.u32": 3328,
+      "mul.lo.s32": 6528,
+      "mul.wide.u32": 1536,
+      "neg.s32": 128,
+      "or.b32": 7808,
+      "ret": 128,
+      "selp.b32": 8448,
+      "selp.f32": 33280,
+      "selp.u32": 2560,
+      "setp.eq.f32": 16384,
+      "setp.eq.s16": 512,
+      "setp.eq.s32": 4480,
+      "setp.eq.s64": 128,
+      "setp.ge.u32": 1280,
+      "setp.le.u32": 16384,
+      "setp.lt.s32": 128,
+      "setp.lt.u32": 7040,
+      "setp.ne.b32": 5120,
+      "setp.ne.s32": 256,
+      "setp.neu.f32": 512,
+      "shfl.sync.bfly.b32": 2048,
+      "shl.b32": 10368,
+      "shl.b64": 2304,
+      "shr.u32": 5760,
+      "st.global.v4.u32": 2048,
+      "stmatrix.sync.aligned.m8n8.x4.shared.b16": 2048,
+      "sub.f32": 17408,
+      "sub.s32": 2688,
+      "xor.b32": 13184
+    },
+    "shared_constant_propagation": {
+      "read_from_dependencies": 0,
+      "representation": "sparse_known_bytes",
+      "validation": "pending_backend"
+    },
+    "source_binding_storage": {
+      "binding_templates": 2,
+      "generated_address_rows": 0,
+      "generated_body_rows": 0,
+      "generated_memory_instances": 0,
+      "logical_instructions": 70080,
+      "stored_bindings": 10704
+    },
+    "source_edge_storage": {
+      "binding_templates": 872,
+      "logical_edges": 69952,
+      "stored_bindings": 872
+    },
+    "thread_count": 128,
+    "unsupported_occurrence_counts": {},
+    "user_branch_decisions": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 0,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "trap_only_equality_assertions_hold": true
+  },
+  "hb_queries": {
+    "memory": {
+      "algorithm": "not-built",
+      "batches": 0,
+      "cache_hits": 0,
+      "dfs_queries": 0,
+      "edge_visits": 0,
+      "filtered_queries": 0,
+      "queries": 0,
+      "shared_peak_index_bytes": 0
+    }
+  },
+  "implementation": "cpp",
+  "memory_analysis": {
+    "address_candidates": 374912,
+    "address_model": {
+      "cache_hits": 0,
+      "ground_disjoint": 0,
+      "ground_overlap": 0,
+      "layer0_disjoint": 0,
+      "refined_pairs": 0,
+      "solver_queries": 0,
+      "solver_sat": 0,
+      "solver_unknown": 0,
+      "solver_unsat": 0
+    },
+    "candidate_generation_fallback": false,
+    "exhaustive": false,
+    "family_analysis": {
+      "access_families": 54492,
+      "affine_member_rows": 4428756,
+      "candidate_relations": 255286,
+      "hb_frontier_pieces": 40288,
+      "hb_member_enumerations": 0,
+      "logical_accesses": 236544
+    },
+    "first_race_seconds": 0.384764595,
+    "hb_algorithm": "member-relations",
+    "hb_batches": 10,
+    "hb_cache_hits": 0,
+    "hb_dfs_queries": 0,
+    "hb_edge_visits": 808022,
+    "hb_filtered_queries": 0,
+    "hb_peak_index_bytes": 0,
+    "hb_queries": 374912,
+    "hb_query_seconds": 0.19853504700000002,
+    "overlap_queries": 1,
+    "strategy": "conflict-family",
+    "unordered_candidates_examined": 1
+  },
+  "memory_analysis_complete": true,
+  "mma_operand_ordering": {},
+  "mode": "verify",
+  "peak_footprint_mib": 435.45703125,
+  "peak_rss_mib": 435.45703125,
+  "pipeline_elapsed_seconds": 2.702073057,
+  "race_count": 1,
+  "race_samples_truncated": false,
+  "races": [
+    {
+      "first": {
+        "access_index": 0,
+        "actor": 0,
+        "bytes": 4,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 220,
+          "kind": "memory"
+        },
+        "event": 3089,
+        "instruction": 507,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__single_prefill_fa2__bf16_hd128_causal__sm_100a.ptx",
+          "line": 4978
+        },
+        "mode": "write"
+      },
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "shared",
+        "allocation": "cta:(0, 0, 0):shared:physical.shared.cta.0",
+        "bytes": 4,
+        "offset": 4320
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 6,
+        "bytes": 16,
+        "effect_index": 0,
+        "endpoint": {
+          "address": 220,
+          "kind": "memory"
+        },
+        "event": 22119,
+        "instruction": 3779,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__single_prefill_fa2__bf16_hd128_causal__sm_100a.ptx",
+          "line": 5147
+        },
+        "mode": "read"
+      }
+    }
+  ],
+  "required_order_domains": 0,
+  "required_orders": 0,
+  "result": "potential_race",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "search_complete": false,
+  "semantic_assumptions": {
+    "bounded_computation_loops": false,
+    "clc_always_fails": true,
+    "duplicate_tma_store_benign": true,
+    "representative_branches": false,
+    "representative_election": true
+  },
+  "semantic_program": {
+    "binding_diagnostic_count": 1,
+    "binding_diagnostics": [
+      {
+        "code": "incomplete_value_semantics",
+        "message": "missing_definition: No recorded definition for operand '0.' in scope /"
+      }
+    ],
+    "execution_cohorts": 1,
+    "mapping_complete": false,
+    "memory_binding_stored_rows": 0,
+    "memory_binding_templates": 0,
+    "memory_bindings": 0,
+    "memory_linking_templates_used": false,
+    "synchronization_groups": 542,
+    "synchronization_groups_materialized": true,
+    "synthetic_synchronization_nodes": 704,
+    "thread_prefix_groups": 43449,
+    "value_diagnostic_count": 1,
+    "value_diagnostics": [
+      {
+        "code": "missing_definition",
+        "line": 2787,
+        "message": "No recorded definition for operand '0.' in scope /"
+      }
+    ]
+  },
+  "source_violations": [],
+  "stage": "memory_check",
+  "synchronization_input": {
+    "compute_access_binding": "after_happens_before",
+    "kind": "ordering_endpoints",
+    "memory_address_payloads": false
+  },
+  "template_execution": {
+    "completed_ctas": 1,
+    "coordinate_bindings": 0,
+    "logical_thread_steps": 546048,
+    "path_entries": 4246,
+    "record_bindings": 13040,
+    "record_nodes": 4246,
+    "splits": 0,
+    "template_steps": 4266,
+    "thread_memberships": 128,
+    "value_nodes": 5602
+  },
+  "thread_record_compression": {
+    "completed_ctas": 1,
+    "enabled": true,
+    "estimated_pool_bytes_sum": 0,
+    "intern_calls": 0,
+    "logical_records": 543488,
+    "record_handle_bytes": 32,
+    "templates": 0,
+    "unique_bindings": 0
+  },
+  "unresolved_count": 0,
+  "value_analysis": {
+    "checks": {
+      "equivalence": "not_requested",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "diagnostics": [
+      {
+        "code": "prerequisite_check_not_passed",
+        "details": {
+          "prerequisite_checks": {
+            "equivalence": "not_run",
+            "memory": "failed",
+            "synchronization": "passed"
+          },
+          "prerequisite_diagnostics": [
+            {
+              "code": "conflicting_accesses_unordered",
+              "details": {
+                "count": 1,
+                "witnesses_path": "races"
+              },
+              "message": "Conflicting accesses have no proven required ordering",
+              "stage": "memory_check"
+            }
+          ],
+          "prerequisite_result": "potential_race",
+          "prerequisite_status": "potential_race"
+        },
+        "stage": "pipeline"
+      }
+    ],
+    "equivalence_check": "blocked",
+    "prerequisite_status": "potential_race",
+    "result": "unsupported",
+    "scalar_fold": {
+      "checks": {
+        "equivalence": "not_requested",
+        "memory": "not_requested",
+        "synchronization": "not_requested"
+      },
+      "diagnostics": [
+        {
+          "code": "memory_elimination_not_completed",
+          "stage": "pipeline"
+        }
+      ],
+      "result": "unsupported",
+      "scope": {
+        "operation": "scalar_fold"
+      }
+    },
+    "scope": {
+      "operation": "value_analysis"
+    }
+  },
+  "value_ir_instance_count": 1364224,
+  "value_ir_node_count": 61555,
+  "value_view_complete": false,
+  "verification_limitations": [],
+  "warning_count": 0,
+  "warning_samples_truncated": false,
+  "warnings": [],
+  "wellsync_timeout_seconds": 500.0,
+  "whole_pipeline_timeout_seconds": 500.0
+}

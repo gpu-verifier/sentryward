@@ -1,0 +1,153 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN12tensorrt_llm7kernels21fusedQKNormRopeKernelIN3c108BFloat16ES3_Li128ELb0EEEvPviiifPKvS6_S6_PKlii",
+  "launch": {
+    "grid_dim": [
+      4,
+      1,
+      1
+    ],
+    "block_dim": [
+      256,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "arguments": [
+    {
+      "parameter": 1,
+      "type": "u32",
+      "value": 3
+    },
+    {
+      "parameter": 2,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 3,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 4,
+      "type": "f32",
+      "value": 1e-06
+    },
+    {
+      "parameter": 9,
+      "type": "u32",
+      "value": 8
+    },
+    {
+      "parameter": 10,
+      "type": "u32",
+      "value": 128
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "qkv",
+      "name": "qkv"
+    },
+    {
+      "parameter": 1,
+      "type": "u32",
+      "name": "num_heads_q"
+    },
+    {
+      "parameter": 2,
+      "type": "u32",
+      "name": "num_heads_k"
+    },
+    {
+      "parameter": 3,
+      "type": "u32",
+      "name": "num_heads_v"
+    },
+    {
+      "parameter": 4,
+      "type": "f32",
+      "name": "eps"
+    },
+    {
+      "parameter": 5,
+      "type": "pointer",
+      "object": "q_weight",
+      "name": "q_weight"
+    },
+    {
+      "parameter": 6,
+      "type": "pointer",
+      "object": "k_weight",
+      "name": "k_weight"
+    },
+    {
+      "parameter": 7,
+      "type": "pointer",
+      "object": "cos_sin_cache",
+      "name": "cos_sin_cache"
+    },
+    {
+      "parameter": 8,
+      "type": "pointer",
+      "object": "position_ids",
+      "name": "position_ids"
+    },
+    {
+      "parameter": 9,
+      "type": "u32",
+      "name": "num_tokens"
+    },
+    {
+      "parameter": 10,
+      "type": "u32",
+      "name": "rotary_dim"
+    }
+  ],
+  "shape_arrays": [
+    {
+      "parameter": 8,
+      "element_type": "s64",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          1
+        ],
+        [
+          2
+        ],
+        [
+          3
+        ],
+        [
+          4
+        ],
+        [
+          5
+        ],
+        [
+          6
+        ],
+        [
+          7
+        ]
+      ]
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

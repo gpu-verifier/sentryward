@@ -1,0 +1,277 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE",
+  "launch": {
+    "grid_dim": [
+      1,
+      12,
+      1
+    ],
+    "block_dim": [
+      256,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "arguments": [
+    {
+      "field": "batch",
+      "value": 1
+    },
+    {
+      "field": "heads",
+      "value": 12
+    },
+    {
+      "field": "value_heads",
+      "value": 12
+    },
+    {
+      "field": "lower_bound",
+      "value": -5.0
+    },
+    {
+      "field": "scale",
+      "value": 0.08838834764831845
+    },
+    {
+      "field": "onorm_eps",
+      "value": 1e-05
+    },
+    {
+      "field": "cu_seqlens",
+      "value": null
+    },
+    {
+      "field": "stride.x_row",
+      "value": 4608
+    },
+    {
+      "field": "stride.beta_row",
+      "value": 12
+    },
+    {
+      "field": "stride.onorm_row",
+      "value": 1536
+    },
+    {
+      "field": "stride.conv_slot",
+      "value": 13824
+    },
+    {
+      "field": "stride.state_slot",
+      "value": 196608
+    }
+  ],
+  "declarations": [
+    {
+      "name": "batch",
+      "parameter": 22,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "heads",
+      "parameter": 23,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "value_heads",
+      "parameter": 24,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "lower_bound",
+      "parameter": 25,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "scale",
+      "parameter": 26,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "onorm_eps",
+      "parameter": 27,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "cu_seqlens",
+      "parameter": 19,
+      "offset": 0,
+      "type": "pointer"
+    },
+    {
+      "name": "stride.x_row",
+      "parameter": 28,
+      "offset": 0,
+      "type": "s64"
+    },
+    {
+      "name": "stride.beta_row",
+      "parameter": 28,
+      "offset": 8,
+      "type": "s64"
+    },
+    {
+      "name": "stride.onorm_row",
+      "parameter": 28,
+      "offset": 16,
+      "type": "s64"
+    },
+    {
+      "name": "stride.conv_slot",
+      "parameter": 28,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "stride.state_slot",
+      "parameter": 28,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "pointer",
+      "object": "x_q"
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "type": "pointer",
+      "object": "x_k"
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "type": "pointer",
+      "object": "x_v"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "type": "pointer",
+      "object": "w_q"
+    },
+    {
+      "parameter": 4,
+      "offset": 0,
+      "type": "pointer",
+      "object": "w_k"
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "type": "pointer",
+      "object": "w_v"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "type": "pointer",
+      "object": "bias_q"
+    },
+    {
+      "parameter": 7,
+      "offset": 0,
+      "type": "pointer",
+      "object": "bias_k"
+    },
+    {
+      "parameter": 8,
+      "offset": 0,
+      "type": "pointer",
+      "object": "bias_v"
+    },
+    {
+      "parameter": 9,
+      "offset": 0,
+      "type": "pointer",
+      "object": "cs_q"
+    },
+    {
+      "parameter": 10,
+      "offset": 0,
+      "type": "pointer",
+      "object": "cs_k"
+    },
+    {
+      "parameter": 11,
+      "offset": 0,
+      "type": "pointer",
+      "object": "cs_v"
+    },
+    {
+      "parameter": 12,
+      "offset": 0,
+      "type": "pointer",
+      "object": "a_log"
+    },
+    {
+      "parameter": 13,
+      "offset": 0,
+      "type": "pointer",
+      "object": "g"
+    },
+    {
+      "parameter": 14,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dt_bias"
+    },
+    {
+      "parameter": 15,
+      "offset": 0,
+      "type": "pointer",
+      "object": "beta"
+    },
+    {
+      "parameter": 16,
+      "offset": 0,
+      "type": "pointer",
+      "object": "onorm_g"
+    },
+    {
+      "parameter": 17,
+      "offset": 0,
+      "type": "pointer",
+      "object": "onorm_weight"
+    },
+    {
+      "parameter": 18,
+      "offset": 0,
+      "type": "pointer",
+      "object": "state_indices"
+    },
+    {
+      "parameter": 20,
+      "offset": 0,
+      "type": "pointer",
+      "object": "state"
+    },
+    {
+      "parameter": 21,
+      "offset": 0,
+      "type": "pointer",
+      "object": "out"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

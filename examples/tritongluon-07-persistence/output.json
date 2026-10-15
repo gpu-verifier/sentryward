@@ -1,0 +1,261 @@
+{
+  "active_stage": "verification.memory",
+  "checks": {
+    "equivalence": "not_run",
+    "memory": "not_run",
+    "synchronization": "not_run"
+  },
+  "diagnostics": [
+    {
+      "code": "timeout",
+      "details": {
+        "resource": {
+          "kind": "time",
+          "limit": 498.576,
+          "origin": "configured_budget",
+          "unit": "seconds"
+        }
+      },
+      "stage": "memory_check"
+    }
+  ],
+  "elapsed_seconds": 498.65423281,
+  "equivalence": {
+    "checks": {
+      "equivalence": "not_run",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "diagnostics": [
+      {
+        "code": "prerequisite_check_not_passed",
+        "details": {
+          "prerequisite_checks": {
+            "equivalence": "not_run",
+            "memory": "not_run",
+            "synchronization": "not_run"
+          },
+          "prerequisite_diagnostics": [
+            {
+              "code": "timeout",
+              "details": {
+                "resource": {
+                  "kind": "time",
+                  "limit": 498.576,
+                  "origin": "configured_budget",
+                  "unit": "seconds"
+                }
+              },
+              "stage": "memory_check"
+            }
+          ],
+          "prerequisite_result": "timeout",
+          "prerequisite_status": "timeout"
+        },
+        "stage": "memory_check"
+      }
+    ],
+    "prerequisite_status": "timeout",
+    "result": "timeout",
+    "scope": {
+      "operation": "equivalence"
+    },
+    "stage": "verification.memory"
+  },
+  "frontend": {
+    "address_value_bridge": {
+      "diagnostics": [],
+      "first_unavailable_reason": "",
+      "queries": 0,
+      "resolved": 0,
+      "source": "value_lowering",
+      "unavailable": 0,
+      "value_view_complete": true
+    },
+    "cluster_completion_joins": 0,
+    "cta_count": 64,
+    "dependency_compression": {
+      "bulk_read_wait": {
+        "consumers": 8192,
+        "emitted_references": 256,
+        "original_references": 256,
+        "prefix_effects": 0
+      },
+      "tcgen_commit": {
+        "consumers": 2048,
+        "emitted_references": 12224,
+        "original_references": 135168,
+        "prefix_effects": 2048
+      },
+      "tcgen_load_wait": {
+        "consumers": 8192,
+        "emitted_references": 32768,
+        "original_references": 32768,
+        "prefix_effects": 0
+      }
+    },
+    "diagnostic_sample_count": 0,
+    "discharged_codes": [
+      "mma_memory_effect_refinement",
+      "tcgen_pipeline_effect_refinement",
+      "tcgen_commit_notification_order_refinement"
+    ],
+    "executed_records": 16554496,
+    "frontend_assumptions": {
+      "assertion_failure_forms": [
+        "trap",
+        "__assertfail"
+      ],
+      "assertion_uses": 0,
+      "bounded_loop_uses": 0,
+      "clc_failure": true,
+      "clc_uses": 0,
+      "data_branch_decisions": [],
+      "election_policy": {
+        "fallback": "lowest_member",
+        "preferred_lane": 0,
+        "strategy": "preferred_member"
+      },
+      "election_uses": 892928,
+      "fixed_election": true,
+      "isolated_launch": true,
+      "noalias_unbounded": false,
+      "opaque_compute_regions": [],
+      "pointer_contract": {
+        "aliasing": "distinct_objects_noalias",
+        "extent_bytes": "unbounded"
+      },
+      "representative_branch_uses": 0,
+      "trap_only_equality_assertions_hold": true
+    },
+    "implementation": "cpp",
+    "input_objects": [
+      {
+        "bytes": 8,
+        "object": "A",
+        "offset": 0,
+        "parameter": "persistent_matmul_kernel_param_15",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "B",
+        "offset": 0,
+        "parameter": "persistent_matmul_kernel_param_16",
+        "source": "declaration"
+      }
+    ],
+    "lowered_instruction_count": 5021248,
+    "mma_refinement": {
+      "blocked": [],
+      "discharged": 8192
+    },
+    "reached_opcodes": {
+      "add.s32": 4091904,
+      "add.s64": 393216,
+      "and.b32": 557056,
+      "and.pred": 557056,
+      "bar.sync": 1368064,
+      "bfe.u32": 131072,
+      "bra": 208896,
+      "bra.uni": 79872,
+      "cp.async.bulk.commit_group": 8192,
+      "cp.async.bulk.tensor.2d.global.shared::cta.bulk_group": 256,
+      "cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes": 10240,
+      "cp.async.bulk.wait_group.read": 8192,
+      "cvt.rn.f16x2.f32": 1048576,
+      "cvt.u64.u32": 131072,
+      "cvta.param.u64": 24576,
+      "div.s32": 16384,
+      "elect.sync": 892928,
+      "fence.proxy.async.shared::cta": 8192,
+      "ld.param.b32": 24576,
+      "ld.shared.b32": 8192,
+      "mad.lo.s32": 368640,
+      "mbarrier.arrive.expect_tx.shared::cta.b64": 2048,
+      "mbarrier.init.shared::cta.b64": 256,
+      "mbarrier.try_wait.parity.shared::cta.b64": 532480,
+      "min.s32": 8192,
+      "mov.b32": 139264,
+      "mov.b64": 2121728,
+      "mov.pred": 67584,
+      "mov.u32": 24576,
+      "mul.hi.s32": 524288,
+      "mul.lo.s32": 303104,
+      "not.b32": 253952,
+      "or.b32": 16384,
+      "or.b64": 131072,
+      "ret": 8192,
+      "setp.eq.b32": 16384,
+      "setp.gt.s32": 2048,
+      "setp.lt.s32": 262144,
+      "setp.lt.u32": 24576,
+      "setp.ne.b32": 16384,
+      "shfl.sync.idx.b32": 8192,
+      "shl.b32": 892928,
+      "shr.s32": 32768,
+      "shr.u32": 548864,
+      "st.shared::cta.v4.b32": 262144,
+      "sub.s32": 294912,
+      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 2048,
+      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 2048,
+      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 2048,
+      "tcgen05.ld.sync.aligned.32x32b.x64.b32": 32768,
+      "tcgen05.mma.cta_group::1.kind::f16": 8192,
+      "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 2048,
+      "tcgen05.wait::ld.sync.aligned": 8192,
+      "xor.b32": 65536
+    },
+    "shared_constant_propagation": {
+      "read_from_dependencies": 0,
+      "representation": "sparse_known_bytes",
+      "validation": "pending_backend"
+    },
+    "source_binding_storage": {
+      "binding_templates": 576,
+      "generated_address_rows": 0,
+      "generated_body_rows": 0,
+      "generated_memory_instances": 0,
+      "logical_instructions": 5021248,
+      "stored_bindings": 474384
+    },
+    "source_edge_storage": {
+      "binding_templates": 9792,
+      "logical_edges": 5013056,
+      "stored_bindings": 9792
+    },
+    "tcgen_history_refinement": {
+      "blocked": [],
+      "notifications": 2048,
+      "operations": 8192
+    },
+    "thread_count": 8192,
+    "unsupported_occurrence_counts": {},
+    "user_branch_decisions": []
+  },
+  "frontend_source_violations": [],
+  "implementation": "cpp",
+  "memory_analysis": {
+    "candidate_generation_fallback": false,
+    "strategy": "conflict-family"
+  },
+  "memory_analysis_complete": false,
+  "memory_analysis_entered": true,
+  "peak_footprint_mib": 69813.09765625,
+  "peak_rss_mib": 69813.09765625,
+  "resource": {
+    "kind": "time",
+    "limit": 498.576,
+    "origin": "configured_budget",
+    "unit": "seconds"
+  },
+  "result": "timeout",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-ptx-run/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "timeout_scope": "whole_pipeline",
+  "verification_limitations": [],
+  "warnings_complete": false
+}

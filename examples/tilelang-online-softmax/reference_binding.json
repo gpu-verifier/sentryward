@@ -1,0 +1,94 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          8192
+        ],
+        "source_strides_bytes": [
+          16384,
+          2
+        ],
+        "target_strides_bytes": [
+          16384,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          8192
+        ],
+        "source_strides_bytes": [
+          16384,
+          2
+        ],
+        "target_strides_bytes": [
+          16384,
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:B",
+    "right_allocation": "6:global1:B",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      1,
+      8192
+    ],
+    "left_strides_bytes": [
+      16384,
+      2
+    ],
+    "right_strides_bytes": [
+      16384,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float16",
+        "allocation": "6:global1:A"
+      }
+    ]
+  },
+  "provenance": {
+    "evidence": "PTX entry softmax_kernel_kernel: CTA row stride8192 elements, 128 threads x64 half elements, four 4096-byte load/store chunks, max/sum/log2 normalization and exp2 output. No public source URL in current PTX.",
+    "ptx": "corpus/tilelang-online-softmax.ptx",
+    "optimized_input": "examples/tilelang-online-softmax/input.json",
+    "semantics": "Fixed saved configuration; ideal-real tensor arithmetic; all written mathematical outputs.",
+    "optimized_input_sha256": "4447e93bfa39de0009b09789e742e58540b55ccfa6bb2392e223a3bce7ce6353",
+    "ptx_sha256": "30aed65c1d8f2cdd55e8f37c229a7d015f3389cd22ede1879eebf10aabbaeb62",
+    "upstream": [],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

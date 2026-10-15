@@ -1,0 +1,481 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_cutlass_kernel_flash_attncutesm100_hd256_2cta_fmha_backward_dqkernelBlackwellFusedMultiHeadAttentionBackwardDQKernel_object_at__TiledMMA_ThrLayoutVMNK21111000_PermutationMNK____MMA_0",
+  "launch": {
+    "grid_dim": [
+      2,
+      8,
+      2
+    ],
+    "block_dim": [
+      384,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      2,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "field": "shape.Q",
+      "value": 128
+    },
+    {
+      "field": "shape.K",
+      "value": 256
+    },
+    {
+      "field": "shape.query_heads_per_kv",
+      "value": 1
+    },
+    {
+      "field": "LSE.stride_head_local",
+      "value": 128
+    },
+    {
+      "field": "LSE.stride_head_kv",
+      "value": 128
+    },
+    {
+      "field": "LSE.stride_batch",
+      "value": 1024
+    },
+    {
+      "field": "sum_odo.stride_head_local",
+      "value": 128
+    },
+    {
+      "field": "sum_odo.stride_head_kv",
+      "value": 128
+    },
+    {
+      "field": "sum_odo.stride_batch",
+      "value": 1024
+    },
+    {
+      "field": "dQ.stride_sequence",
+      "value": 2048
+    },
+    {
+      "field": "dQ.stride_head_local",
+      "value": 256
+    },
+    {
+      "field": "dQ.stride_head_kv",
+      "value": 256
+    },
+    {
+      "field": "dQ.stride_batch",
+      "value": 262144
+    }
+  ],
+  "declarations": [
+    {
+      "name": "shape.Q",
+      "parameter": 4,
+      "offset": 0,
+      "type": "u64"
+    },
+    {
+      "name": "shape.Q",
+      "parameter": 10,
+      "offset": 0,
+      "type": "u64"
+    },
+    {
+      "name": "shape.Q",
+      "parameter": 14,
+      "offset": 0,
+      "type": "u64"
+    },
+    {
+      "name": "shape.K",
+      "parameter": 6,
+      "offset": 0,
+      "type": "u64"
+    },
+    {
+      "name": "shape.K",
+      "parameter": 8,
+      "offset": 0,
+      "type": "u64"
+    },
+    {
+      "name": "shape.query_heads_per_kv",
+      "parameter": 4,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.query_heads_per_kv",
+      "parameter": 6,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.query_heads_per_kv",
+      "parameter": 8,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.query_heads_per_kv",
+      "parameter": 10,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.query_heads_per_kv",
+      "parameter": 14,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.query_heads_per_kv",
+      "parameter": 12,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "shape.query_heads_per_kv",
+      "parameter": 15,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.query_heads_per_kv",
+      "parameter": 16,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "shape.query_heads_per_kv",
+      "parameter": 17,
+      "offset": 20,
+      "type": "s32"
+    },
+    {
+      "name": "LSE.stride_head_local",
+      "parameter": 15,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "LSE.stride_head_kv",
+      "parameter": 15,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "LSE.stride_batch",
+      "parameter": 15,
+      "offset": 40,
+      "type": "s64"
+    },
+    {
+      "name": "sum_odo.stride_head_local",
+      "parameter": 16,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "sum_odo.stride_head_kv",
+      "parameter": 16,
+      "offset": 40,
+      "type": "s64"
+    },
+    {
+      "name": "sum_odo.stride_batch",
+      "parameter": 16,
+      "offset": 48,
+      "type": "s64"
+    },
+    {
+      "name": "dQ.stride_sequence",
+      "parameter": 17,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "dQ.stride_head_local",
+      "parameter": 17,
+      "offset": 40,
+      "type": "s64"
+    },
+    {
+      "name": "dQ.stride_head_kv",
+      "parameter": 17,
+      "offset": 48,
+      "type": "s64"
+    },
+    {
+      "name": "dQ.stride_batch",
+      "parameter": 17,
+      "offset": 56,
+      "type": "s64"
+    },
+    {
+      "parameter": 3,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 5,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 7,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 9,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 11,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 13,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 15,
+      "offset": 0,
+      "type": "pointer",
+      "object": "LSE"
+    },
+    {
+      "parameter": 16,
+      "offset": 0,
+      "type": "pointer",
+      "object": "sum_odo"
+    },
+    {
+      "parameter": 17,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dQ"
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 3,
+      "offset": 0,
+      "object": "Q",
+      "element_type": "bf16",
+      "global_shape": [
+        256,
+        128,
+        1,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        4096,
+        512,
+        512,
+        524288
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 9,
+      "offset": 0,
+      "object": "dO",
+      "element_type": "bf16",
+      "global_shape": [
+        256,
+        128,
+        1,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        4096,
+        512,
+        512,
+        524288
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 13,
+      "offset": 0,
+      "object": "dQ",
+      "element_type": "bf16",
+      "global_shape": [
+        256,
+        128,
+        1,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        4096,
+        512,
+        512,
+        524288
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "object": "K",
+      "element_type": "bf16",
+      "global_shape": [
+        256,
+        256,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        4096,
+        512,
+        1048576
+      ],
+      "box_shape": [
+        64,
+        64,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 7,
+      "offset": 0,
+      "object": "V",
+      "element_type": "bf16",
+      "global_shape": [
+        256,
+        256,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        4096,
+        512,
+        1048576
+      ],
+      "box_shape": [
+        64,
+        64,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 11,
+      "offset": 0,
+      "object": "K",
+      "element_type": "bf16",
+      "global_shape": [
+        256,
+        256,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        4096,
+        512,
+        1048576
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

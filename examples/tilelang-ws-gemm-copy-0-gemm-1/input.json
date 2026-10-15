@@ -1,0 +1,96 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "matmul_warp_specialize_copy_0_gemm_1_kernel",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      256,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "declarations": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "type": "pointer",
+      "object": "C"
+    }
+  ],
+  "arguments": [],
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "object": "A",
+      "element_type": "f16",
+      "rank": 2,
+      "box_shape": [
+        64,
+        128
+      ],
+      "global_shape": [
+        1024,
+        1024
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "global_strides_bytes": [
+        2048
+      ],
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 1,
+      "object": "B",
+      "element_type": "f16",
+      "rank": 2,
+      "box_shape": [
+        64,
+        64
+      ],
+      "global_shape": [
+        1024,
+        1024
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "global_strides_bytes": [
+        2048
+      ],
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

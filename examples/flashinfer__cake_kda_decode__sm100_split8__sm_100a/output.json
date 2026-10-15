@@ -1,0 +1,356 @@
+{
+  "assumption_hints": [
+    {
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
+      "suggested_value": true
+    },
+    {
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
+      "suggested_value": true
+    }
+  ],
+  "assumptions": [
+    {
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": null
+    },
+    {
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": null
+    },
+    {
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": null
+    },
+    {
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    }
+  ],
+  "checks": {
+    "equivalence": "not_run",
+    "memory": "not_run",
+    "synchronization": "not_run"
+  },
+  "details": {
+    "required_parameters": []
+  },
+  "diagnostics": [
+    {
+      "code": "control_predicate_not_static",
+      "details": {
+        "location": {
+          "column": 0,
+          "file": "corpus/flashinfer__cake_kda_decode__sm100_split8__sm_100a.ptx",
+          "line": 120
+        },
+        "required_parameters": []
+      },
+      "message": "control predicate is not statically determined",
+      "stage": "ptx_execution"
+    }
+  ],
+  "equivalence": {
+    "checks": {
+      "equivalence": "not_run",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "diagnostics": [
+      {
+        "code": "prerequisite_check_not_passed",
+        "details": {
+          "prerequisite_checks": {
+            "equivalence": "not_run",
+            "memory": "not_run",
+            "synchronization": "not_run"
+          },
+          "prerequisite_diagnostics": [
+            {
+              "code": "control_predicate_not_static",
+              "details": {
+                "location": {
+                  "column": 0,
+                  "file": "corpus/flashinfer__cake_kda_decode__sm100_split8__sm_100a.ptx",
+                  "line": 120
+                },
+                "required_parameters": []
+              },
+              "message": "control predicate is not statically determined",
+              "stage": "ptx_execution"
+            }
+          ],
+          "prerequisite_result": "unsupported"
+        },
+        "stage": "pipeline"
+      }
+    ],
+    "result": "unsupported",
+    "scope": {
+      "operation": "equivalence"
+    }
+  },
+  "frontend": {
+    "frontend_assumptions": {
+      "assertion_failure_forms": [
+        "trap",
+        "__assertfail"
+      ],
+      "assertion_uses": 0,
+      "bounded_loop_uses": 0,
+      "clc_failure": true,
+      "clc_uses": 0,
+      "data_branch_decisions": [],
+      "election_policy": {
+        "fallback": "lowest_member",
+        "preferred_lane": 0,
+        "strategy": "preferred_member"
+      },
+      "election_uses": 0,
+      "fixed_election": true,
+      "isolated_launch": true,
+      "noalias_unbounded": false,
+      "opaque_compute_regions": [],
+      "pointer_contract": {
+        "aliasing": "distinct_objects_noalias",
+        "extent_bytes": "unbounded"
+      },
+      "representative_branch_uses": 0,
+      "trap_only_equality_assertions_hold": true
+    },
+    "input_objects": [
+      {
+        "bytes": 8,
+        "object": "q",
+        "offset": 0,
+        "parameter": "kernel_flashinfer_recurrent_kda_t1_unbounded_softplus_param_0",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "k",
+        "offset": 0,
+        "parameter": "kernel_flashinfer_recurrent_kda_t1_unbounded_softplus_param_1",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "v",
+        "offset": 0,
+        "parameter": "kernel_flashinfer_recurrent_kda_t1_unbounded_softplus_param_2",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "g",
+        "offset": 0,
+        "parameter": "kernel_flashinfer_recurrent_kda_t1_unbounded_softplus_param_3",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "beta",
+        "offset": 0,
+        "parameter": "kernel_flashinfer_recurrent_kda_t1_unbounded_softplus_param_4",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "A_log",
+        "offset": 0,
+        "parameter": "kernel_flashinfer_recurrent_kda_t1_unbounded_softplus_param_5",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "dt_bias",
+        "offset": 0,
+        "parameter": "kernel_flashinfer_recurrent_kda_t1_unbounded_softplus_param_6",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "state",
+        "offset": 0,
+        "parameter": "kernel_flashinfer_recurrent_kda_t1_unbounded_softplus_param_7",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "out",
+        "offset": 0,
+        "parameter": "kernel_flashinfer_recurrent_kda_t1_unbounded_softplus_param_8",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "cu_seqlens",
+        "offset": 0,
+        "parameter": "kernel_flashinfer_recurrent_kda_t1_unbounded_softplus_param_9",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "ssm_state_indices",
+        "offset": 0,
+        "parameter": "kernel_flashinfer_recurrent_kda_t1_unbounded_softplus_param_10",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "num_accepted_tokens",
+        "offset": 0,
+        "parameter": "kernel_flashinfer_recurrent_kda_t1_unbounded_softplus_param_11",
+        "source": "declaration"
+      }
+    ],
+    "required_parameters": [],
+    "user_branch_decisions": []
+  },
+  "implementation": "cpp",
+  "location": {
+    "column": 0,
+    "file": "corpus/flashinfer__cake_kda_decode__sm100_split8__sm_100a.ptx",
+    "line": 120
+  },
+  "memory_analysis_complete": false,
+  "peak_footprint_mib": 13.5625,
+  "peak_rss_mib": 31.3046875,
+  "pipeline_elapsed_seconds": 0.009418144,
+  "result": "unsupported",
+  "rss_limit_mib": null,
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "semantic_assumptions": {
+    "bounded_computation_loops": false,
+    "clc_always_fails": true,
+    "duplicate_tma_store_benign": true,
+    "representative_branches": false,
+    "representative_election": true
+  },
+  "semantic_program": {
+    "execution_cohorts": 0,
+    "mapping_complete": false,
+    "memory_binding_stored_rows": 0,
+    "memory_binding_templates": 0,
+    "memory_bindings": 0,
+    "memory_linking_templates_used": false,
+    "synchronization_groups": 0,
+    "synchronization_groups_materialized": false,
+    "synthetic_synchronization_nodes": 0,
+    "thread_prefix_groups": 0
+  },
+  "stage": "ptx_execution",
+  "template_execution": {
+    "completed_ctas": 0,
+    "coordinate_bindings": 0,
+    "logical_thread_steps": 0,
+    "path_entries": 0,
+    "record_bindings": 0,
+    "record_nodes": 0,
+    "splits": 0,
+    "template_steps": 0,
+    "thread_memberships": 0,
+    "value_nodes": 0
+  },
+  "thread_record_compression": {
+    "completed_ctas": 0,
+    "enabled": true,
+    "estimated_pool_bytes_sum": 0,
+    "intern_calls": 0,
+    "logical_records": 0,
+    "record_handle_bytes": 32,
+    "templates": 0,
+    "unique_bindings": 0
+  },
+  "value_analysis": {
+    "checks": {
+      "equivalence": "not_requested",
+      "memory": "not_requested",
+      "synchronization": "not_requested"
+    },
+    "diagnostics": [
+      {
+        "code": "prerequisite_check_not_passed",
+        "details": {
+          "prerequisite_checks": {
+            "equivalence": "not_run",
+            "memory": "not_run",
+            "synchronization": "not_run"
+          },
+          "prerequisite_diagnostics": [
+            {
+              "code": "control_predicate_not_static",
+              "details": {
+                "location": {
+                  "column": 0,
+                  "file": "corpus/flashinfer__cake_kda_decode__sm100_split8__sm_100a.ptx",
+                  "line": 120
+                },
+                "required_parameters": []
+              },
+              "message": "control predicate is not statically determined",
+              "stage": "ptx_execution"
+            }
+          ],
+          "prerequisite_result": "unsupported",
+          "prerequisite_status": "ptx_execution_unsupported"
+        },
+        "stage": "pipeline"
+      }
+    ],
+    "equivalence_check": "blocked",
+    "prerequisite_status": "ptx_execution_unsupported",
+    "result": "unsupported",
+    "scalar_fold": {
+      "checks": {
+        "equivalence": "not_requested",
+        "memory": "not_requested",
+        "synchronization": "not_requested"
+      },
+      "diagnostics": [
+        {
+          "code": "memory_elimination_not_completed",
+          "stage": "pipeline"
+        }
+      ],
+      "result": "unsupported",
+      "scope": {
+        "operation": "scalar_fold"
+      }
+    },
+    "scope": {
+      "operation": "value_analysis"
+    }
+  },
+  "value_ir_instance_count": 0,
+  "value_ir_node_count": 0,
+  "value_view_complete": false,
+  "warnings": [],
+  "wellsync_timeout_seconds": 500.0,
+  "whole_pipeline_timeout_seconds": 500.0
+}

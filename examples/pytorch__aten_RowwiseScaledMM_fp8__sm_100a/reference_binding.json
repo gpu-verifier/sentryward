@@ -1,0 +1,218 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:x_scale": "x_scale",
+      "6:global7:w_scale": "w_scale"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global7:x_scale": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global7:w_scale": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:x_scale": "x_scale",
+      "6:global7:w_scale": "w_scale"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          256
+        ],
+        "source_strides_bytes": [
+          256,
+          1
+        ],
+        "target_strides_bytes": [
+          256,
+          1
+        ]
+      },
+      "6:global7:x_scale": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global7:w_scale": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN7cutlass13device_kernelIN2at4cuda6detail34enable_3x_kernel_for_sm10_or_laterINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiEEENS5_10collective13CollectiveMmaINS5_35MainloopSm100TmaUmmaWarpSpecializedILi8ELi2ELi4ENS9_IJNS8_1CILi2EEENSE_ILi1EEESG_EEENS_4arch5Sm100EEENS9_IJNSE_ILi64EEENSE_ILi128EEESM_EEENS_12float_e4m3_tENS9_IJlSG_lEEESO_SP_NS8_8TiledMMAINS8_8MMA_AtomIJNS8_19SM100_MMA_F8F6F4_SSISO_SO_fLi64ELi128ELNS8_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS8_6LayoutINS9_IJSG_SG_SG_EEENS9_IJNSE_ILi0EEES10_S10_EEEEENS9_IJNS8_10UnderscoreES13_S13_EEEEENS8_13SM90_TMA_LOADENS8_14ComposedLayoutINS8_7SwizzleILi3ELi4ELi3EEENS8_18smem_ptr_flag_bitsILi8EEENSY_INS9_IJNSE_ILi8EEESM_EEENS9_IJSM_SG_EEEEEEEvNS8_8identityENS8_23SM90_TMA_LOAD_MULTICASTES1G_vS1H_EENS_8epilogue10collective18CollectiveEpilogueINS1K_23Sm100TmaWarpSpecializedILi2ELi2ELi32ELb0ELb1EEEJSN_NS9_IJNSY_ISL_SG_EES1P_EEEvSP_NS_10bfloat16_tESP_NS1K_6fusion15Sm90TreeVisitorINS1S_11Sm90ComputeINS1K_6thread8IdentityES1R_fLNS_15FloatRoundStyleE2EvEEJNS1T_INS1U_INS_4plusEffLS1X_2EvEEJNS1S_16Sm90RowBroadcastILi0ESN_ffNS9_IJS10_SG_S10_EEELi4ELb1EEENS1T_INS1U_INS_10multipliesEffLS1X_2EvEEJS23_NS1T_IS25_JNS1S_16Sm90ColBroadcastILi0ESN_ffNS9_IJSG_S10_S10_EEELi4ELb1EEENS1S_12Sm90AccFetchEEEEEEEEEEEEENS8_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b8xES16_NS17_IS19_NS1A_ILi16EEENSY_INS9_IJS1C_SL_EEENS9_IJSL_SG_EEEEEEENS8_17SM75_U32x4_LDSM_NENS8_14SM90_TMA_STOREES2M_NS8_17SM90_U32x4_STSM_NENS8_39AutoVectorizingCopyWithAssumedAlignmentILi128EEEEEEvvEEEEEEvNT_6ParamsE_param_0+1288": {
+        "type": "f32",
+        "literal": "0.0"
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      128,
+      128
+    ],
+    "left_strides_bytes": [
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      256,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:B"
+      },
+      {
+        "name": "x_scale",
+        "dtype": "float32",
+        "allocation": "6:global7:x_scale"
+      },
+      {
+        "name": "w_scale",
+        "dtype": "float32",
+        "allocation": "6:global7:w_scale"
+      }
+    ]
+  },
+  "provenance": {
+    "evidence": "SM100 EVT: column x_scale, row w_scale, null bias; A/B K-major descriptors.",
+    "ptx": "corpus/pytorch__aten_RowwiseScaledMM_fp8__sm_100a.ptx",
+    "optimized_input": "examples/pytorch__aten_RowwiseScaledMM_fp8__sm_100a/input.json",
+    "semantics": "Fixed saved configuration; ideal-real tensor arithmetic; all written mathematical outputs.",
+    "optimized_input_sha256": "cfe057bf69a02bb6920e8cfac7fd8a402368320aa7436dac87385a2a356ebc6f",
+    "ptx_sha256": "fdd556de46f1245499ff584d5e77e637d170e30957cb5933e2cac0a52a2af671",
+    "upstream": [
+      "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/RowwiseScaledMM.cu",
+      "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/cutlass_common.cuh",
+      "https://github.com/NVIDIA/cutlass/blob/e05f953a5b3d38adc240df2ff928e0421c2abba3/include/cutlass/device_kernel.h",
+      "https://github.com/NVIDIA/cutlass/blob/e05f953a5b3d38adc240df2ff928e0421c2abba3/include/cutlass/gemm/kernel/sm100_gemm_tma_warpspecialized.hpp",
+      "https://github.com/NVIDIA/cutlass/blob/e05f953a5b3d38adc240df2ff928e0421c2abba3/include/cutlass/gemm/collective/sm100_mma_warpspecialized.hpp",
+      "https://github.com/NVIDIA/cutlass/blob/e05f953a5b3d38adc240df2ff928e0421c2abba3/include/cutlass/epilogue/collective/sm100_epilogue_tma_warpspecialized.hpp"
+    ],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

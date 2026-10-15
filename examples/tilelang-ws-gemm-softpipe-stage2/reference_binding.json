@@ -1,0 +1,138 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1024,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1024,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1024,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1024,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:C",
+    "right_allocation": "6:global1:C",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      128,
+      128
+    ],
+    "left_strides_bytes": [
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      2048,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float16",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "float16",
+        "allocation": "6:global1:B"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tilelang-ws-gemm-softpipe-stage2.ptx",
+    "optimized_input": "examples/tilelang-ws-gemm-softpipe-stage2/input.json",
+    "evidence": "One CTA at (0,0) of the compiled K=N=1024 GEMM computes a 128x128 output tile with 16 K-tiles of 64. Upstream declares contiguous f16 A[M,K] and B[K,N], and allocates independent C[M,N]. Both input tensor maps have 1024-element (2048-byte) row pitches. A copies a [K,M]=[64,128] box; two B copies use [N,K]=[64,64] boxes at adjacent N coordinates. Output stores retain the full C row pitch of 1024 elements. Parameter 2 binds distinct C, not input A. PyTorch uses full contiguous A/B inputs and computes A[:128,:] @ B[:,:128], with f32 accumulation and f16 output. Input maps are identity; output mapping selects the analyzed tile.",
+    "coverage": "Only the launch's128x128 tile, not a full1024x1024 GEMM.",
+    "semantics": "ideal_real",
+    "upstream": [
+      "https://github.com/tile-ai/tilelang/blob/cd37ed5fc35ae7a60a1277c8eb49028174ac51e6/examples/warp_specialize/example_warp_specialize_gemm_softpipe_stage2.py"
+    ],
+    "optimized_input_sha256": "b4ed9bad8c494def77a89f762ab3ffbdb4a5a63d0eaef73ff71c48daf5f93046",
+    "ptx_sha256": "54feb44f5a4ede27ba2ffe7597761bb32d043c2187017e78cfea8e15dac0d46c",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

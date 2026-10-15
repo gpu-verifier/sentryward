@@ -1,0 +1,166 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:a": "A",
+      "6:global1:b": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global1:b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_47MainloopSm100UmmaMixedTmaCpAsyncWarpSpecializedILi12ELi3ELi2ENS5_IJNS4_1CILi1EEESB_SB_EEENS_4arch5Sm100EEENS5_IJNSA_ILi128EEENSA_ILi16EEESG_EEENS_12float_e4m3_tENS5_IJlSB_lEEESJ_SK_NS4_8TiledMMAINS4_8MMA_AtomIJNS4_19SM100_MMA_F8F6F4_SSISJ_SJ_fLi128ELi16ELNS4_4UMMA5MajorE0ELSP_0ELNSO_7ScaleInE0ELSQ_0EEEEEENS4_6LayoutISC_NS5_IJNSA_ILi0EEESU_SU_EEEEENS5_IJNS4_10UnderscoreESX_SX_EEEEENS4_13SM90_TMA_LOADENS4_14ComposedLayoutINS4_7SwizzleILi3ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi8EEENST_INS5_IJNSA_ILi8EEESG_EEENS5_IJSG_SB_EEEEEEEvNS4_8identityENS4_9TiledCopyINS4_9Copy_AtomIJNS4_31SM80_CP_ASYNC_CACHEGLOBAL_ZFILLINS_9uint128_tES1F_EESJ_EEENST_INS5_IJNS5_IJS16_SH_EEESH_EEENS5_IJNS5_IJNSA_ILi256EEESB_EEESH_EEEEENS5_IJSH_SG_EEEEES1A_vS1B_EENS_8epilogue10collective18CollectiveEpilogueINS1R_23Sm100TmaWarpSpecializedILi2ELi1ELi16ELb1ELb0EEEJSI_NS5_IJNST_ISG_SB_EENST_ISH_SB_EEEEENS_6half_tENS5_IJSB_llEEES1Z_S20_NS1R_6fusion15FusionCallbacksIS1V_NS21_17LinearCombinationIS1Z_fS1Z_fLNS_15FloatRoundStyleE2EEESI_S1Y_JEEENS4_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b2xES10_NS11_IS13_NS14_ILi16EEENST_INS5_IJNSA_ILi64EEES16_EEENS5_IJSB_S2C_EEEEEEENS4_17SM75_U16x8_LDSM_TENS4_14SM90_TMA_STOREES2G_NS4_17SM90_U16x8_STSM_TENS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEEEEEvvEEEEvNT_6ParamsE_param_0+544": {
+        "type": "b32",
+        "literal": "1065353216"
+      },
+      "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_47MainloopSm100UmmaMixedTmaCpAsyncWarpSpecializedILi12ELi3ELi2ENS5_IJNS4_1CILi1EEESB_SB_EEENS_4arch5Sm100EEENS5_IJNSA_ILi128EEENSA_ILi16EEESG_EEENS_12float_e4m3_tENS5_IJlSB_lEEESJ_SK_NS4_8TiledMMAINS4_8MMA_AtomIJNS4_19SM100_MMA_F8F6F4_SSISJ_SJ_fLi128ELi16ELNS4_4UMMA5MajorE0ELSP_0ELNSO_7ScaleInE0ELSQ_0EEEEEENS4_6LayoutISC_NS5_IJNSA_ILi0EEESU_SU_EEEEENS5_IJNS4_10UnderscoreESX_SX_EEEEENS4_13SM90_TMA_LOADENS4_14ComposedLayoutINS4_7SwizzleILi3ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi8EEENST_INS5_IJNSA_ILi8EEESG_EEENS5_IJSG_SB_EEEEEEEvNS4_8identityENS4_9TiledCopyINS4_9Copy_AtomIJNS4_31SM80_CP_ASYNC_CACHEGLOBAL_ZFILLINS_9uint128_tES1F_EESJ_EEENST_INS5_IJNS5_IJS16_SH_EEESH_EEENS5_IJNS5_IJNSA_ILi256EEESB_EEESH_EEEEENS5_IJSH_SG_EEEEES1A_vS1B_EENS_8epilogue10collective18CollectiveEpilogueINS1R_23Sm100TmaWarpSpecializedILi2ELi1ELi16ELb1ELb0EEEJSI_NS5_IJNST_ISG_SB_EENST_ISH_SB_EEEEENS_6half_tENS5_IJSB_llEEES1Z_S20_NS1R_6fusion15FusionCallbacksIS1V_NS21_17LinearCombinationIS1Z_fS1Z_fLNS_15FloatRoundStyleE2EEESI_S1Y_JEEENS4_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b2xES10_NS11_IS13_NS14_ILi16EEENST_INS5_IJNSA_ILi64EEES16_EEENS5_IJSB_S2C_EEEEEEENS4_17SM75_U16x8_LDSM_TENS4_14SM90_TMA_STOREES2G_NS4_17SM90_U16x8_STSM_TENS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEEEEEvvEEEEvNT_6ParamsE_param_0+512": {
+        "type": "b32",
+        "literal": "0"
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:d",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      128,
+      16
+    ],
+    "left_strides_bytes": [
+      32,
+      2
+    ],
+    "right_strides_bytes": [
+      2,
+      256
+    ]
+  },
+  "parameter_constant_sources": [
+    {
+      "symbol": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_47MainloopSm100UmmaMixedTmaCpAsyncWarpSpecializedILi12ELi3ELi2ENS5_IJNS4_1CILi1EEESB_SB_EEENS_4arch5Sm100EEENS5_IJNSA_ILi128EEENSA_ILi16EEESG_EEENS_12float_e4m3_tENS5_IJlSB_lEEESJ_SK_NS4_8TiledMMAINS4_8MMA_AtomIJNS4_19SM100_MMA_F8F6F4_SSISJ_SJ_fLi128ELi16ELNS4_4UMMA5MajorE0ELSP_0ELNSO_7ScaleInE0ELSQ_0EEEEEENS4_6LayoutISC_NS5_IJNSA_ILi0EEESU_SU_EEEEENS5_IJNS4_10UnderscoreESX_SX_EEEEENS4_13SM90_TMA_LOADENS4_14ComposedLayoutINS4_7SwizzleILi3ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi8EEENST_INS5_IJNSA_ILi8EEESG_EEENS5_IJSG_SB_EEEEEEEvNS4_8identityENS4_9TiledCopyINS4_9Copy_AtomIJNS4_31SM80_CP_ASYNC_CACHEGLOBAL_ZFILLINS_9uint128_tES1F_EESJ_EEENST_INS5_IJNS5_IJS16_SH_EEESH_EEENS5_IJNS5_IJNSA_ILi256EEESB_EEESH_EEEEENS5_IJSH_SG_EEEEES1A_vS1B_EENS_8epilogue10collective18CollectiveEpilogueINS1R_23Sm100TmaWarpSpecializedILi2ELi1ELi16ELb1ELb0EEEJSI_NS5_IJNST_ISG_SB_EENST_ISH_SB_EEEEENS_6half_tENS5_IJSB_llEEES1Z_S20_NS1R_6fusion15FusionCallbacksIS1V_NS21_17LinearCombinationIS1Z_fS1Z_fLNS_15FloatRoundStyleE2EEESI_S1Y_JEEENS4_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b2xES10_NS11_IS13_NS14_ILi16EEENST_INS5_IJNSA_ILi64EEES16_EEENS5_IJSB_S2C_EEEEEEENS4_17SM75_U16x8_LDSM_TENS4_14SM90_TMA_STOREES2G_NS4_17SM90_U16x8_STSM_TENS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEEEEEvvEEEEvNT_6ParamsE_param_0+544",
+      "input": "examples/cutlass92_blackwell_moe_gemm_regular.compute_100a/input.json",
+      "argument": {
+        "parameter": 0,
+        "offset": 544,
+        "type": "f32",
+        "value": 1
+      },
+      "declaration": {
+        "parameter": 0,
+        "offset": 544,
+        "type": "f32"
+      }
+    },
+    {
+      "symbol": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_47MainloopSm100UmmaMixedTmaCpAsyncWarpSpecializedILi12ELi3ELi2ENS5_IJNS4_1CILi1EEESB_SB_EEENS_4arch5Sm100EEENS5_IJNSA_ILi128EEENSA_ILi16EEESG_EEENS_12float_e4m3_tENS5_IJlSB_lEEESJ_SK_NS4_8TiledMMAINS4_8MMA_AtomIJNS4_19SM100_MMA_F8F6F4_SSISJ_SJ_fLi128ELi16ELNS4_4UMMA5MajorE0ELSP_0ELNSO_7ScaleInE0ELSQ_0EEEEEENS4_6LayoutISC_NS5_IJNSA_ILi0EEESU_SU_EEEEENS5_IJNS4_10UnderscoreESX_SX_EEEEENS4_13SM90_TMA_LOADENS4_14ComposedLayoutINS4_7SwizzleILi3ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi8EEENST_INS5_IJNSA_ILi8EEESG_EEENS5_IJSG_SB_EEEEEEEvNS4_8identityENS4_9TiledCopyINS4_9Copy_AtomIJNS4_31SM80_CP_ASYNC_CACHEGLOBAL_ZFILLINS_9uint128_tES1F_EESJ_EEENST_INS5_IJNS5_IJS16_SH_EEESH_EEENS5_IJNS5_IJNSA_ILi256EEESB_EEESH_EEEEENS5_IJSH_SG_EEEEES1A_vS1B_EENS_8epilogue10collective18CollectiveEpilogueINS1R_23Sm100TmaWarpSpecializedILi2ELi1ELi16ELb1ELb0EEEJSI_NS5_IJNST_ISG_SB_EENST_ISH_SB_EEEEENS_6half_tENS5_IJSB_llEEES1Z_S20_NS1R_6fusion15FusionCallbacksIS1V_NS21_17LinearCombinationIS1Z_fS1Z_fLNS_15FloatRoundStyleE2EEESI_S1Y_JEEENS4_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b2xES10_NS11_IS13_NS14_ILi16EEENST_INS5_IJNSA_ILi64EEES16_EEENS5_IJSB_S2C_EEEEEEENS4_17SM75_U16x8_LDSM_TENS4_14SM90_TMA_STOREES2G_NS4_17SM90_U16x8_STSM_TENS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEEEEEvvEEEEvNT_6ParamsE_param_0+512",
+      "input": "examples/cutlass92_blackwell_moe_gemm_regular.compute_100a/input.json",
+      "argument": {
+        "parameter": 0,
+        "offset": 512,
+        "type": "f32",
+        "value": 0
+      },
+      "declaration": {
+        "parameter": 0,
+        "offset": 512,
+        "type": "f32"
+      }
+    }
+  ],
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:B"
+      }
+    ]
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_cake_selective_state_update_mtp_short",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      128,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 1664
+  },
+  "arguments": [
+    {
+      "parameter": 10,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 11,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 12,
+      "type": "u32",
+      "value": 64
+    },
+    {
+      "parameter": 13,
+      "type": "u32",
+      "value": 128
+    },
+    {
+      "parameter": 14,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 15,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 16,
+      "type": "u64",
+      "value": 8192
+    },
+    {
+      "parameter": 17,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 18,
+      "type": "u64",
+      "value": 18446744073709551615
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "state"
+    },
+    {
+      "parameter": 1,
+      "type": "pointer",
+      "object": "x"
+    },
+    {
+      "parameter": 2,
+      "type": "pointer",
+      "object": "dt"
+    },
+    {
+      "parameter": 3,
+      "type": "pointer",
+      "object": "A"
+    },
+    {
+      "parameter": 4,
+      "type": "pointer",
+      "object": "B"
+    },
+    {
+      "parameter": 5,
+      "type": "pointer",
+      "object": "C"
+    },
+    {
+      "parameter": 6,
+      "type": "pointer",
+      "object": "D"
+    },
+    {
+      "parameter": 7,
+      "type": "pointer",
+      "object": "dt_bias"
+    },
+    {
+      "parameter": 8,
+      "type": "pointer",
+      "object": "output"
+    },
+    {
+      "parameter": 9,
+      "type": "pointer",
+      "object": "state_batch_indices"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}

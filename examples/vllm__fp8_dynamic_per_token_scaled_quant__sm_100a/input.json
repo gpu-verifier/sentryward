@@ -1,0 +1,101 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN4vllm49dynamic_per_token_scaled_fp8_quant_kernel_stridedIN3c108BFloat16ENS1_13Float8_e4m3fnEEEvPT0_PfPKT_PKfill",
+  "launch": {
+    "grid_dim": [
+      2,
+      1,
+      1
+    ],
+    "block_dim": [
+      256,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "arguments": [
+    {
+      "parameter": 3,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 4,
+      "type": "u32",
+      "value": 1024
+    },
+    {
+      "parameter": 5,
+      "type": "u64",
+      "value": 1024
+    },
+    {
+      "parameter": 6,
+      "type": "u64",
+      "value": 1024
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "out",
+      "name": "out"
+    },
+    {
+      "parameter": 1,
+      "type": "pointer",
+      "object": "scale",
+      "name": "scale"
+    },
+    {
+      "parameter": 2,
+      "type": "pointer",
+      "object": "input",
+      "name": "input"
+    },
+    {
+      "parameter": 3,
+      "type": "pointer",
+      "name": "scale_ub"
+    },
+    {
+      "parameter": 4,
+      "type": "u32",
+      "name": "hidden_size"
+    },
+    {
+      "parameter": 5,
+      "type": "u64",
+      "name": "in_row_stride"
+    },
+    {
+      "parameter": 6,
+      "type": "u64",
+      "name": "out_row_stride"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  },
+  "branch_decisions": [
+    {
+      "line": 52,
+      "taken": false,
+      "note": "vectorize_read_with_alignment<16>: the token's input row pointer is 32-byte aligned (PyTorch allocations are 256-byte aligned and the 2048-byte row stride keeps every row aligned), so the vectorized path is taken instead of the scalar fallback. User-authorized scenario; the frontend cannot decide alignment of a symbolic pointer."
+    },
+    {
+      "line": 1116,
+      "taken": false,
+      "note": "vectorize_with_alignment<16>: the token's input row (32-byte aligned) and fp8 output row (16-byte aligned) allow the vectorized quantization path; the scalar fallback is not taken. User-authorized scenario; the frontend cannot decide alignment of symbolic pointers."
+    }
+  ]
+}
