@@ -57,18 +57,13 @@ of them upstream.
 
 Because SentryWard checks every schedule, it can also show that a
 synchronization operation is unnecessary: if the kernel still verifies without
-it, the operation is redundant. We applied this test greedily, one operation at
-a time, to 50 verified kernels from our benchmark.
+it, the operation is redundant. We applied this test greedily, one operation at a time.
 
-| Measure | Result |
-| --- | --- |
-| Synchronization operations found redundant | **48.7%** of those tried |
-| Kernels faster on a B200 after removal | **35 of 44** reduced kernels |
-| Median reduction in kernel time | **6.8%** |
-| Output check | Identical outputs to the original over 500,000 random launches |
-
-Which synchronization is redundant may depend on the input shape. These results
-hold for the shapes we verified; other shapes may allow fewer removals.
+[Per-kernel synchronization removal results](examples/results.md)
+include removable operation counts and B200 timings for both recorded and larger
+inputs. Each experiment is saved in `examples/<kernel>/sync_removal.json`, with
+its source, methodology, and limitations. These results hold for the tested
+input shapes; other shapes may require synchronization that was removable here.
 
 ## Getting started
 

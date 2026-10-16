@@ -2,9 +2,9 @@
   "schema": "sentryward.kernel-results.v1",
   "verification_results_source": {
     "repository": "gpu-verifier/sentryward",
-    "revision": "f4523afe1863b7b0871b31fb3ef58e18f56cfd3f",
+    "revision": "935af9643a1e753ee360cd5ed333cc5c8eeadb56",
     "path": "examples/results.md",
-    "sha256": "3884e702e98a89c4a8b0511555c2a421c86a8341c74267f468b5fcc6e3b94a5a"
+    "sha256": "7a1e51f2ef5db5be41e9ab818083d2ed9c87d11f7b32c3d283bc591e0859ea38"
   },
   "counts": {
     "not_wellsynced": 1,
@@ -72,13 +72,6 @@
         "result": {
           "path": "examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Verifier finding; no separate confirmation is recorded here. [upstream reference 1](https://github.com/NVIDIA/cutlass/pull/3654) [upstream reference 2](https://github.com/NVIDIA/cutlass/pull/3653)",
-        "references": [
-          "https://github.com/NVIDIA/cutlass/pull/3654",
-          "https://github.com/NVIDIA/cutlass/pull/3653"
-        ]
       }
     },
     {
@@ -100,6 +93,9 @@
         },
         "reference_binding": {
           "path": "examples/cutlass86_blackwell_mixed_dtype_gemm.compute_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/cutlass86_blackwell_mixed_dtype_gemm.compute_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -162,6 +158,9 @@
         },
         "reference_binding": {
           "path": "examples/cutlass92_blackwell_moe_gemm_regular.compute_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/cutlass92_blackwell_moe_gemm_regular.compute_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -224,12 +223,6 @@
         "result": {
           "path": "examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Verifier finding; no separate confirmation is recorded here. [upstream reference 1](https://github.com/NVIDIA/cutlass/pull/3652)",
-        "references": [
-          "https://github.com/NVIDIA/cutlass/pull/3652"
-        ]
       }
     },
     {
@@ -251,6 +244,9 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__block-scaled-gemm-mixed-8-bit__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/cutlass__block-scaled-gemm-mixed-8-bit__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -313,6 +309,9 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__block-scaled-gemm-mxfp4__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/cutlass__block-scaled-gemm-mxfp4__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -396,6 +395,9 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__block-scaled-mxfp4-gemm-2sm__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/cutlass__block-scaled-mxfp4-gemm-2sm__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -458,6 +460,9 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__blockwise-scaled-gemm-runtime-fp8__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/cutlass__blockwise-scaled-gemm-runtime-fp8__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -520,6 +525,9 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__dense-gemm-f16-cp-async-alignment-fallback__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/cutlass__dense-gemm-f16-cp-async-alignment-fallback__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -603,6 +611,9 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -665,6 +676,9 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__dense-gemm-f16-tma-2sm__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/cutlass__dense-gemm-f16-tma-2sm__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -727,6 +741,9 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__dense-gemm-fp8-cp-async-fallback__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/cutlass__dense-gemm-fp8-cp-async-fallback__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -789,6 +806,9 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__dense-gemm-fp8__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/cutlass__dense-gemm-fp8__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -998,10 +1018,6 @@
         "result": {
           "path": "examples/cutlass__sparse-block-scaled-gemm-mxfp8__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Not reproduced on B200 over 300,000 launches. The recorded investigation identifies an unresolved PTX 9.2 versus 9.4 ordering interpretation.",
-        "references": []
       }
     },
     {
@@ -1023,10 +1039,6 @@
         "result": {
           "path": "examples/cutlass__sparse-block-scaled-gemm-nvfp4__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Not reproduced on B200 over 300,000 launches. The recorded investigation identifies an unresolved PTX 9.2 versus 9.4 ordering interpretation.",
-        "references": []
       }
     },
     {
@@ -1048,10 +1060,6 @@
         "result": {
           "path": "examples/cutlass__sparse-block-scaled-mxfp8-gemm-2sm__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Not reproduced on B200 over 300,000 launches. The recorded investigation identifies an unresolved PTX 9.2 versus 9.4 ordering interpretation.",
-        "references": []
       }
     },
     {
@@ -1115,10 +1123,6 @@
         "result": {
           "path": "examples/cutlass__sparse-gemm-f16__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Not reproduced on B200 over 300,000 launches. The recorded investigation identifies an unresolved PTX 9.2 versus 9.4 ordering interpretation.",
-        "references": []
       }
     },
     {
@@ -1140,10 +1144,6 @@
         "result": {
           "path": "examples/cutlass__sparse-gemm-runtime-fp8-family__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Not reproduced on B200 over 300,000 launches. The recorded investigation identifies an unresolved PTX 9.2 versus 9.4 ordering interpretation.",
-        "references": []
       }
     },
     {
@@ -1165,6 +1165,9 @@
         },
         "reference_binding": {
           "path": "examples/deepgemm__deepgemm_sm100_bf16_gemm_m128_n256_k128__sm_100f/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/deepgemm__deepgemm_sm100_bf16_gemm_m128_n256_k128__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1274,6 +1277,9 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__bwd_dense_bf16_h64__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flash_attention__bwd_dense_bf16_h64__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1336,10 +1342,6 @@
         "result": {
           "path": "examples/flash_attention__bwd_dense_fp16_h128_causal_gqa__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Verifier finding; no separate confirmation is recorded here.",
-        "references": []
       }
     },
     {
@@ -1386,12 +1388,6 @@
         "result": {
           "path": "examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Source analysis identifies missing completion of dQ-epilogue TMEM loads before deallocation; not tested on B200. [source analysis](https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/sm100_hd256_2cta_fmha_backward_dqkernel.py#L2240-L2288)",
-        "references": [
-          "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/sm100_hd256_2cta_fmha_backward_dqkernel.py#L2240-L2288"
-        ]
       }
     },
     {
@@ -1518,6 +1514,9 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__fwd_dense_bf16_h192_dv128__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flash_attention__fwd_dense_bf16_h192_dv128__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1575,6 +1574,9 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__fwd_dense_bf16_h64__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flash_attention__fwd_dense_bf16_h64__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1637,6 +1639,9 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__fwd_dense_fp16_h128_causal_gqa__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flash_attention__fwd_dense_fp16_h128_causal_gqa__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1694,6 +1699,9 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__fwd_fp8_h128__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flash_attention__fwd_fp8_h128__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1756,6 +1764,9 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__fwd_hd256_bf16_2cta__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flash_attention__fwd_hd256_bf16_2cta__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1822,10 +1833,6 @@
         "result": {
           "path": "examples/flash_attention__fwd_mla_dense_bf16__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Verifier finding; no separate confirmation is recorded here.",
-        "references": []
       }
     },
     {
@@ -1859,10 +1866,6 @@
         "result": {
           "path": "examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Verifier finding; no separate confirmation is recorded here.",
-        "references": []
       }
     },
     {
@@ -1889,6 +1892,9 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__fwd_paged_bf16_h128__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flash_attention__fwd_paged_bf16_h128__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1946,6 +1952,9 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__fwd_split_bf16_h64__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flash_attention__fwd_split_bf16_h64__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -2302,6 +2311,9 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -2517,12 +2529,6 @@
         "result": {
           "path": "examples/flashinfer__cascade__merge_state_bf16__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Recorded as benign same-value duplicate stores on B200; 300,000 launches. [upstream reference 1](https://github.com/flashinfer-ai/flashinfer/pull/5740)",
-        "references": [
-          "https://github.com/flashinfer-ai/flashinfer/pull/5740"
-        ]
       }
     },
     {
@@ -2712,6 +2718,9 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma1_sm100__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma1_sm100__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -2774,6 +2783,9 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma2_sm100__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma2_sm100__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -2878,6 +2890,9 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__gemm_sm100_module_cutlass_bf16__bf16_gemm_cutlass___nv_bfloat16_128_128_128__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flashinfer__gemm_sm100_module_cutlass_bf16__bf16_gemm_cutlass___nv_bfloat16_128_128_128__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -2940,6 +2955,9 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3002,6 +3020,9 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__gemm_sm100_module_cutlass_fp8__fp8_gemm_cutlass___nv_bfloat16_128_128_128__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flashinfer__gemm_sm100_module_cutlass_fp8__fp8_gemm_cutlass___nv_bfloat16_128_128_128__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3064,6 +3085,9 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__gemm_sm100_module_cutlass_mxfp8__mxfp8_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flashinfer__gemm_sm100_module_cutlass_mxfp8__mxfp8_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3126,6 +3150,9 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__gemm_sm100_module_cutlass_nvfp4_svdquant__nvfp4_svdquant_gemm_cutlass_Tactic1Sm128x128x128Config__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flashinfer__gemm_sm100_module_cutlass_nvfp4_svdquant__nvfp4_svdquant_gemm_cutlass_Tactic1Sm128x128x128Config__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3188,12 +3215,6 @@
         "result": {
           "path": "examples/flashinfer__norm__fused_add_rmsnorm_bf16__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Recorded as benign duplicate stores plus a load-to-store dependency through shfl.sync; 300,000 B200 launches. [upstream reference 1](https://github.com/flashinfer-ai/flashinfer/pull/5740)",
-        "references": [
-          "https://github.com/flashinfer-ai/flashinfer/pull/5740"
-        ]
       }
     },
     {
@@ -3215,6 +3236,9 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__rope__apply_rope_pos_ids_bf16__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flashinfer__rope__apply_rope_pos_ids_bf16__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3285,12 +3309,6 @@
         "result": {
           "path": "examples/flashinfer__single_decode__bf16_hd128__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Recorded as benign same-value duplicate stores on B200; 300,000 launches. [upstream reference 1](https://github.com/flashinfer-ai/flashinfer/pull/5740)",
-        "references": [
-          "https://github.com/flashinfer-ai/flashinfer/pull/5740"
-        ]
       }
     },
     {
@@ -3312,12 +3330,6 @@
         "result": {
           "path": "examples/flashinfer__single_prefill_fa2__bf16_hd128_causal__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Not reproduced on B200. Source analysis suspects missing warp memory ordering; a verifier modeling gap has not been ruled out. [source analysis](https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/attention/prefill.cuh#L2219-L2260)",
-        "references": [
-          "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/attention/prefill.cuh#L2219-L2260"
-        ]
       }
     },
     {
@@ -3339,6 +3351,9 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__tinygemm2_sm100__deep_shallow_pdl_matrix__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/flashinfer__tinygemm2_sm100__deep_shallow_pdl_matrix__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3485,10 +3500,6 @@
         "result": {
           "path": "examples/pytorch__aten_Copy__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Conflicting writes reproduced on B200; the investigation attributes them to overlapping output memory, a documented input limitation, rather than a kernel bug.",
-        "references": []
       }
     },
     {
@@ -3552,6 +3563,9 @@
         },
         "reference_binding": {
           "path": "examples/pytorch__aten_MultiMarginLoss__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/pytorch__aten_MultiMarginLoss__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3605,12 +3619,6 @@
         "result": {
           "path": "examples/pytorch__aten_MultiMarginLoss_v2.8.0__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Wrong output reproduced on B200 with 64 classes and target 40; the saved 8-class verifier input does not reproduce the wrong output. [upstream reference 1](https://github.com/pytorch/pytorch/pull/158994)",
-        "references": [
-          "https://github.com/pytorch/pytorch/pull/158994"
-        ]
       }
     },
     {
@@ -3632,6 +3640,9 @@
         },
         "reference_binding": {
           "path": "examples/pytorch__aten_Normalization__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/pytorch__aten_Normalization__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3694,6 +3705,9 @@
         },
         "reference_binding": {
           "path": "examples/pytorch__aten_RowwiseScaledMM_fp8__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/pytorch__aten_RowwiseScaledMM_fp8__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3756,6 +3770,9 @@
         },
         "reference_binding": {
           "path": "examples/pytorch__aten_SoftMax__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/pytorch__aten_SoftMax__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3844,6 +3861,9 @@
         },
         "reference_binding": {
           "path": "examples/pytorch__aten_WeightNorm__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/pytorch__aten_WeightNorm__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3902,11 +3922,10 @@
         },
         "reference_binding": {
           "path": "examples/pytorch__aten_layer_norm_kernel__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/pytorch__aten_layer_norm_kernel__sm_100a/sync_removal.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Verifier finding; no separate confirmation is recorded here.",
-        "references": []
       },
       "synchronization_removal": {
         "static_sync_instructions": 5,
@@ -3962,11 +3981,10 @@
         },
         "reference_binding": {
           "path": "examples/tensorrt_llm__aux_kdaDecode_kdaDecode__sm_100f/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tensorrt_llm__aux_kdaDecode_kdaDecode__sm_100f/sync_removal.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Verifier finding; no separate confirmation is recorded here.",
-        "references": []
       },
       "synchronization_removal": {
         "static_sync_instructions": 16,
@@ -4017,6 +4035,9 @@
         },
         "reference_binding": {
           "path": "examples/tensorrt_llm__cutlass_fp4_gemm_bf16__sm_100f/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tensorrt_llm__cutlass_fp4_gemm_bf16__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4079,10 +4100,6 @@
         "result": {
           "path": "examples/tensorrt_llm__cutlass_fp8_blockscale_gemm__sm_100f/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Recorded as benign repeated zero stores and async copies on B200; 300,000 launches.",
-        "references": []
       }
     },
     {
@@ -4104,6 +4121,9 @@
         },
         "reference_binding": {
           "path": "examples/tensorrt_llm__cutlass_fp8_rowwise_gemm_bf16__sm_100f/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tensorrt_llm__cutlass_fp8_rowwise_gemm_bf16__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4166,6 +4186,9 @@
         },
         "reference_binding": {
           "path": "examples/tensorrt_llm__cutlass_mixed_runner_bf16_int4_gemm_fg_scaleonly__sm_100f/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tensorrt_llm__cutlass_mixed_runner_bf16_int4_gemm_fg_scaleonly__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4270,6 +4293,9 @@
         },
         "reference_binding": {
           "path": "examples/tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4323,6 +4349,9 @@
         },
         "reference_binding": {
           "path": "examples/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4424,6 +4453,9 @@
         },
         "reference_binding": {
           "path": "examples/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4486,12 +4518,6 @@
         "result": {
           "path": "examples/tilelang-gemm-sm100-tcgen5mma/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Source analysis identifies a synchronization gap; not reproduced on B200, including comparison against a version with an added wait. [upstream reference 1](https://github.com/tile-ai/tilelang/issues/3424)",
-        "references": [
-          "https://github.com/tile-ai/tilelang/issues/3424"
-        ]
       }
     },
     {
@@ -4513,6 +4539,9 @@
         },
         "reference_binding": {
           "path": "examples/tilelang-online-softmax/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tilelang-online-softmax/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4575,6 +4604,9 @@
         },
         "reference_binding": {
           "path": "examples/tilelang-ws-gemm-barrierpipe-stage2/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tilelang-ws-gemm-barrierpipe-stage2/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4637,6 +4669,9 @@
         },
         "reference_binding": {
           "path": "examples/tilelang-ws-gemm-copy-0-gemm-1/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tilelang-ws-gemm-copy-0-gemm-1/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4699,6 +4734,9 @@
         },
         "reference_binding": {
           "path": "examples/tilelang-ws-gemm-copy-1-gemm-0/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tilelang-ws-gemm-copy-1-gemm-0/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4761,10 +4799,6 @@
         "result": {
           "path": "examples/tilelang-ws-gemm-copy-gemm-0-1/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Wrong output reproduced on B200 when warp 0\u2019s copy is delayed: 52% of launches at 2 \u00b5s, over 99.9% at 20 \u00b5s or more.",
-        "references": []
       }
     },
     {
@@ -4786,6 +4820,9 @@
         },
         "reference_binding": {
           "path": "examples/tilelang-ws-gemm-softpipe-stage2/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tilelang-ws-gemm-softpipe-stage2/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4869,6 +4906,9 @@
         },
         "reference_binding": {
           "path": "examples/tirx-basic-rmsnorm/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tirx-basic-rmsnorm/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5062,6 +5102,9 @@
         },
         "reference_binding": {
           "path": "examples/tirx-flashinfer-quantization-nvfp4/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tirx-flashinfer-quantization-nvfp4/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5132,12 +5175,6 @@
         "result": {
           "path": "examples/triton__triton_ws.exact-3.8.0__sm_100a/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Compiler-source analysis identifies barrier cleanup before asynchronous completion; not tested on B200. [source analysis](https://github.com/triton-lang/triton/blob/1826d8ef0baa70686860658f5ab5dd7cb0d3b163/third_party/nvidia/lib/Dialect/NVWS/Transforms/LowerAref.cpp#L228-L263)",
-        "references": [
-          "https://github.com/triton-lang/triton/blob/1826d8ef0baa70686860658f5ab5dd7cb0d3b163/third_party/nvidia/lib/Dialect/NVWS/Transforms/LowerAref.cpp#L228-L263"
-        ]
       }
     },
     {
@@ -5159,6 +5196,9 @@
         },
         "reference_binding": {
           "path": "examples/tritongluon-03-async-copy/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tritongluon-03-async-copy/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5226,6 +5266,9 @@
         },
         "reference_binding": {
           "path": "examples/tritongluon-03-async-pipelined/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tritongluon-03-async-pipelined/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5359,6 +5402,9 @@
         },
         "reference_binding": {
           "path": "examples/tritongluon-07-persistence/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/tritongluon-07-persistence/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5437,10 +5483,6 @@
         "result": {
           "path": "examples/tritongluon-08-ws-elementwise/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Recorded as benign same-constant shared-memory stores. The saved input writes no output, so no output-equivalence experiment was possible.",
-        "references": []
       }
     },
     {
@@ -5462,10 +5504,6 @@
         "result": {
           "path": "examples/tritongluon-08-ws-matmul-512/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Recorded as benign same-constant shared-memory stores. The saved input writes no output, so no output-equivalence experiment was possible.",
-        "references": []
       }
     },
     {
@@ -5487,10 +5525,6 @@
         "result": {
           "path": "examples/tritongluon-10-matmul-accumulate/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Recorded as benign same-constant shared-memory stores. The saved input writes no output, so no output-equivalence experiment was possible.",
-        "references": []
       }
     },
     {
@@ -5512,10 +5546,6 @@
         "result": {
           "path": "examples/tritongluon-10-tcgen05-copy/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Recorded as benign identical stmatrix stores across warps. The saved input writes no output, so no output-equivalence experiment was possible.",
-        "references": []
       }
     },
     {
@@ -5564,10 +5594,6 @@
         "result": {
           "path": "examples/vllm__dsv3_fused_a_gemm__sm_100f/output.json"
         }
-      },
-      "recorded_followup": {
-        "note": "Verifier finding; no separate confirmation is recorded here.",
-        "references": []
       }
     },
     {
@@ -5589,6 +5615,9 @@
         },
         "reference_binding": {
           "path": "examples/vllm__fp8_dynamic_per_token_scaled_quant__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/vllm__fp8_dynamic_per_token_scaled_quant__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5684,6 +5713,9 @@
         },
         "reference_binding": {
           "path": "examples/vllm__fused_qknorm_rope__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/vllm__fused_qknorm_rope__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5767,6 +5799,9 @@
         },
         "reference_binding": {
           "path": "examples/vllm__layernorm_fused_add_rms_norm__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/vllm__layernorm_fused_add_rms_norm__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5883,6 +5918,9 @@
         },
         "reference_binding": {
           "path": "examples/vllm__nvfp4_scaled_mm_kernels__sm_100f/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/vllm__nvfp4_scaled_mm_kernels__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5945,6 +5983,9 @@
         },
         "reference_binding": {
           "path": "examples/vllm__pos_encoding_rotary_embedding__sm_100a/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/vllm__pos_encoding_rotary_embedding__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5994,6 +6035,9 @@
         },
         "reference_binding": {
           "path": "examples/vllm__scaled_mm_blockwise_sm100_fp8__sm_100f/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/vllm__scaled_mm_blockwise_sm100_fp8__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -6056,6 +6100,9 @@
         },
         "reference_binding": {
           "path": "examples/vllm__scaled_mm_sm100_fp8__sm_100f/reference_binding.json"
+        },
+        "sync_removal": {
+          "path": "examples/vllm__scaled_mm_sm100_fp8__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {

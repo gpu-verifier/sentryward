@@ -109,7 +109,7 @@ manylinux-aarch64-image = "manylinux_2_28"
 # its sdist on aarch64), which ships libz3.so without the soname link that the
 # linker records; auditwheel then copies the library into the wheel.
 before-all = [
-  "/opt/python/cp312-cp312/bin/pip install --upgrade --prefix /usr/local patchelf==0.18.0.0",
+  "if [ \"$(uname -m)\" = aarch64 ]; then /opt/python/cp312-cp312/bin/pip install --upgrade --prefix /usr/local patchelf==0.18.0.0; fi",
   "dnf install -y openssl-devel",
   "curl -sSL https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.gz | tar xz -C /opt boost_1_86_0/boost",
   "/opt/python/cp312-cp312/bin/pip install --no-deps --target /opt/z3-solver z3-solver==5.1.0.0",
