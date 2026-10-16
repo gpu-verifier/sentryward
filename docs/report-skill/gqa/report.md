@@ -239,7 +239,7 @@ Q and K TMA destinations feed the first MMA accumulator, whose handle is stored 
 
 ### 2.2 Final read: half the lanes bypass result use
 
-After the final output MMA is ready, all four reader warps issue the TMEM load. Lanes 0–15 in each warp use its eight result registers in cluster-shared stores; lanes 16–31 skip those stores. Both paths reach the same release arrival, with no intervening load-completion wait. This establishes a load-issue-to-arrival path, but the skipped stores cannot establish completion of the bypassing lanes’ reads. Another lane receiving its result registers does not establish completion of the bypassing lanes’ reads. The relevant question is whether those reads complete before their release arrivals.
+After the final output MMA is ready, all four reader warps issue the TMEM load. Lanes 0–15 in each warp use its eight result registers in cluster-shared stores; lanes 16–31 skip those stores. Both paths reach the same release arrival, with no intervening load-completion wait. This establishes a load-issue-to-arrival path, but the skipped stores cannot establish completion of the bypassing lanes’ reads.
 
 ```mermaid
 ---
