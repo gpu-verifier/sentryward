@@ -230,3 +230,40 @@ Total: 169 kernels.
 | `tritongluon-10-tcgen05-copy` | Recorded as benign identical stmatrix stores across warps. The saved input writes no output, so no output-equivalence experiment was possible. |
 | `vllm__dsv3_fused_a_gemm__sm_100f` | Verifier finding; no separate confirmation is recorded here. |
 
+
+## Synchronization-removal study in the JSON manifest
+
+The [synchronization-removal manifest](synchronization-removal-results.json)
+records historical experiments for 60 kernels from the
+[pinned experiment index](https://github.com/wmdi/wasp_verification/blob/3281444e96473d554a813f96e196015a4c84bdf1/examples/index.md).
+The top-level `synchronization_removal_study` object records the source repository,
+pinned revision, file SHA-256, B200 device, and methodology. Each entry in `results`
+identifies a kernel by `name` and has a `synchronization_removal` object with the
+following fields:
+
+| Field | Meaning |
+| --- | --- |
+| `static_sync_instructions` | Synchronization statements in the analyzed entry, including fences that are not removal candidates. |
+| `sync_instructions_note` | Original count cell, including the executed candidate count when reported. |
+| `recorded`, `larger` | Separate experiment scenarios; each contains `removal`, `performance`, and `rechecked_at_recorded_input`. |
+| `removal.removable`, `removal.candidates` | Number of candidate sites removable together and total executed candidates for that scenario. Present only when the removal status is `measured`. |
+| `performance.runtime_change_percent` | Reported change in kernel time: negative is faster, positive is slower. Preserve the source percentage rather than recomputing it from rounded timings. |
+| `performance.original_us`, `performance.reduced_us` | Original and reduced kernel times in microseconds, when timings are available. |
+| `removal.note`, `performance.note` | Original source cells, preserving input dimensions, launch restrictions, verification outcomes, hardware observations, and output-comparison evidence. |
+| `rechecked_at_recorded_input` | True when an entry in the larger-input columns was actually rechecked at the recorded input; it must not be treated as a larger-shape measurement. |
+| `references` | Links to experiment issues recorded in the source table. |
+
+Both `removal` and `performance` carry a `status`: `measured`, `not_run`,
+`not_applicable`, or `not_reported`. Performance also uses
+`no_measurable_change`, with `runtime_change_percent` set to zero while retaining
+the reported timings. Missing measurements omit numeric fields; a measured zero
+removal count remains zero. Kernels absent from this manifest have no
+synchronization-study data in this source table.
+
+These are historical, input-specific experiments, not new verifier or GPU runs.
+Their verifier revisions and input caveats are preserved in the study methodology
+and per-scenario notes. The study's recorded input is the input used for that
+experiment, not necessarily the current input file. The study manifest contains
+only synchronization-removal data; it does not override the current verification
+verdicts above or the per-kernel `input.json` and `output.json` evidence. Historical
+source and issue links continue to point to the original repository.
