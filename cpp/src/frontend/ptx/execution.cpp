@@ -2052,7 +2052,7 @@ bool Executor::SharedData(const Decoded &d, State &state, std::uint32_t warp,
     if (!a) throw ExecutionError("shared_control_operand",i.line,"unknown shared address");
     return *a;
   };
-  auto operand=[&](unsigned index) { return d.operands.at(index).text; };
+  auto operand=[&](unsigned index) -> const std::string & { return d.operands.at(index).text; };
   auto encoded_values=[&](std::string_view text,unsigned width) {
     text=TrimView(text);
     if (text.starts_with('{') && text.ends_with('}')) text=text.substr(1,text.size()-2);
