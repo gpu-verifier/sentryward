@@ -198,3 +198,54 @@ Sync removal: removable/candidate operations; B200 runtime change (negative is f
 | [`vllm__mxfp4_blockwise_moe_kernel__sm_100f`](../corpus/vllm__mxfp4_blockwise_moe_kernel__sm_100f.ptx) | `unsupported` | `allocation_alias_relation_unknown` (`memory_check`) | — | — | [examples/vllm__mxfp4_blockwise_moe_kernel__sm_100f/input.json](../examples/vllm__mxfp4_blockwise_moe_kernel__sm_100f/input.json) · [examples/vllm__mxfp4_blockwise_moe_kernel__sm_100f/output.json](../examples/vllm__mxfp4_blockwise_moe_kernel__sm_100f/output.json) |
 | [`vllm__nvfp4_blockwise_moe_kernel__sm_100f`](../corpus/vllm__nvfp4_blockwise_moe_kernel__sm_100f.ptx) | `unsupported` | `allocation_alias_relation_unknown` (`memory_check`) | — | — | [examples/vllm__nvfp4_blockwise_moe_kernel__sm_100f/input.json](../examples/vllm__nvfp4_blockwise_moe_kernel__sm_100f/input.json) · [examples/vllm__nvfp4_blockwise_moe_kernel__sm_100f/output.json](../examples/vllm__nvfp4_blockwise_moe_kernel__sm_100f/output.json) |
 | [`vllm__sm100_cutlass_mla_kernel__sm_100f`](../corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx) | `unsupported` | `control_predicate_not_static` (`ptx_execution`) | — | — | [examples/vllm__sm100_cutlass_mla_kernel__sm_100f/input.json](../examples/vllm__sm100_cutlass_mla_kernel__sm_100f/input.json) · [examples/vllm__sm100_cutlass_mla_kernel__sm_100f/output.json](../examples/vllm__sm100_cutlass_mla_kernel__sm_100f/output.json) |
+## JSON results manifest
+
+The [JSON results manifest](results.json) includes all 169 kernels in the tables
+above, using schema `sentryward.kernel-results.v1`. The top-level `counts` matches
+the result summary. `verification_results_source` pins the source repository,
+revision, path, and SHA-256 of the results guide used for this snapshot; this is a
+transcription of recorded results, not a new verifier run.
+
+Each entry in `results` contains the kernel `name`, its `result`, and the
+`diagnostics` listed in the guide as `code`/`stage` pairs. An empty diagnostics
+array corresponds to the guide's dash. `files` preserves the linked PTX, input,
+output, optional reference/binding, and `sync_removal.json` paths, relative to the
+repository root. Run metrics and check details not reported in the guide are not
+inferred. The synchronization-removal objects match the linked per-kernel JSON
+files and retain the full measurements behind the guide's two summary columns.
+
+### Synchronization-removal study
+
+The manifest also records historical synchronization-removal experiments for 60
+kernels from the
+[pinned experiment index](https://github.com/wmdi/wasp_verification/blob/3281444e96473d554a813f96e196015a4c84bdf1/examples/index.md).
+The top-level `synchronization_removal_study` object records the source repository,
+pinned revision, file SHA-256, B200 device, and methodology. Each matching entry in
+`results` has a `synchronization_removal` object with the following fields:
+
+| Field | Meaning |
+| --- | --- |
+| `static_sync_instructions` | Synchronization statements in the analyzed entry, including fences that are not removal candidates. |
+| `sync_instructions_note` | Original count cell, including the executed candidate count when reported. |
+| `recorded`, `larger` | Separate experiment scenarios; each contains `removal`, `performance`, and `rechecked_at_recorded_input`. |
+| `removal.removable`, `removal.candidates` | Number of candidate sites removable together and total executed candidates for that scenario. Present only when the removal status is `measured`. |
+| `performance.runtime_change_percent` | Reported change in kernel time: negative is faster, positive is slower. Preserve the source percentage rather than recomputing it from rounded timings. |
+| `performance.original_us`, `performance.reduced_us` | Original and reduced kernel times in microseconds, when timings are available. |
+| `removal.note`, `performance.note` | Original source cells, preserving input dimensions, launch restrictions, verification outcomes, hardware observations, and output-comparison evidence. |
+| `rechecked_at_recorded_input` | True when an entry in the larger-input columns was actually rechecked at the recorded input; it must not be treated as a larger-shape measurement. |
+| `references` | Links to experiment issues recorded in the source table. |
+
+Both `removal` and `performance` carry a `status`: `measured`, `not_run`,
+`not_applicable`, or `not_reported`. Performance also uses
+`no_measurable_change`, with `runtime_change_percent` set to zero while retaining
+the reported timings. Missing measurements omit numeric fields; a measured zero
+removal count remains zero. Entries without a `synchronization_removal` object
+have no synchronization-study data in this source table.
+
+These are historical, input-specific experiments, not new verifier or GPU runs.
+Their verifier revisions and input caveats are preserved in the study methodology
+and per-scenario notes. The study's recorded input is the input used for that
+experiment, not necessarily the current input file. The historical study data does
+not override the entry's current verification verdict or the per-kernel `input.json`
+and `output.json` evidence. Historical source and issue links continue to point to
+the original repository.
