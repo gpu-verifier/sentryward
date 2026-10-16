@@ -97,7 +97,7 @@ skip = "*-musllinux_* *_i686"
 # Exercise the installed CLI, native executable, and reference capture.
 test-requires = ["torch>=2.5"]
 test-command = """
-sentryward {project}/corpus/pytorch__aten_MultiMarginLoss__sm_100a.ptx --input {project}/examples/pytorch__aten_MultiMarginLoss__sm_100a/input.json --reference {project}/examples/pytorch__aten_MultiMarginLoss__sm_100a/reference.py --reference-binding {project}/examples/pytorch__aten_MultiMarginLoss__sm_100a/reference_binding.json --timeout 120 > wheel-smoke-output.json &&
+sentryward {project}/corpus/pytorch__aten_MultiMarginLoss__sm_100a.ptx --input {project}/examples/pytorch__aten_MultiMarginLoss__sm_100a/input.json --reference {project}/examples/pytorch__aten_MultiMarginLoss__sm_100a/reference.py --reference-binding {project}/examples/pytorch__aten_MultiMarginLoss__sm_100a/reference_binding.json --timeout 120 > wheel-smoke-output.json || (cat wheel-smoke-output.json; exit 1) &&
 python -c "import json; r=json.load(open('wheel-smoke-output.json')); assert r['result']=='verified', r; assert all(r['checks'][k]=='passed' for k in ('synchronization','memory','equivalence')), r"
 """
 
@@ -109,6 +109,7 @@ manylinux-aarch64-image = "manylinux_2_28"
 # its sdist on aarch64), which ships libz3.so without the soname link that the
 # linker records; auditwheel then copies the library into the wheel.
 before-all = [
+  "/opt/python/cp312-cp312/bin/pip install --upgrade --prefix /usr/local patchelf==0.18.0.0",
   "dnf install -y openssl-devel",
   "curl -sSL https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.gz | tar xz -C /opt boost_1_86_0/boost",
   "/opt/python/cp312-cp312/bin/pip install --no-deps --target /opt/z3-solver z3-solver==5.1.0.0",
