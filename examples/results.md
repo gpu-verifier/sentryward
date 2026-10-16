@@ -230,16 +230,30 @@ Total: 169 kernels.
 | `tritongluon-10-tcgen05-copy` | Recorded as benign identical stmatrix stores across warps. The saved input writes no output, so no output-equivalence experiment was possible. |
 | `vllm__dsv3_fused_a_gemm__sm_100f` | Verifier finding; no separate confirmation is recorded here. |
 
+## JSON results manifest
 
-## Synchronization-removal study in the JSON manifest
+The [JSON results manifest](results.json) includes all 169 kernels in the tables
+above, using schema `sentryward.kernel-results.v1`. The top-level `counts` matches
+the result summary. `verification_results_source` pins the source repository,
+revision, path, and SHA-256 of the results guide used for this snapshot; this is a
+transcription of recorded results, not a new verifier run.
 
-The [synchronization-removal manifest](synchronization-removal-results.json)
-records historical experiments for 60 kernels from the
+Each entry in `results` contains the kernel `name`, its `result`, and the
+`diagnostics` listed in the guide as `code`/`stage` pairs. An empty diagnostics
+array corresponds to the guide's dash. `files` preserves the linked PTX, input,
+output, and optional reference/binding paths, relative to the repository root.
+When a recorded follow-up exists, `recorded_followup.note` retains the full
+Markdown cell and `recorded_followup.references` lists its URLs. Run metrics and
+check details not reported in the guide are not inferred.
+
+### Synchronization-removal study
+
+The manifest also records historical synchronization-removal experiments for 60
+kernels from the
 [pinned experiment index](https://github.com/wmdi/wasp_verification/blob/3281444e96473d554a813f96e196015a4c84bdf1/examples/index.md).
 The top-level `synchronization_removal_study` object records the source repository,
-pinned revision, file SHA-256, B200 device, and methodology. Each entry in `results`
-identifies a kernel by `name` and has a `synchronization_removal` object with the
-following fields:
+pinned revision, file SHA-256, B200 device, and methodology. Each matching entry in
+`results` has a `synchronization_removal` object with the following fields:
 
 | Field | Meaning |
 | --- | --- |
@@ -257,13 +271,13 @@ Both `removal` and `performance` carry a `status`: `measured`, `not_run`,
 `not_applicable`, or `not_reported`. Performance also uses
 `no_measurable_change`, with `runtime_change_percent` set to zero while retaining
 the reported timings. Missing measurements omit numeric fields; a measured zero
-removal count remains zero. Kernels absent from this manifest have no
-synchronization-study data in this source table.
+removal count remains zero. Entries without a `synchronization_removal` object
+have no synchronization-study data in this source table.
 
 These are historical, input-specific experiments, not new verifier or GPU runs.
 Their verifier revisions and input caveats are preserved in the study methodology
 and per-scenario notes. The study's recorded input is the input used for that
-experiment, not necessarily the current input file. The study manifest contains
-only synchronization-removal data; it does not override the current verification
-verdicts above or the per-kernel `input.json` and `output.json` evidence. Historical
-source and issue links continue to point to the original repository.
+experiment, not necessarily the current input file. The historical study data does
+not override the entry's current verification verdict or the per-kernel `input.json`
+and `output.json` evidence. Historical source and issue links continue to point to
+the original repository.
