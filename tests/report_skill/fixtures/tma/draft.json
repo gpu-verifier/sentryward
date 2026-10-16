@@ -1,0 +1,69 @@
+{
+  "title": "CUTLASS SM100 f16 GEMM, TMA output store",
+  "computation": {
+    "summary": "The kernel multiplies A by B and scales the product by the configured alpha to form D. Configured beta is 0.0, and C is a declared source descriptor for the beta term.",
+    "shapes": [
+      {"name": "A", "rows": {"label": "M", "value": 64}, "columns": {"label": "K", "value": 128}},
+      {"name": "B", "rows": {"label": "K", "value": 128}, "columns": {"label": "N", "value": 128}},
+      {"name": "D", "rows": {"label": "M", "value": 64}, "columns": {"label": "N", "value": 128}}
+    ],
+    "operators": ["×", "→"],
+    "caption": "M names output rows, N output columns, K the shared reduction axis; these are logical dimensions. C, same M by N extent as D, feeds the beta term. Descriptor axes are not drawn as rows."
+  },
+  "finding": {
+    "summary": "D is written back to global memory by TMA tensor stores. The run is race_free with retained duplicate-tma-store warnings: unordered stores to D match in footprint and site-visit index, and value equality is not proven."
+  },
+  "code": {
+    "caption": "Representative first of four D store sites; retained events are not uniquely assigned to it.",
+    "lines": "3335,3339,3342,3345",
+    "focus": ["@%p176", "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group", "cp.async.bulk.commit_group", "cp.async.bulk.wait_group.read"],
+    "roles": "%p176 skips the store when (tid.x & 96) is non-zero. The tensor store copies a shared-memory tile at %r718 to D through descriptor %rd139. Commit groups the issuing thread's store.",
+    "scope": "Local guard only: x 0-31 and 128-159 may issue if this block is reached. Outer exits are not applied, and actual issuers are not established."
+  },
+  "completion": {
+    "kind": "bulk-read-1",
+    "final_wait": {"line": 4019, "state": "skipped", "reason": "Configured beta is 0.0, so the beta == 0 test at 4016 branches past the drain; the other entrance, 3987, is not taken."}
+  },
+  "next": "Inspect whether the stored values from the matching same-warp store pairs are equal, since the saved rule matches footprints and site visits without proving equal data.",
+  "source_sections": [
+    {
+      "title": "Output store operation and local guard",
+      "answer": "Four unrolled sites store shared-memory tiles to D with a 3D tensor store, commit, and a read-1 wait. The evaluated local guard admits x 0-31 and 128-159; actual issuers and full-path eligibility are not established.",
+      "steps": [
+        {"label": "Thread mask source", "text": "%r2 is mov.u32 %tid.x (72). %r83 = %r2 & 96 (2837). %p176 = (%r83 != 0) (3242); the branch at 3335 skips the store when %p176 is true, so the guard passes where (tid.x & 96) == 0."},
+        {"label": "Repeated sites", "text": "The stores at 3339, 3541, 3733 and 3937 each use %p176, %p182, %p186 or %p190 (all set from %r83 != 0 at 3242, 3445, 3639, 3829) and differ in the tile coordinate. The fourth site waits under %p191, also %r83 != 0 (3943)."},
+        {"label": "Scope", "text": "Outer exits are not applied; the 64 x values are a local predicate result, not a count of issuing threads, and x values are not full thread identities."}
+      ],
+      "table": {
+        "headers": ["Site", "Store", "Commit", "Read-1 wait"],
+        "rows": [["1", "3339", "3342", "3345"], ["2", "3541", "3544", "3547"], ["3", "3733", "3736", "3739"], ["4", "3937", "3940", "3946"]]
+      },
+      "code": {
+        "caption": "Fourth site, whose wait has its own guard.",
+        "lines": "3932,3937,3940,3944,3946",
+        "focus": ["@%p190", "@%p191", "cp.async.bulk.wait_group.read"]
+      }
+    },
+    {
+      "title": "Beta scalar and final read-0 drain",
+      "answer": "Under the configured inputs the final read-0 wait at 4019 is skipped. Beta is 0.0 from its first load, the later reloads are bypassed, and the beta == 0 test branches past the drain. This is static configuration analysis, not a runtime trace.",
+      "steps": [
+        {"label": "Live value", "text": "beta (offset 1280, configured 0.0) is loaded into %rs1 at 126. Reloads at 2572 and 3035 are bypassed by branches at 2560 (%p210, beta.stride = 0) and 3023 (%p161, beta.stride = 0), so %rs1 stays 0.0."},
+        {"label": "Incoming paths", "text": "The drain label $L__BB0_277 (4017) is entered by the direct jump at 3987 and by fall-through from 4016. Both are checked separately; they are not joined with OR."},
+        {"label": "Final gate", "text": "Entering 3987: %p166 = not(%p165 or %p1) with %p165 = (beta.stride == 0) true, so %p166 is false and the jump is not taken. 3989 tests beta.stride != 0, false. 4000 jumps to 4015. %p1 (3999) = (%rs1 == 0.0 in f16), true, so 4016 branches to $L__BB0_278, past the wait."}
+      ],
+      "table": {
+        "headers": ["Entrance", "Configured condition", "Taken?"],
+        "rows": [
+          ["Direct jump 3987 (@%p166)", "beta.stride == 0 makes %p6 true, %p166 false", "No"],
+          ["Fall-through from 4016 (@%p1)", "%p1 true because beta (%rs1) equals 0.0", "No; 4016 branches past 4019"]
+        ]
+      },
+      "code": {
+        "caption": "Final drain and its two entrances.",
+        "lines": "3987,3989,3999,4000,4016,4019",
+        "focus": ["@%p166", "@%p197", "@%p1", "cp.async.bulk.wait_group.read"]
+      }
+    }
+  ]
+}

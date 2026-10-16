@@ -1,0 +1,1142 @@
+{
+  "address_model": {
+    "address_invariants": [],
+    "kind": "symbolic",
+    "layers": [
+      0,
+      2
+    ],
+    "solver": "z3",
+    "solver_timeout_ms": 100
+  },
+  "assumption_dependent": true,
+  "assumption_effects": {
+    "warp_tmem_load_completion": {
+      "read_completion_joins": 0
+    }
+  },
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "unclear assumption",
+      "enabled": false,
+      "id": "A001",
+      "key": "warp_tmem_load_completion",
+      "text": "All lanes' TMEM reads complete before any lane receives its register results.",
+      "triggered": false
+    },
+    {
+      "category": "unclear assumption",
+      "enabled": true,
+      "id": "A002",
+      "key": "duplicate_tma_store_benign",
+      "text": "Matching same-warp duplicate TMA stores are reported as warnings instead of races.",
+      "triggered": true
+    },
+    {
+      "category": "unclear assumption",
+      "enabled": true,
+      "id": "A003",
+      "key": "immediate_visibility",
+      "text": "Memory effects are immediately visible when executed; visibility fences add no ordering constraints. Async completion and synchronization remain modeled.",
+      "triggered": true
+    },
+    {
+      "category": "unclear assumption",
+      "enabled": true,
+      "id": "A004",
+      "key": "representative_election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": true
+    },
+    {
+      "category": "unclear assumption",
+      "enabled": true,
+      "id": "A005",
+      "key": "clc_always_fails",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": true
+    }
+  ],
+  "counts": {
+    "edges": 642422,
+    "events": 234124,
+    "instructions": 34414,
+    "memory_accesses": 217324,
+    "threads": 256
+  },
+  "frontend": {
+    "address_value_bridge": {
+      "first_unavailable_reason": "",
+      "queries": 0,
+      "resolved": 0,
+      "source": "value_lowering",
+      "unavailable": 0,
+      "value_ir_complete": true
+    },
+    "cluster_completion_joins": 0,
+    "cta_count": 1,
+    "dependency_compression": {
+      "bulk_read_wait": {
+        "consumers": 128,
+        "emitted_references": 96,
+        "original_references": 192,
+        "prefix_effects": 0
+      },
+      "tcgen_commit": {
+        "consumers": 3,
+        "emitted_references": 13,
+        "original_references": 20,
+        "prefix_effects": 3
+      },
+      "tcgen_load_wait": {
+        "consumers": 128,
+        "emitted_references": 512,
+        "original_references": 512,
+        "prefix_effects": 0
+      }
+    },
+    "diagnostic_sample_count": 0,
+    "discharged_codes": [
+      "mma_memory_effect_refinement",
+      "tcgen_pipeline_effect_refinement",
+      "tcgen_commit_notification_order_refinement"
+    ],
+    "executed_records": 116156,
+    "frontend_assumptions": {
+      "assertion_failure_forms": [
+        "trap",
+        "__assertfail"
+      ],
+      "assertion_uses": 512,
+      "clc_failure": true,
+      "clc_uses": 225,
+      "election_policy": {
+        "fallback": "lowest_member",
+        "preferred_lane": 0,
+        "strategy": "preferred_member"
+      },
+      "election_uses": 1408,
+      "fixed_election": true,
+      "immediate_visibility": true,
+      "isolated_launch": true,
+      "noalias_unbounded": false,
+      "pointer_contract": {
+        "aliasing": "distinct_objects_noalias",
+        "extent_bytes": "unbounded"
+      },
+      "trap_only_equality_assertions_hold": true
+    },
+    "implementation": "cpp",
+    "input_objects": [],
+    "lowered_instruction_count": 34414,
+    "mma_refinement": {
+      "blocked": [],
+      "discharged": 8
+    },
+    "reached_opcodes": {
+      "add.s32": 8930,
+      "add.s64": 675,
+      "and.b16": 256,
+      "and.b32": 2528,
+      "and.pred": 512,
+      "bar.arrive": 32,
+      "bar.sync": 1664,
+      "bar.warp.sync": 64,
+      "bra": 8114,
+      "bra.uni": 800,
+      "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128": 224,
+      "clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128": 1,
+      "cp.async.bulk.commit_group": 128,
+      "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group": 128,
+      "cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 4,
+      "cp.async.bulk.wait_group.read": 128,
+      "cvt.rn.f16.s32": 640,
+      "cvt.u16.u32": 1824,
+      "cvt.u32.u16": 1280,
+      "cvt.u64.u32": 32,
+      "cvta.param.u64": 195,
+      "div.s32": 512,
+      "div.u32": 256,
+      "elect.sync": 1408,
+      "fence.mbarrier_init.release.cluster": 1536,
+      "fence.proxy.async.shared::cta": 736,
+      "fma.rn.f16x2": 4096,
+      "ld.param.b16": 512,
+      "ld.param.b32": 1600,
+      "ld.param.b64": 1536,
+      "ld.param.v4.b32": 416,
+      "ld.shared.b128": 224,
+      "ld.shared.b32": 160,
+      "mad.lo.s32": 1120,
+      "mapa.shared::cluster.u32": 385,
+      "max.s32": 32,
+      "mbarrier.arrive.expect_tx.shared::cluster.b64": 1,
+      "mbarrier.arrive.expect_tx.shared::cta.b64": 2,
+      "mbarrier.arrive.shared::cluster.b64": 384,
+      "mbarrier.arrive.shared::cta.b64": 32,
+      "mbarrier.init.shared::cta.b64": 42,
+      "mbarrier.test_wait.parity.shared::cta.b64": 64,
+      "mbarrier.try_wait.parity.shared::cta.b64": 1376,
+      "min.u32": 32,
+      "mov.b16": 800,
+      "mov.b32": 13792,
+      "mov.b64": 570,
+      "mov.pred": 416,
+      "mov.s32": 1452,
+      "mov.u32": 3904,
+      "mul.f16x2": 4096,
+      "mul.hi.u32": 832,
+      "mul.lo.s32": 1280,
+      "neg.s32": 32,
+      "not.pred": 832,
+      "or.b16": 1056,
+      "or.b32": 738,
+      "or.b64": 32,
+      "or.pred": 1568,
+      "prefetch.tensormap": 4,
+      "rem.u32": 256,
+      "ret": 256,
+      "selp.b16": 64,
+      "selp.b32": 4416,
+      "selp.b64": 512,
+      "selp.u16": 640,
+      "selp.u32": 224,
+      "setp.eq.b32": 5920,
+      "setp.eq.b64": 1152,
+      "setp.eq.f16": 640,
+      "setp.eq.u32": 96,
+      "setp.le.s32": 32,
+      "setp.lt.s32": 1472,
+      "setp.lt.u32": 96,
+      "setp.ne.b16": 640,
+      "setp.ne.b32": 5394,
+      "setp.ne.b64": 1664,
+      "shf.l.wrap.b32": 256,
+      "shfl.sync.idx.b32": 2304,
+      "shl.b32": 5702,
+      "shr.s32": 128,
+      "shr.u32": 2976,
+      "stmatrix.sync.aligned.x4.trans.m8n8.shared.b16": 1024,
+      "sub.s32": 1792,
+      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 32,
+      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 1,
+      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 2,
+      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 32,
+      "tcgen05.ld.sync.aligned.16x128b.x4.pack::16b.b32": 512,
+      "tcgen05.mma.cta_group::1.kind::f16": 8,
+      "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 32,
+      "tcgen05.wait::ld.sync.aligned": 128,
+      "xor.b32": 1728
+    },
+    "shared_constant_propagation": {
+      "read_from_dependencies": 0,
+      "representation": "sparse_known_bytes",
+      "validation": "pending_backend"
+    },
+    "source_binding_storage": {
+      "binding_templates": 17,
+      "generated_address_rows": 0,
+      "generated_body_rows": 0,
+      "generated_memory_instances": 0,
+      "logical_instructions": 34414,
+      "stored_bindings": 2445
+    },
+    "source_edge_storage": {
+      "binding_templates": 354,
+      "logical_edges": 34158,
+      "stored_bindings": 354
+    },
+    "tcgen_history_refinement": {
+      "blocked": [],
+      "notifications": 3,
+      "operations": 8
+    },
+    "thread_count": 256,
+    "unsupported_occurrence_counts": {},
+    "user_branch_decisions": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 512,
+    "clc_failure": true,
+    "clc_uses": 225,
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 1408,
+    "fixed_election": true,
+    "immediate_visibility": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "trap_only_equality_assertions_hold": true
+  },
+  "hb_queries": {
+    "memory": {
+      "algorithm": "event-family-relations",
+      "batches": 11,
+      "cache_hits": 0,
+      "dfs_queries": 0,
+      "edge_visits": 5124836,
+      "filtered_queries": 401664,
+      "queries": 674992,
+      "shared_peak_index_bytes": 16777216
+    },
+    "required_orders": {
+      "algorithm": "event-family-relations",
+      "batches": 1,
+      "cache_hits": 0,
+      "dfs_queries": 0,
+      "edge_visits": 188461,
+      "filtered_queries": 0,
+      "queries": 17280,
+      "shared_peak_index_bytes": 1105920
+    }
+  },
+  "implementation": "cpp",
+  "memory_analysis": {
+    "address_candidates": 674992,
+    "address_model": {
+      "cache_hits": 0,
+      "ground_disjoint": 0,
+      "ground_overlap": 0,
+      "layer0_disjoint": 0,
+      "refined_pairs": 0,
+      "solver_queries": 0,
+      "solver_sat": 0,
+      "solver_unknown": 0,
+      "solver_unsat": 0
+    },
+    "candidate_generation_fallback": false,
+    "exhaustive": false,
+    "hb_algorithm": "event-family-relations",
+    "hb_batches": 11,
+    "hb_cache_hits": 0,
+    "hb_dfs_queries": 0,
+    "hb_edge_visits": 5124836,
+    "hb_filtered_queries": 401664,
+    "hb_peak_index_bytes": 16777216,
+    "hb_queries": 674992,
+    "hb_query_seconds": 1.578703442,
+    "overlap_queries": 341248,
+    "strategy": "conflict-hybrid",
+    "unordered_candidates_examined": 341248
+  },
+  "memory_analysis_complete": true,
+  "mma_operand_ordering": {},
+  "mode": "verify",
+  "peak_footprint_mib": 548.05859375,
+  "peak_rss_mib": 548.05859375,
+  "pipeline_elapsed_seconds": 3.810909391,
+  "race_count": 0,
+  "race_samples_truncated": false,
+  "races": [],
+  "required_orders": 17280,
+  "schema": "spverify.native-result/v1",
+  "search_complete": true,
+  "semantic_assumptions": {
+    "clc_always_fails": true,
+    "duplicate_tma_store_benign": true,
+    "immediate_visibility": true,
+    "representative_election": true,
+    "warp_tmem_load_completion": false
+  },
+  "source_violations": [],
+  "status": "race_free",
+  "synchronization_input": {
+    "compute_access_binding": "after_happens_before",
+    "kind": "ordering_endpoints",
+    "memory_address_payloads": false
+  },
+  "template_execution": {
+    "completed_ctas": 1,
+    "coordinate_bindings": 0,
+    "logical_thread_steps": 121542,
+    "path_entries": 6449,
+    "record_bindings": 5719,
+    "record_nodes": 5267,
+    "splits": 13,
+    "template_steps": 5469,
+    "thread_memberships": 256,
+    "value_nodes": 1397
+  },
+  "thread_record_compression": {
+    "completed_ctas": 1,
+    "enabled": true,
+    "estimated_pool_bytes_sum": 0,
+    "intern_calls": 0,
+    "logical_records": 116156,
+    "record_handle_bytes": 32,
+    "templates": 0,
+    "unique_bindings": 0
+  },
+  "unresolved_count": 0,
+  "verification_limitations": [],
+  "warning_count": 341248,
+  "warning_samples_truncated": true,
+  "warnings": [
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 107459,
+        "instruction": 13149,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 129,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 109510,
+        "instruction": 13327,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 107459,
+        "instruction": 13149,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 130,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 111561,
+        "instruction": 13505,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 129,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 109510,
+        "instruction": 13327,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 130,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 111561,
+        "instruction": 13505,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 107459,
+        "instruction": 13149,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 131,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 113612,
+        "instruction": 13683,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 129,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 109510,
+        "instruction": 13327,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 131,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 113612,
+        "instruction": 13683,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 130,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 111561,
+        "instruction": 13505,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 131,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 113612,
+        "instruction": 13683,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 107459,
+        "instruction": 13149,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 132,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 115663,
+        "instruction": 13861,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 129,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 109510,
+        "instruction": 13327,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 132,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 115663,
+        "instruction": 13861,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 130,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 111561,
+        "instruction": 13505,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 132,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 115663,
+        "instruction": 13861,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 131,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 113612,
+        "instruction": 13683,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 132,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 115663,
+        "instruction": 13861,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 107459,
+        "instruction": 13149,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 133,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 117714,
+        "instruction": 14039,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 129,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 109510,
+        "instruction": 13327,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 133,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 117714,
+        "instruction": 14039,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 130,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 111561,
+        "instruction": 13505,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 133,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 117714,
+        "instruction": 14039,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 131,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 113612,
+        "instruction": 13683,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 133,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 117714,
+        "instruction": 14039,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 132,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 115663,
+        "instruction": 13861,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 133,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 117714,
+        "instruction": 14039,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 107459,
+        "instruction": 13149,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 134,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 12498,
+          "kind": "memory"
+        },
+        "event": 119765,
+        "instruction": 14217,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx",
+          "line": 3339
+        },
+        "mode": "write"
+      }
+    }
+  ],
+  "wellsync_timeout_seconds": 120.0,
+  "whole_pipeline_timeout_seconds": 300.0
+}

@@ -1,0 +1,147 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN4vllm3moe10topkGatingILi4ELi64ELi4ELi16ELi32EifLNS0_11ScoringFuncE0EEEvPKT5_PKbPfiPT4_PiiiibPKfdS7_",
+  "launch": {
+    "grid_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      32,
+      4,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "arguments": [
+    {
+      "parameter": 1,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 3,
+      "type": "u32",
+      "value": 8
+    },
+    {
+      "parameter": 6,
+      "type": "u32",
+      "value": 2
+    },
+    {
+      "parameter": 7,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 8,
+      "type": "u32",
+      "value": 64
+    },
+    {
+      "parameter": 9,
+      "type": "u8",
+      "value": 1
+    },
+    {
+      "parameter": 10,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 11,
+      "type": "f64",
+      "value": 1.0
+    },
+    {
+      "parameter": 12,
+      "type": "pointer",
+      "value": null
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "object": "input",
+      "name": "input"
+    },
+    {
+      "parameter": 1,
+      "type": "pointer",
+      "name": "finished"
+    },
+    {
+      "parameter": 2,
+      "type": "pointer",
+      "object": "output",
+      "name": "output"
+    },
+    {
+      "parameter": 3,
+      "type": "u32",
+      "name": "num_rows"
+    },
+    {
+      "parameter": 4,
+      "type": "pointer",
+      "object": "indices",
+      "name": "indices"
+    },
+    {
+      "parameter": 5,
+      "type": "pointer",
+      "object": "source_rows",
+      "name": "source_rows"
+    },
+    {
+      "parameter": 6,
+      "type": "u32",
+      "name": "k"
+    },
+    {
+      "parameter": 7,
+      "type": "u32",
+      "name": "start_expert"
+    },
+    {
+      "parameter": 8,
+      "type": "u32",
+      "name": "end_expert"
+    },
+    {
+      "parameter": 9,
+      "type": "u8",
+      "name": "renormalize"
+    },
+    {
+      "parameter": 10,
+      "type": "pointer",
+      "name": "bias"
+    },
+    {
+      "parameter": 11,
+      "type": "f64",
+      "name": "routed_scaling_factor"
+    },
+    {
+      "parameter": 12,
+      "type": "pointer",
+      "name": "is_padding"
+    }
+  ],
+  "assumptions": {
+    "warp_tmem_load_completion": false,
+    "duplicate_tma_store_benign": true,
+    "immediate_visibility": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  }
+}
