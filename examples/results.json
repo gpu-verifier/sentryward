@@ -29,7 +29,12 @@
     "methodology": [
       "**Synchronization columns.** Filled for the examples that verify `race_free`. **Sync Instructions** counts the synchronization statements in the analyzed entry (barriers, `mbarrier` operations, async-copy waits, `tcgen05.commit`/`tcgen05.wait`, fences, `griddepcontrol.wait`) and, in parentheses, how many of them are executed for the recorded input and are removal candidates; fences and `griddepcontrol.wait` are never candidates because the verifier does not check what they protect. **Removable (recorded input)** is how many of those candidates can be removed together while the verifier still reports `race_free`; the linked issues list the sites. **Performance Improvement (recorded input)** is the change in in-kernel time of the reduced kernel on a B200 (negative is faster); \"output identical\" means byte-identical to the original kernel on 500,000 launches. These three columns hold for the recorded input only. Verdicts are from the verifier at `a47ae4f` (the fix in #269), or at `be4e9f3` for the examples whose input changed afterwards; the reduced kernels were re-verified at `be4e9f3`.",
       "**Larger-input columns.** Most recorded inputs run the main loop fewer times than the kernel's pipeline has stages, so no pipeline buffer is ever reused and synchronization that guards buffer reuse looks redundant. We reran each reduction at a larger input, named in the cell, at which every pipeline stage is written at least twice, with the verifier at `f8339ff`. **Removable (larger input)** is how many of the candidates executed at that input can be removed together while the verifier still reports `race_free`. To find them, the recorded-input removals and the candidates that only execute at the larger input were ablated one at a time, the redundant ones were removed together, and the result was verified in full. Sites that were necessary at the recorded input were not retried. The cell also says whether the recorded-input reduction still verifies at the larger input, and what it did on a B200 when it did not. **Performance Improvement (larger input)** is the change in in-kernel time of the larger-input reduction at that input. \"output identical\" means byte-identical to the original kernel on 20,000 launches. Some FlashAttention and DeepGEMM inputs launch only the first CTAs or cluster of the larger problem; the cell says so. Kernels with compile-time shapes (TileLang) were re-checked at the recorded input. The linked issues list the sites that the larger input needs and, for most GEMM-style kernels, a second check at an even larger input."
-    ]
+    ],
+    "record_source": {
+      "pull_request": "https://github.com/wmdi/wasp_verification/pull/304",
+      "revision": "ba83a5f0f4c4c6f7e4d676855d9b5da3a69e9189",
+      "path": "docs/kernel-verification-results.json"
+    }
   },
   "results": [
     {
@@ -51,6 +56,11 @@
         "result": {
           "path": "examples/cutlass112_blackwell_ssd.compute_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 500.074721047,
+      "analysis_time_source": {
+        "path": "examples/cutlass112_blackwell_ssd.compute_100a/output.json",
+        "field": "elapsed_seconds"
       }
     },
     {
@@ -72,6 +82,11 @@
         "result": {
           "path": "examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 7.435162335,
+      "analysis_time_source": {
+        "path": "examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -93,9 +108,6 @@
         },
         "reference_binding": {
           "path": "examples/cutlass86_blackwell_mixed_dtype_gemm.compute_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/cutlass86_blackwell_mixed_dtype_gemm.compute_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -137,6 +149,11 @@
           "https://github.com/wmdi/wasp_verification/issues/59",
           "https://github.com/wmdi/wasp_verification/issues/60"
         ]
+      },
+      "analysis_time_seconds": 70.774872258,
+      "analysis_time_source": {
+        "path": "examples/cutlass86_blackwell_mixed_dtype_gemm.compute_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -158,9 +175,6 @@
         },
         "reference_binding": {
           "path": "examples/cutlass92_blackwell_moe_gemm_regular.compute_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/cutlass92_blackwell_moe_gemm_regular.compute_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -202,6 +216,11 @@
           "https://github.com/wmdi/wasp_verification/issues/61",
           "https://github.com/wmdi/wasp_verification/issues/62"
         ]
+      },
+      "analysis_time_seconds": 1.015967177,
+      "analysis_time_source": {
+        "path": "examples/cutlass92_blackwell_moe_gemm_regular.compute_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -223,6 +242,11 @@
         "result": {
           "path": "examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 103.349909569,
+      "analysis_time_source": {
+        "path": "examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -244,9 +268,6 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__block-scaled-gemm-mixed-8-bit__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/cutlass__block-scaled-gemm-mixed-8-bit__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -288,6 +309,11 @@
           "https://github.com/wmdi/wasp_verification/issues/64",
           "https://github.com/wmdi/wasp_verification/issues/65"
         ]
+      },
+      "analysis_time_seconds": 7.152582624,
+      "analysis_time_source": {
+        "path": "examples/cutlass__block-scaled-gemm-mixed-8-bit__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -309,9 +335,6 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__block-scaled-gemm-mxfp4__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/cutlass__block-scaled-gemm-mxfp4__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -353,6 +376,11 @@
           "https://github.com/wmdi/wasp_verification/issues/66",
           "https://github.com/wmdi/wasp_verification/issues/67"
         ]
+      },
+      "analysis_time_seconds": 7.408670476,
+      "analysis_time_source": {
+        "path": "examples/cutlass__block-scaled-gemm-mxfp4__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -374,6 +402,11 @@
         "result": {
           "path": "examples/cutlass__block-scaled-moe-fp4__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.052319433,
+      "analysis_time_source": {
+        "path": "examples/cutlass__block-scaled-moe-fp4__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -395,9 +428,6 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__block-scaled-mxfp4-gemm-2sm__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/cutlass__block-scaled-mxfp4-gemm-2sm__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -439,6 +469,11 @@
           "https://github.com/wmdi/wasp_verification/issues/69",
           "https://github.com/wmdi/wasp_verification/issues/70"
         ]
+      },
+      "analysis_time_seconds": 13.323632286,
+      "analysis_time_source": {
+        "path": "examples/cutlass__block-scaled-mxfp4-gemm-2sm__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -460,9 +495,6 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__blockwise-scaled-gemm-runtime-fp8__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/cutlass__blockwise-scaled-gemm-runtime-fp8__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -504,6 +536,11 @@
           "https://github.com/wmdi/wasp_verification/issues/71",
           "https://github.com/wmdi/wasp_verification/issues/72"
         ]
+      },
+      "analysis_time_seconds": 1.959850442,
+      "analysis_time_source": {
+        "path": "examples/cutlass__blockwise-scaled-gemm-runtime-fp8__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -525,9 +562,6 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__dense-gemm-f16-cp-async-alignment-fallback__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/cutlass__dense-gemm-f16-cp-async-alignment-fallback__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -569,6 +603,11 @@
           "https://github.com/wmdi/wasp_verification/issues/73",
           "https://github.com/wmdi/wasp_verification/issues/74"
         ]
+      },
+      "analysis_time_seconds": 7.720924379,
+      "analysis_time_source": {
+        "path": "examples/cutlass__dense-gemm-f16-cp-async-alignment-fallback__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -590,6 +629,11 @@
         "result": {
           "path": "examples/cutlass__dense-gemm-f16-stream-k__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.879822849,
+      "analysis_time_source": {
+        "path": "examples/cutlass__dense-gemm-f16-stream-k__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -611,9 +655,6 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -655,6 +696,11 @@
           "https://github.com/wmdi/wasp_verification/issues/76",
           "https://github.com/wmdi/wasp_verification/issues/77"
         ]
+      },
+      "analysis_time_seconds": 7.913149187,
+      "analysis_time_source": {
+        "path": "examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -676,9 +722,6 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__dense-gemm-f16-tma-2sm__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/cutlass__dense-gemm-f16-tma-2sm__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -720,6 +763,11 @@
           "https://github.com/wmdi/wasp_verification/issues/78",
           "https://github.com/wmdi/wasp_verification/issues/79"
         ]
+      },
+      "analysis_time_seconds": 43.323172365,
+      "analysis_time_source": {
+        "path": "examples/cutlass__dense-gemm-f16-tma-2sm__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -741,9 +789,6 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__dense-gemm-fp8-cp-async-fallback__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/cutlass__dense-gemm-fp8-cp-async-fallback__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -785,6 +830,11 @@
           "https://github.com/wmdi/wasp_verification/issues/80",
           "https://github.com/wmdi/wasp_verification/issues/81"
         ]
+      },
+      "analysis_time_seconds": 1.707389992,
+      "analysis_time_source": {
+        "path": "examples/cutlass__dense-gemm-fp8-cp-async-fallback__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -806,9 +856,6 @@
         },
         "reference_binding": {
           "path": "examples/cutlass__dense-gemm-fp8__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/cutlass__dense-gemm-fp8__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -850,6 +897,11 @@
           "https://github.com/wmdi/wasp_verification/issues/82",
           "https://github.com/wmdi/wasp_verification/issues/83"
         ]
+      },
+      "analysis_time_seconds": 2.968258019,
+      "analysis_time_source": {
+        "path": "examples/cutlass__dense-gemm-fp8__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -871,6 +923,11 @@
         "result": {
           "path": "examples/cutlass__grouped-block-scaled-gemm-mxfp4__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 20.204217182,
+      "analysis_time_source": {
+        "path": "examples/cutlass__grouped-block-scaled-gemm-mxfp4__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -892,6 +949,11 @@
         "result": {
           "path": "examples/cutlass__grouped-block-scaled-mxfp4-gemm-2sm__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 32.839318587,
+      "analysis_time_source": {
+        "path": "examples/cutlass__grouped-block-scaled-mxfp4-gemm-2sm__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -913,6 +975,11 @@
         "result": {
           "path": "examples/cutlass__grouped-blockwise-scaled-gemm-fp8__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.509053802,
+      "analysis_time_source": {
+        "path": "examples/cutlass__grouped-blockwise-scaled-gemm-fp8__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -934,6 +1001,11 @@
         "result": {
           "path": "examples/cutlass__grouped-gemm-f16-2sm__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 118.101557335,
+      "analysis_time_source": {
+        "path": "examples/cutlass__grouped-gemm-f16-2sm__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -955,6 +1027,11 @@
         "result": {
           "path": "examples/cutlass__grouped-gemm-f16-stream-k__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 76.650201851,
+      "analysis_time_source": {
+        "path": "examples/cutlass__grouped-gemm-f16-stream-k__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -976,6 +1053,11 @@
         "result": {
           "path": "examples/cutlass__grouped-gemm-f16__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 18.232167201,
+      "analysis_time_source": {
+        "path": "examples/cutlass__grouped-gemm-f16__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -997,6 +1079,11 @@
         "result": {
           "path": "examples/cutlass__moe-gemm-f16-mixed-cp-async__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.055694025,
+      "analysis_time_source": {
+        "path": "examples/cutlass__moe-gemm-f16-mixed-cp-async__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1018,6 +1105,11 @@
         "result": {
           "path": "examples/cutlass__sparse-block-scaled-gemm-mxfp8__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 33.957281843,
+      "analysis_time_source": {
+        "path": "examples/cutlass__sparse-block-scaled-gemm-mxfp8__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1039,6 +1131,11 @@
         "result": {
           "path": "examples/cutlass__sparse-block-scaled-gemm-nvfp4__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 31.834005691,
+      "analysis_time_source": {
+        "path": "examples/cutlass__sparse-block-scaled-gemm-nvfp4__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1060,6 +1157,11 @@
         "result": {
           "path": "examples/cutlass__sparse-block-scaled-mxfp8-gemm-2sm__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 33.535260837,
+      "analysis_time_source": {
+        "path": "examples/cutlass__sparse-block-scaled-mxfp8-gemm-2sm__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1081,6 +1183,11 @@
         "result": {
           "path": "examples/cutlass__sparse-gemm-f16-stream-k-1sm__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 4.863797619,
+      "analysis_time_source": {
+        "path": "examples/cutlass__sparse-gemm-f16-stream-k-1sm__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1102,6 +1209,11 @@
         "result": {
           "path": "examples/cutlass__sparse-gemm-f16-stream-k-2sm__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 4.688520289,
+      "analysis_time_source": {
+        "path": "examples/cutlass__sparse-gemm-f16-stream-k-2sm__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1123,6 +1235,11 @@
         "result": {
           "path": "examples/cutlass__sparse-gemm-f16__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 27.229989333,
+      "analysis_time_source": {
+        "path": "examples/cutlass__sparse-gemm-f16__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1144,6 +1261,11 @@
         "result": {
           "path": "examples/cutlass__sparse-gemm-runtime-fp8-family__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 25.025053835,
+      "analysis_time_source": {
+        "path": "examples/cutlass__sparse-gemm-runtime-fp8-family__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1165,9 +1287,6 @@
         },
         "reference_binding": {
           "path": "examples/deepgemm__deepgemm_sm100_bf16_gemm_m128_n256_k128__sm_100f/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/deepgemm__deepgemm_sm100_bf16_gemm_m128_n256_k128__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1209,6 +1328,11 @@
           "https://github.com/wmdi/wasp_verification/issues/98",
           "https://github.com/wmdi/wasp_verification/issues/99"
         ]
+      },
+      "analysis_time_seconds": 20.588045216,
+      "analysis_time_source": {
+        "path": "examples/deepgemm__deepgemm_sm100_bf16_gemm_m128_n256_k128__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1230,6 +1354,11 @@
         "result": {
           "path": "examples/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f/output.json"
         }
+      },
+      "analysis_time_seconds": 0.034362305,
+      "analysis_time_source": {
+        "path": "examples/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1251,6 +1380,11 @@
         "result": {
           "path": "examples/flash_attention__bwd_block_sparse_bf16_h128__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.080729368,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__bwd_block_sparse_bf16_h128__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1277,9 +1411,6 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__bwd_dense_bf16_h64__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flash_attention__bwd_dense_bf16_h64__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1321,6 +1452,11 @@
           "https://github.com/wmdi/wasp_verification/issues/102",
           "https://github.com/wmdi/wasp_verification/issues/103"
         ]
+      },
+      "analysis_time_seconds": 71.680643552,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__bwd_dense_bf16_h64__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1342,6 +1478,11 @@
         "result": {
           "path": "examples/flash_attention__bwd_dense_fp16_h128_causal_gqa__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 16.166174151,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__bwd_dense_fp16_h128_causal_gqa__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1363,6 +1504,11 @@
         "result": {
           "path": "examples/flash_attention__bwd_deterministic_bf16_h128__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 1.71900233,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__bwd_deterministic_bf16_h128__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1388,6 +1534,11 @@
         "result": {
           "path": "examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 302.799368699,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1409,6 +1560,11 @@
         "result": {
           "path": "examples/flash_attention__bwd_mla_sparse_bf16__dk__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.210960563,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__bwd_mla_sparse_bf16__dk__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1430,6 +1586,11 @@
         "result": {
           "path": "examples/flash_attention__bwd_mla_sparse_bf16__dq_dqv__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 1.249013463,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__bwd_mla_sparse_bf16__dq_dqv__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1451,6 +1612,11 @@
         "result": {
           "path": "examples/flash_attention__bwd_mla_sparse_bf16__main__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.138360337,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__bwd_mla_sparse_bf16__main__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1472,6 +1638,11 @@
         "result": {
           "path": "examples/flash_attention__bwd_varlen_bf16_h128__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.239188997,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__bwd_varlen_bf16_h128__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1493,6 +1664,11 @@
         "result": {
           "path": "examples/flash_attention__fwd_block_sparse_bf16_h128__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.877524272,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__fwd_block_sparse_bf16_h128__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1514,9 +1690,6 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__fwd_dense_bf16_h192_dv128__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flash_attention__fwd_dense_bf16_h192_dv128__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1553,6 +1726,11 @@
           "https://github.com/wmdi/wasp_verification/issues/235",
           "https://github.com/wmdi/wasp_verification/issues/236"
         ]
+      },
+      "analysis_time_seconds": 227.246186032,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__fwd_dense_bf16_h192_dv128__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1574,9 +1752,6 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__fwd_dense_bf16_h64__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flash_attention__fwd_dense_bf16_h64__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1618,6 +1793,11 @@
           "https://github.com/wmdi/wasp_verification/issues/230",
           "https://github.com/wmdi/wasp_verification/issues/231"
         ]
+      },
+      "analysis_time_seconds": 283.982981615,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__fwd_dense_bf16_h64__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1639,9 +1819,6 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__fwd_dense_fp16_h128_causal_gqa__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flash_attention__fwd_dense_fp16_h128_causal_gqa__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1678,6 +1855,11 @@
           "https://github.com/wmdi/wasp_verification/issues/237",
           "https://github.com/wmdi/wasp_verification/issues/238"
         ]
+      },
+      "analysis_time_seconds": 447.520892126,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__fwd_dense_fp16_h128_causal_gqa__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1699,9 +1881,6 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__fwd_fp8_h128__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flash_attention__fwd_fp8_h128__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1743,6 +1922,11 @@
           "https://github.com/wmdi/wasp_verification/issues/232",
           "https://github.com/wmdi/wasp_verification/issues/233"
         ]
+      },
+      "analysis_time_seconds": 184.472521184,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__fwd_fp8_h128__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1764,9 +1948,6 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__fwd_hd256_bf16_2cta__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flash_attention__fwd_hd256_bf16_2cta__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1808,6 +1989,11 @@
           "https://github.com/wmdi/wasp_verification/issues/112",
           "https://github.com/wmdi/wasp_verification/issues/113"
         ]
+      },
+      "analysis_time_seconds": 43.219330524,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__fwd_hd256_bf16_2cta__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1833,6 +2019,11 @@
         "result": {
           "path": "examples/flash_attention__fwd_mla_dense_bf16__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 4.03943552,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__fwd_mla_dense_bf16__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1866,6 +2057,11 @@
         "result": {
           "path": "examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 1.581065937,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1892,9 +2088,6 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__fwd_paged_bf16_h128__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flash_attention__fwd_paged_bf16_h128__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1931,6 +2124,11 @@
           "https://github.com/wmdi/wasp_verification/issues/293",
           "https://github.com/wmdi/wasp_verification/issues/294"
         ]
+      },
+      "analysis_time_seconds": 283.151018678,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -1952,9 +2150,6 @@
         },
         "reference_binding": {
           "path": "examples/flash_attention__fwd_split_bf16_h64__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flash_attention__fwd_split_bf16_h64__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -1996,6 +2191,11 @@
           "https://github.com/wmdi/wasp_verification/issues/117",
           "https://github.com/wmdi/wasp_verification/issues/118"
         ]
+      },
+      "analysis_time_seconds": 103.643864632,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__fwd_split_bf16_h64__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2017,6 +2217,11 @@
         "result": {
           "path": "examples/flash_attention__fwd_varlen_bf16_h128__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.101513831,
+      "analysis_time_source": {
+        "path": "examples/flash_attention__fwd_varlen_bf16_h128__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2038,6 +2243,11 @@
         "result": {
           "path": "examples/flashinfer__bgmv_moe__moe_bgmv_bf16_bf16_bf16__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 1.433708955,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__bgmv_moe__moe_bgmv_bf16_bf16_bf16__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2059,6 +2269,11 @@
         "result": {
           "path": "examples/flashinfer__blackwell_bgmv_moe__blackwell_bgmv_moe_bf16_h2688_sm100a__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.122871532,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__blackwell_bgmv_moe__blackwell_bgmv_moe_bf16_h2688_sm100a__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2080,6 +2295,11 @@
         "result": {
           "path": "examples/flashinfer__blackwell_msa__decode_m16_bf16_flat__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.842361977,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__blackwell_msa__decode_m16_bf16_flat__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2101,6 +2321,11 @@
         "result": {
           "path": "examples/flashinfer__blackwell_msa__decode_m16_bf16_paged__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.801288588,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__blackwell_msa__decode_m16_bf16_paged__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2122,6 +2347,11 @@
         "result": {
           "path": "examples/flashinfer__blackwell_msa__decode_m16_bf16_query_fp8_kv_paged__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 1.144017662,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__blackwell_msa__decode_m16_bf16_query_fp8_kv_paged__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2143,6 +2373,11 @@
         "result": {
           "path": "examples/flashinfer__blackwell_msa__long_prefill_paged_bf16_gqa16_sm100__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.093700297,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__blackwell_msa__long_prefill_paged_bf16_gqa16_sm100__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2164,6 +2399,11 @@
         "result": {
           "path": "examples/flashinfer__blackwell_msa__prefill_union_bf16_flat__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.216270736,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__blackwell_msa__prefill_union_bf16_flat__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2185,6 +2425,11 @@
         "result": {
           "path": "examples/flashinfer__blackwell_msa__prefill_union_bf16_paged__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.226953665,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__blackwell_msa__prefill_union_bf16_paged__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2206,6 +2451,11 @@
         "result": {
           "path": "examples/flashinfer__blackwell_msa__reverse_prefill_bf16_paged_topk4_qload4__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.123376356,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__blackwell_msa__reverse_prefill_bf16_paged_topk4_qload4__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2227,6 +2477,11 @@
         "result": {
           "path": "examples/flashinfer__cake_kda_decode__sm100_split8__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.009418144,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__cake_kda_decode__sm100_split8__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2248,6 +2503,11 @@
         "result": {
           "path": "examples/flashinfer__cake_kda_fused__sm100_unbounded_softplus__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.12756727,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__cake_kda_fused__sm100_unbounded_softplus__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2269,6 +2529,11 @@
         "result": {
           "path": "examples/flashinfer__cake_kda_packed_t1__cpasync_tile128_register_pipeline__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.032962787,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__cake_kda_packed_t1__cpasync_tile128_register_pipeline__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2290,6 +2555,11 @@
         "result": {
           "path": "examples/flashinfer__cake_kda_packed_t1__register_tile8_interleaved__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.007046376,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__cake_kda_packed_t1__register_tile8_interleaved__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2311,9 +2581,6 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -2355,6 +2622,11 @@
           "https://github.com/wmdi/wasp_verification/issues/133",
           "https://github.com/wmdi/wasp_verification/issues/134"
         ]
+      },
+      "analysis_time_seconds": 57.81329823,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2376,6 +2648,11 @@
         "result": {
           "path": "examples/flashinfer__cake_mamba_ssd_combined__exact_bf16_varlen__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.470017201,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__cake_mamba_ssd_combined__exact_bf16_varlen__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2403,6 +2680,11 @@
         "reference_binding": {
           "path": "examples/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a/reference_binding.json"
         }
+      },
+      "analysis_time_seconds": 4.244945745,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2424,6 +2706,11 @@
         "result": {
           "path": "examples/flashinfer__cake_selective_state_update__mtp_short__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.011042302,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__cake_selective_state_update__mtp_short__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2445,6 +2732,11 @@
         "result": {
           "path": "examples/flashinfer__cake_selective_state_update__stp_bf16_direct__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 2.416004476,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__cake_selective_state_update__stp_bf16_direct__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2466,6 +2758,11 @@
         "result": {
           "path": "examples/flashinfer__cake_selective_state_update__stp_bf16_persistent__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 2.37079799,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__cake_selective_state_update__stp_bf16_persistent__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2487,6 +2784,11 @@
         "result": {
           "path": "examples/flashinfer__cake_vsa__blk64_persistent_ws_m64n256__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.094478982,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__cake_vsa__blk64_persistent_ws_m64n256__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2508,6 +2810,11 @@
         "result": {
           "path": "examples/flashinfer__cake_vsa__ultrasparse_bsr__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 1.819747498,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__cake_vsa__ultrasparse_bsr__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2529,6 +2836,11 @@
         "result": {
           "path": "examples/flashinfer__cascade__merge_state_bf16__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.02182485,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__cascade__merge_state_bf16__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2550,6 +2862,11 @@
         "result": {
           "path": "examples/flashinfer__flash_kda__cake_flashkda_bf16_persistent_m128__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.10501665,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__flash_kda__cake_flashkda_bf16_persistent_m128__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2571,6 +2888,11 @@
         "result": {
           "path": "examples/flashinfer__flash_kda_backward__flashkda_backward__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.434955143,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__flash_kda_backward__flashkda_backward__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2592,6 +2914,11 @@
         "result": {
           "path": "examples/flashinfer__flash_kda_training__cake_flashkda_training_c16_aligned_forward_36075669f2__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.622426427,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__flash_kda_training__cake_flashkda_training_c16_aligned_forward_36075669f2__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2613,6 +2940,11 @@
         "result": {
           "path": "examples/flashinfer__fused_moe_cutlass__cutlass_kernel_file_gemm_grouped_sm100_M128_BS_group0.generated__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 30.41084346,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__fused_moe_cutlass__cutlass_kernel_file_gemm_grouped_sm100_M128_BS_group0.generated__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2634,6 +2966,11 @@
         "result": {
           "path": "examples/flashinfer__fused_moe_cutlass__cutlass_kernel_file_gemm_grouped_sm100_M128_group0.generated__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 29.33021349,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__fused_moe_cutlass__cutlass_kernel_file_gemm_grouped_sm100_M128_group0.generated__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2655,6 +2992,11 @@
         "result": {
           "path": "examples/flashinfer__fused_moe_cutlass_static__moe_gemm_kernels_bf16_bf16__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 500.009478938,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__fused_moe_cutlass_static__moe_gemm_kernels_bf16_bf16__sm_100a/output.json",
+        "field": "elapsed_seconds"
       }
     },
     {
@@ -2676,6 +3018,11 @@
         "result": {
           "path": "examples/flashinfer__fused_moe_cutlass_static__moe_gemm_kernels_bf16_uint4__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 500.08059429,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__fused_moe_cutlass_static__moe_gemm_kernels_bf16_uint4__sm_100a/output.json",
+        "field": "elapsed_seconds"
       }
     },
     {
@@ -2697,6 +3044,11 @@
         "result": {
           "path": "examples/flashinfer__fused_moe_cutlass_static__moe_gemm_kernels_fp8_fp8__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.410620831,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__fused_moe_cutlass_static__moe_gemm_kernels_fp8_fp8__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2718,9 +3070,6 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma1_sm100__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma1_sm100__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -2762,6 +3111,11 @@
           "https://github.com/wmdi/wasp_verification/issues/151",
           "https://github.com/wmdi/wasp_verification/issues/152"
         ]
+      },
+      "analysis_time_seconds": 11.1337382,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma1_sm100__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2783,9 +3137,6 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma2_sm100__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma2_sm100__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -2827,6 +3178,11 @@
           "https://github.com/wmdi/wasp_verification/issues/153",
           "https://github.com/wmdi/wasp_verification/issues/154"
         ]
+      },
+      "analysis_time_seconds": 24.4289909,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__gemm_sm100_module__gemm_groupwise_e4m3_bf16_majorfalse_mma2_sm100__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2848,6 +3204,11 @@
         "result": {
           "path": "examples/flashinfer__gemm_sm100_module__group_gemm_mxfp4_groupwise_e4m3_bf16_mma1_swapfalse_sm100__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 27.635144605,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__gemm_sm100_module__group_gemm_mxfp4_groupwise_e4m3_bf16_mma1_swapfalse_sm100__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2869,6 +3230,11 @@
         "result": {
           "path": "examples/flashinfer__gemm_sm100_module__group_gemm_mxfp4_groupwise_e4m3_bf16_mma2_swapfalse_sm100__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 47.082778419,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__gemm_sm100_module__group_gemm_mxfp4_groupwise_e4m3_bf16_mma2_swapfalse_sm100__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2890,9 +3256,6 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__gemm_sm100_module_cutlass_bf16__bf16_gemm_cutlass___nv_bfloat16_128_128_128__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flashinfer__gemm_sm100_module_cutlass_bf16__bf16_gemm_cutlass___nv_bfloat16_128_128_128__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -2934,6 +3297,11 @@
           "https://github.com/wmdi/wasp_verification/issues/157",
           "https://github.com/wmdi/wasp_verification/issues/158"
         ]
+      },
+      "analysis_time_seconds": 7.085157682,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__gemm_sm100_module_cutlass_bf16__bf16_gemm_cutlass___nv_bfloat16_128_128_128__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -2955,9 +3323,6 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -2999,6 +3364,11 @@
           "https://github.com/wmdi/wasp_verification/issues/159",
           "https://github.com/wmdi/wasp_verification/issues/160"
         ]
+      },
+      "analysis_time_seconds": 3.809943749,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__gemm_sm100_module_cutlass_fp4__fp4_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3020,9 +3390,6 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__gemm_sm100_module_cutlass_fp8__fp8_gemm_cutlass___nv_bfloat16_128_128_128__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flashinfer__gemm_sm100_module_cutlass_fp8__fp8_gemm_cutlass___nv_bfloat16_128_128_128__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3064,6 +3431,11 @@
           "https://github.com/wmdi/wasp_verification/issues/161",
           "https://github.com/wmdi/wasp_verification/issues/162"
         ]
+      },
+      "analysis_time_seconds": 7.688195272,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__gemm_sm100_module_cutlass_fp8__fp8_gemm_cutlass___nv_bfloat16_128_128_128__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3085,9 +3457,6 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__gemm_sm100_module_cutlass_mxfp8__mxfp8_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flashinfer__gemm_sm100_module_cutlass_mxfp8__mxfp8_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3129,6 +3498,11 @@
           "https://github.com/wmdi/wasp_verification/issues/163",
           "https://github.com/wmdi/wasp_verification/issues/164"
         ]
+      },
+      "analysis_time_seconds": 4.020612831,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__gemm_sm100_module_cutlass_mxfp8__mxfp8_gemm_cutlass___nv_bfloat16_128_128_256__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3150,9 +3524,6 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__gemm_sm100_module_cutlass_nvfp4_svdquant__nvfp4_svdquant_gemm_cutlass_Tactic1Sm128x128x128Config__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flashinfer__gemm_sm100_module_cutlass_nvfp4_svdquant__nvfp4_svdquant_gemm_cutlass_Tactic1Sm128x128x128Config__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3194,6 +3565,11 @@
           "https://github.com/wmdi/wasp_verification/issues/165",
           "https://github.com/wmdi/wasp_verification/issues/166"
         ]
+      },
+      "analysis_time_seconds": 159.0814626,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__gemm_sm100_module_cutlass_nvfp4_svdquant__nvfp4_svdquant_gemm_cutlass_Tactic1Sm128x128x128Config__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3215,6 +3591,11 @@
         "result": {
           "path": "examples/flashinfer__norm__fused_add_rmsnorm_bf16__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.158395711,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__norm__fused_add_rmsnorm_bf16__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3236,9 +3617,6 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__rope__apply_rope_pos_ids_bf16__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flashinfer__rope__apply_rope_pos_ids_bf16__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3267,6 +3645,11 @@
           "rechecked_at_recorded_input": false
         },
         "references": []
+      },
+      "analysis_time_seconds": 3.246048148,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__rope__apply_rope_pos_ids_bf16__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3288,6 +3671,11 @@
         "result": {
           "path": "examples/flashinfer__selective_state_update_sm100_patched_upstream_compat__selective_state_update_s_bf16_i_bf16_w_bf16_a_f32_si_i64_d_64_ds_128_nt_4_cs_i32_na_i32_sm100_selective_state_update__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.077827751,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__selective_state_update_sm100_patched_upstream_compat__selective_state_update_s_bf16_i_bf16_w_bf16_a_f32_si_i64_d_64_ds_128_nt_4_cs_i32_na_i32_sm100_selective_state_update__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3309,6 +3697,11 @@
         "result": {
           "path": "examples/flashinfer__single_decode__bf16_hd128__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 3.32456028,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__single_decode__bf16_hd128__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3330,6 +3723,11 @@
         "result": {
           "path": "examples/flashinfer__single_prefill_fa2__bf16_hd128_causal__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 2.702073057,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__single_prefill_fa2__bf16_hd128_causal__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3351,9 +3749,6 @@
         },
         "reference_binding": {
           "path": "examples/flashinfer__tinygemm2_sm100__deep_shallow_pdl_matrix__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/flashinfer__tinygemm2_sm100__deep_shallow_pdl_matrix__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3395,6 +3790,11 @@
           "https://github.com/wmdi/wasp_verification/issues/172",
           "https://github.com/wmdi/wasp_verification/issues/173"
         ]
+      },
+      "analysis_time_seconds": 3.06200265,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__tinygemm2_sm100__deep_shallow_pdl_matrix__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3416,6 +3816,11 @@
         "result": {
           "path": "examples/flashinfer__xqa_standard__input_bf16_kv_bf16_page32_head128_group8_sliding0__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.426076896,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__xqa_standard__input_bf16_kv_bf16_page32_head128_group8_sliding0__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3437,6 +3842,11 @@
         "result": {
           "path": "examples/flashinfer__xqa_standard__input_bf16_kv_bf16_page32_head128_group8_sliding1__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.435097002,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__xqa_standard__input_bf16_kv_bf16_page32_head128_group8_sliding1__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3458,6 +3868,11 @@
         "result": {
           "path": "examples/flashinfer__xqa_standard__input_bf16_kv_fp8_page32_head128_group8_sliding0__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.264108721,
+      "analysis_time_source": {
+        "path": "examples/flashinfer__xqa_standard__input_bf16_kv_fp8_page32_head128_group8_sliding0__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3479,6 +3894,11 @@
         "result": {
           "path": "examples/flashmla__flashmla_sm100_sparse_decode_v32_h64__sm_100f/output.json"
         }
+      },
+      "analysis_time_seconds": 0.194153634,
+      "analysis_time_source": {
+        "path": "examples/flashmla__flashmla_sm100_sparse_decode_v32_h64__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3500,6 +3920,11 @@
         "result": {
           "path": "examples/pytorch__aten_Copy__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.011811613,
+      "analysis_time_source": {
+        "path": "examples/pytorch__aten_Copy__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3521,6 +3946,11 @@
         "result": {
           "path": "examples/pytorch__aten_GroupMM_bf16_grouped__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 23.485204195,
+      "analysis_time_source": {
+        "path": "examples/pytorch__aten_GroupMM_bf16_grouped__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3542,6 +3972,11 @@
         "result": {
           "path": "examples/pytorch__aten_MaxUnpooling__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.042935177,
+      "analysis_time_source": {
+        "path": "examples/pytorch__aten_MaxUnpooling__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3563,9 +3998,6 @@
         },
         "reference_binding": {
           "path": "examples/pytorch__aten_MultiMarginLoss__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/pytorch__aten_MultiMarginLoss__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3598,6 +4030,11 @@
         "references": [
           "https://github.com/wmdi/wasp_verification/issues/270"
         ]
+      },
+      "analysis_time_seconds": 0.038770226,
+      "analysis_time_source": {
+        "path": "examples/pytorch__aten_MultiMarginLoss__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3619,6 +4056,11 @@
         "result": {
           "path": "examples/pytorch__aten_MultiMarginLoss_v2.8.0__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.027209361,
+      "analysis_time_source": {
+        "path": "examples/pytorch__aten_MultiMarginLoss_v2.8.0__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3640,9 +4082,6 @@
         },
         "reference_binding": {
           "path": "examples/pytorch__aten_Normalization__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/pytorch__aten_Normalization__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3684,6 +4123,11 @@
           "https://github.com/wmdi/wasp_verification/issues/183",
           "https://github.com/wmdi/wasp_verification/issues/184"
         ]
+      },
+      "analysis_time_seconds": 4.373120802,
+      "analysis_time_source": {
+        "path": "examples/pytorch__aten_Normalization__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3705,9 +4149,6 @@
         },
         "reference_binding": {
           "path": "examples/pytorch__aten_RowwiseScaledMM_fp8__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/pytorch__aten_RowwiseScaledMM_fp8__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3749,6 +4190,11 @@
           "https://github.com/wmdi/wasp_verification/issues/185",
           "https://github.com/wmdi/wasp_verification/issues/186"
         ]
+      },
+      "analysis_time_seconds": 8.337851149,
+      "analysis_time_source": {
+        "path": "examples/pytorch__aten_RowwiseScaledMM_fp8__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3770,9 +4216,6 @@
         },
         "reference_binding": {
           "path": "examples/pytorch__aten_SoftMax__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/pytorch__aten_SoftMax__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3814,6 +4257,11 @@
           "https://github.com/wmdi/wasp_verification/issues/187",
           "https://github.com/wmdi/wasp_verification/issues/188"
         ]
+      },
+      "analysis_time_seconds": 34.063765242,
+      "analysis_time_source": {
+        "path": "examples/pytorch__aten_SoftMax__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3835,6 +4283,11 @@
         "result": {
           "path": "examples/pytorch__aten_Sorting_kthvalue_v2.8.0__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.150155363,
+      "analysis_time_source": {
+        "path": "examples/pytorch__aten_Sorting_kthvalue_v2.8.0__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3861,9 +4314,6 @@
         },
         "reference_binding": {
           "path": "examples/pytorch__aten_WeightNorm__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/pytorch__aten_WeightNorm__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3896,6 +4346,11 @@
         "references": [
           "https://github.com/wmdi/wasp_verification/issues/271"
         ]
+      },
+      "analysis_time_seconds": 0.642523458,
+      "analysis_time_source": {
+        "path": "examples/pytorch__aten_WeightNorm__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3922,9 +4377,6 @@
         },
         "reference_binding": {
           "path": "examples/pytorch__aten_layer_norm_kernel__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/pytorch__aten_layer_norm_kernel__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -3955,6 +4407,11 @@
         "references": [
           "https://github.com/wmdi/wasp_verification/issues/191"
         ]
+      },
+      "analysis_time_seconds": 0.402508646,
+      "analysis_time_source": {
+        "path": "examples/pytorch__aten_layer_norm_kernel__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -3981,9 +4438,6 @@
         },
         "reference_binding": {
           "path": "examples/tensorrt_llm__aux_kdaDecode_kdaDecode__sm_100f/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tensorrt_llm__aux_kdaDecode_kdaDecode__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4014,6 +4468,11 @@
         "references": [
           "https://github.com/wmdi/wasp_verification/issues/193"
         ]
+      },
+      "analysis_time_seconds": 8.829383951,
+      "analysis_time_source": {
+        "path": "examples/tensorrt_llm__aux_kdaDecode_kdaDecode__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4035,9 +4494,6 @@
         },
         "reference_binding": {
           "path": "examples/tensorrt_llm__cutlass_fp4_gemm_bf16__sm_100f/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tensorrt_llm__cutlass_fp4_gemm_bf16__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4079,6 +4535,11 @@
           "https://github.com/wmdi/wasp_verification/issues/195",
           "https://github.com/wmdi/wasp_verification/issues/196"
         ]
+      },
+      "analysis_time_seconds": 38.189942527,
+      "analysis_time_source": {
+        "path": "examples/tensorrt_llm__cutlass_fp4_gemm_bf16__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4100,6 +4561,11 @@
         "result": {
           "path": "examples/tensorrt_llm__cutlass_fp8_blockscale_gemm__sm_100f/output.json"
         }
+      },
+      "analysis_time_seconds": 0.31963238,
+      "analysis_time_source": {
+        "path": "examples/tensorrt_llm__cutlass_fp8_blockscale_gemm__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4121,9 +4587,6 @@
         },
         "reference_binding": {
           "path": "examples/tensorrt_llm__cutlass_fp8_rowwise_gemm_bf16__sm_100f/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tensorrt_llm__cutlass_fp8_rowwise_gemm_bf16__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4165,6 +4628,11 @@
           "https://github.com/wmdi/wasp_verification/issues/198",
           "https://github.com/wmdi/wasp_verification/issues/199"
         ]
+      },
+      "analysis_time_seconds": 1.397324089,
+      "analysis_time_source": {
+        "path": "examples/tensorrt_llm__cutlass_fp8_rowwise_gemm_bf16__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4186,9 +4654,6 @@
         },
         "reference_binding": {
           "path": "examples/tensorrt_llm__cutlass_mixed_runner_bf16_int4_gemm_fg_scaleonly__sm_100f/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tensorrt_llm__cutlass_mixed_runner_bf16_int4_gemm_fg_scaleonly__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4230,6 +4695,11 @@
           "https://github.com/wmdi/wasp_verification/issues/200",
           "https://github.com/wmdi/wasp_verification/issues/201"
         ]
+      },
+      "analysis_time_seconds": 12.46431442,
+      "analysis_time_source": {
+        "path": "examples/tensorrt_llm__cutlass_mixed_runner_bf16_int4_gemm_fg_scaleonly__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4251,6 +4721,11 @@
         "result": {
           "path": "examples/tensorrt_llm__cutlass_moe_moe_gemm_kernels_fp8_fp8__sm_100f/output.json"
         }
+      },
+      "analysis_time_seconds": 0.377398311,
+      "analysis_time_source": {
+        "path": "examples/tensorrt_llm__cutlass_moe_moe_gemm_kernels_fp8_fp8__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4272,6 +4747,11 @@
         "result": {
           "path": "examples/tensorrt_llm__cutlass_moe_moe_gemm_kernels_fp8_uint4__sm_100f/output.json"
         }
+      },
+      "analysis_time_seconds": 500.08476533,
+      "analysis_time_source": {
+        "path": "examples/tensorrt_llm__cutlass_moe_moe_gemm_kernels_fp8_uint4__sm_100f/output.json",
+        "field": "elapsed_seconds"
       }
     },
     {
@@ -4293,9 +4773,6 @@
         },
         "reference_binding": {
           "path": "examples/tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4328,6 +4805,11 @@
         "references": [
           "https://github.com/wmdi/wasp_verification/issues/272"
         ]
+      },
+      "analysis_time_seconds": 88.971927965,
+      "analysis_time_source": {
+        "path": "examples/tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4349,9 +4831,6 @@
         },
         "reference_binding": {
           "path": "examples/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4384,6 +4863,11 @@
         "references": [
           "https://github.com/wmdi/wasp_verification/issues/273"
         ]
+      },
+      "analysis_time_seconds": 4.333362071,
+      "analysis_time_source": {
+        "path": "examples/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4411,6 +4895,11 @@
         "reference_binding": {
           "path": "examples/tensorrt_llm__selective_scan_chunkscan_bf16_bf16__sm_100f/reference_binding.json"
         }
+      },
+      "analysis_time_seconds": 79.601578889,
+      "analysis_time_source": {
+        "path": "examples/tensorrt_llm__selective_scan_chunkscan_bf16_bf16__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4432,6 +4921,11 @@
         "result": {
           "path": "examples/tensorrt_llm__selective_scan_selectiveScan__sm_100f/output.json"
         }
+      },
+      "analysis_time_seconds": 0.020621713,
+      "analysis_time_source": {
+        "path": "examples/tensorrt_llm__selective_scan_selectiveScan__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4453,9 +4947,6 @@
         },
         "reference_binding": {
           "path": "examples/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4497,6 +4988,11 @@
           "https://github.com/wmdi/wasp_verification/issues/208",
           "https://github.com/wmdi/wasp_verification/issues/209"
         ]
+      },
+      "analysis_time_seconds": 1.917052914,
+      "analysis_time_source": {
+        "path": "examples/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4518,6 +5014,11 @@
         "result": {
           "path": "examples/tilelang-gemm-sm100-tcgen5mma/output.json"
         }
+      },
+      "analysis_time_seconds": 20.885127372,
+      "analysis_time_source": {
+        "path": "examples/tilelang-gemm-sm100-tcgen5mma/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4539,9 +5040,6 @@
         },
         "reference_binding": {
           "path": "examples/tilelang-online-softmax/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tilelang-online-softmax/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4583,6 +5081,11 @@
           "https://github.com/wmdi/wasp_verification/issues/274",
           "https://github.com/wmdi/wasp_verification/issues/275"
         ]
+      },
+      "analysis_time_seconds": 9.156499016,
+      "analysis_time_source": {
+        "path": "examples/tilelang-online-softmax/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4604,9 +5107,6 @@
         },
         "reference_binding": {
           "path": "examples/tilelang-ws-gemm-barrierpipe-stage2/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tilelang-ws-gemm-barrierpipe-stage2/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4648,6 +5148,11 @@
           "https://github.com/wmdi/wasp_verification/issues/276",
           "https://github.com/wmdi/wasp_verification/issues/277"
         ]
+      },
+      "analysis_time_seconds": 234.588294499,
+      "analysis_time_source": {
+        "path": "examples/tilelang-ws-gemm-barrierpipe-stage2/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4669,9 +5174,6 @@
         },
         "reference_binding": {
           "path": "examples/tilelang-ws-gemm-copy-0-gemm-1/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tilelang-ws-gemm-copy-0-gemm-1/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4713,6 +5215,11 @@
           "https://github.com/wmdi/wasp_verification/issues/278",
           "https://github.com/wmdi/wasp_verification/issues/279"
         ]
+      },
+      "analysis_time_seconds": 188.945792593,
+      "analysis_time_source": {
+        "path": "examples/tilelang-ws-gemm-copy-0-gemm-1/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4734,9 +5241,6 @@
         },
         "reference_binding": {
           "path": "examples/tilelang-ws-gemm-copy-1-gemm-0/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tilelang-ws-gemm-copy-1-gemm-0/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4778,6 +5282,11 @@
           "https://github.com/wmdi/wasp_verification/issues/280",
           "https://github.com/wmdi/wasp_verification/issues/281"
         ]
+      },
+      "analysis_time_seconds": 234.004103869,
+      "analysis_time_source": {
+        "path": "examples/tilelang-ws-gemm-copy-1-gemm-0/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4799,6 +5308,11 @@
         "result": {
           "path": "examples/tilelang-ws-gemm-copy-gemm-0-1/output.json"
         }
+      },
+      "analysis_time_seconds": 0.597341771,
+      "analysis_time_source": {
+        "path": "examples/tilelang-ws-gemm-copy-gemm-0-1/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4820,9 +5334,6 @@
         },
         "reference_binding": {
           "path": "examples/tilelang-ws-gemm-softpipe-stage2/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tilelang-ws-gemm-softpipe-stage2/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4864,6 +5375,11 @@
           "https://github.com/wmdi/wasp_verification/issues/282",
           "https://github.com/wmdi/wasp_verification/issues/283"
         ]
+      },
+      "analysis_time_seconds": 239.339174135,
+      "analysis_time_source": {
+        "path": "examples/tilelang-ws-gemm-softpipe-stage2/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4885,6 +5401,11 @@
         "result": {
           "path": "examples/tirx-basic-allgather-gemm/output.json"
         }
+      },
+      "analysis_time_seconds": 0.135760375,
+      "analysis_time_source": {
+        "path": "examples/tirx-basic-allgather-gemm/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4906,9 +5427,6 @@
         },
         "reference_binding": {
           "path": "examples/tirx-basic-rmsnorm/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tirx-basic-rmsnorm/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -4950,6 +5468,11 @@
           "https://github.com/wmdi/wasp_verification/issues/295",
           "https://github.com/wmdi/wasp_verification/issues/296"
         ]
+      },
+      "analysis_time_seconds": 0.457962582,
+      "analysis_time_source": {
+        "path": "examples/tirx-basic-rmsnorm/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4971,6 +5494,11 @@
         "result": {
           "path": "examples/tirx-curated-kda-forward/output.json"
         }
+      },
+      "analysis_time_seconds": 0.181952299,
+      "analysis_time_source": {
+        "path": "examples/tirx-curated-kda-forward/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -4992,6 +5520,11 @@
         "result": {
           "path": "examples/tirx-curated-msa-decode/output.json"
         }
+      },
+      "analysis_time_seconds": 0.161620277,
+      "analysis_time_source": {
+        "path": "examples/tirx-curated-msa-decode/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5013,6 +5546,11 @@
         "result": {
           "path": "examples/tirx-curated-msa-prefill/output.json"
         }
+      },
+      "analysis_time_seconds": 0.169598797,
+      "analysis_time_source": {
+        "path": "examples/tirx-curated-msa-prefill/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5034,6 +5572,11 @@
         "result": {
           "path": "examples/tirx-curated-vsa/output.json"
         }
+      },
+      "analysis_time_seconds": 0.313961285,
+      "analysis_time_source": {
+        "path": "examples/tirx-curated-vsa/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5055,6 +5598,11 @@
         "result": {
           "path": "examples/tirx-flashattention-forward/output.json"
         }
+      },
+      "analysis_time_seconds": 2.239325603,
+      "analysis_time_source": {
+        "path": "examples/tirx-flashattention-forward/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5076,6 +5624,11 @@
         "result": {
           "path": "examples/tirx-flashattention-forward-causal/output.json"
         }
+      },
+      "analysis_time_seconds": 2.681799319,
+      "analysis_time_source": {
+        "path": "examples/tirx-flashattention-forward-causal/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5102,9 +5655,6 @@
         },
         "reference_binding": {
           "path": "examples/tirx-flashinfer-quantization-nvfp4/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tirx-flashinfer-quantization-nvfp4/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5133,6 +5683,11 @@
           "rechecked_at_recorded_input": false
         },
         "references": []
+      },
+      "analysis_time_seconds": 0.046670844,
+      "analysis_time_source": {
+        "path": "examples/tirx-flashinfer-quantization-nvfp4/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5154,6 +5709,11 @@
         "result": {
           "path": "examples/tirx-flashinfer-topk-filtered/output.json"
         }
+      },
+      "analysis_time_seconds": 1.057081113,
+      "analysis_time_source": {
+        "path": "examples/tirx-flashinfer-topk-filtered/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5175,6 +5735,11 @@
         "result": {
           "path": "examples/triton__triton_ws.exact-3.8.0__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 24.415651146,
+      "analysis_time_source": {
+        "path": "examples/triton__triton_ws.exact-3.8.0__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5196,9 +5761,6 @@
         },
         "reference_binding": {
           "path": "examples/tritongluon-03-async-copy/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tritongluon-03-async-copy/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5240,6 +5802,11 @@
           "https://github.com/wmdi/wasp_verification/issues/284",
           "https://github.com/wmdi/wasp_verification/issues/285"
         ]
+      },
+      "analysis_time_seconds": 0.093114396,
+      "analysis_time_source": {
+        "path": "examples/tritongluon-03-async-copy/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5266,9 +5833,6 @@
         },
         "reference_binding": {
           "path": "examples/tritongluon-03-async-pipelined/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tritongluon-03-async-pipelined/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5307,6 +5871,11 @@
           "https://github.com/wmdi/wasp_verification/issues/286",
           "https://github.com/wmdi/wasp_verification/issues/287"
         ]
+      },
+      "analysis_time_seconds": 498.681199698,
+      "analysis_time_source": {
+        "path": "examples/tritongluon-03-async-pipelined/output.json",
+        "field": "elapsed_seconds"
       }
     },
     {
@@ -5328,6 +5897,11 @@
         "result": {
           "path": "examples/tritongluon-04-tma-pipelined/output.json"
         }
+      },
+      "analysis_time_seconds": 13.222290161,
+      "analysis_time_source": {
+        "path": "examples/tritongluon-04-tma-pipelined/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5355,6 +5929,11 @@
         "reference_binding": {
           "path": "examples/tritongluon-06-tcgen05-blocked-matmul/reference_binding.json"
         }
+      },
+      "analysis_time_seconds": 0.647003438,
+      "analysis_time_source": {
+        "path": "examples/tritongluon-06-tcgen05-blocked-matmul/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5376,6 +5955,11 @@
         "result": {
           "path": "examples/tritongluon-06-tcgen05-tmem/output.json"
         }
+      },
+      "analysis_time_seconds": 0.450873818,
+      "analysis_time_source": {
+        "path": "examples/tritongluon-06-tcgen05-tmem/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5402,9 +5986,6 @@
         },
         "reference_binding": {
           "path": "examples/tritongluon-07-persistence/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/tritongluon-07-persistence/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5435,6 +6016,11 @@
         "references": [
           "https://github.com/wmdi/wasp_verification/issues/288"
         ]
+      },
+      "analysis_time_seconds": 498.65423281,
+      "analysis_time_source": {
+        "path": "examples/tritongluon-07-persistence/output.json",
+        "field": "elapsed_seconds"
       }
     },
     {
@@ -5462,6 +6048,11 @@
         "reference_binding": {
           "path": "examples/tritongluon-07-persistence-stealb/reference_binding.json"
         }
+      },
+      "analysis_time_seconds": 56.293417778,
+      "analysis_time_source": {
+        "path": "examples/tritongluon-07-persistence-stealb/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5483,6 +6074,11 @@
         "result": {
           "path": "examples/tritongluon-08-ws-elementwise/output.json"
         }
+      },
+      "analysis_time_seconds": 0.08185839,
+      "analysis_time_source": {
+        "path": "examples/tritongluon-08-ws-elementwise/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5504,6 +6100,11 @@
         "result": {
           "path": "examples/tritongluon-08-ws-matmul-512/output.json"
         }
+      },
+      "analysis_time_seconds": 0.138460123,
+      "analysis_time_source": {
+        "path": "examples/tritongluon-08-ws-matmul-512/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5525,6 +6126,11 @@
         "result": {
           "path": "examples/tritongluon-10-matmul-accumulate/output.json"
         }
+      },
+      "analysis_time_seconds": 0.170889162,
+      "analysis_time_source": {
+        "path": "examples/tritongluon-10-matmul-accumulate/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5546,6 +6152,11 @@
         "result": {
           "path": "examples/tritongluon-10-tcgen05-copy/output.json"
         }
+      },
+      "analysis_time_seconds": 0.966685883,
+      "analysis_time_source": {
+        "path": "examples/tritongluon-10-tcgen05-copy/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5573,6 +6184,11 @@
         "reference_binding": {
           "path": "examples/tritongluon-12-cluster-launch-control/reference_binding.json"
         }
+      },
+      "analysis_time_seconds": 19.528077161,
+      "analysis_time_source": {
+        "path": "examples/tritongluon-12-cluster-launch-control/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5594,6 +6210,11 @@
         "result": {
           "path": "examples/vllm__dsv3_fused_a_gemm__sm_100f/output.json"
         }
+      },
+      "analysis_time_seconds": 137.270495222,
+      "analysis_time_source": {
+        "path": "examples/vllm__dsv3_fused_a_gemm__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5615,9 +6236,6 @@
         },
         "reference_binding": {
           "path": "examples/vllm__fp8_dynamic_per_token_scaled_quant__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/vllm__fp8_dynamic_per_token_scaled_quant__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5650,6 +6268,11 @@
         "references": [
           "https://github.com/wmdi/wasp_verification/issues/290"
         ]
+      },
+      "analysis_time_seconds": 1.258770229,
+      "analysis_time_source": {
+        "path": "examples/vllm__fp8_dynamic_per_token_scaled_quant__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5671,6 +6294,11 @@
         "result": {
           "path": "examples/vllm__fused_gdn_decode_kernel__sm_100f/output.json"
         }
+      },
+      "analysis_time_seconds": 0.060549166,
+      "analysis_time_source": {
+        "path": "examples/vllm__fused_gdn_decode_kernel__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5692,6 +6320,11 @@
         "result": {
           "path": "examples/vllm__fused_kda_decode_kernel__sm_100f/output.json"
         }
+      },
+      "analysis_time_seconds": 108.894441489,
+      "analysis_time_source": {
+        "path": "examples/vllm__fused_kda_decode_kernel__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5713,9 +6346,6 @@
         },
         "reference_binding": {
           "path": "examples/vllm__fused_qknorm_rope__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/vllm__fused_qknorm_rope__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5757,6 +6387,11 @@
           "https://github.com/wmdi/wasp_verification/issues/215",
           "https://github.com/wmdi/wasp_verification/issues/216"
         ]
+      },
+      "analysis_time_seconds": 4.849427293,
+      "analysis_time_source": {
+        "path": "examples/vllm__fused_qknorm_rope__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5778,6 +6413,11 @@
         "result": {
           "path": "examples/vllm__grouped_mm_c3x_sm100__sm_100f/output.json"
         }
+      },
+      "analysis_time_seconds": 42.598142868,
+      "analysis_time_source": {
+        "path": "examples/vllm__grouped_mm_c3x_sm100__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5799,9 +6439,6 @@
         },
         "reference_binding": {
           "path": "examples/vllm__layernorm_fused_add_rms_norm__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/vllm__layernorm_fused_add_rms_norm__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5834,6 +6471,11 @@
         "references": [
           "https://github.com/wmdi/wasp_verification/issues/291"
         ]
+      },
+      "analysis_time_seconds": 3.305750058,
+      "analysis_time_source": {
+        "path": "examples/vllm__layernorm_fused_add_rms_norm__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5855,6 +6497,11 @@
         "result": {
           "path": "examples/vllm__moe_topk_softmax__sm_100a/output.json"
         }
+      },
+      "analysis_time_seconds": 0.020495008,
+      "analysis_time_source": {
+        "path": "examples/vllm__moe_topk_softmax__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5876,6 +6523,11 @@
         "result": {
           "path": "examples/vllm__mxfp4_blockwise_moe_kernel__sm_100f/output.json"
         }
+      },
+      "analysis_time_seconds": 9.564533234,
+      "analysis_time_source": {
+        "path": "examples/vllm__mxfp4_blockwise_moe_kernel__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5897,6 +6549,11 @@
         "result": {
           "path": "examples/vllm__nvfp4_blockwise_moe_kernel__sm_100f/output.json"
         }
+      },
+      "analysis_time_seconds": 9.59633886,
+      "analysis_time_source": {
+        "path": "examples/vllm__nvfp4_blockwise_moe_kernel__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5918,9 +6575,6 @@
         },
         "reference_binding": {
           "path": "examples/vllm__nvfp4_scaled_mm_kernels__sm_100f/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/vllm__nvfp4_scaled_mm_kernels__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -5962,6 +6616,11 @@
           "https://github.com/wmdi/wasp_verification/issues/222",
           "https://github.com/wmdi/wasp_verification/issues/223"
         ]
+      },
+      "analysis_time_seconds": 148.880317242,
+      "analysis_time_source": {
+        "path": "examples/vllm__nvfp4_scaled_mm_kernels__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -5983,9 +6642,6 @@
         },
         "reference_binding": {
           "path": "examples/vllm__pos_encoding_rotary_embedding__sm_100a/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/vllm__pos_encoding_rotary_embedding__sm_100a/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -6014,6 +6670,11 @@
           "rechecked_at_recorded_input": false
         },
         "references": []
+      },
+      "analysis_time_seconds": 0.379444384,
+      "analysis_time_source": {
+        "path": "examples/vllm__pos_encoding_rotary_embedding__sm_100a/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -6035,9 +6696,6 @@
         },
         "reference_binding": {
           "path": "examples/vllm__scaled_mm_blockwise_sm100_fp8__sm_100f/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/vllm__scaled_mm_blockwise_sm100_fp8__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -6079,6 +6737,11 @@
           "https://github.com/wmdi/wasp_verification/issues/225",
           "https://github.com/wmdi/wasp_verification/issues/226"
         ]
+      },
+      "analysis_time_seconds": 4.615278305,
+      "analysis_time_source": {
+        "path": "examples/vllm__scaled_mm_blockwise_sm100_fp8__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -6100,9 +6763,6 @@
         },
         "reference_binding": {
           "path": "examples/vllm__scaled_mm_sm100_fp8__sm_100f/reference_binding.json"
-        },
-        "sync_removal": {
-          "path": "examples/vllm__scaled_mm_sm100_fp8__sm_100f/sync_removal.json"
         }
       },
       "synchronization_removal": {
@@ -6144,6 +6804,11 @@
           "https://github.com/wmdi/wasp_verification/issues/227",
           "https://github.com/wmdi/wasp_verification/issues/228"
         ]
+      },
+      "analysis_time_seconds": 2.39696549,
+      "analysis_time_source": {
+        "path": "examples/vllm__scaled_mm_sm100_fp8__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     },
     {
@@ -6165,6 +6830,11 @@
         "result": {
           "path": "examples/vllm__sm100_cutlass_mla_kernel__sm_100f/output.json"
         }
+      },
+      "analysis_time_seconds": 0.471141575,
+      "analysis_time_source": {
+        "path": "examples/vllm__sm100_cutlass_mla_kernel__sm_100f/output.json",
+        "field": "pipeline_elapsed_seconds"
       }
     }
   ]

@@ -44,7 +44,7 @@ that the kernel computes the same function.
 ## Results
 
 Results for every kernel in our benchmark, with diagnostics and evidence, are
-in [Kernel verification results](examples/results.md).
+in [Kernel verification results](https://sentryward.io/results/).
 
 ### Bugs in popular kernel libraries
 
@@ -59,10 +59,10 @@ Because SentryWard checks every schedule, it can also show that a
 synchronization operation is unnecessary: if the kernel still verifies without
 it, the operation is redundant. We applied this test greedily, one operation at a time.
 
-[Per-kernel synchronization removal results](examples/results.md)
+[Per-kernel synchronization removal results](https://sentryward.io/results/)
 include removable operation counts and B200 timings for both recorded and larger
-inputs. Each experiment is saved in `examples/<kernel>/sync_removal.json`, with
-its source, methodology, and limitations. These results hold for the tested
+inputs. Experiments are saved in [examples/results.json](examples/results.json), with
+their sources, methodology, and limitations. These results hold for the tested
 input shapes; other shapes may require synchronization that was removable here.
 
 ## Getting started
