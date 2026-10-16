@@ -1,0 +1,62 @@
+{
+  "schema": "sentryward.sync-removal.v1",
+  "kernel": "flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a",
+  "study": {
+    "schema": "sentryward.sync-removal-study.v1",
+    "source": {
+      "repository": "wmdi/wasp_verification",
+      "revision": "3281444e96473d554a813f96e196015a4c84bdf1",
+      "published_at": "2026-10-14T18:15:03Z",
+      "path": "examples/index.md",
+      "sha256": "43aa5142a29e9e1f47731f5b9d54d804d24b6f3985ddbe23099e10162a0db1b1"
+    },
+    "device": "NVIDIA B200",
+    "methodology": [
+      "**Synchronization columns.** Filled for the examples that verify `race_free`. **Sync Instructions** counts the synchronization statements in the analyzed entry (barriers, `mbarrier` operations, async-copy waits, `tcgen05.commit`/`tcgen05.wait`, fences, `griddepcontrol.wait`) and, in parentheses, how many of them are executed for the recorded input and are removal candidates; fences and `griddepcontrol.wait` are never candidates because the verifier does not check what they protect. **Removable (recorded input)** is how many of those candidates can be removed together while the verifier still reports `race_free`; the linked issues list the sites. **Performance Improvement (recorded input)** is the change in in-kernel time of the reduced kernel on a B200 (negative is faster); \"output identical\" means byte-identical to the original kernel on 500,000 launches. These three columns hold for the recorded input only. Verdicts are from the verifier at `a47ae4f` (the fix in #269), or at `be4e9f3` for the examples whose input changed afterwards; the reduced kernels were re-verified at `be4e9f3`.",
+      "**Larger-input columns.** Most recorded inputs run the main loop fewer times than the kernel's pipeline has stages, so no pipeline buffer is ever reused and synchronization that guards buffer reuse looks redundant. We reran each reduction at a larger input, named in the cell, at which every pipeline stage is written at least twice, with the verifier at `f8339ff`. **Removable (larger input)** is how many of the candidates executed at that input can be removed together while the verifier still reports `race_free`. To find them, the recorded-input removals and the candidates that only execute at the larger input were ablated one at a time, the redundant ones were removed together, and the result was verified in full. Sites that were necessary at the recorded input were not retried. The cell also says whether the recorded-input reduction still verifies at the larger input, and what it did on a B200 when it did not. **Performance Improvement (larger input)** is the change in in-kernel time of the larger-input reduction at that input. \"output identical\" means byte-identical to the original kernel on 20,000 launches. Some FlashAttention and DeepGEMM inputs launch only the first CTAs or cluster of the larger problem; the cell says so. Kernels with compile-time shapes (TileLang) were re-checked at the recorded input. The linked issues list the sites that the larger input needs and, for most GEMM-style kernels, a second check at an even larger input."
+    ]
+  },
+  "record_source": {
+    "pull_request": "https://github.com/wmdi/wasp_verification/pull/304",
+    "revision": "ba83a5f0f4c4c6f7e4d676855d9b5da3a69e9189",
+    "path": "docs/kernel-verification-results.json"
+  },
+  "static_sync_instructions": 84,
+  "sync_instructions_note": "84 (72 executed candidates)",
+  "recorded": {
+    "removal": {
+      "status": "measured",
+      "removable": 35,
+      "candidates": 72,
+      "note": "35 of 72 ([#133](https://github.com/wmdi/wasp_verification/issues/133), [#134](https://github.com/wmdi/wasp_verification/issues/134))"
+    },
+    "performance": {
+      "status": "measured",
+      "runtime_change_percent": -6.0,
+      "note": "-6.0% (19.66 → 18.86 µs); B200 output identical",
+      "original_us": 19.66,
+      "reduced_us": 18.86
+    },
+    "rechecked_at_recorded_input": false
+  },
+  "larger": {
+    "removal": {
+      "status": "measured",
+      "removable": 27,
+      "candidates": 74,
+      "note": "27 of 74 with sequence length 256 → 512; the 35-site recorded-input reduction is `not_wellsynced` here and faults (launch failure) on a B200"
+    },
+    "performance": {
+      "status": "no_measurable_change",
+      "runtime_change_percent": 0.0,
+      "note": "no measurable change (29.83 vs 29.18 µs); B200 output identical",
+      "original_us": 29.83,
+      "reduced_us": 29.18
+    },
+    "rechecked_at_recorded_input": false
+  },
+  "references": [
+    "https://github.com/wmdi/wasp_verification/issues/133",
+    "https://github.com/wmdi/wasp_verification/issues/134"
+  ]
+}
