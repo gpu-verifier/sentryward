@@ -158,6 +158,7 @@ struct SemanticProgramOptions final {
   bool link_numerical_memory = true;
   bool defer_address_serialization = false;
   bool capture_branch_scope = false;
+  bool atomics = false;  // order_independent_atomics: lower atom/red as atomic accesses
 };
 
 // Both views consume the same specialized instruction occurrences.

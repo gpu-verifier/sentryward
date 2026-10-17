@@ -741,7 +741,8 @@ int main(int argc, char **argv) {
           {"clc_failure", config.fixed_input.contains("cluster_launch_cancellation") &&
               config.fixed_input["cluster_launch_cancellation"] == false},
           {"assertion_uses",0}, {"election_uses",0}, {"clc_uses",0},
-          {"representative_branch_uses",0}, {"bounded_loop_uses",0}, {"data_branch_decisions",Json::array()},
+          {"representative_branch_uses",0}, {"bounded_loop_uses",0}, {"atomic_uses",0},
+          {"data_branch_decisions",Json::array()},
           {"opaque_compute_regions",Json::array()}};
       alg::OverridePtxAssumptions(effective_assumptions,
           config.raw.value("semantic_assumptions", Json::object()).get<alg::PtxAssumptions>());
@@ -816,10 +817,12 @@ int main(int argc, char **argv) {
         semantic_builder = std::make_unique<ptx::SemanticProgramBuilder>(module, *function, poll,
             ptx::SemanticProgramOptions{options.analyze_values && !options.trusted_reference,
                                        true, options.analyze_values, !options.trusted_reference,
-                                       !options.dump_branch_scope.empty()});
+                                       !options.dump_branch_scope.empty(),
+                                       effective_assumptions.at("order_independent_atomics")});
       } else if (!options.semantic && !values)
         lowerer = alg::ProfileCall("frontend.static_lowering_prepare", [&] {
-          return std::make_unique<ptx::ModelLowerer>(module, *function, poll);
+          return std::make_unique<ptx::ModelLowerer>(module, *function, poll, false,
+              effective_assumptions.at("order_independent_atomics"));
         });
       {
         alg::ProfileScope frontend("frontend.dynamic_pipeline");
@@ -914,6 +917,7 @@ int main(int argc, char **argv) {
                 const auto count=program.static_execution_counts[id];
                 if (op=="elect") facts["election_uses"]=facts["election_uses"].get<std::uint64_t>()+count;
                 if (op=="clusterlaunchcontrol") facts["clc_uses"]=facts["clc_uses"].get<std::uint64_t>()+count;
+                if (op=="atom" || op=="red") facts["atomic_uses"]=facts["atomic_uses"].get<std::uint64_t>()+count;
               }
               if (lowerer) {
                 monitor.Stage("source_ir.cta" + std::to_string(ctas));
@@ -1322,6 +1326,7 @@ int main(int argc, char **argv) {
           if (entry.key == "clc_always_fails") triggered = facts.value("clc_uses", 0) > 0;
           if (entry.key == "representative_branches") triggered = facts.value("representative_branch_uses", 0) > 0;
           if (entry.key == "bounded_computation_loops") triggered = facts.value("bounded_loop_uses", 0) > 0;
+          if (entry.key == "order_independent_atomics") triggered = facts.value("atomic_uses", 0) > 0;
         }
         result["assumptions"].push_back({{"label",entry.label},{"key",entry.key},{"text",entry.text},
             {"enabled",effective_assumptions.at(entry.key)},
