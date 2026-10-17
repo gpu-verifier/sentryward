@@ -1,0 +1,877 @@
+{
+  "version": 2,
+  "title": "Sparse MLA: startup synchronization and copy-model boundaries",
+  "context": {
+    "title": "Where the concerns occur",
+    "summary": "The affected code prepares shared-memory synchronization objects, gathers selected K/V entries into shared tiles, and uses tensor descriptors for input and output transfers. The input file names `K`, `V`, and `topk_indices`; the descriptor-defined tensors have no captured contents from which to recover their logical identities. The following accounts separate three concerns:\n\n- **Cluster startup:** the order of cluster-wide arrivals and waits before worker dispatch.\n- **Index-controlled copies:** sparse-index values select whether a shared tile receives source data or zeros.\n- **Tensor-map binding:** descriptor addresses are traceable, but their tensor layouts and global bindings are not supplied.\n\nThe source walkthrough uses physical PTX locations and static thread guards. It does not turn the saved diagnostic actor ranges into a hardware execution trace.",
+    "evidence": [
+      {
+        "kind": "ptx",
+        "lines": "338-366",
+        "contains": [
+          "barrier.cluster.arrive.relaxed",
+          "barrier.cluster.wait"
+        ]
+      },
+      {
+        "kind": "ptx",
+        "lines": "707-762",
+        "contains": [
+          "ld.global.b32",
+          "cp.async.cg.shared.global"
+        ]
+      },
+      {
+        "kind": "ptx",
+        "lines": "1258-1262,1286-1290,5178-5187,5525-5536",
+        "contains": [
+          "cvta.param.u64"
+        ]
+      },
+      {
+        "kind": "input",
+        "pointer": "/declarations"
+      },
+      {
+        "kind": "result",
+        "pointer": "/diagnostics"
+      }
+    ],
+    "evidence_title": "Derivation: input objects and tensor descriptors",
+    "steps": [
+      {
+        "label": "Pointer objects and descriptor objects are separate inputs",
+        "text": "Parameters 2, 3, 4 and 6 are declared pointers to K, V, V and topk_indices. Their initial loads supply the ordinary gather path. Parameters 7, 8 and 9 are instead declared tensor maps and are addressed directly in parameter memory. The latter declarations do not bind their global backing tensors to K or V. This is why the discussion uses “descriptor-defined input tiles” instead of guessing query/key names for those transfers.",
+        "evidence": [
+          {
+            "kind": "input",
+            "pointer": "/declarations/26"
+          },
+          {
+            "kind": "input",
+            "pointer": "/declarations/27"
+          },
+          {
+            "kind": "input",
+            "pointer": "/declarations/28"
+          },
+          {
+            "kind": "input",
+            "pointer": "/declarations/29"
+          },
+          {
+            "kind": "input",
+            "pointer": "/declarations/30"
+          },
+          {
+            "kind": "input",
+            "pointer": "/declarations/31"
+          },
+          {
+            "kind": "input",
+            "pointer": "/declarations/32"
+          },
+          {
+            "kind": "ptx",
+            "lines": "51-69",
+            "contains": [
+              "%rd39",
+              "%rd43",
+              "%rd47",
+              "%rd51",
+              "%rd3",
+              "%rd2",
+              "%rd1"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "sections": [
+    {
+      "title": "Cluster startup: both arrivals precede both waits",
+      "answer": "The startup sequence is `arrive → arrive → wait → wait`. Both arrivals address the implicit cluster barrier, not either of the shared-memory `mbarrier` objects initialized between them. All threads take this sequence before worker dispatch.\n\nA fast warp can therefore make its second arrival while another warp has not made its first; the intervening initialization fences do not establish completion of that first cluster round. The consecutive waits also contain no new arrival between them. These source relations explain the two startup diagnostics without asserting that a GPU hang was observed.",
+      "evidence": [
+        {
+          "kind": "ptx",
+          "lines": "88-362",
+          "contains": [
+            "barrier.cluster.arrive.relaxed",
+            "barrier.cluster.wait"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "72-81",
+          "contains": [
+            "%tid.x",
+            "%ntid.x"
+          ]
+        },
+        {
+          "kind": "input",
+          "pointer": "/launch"
+        },
+        {
+          "kind": "result",
+          "pointer": "/diagnostics/0"
+        },
+        {
+          "kind": "result",
+          "pointer": "/diagnostics/1"
+        }
+      ],
+      "diagram": {
+        "kind": "timeline",
+        "basis": "possible interleaving",
+        "participants": [
+          {
+            "id": "fast",
+            "label": "CTA 0, warp 12 — local threads 384–415",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "72-81",
+                "contains": [
+                  "%tid.x"
+                ]
+              },
+              {
+                "kind": "input",
+                "pointer": "/launch/block_dim"
+              }
+            ]
+          },
+          {
+            "id": "lag",
+            "label": "CTA 0, warp 13 — local threads 416–447",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "72-81",
+                "contains": [
+                  "%tid.x"
+                ]
+              },
+              {
+                "kind": "input",
+                "pointer": "/launch/block_dim"
+              }
+            ]
+          }
+        ],
+        "steps": [
+          {
+            "participant": "lag",
+            "action": "Still in startup before the first cluster arrival.",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "72-339",
+                "contains": [
+                  "barrier.cluster.arrive.relaxed"
+                ]
+              }
+            ]
+          },
+          {
+            "participant": "fast",
+            "action": "Issue the first cluster arrival at L339.",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "339",
+                "contains": [
+                  "barrier.cluster.arrive.relaxed"
+                ]
+              }
+            ]
+          },
+          {
+            "participant": "fast",
+            "action": "Skip warp-0-only initialization; issue the second arrival at L360 while the first round is still incomplete.",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "337-360",
+                "contains": [
+                  "%p72",
+                  "%p75",
+                  "barrier.cluster.arrive.relaxed"
+                ]
+              }
+            ]
+          }
+        ],
+        "conditions": {
+          "participants": {
+            "text": "These are two concrete warps of the first 512-thread CTA. All their lanes are non-exited at startup; the other CTA and warps remain participants in the cluster barrier. The schedule is source-derived and is not an actor-ID reconstruction.",
+            "evidence": [
+              {
+                "kind": "input",
+                "pointer": "/launch"
+              },
+              {
+                "kind": "ptx",
+                "lines": "44,72-81,88-362",
+                "contains": [
+                  ".reqntid",
+                  "barrier.cluster.wait"
+                ]
+              }
+            ]
+          },
+          "branches": {
+            "text": "Both selected warps have warp ID different from zero. At L341 and L350 they take the branches to L347 and L356, skipping only the two mbarrier initializations. No intervening instruction waits for another warp.",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "337-362",
+                "contains": [
+                  "@%p72",
+                  "@%p75",
+                  "$L__BB0_72:",
+                  "$L__BB0_75:"
+                ]
+              }
+            ]
+          },
+          "iterations": {
+            "text": "This is straight-line startup before the work loops and role dispatch at L363–366. Sparse indices, topk, and later cluster-launch cancellation decisions do not guard it.",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "335-366",
+                "contains": [
+                  "barrier.cluster.arrive.relaxed",
+                  "%p78",
+                  "%p79"
+                ]
+              }
+            ]
+          },
+          "completion": {
+            "text": "The first cluster round cannot complete while warp 13 has not arrived. The second arrival is the boundary of this possible schedule; no hardware behavior after that protocol violation is assumed.",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "339-362",
+                "contains": [
+                  "barrier.cluster.arrive.relaxed",
+                  "barrier.cluster.wait"
+                ]
+              },
+              {
+                "kind": "input",
+                "pointer": "/launch/cluster_dim"
+              }
+            ]
+          }
+        }
+      },
+      "code": {
+        "caption": "The complete cluster-barrier sequence; the omitted interval contains initialization, not a cluster wait",
+        "lines": "338-339,359-362",
+        "focus": [
+          "barrier.cluster.arrive.relaxed",
+          "barrier.cluster.wait"
+        ]
+      },
+      "evidence_title": "Derivation: cluster arrivals and waits",
+      "steps": [
+        {
+          "label": "Every startup path rejoins before the second arrival",
+          "text": "The role value is the linear thread index divided by 32, broadcast within each warp. With a 512×1×1 block it is tid.x / 32. The earlier role/election branches select setup work and rejoin before L339; there is no return or work-loop exit before the four cluster-barrier instructions. Between L339 and L360, the first branch skips to L347 and the second to L356. Thus neither taken edge bypasses the second arrival or either wait.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "72-81",
+              "contains": [
+                "%r3"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "88-339",
+              "contains": [
+                "mbarrier.init.shared.b64"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "337-362",
+              "contains": [
+                "@%p72",
+                "@%p75"
+              ]
+            }
+          ],
+          "code": {
+            "caption": "Warp-0 initialization branches rejoin above the second arrival",
+            "lines": "337-362",
+            "focus": [
+              "barrier.cluster.arrive.relaxed",
+              "barrier.cluster.wait",
+              "@%p72",
+              "@%p75"
+            ]
+          }
+        },
+        {
+          "label": "The initialization counts belong to different barriers",
+          "text": "The intermediate shared objects are base+368, initialized to count 1, and base+376, initialized to count 1024. Those counts belong to mbarriers used later by the cluster-work scheduler. They neither name nor reset the implicit cluster barrier. The cluster instructions have no address, explicit participant count or parity operand. Consequently, no phase-1 completion can be inferred from the second arrival merely because it is second in source order.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "336-355",
+              "contains": [
+                "%r290",
+                "%r296",
+                "mbarrier.init.shared.b64"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "359-362",
+              "contains": [
+                "barrier.cluster.wait"
+              ]
+            }
+          ],
+          "comparison": {
+            "headers": [
+              "Source point",
+              "Cluster-round fact"
+            ],
+            "rows": [
+              [
+                "L339: first arrival",
+                "No earlier cluster arrival in this entry"
+              ],
+              [
+                "L360: second arrival",
+                "No cluster wait since L339"
+              ],
+              [
+                "L361: first wait",
+                "First completion-detection site"
+              ],
+              [
+                "L362: second wait",
+                "No intervening cluster arrival"
+              ]
+            ]
+          }
+        },
+        {
+          "label": "Completion must precede reuse of a cluster round",
+          "text": "The [PTX 9.3 cluster-barrier contract](https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster) says a round completes after all non-exited cluster threads arrive, and each thread must arrive only once before completion. A wait detects completion before the thread arrives again. The source admits the fast/lagging-warp example above; it does not establish that every schedule fails. The `.relaxed` qualifier changes memory-ordering guarantees, not the requirement that the first round complete before another arrival. No async-copy completion or TMEM-release claim is needed to explain this startup issue.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "338-362",
+              "contains": [
+                "fence.mbarrier_init.release.cluster",
+                "barrier.cluster.arrive.relaxed"
+              ]
+            },
+            {
+              "kind": "result",
+              "pointer": "/diagnostics/0/details"
+            },
+            {
+              "kind": "result",
+              "pointer": "/diagnostics/1/details"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Index-controlled copies: the unknown is the selected index value",
+      "answer": "The gather workers stage K and V data for the sparse attention computation. Each 16-byte copy uses a separate source-size operand: a selected index in `[0, 256)` chooses 16 source bytes; an invalid index chooses zero source bytes, producing zeros in the shared destination.\n\nThat choice comes from global `topk_indices` data, not from the known scalar `topk=128`. The supplied configuration fixes the bound and addressing strides but supplies no index-array contents. This explains why a model requiring a statically determined source size stops here; the diagnostic alone does not establish an out-of-bounds access or an illegal hardware copy.",
+      "evidence": [
+        {
+          "kind": "input",
+          "pointer": "/arguments/0"
+        },
+        {
+          "kind": "input",
+          "pointer": "/arguments/9"
+        },
+        {
+          "kind": "input",
+          "pointer": "/declarations/9"
+        },
+        {
+          "kind": "input",
+          "pointer": "/declarations/32"
+        },
+        {
+          "kind": "ptx",
+          "lines": "58,64-66,690-736",
+          "contains": [
+            "%r191",
+            "%rd51",
+            "%r329",
+            "%r337"
+          ]
+        },
+        {
+          "kind": "result",
+          "pointer": "/diagnostics/19"
+        },
+        {
+          "kind": "result",
+          "pointer": "/semantic_program/value_diagnostics/0"
+        }
+      ],
+      "diagram": {
+        "kind": "mermaid",
+        "source": "flowchart TD\n I[\"topk_indices entry<br/>loaded from global memory\"]:::context -->|index value| V{\"0 ≤ index < 256?\"}:::operation\n B[\"tensor3.sequence = 256\"]:::context -->|upper bound| V\n V -->|validity bit| S[\"Warp shuffle selects the same index<br/>as the source address\"]:::operation\n S -->|selected validity| Z[\"Source size: valid → 16; invalid → 0\"]:::focus\n Z -->|fourth operand| C[\"16-byte global-to-shared copy<br/>K or V data, or zero fill\"]:::operation",
+        "meaning": "Arrows are value dependencies. They do not represent instruction completion or a saved execution. The bound is configured; the index values are not supplied."
+      },
+      "code": {
+        "caption": "The first retained site: index validity becomes the copy source size",
+        "lines": "707,720-723,728-729,735-736",
+        "focus": [
+          "ld.global.b32",
+          "selp.b32",
+          "cp.async.cg.shared.global",
+          "%r337"
+        ],
+        "operands": [
+          {
+            "token": "%r329",
+            "meaning": "Sparse index loaded from topk_indices"
+          },
+          {
+            "token": "%r191",
+            "meaning": "Configured upper bound, tensor3.sequence = 256"
+          },
+          {
+            "token": "%r337",
+            "meaning": "Source bytes selected as 0 or 16; the copy size is the preceding literal 16"
+          }
+        ]
+      },
+      "evidence_title": "Derivation: sparse indices and copy participants",
+      "steps": [
+        {
+          "label": "Which threads stage the sparse inputs?",
+          "text": "After the special-register derivation of warp ID, the test `(warp_id & -4) != 12` branches over the gather block. Its fallthrough admits warps 12–15, local threads 384–511, in each CTA. These workers bypass the warp-10/11 scheduler branches and enter the gather loop directly. There is no election around the copies: every lane in those four warps participates. The configured cluster-launch cancellation assumption makes the back edge at L1171 false after the first work item; it does not skip the initial gather.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "72-81,363-366,633-639",
+              "contains": [
+                "%r3",
+                "%p97"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "1136-1171",
+              "contains": [
+                "%p136"
+              ]
+            },
+            {
+              "kind": "input",
+              "pointer": "/launch"
+            },
+            {
+              "kind": "input",
+              "pointer": "/assumptions/clc_always_fails"
+            }
+          ],
+          "code": {
+            "caption": "Fallthrough selects the four gather warps",
+            "lines": "634-638",
+            "focus": [
+              "and.b32",
+              "setp.ne.b32",
+              "@%p97"
+            ]
+          }
+        },
+        {
+          "label": "The scalar shape does not determine sparse-index contents",
+          "text": "Parameter 6 provides the topk_indices pointer and its strides. Initially ctaid.x is 0 or 1, so ctaid.x >> 1 is zero; ctaid.y and ctaid.z are also zero. The gather addresses therefore select entries within the initial index list, using the permutation `16 × (tid.x & 7) + ((tid.x & 127) >> 3)`. This covers indices 0–127 across the gather group. L707 loads the selected value, while L940 reloads the same address for the later V path. Parameter 3 at offset 8 supplies the independent bound 256. No supplied scalar provides the loaded index values, and no `topk` branch removes this dependency.",
+          "evidence": [
+            {
+              "kind": "input",
+              "pointer": "/arguments"
+            },
+            {
+              "kind": "input",
+              "pointer": "/declarations/9"
+            },
+            {
+              "kind": "input",
+              "pointer": "/declarations/24"
+            },
+            {
+              "kind": "input",
+              "pointer": "/declarations/25"
+            },
+            {
+              "kind": "input",
+              "pointer": "/declarations/32"
+            },
+            {
+              "kind": "ptx",
+              "lines": "58,64-66,132,340,638-639,675-707,940",
+              "contains": [
+                "%rd51",
+                "%r329",
+                "%r411"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "The shuffle selects validity and address together",
+          "text": "The first copy uses the same shuffle selector for the index-valid bit and the two halves of its K source pointer. The [PTX 9.3 shuffle semantics](https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-sync) decode 6175 as 0x181f: an eight-lane segment mask with a valid lane clamp. For cluster ranks 0 and 1, the first selector is respectively 0 or 4 within each eight-lane segment; the next three selectors add 1, 2 and 3. Thus a lane uses the validity of the index supplying its address, not necessarily its own originally loaded index. `setp.eq` makes the predicate true for an invalid selection, and `selp` then selects 0, not 16.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "82-87,646-666,720-760",
+              "contains": [
+                "%r32",
+                "%r34",
+                "%r35",
+                "%r36",
+                "6175",
+                "%r337"
+              ]
+            }
+          ],
+          "code": {
+            "caption": "Validity and pointer halves share the selector",
+            "lines": "724-736",
+            "focus": [
+              "shfl.sync.idx.b32",
+              "selp.b32",
+              "%r32",
+              "%r337"
+            ]
+          }
+        },
+        {
+          "label": "Both V paths use the same kind of dynamic source-size choice",
+          "text": "The first group copies from parameter 2 (K). The next two groups use parameter 3 (V) and the original index-valid bit. The last two groups use parameter 4, also declared V, after reloading the index and testing the same 0–255 range. Every reported source-size register in these groups is selected between 0 and 16; the later groups differ in selected lanes and address offsets, not in the reason the source-size choice is dynamic. Their commits and mbarrier notifications are present, so this diagnostic is not evidence that a completion instruction is missing.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "54-63,724-762,774-882,940-1124",
+              "contains": [
+                "cp.async.commit_group",
+                "cp.async.mbarrier.arrive.noinc.shared.b64"
+              ]
+            },
+            {
+              "kind": "input",
+              "pointer": "/declarations/29"
+            },
+            {
+              "kind": "input",
+              "pointer": "/declarations/30"
+            },
+            {
+              "kind": "input",
+              "pointer": "/declarations/31"
+            }
+          ],
+          "comparison": {
+            "headers": [
+              "Source object",
+              "Copy interval",
+              "Index value",
+              "Commit / notification"
+            ],
+            "rows": [
+              [
+                "K, parameter 2",
+                "L736–760",
+                "L707 load",
+                "L761 / L762"
+              ],
+              [
+                "V, parameter 3",
+                "L785–821",
+                "L707 load",
+                "L822 / L823"
+              ],
+              [
+                "V, parameter 3",
+                "L844–880",
+                "L707 load",
+                "L881 / L882"
+              ],
+              [
+                "V, parameter 4",
+                "L971–1035",
+                "L940 reload",
+                "L1036 / L1037"
+              ],
+              [
+                "V, parameter 4",
+                "L1058–1122",
+                "L940 reload",
+                "L1123 / L1124"
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Tensor-map binding: input and output descriptors lack captured contents",
+      "answer": "The TMA operand addresses have concrete parameter origins: parameters 7 and 8 describe global-to-cluster-shared input transfers, and parameter 9 describes shared-to-global output transfers. The output source is a shared staging area populated with BF16 values after normalizing TMEM-loaded accumulators.\n\nThe saved input declares all three parameters as `tensor_map`, but contains no captured descriptor payload or map-to-object binding. Consequently, the source identifies the direction and staging buffers, while the descriptor-defined global footprints and tensor layouts remain unresolved. This is a capture/binding gap, not evidence that the descriptors supplied to a real launch were invalid.",
+      "evidence": [
+        {
+          "kind": "input",
+          "pointer": "/declarations/26"
+        },
+        {
+          "kind": "input",
+          "pointer": "/declarations/27"
+        },
+        {
+          "kind": "input",
+          "pointer": "/declarations/28"
+        },
+        {
+          "kind": "ptx",
+          "lines": "67-69,1258-1262,1286-1290,5178-5187,5525-5536",
+          "contains": [
+            "cvta.param.u64"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "4840-4860,4928-4929,5116-5131",
+          "contains": [
+            "rcp.approx.ftz.f32",
+            "cvt.rn.bf16x2.f32"
+          ]
+        },
+        {
+          "kind": "result",
+          "pointer": "/diagnostics/2"
+        },
+        {
+          "kind": "result",
+          "pointer": "/diagnostics/10"
+        },
+        {
+          "kind": "result",
+          "pointer": "/diagnostics/11"
+        }
+      ],
+      "diagram": {
+        "kind": "mermaid",
+        "source": "flowchart LR\n P7[\"Parameter 7<br/>contents unavailable\"]:::focus -->|descriptor operand| C7[\"Input: global → cluster shared<br/>one copy site\"]:::operation\n P8[\"Parameter 8<br/>contents unavailable\"]:::focus -->|descriptor operand| C8[\"Input: global → cluster shared<br/>eight copy sites\"]:::operation\n P9[\"Parameter 9<br/>contents unavailable\"]:::focus -->|descriptor operand| C9[\"Output: shared → global<br/>two groups of four sites\"]:::operation",
+        "meaning": "Each arrow maps a parameter address to the operations that use it as their tensor descriptor. The arrows are not data-flow or completion edges; copy counts here describe static instruction sites."
+      },
+      "code": {
+        "caption": "Descriptor addresses enter both transfer directions",
+        "lines": "1258,1262,1286,1290,5178,5181",
+        "focus": [
+          "cvta.param.u64",
+          "cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.L2::cache_hint.cta_group::2",
+          "cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.L2::cache_hint"
+        ],
+        "operands": [
+          {
+            "token": "%rd3",
+            "meaning": "Address of descriptor parameter 7"
+          },
+          {
+            "token": "%rd2",
+            "meaning": "Address of descriptor parameter 8"
+          },
+          {
+            "token": "%rd1",
+            "meaning": "Address of descriptor parameter 9"
+          }
+        ]
+      },
+      "evidence_title": "Derivation: descriptor origins and transfer paths",
+      "steps": [
+        {
+          "label": "Parameter identity is established; descriptor contents are not",
+          "text": "L67–69 take the addresses of parameters 7, 8 and 9 into `%rd3`, `%rd2` and `%rd1`; these registers have no later assignments. The `cvta.param` instructions convert those addresses for the TMA operand. The input records only the `tensor_map` type for these three parameters. Its named K/V pointer and stride declarations are separate inputs and cannot substitute for a captured tensor map. The PTX coordinates therefore cannot be renamed logical rows or columns without additional mapping evidence.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "24-26,67-69",
+              "contains": [
+                "_param_7",
+                "_param_8",
+                "_param_9"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "1258,1286,1295,1304,1313,1340,1349,1358,1367,5178,5525",
+              "contains": [
+                "cvta.param.u64"
+              ]
+            },
+            {
+              "kind": "input",
+              "pointer": "/declarations"
+            }
+          ],
+          "comparison": {
+            "headers": [
+              "Descriptor",
+              "Relevant physical PTX sites",
+              "Direction"
+            ],
+            "rows": [
+              [
+                "Parameter 7",
+                "L1262",
+                "Global to cluster shared"
+              ],
+              [
+                "Parameter 8",
+                "L1290, 1299, 1308, 1317, 1344, 1353, 1362, 1371",
+                "Global to cluster shared"
+              ],
+              [
+                "Parameter 9",
+                "L5181, 5183, 5185, 5187; L5528, 5530, 5532, 5534",
+                "Shared to global"
+              ]
+            ]
+          }
+        },
+        {
+          "label": "Input transfers are issued by an elected lane of warp 8",
+          "text": "The warp-ID test at L1204–1205 admits only warp 8, local threads 256–287. Each input-copy site then has its own election and branches around the copy for non-elected lanes. Under the saved representative-election assumption, lane zero issues each copy. The CTA-parity tests control `arrive.expect_tx` setup separately; their branches rejoin before the copy elections, so they do not remove the copies in the peer CTA. The first input transfer starts at shared offset 67584. Parameter 8 transfers use offsets 2048 through 59392 and first descriptor-axis coordinates 0 through 448 in increments of 64. These are source operands, not inferred tensor extents.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "72-83,1204-1237,1248-1371",
+              "contains": [
+                "%p141",
+                "elect.sync",
+                "%rd2",
+                "%rd3"
+              ]
+            },
+            {
+              "kind": "input",
+              "pointer": "/assumptions/representative_election"
+            }
+          ],
+          "code": {
+            "caption": "The arrival-setup branch rejoins before the independent copy election",
+            "lines": "1248-1262",
+            "focus": [
+              "@%p142",
+              "@%p144",
+              "elect.sync",
+              "@%p146"
+            ]
+          }
+        },
+        {
+          "label": "Output transfers use all lanes of warp 4, after four warps stage data",
+          "text": "The epilogue admits warps 4–7, local threads 128–255, by `(warp_id & -4) == 4`. They load TMEM accumulators, multiply by a reciprocal normalization factor, convert to BF16, and stage values in shared memory. After a 128-thread barrier, `(warp_id & 3) != 0` skips the TMA group for warps 5–7; warp 4 falls through with no election before either group of stores. Both output groups therefore have the same warp-4 issuer scope. The election after the final wait selects only the later mbarrier arrival, not the copies. The first bulk-read wait leaves at most one group with pending source reads; the second waits for source reads of all groups issued by that thread. Neither statement asserts global-write completion. Those waits do not resolve the absent tensor-map payload.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "3986-3987,4781-4810,4835-4860,4928-4929,5116-5131,5175-5195,5522-5547",
+              "contains": [
+                "%p363",
+                "%p365",
+                "cp.async.bulk.wait_group.read",
+                "elect.sync"
+              ]
+            }
+          ],
+          "code": {
+            "caption": "The warp selector controls both output-copy groups; election comes afterwards",
+            "lines": "4810,5175-5189,5195,5522-5541",
+            "focus": [
+              "@%p363",
+              "@%p365",
+              "cp.async.bulk.wait_group.read",
+              "elect.sync"
+            ]
+          }
+        },
+        {
+          "label": "Configured work reaches the initial copy groups",
+          "text": "The input-producer work coordinates begin with ctaid.x >> 1 and ctaid.z, which are zero for this launch; the two CTA ranks set the second descriptor-axis coordinate to 0 or 64. The output path similarly begins with third/fourth coordinates zero and second coordinate 0 or 64. All listed copies occur before the respective cancellation-dependent loop back edges. With `clc_always_fails=true`, those back edges at L1414 and L5595 are not taken, so later work-item coordinates are not needed for this configured explanation. Earlier startup rejection still prevents treating these static paths as a validated hardware execution.",
+          "evidence": [
+            {
+              "kind": "input",
+              "pointer": "/launch"
+            },
+            {
+              "kind": "input",
+              "pointer": "/assumptions/clc_always_fails"
+            },
+            {
+              "kind": "ptx",
+              "lines": "82-87,132-133,340,1207,1231-1237,1384-1414,4785-4792,4811-4834,5561-5595",
+              "contains": [
+                "%r2137",
+                "%r2171",
+                "%p169",
+                "%p369"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "next": {
+    "text": "First resolve whether the generated startup should contain two distinct cluster rounds, and make each round’s completion boundary explicit before reusing it. Separately, check the capture/binding path for descriptor parameters 7–9 and the frontend’s handling of a source-size value selected from sparse-index data. The missing evidence is the descriptor payload/binding and the index contents or supported value semantics—not the already supplied shape scalars. These source findings identify where to investigate; no corrected kernel or successful verification is claimed.",
+    "evidence": [
+      {
+        "kind": "ptx",
+        "lines": "339-362",
+        "contains": [
+          "barrier.cluster.arrive.relaxed",
+          "barrier.cluster.wait"
+        ]
+      },
+      {
+        "kind": "ptx",
+        "lines": "707-736",
+        "contains": [
+          "%r337"
+        ]
+      },
+      {
+        "kind": "input",
+        "pointer": "/declarations/26"
+      },
+      {
+        "kind": "input",
+        "pointer": "/declarations/27"
+      },
+      {
+        "kind": "input",
+        "pointer": "/declarations/28"
+      },
+      {
+        "kind": "result",
+        "pointer": "/semantic_program"
+      },
+      {
+        "kind": "result",
+        "pointer": "/checks"
+      }
+    ]
+  }
+}

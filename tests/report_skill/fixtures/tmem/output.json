@@ -1,0 +1,438 @@
+{
+  "address_model": {
+    "address_invariants": [],
+    "kind": "symbolic",
+    "layers": [
+      0,
+      2
+    ],
+    "solver": "z3",
+    "solver_timeout_ms": 100
+  },
+  "assumption_dependent": true,
+  "assumption_effects": {
+    "warp_tmem_load_completion": {
+      "read_completion_joins": 0
+    }
+  },
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "unclear assumption",
+      "enabled": false,
+      "id": "A001",
+      "key": "warp_tmem_load_completion",
+      "text": "All lanes' TMEM reads complete before any lane receives its register results.",
+      "triggered": false
+    },
+    {
+      "category": "unclear assumption",
+      "enabled": true,
+      "id": "A002",
+      "key": "duplicate_tma_store_benign",
+      "text": "Matching same-warp duplicate TMA stores are reported as warnings instead of races.",
+      "triggered": false
+    },
+    {
+      "category": "unclear assumption",
+      "enabled": true,
+      "id": "A003",
+      "key": "immediate_visibility",
+      "text": "Memory effects are immediately visible when executed; visibility fences add no ordering constraints. Async completion and synchronization remain modeled.",
+      "triggered": true
+    },
+    {
+      "category": "unclear assumption",
+      "enabled": true,
+      "id": "A004",
+      "key": "representative_election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": true
+    },
+    {
+      "category": "unclear assumption",
+      "enabled": true,
+      "id": "A005",
+      "key": "clc_always_fails",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": true
+    }
+  ],
+  "counts": {
+    "edges": 10922712,
+    "events": 4448504,
+    "instructions": 819698,
+    "memory_accesses": 2924288,
+    "threads": 4096
+  },
+  "frontend": {
+    "address_value_bridge": {
+      "first_unavailable_reason": "",
+      "queries": 0,
+      "resolved": 0,
+      "source": "value_lowering",
+      "unavailable": 0,
+      "value_ir_complete": true
+    },
+    "cluster_completion_joins": 1,
+    "cta_count": 16,
+    "dependency_compression": {
+      "bulk_read_wait": {
+        "consumers": 2048,
+        "emitted_references": 1536,
+        "original_references": 3072,
+        "prefix_effects": 0
+      },
+      "tcgen_commit": {
+        "consumers": 32,
+        "emitted_references": 272,
+        "original_references": 1024,
+        "prefix_effects": 32
+      },
+      "tcgen_load_wait": {
+        "consumers": 2048,
+        "emitted_references": 8192,
+        "original_references": 8192,
+        "prefix_effects": 0
+      }
+    },
+    "diagnostic_sample_count": 0,
+    "discharged_codes": [
+      "tcgen_cp_memory_effect_refinement",
+      "mma_memory_effect_refinement",
+      "tcgen_pipeline_effect_refinement",
+      "tcgen_commit_notification_order_refinement"
+    ],
+    "executed_records": 2626131,
+    "frontend_assumptions": {
+      "assertion_failure_forms": [
+        "trap",
+        "__assertfail"
+      ],
+      "assertion_uses": 8192,
+      "clc_failure": true,
+      "clc_uses": 3105,
+      "election_policy": {
+        "fallback": "lowest_member",
+        "preferred_lane": 0,
+        "strategy": "preferred_member"
+      },
+      "election_uses": 19488,
+      "fixed_election": true,
+      "immediate_visibility": true,
+      "isolated_launch": true,
+      "noalias_unbounded": false,
+      "pointer_contract": {
+        "aliasing": "distinct_objects_noalias",
+        "extent_bytes": "unbounded"
+      },
+      "trap_only_equality_assertions_hold": true
+    },
+    "implementation": "cpp",
+    "input_objects": [],
+    "lowered_instruction_count": 819698,
+    "mma_refinement": {
+      "blocked": [],
+      "discharged": 64
+    },
+    "reached_opcodes": {
+      "add.s32": 96226,
+      "add.s64": 4720,
+      "and.b16": 8192,
+      "and.b32": 46080,
+      "and.pred": 37376,
+      "bar.arrive": 512,
+      "bar.sync": 18432,
+      "bar.warp.sync": 1024,
+      "barrier.cluster.arrive.relaxed.aligned": 4096,
+      "barrier.cluster.wait.aligned": 4096,
+      "bra": 115823,
+      "bra.uni": 1056,
+      "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128": 3104,
+      "clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128": 1,
+      "cp.async.bulk.commit_group": 2048,
+      "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group": 2048,
+      "cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 48,
+      "cp.async.bulk.tensor.4d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 48,
+      "cp.async.bulk.wait_group.read": 2048,
+      "cvt.f32.f16": 262144,
+      "cvt.rn.f16x2.f32": 131072,
+      "cvt.u16.u32": 4096,
+      "cvt.u64.u32": 2560,
+      "cvta.param.u64": 2592,
+      "elect.sync": 19488,
+      "fence.mbarrier_init.release.cluster": 24576,
+      "fence.proxy.async.shared::cta": 11296,
+      "fma.rn.f32": 262144,
+      "ld.param.b32": 33792,
+      "ld.param.b64": 20480,
+      "ld.param.v4.b32": 6656,
+      "ld.shared.b128": 3104,
+      "ld.shared.b32": 2560,
+      "mad.lo.s32": 13312,
+      "mapa.shared::cluster.u32": 5200,
+      "max.s32": 1024,
+      "mbarrier.arrive.expect_tx.shared::cluster.b64": 16,
+      "mbarrier.arrive.expect_tx.shared::cta.b64": 16,
+      "mbarrier.arrive.shared::cluster.b64": 5184,
+      "mbarrier.arrive.shared::cta.b64": 32,
+      "mbarrier.init.shared::cta.b64": 448,
+      "mbarrier.test_wait.parity.shared::cta.b64": 64,
+      "mbarrier.try_wait.parity.shared::cta.b64": 12992,
+      "mov.b16": 13312,
+      "mov.b32": 421408,
+      "mov.b64": 88960,
+      "mov.pred": 6656,
+      "mov.s32": 20097,
+      "mov.u32": 50176,
+      "mul.f32": 262144,
+      "mul.hi.u32": 13312,
+      "neg.s32": 4608,
+      "not.pred": 12256,
+      "or.b16": 11776,
+      "or.b32": 5232,
+      "or.b64": 2560,
+      "or.pred": 28160,
+      "prefetch.tensormap": 112,
+      "ret": 4096,
+      "selp.b16": 15872,
+      "selp.b32": 40368,
+      "selp.u32": 3104,
+      "setp.eq.b16": 4096,
+      "setp.eq.b32": 69344,
+      "setp.eq.b64": 28672,
+      "setp.eq.f32": 10240,
+      "setp.eq.u32": 96,
+      "setp.lt.s32": 11232,
+      "setp.lt.u32": 32,
+      "setp.ne.b16": 4096,
+      "setp.ne.b32": 82016,
+      "setp.ne.b64": 34816,
+      "shfl.sync.idx.b32": 36864,
+      "shl.b16": 1536,
+      "shl.b32": 47952,
+      "shr.s32": 2048,
+      "shr.u32": 38400,
+      "st.shared.v4.b32": 32768,
+      "sub.s32": 15360,
+      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 512,
+      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 16,
+      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 16,
+      "tcgen05.cp.cta_group::1.128x128b": 32,
+      "tcgen05.cp.cta_group::1.32x128b.warpx4": 32,
+      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 512,
+      "tcgen05.ld.sync.aligned.32x32b.x32.b32": 8192,
+      "tcgen05.mma.sp.cta_group::1.kind::mxf8f6f4.block_scale": 64,
+      "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 512,
+      "tcgen05.wait::ld.sync.aligned": 2048,
+      "xor.b32": 18592
+    },
+    "shared_constant_propagation": {
+      "read_from_dependencies": 0,
+      "representation": "sparse_known_bytes",
+      "validation": "pending_backend"
+    },
+    "source_binding_storage": {
+      "binding_templates": 273,
+      "generated_address_rows": 0,
+      "generated_body_rows": 0,
+      "generated_memory_instances": 0,
+      "logical_instructions": 819698,
+      "stored_bindings": 71705
+    },
+    "source_edge_storage": {
+      "binding_templates": 4641,
+      "logical_edges": 815602,
+      "stored_bindings": 4642
+    },
+    "tcgen_copy_refinement": {
+      "blocked": [],
+      "discharged": 64
+    },
+    "tcgen_history_refinement": {
+      "blocked": [],
+      "notifications": 32,
+      "operations": 128
+    },
+    "thread_count": 4096,
+    "unsupported_occurrence_counts": {},
+    "user_branch_decisions": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 8192,
+    "clc_failure": true,
+    "clc_uses": 3105,
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 19488,
+    "fixed_election": true,
+    "immediate_visibility": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "trap_only_equality_assertions_hold": true
+  },
+  "hb_queries": {
+    "memory": {
+      "algorithm": "event-family-relations",
+      "batches": 2,
+      "cache_hits": 0,
+      "dfs_queries": 0,
+      "edge_visits": 392649,
+      "filtered_queries": 54883,
+      "queries": 131072,
+      "shared_peak_index_bytes": 16777216
+    },
+    "required_orders": {
+      "algorithm": "event-family-relations",
+      "batches": 1,
+      "cache_hits": 0,
+      "dfs_queries": 0,
+      "edge_visits": 694647,
+      "filtered_queries": 0,
+      "queries": 276480,
+      "shared_peak_index_bytes": 16777216
+    }
+  },
+  "implementation": "cpp",
+  "memory_analysis": {
+    "address_candidates": 131072,
+    "address_model": {
+      "cache_hits": 0,
+      "ground_disjoint": 0,
+      "ground_overlap": 0,
+      "layer0_disjoint": 0,
+      "refined_pairs": 0,
+      "solver_queries": 0,
+      "solver_sat": 0,
+      "solver_unknown": 0,
+      "solver_unsat": 0
+    },
+    "candidate_generation_fallback": false,
+    "exhaustive": false,
+    "first_race_seconds": 1.643154496,
+    "hb_algorithm": "event-family-relations",
+    "hb_batches": 2,
+    "hb_cache_hits": 0,
+    "hb_dfs_queries": 0,
+    "hb_edge_visits": 392649,
+    "hb_filtered_queries": 54883,
+    "hb_peak_index_bytes": 16777216,
+    "hb_queries": 131072,
+    "hb_query_seconds": 0.18102326100000002,
+    "overlap_queries": 1,
+    "strategy": "conflict-hybrid",
+    "unordered_candidates_examined": 1
+  },
+  "memory_analysis_complete": true,
+  "mma_operand_ordering": {},
+  "mode": "verify",
+  "peak_footprint_mib": 3099.8203125,
+  "peak_rss_mib": 3168.23828125,
+  "pipeline_elapsed_seconds": 32.4124692,
+  "race_count": 1,
+  "race_samples_truncated": false,
+  "races": [
+    {
+      "first": {
+        "access_index": 0,
+        "actor": 0,
+        "bytes": 16,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 3,
+          "kind": "memory"
+        },
+        "event": 258,
+        "instruction": 95,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-block-scaled-gemm-mxfp8__sm_100a.ptx",
+          "line": 6347
+        },
+        "mode": "write"
+      },
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "tensor",
+        "allocation": "cta:(0, 0, 0):tensor:physical.tmem.cta.0",
+        "bytes": 8,
+        "offset": 1032
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 0,
+        "bytes": 8,
+        "effect_index": 240,
+        "endpoint": {
+          "address": 2196,
+          "kind": "memory"
+        },
+        "event": 3072,
+        "instruction": 110,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-block-scaled-gemm-mxfp8__sm_100a.ptx",
+          "line": 6426
+        },
+        "mode": "read"
+      }
+    }
+  ],
+  "required_orders": 276480,
+  "schema": "spverify.native-result/v1",
+  "search_complete": false,
+  "semantic_assumptions": {
+    "clc_always_fails": true,
+    "duplicate_tma_store_benign": true,
+    "immediate_visibility": true,
+    "representative_election": true,
+    "warp_tmem_load_completion": false
+  },
+  "source_violations": [],
+  "status": "race_candidate",
+  "synchronization_input": {
+    "compute_access_binding": "after_happens_before",
+    "kind": "ordering_endpoints",
+    "memory_address_payloads": false
+  },
+  "template_execution": {
+    "completed_ctas": 16,
+    "coordinate_bindings": 0,
+    "logical_thread_steps": 2693635,
+    "path_entries": 134734,
+    "record_bindings": 137818,
+    "record_nodes": 120239,
+    "splits": 209,
+    "template_steps": 122702,
+    "thread_memberships": 4096,
+    "value_nodes": 21182
+  },
+  "thread_record_compression": {
+    "completed_ctas": 16,
+    "enabled": true,
+    "estimated_pool_bytes_sum": 0,
+    "intern_calls": 0,
+    "logical_records": 2626131,
+    "record_handle_bytes": 32,
+    "templates": 0,
+    "unique_bindings": 0
+  },
+  "unresolved_count": 0,
+  "verification_limitations": [],
+  "warning_count": 0,
+  "warning_samples_truncated": false,
+  "warnings": [],
+  "wellsync_timeout_seconds": 120.0,
+  "whole_pipeline_timeout_seconds": 300.0
+}

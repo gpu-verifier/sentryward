@@ -1,0 +1,373 @@
+{
+  "version": 2,
+  "title": "MoE top-k routing: a score-dependent owner test",
+  "sections": [
+    {
+      "title": "The branch asks whether this thread owns the selected expert",
+      "answer": "This kernel converts each row of expert scores into routing weights and expert indices. A 16-thread group holds four candidates per thread.\n\nWith `k = 2`, it selects twice. Between selections, the thread that owns the first winner replaces that entry in its private array with −10000, allowing another expert to be selected for ordinary finite inputs. **The reported branch decides whether this thread performs that update.**\n\nThe owner comes from the loaded scores. Those values are absent from the supplied files, so the launch and scalar parameters cannot determine which side of this branch is taken.",
+      "evidence": [
+        {
+          "kind": "ptx",
+          "lines": "51-81",
+          "contains": [
+            "%tid.x",
+            "%tid.y",
+            "ld.global.v4.f32"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "192-239",
+          "contains": [
+            "st.local.v4.f32",
+            "%r10"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "240-307",
+          "contains": [
+            "shfl.sync.bfly.b32",
+            "%r22"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "338-369",
+          "contains": [
+            "%p68",
+            "st.local.u32"
+          ]
+        },
+        {
+          "kind": "input",
+          "pointer": "/arguments/2/value",
+          "equals": 2
+        },
+        {
+          "kind": "result",
+          "pointer": "/diagnostics/0/details/location/line",
+          "equals": 352
+        },
+        {
+          "kind": "input",
+          "pointer": "/declarations/0/object",
+          "equals": "input"
+        }
+      ],
+      "diagram": {
+        "kind": "branch",
+        "comparison_line": 351,
+        "branch_line": 352,
+        "effect_line": 363,
+        "inputs": [
+          "Thread slot",
+          "Owner slot"
+        ]
+      },
+      "code": {
+        "caption": "Skip the candidate update in non-owner threads",
+        "lines": "350-352,360-364",
+        "focus": [
+          "%p68",
+          "%r3",
+          "%r116",
+          "st.local.u32"
+        ],
+        "links": {
+          "setp.ne.s32": "https://docs.nvidia.com/cuda/archive/13.0.0/parallel-thread-execution/index.html#comparison-and-selection-instructions-setp",
+          "bra": "https://docs.nvidia.com/cuda/archive/13.0.0/parallel-thread-execution/index.html#control-flow-instructions-bra",
+          "st.local.u32": "https://docs.nvidia.com/cuda/archive/13.0.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st"
+        },
+        "operands": [
+          {
+            "token": "%r3",
+            "meaning": "Thread slot within its row group"
+          },
+          {
+            "token": "%r116",
+            "meaning": "Owner slot derived from the selected expert"
+          },
+          {
+            "token": "%rd34",
+            "meaning": "Selected entry in this thread’s private candidate array"
+          }
+        ]
+      },
+      "evidence_title": "Derivation: row ownership and score-dependent selection",
+      "steps": [
+        {
+          "label": "Which scores does each thread own?",
+          "text": "The configured block covers all eight rows: `row = 8×ctaid.x + 2×tid.y + (tid.x >> 4)` ranges from 0 to 7, so the comparison with `num_rows=8` does not exit any launched thread. The group slot is `s = tid.x & 15`; its four input indices are `64×row + 4×s + j`, for `j=0..3`. Each thread stores its candidates in a separate 16-byte local array. The butterfly exchanges use offsets 8, 4, 2 and 1 with `4127 = 0x101f`, preserving the two 16-lane halves. Their `-1` member mask still includes the full warp in the shuffle rendezvous. Slot zero writes the selected global weight, expert index and source-row reference; it is not necessarily the thread that owns the selected candidate.",
+          "evidence": [
+            {
+              "kind": "input",
+              "pointer": "/launch/block_dim",
+              "equals": [
+                32,
+                4,
+                1
+              ]
+            },
+            {
+              "kind": "input",
+              "pointer": "/launch/grid_dim",
+              "equals": [
+                1,
+                1,
+                1
+              ]
+            },
+            {
+              "kind": "input",
+              "pointer": "/arguments/1/value",
+              "equals": 8
+            },
+            {
+              "kind": "ptx",
+              "lines": "31,50-81",
+              "contains": [
+                "__local_depot7",
+                "%r3",
+                "%rd21"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "212,240-307",
+              "contains": [
+                "st.local.v4.f32",
+                "4127"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "304-337",
+              "contains": [
+                "%p61",
+                "st.global.f32",
+                "st.global.u32"
+              ]
+            }
+          ],
+          "code": {
+            "caption": "Thread coordinates assign the row and its four-score slice",
+            "lines": "51-60,71-81",
+            "focus": [
+              "%tid.y",
+              "%tid.x",
+              "%r3",
+              "ld.global.v4.f32"
+            ]
+          }
+        },
+        {
+          "label": "Why does the selected index depend on input values?",
+          "text": "The vector load supplies the scores. The following maximum reduction, exponential calculations and normalization produce the softmax candidates. Because `bias=null`, the bias-load path is bypassed and these candidates enter the local array unchanged. The selection loop compares four candidates locally, then exchanges candidate values and indices across the row group. For finite inputs, larger scores win and equal scores prefer the smaller expert index. The final selection carries an expert index in `%r22`; it cannot be inferred from coordinates alone. Whatever the comparison outcomes, that index is selected from the constructed range 0..63. No tensor contents or selected index are saved, so this explanation does not choose a numerical winner or assert behavior for exceptional floating-point inputs.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "70-191",
+              "contains": [
+                "ld.global.v4.f32",
+                "ex2.approx.ftz.f32",
+                "rcp.rn.f32"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "192-239",
+              "contains": [
+                "%p28",
+                "%r10"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "240-307",
+              "contains": [
+                "%p86",
+                "%r22"
+              ]
+            },
+            {
+              "kind": "input",
+              "pointer": "/arguments/6"
+            },
+            {
+              "kind": "input",
+              "pointer": "/declarations/0"
+            },
+            {
+              "kind": "result",
+              "pointer": "/frontend/user_branch_decisions",
+              "equals": []
+            }
+          ],
+          "code": {
+            "caption": "The last exchange selects the expert index carried into the owner test",
+            "lines": "292-307",
+            "focus": [
+              "shfl.sync.bfly.b32",
+              "%p86",
+              "%r22"
+            ],
+            "links": {
+              "shfl.sync.bfly.b32": "https://docs.nvidia.com/cuda/archive/13.0.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-sync",
+              "setp.lt.f32": "https://docs.nvidia.com/cuda/archive/13.0.0/parallel-thread-execution/index.html#comparison-and-selection-instructions-setp",
+              "selp.b32": "https://docs.nvidia.com/cuda/archive/13.0.0/parallel-thread-execution/index.html#comparison-and-selection-instructions-selp"
+            }
+          },
+          "diagram": {
+            "kind": "mermaid",
+            "source": "flowchart TB\n  I[\"Input scores: values not supplied\"] -->|\"softmax and candidate comparisons\"| E[\"Selected expert e\"]\n  E -->|\"integer owner calculation\"| O[\"Owner slot: floor(e / 4)\"]\n  T[\"Thread x coordinate\"] -->|\"x AND 15\"| S[\"Thread group slot s\"]\n  O -->|\"comparison operand\"| P[\"s differs from owner?\nTrue: skip local update\nFalse: replace candidate\"]\n  S -->|\"comparison operand\"| P\n  class I,T context\n  class E,O,S operation\n  class P focus",
+            "meaning": "Arrows show source value dependencies, not a saved execution. The owner comparison is evaluated between the first and second selections; the final selection skips this update."
+          }
+        },
+        {
+          "label": "Why is this test reached only between the two selections?",
+          "text": "`k=2` admits the selection loop. Its completed-selection counter starts at zero and is incremented before the owner test: after the first selection it is 1, so the `>= k` branch falls through; after the second it is 2, so that branch skips the entire owner test and replacement. The loop-back counter starts at −2 and advances through −1 to 0, giving two selection rounds. Slot-zero output writers and the other threads rejoin before this counter check. The configured null `finished` and `is_padding` pointers bypass their flag loads; they do not remove this first-round owner test. These are deductions from source and supplied configuration, not recorded execution steps.",
+          "evidence": [
+            {
+              "kind": "input",
+              "pointer": "/arguments/0"
+            },
+            {
+              "kind": "input",
+              "pointer": "/arguments/2/value",
+              "equals": 2
+            },
+            {
+              "kind": "input",
+              "pointer": "/arguments/8"
+            },
+            {
+              "kind": "ptx",
+              "lines": "61-69",
+              "contains": [
+                "%p82",
+                "%p15"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "213-225",
+              "contains": [
+                "%r136",
+                "%r135"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "304-341",
+              "contains": [
+                "%p61",
+                "%p63",
+                "%p67"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "364-369",
+              "contains": [
+                "%p69"
+              ]
+            }
+          ],
+          "comparison": {
+            "headers": [
+              "Selection round",
+              "Completed selections",
+              "Owner test",
+              "Next selection"
+            ],
+            "rows": [
+              [
+                "First",
+                "1 < 2",
+                "Reached",
+                "Loop back"
+              ],
+              [
+                "Second",
+                "2 ≥ 2",
+                "Skipped",
+                "Exit selection loop"
+              ]
+            ]
+          },
+          "code": {
+            "caption": "Loop bookkeeping after both paths rejoin",
+            "lines": "364-369",
+            "focus": [
+              "%p69"
+            ]
+          }
+        },
+        {
+          "label": "What exactly does the taken branch skip?",
+          "text": "For selected expert `e` in 0..63, the sign-correction terms at lines 342–350 are zero. The comparison operand reduces to `floor(e/4)`, the slot whose four candidates contain that expert. Thus `%p68=true` takes the branch and skips the replacement; `%p68=false` falls through. The address arithmetic at lines 353–361 selects local element `e mod 4`, a byte offset of `4×(e mod 4)` within the 16-byte array. The stored integer bits `0xc61c4000` represent float −10000. Both paths then reach the same loop-counter increment. The store is to private candidate storage, not the global routing output, and it is not an asynchronous handoff.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "342-369",
+              "contains": [
+                "%r116",
+                "%p68",
+                "%rd34",
+                "-971227136",
+                "st.local.u32"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "31,50",
+              "contains": [
+                "__local_depot7",
+                "%rd2"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "next": {
+    "text": "Check frontend support for the score-dependent owner branch. The missing value is the selected winner from the input tensor: the required-parameter list is empty and no concrete branch decision is saved.\n\nThe later prerequisite and memory-elimination diagnostics describe analyses that could not proceed. They do not identify additional kernel operations to repair, or justify forcing either side of the branch.",
+    "evidence": [
+      {
+        "kind": "result",
+        "pointer": "/details/required_parameters",
+        "equals": []
+      },
+      {
+        "kind": "result",
+        "pointer": "/frontend/user_branch_decisions",
+        "equals": []
+      },
+      {
+        "kind": "result",
+        "pointer": "/equivalence/diagnostics/0/code",
+        "equals": "prerequisite_check_not_passed"
+      },
+      {
+        "kind": "result",
+        "pointer": "/value_analysis/diagnostics/0/code",
+        "equals": "prerequisite_check_not_passed"
+      },
+      {
+        "kind": "result",
+        "pointer": "/value_analysis/scalar_fold/diagnostics/0/code",
+        "equals": "memory_elimination_not_completed"
+      },
+      {
+        "kind": "ptx",
+        "lines": "307,342-352",
+        "contains": [
+          "%r22",
+          "%p68"
+        ]
+      }
+    ]
+  }
+}

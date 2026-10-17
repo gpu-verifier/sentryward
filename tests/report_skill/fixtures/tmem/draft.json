@@ -1,0 +1,66 @@
+{
+  "title": "Sparse block-scaled MXFP8 GEMM (SM100, 128x128x256 tile)",
+  "computation": {
+    "summary": "The kernel multiplies a 2:4-sparse e4m3 matrix A by a dense e4m3 matrix B, applying ue8m0 block scales, with configured alpha 1 and beta 0, and writes f16 D.",
+    "shapes": [
+      {"name": "sparse A", "rows": {"label": "M", "value": 512}, "columns": {"label": "K", "value": 256}},
+      {"name": "B", "rows": {"label": "K", "value": 256}, "columns": {"label": "N", "value": 512}},
+      {"name": "D", "rows": {"label": "M", "value": 512}, "columns": {"label": "N", "value": 512}}
+    ],
+    "operators": ["×", "→"],
+    "caption": "K is the shared reduction axis; these are logical dimensions. A is stored compressed (A.compressed) with E.metadata; scale_a and scale_b are block scales; C is a declared f16 input; D is the f16 output."
+  },
+  "finding": {
+    "summary": "A sparse-metadata copy into tensor memory (tcgen05.cp) and a later sparse MMA appear as an unordered pair in the retained record. The pair is a candidate only; the saved search was not complete, and no missing wait is established."
+  },
+  "code": {
+    "caption": "Metadata copy, its elect guard, and the first two sparse MMAs.",
+    "lines": "6340-6341,6347,6395,6426",
+    "focus": ["tcgen05.cp.cta_group::1.128x128b", "tcgen05.mma.sp.cta_group::1.kind::mxf8f6f4.block_scale", "@%p211","[%r1540]", "[%r1550]"],
+    "roles": "%p211 is true when the elect.sync flag is 0, skipping the copy. The copy writes tensor memory at [%r1540]; the MMAs name metadata at [%r1540] and [%r1550]. The saved read is not mapped to an operand.",
+    "scope": "Local eligibility only: this shows which elect outcome may issue if the block is reached, not the recorded issuing thread."
+  },
+  "completion": {
+    "kind": "other",
+    "explanation": "PTX 9.2 treats tcgen05.cp.cta_group::N followed by tcgen05.mma.cta_group::N as a pipelined pairing; PTX documents a same-thread pattern needing no explicit ordering. Whether it applies here is open: the issuing-thread relation of the two sites is not saved."
+  },
+  "next": "Obtain the issuing thread of the copy (event 258) and of the second MMA (event 3072), and an effect-to-operand mapping for the 8-byte read. If both come from one thread, the pipelined same-thread pairing applies.",
+  "source_sections": [
+    {
+      "title": "What the two operations are",
+      "answer": "The first access is a tcgen05.cp writing sparsity metadata into tensor memory; the second is the second tcgen05.mma.sp in the same K-block, which names a different metadata operand register than the copy destination.",
+      "steps": [
+        {"label": "Copy", "text": "Line 6347 copies via descriptor %rd87 into tensor address %r1540 = %r1593 + 256 (line 6113). A second 128x128b copy at 6352 targets %r1562 = %r1593 + 260 (line 6152)."},
+        {"label": "MMAs", "text": "The first MMA (6395) takes metadata at [%r1540]; the second (6426) at [%r1550] = %r1593 + 258 (line 6173). The retained pair, not this operand arithmetic, supplies the byte intersection."},
+        {"label": "Saved pair", "text": "The retained record pairs a 16-byte write at line 6347 with an 8-byte read at line 6426, intersecting in an 8-byte tensor-memory region. The read is not attributed to a specific operand."}
+      ],
+      "table": {
+        "headers": ["Site", "Line", "Tensor address operand"],
+        "rows": [
+          ["tcgen05.cp (128x128b)", "6347", "destination [%r1540]"],
+          ["tcgen05.mma.sp #1", "6395", "metadata [%r1540]"],
+          ["tcgen05.mma.sp #2", "6426", "metadata [%r1550]"]
+        ]
+      },
+      "code": {"caption": "Copy and the two MMAs", "lines": "6347,6395,6426"}
+    },
+    {
+      "title": "Who may issue",
+      "answer": "Each copy and MMA sits behind its own elect.sync test, so only the elected lane of a warp may issue it if the block is reached. Whether the copy and the second MMA share a lane is not derived here.",
+      "steps": [
+        {"label": "Copy guard", "text": "elect.sync at 6334 sets %r1521 to 1 for the elected lane. %p211 = (%r1521 == 0) at 6340; the branch at 6341 jumps to $L__BB1_84 when true, skipping the copies at 6347-6365."},
+        {"label": "MMA #2 guard", "text": "A separate elect.sync (6407) sets %r1544; %p213 = (%r1544 == 0) at 6413 and the branch at 6414 skips the MMA at 6426 when true."},
+        {"label": "Limit", "text": "Election is a separate event per site; the result's election assumption selects lane zero when participating. Actor IDs are not CUDA coordinates, so this does not establish a recorded issuer."}
+      ],
+      "code": {"caption": "Elect guards", "lines": "6340-6341,6413-6414"}
+    },
+    {
+      "title": "Accumulator control in the loop",
+      "answer": "The first MMA accumulates only after the first iteration; the next three always accumulate. This concerns the accumulator, not the metadata overlap.",
+      "steps": [
+        {"label": "First MMA flag", "text": "Predicate p is (%r1630 != 0) at 6394. %r1630 is set to 0 at 6283 before the loop and to 1 at 6518 at the end of each iteration, so the first pass starts a fresh accumulator and later passes accumulate."},
+        {"label": "Other three", "text": "MMAs at 6426, 6457 and 6488 each set their flag register to 1 (6421, 6452, 6483) immediately before use."}
+      ]
+    }
+  ]
+}

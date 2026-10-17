@@ -1,0 +1,1104 @@
+{
+  "version": 2,
+  "title": "Duplicate TMA output copies",
+  "context": {
+    "title": "The warning is in the shared-to-global output handoff",
+    "summary": "This f16 GEMM uses matrix-multiply instructions to build an accumulator in tensor memory (TMEM). Its output stage reads that accumulator, applies the epilogue scalars, stages f16 values in shared memory, and copies them to global output `D`.\n\nFor the supplied `alpha = 1` and `beta = 0`, the input-`C` load path is skipped. The affected TMA instruction copies the first 4 KiB strip of `D`; the question is which threads issue that copy, not which thread computed each element.",
+    "evidence": [
+      {
+        "kind": "ptx",
+        "lines": "1973-1998,2094-2097,2162-2168,2294-2299",
+        "contains": [
+          "tcgen05.mma",
+          "%r1173"
+        ]
+      },
+      {
+        "kind": "ptx",
+        "lines": "3240-3254,3281-3288,3315-3339",
+        "contains": [
+          "tcgen05.ld",
+          "stmatrix",
+          "cp.async.bulk.tensor"
+        ]
+      },
+      {
+        "kind": "ptx",
+        "lines": "114-139",
+        "contains": [
+          "%rd4",
+          "%rs1",
+          "%rs3"
+        ]
+      },
+      {
+        "kind": "ptx",
+        "lines": "3021-3057",
+        "contains": [
+          "%p161",
+          "%p163",
+          "%p166"
+        ]
+      },
+      {
+        "kind": "ptx",
+        "lines": "3086-3120,3164-3199",
+        "contains": [
+          "%p171",
+          "%p243"
+        ]
+      },
+      {
+        "kind": "input",
+        "pointer": "/arguments/5"
+      },
+      {
+        "kind": "input",
+        "pointer": "/arguments/6"
+      },
+      {
+        "kind": "input",
+        "pointer": "/arguments/7"
+      },
+      {
+        "kind": "input",
+        "pointer": "/arguments/8"
+      },
+      {
+        "kind": "input",
+        "pointer": "/arguments/9"
+      },
+      {
+        "kind": "input",
+        "pointer": "/arguments/10"
+      },
+      {
+        "kind": "input",
+        "pointer": "/tma_descriptors/5"
+      }
+    ],
+    "evidence_title": "Derivation: output stage and supplied scalars",
+    "steps": [
+      {
+        "label": "Why this is a nonempty multiplication",
+        "text": "The `shape.K` declaration supplies the load at PTX 71. With `K = 128`, the calculation at 1994–1998 gives `(128 + 63) >> 6 = 2`; the `K < 1` branches at 2064 and 2094 are not taken. The K-loop counter starts at −2 and increments to zero. The first MMA uses `%r1173 = 0`, so it starts the accumulator without its old contents; subsequent unrolled MMAs use a literal 1, and 2297 changes `%r1173` to 1 for the next K iteration. This identifies an actual multiply/accumulate path rather than inferring computation from matrix-shaped descriptors.",
+        "evidence": [
+          {
+            "kind": "input",
+            "pointer": "/arguments/3",
+            "equals": {
+              "field": "shape.K",
+              "value": 128
+            }
+          },
+          {
+            "kind": "input",
+            "pointer": "/declarations/3"
+          },
+          {
+            "kind": "ptx",
+            "lines": "71,1994-2007,2009,2063-2064,2078-2097,2162-2168,2194-2201,2227-2234,2260-2267,2294-2299",
+            "contains": [
+              "%r1173"
+            ]
+          }
+        ]
+      },
+      {
+        "label": "Why the input-C contribution is bypassed",
+        "text": "The zero beta stride at parameter offset 1296 lets the initial scalar load proceed, and the null beta pointer at 1288 selects the by-value zero at 1280. Alpha follows the analogous null-pointer path to the by-value one at 1312. At the output loop, `%p161` and `%p163` test the strides, so both reload blocks are skipped and those initial scalar values stay live. The beta-zero comparisons then give `%p242 = false`, `%p171 = true`, and `%p243 = true`; the branches at 3120 and 3164 bypass the C wait/load corridor. Later C-load corridors are likewise bypassed at 3387, 3571 and 3763. The first epilogue arithmetic multiplies TMEM values by alpha and adds beta times initially zero C registers before `stmatrix` stages the result.",
+        "evidence": [
+          {
+            "kind": "ptx",
+            "lines": "114-139",
+            "contains": [
+              "%rd4",
+              "%rs1",
+              "%rs3"
+            ]
+          },
+          {
+            "kind": "ptx",
+            "lines": "3021-3057",
+            "contains": [
+              "%p161",
+              "%p163",
+              "%p166"
+            ]
+          },
+          {
+            "kind": "ptx",
+            "lines": "3086-3120,3164-3199",
+            "contains": [
+              "%p171",
+              "%p243"
+            ]
+          },
+          {
+            "kind": "input",
+            "pointer": "/arguments/5"
+          },
+          {
+            "kind": "input",
+            "pointer": "/arguments/6"
+          },
+          {
+            "kind": "input",
+            "pointer": "/arguments/7"
+          },
+          {
+            "kind": "input",
+            "pointer": "/arguments/8"
+          },
+          {
+            "kind": "input",
+            "pointer": "/arguments/9"
+          },
+          {
+            "kind": "input",
+            "pointer": "/arguments/10"
+          },
+          {
+            "kind": "ptx",
+            "lines": "3155-3164,3240-3317,3387,3571,3763",
+            "contains": [
+              "%r1204",
+              "%p171"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "sections": [
+    {
+      "title": "The copy selector admits a whole warp",
+      "answer": "Within the first output-copy block, the selector admits all 32 lanes of warp 4, threads 128–159, while warps 5–7 skip the copy and rejoin the next barrier. Each admitted lane uses the same `D` descriptor, coordinates `(0, 0, 0)`, and shared source at base + 1024.\n\nThus the source contains peer copies of one output strip, rather than disjoint per-lane output addresses. The view below is derived from PTX; the saved actor IDs are not explicitly mapped to CUDA thread coordinates in the supplied records, so it does not identify the retained pair.",
+      "evidence": [
+        {
+          "kind": "ptx",
+          "lines": "72-74",
+          "contains": [
+            "%tid.x",
+            "%r4"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "1191-1192,1766-1769,1971-1972,2412-2415,2825-2837",
+          "contains": [
+            "%p148",
+            "%r83"
+          ]
+        },
+        {
+          "kind": "input",
+          "pointer": "/launch/block_dim",
+          "equals": [
+            256,
+            1,
+            1
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "3242,3330-3351",
+          "contains": [
+            "%p176",
+            "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group",
+            "cp.async.bulk.wait_group.read 1",
+            "bar.sync"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "1099-1105,1161-1179",
+          "contains": [
+            "%ctaid.x",
+            "%r29"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "2856-2857,2985-2986,3336-3339",
+          "contains": [
+            "1664",
+            "1024"
+          ]
+        },
+        {
+          "kind": "input",
+          "pointer": "/launch/grid_dim",
+          "equals": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "kind": "input",
+          "pointer": "/arguments/22"
+        },
+        {
+          "kind": "input",
+          "pointer": "/arguments/25"
+        },
+        {
+          "kind": "input",
+          "pointer": "/tma_descriptors/5"
+        },
+        {
+          "kind": "result",
+          "pointer": "/warnings"
+        },
+        {
+          "kind": "result",
+          "pointer": "/semantic_program"
+        }
+      ],
+      "diagram": {
+        "kind": "timeline",
+        "basis": "possible interleaving",
+        "participants": [
+          {
+            "id": "lane0",
+            "label": "Warp 4, lane 0 (thread 128)",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "72-74",
+                "contains": [
+                  "%tid.x",
+                  "%r4"
+                ]
+              },
+              {
+                "kind": "ptx",
+                "lines": "1191-1192,1766-1769,1971-1972,2412-2415,2825-2837",
+                "contains": [
+                  "%p148",
+                  "%r83"
+                ]
+              },
+              {
+                "kind": "input",
+                "pointer": "/launch/block_dim",
+                "equals": [
+                  256,
+                  1,
+                  1
+                ]
+              }
+            ]
+          },
+          {
+            "id": "lane1",
+            "label": "Warp 4, lane 1 (thread 129)",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "72-74",
+                "contains": [
+                  "%tid.x",
+                  "%r4"
+                ]
+              },
+              {
+                "kind": "ptx",
+                "lines": "1191-1192,1766-1769,1971-1972,2412-2415,2825-2837",
+                "contains": [
+                  "%p148",
+                  "%r83"
+                ]
+              },
+              {
+                "kind": "input",
+                "pointer": "/launch/block_dim",
+                "equals": [
+                  256,
+                  1,
+                  1
+                ]
+              }
+            ]
+          }
+        ],
+        "steps": [
+          {
+            "participant": "lane0",
+            "action": "Issue the first shared → D copy with coordinates (0, 0, 0).",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "3242,3330-3351",
+                "contains": [
+                  "%p176",
+                  "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group",
+                  "cp.async.bulk.wait_group.read 1",
+                  "bar.sync"
+                ]
+              },
+              {
+                "kind": "ptx",
+                "lines": "1099-1105,1161-1179",
+                "contains": [
+                  "%ctaid.x",
+                  "%r29"
+                ]
+              },
+              {
+                "kind": "ptx",
+                "lines": "2856-2857,2985-2986,3336-3339",
+                "contains": [
+                  "1664",
+                  "1024"
+                ]
+              },
+              {
+                "kind": "input",
+                "pointer": "/launch/grid_dim",
+                "equals": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              {
+                "kind": "input",
+                "pointer": "/arguments/22"
+              },
+              {
+                "kind": "input",
+                "pointer": "/arguments/25"
+              },
+              {
+                "kind": "input",
+                "pointer": "/tma_descriptors/5"
+              }
+            ]
+          },
+          {
+            "participant": "lane1",
+            "action": "Issue the same copy from the same shared source.",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "3242,3330-3351",
+                "contains": [
+                  "%p176",
+                  "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group",
+                  "cp.async.bulk.wait_group.read 1",
+                  "bar.sync"
+                ]
+              },
+              {
+                "kind": "ptx",
+                "lines": "1099-1105,1161-1179",
+                "contains": [
+                  "%ctaid.x",
+                  "%r29"
+                ]
+              },
+              {
+                "kind": "ptx",
+                "lines": "2856-2857,2985-2986,3336-3339",
+                "contains": [
+                  "1664",
+                  "1024"
+                ]
+              },
+              {
+                "kind": "input",
+                "pointer": "/launch/grid_dim",
+                "equals": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              {
+                "kind": "input",
+                "pointer": "/arguments/22"
+              },
+              {
+                "kind": "input",
+                "pointer": "/arguments/25"
+              },
+              {
+                "kind": "input",
+                "pointer": "/tma_descriptors/5"
+              }
+            ]
+          },
+          {
+            "participant": "lane0",
+            "action": "Commit its bulk group; execute read-wait 1; reach the next 128-thread barrier.",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "3242,3330-3351",
+                "contains": [
+                  "%p176",
+                  "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group",
+                  "cp.async.bulk.wait_group.read 1",
+                  "bar.sync"
+                ]
+              }
+            ]
+          },
+          {
+            "participant": "lane1",
+            "action": "Commit its bulk group; execute read-wait 1; reach the same barrier.",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "3242,3330-3351",
+                "contains": [
+                  "%p176",
+                  "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group",
+                  "cp.async.bulk.wait_group.read 1",
+                  "bar.sync"
+                ]
+              }
+            ]
+          }
+        ],
+        "conditions": {
+          "participants": {
+            "text": "These are two of the 32 lanes admitted by the same warp-level selector. The other 126 output threads also participate in the surrounding counted barriers; they are omitted from the two-column view. Rows that expand the same warp instruction do not imply a measured lane issue order.",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "72-74",
+                "contains": [
+                  "%tid.x",
+                  "%r4"
+                ]
+              },
+              {
+                "kind": "ptx",
+                "lines": "1191-1192,1766-1769,1971-1972,2412-2415,2825-2837",
+                "contains": [
+                  "%p148",
+                  "%r83"
+                ]
+              },
+              {
+                "kind": "input",
+                "pointer": "/launch/block_dim",
+                "equals": [
+                  256,
+                  1,
+                  1
+                ]
+              },
+              {
+                "kind": "ptx",
+                "lines": "3242,3330-3351",
+                "contains": [
+                  "%p176",
+                  "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group",
+                  "cp.async.bulk.wait_group.read 1",
+                  "bar.sync"
+                ]
+              }
+            ]
+          },
+          "branches": {
+            "text": "This starts after the first output preparation barrier, for threads reaching that block after setup, assertions and accumulator availability. Both selected threads have `(tid.x & 96) = 0`, so `%p176` is false. No elected-lane predicate appears on this copy corridor.",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "72-74",
+                "contains": [
+                  "%tid.x",
+                  "%r4"
+                ]
+              },
+              {
+                "kind": "ptx",
+                "lines": "1191-1192,1766-1769,1971-1972,2412-2415,2825-2837",
+                "contains": [
+                  "%p148",
+                  "%r83"
+                ]
+              },
+              {
+                "kind": "input",
+                "pointer": "/launch/block_dim",
+                "equals": [
+                  256,
+                  1,
+                  1
+                ]
+              },
+              {
+                "kind": "ptx",
+                "lines": "3242,3330-3351",
+                "contains": [
+                  "%p176",
+                  "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group",
+                  "cp.async.bulk.wait_group.read 1",
+                  "bar.sync"
+                ]
+              },
+              {
+                "kind": "ptx",
+                "lines": "3200-3244",
+                "contains": [
+                  "%p175",
+                  "%p176"
+                ]
+              }
+            ]
+          },
+          "iterations": {
+            "text": "The example uses the first strip of the initial tile. The initial CTA coordinates are zero, the configured swizzle branch is bypassed, and the raster transform preserves zero. Later scheduler coordinates do not replace the current tile coordinates until 3979–3985.",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "1099-1105,1161-1179",
+                "contains": [
+                  "%ctaid.x",
+                  "%r29"
+                ]
+              },
+              {
+                "kind": "ptx",
+                "lines": "2856-2857,2985-2986,3336-3339",
+                "contains": [
+                  "1664",
+                  "1024"
+                ]
+              },
+              {
+                "kind": "input",
+                "pointer": "/launch/grid_dim",
+                "equals": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              {
+                "kind": "input",
+                "pointer": "/arguments/22"
+              },
+              {
+                "kind": "input",
+                "pointer": "/arguments/25"
+              },
+              {
+                "kind": "input",
+                "pointer": "/tma_descriptors/5"
+              },
+              {
+                "kind": "ptx",
+                "lines": "3979-3985",
+                "contains": [
+                  "%r30",
+                  "%r31",
+                  "%r16"
+                ]
+              }
+            ]
+          },
+          "completion": {
+            "text": "Both copy issues precede their respective commit and read-wait. No completion order between the two asynchronous writes is asserted. Read-wait 1 may leave the newest group outstanding; the following `bar.sync` rendezvous does not select one writer or impose an order between peer copy completions.",
+            "evidence": [
+              {
+                "kind": "ptx",
+                "lines": "3242,3330-3351",
+                "contains": [
+                  "%p176",
+                  "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group",
+                  "cp.async.bulk.wait_group.read 1",
+                  "bar.sync"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "code": {
+        "caption": "The same copy, commit and read-wait corridor applies to both illustrated lanes",
+        "lines": "3242,3330-3351",
+        "focus": [
+          "%p176",
+          "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group",
+          "cp.async.bulk.commit_group",
+          "cp.async.bulk.wait_group.read",
+          "bar.sync"
+        ],
+        "operands": [
+          {
+            "token": "%p176",
+            "meaning": "True for output warps 5–7, which skip the copy corridor"
+          },
+          {
+            "token": "%rd139",
+            "meaning": "D tensor-map address"
+          },
+          {
+            "token": "%r718",
+            "meaning": "Shared source, base + 1024"
+          },
+          {
+            "token": "%r878",
+            "meaning": "First descriptor-axis coordinate"
+          },
+          {
+            "token": "%r719",
+            "meaning": "Second descriptor-axis coordinate"
+          }
+        ]
+      },
+      "evidence_title": "Derivation: issuing warp and shared copy operands",
+      "steps": [
+        {
+          "label": "How the thread selector reaches the output block",
+          "text": "PTX 72 reads `%tid.x`; shifting by five gives the warp index, and the shuffle broadcasts that index within each warp. Warps 4–7 take the branches that skip the warp-2, warp-1, warp-0 and warp-3 work bodies at 1192, 1769, 1972 and 2415. They then fall through the `warp < 4` exit test at 2827. The later mask is decimal 96 = 0x60, the two low warp-index bits of `tid.x`; it is zero for warp 4 and nonzero for warps 5–7. It contains no lane bits. This establishes the local role for threads reaching the output body, rather than identifying roles by nearby code placement.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "72-74",
+              "contains": [
+                "%tid.x",
+                "%r4"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "1191-1192,1766-1769,1971-1972,2412-2415,2825-2837",
+              "contains": [
+                "%p148",
+                "%r83"
+              ]
+            },
+            {
+              "kind": "input",
+              "pointer": "/launch/block_dim",
+              "equals": [
+                256,
+                1,
+                1
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "3242,3335",
+              "contains": [
+                "%p176"
+              ]
+            }
+          ],
+          "diagram": {
+            "kind": "mermaid",
+            "source": "flowchart LR\n S{\"tid.x & 96 != 0?\"} -->|\"False: warp 4\"| C[\"Copy, commit, read-wait 1\"]\n S -->|\"True: warps 5–7\"| J[\"bar.sync 1, 128\"]\n C --> J\n class S context\n class C focus\n class J operation",
+            "meaning": "Arrows show local branch and rejoin paths at PTX 3335–3351; they do not establish asynchronous completion or cross-thread order."
+          }
+        },
+        {
+          "label": "Why the copy operands are identical",
+          "text": "The tensor-map address is parameter base + 1664, matching the supplied `D` descriptor. The source base is the shared symbol + 1024, with no lane-dependent addition. The coordinate tuple is `(tile_x << 6, tile_y << 7, tile_z)`. A one-CTA grid starts at `(0,0,0)`; swizzle divisor zero takes the branch at 1105, and raster order one with unit cluster divisors leaves those coordinates zero. The descriptor has a 64 × 32 × 1 f16 box, so one copy reads `64 × 32 × 1 × 2 = 4096` bytes. Its first two coordinate strides are 2 and 128 bytes. This is the complete copy box; the retained 128-byte overlap is a modeled region within it, not the total transfer size.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "1099-1105,1161-1179",
+              "contains": [
+                "%ctaid.x",
+                "%r29"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "2856-2857,2985-2986,3336-3339",
+              "contains": [
+                "1664",
+                "1024"
+              ]
+            },
+            {
+              "kind": "input",
+              "pointer": "/launch/grid_dim",
+              "equals": [
+                1,
+                1,
+                1
+              ]
+            },
+            {
+              "kind": "input",
+              "pointer": "/arguments/22"
+            },
+            {
+              "kind": "input",
+              "pointer": "/arguments/25"
+            },
+            {
+              "kind": "input",
+              "pointer": "/tma_descriptors/5"
+            },
+            {
+              "kind": "result",
+              "pointer": "/warnings/0/region"
+            }
+          ]
+        },
+        {
+          "label": "What the surrounding barrier coordinates",
+          "text": "The output roles comprise four warps, or 128 threads. They stage register values with `stmatrix`, execute the async-proxy fence, and rendezvous at named barrier 1 with count 128 before the copy. The non-copying warps branch directly to the second barrier-1 rendezvous; the copying warp reaches it after its own bulk-group wait. Each rendezvous therefore coordinates the output threads, but neither is an election and neither serializes the peer TMA writes. A fence concerns visibility across proxies; it is not a wait for these later copies to finish.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "72-74",
+              "contains": [
+                "%tid.x",
+                "%r4"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "1191-1192,1766-1769,1971-1972,2412-2415,2825-2837",
+              "contains": [
+                "%p148",
+                "%r83"
+              ]
+            },
+            {
+              "kind": "input",
+              "pointer": "/launch/block_dim",
+              "equals": [
+                256,
+                1,
+                1
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "3315-3351",
+              "contains": [
+                "stmatrix",
+                "fence.proxy.async.shared::cta",
+                "bar.sync"
+              ]
+            }
+          ],
+          "code": {
+            "caption": "Shared staging is visible before the output threads rendezvous",
+            "lines": "3315-3333",
+            "focus": [
+              "stmatrix",
+              "fence.proxy.async.shared::cta",
+              "bar.sync"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "The copy waits do not serialize peer writers",
+      "answer": "Each output strip has a per-issuer `cp.async.bulk.wait_group.read 1` after its copy group is committed. This waits for source reads of older groups and permits the newest group to remain pending; it is not a mutual-exclusion mechanism for the destination.\n\nThe configured `beta = 0` exit skips the final `read 0` drain, and failed cluster cancellation prevents a second output-loop iteration. Those conditions explain the actual lifetime of this tile’s staging buffers; they do not turn the duplicate-write warning into evidence of a missing wait.",
+      "evidence": [
+        {
+          "kind": "ptx",
+          "lines": "2888-2891,3973-4019",
+          "contains": [
+            "%r595",
+            "%p196",
+            "%p166",
+            "%p197",
+            "%p1",
+            "cp.async.bulk.wait_group.read 0"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "114-139",
+          "contains": [
+            "%rd4",
+            "%rs1",
+            "%rs3"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "3021-3057",
+          "contains": [
+            "%p161",
+            "%p163",
+            "%p166"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "3086-3120,3164-3199",
+          "contains": [
+            "%p171",
+            "%p243"
+          ]
+        },
+        {
+          "kind": "input",
+          "pointer": "/arguments/5"
+        },
+        {
+          "kind": "input",
+          "pointer": "/arguments/6"
+        },
+        {
+          "kind": "input",
+          "pointer": "/arguments/7"
+        },
+        {
+          "kind": "input",
+          "pointer": "/arguments/8"
+        },
+        {
+          "kind": "input",
+          "pointer": "/arguments/9"
+        },
+        {
+          "kind": "input",
+          "pointer": "/arguments/10"
+        },
+        {
+          "kind": "input",
+          "pointer": "/assumptions/clc_always_fails",
+          "equals": true
+        },
+        {
+          "kind": "ptx",
+          "lines": "3339-3351,3536-3553,3728-3745,3932-3952",
+          "contains": [
+            "cp.async.bulk.wait_group.read 1"
+          ]
+        }
+      ],
+      "comparison": {
+        "headers": [
+          "Output strip",
+          "Shared source offset",
+          "Second descriptor coordinate",
+          "Copy / commit / read-wait"
+        ],
+        "rows": [
+          [
+            "First",
+            "1024",
+            "0",
+            "3339 / 3342 / 3345"
+          ],
+          [
+            "Second",
+            "5120",
+            "32",
+            "3541 / 3544 / 3547"
+          ],
+          [
+            "Third",
+            "9216",
+            "64",
+            "3733 / 3736 / 3739"
+          ],
+          [
+            "Fourth",
+            "13312",
+            "96",
+            "3937 / 3940 / 3946"
+          ]
+        ]
+      },
+      "code": {
+        "caption": "The final drain is conditional: beta-zero takes the branch to return",
+        "lines": "3996-4000,4015-4019,4032-4033",
+        "focus": [
+          "setp.eq.f16",
+          "%p1",
+          "bra",
+          "cp.async.bulk.wait_group.read",
+          "ret"
+        ]
+      },
+      "evidence_title": "Derivation: copy passes and the final drain",
+      "steps": [
+        {
+          "label": "All four copy predicates select the same warp",
+          "text": "The first three selectors `%p176`, `%p182`, and `%p186` all compare the unchanged `%r83` with zero. The fourth copy selector `%p190` and its separate wait selector `%p191` perform the same comparison, with no intervening assignment to `%r83`. Thus the last wait has a different predicate name but the same participating warp. Every pass rejoins a 128-thread barrier. The shared source offsets differ by 4096 bytes, exactly one descriptor box, so later strips of this tile do not overwrite the first strip’s staging range. The second descriptor coordinate advances by 32; the first and third stay zero. These are descriptor-axis positions, not assumed logical row/column names.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "2837,3242,3330-3351,3445,3531-3553,3639,3723-3745,3829,3927-3952",
+              "contains": [
+                "%r83",
+                "cp.async.bulk.wait_group.read 1"
+              ]
+            },
+            {
+              "kind": "input",
+              "pointer": "/tma_descriptors/5"
+            }
+          ],
+          "comparison": {
+            "headers": [
+              "Pass",
+              "Before / after barrier-1 rendezvous",
+              "Copy selector / wait selector"
+            ],
+            "rows": [
+              [
+                "First",
+                "3333 / 3351",
+                "%p176 / %p176"
+              ],
+              [
+                "Second",
+                "3534 / 3553",
+                "%p182 / %p182"
+              ],
+              [
+                "Third",
+                "3726 / 3745",
+                "%p186 / %p186"
+              ],
+              [
+                "Fourth",
+                "3930 / 3952",
+                "%p190 / %p191"
+              ]
+            ]
+          }
+        },
+        {
+          "label": "Why the final read-zero wait is skipped here",
+          "text": "Live values: beta is still the initial by-value zero because the zero stride bypassed its reload. `%p165` is true and therefore `%p6 = %p165 OR %p1` is true; `%p166 = NOT %p6` is false. Loop exit: the configured failed-cancellation assumption makes the query result `%r595 = 0`, so `%p196` is false and 3986 does not loop. Incoming drain paths: 3987 cannot jump directly to the drain because `%p166` is false. The zero beta stride also makes `%p197` false at 3988, so execution falls through the live beta-zero comparison at 3996. It sets `%p1 = true`; 4000 jumps to the test at 4016, which takes the return path and bypasses 4019. The alternative stride-nonzero path at 4001–4014 is not taken. This is static reduction of the supplied conditions, not a recorded GPU trace.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "2888-2891,3973-4019",
+              "contains": [
+                "%r595",
+                "%p196",
+                "%p166",
+                "%p197",
+                "%p1",
+                "cp.async.bulk.wait_group.read 0"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "114-139",
+              "contains": [
+                "%rd4",
+                "%rs1",
+                "%rs3"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "3021-3057",
+              "contains": [
+                "%p161",
+                "%p163",
+                "%p166"
+              ]
+            },
+            {
+              "kind": "ptx",
+              "lines": "3086-3120,3164-3199",
+              "contains": [
+                "%p171",
+                "%p243"
+              ]
+            },
+            {
+              "kind": "input",
+              "pointer": "/arguments/5"
+            },
+            {
+              "kind": "input",
+              "pointer": "/arguments/6"
+            },
+            {
+              "kind": "input",
+              "pointer": "/arguments/7"
+            },
+            {
+              "kind": "input",
+              "pointer": "/arguments/8"
+            },
+            {
+              "kind": "input",
+              "pointer": "/arguments/9"
+            },
+            {
+              "kind": "input",
+              "pointer": "/arguments/10"
+            },
+            {
+              "kind": "input",
+              "pointer": "/assumptions/clc_always_fails",
+              "equals": true
+            }
+          ]
+        },
+        {
+          "label": "Source-read completion is different from destination-write order",
+          "text": "The `.read` qualifier concerns completion of reads from the shared source for the calling thread’s bulk groups. Waiting for zero groups, when reached, drains that source-read obligation; waiting for one may leave the latest group pending. Neither statement establishes a total order between writes issued by different lanes. The saved warning specifically describes unordered writes with matching footprints and PTX site visits. Its classification rule does not assert equal values. The separately saved numerical analysis and value checks must retain their own scope; they do not change the meaning of the warning message.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "3339-3351,4019",
+              "contains": [
+                "cp.async.bulk.wait_group.read"
+              ]
+            },
+            {
+              "kind": "result",
+              "pointer": "/warnings/0"
+            },
+            {
+              "kind": "result",
+              "pointer": "/assumptions/0"
+            },
+            {
+              "kind": "result",
+              "pointer": "/equivalence/scope"
+            },
+            {
+              "kind": "result",
+              "pointer": "/value_analysis/duplicate_write_value_checks"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "next": {
+    "text": "Before relying on the duplicate-store exception, check the ISA or implementation contract for multiple same-warp TMA stores to the same destination, and associate the saved duplicate-write value checks with the relevant write pairs. The source establishes identical copy operands and the surrounding waits; the unresolved issue is whether those facts justify the benign classification for the intended execution model. Adding a wait is not a conclusion supported by this warning alone.",
+    "evidence": [
+      {
+        "kind": "result",
+        "pointer": "/assumptions/0"
+      },
+      {
+        "kind": "result",
+        "pointer": "/warnings/0"
+      },
+      {
+        "kind": "result",
+        "pointer": "/value_analysis/duplicate_write_value_checks"
+      },
+      {
+        "kind": "ptx",
+        "lines": "3242,3330-3351",
+        "contains": [
+          "%p176",
+          "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group",
+          "cp.async.bulk.wait_group.read 1",
+          "bar.sync"
+        ]
+      }
+    ]
+  }
+}

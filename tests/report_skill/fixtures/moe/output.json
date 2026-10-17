@@ -1,0 +1,142 @@
+{
+  "assumptions": [
+    {
+      "enabled": false,
+      "id": "A001",
+      "key": "warp_tmem_load_completion",
+      "text": "All lanes' TMEM reads complete before any lane receives its register results.",
+      "triggered": false
+    },
+    {
+      "enabled": true,
+      "id": "A002",
+      "key": "duplicate_tma_store_benign",
+      "text": "Matching same-warp duplicate TMA stores are reported as warnings instead of races.",
+      "triggered": null
+    },
+    {
+      "enabled": true,
+      "id": "A003",
+      "key": "immediate_visibility",
+      "text": "Memory effects are immediately visible when executed; visibility fences add no ordering constraints. Async completion and synchronization remain modeled.",
+      "triggered": null
+    },
+    {
+      "enabled": true,
+      "id": "A004",
+      "key": "representative_election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": null
+    },
+    {
+      "enabled": true,
+      "id": "A005",
+      "key": "clc_always_fails",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": null
+    }
+  ],
+  "frontend": {
+    "frontend_assumptions": {
+      "assertion_failure_forms": [
+        "trap",
+        "__assertfail"
+      ],
+      "assertion_uses": 0,
+      "clc_failure": true,
+      "clc_uses": 0,
+      "election_policy": {
+        "fallback": "lowest_member",
+        "preferred_lane": 0,
+        "strategy": "preferred_member"
+      },
+      "election_uses": 0,
+      "fixed_election": true,
+      "immediate_visibility": true,
+      "isolated_launch": true,
+      "noalias_unbounded": false,
+      "pointer_contract": {
+        "aliasing": "distinct_objects_noalias",
+        "extent_bytes": "unbounded"
+      },
+      "trap_only_equality_assertions_hold": true
+    },
+    "input_objects": [
+      {
+        "bytes": 8,
+        "object": "input",
+        "offset": 0,
+        "parameter": "_ZN4vllm3moe10topkGatingILi4ELi64ELi4ELi16ELi32EifLNS0_11ScoringFuncE0EEEvPKT5_PKbPfiPT4_PiiiibPKfdS7__param_0",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "output",
+        "offset": 0,
+        "parameter": "_ZN4vllm3moe10topkGatingILi4ELi64ELi4ELi16ELi32EifLNS0_11ScoringFuncE0EEEvPKT5_PKbPfiPT4_PiiiibPKfdS7__param_2",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "indices",
+        "offset": 0,
+        "parameter": "_ZN4vllm3moe10topkGatingILi4ELi64ELi4ELi16ELi32EifLNS0_11ScoringFuncE0EEEvPKT5_PKbPfiPT4_PiiiibPKfdS7__param_4",
+        "source": "declaration"
+      },
+      {
+        "bytes": 8,
+        "object": "source_rows",
+        "offset": 0,
+        "parameter": "_ZN4vllm3moe10topkGatingILi4ELi64ELi4ELi16ELi32EifLNS0_11ScoringFuncE0EEEvPKT5_PKbPfiPT4_PiiiibPKfdS7__param_5",
+        "source": "declaration"
+      }
+    ],
+    "required_parameters": [],
+    "user_branch_decisions": []
+  },
+  "implementation": "cpp",
+  "location": {
+    "column": 0,
+    "file": "corpus/vllm__moe_topk_softmax__sm_100a.ptx",
+    "line": 352
+  },
+  "memory_analysis_complete": false,
+  "message": "control predicate is not statically determined",
+  "peak_footprint_mib": 15.62109375,
+  "peak_rss_mib": 30.0,
+  "pipeline_elapsed_seconds": 0.013931082,
+  "reason": "branch_not_static",
+  "semantic_assumptions": {
+    "clc_always_fails": true,
+    "duplicate_tma_store_benign": true,
+    "immediate_visibility": true,
+    "representative_election": true,
+    "warp_tmem_load_completion": false
+  },
+  "status": "frontend_unsupported",
+  "template_execution": {
+    "completed_ctas": 0,
+    "coordinate_bindings": 0,
+    "logical_thread_steps": 0,
+    "path_entries": 0,
+    "record_bindings": 0,
+    "record_nodes": 0,
+    "splits": 0,
+    "template_steps": 0,
+    "thread_memberships": 0,
+    "value_nodes": 0
+  },
+  "thread_record_compression": {
+    "completed_ctas": 0,
+    "enabled": true,
+    "estimated_pool_bytes_sum": 0,
+    "intern_calls": 0,
+    "logical_records": 0,
+    "record_handle_bytes": 32,
+    "templates": 0,
+    "unique_bindings": 0
+  },
+  "warnings": [],
+  "wellsync_timeout_seconds": 120.0,
+  "whole_pipeline_timeout_seconds": 300.0
+}
