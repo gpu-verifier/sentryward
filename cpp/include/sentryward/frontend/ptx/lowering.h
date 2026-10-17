@@ -30,7 +30,8 @@ struct LoweringResult {
 class ModelLowerer {
 public:
   explicit ModelLowerer(const Module &, const Function &,
-                        std::function<void()> poll = {}, bool retain_matrix_layout = false);
+                        std::function<void()> poll = {}, bool retain_matrix_layout = false,
+                        bool atomics = false);
   ~ModelLowerer();
   using ValueAddresses = std::function<std::optional<nlohmann::json>(
       const LaneTrace&, const ExecutedInstruction&, std::string_view)>;

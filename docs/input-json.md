@@ -149,6 +149,7 @@ semantics require review.
 | `clc_always_fails` | `true` |
 | `representative_branches` | `false` |
 | `bounded_computation_loops` | `false` |
+| `order_independent_atomics` | `false` |
 
 For example, this fragment opts into representative data-dependent control:
 
