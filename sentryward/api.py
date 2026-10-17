@@ -3,7 +3,9 @@ from pathlib import Path
 import json
 import subprocess
 import sys
+import tempfile
 import time
+from .frontend.partial_warp import pad
 from .frontend.ptx_native import _positive, _run_ptx
 from .results import failure, normalize
 
@@ -74,12 +76,24 @@ def verify(ptx, *, input, reference=None,
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise subprocess.TimeoutExpired([], timeout_seconds)
-        result = _run_ptx(ptx, config, reference=expression, reference_binding=binding,
-                          deadline=deadline,
-                          reference_failure=reference_failure,
-                          pipeline_timeout_seconds=remaining,
-                          wellsync_timeout_seconds=remaining,
-                          rss_limit_mib=memory_limit_mib)
+        # A partial-warp block of a kernel that cannot observe padding is verified padded to whole warps.
+        padded = pad(ptx.read_text(), json.loads(config.read_text()))
+        with tempfile.TemporaryDirectory(prefix='sentryward-partial-warp-') as scratch:
+            run_ptx, run_config = ptx, config
+            if padded is not None:
+                run_ptx, run_config = Path(scratch) / ptx.name, Path(scratch) / config.name
+                run_ptx.write_text(padded[0])
+                run_config.write_text(json.dumps(padded[1]))
+            result = _run_ptx(run_ptx, run_config, reference=expression, reference_binding=binding,
+                              deadline=deadline,
+                              reference_failure=reference_failure,
+                              pipeline_timeout_seconds=remaining,
+                              wellsync_timeout_seconds=remaining,
+                              rss_limit_mib=memory_limit_mib)
+        if padded is not None:
+            # Witnesses name the files given: the line numbers are unchanged by the padding.
+            result = json.loads(json.dumps(result).replace(str(run_ptx), str(ptx)).replace(str(run_config), str(config)))
+            result.setdefault('warnings', []).append(padded[2])
         result.pop('_process', None)
         result['elapsed_seconds'] = time.monotonic() - started
         if result['elapsed_seconds'] > timeout_seconds and result.get('result') != 'timeout':
