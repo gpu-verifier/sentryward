@@ -4,50 +4,19 @@
 <p align="center">flash_attention__fwd_paged_bf16_h128__sm_100a</p>
 <h1 align="center">ANALYSIS UNSUPPORTED</h1>
 
-**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/input.json) · launch, arguments and assumptions.
+**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx) ([raw](https://github.com/gpu-verifier/sentryward/raw/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx)) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/input.json) · launch, arguments and assumptions.
 
 **Result:** [output.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json) · saved verifier findings.
 
-<details>
-<summary><strong>Analysis records — open the saved evidence</strong></summary>
-
-Each record link opens its field in the original `output.json`. Model summaries are not full execution traces.
-
-**Check the finding**
-
-- [Diagnostic messages and details · `diagnostics`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L68)
-- [Individual check outcomes · `checks`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L56)
-
-**Check how the model was built**
-
-- [PTX translation · `frontend`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L282)
-- [Model and source bindings · `semantic_program`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L644)
-- [Synchronization-check setup · `synchronization_input`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L661)
-
-**Check values separately**
-
-- [Value-analysis status · `value_analysis`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L689)
-- [Numerical comparison · `equivalence`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L81)
-
-For the records explained in this report, see the [Evidence appendix](#evidence-appendix).
-
-</details>
-
-## 1. Verifier result
-
-Saved findings and analysis scope, formatted directly from the verifier output.
-
-### 1.1 Where analysis stopped
+<table>
+<thead><tr><th align="left">VERIFIER RESULT · Where analysis stopped</th></tr></thead>
+<tbody><tr><td>
 
 A required operation is unsupported. The saved checks identify which analyses completed.
 
-**Saved result:** <code>unsupported</code> · <code>output.json#/result</code>.
+**Synchronization:** Passed · **Memory:** Passed · **Equivalence:** Incomplete
 
-**Checks:** Synchronization <code>passed</code> · Memory <code>passed</code> · Equivalence <code>incomplete</code>.
-
-**Operation:** <code>kernel_verification</code>.
-
-**First diagnostic:** <code>input_alignment_not_proven</code> · <code>equivalence_import</code> — Could not prove that the input read is element-aligned · <code>output.json#/diagnostics/0</code>.
+**First diagnostic:** <code>input_alignment_not_proven</code> · <code>equivalence_import</code> — Could not prove that the input read is element-aligned · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L69"><code>output.json#/diagnostics/0</code></a>.
 
 **Recorded totals:** 0 races · 10,919,936 warnings · 0 unresolved.
 
@@ -90,30 +59,72 @@ Lines connect the two recorded accesses to their shared byte region; they do not
 
 | Access | Source operation | Model event / instruction | Actor ID |
 | --- | --- | --- | --- |
-| First access | <code>cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.L2::cache_hint</code><br/>PTX line <code>1421</code> | <code>646637</code> / <code>148156</code> | <code>416</code> |
-| Second access | <code>cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.L2::cache_hint</code><br/>PTX line <code>1421</code> | <code>649448</code> / <code>148179</code> | <code>417</code> |
+| First access | <code>cp.async.bulk.tensor.4d.global.</code><br/><code>shared::cta.tile.bulk_group.L2::</code><br/><code>cache_hint</code><br/>PTX line <code>1421</code> | <code>646637</code> / <code>148156</code> | <code>416</code> |
+| Second access | <code>cp.async.bulk.tensor.4d.global.</code><br/><code>shared::cta.tile.bulk_group.L2::</code><br/><code>cache_hint</code><br/>PTX line <code>1421</code> | <code>649448</code> / <code>148179</code> | <code>417</code> |
 
 Actor IDs name verifier participants; this record does not itself establish CUDA thread coordinates. Event and instruction IDs identify model records, not source-line numbers.
 
 **Recorded source anchors.** These lines locate the saved events. Their guards and surrounding control flow belong to the code explanation.
 
-<p><strong>First access · saved source location</strong> · physical PTX 1421 · display wrapping added</p>
+<p><strong>First access · saved source location</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx#L1421">physical PTX 1421</a> · display wrapping added</p>
 
 <pre><code><strong>cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.L2::cache_hint</strong>
     [%rd258, {%r583, %r582, %r2935, %r2934}], [%r56], %rd259;</code></pre>
 
 
-**Saved record:** <code>output.json#/warnings/0</code>. **Overlap check:** constant byte ranges intersect. **Allocation:** <code>O</code>. **Address space:** <code>global</code>.
+**Saved record:** <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L823"><code>output.json#/warnings/0</code></a>. **Overlap check:** constant byte ranges intersect. **Allocation:** <code>O</code>. **Address space:** <code>global</code>.
 
 </details>
 
-### 1.2 Analysis scope
+<details>
+<summary><strong>Saved status and diagnostic codes</strong></summary>
+
+**Saved result:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L630"><code>output.json#/result</code></a>.
+
+**Operation:** <code>kernel_verification</code>.
+
+**Checks:** Synchronization <code>passed</code> · Memory <code>passed</code> · Equivalence <code>incomplete</code>.
+
+</details>
+
+</td></tr>
+<tr><td>
+
+### Analysis scope
 
 **Coverage:** Memory analysis complete: yes · Search complete: yes · Exhaustive search: **no**.
 
 **Assumption-dependent:** <code>true</code>. Triggered rules: Duplicate TMA stores, Representative election.
 
 This result applies to the supplied launch, arguments and enabled assumptions.
+
+<details>
+<summary><strong>Analysis records — open the saved evidence</strong></summary>
+
+Each record link opens its field in the original `output.json`. Model summaries are not full execution traces.
+
+**Check the finding**
+
+- [Diagnostic messages and details · `diagnostics`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L68)
+- [Individual check outcomes · `checks`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L56)
+
+**Check how the model was built**
+
+- [PTX translation · `frontend`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L282)
+- [Model and source bindings · `semantic_program`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L644)
+- [Synchronization-check setup · `synchronization_input`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L661)
+
+**Check values separately**
+
+- [Value-analysis status · `value_analysis`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L689)
+- [Numerical comparison · `equivalence`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L81)
+
+For the records explained in this report, see the [Evidence appendix](#evidence-appendix).
+
+</details>
+
+</td></tr></tbody>
+</table>
 <!-- verifier-result:end -->
 
 <!-- verifier-evidence:start -->
@@ -151,7 +162,7 @@ These are saved verifier records. Truncation flags describe missing records in t
 
 Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.
 
-Byte regions, endpoints and exact locations: <code>output.json#/warnings</code>.
+Byte regions, endpoints and exact locations: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L822"><code>output.json#/warnings</code></a>.
 
 #### Diagnostics
 
@@ -174,7 +185,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Warnings
 
-<code>output.json#/warnings</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L822"><code>output.json#/warnings</code></a>
 
 **Retained records:** 16.
 
@@ -937,7 +948,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Diagnostics
 
-<code>output.json#/diagnostics</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L68"><code>output.json#/diagnostics</code></a>
 
 **Retained records:** 1.
 
@@ -1101,13 +1112,13 @@ Execute a configured number of body iterations for unresolved recognized computa
 
 Memory safety and numerical equivalence are separate results.
 
-**Value analysis:** <code>verified</code> · <code>output.json#/value_analysis</code>
+**Value analysis:** <code>verified</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L689"><code>output.json#/value_analysis</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_requested</code>.
 
 - **Scope:** {&quot;operation&quot;:&quot;<code>value_analysis</code>&quot;}
 
-**Equivalence:** <code>unsupported</code> · <code>output.json#/equivalence</code>
+**Equivalence:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L81"><code>output.json#/equivalence</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>incomplete</code>.
 
@@ -1116,10 +1127,10 @@ Memory safety and numerical equivalence are separate results.
 - **Semantics:** <code>ideal_real</code> numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any <code>input_contract</code>
 - **Equivalence contract:** <code>same_domain_and_equal_values</code>; total definedness reported separately
 - **Prerequisites:** caller must combine numerical proof with synchronization, memory and scope results
-- **Diagnostic:** <code>input_alignment_not_proven</code> · <code>equivalence_import</code> — Could not prove that the input read is element-aligned · <code>output.json#/equivalence/diagnostics/0</code>
+- **Diagnostic:** <code>input_alignment_not_proven</code> · <code>equivalence_import</code> — Could not prove that the input read is element-aligned · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L148"><code>output.json#/equivalence/diagnostics/0</code></a>
 - **Definedness:** <code>not_proven</code>
 
-**Verification result:** <code>race_free</code> · <code>output.json#/verification_result</code>
+**Verification result:** <code>race_free</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/output.json#L819"><code>output.json#/verification_result</code></a>
 
 <details>
 <summary><strong>Exact value-analysis fields and large-data references</strong></summary>
@@ -1470,7 +1481,7 @@ Memory safety and numerical equivalence are separate results.
 | Cluster · blocks | <code>[1,1,1]</code> |
 | Dynamic shared memory · bytes | <code>232448</code> |
 
-**Arguments:** 35 retained entries. Exact parameter bindings, descriptors and entry name: <code>input.json#</code>.
+**Arguments:** 35 retained entries. Exact parameter bindings, descriptors and entry name: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_paged_bf16_h128__sm_100a/input.json#L1"><code>input.json#</code></a>.
 
 <details>
 <summary><strong>Exact input configuration</strong></summary>

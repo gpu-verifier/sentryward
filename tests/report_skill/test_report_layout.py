@@ -43,7 +43,12 @@ class ReportLayoutTests(unittest.TestCase):
         base=layout.compose(None,self.input,self.result,self.ptx,self.artifacts)
         explained=self.render()
         self.assertIn('## 2. Code explanation',explained)
-        self.assertIn(result_view.render_evidence(self.input,self.result,self.ptx,self.artifacts).strip(),explained)
+        # Explanation may add a short kernel title, but must not change the
+        # factual result or evidence, including their resolved source links.
+        for start, end in [('## 1. Verifier result', result_view.FACTS_END),
+                           (result_view.EVIDENCE_START, result_view.EVIDENCE_END)]:
+            self.assertEqual(base.split(start, 1)[1].split(end, 1)[0],
+                             explained.split(start, 1)[1].split(end, 1)[0])
         self.assertLess(explained.index('## 1. Verifier result'),explained.index('## 2. Code explanation'))
         self.assertIn('<strong>1</strong>',explained)
 
@@ -89,7 +94,7 @@ class ReportLayoutTests(unittest.TestCase):
         code = {'caption':'Read buffer handle', 'lines':'1',
                 'operands':[{'token':'%r7','meaning':'Handle storage address'}]}
         rendered = layout.code_view(code, ptx)
-        self.assertIn('Handle storage address (<code>%r7</code>)', rendered)
+        self.assertIn('<li><code>%r7</code> — Handle storage address</li>', rendered)
         instructions = rendered.split('<pre><code>',1)[1].split('</code></pre>',1)[0]
         self.assertEqual(re.sub('<[^>]+>','',instructions),ptx)
         code['operands'][0]['token'] = '%r1'
@@ -209,7 +214,7 @@ class ReportLayoutTests(unittest.TestCase):
         context = rendered.split('### 2.1 Code context', 1)[1].split('### 2.2', 1)[0]
         self.assertIn('<summary><strong>Follow the copy group</strong></summary>', context)
         self.assertLess(context.index('#### Commit, then wait'), context.index('<pre>'))
-        self.assertLess(context.index('<pre>'), context.index('Exact source references'))
+        self.assertLess(context.index('<pre>'), context.index('Sources:'))
         self.assertIn('input.json#/entry', context)
         self.assertIn('physical PTX 3-4:', context)
         self.assertEqual(context.count('<details>'), 2)
@@ -246,12 +251,14 @@ class ReportLayoutTests(unittest.TestCase):
              'evidence':[{'kind':'ptx','lines':'4','contains':['wait_group.read']}]}]
         rendered = self.render()
         start = rendered.index('#### Commit')
-        refs = rendered.index('<summary><strong>Exact source references')
+        refs = rendered.index('<summary><strong>Sources:')
         self.assertLess(rendered.index('#### Wait'), refs)
         self.assertNotIn('physical PTX', rendered[start:refs])
-        self.assertIn('##### Commit', rendered[refs:])
-        self.assertIn('##### Wait', rendered[refs:])
+        self.assertIn('##### Source references: Commit', rendered[refs:])
+        self.assertIn('##### Source references: Wait', rendered[refs:])
         self.assertIn('physical PTX 3:', rendered[refs:])
+        self.assertIn('<blockquote>', rendered[refs:])
+        self.assertEqual(rendered.count('<blockquote>'), rendered.count('</blockquote>'))
         # Folding citations changes visibility, not validation.
         section['steps'][1]['evidence'][0]['contains'] = ['missing_wait']
         with self.assertRaisesRegex(ValueError, 'exact token'): self.render()
@@ -264,7 +271,7 @@ class ReportLayoutTests(unittest.TestCase):
             'evidence':[{'kind':'input','pointer':'/launch/block_dim'}]}]
         rendered = self.render()
         self.assertLess(rendered.index('#### Group count'),rendered.index('16 / 8 = 2'))
-        self.assertLess(rendered.index('16 / 8 = 2'),rendered.index('Exact source references'))
+        self.assertLess(rendered.index('16 / 8 = 2'),rendered.index('Sources:'))
         section['steps'][0]['evidence'][0]['pointer'] = '/missing'
         with self.assertRaisesRegex(ValueError,'absent'): self.render()
 
@@ -358,6 +365,7 @@ class ReportLayoutTests(unittest.TestCase):
         self.assertIn('Lane slot ≠ Owner slot', rendered)
         self.assertIn('%r1 and %r2 (≠)', rendered)
         self.assertIn('G -->|"true: skip"| J', rendered)
+        self.assertIn('G{"Lane slot ≠<br/>Owner slot<br/>PTX', rendered)
         self.assertIn('G -->|"false"| E', rendered)
         self.assertIn('E --> J', rendered)
         self.assertIn('Continue<br/>PTX 4', rendered)

@@ -1,12 +1,100 @@
 <!-- report-layout:v2 -->
 
 <!-- verifier-result:start -->
-<p align="center">cutlass77_blackwell_fmha_fp16.compute_100a</p>
+<p align="center">FMHA: Q-input barrier handoff</p>
 <h1 align="center">SYNCHRONIZATION CANDIDATE</h1>
 
-**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json) · launch, arguments and assumptions.
+**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx) ([raw](https://github.com/gpu-verifier/sentryward/raw/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx)) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json) · launch, arguments and assumptions.
 
 **Result:** [output.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json) · saved verifier findings.
+
+<table>
+<thead><tr><th align="left">VERIFIER RESULT · Synchronization requirement</th></tr></thead>
+<tbody><tr><td>
+
+A synchronization check rejected the candidate model execution.
+
+**Synchronization:** Failed · **Memory:** Not run · **Equivalence:** Not run
+
+This finding concerns **barrier reuse**. The model could not establish that the wait is issued before at least one completion effect of the next barrier phase. The failed requirement is shown below.
+
+**Checked phase:** barrier 1 · generation 0.
+
+```mermaid
+flowchart LR
+  I["Wait issue<br/>mbarrier.try_wait<br/>PTX 314797"]
+  R["Next-phase completion effect<br/>tcgen05.commit…<br/>PTX 310187"]
+  I -. "required before: not established" .-> R
+  classDef context fill:#f6f8fa,stroke:#8c959f,color:#24292f
+  classDef operation fill:#ddf4ff,stroke:#54aeff,color:#0550ae
+  classDef focus fill:#fbefff,stroke:#c297ff,color:#6639ba
+  class I operation
+  class R focus
+```
+
+The dashed arrow names the failed requirement: issue before at least one listed phase effect. It does not show an observed order.
+
+**Model replay — not an observed GPU trace:** 32 event IDs retained from an executed prefix of 1,318,836. First unexecuted event: <code>1290360</code>.
+
+**Replay gap: 1,318,804 events not listed**; do not join the retained prefix directly to the stop point.
+
+**Other truncated sequences:** candidate order, replayed candidate order.
+
+<details>
+<summary><strong>Locate the wait, phase effect and replay stop</strong></summary>
+
+**Saved check:** requirement details · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L593"><code>output.json#/rejection</code></a>.
+
+The listed required events are next-phase completion effects, not predecessors that the wait must follow.
+
+| Role | Source operation | Model event / instruction |
+| --- | --- | --- |
+| Wait issue | <code>mbarrier.try_wait.parity.shared::</code><br/><code>cta.b64</code><br/>PTX line <code>314797</code> | <code>1290359</code> / <code>330050</code> |
+| Phase effect | <code>tcgen05.commit.cta_group::1.</code><br/><code>mbarrier::arrive::one.shared::</code><br/><code>cluster.b64</code><br/>PTX line <code>310187</code> | <code>1239648</code> / <code>316627</code> |
+| First unexecuted | <code>mbarrier.try_wait.parity.shared::</code><br/><code>cta.b64</code><br/>PTX line <code>314797</code> | <code>1290360</code> / <code>330050</code> |
+
+Event and instruction IDs are model identifiers; only the separately saved source location identifies a file and line.
+
+**Recorded source anchors.** These lines locate the saved events. Their guards and surrounding control flow belong to the code explanation.
+
+<p><strong>Wait issue event 1290359 · saved source location</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx#L314797">physical PTX 314797</a></p>
+
+<pre><code><strong>mbarrier.try_wait.parity.shared::cta.b64</strong> P1, [%r235], %r236, %r237;</code></pre>
+
+
+<p><strong>Phase effect event 1239648 · saved source location</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx#L310187">physical PTX 310187</a> · display wrapping added</p>
+
+<pre><code><strong>tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64</strong>
+    [%r2047];</code></pre>
+
+
+The saved witness does not map its events to CUDA participant columns. Exact retained sequences, candidate order and source mappings: Evidence appendix → Diagnostic records.
+
+</details>
+
+<details>
+<summary><strong>Saved status and diagnostic codes</strong></summary>
+
+**Saved result:** <code>not_wellsynced</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L612"><code>output.json#/result</code></a>.
+
+**Operation:** <code>kernel_verification</code>.
+
+**First diagnostic:** <code>issue_not_ordered_before_next_phase</code> · <code>synchronization_check</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L203"><code>output.json#/diagnostics/0</code></a>.
+
+**Checks:** Synchronization <code>failed</code> · Memory <code>not_run</code> · Equivalence <code>not_run</code>.
+
+</details>
+
+</td></tr>
+<tr><td>
+
+### Analysis scope
+
+**Coverage:** Memory analysis complete: **no** · Search complete: <code>not saved</code> · Exhaustive search: <code>not saved</code>.
+
+**Assumption-dependent:** <code>true</code>. Triggered rules: Representative election.
+
+This result applies to the supplied launch, arguments and enabled assumptions.
 
 <details>
 <summary><strong>Analysis records — open the saved evidence</strong></summary>
@@ -36,86 +124,361 @@ For the records explained in this report, see the [Evidence appendix](#evidence-
 
 </details>
 
-## 1. Verifier result
+</td></tr></tbody>
+</table>
+<!-- verifier-result:end -->
 
-Saved findings and analysis scope, formatted directly from the verifier output.
+<!-- code-explanation:start -->
 
-### 1.1 Synchronization requirement
+## Code explanation
 
-A synchronization check rejected the candidate model execution.
+Interpretation from the PTX and saved inputs: how the reported operations fit together and what remains to check.
 
-**Saved result:** <code>not_wellsynced</code> · <code>output.json#/result</code>.
+### 1. The reported wait guards the first Q copy
 
-**Checks:** Synchronization <code>failed</code> · Memory <code>not_run</code> · Equivalence <code>not_run</code>.
+This forward-attention kernel stages `Q`, `K` and `V` in shared memory, uses tensor memory (TMEM) for matrix accumulators, and writes output `O` to global memory.
 
-**Operation:** <code>kernel_verification</code>.
-
-**First diagnostic:** <code>issue_not_ordered_before_next_phase</code> · <code>synchronization_check</code> · <code>output.json#/diagnostics/0</code>.
-
-This finding concerns **barrier reuse**. The model could not establish that the wait is issued before at least one completion effect of the next barrier phase. The failed requirement is shown below.
-
-**Checked phase:** barrier 1 · generation 0.
-
-```mermaid
-flowchart TB
-  I["Wait issue<br/>mbarrier.try_wait.parity.shared::cta.b64<br/>PTX 314797"]
-  R["Next-phase completion effect<br/>tcgen05.commit…<br/>PTX 310187"]
-  I -. "required before: not established" .-> R
-  classDef context fill:#f6f8fa,stroke:#8c959f,color:#24292f
-  classDef operation fill:#ddf4ff,stroke:#54aeff,color:#0550ae
-  classDef focus fill:#fbefff,stroke:#c297ff,color:#6639ba
-  class I operation
-  class R focus
-```
-
-The dashed arrow names the failed requirement: issue before at least one listed phase effect. It does not show an observed order.
-
-**Model replay — not an observed GPU trace:** 32 event IDs retained from an executed prefix of 1,318,836. First unexecuted event: <code>1290360</code>.
-
-**Replay gap: 1,318,804 events not listed**; do not join the retained prefix directly to the stop point.
-
-**Other truncated sequences:** candidate order, replayed candidate order.
+The finding concerns the **Q-input handoff**. The input-loader warp waits before its first 16 KiB `Q` copy. A separate matrix-compute warp later sends a completion notification to the same barrier. The report follows how these two source paths connect.
 
 <details>
-<summary><strong>Locate the wait, phase effect and replay stop</strong></summary>
+<summary><strong>Derivation: warp roles and configured workload</strong></summary>
 
-**Saved check:** requirement details · <code>output.json#/rejection</code>.
+#### Where the input and output paths meet the computation
 
-The listed required events are next-phase completion effects, not predecessors that the wait must follow.
+The supplied descriptor offsets identify `Q` at parameter +128, `K` at +384, `V` at +640 and `O` at +1024. Their TMA sites are PTX 314822, 314859, 314934 and 315459 respectively. The first `Q` tile is 64 × 128 f16 elements: 64 × 128 × 2 = 16,384 bytes. The matrix path builds shared-memory descriptors from the `Q` base and `K` base +32,768 before <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-mma-instructions"><code>tcgen05.mma</code></a> writes TMEM. This account follows that input handoff; it does not reconstruct the numerical attention calculation.
 
-| Role | Source operation | Model event / instruction |
-| --- | --- | --- |
-| Wait issue | <code>mbarrier.try_wait.parity.shared::cta.b64</code><br/>PTX line <code>314797</code> | <code>1290359</code> / <code>330050</code> |
-| Phase effect | <code>tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64</code><br/>PTX line <code>310187</code> | <code>1239648</code> / <code>316627</code> |
-| First unexecuted | <code>mbarrier.try_wait.parity.shared::cta.b64</code><br/>PTX line <code>314797</code> | <code>1290360</code> / <code>330050</code> |
+#### Which warps execute the two sides
 
-Event and instruction IDs are model identifiers; only the separately saved source location identifies a file and line.
+The entry computes the warp number as `tid.x >> 5`. Dispatch assigns warp 12 to role 3 and warp 13 to role 4; roles 0–2 take other compute/epilogue paths. Role 3 falls through PTX 308434–308439 to the matrix path. Role 4 branches through 310577–310578 to the loader at 314757. With 512 threads, these are threads 384–415 and 416–447. All 32 loader lanes reach the startup wait; the copy below it is elected-lane-only.
 
-**Recorded source anchors.** These lines locate the saved events. Their guards and surrounding control flow belong to the code explanation.
+#### The supplied configuration admits both paths
 
-<p><strong>Wait issue event 1290359 · saved source location</strong> · physical PTX 314797</p>
+Both paths load parameter offsets 0 and 4 as 256 and 256. The only CTA has `ctaid.x = 0`, so its tile origin is `0 << 8 = 0 < 256`, and the second extent is nonzero. Neither work guard exits before the handoff. The matrix path computes `(256 + 127) >> 7 = 2`; its remaining-work loop executes one body before reaching the `Q`-release commit. The loader’s bootstrap order is first `Q` tile, first `K` tile, second `Q` tile, then first `V` tile; the remaining `K`/`V` loop follows. That later loop does not revisit the startup wait at PTX 314797.
 
-<pre><code><strong>mbarrier.try_wait.parity.shared::cta.b64</strong> P1, [%r235], %r236, %r237;</code></pre>
+#### Keep the configured analysis boundary
 
+The input fixes ten softmax-correction branch decisions and enables representative election. The saved frontend also records an unresolved compute diamond at PTX 313193 and incomplete value semantics. These conditions remain part of the result; the source explanation below establishes the local handoff, not full numerical correctness.
 
-<p><strong>Phase effect event 1239648 · saved source location</strong> · physical PTX 310187 · display wrapping added</p>
+<details>
+<summary><strong>Sources: warp roles and configured workload</strong></summary>
 
-<pre><code><strong>tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64</strong>
-    [%r2047];</code></pre>
+<blockquote>
 
+##### Source references: Where the input and output paths meet the computation
 
-The saved witness does not map its events to CUDA participant columns. Exact retained sequences, candidate order and source mappings: Evidence appendix → Diagnostic records.
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json#L111"><code>input.json#/tma_descriptors</code></a>: <code>list, 4 entries; see original artifact</code>
+- physical PTX 314813-314822,314849-314859,314924-314934,315452-315459: <code>128</code>, <code>384</code>, <code>640</code>, <code>1024</code>
+- physical PTX 308460-308473,308524-308530: <code>32768</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-mma-instructions"><code>tcgen05.mma</code></a>
+
+##### Source references: Which warps execute the two sides
+
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json#L6"><code>input.json#/launch/block_dim</code></a>: <code>[512,1,1]</code>
+- physical PTX 307806-307865: <code>%tid.x</code>, <code>%r2, 12</code>, <code>%r2, 13</code>, <code>%r2157, 4</code>
+- physical PTX 308434-308449,310576-310580,314757-314800: <code>%p46</code>, <code>%p47</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-try-wait"><code>mbarrier.try_wait</code></a>
+- physical PTX 314813-314822: <code>@%p57</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor"><code>cp.async.bulk.tensor</code></a>
+
+##### Source references: The supplied configuration admits both paths
+
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json#L11"><code>input.json#/launch/grid_dim</code></a>: <code>[1,1,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json#L23"><code>input.json#/arguments/0</code></a>: <code>{&quot;parameter&quot;:0,&quot;offset&quot;:0,&quot;type&quot;:&quot;s32&quot;,&quot;value&quot;:256}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json#L29"><code>input.json#/arguments/1</code></a>: <code>{&quot;parameter&quot;:0,&quot;offset&quot;:4,&quot;type&quot;:&quot;s32&quot;,&quot;value&quot;:256}</code>
+- physical PTX 308444-308459,314762-314770: <code>shl.b32</code>
+- physical PTX 309150-309170,310156-310187: <code>%r2302</code>, <code>@%p183</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen-async-sync-operations-commit"><code>tcgen05.commit</code></a>
+- physical PTX 314813-314934,314936-314955,315315-315407: <code>%r2318</code>, <code>@%p85</code>
+
+##### Source references: Keep the configured analysis boundary
+
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json#L258"><code>input.json#/branch_decisions</code></a>: <code>list, 10 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json#L255"><code>input.json#/assumptions/representative_election</code></a>: <code>true</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L271"><code>output.json#/frontend/address_value_bridge/diagnostics</code></a>: <code>list, 1 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L634"><code>output.json#/semantic_program/mapping_complete</code></a>: <code>false</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L56"><code>output.json#/checks</code></a>: <code>{&quot;equivalence&quot;:&quot;not_run&quot;,&quot;memory&quot;:&quot;not_run&quot;,&quot;synchronization&quot;:&quot;failed&quot;}</code>
+
+##### Additional section references
+
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json#L3"><code>input.json#/entry</code></a>: <code>str, 547 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json#L4"><code>input.json#/launch</code></a>: <code>{&quot;dynamic_shared_bytes&quot;:232448,&quot;block_dim&quot;:[512,1,1],&quot;grid_dim&quot;:[1,1,1],&quot;cluster_dim&quot;:[1,1,1]}</code>
+- physical PTX 314813-314822,314849-314859,314924-314934: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor"><code>cp.async.bulk.tensor</code></a>
+- physical PTX 308524-308530,315452-315459: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-mma-instructions"><code>tcgen05.mma</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor"><code>cp.async.bulk.tensor.5d.global</code></a>
+- physical PTX 314789-314800,310182-310187: <code>81936</code>
+
+</blockquote>
 
 </details>
 
-### 1.2 Analysis scope
+</details>
 
-**Coverage:** Memory analysis complete: **no** · Search complete: <code>not saved</code> · Exhaustive search: <code>not saved</code>.
+### 2. Q-ready announces available data; Q-release allows reuse
 
-**Assumption-dependent:** <code>true</code>. Triggered rules: Representative election.
+Two barriers have different jobs: **Q-ready** tells the compute warp that the input copy has finished; **Q-release** receives the compute warp’s later completion notification.
 
-This result applies to the supplied launch, arguments and enabled assumptions.
-<!-- verifier-result:end -->
+The rejected wait is on Q-release. Its test uses **parity `1`**, while initialization starts the barrier at phase `0`. That test can succeed immediately, allowing the first copy to start. The startup wait therefore does not wait for the current matrix work to finish.
+
+| Protocol point | Q-ready · shared +81920 | Q-release · shared +81936 |
+| --- | --- | --- |
+| After initialization | Phase 0 · one arrival expected | Phase 0 · one arrival expected |
+| Loader’s first Q copy | Expect 16 KiB; TMA completes the bytes | Startup wait uses parity `1` |
+| Compute consumes Q | Wait uses parity `0` | Later <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen-async-sync-operations-commit"><code>tcgen05.commit</code></a> notifies completion |
+
+<p><strong>Startup gate: test Q-release with opposite parity</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx#L314789-L314801" title="Open the original PTX">physical PTX 314789–314801</a></p>
+
+<ul>
+<li><code>%r235</code> — Q-release barrier address</li>
+<li><code>%r236</code> — Literal parity 1</li>
+</ul>
+
+<pre><code><strong>mov.b32</strong> %r241, _ZN7cutlass4smemE;
+<strong>add.s32</strong> %r235, %r241, <strong>81936</strong>;
+<strong>mov.b32</strong> <strong>%r236</strong>, 1;
+<strong>mov.b32</strong> %r237, 10000000;
+
+{
+.reg .pred P1;
+LAB_WAIT:
+<a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-try-wait"><strong>mbarrier.try_wait.parity.shared::cta.b64</strong></a> P1, [%r235], <strong>%r236</strong>, %r237;
+<strong>@P1</strong> <strong>bra</strong> DONE;
+<strong>bra</strong> LAB_WAIT;
+DONE:
+}</code></pre>
+
+
+<details>
+<summary><strong>Derivation: barrier initialization and startup phase</strong></summary>
+
+#### Both barrier addresses are initialized before role dispatch
+
+One elected lane of warp 0 initializes both barriers with arrival count 1. The barrier-initialization fence and CTA-wide `bar.sync 0` precede the split into loader and compute paths. PTX initializes an mbarrier at phase 0. The loader’s literal parity 1 therefore allows the first copy to start before any matrix-completion arrival; calling this wait “wait for the current computation” would reverse its startup purpose.
+
+<p><strong>One arrival expected for Q-ready and Q-release</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx#L307945-L307957" title="Open the original PTX">physical PTX 307945–307957</a></p>
+
+<pre><code><strong>mov.b32</strong> %r97, _ZN7cutlass4smemE;
+<strong>add.s32</strong> %r93, %r97, <strong>81920</strong>;
+<strong>mov.b32</strong> <strong>%r92</strong>, 1;
+
+{
+<a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init"><strong>mbarrier.init.shared::cta.b64</strong></a> [%r93], <strong>%r92</strong>;
+}
+
+<strong>add.s32</strong> %r94, %r97, <strong>81936</strong>;
+
+{
+<a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init"><strong>mbarrier.init.shared::cta.b64</strong></a> [%r94], <strong>%r92</strong>;
+}</code></pre>
+
+
+#### The checked completion belongs to the release barrier
+
+The saved rejection names model barrier 1, generation 0. Its source mappings tie the wait to PTX 314797 and the required completion effect to 310187. The latter is a <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen-async-sync-operations-commit"><code>tcgen05.commit</code></a> with address shared +81936. It arranges a completion arrival after preceding asynchronous matrix operations; issuing the commit is not that completion itself. Q-ready uses shared +81920 instead, so its TMA completion must not be confused with this later release notification.
+
+<p><strong>Notify Q-release when prior matrix operations complete</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx#L310182-L310187" title="Open the original PTX">physical PTX 310182–310187</a> · display wrapping added</p>
+
+<ul>
+<li><code>%r2047</code> — The same Q-release address</li>
+</ul>
+
+<pre><code><strong>setp.eq.b32</strong> %p184, %r2045, 0;
+@%p184 <strong>bra</strong> $L__BB37_152;
+<strong>mov.b32</strong> %r2048, _ZN7cutlass4smemE;
+<strong>add.s32</strong> %r2047, %r2048, <strong>81936</strong>;
+
+<a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen-async-sync-operations-commit"><strong>tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64</strong></a>
+    [%r2047];</code></pre>
+
+
+#### Why startup order matters
+
+A parity bit repeats across barrier phases. The checker therefore needs the startup wait issue to precede a completion effect that advances this barrier out of its initial phase. The failed requirement is that direction: wait issue before the listed completion effect. It does not say that the completion happened first, and it does not establish a hardware race.
+
+<details>
+<summary><strong>Sources: barrier initialization and startup phase</strong></summary>
+
+<blockquote>
+
+##### Source references: Both barrier addresses are initialized before role dispatch
+
+- physical PTX 307927-307956,307971-307975,308367-308373: <code>%r88, 0</code>, <code>elect.sync</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init"><code>mbarrier.init</code></a>, <code>fence.mbarrier_init</code>, <code>bar.sync</code>
+
+##### Source references: The checked completion belongs to the release barrier
+
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L597"><code>output.json#/rejection/phase</code></a>: <code>{&quot;barrier&quot;:1,&quot;generation&quot;:0}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L878"><code>output.json#/source_events/32</code></a>: <code>{&quot;column&quot;:1,&quot;event&quot;:1239648,&quot;file&quot;:&quot;corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx&quot;,&quot;instruction&quot;:316627,&quot;line&quot;:310187}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L885"><code>output.json#/source_events/33</code></a>: <code>{&quot;column&quot;:1,&quot;event&quot;:1290359,&quot;file&quot;:&quot;corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx&quot;,&quot;instruction&quot;:330050,&quot;line&quot;:314797}</code>
+- physical PTX 310182-310187,314789-314822: <code>81936</code>, <code>81920</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen-async-sync-operations-commit"><code>tcgen05.commit</code></a>
+
+##### Source references: Why startup order matters
+
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L593"><code>output.json#/rejection</code></a>: <code>dict, 5 entries; see original artifact</code>
+- physical PTX 314791-314800,310182-310187: <code>%r236, 1</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-try-wait"><code>mbarrier.try_wait</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen-async-sync-operations-commit"><code>tcgen05.commit</code></a>
+
+##### Additional section references
+
+- physical PTX 307943-307956,308373: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init"><code>mbarrier.init</code></a>, <code>%r92, 1</code>, <code>bar.sync</code>
+- physical PTX 314789-314822: <code>81936</code>, <code>%r236, 1</code>, <code>81920</code>, <code>16384</code>
+- physical PTX 308474-308485,310182-310187: <code>%r1581, 0</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen-async-sync-operations-commit"><code>tcgen05.commit</code></a>
+
+</blockquote>
+
+</details>
+
+</details>
+
+### 3. Only one loader lane issues the copy
+
+All 32 loader lanes execute the startup wait, but **only the elected lane submits the Q copy**. For that lane, source order leads from the wait to the copy; copy completion then enables the compute warp’s Q-ready wait.
+
+The failing model event identifies the wait’s source site, but supplies **neither its lane identity nor the intervening ordering edges**. The diagram explains the source protocol. The missing lane binding prevents it from explaining the failure of that particular model event.
+
+```mermaid
+---
+config:
+  theme: base
+  flowchart:
+    curve: linear
+    nodeSpacing: 24
+    rankSpacing: 24
+  themeVariables:
+    lineColor: "#8c959f"
+    edgeLabelBackground: "#f6f8fa"
+    fontFamily: Arial
+    fontSize: 17px
+---
+flowchart TB
+  subgraph L["Loader warp 13"]
+    A["Elected lane: startup wait"] -->|"local source order"| B["Submit Q TMA copy"]
+    X["Other 31 lanes: startup wait<br/>No Q copy"]
+  end
+  B ==>|"Q-ready completion"| C["Compute warp 12: wait for Q"]
+  C -->|"local source path"| D["Matrix work, then commit"]
+  D ==>|"async completion notification"| E["Q-release phase advances"]
+  class A,B,C,D operation
+  class E context
+  class X focus
+classDef focus fill:#f0ebfa,stroke:#bba6d9,color:#513477
+classDef context fill:#f6f8fa,stroke:#abb5c0,color:#344251
+classDef operation fill:#e8f0ff,stroke:#8ca7d2,color:#254b83
+```
+
+Single arrows show source order within the indicated participant; double arrows show the named PTX completion handoff. No ordering edge from the other loader lanes to the elected lane’s copy is assumed. This is a source-protocol view, not a replay or an observed GPU schedule.
+
+<p><strong>Only the elected loader lane submits the Q copy</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx#L314813-L314824" title="Open the original PTX">physical PTX 314813–314824</a> · display wrapping added</p>
+
+<ul>
+<li><code>%rd22</code> — Q tensor-map descriptor</li>
+<li><code>%r245</code> — Shared Q tile destination</li>
+<li><code>%r246</code> — Q-ready barrier</li>
+</ul>
+
+<pre><code><strong>setp.eq.b32</strong> %p57, %r233, 0;
+<strong>@%p57</strong> <strong>bra</strong> $L__BB37_241;
+<strong>cvta.param.u64</strong> %rd24, %rd1;
+<strong>add.s64</strong> %rd22, %rd24, <strong>128</strong>;
+<strong>mov.b32</strong> %r245, _ZN7cutlass4smemE;
+<strong>add.s32</strong> %r246, %r245, 81920;
+<strong>mov.b32</strong> %r247, 0;
+<strong>mov.b64</strong> %rd23, 1152921504606846976;
+
+<a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor"><strong>cp.async.bulk.tensor.5d.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint</strong></a>
+    [%r245], [%rd22, {%r247, %r248, %r271, %r56, %r54}], [%r246], %rd23;
+
+$L__BB37_241:</code></pre>
+
+
+<details>
+<summary><strong>Derivation: copy completion and loader lanes</strong></summary>
+
+#### The wait includes every loader lane; submission is elected
+
+The election at PTX 314783 sets `%r233 = 1` only in its elected lane. The wait at 314797 has no lane-selection branch. After it succeeds, `%r233 == 0` branches over the copy at 314822. A separate entry election controls the single `arrive.expect_tx` at 314809 through `%p1`; under the supplied representative-election rule both elections choose the preferred lane 0. The all-lane wait is therefore distinct from the single-lane copy and arrival. There is no later explicit `bar.warp.sync` between this wait and the copy; that observation alone does not prove the model is missing an edge.
+
+#### Q-ready carries copy completion into the matrix path
+
+The loader expects 16,384 bytes on shared +81920 and supplies that same address to <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor"><code>cp.async.bulk.tensor</code></a>. The compute warp waits on shared +81920 with parity 0 before its first <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-mma-instructions"><code>tcgen05.mma</code></a>. This is the input-ready handoff that connects the elected loader lane to matrix work. The compute warp also waits for K and other pipeline stages; Q-ready alone is not a claim that all later matrix work is immediately executable.
+
+<p><strong>Compute waits for the first Q-ready phase</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx#L308474-L308485" title="Open the original PTX">physical PTX 308474–308485</a></p>
+
+<pre><code><strong>add.s32</strong> %r1576, %r1584, <strong>81920</strong>;
+<strong>mov.b32</strong> <strong>%r1581</strong>, 0;
+<strong>mov.b32</strong> %r1577, 10000000;
+
+{
+.reg .pred P1;
+LAB_WAIT:
+<a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-try-wait"><strong>mbarrier.try_wait.parity.shared::cta.b64</strong></a> P1, [%r1576], <strong>%r1581</strong>, %r1577;
+<strong>@P1</strong> <strong>bra</strong> DONE;
+<strong>bra</strong> LAB_WAIT;
+DONE:
+}</code></pre>
+
+
+#### The release notification follows the configured matrix path
+
+Warp 12 elects one lane at each matrix-issue and commit site. With the supplied extent 256, the loop counter starts at 2; after one remaining-work body, the `> 2` back-edge is false and control reaches the release commit. That site notifies shared +81936; the following commit uses shared +81944 for the second Q tile. These are distinct release barriers, not two arrivals required to finish the first barrier’s phase.
+
+#### The retained replay cannot supply the missing lane-by-lane history
+
+The 32 retained executed-prefix IDs all map to the entry shuffle at PTX 307808. Neither endpoint of the failed requirement appears in that retained prefix. `source_events` separately maps the later wait and commit effect to PTX, but provides no CUDA thread field. The first unexecuted event maps to the same wait site as the failed issue. Thus the saved result locates the stop and the rejected relation; reconstructing a participant timeline around that stop requires the omitted event bindings and ordering edges, not invented steps between the sample and the stop.
+
+<details>
+<summary><strong>Sources: copy completion and loader lanes</strong></summary>
+
+<blockquote>
+
+##### Source references: The wait includes every loader lane; submission is elected
+
+- physical PTX 307870-307912,314776-314822: <code>%r233</code>, <code>%p1</code>, <code>elect.sync</code>, <code>@%p57</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json#L255"><code>input.json#/assumptions/representative_election</code></a>: <code>true</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L345"><code>output.json#/frontend/frontend_assumptions/election_policy</code></a>: <code>{&quot;fallback&quot;:&quot;lowest_member&quot;,&quot;preferred_lane&quot;:0,&quot;strategy&quot;:&quot;preferred_member&quot;}</code>
+
+##### Source references: Q-ready carries copy completion into the matrix path
+
+- physical PTX 314803-314822,308474-308530: <code>81920</code>, <code>16384</code>, <code>%r1581, 0</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-mma-instructions"><code>tcgen05.mma</code></a>
+
+##### Source references: The release notification follows the configured matrix path
+
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json#L29"><code>input.json#/arguments/1</code></a>: <code>{&quot;parameter&quot;:0,&quot;offset&quot;:4,&quot;type&quot;:&quot;s32&quot;,&quot;value&quot;:256}</code>
+- physical PTX 308444-308459,309150-309170,310156-310208: <code>%r2302</code>, <code>%p183</code>, <code>81936</code>, <code>81944</code>, <code>elect.sync</code>
+
+##### Source references: The retained replay cannot supply the missing lane-by-lane history
+
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L101"><code>output.json#/counterexample/executed_prefix</code></a>: <code>dict, 3 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L139"><code>output.json#/counterexample/first_unexecuted</code></a>: <code>1290360</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L653"><code>output.json#/source_events</code></a>: <code>list, 45 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L878"><code>output.json#/source_events/32</code></a>: <code>{&quot;column&quot;:1,&quot;event&quot;:1239648,&quot;file&quot;:&quot;corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx&quot;,&quot;instruction&quot;:316627,&quot;line&quot;:310187}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L885"><code>output.json#/source_events/33</code></a>: <code>{&quot;column&quot;:1,&quot;event&quot;:1290359,&quot;file&quot;:&quot;corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx&quot;,&quot;instruction&quot;:330050,&quot;line&quot;:314797}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L892"><code>output.json#/source_events/34</code></a>: <code>{&quot;column&quot;:1,&quot;event&quot;:1290360,&quot;file&quot;:&quot;corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx&quot;,&quot;instruction&quot;:330050,&quot;line&quot;:314797}</code>
+
+##### Additional section references
+
+- physical PTX 314776-314822: <code>elect.sync</code>, <code>@%p57</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor"><code>cp.async.bulk.tensor</code></a>
+- physical PTX 307870-307912: <code>elect.sync</code>, <code>%p1</code>
+- physical PTX 308474-308530,310182-310187: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-try-wait"><code>mbarrier.try_wait</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-mma-instructions"><code>tcgen05.mma</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen-async-sync-operations-commit"><code>tcgen05.commit</code></a>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L593"><code>output.json#/rejection</code></a>: <code>dict, 5 entries; see original artifact</code>
+
+</blockquote>
+
+</details>
+
+</details>
+
+### 4. Next check
+
+Identify the loader lane bound to wait event `1290359`, then inspect its ordering edges to the Q-copy issuer, Q-ready completion and release effect `1239648`.
+
+The saved output gives the endpoint locations and edge counts, but omits those bindings and edges. They are needed to distinguish a missing model dependency from a source synchronization problem.
+
+<details>
+<summary><strong>Evidence for the next check</strong></summary>
+
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L593"><code>output.json#/rejection</code></a>: <code>dict, 5 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L878"><code>output.json#/source_events/32</code></a>: <code>{&quot;column&quot;:1,&quot;event&quot;:1239648,&quot;file&quot;:&quot;corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx&quot;,&quot;instruction&quot;:316627,&quot;line&quot;:310187}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L885"><code>output.json#/source_events/33</code></a>: <code>{&quot;column&quot;:1,&quot;event&quot;:1290359,&quot;file&quot;:&quot;corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx&quot;,&quot;instruction&quot;:330050,&quot;line&quot;:314797}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L197"><code>output.json#/counts/edges</code></a>: <code>2981284</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L625"><code>output.json#/semantic_program</code></a>: <code>dict, 14 entries; see original artifact</code>
+- physical PTX 314776-314822,308474-308485,310182-310187: <code>elect.sync</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-try-wait"><code>mbarrier.try_wait</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen-async-sync-operations-commit"><code>tcgen05.commit</code></a>
+
+</details>
+
+<!-- code-explanation:end -->
 
 <!-- verifier-evidence:start -->
 ## Evidence appendix
@@ -131,7 +494,7 @@ These are saved verifier records. Truncation flags describe missing records in t
 
 Wait check failed: <code>issue_not_ordered_before_next_phase</code>.
 
-**Issue event:** <code>1290359</code> · **Barrier phase:** <code>{&quot;barrier&quot;:1,&quot;generation&quot;:0}</code> · <code>output.json#/rejection</code>
+**Issue event:** <code>1290359</code> · **Barrier phase:** <code>{&quot;barrier&quot;:1,&quot;generation&quot;:0}</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L593"><code>output.json#/rejection</code></a>
 
 #### Model replay coverage
 
@@ -144,7 +507,7 @@ Each row describes one saved sequence. Truncation means events are missing from 
 | <code>replayed_candidate_order</code> | 32 / <code>1318491</code> | <code>true</code> |
 | <code>unexecuted_candidate</code> | 11 / <code>11</code> | <code>false</code> |
 
-**Replay stop:** first unexecuted event <code>1290360</code>. Exact arrays and flags: <code>output.json#/counterexample</code>.
+**Replay stop:** first unexecuted event <code>1290360</code>. Exact arrays and flags: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L61"><code>output.json#/counterexample</code></a>.
 
 #### Event-to-source lookup
 
@@ -163,7 +526,7 @@ Event IDs below are lookup sets, **not execution order**. Each file is named onc
 | 1 · <code>315329</code> / <code>1</code> | <code>1290367–1290368</code> | <code>330054</code> |
 | 1 · <code>315371</code> / <code>1</code> | <code>1290369–1290370</code> | <code>330055</code> |
 
-Exact per-event associations: <code>output.json#/source_events</code>.
+Exact per-event associations: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L653"><code>output.json#/source_events</code></a>.
 
 #### Diagnostics
 
@@ -192,7 +555,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Rejection
 
-<code>output.json#/rejection</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L593"><code>output.json#/rejection</code></a>
 
 ```json
 {
@@ -215,7 +578,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Counterexample
 
-<code>output.json#/counterexample</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L61"><code>output.json#/counterexample</code></a>
 
 ```json
 {
@@ -357,7 +720,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Source events
 
-<code>output.json#/source_events</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L653"><code>output.json#/source_events</code></a>
 
 **Retained records:** 45.
 
@@ -683,7 +1046,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Diagnostics
 
-<code>output.json#/diagnostics</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L202"><code>output.json#/diagnostics</code></a>
 
 **Retained records:** 1.
 
@@ -855,20 +1218,20 @@ Execute a configured number of body iterations for unresolved recognized computa
 
 Memory safety and numerical equivalence are separate results.
 
-**Value analysis:** <code>unsupported</code> · <code>output.json#/value_analysis</code>
+**Value analysis:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L1001"><code>output.json#/value_analysis</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_requested</code>.
 
 - **Prerequisite status:** <code>not_wellsynced</code>
 - **Scope:** {&quot;operation&quot;:&quot;<code>value_analysis</code>&quot;}
-- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <code>output.json#/value_analysis/diagnostics/0</code>
+- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L1008"><code>output.json#/value_analysis/diagnostics/0</code></a>
 
-**Equivalence:** <code>unsupported</code> · <code>output.json#/equivalence</code>
+**Equivalence:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L223"><code>output.json#/equivalence</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_run</code>.
 
 - **Scope:** {&quot;operation&quot;:&quot;equivalence&quot;}
-- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <code>output.json#/equivalence/diagnostics/0</code>
+- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/output.json#L230"><code>output.json#/equivalence/diagnostics/0</code></a>
 
 <details>
 <summary><strong>Exact value-analysis fields and large-data references</strong></summary>
@@ -983,7 +1346,7 @@ Memory safety and numerical equivalence are separate results.
 | Cluster · blocks | <code>[1,1,1]</code> |
 | Dynamic shared memory · bytes | <code>232448</code> |
 
-**Arguments:** 9 retained entries. Exact parameter bindings, descriptors and entry name: <code>input.json#</code>.
+**Arguments:** 9 retained entries. Exact parameter bindings, descriptors and entry name: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json#L1"><code>input.json#</code></a>.
 
 <details>
 <summary><strong>Exact input configuration</strong></summary>

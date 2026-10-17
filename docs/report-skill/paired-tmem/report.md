@@ -4,49 +4,17 @@
 <p align="center">flash_attention__bwd_hd256_bf16_2cta__sm_100a</p>
 <h1 align="center">LIFECYCLE ORDERING MISSING</h1>
 
-**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/flash_attention__bwd_hd256_bf16_2cta__sm_100a.ptx) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/input.json) · launch, arguments and assumptions.
+**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/flash_attention__bwd_hd256_bf16_2cta__sm_100a.ptx) ([raw](https://github.com/gpu-verifier/sentryward/raw/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/flash_attention__bwd_hd256_bf16_2cta__sm_100a.ptx)) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/input.json) · launch, arguments and assumptions.
 
 **Result:** [output.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json) · saved verifier findings.
 
-<details>
-<summary><strong>Analysis records — open the saved evidence</strong></summary>
-
-Each record link opens its field in the original `output.json`. Model summaries are not full execution traces.
-
-**Check the finding**
-
-- [Diagnostic messages and details · `diagnostics`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L67)
-- [Individual check outcomes · `checks`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L56)
-- [Failed lifecycle orders · `failed_required_orders`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L5652)
-
-**Check how the model was built**
-
-- [PTX translation · `frontend`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L7033)
-- [Model and source bindings · `semantic_program`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L7340)
-- [Synchronization-check setup · `synchronization_input`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L12479)
-
-**Check values separately**
-
-- [Value-analysis status · `value_analysis`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L12506)
-- [Numerical comparison · `equivalence`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L2845)
-
-For the records explained in this report, see the [Evidence appendix](#evidence-appendix).
-
-</details>
-
-## 1. Verifier result
-
-Saved findings and analysis scope, formatted directly from the verifier output.
-
-### 1.1 Required lifecycle order
+<table>
+<thead><tr><th align="left">VERIFIER RESULT · Required lifecycle order</th></tr></thead>
+<tbody><tr><td>
 
 A required lifecycle happens-before relation is absent in the analyzed model.
 
-**Saved result:** <code>invalid_lifecycle</code> · <code>output.json#/result</code>.
-
-**Checks:** Synchronization <code>incomplete</code> · Memory <code>not_run</code> · Equivalence <code>not_run</code>.
-
-**Operation:** <code>kernel_verification</code>.
+**Synchronization:** Incomplete · **Memory:** Not run · **Equivalence:** Not run
 
 **2 diagnostic categories · 2 retained records.**
 
@@ -108,13 +76,13 @@ Dashed arrow: required ordering, not established by this run.
 
 #### One allocation
 
-**Requirement:** <code>access_completion_before_dealloc</code> · <code>output.json#/diagnostics/0/details</code>.
+**Requirement:** <code>access_completion_before_dealloc</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L70"><code>output.json#/diagnostics/0/details</code></a>.
 
 First saved witness: model instruction <code>85888</code> → <code>86362</code>. The arrow denotes the required order.
 
 #### Paired TMEM allocations
 
-**Requirement:** <code>tmem_group2_access_before_dealloc</code> · <code>output.json#/diagnostics/1/details</code>.
+**Requirement:** <code>tmem_group2_access_before_dealloc</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L1458"><code>output.json#/diagnostics/1/details</code></a>.
 
 First saved witness: model instruction <code>85888</code> → <code>86362</code>. The arrow denotes the required order.
 
@@ -122,13 +90,56 @@ Instruction IDs identify model records, not physical PTX lines or CUDA issuers. 
 
 </details>
 
-### 1.2 Analysis scope
+<details>
+<summary><strong>Saved status and diagnostic codes</strong></summary>
+
+**Saved result:** <code>invalid_lifecycle</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L7327"><code>output.json#/result</code></a>.
+
+**Operation:** <code>kernel_verification</code>.
+
+**Checks:** Synchronization <code>incomplete</code> · Memory <code>not_run</code> · Equivalence <code>not_run</code>.
+
+</details>
+
+</td></tr>
+<tr><td>
+
+### Analysis scope
 
 **Coverage:** Memory analysis complete: **no** · Search complete: <code>not saved</code> · Exhaustive search: <code>not saved</code>.
 
 **Assumption-dependent:** <code>true</code>. Triggered rules: Representative election.
 
 This result applies to the supplied launch, arguments and enabled assumptions.
+
+<details>
+<summary><strong>Analysis records — open the saved evidence</strong></summary>
+
+Each record link opens its field in the original `output.json`. Model summaries are not full execution traces.
+
+**Check the finding**
+
+- [Diagnostic messages and details · `diagnostics`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L67)
+- [Individual check outcomes · `checks`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L56)
+- [Failed lifecycle orders · `failed_required_orders`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L5652)
+
+**Check how the model was built**
+
+- [PTX translation · `frontend`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L7033)
+- [Model and source bindings · `semantic_program`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L7340)
+- [Synchronization-check setup · `synchronization_input`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L12479)
+
+**Check values separately**
+
+- [Value-analysis status · `value_analysis`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L12506)
+- [Numerical comparison · `equivalence`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L2845)
+
+For the records explained in this report, see the [Evidence appendix](#evidence-appendix).
+
+</details>
+
+</td></tr></tbody>
+</table>
 <!-- verifier-result:end -->
 
 <!-- verifier-evidence:start -->
@@ -184,7 +195,7 @@ These are saved verifier records. Truncation flags describe missing records in t
 
 tcgen05.load must complete before the allocation is deallocated
 
-Effect lists and per-record flags: <code>output.json#/failed_required_orders</code>.
+Effect lists and per-record flags: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L5652"><code>output.json#/failed_required_orders</code></a>.
 
 #### Diagnostics
 
@@ -229,7 +240,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Diagnostics
 
-<code>output.json#/diagnostics</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L67"><code>output.json#/diagnostics</code></a>
 
 **Retained records:** 2.
 
@@ -3016,7 +3027,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Error
 
-<code>output.json#/error</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L5648"><code>output.json#/error</code></a>
 
 ```json
 {
@@ -3027,7 +3038,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Failed required orders
 
-<code>output.json#/failed_required_orders</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L5652"><code>output.json#/failed_required_orders</code></a>
 
 **Retained records:** 32.
 
@@ -3185,20 +3196,20 @@ Execute a configured number of body iterations for unresolved recognized computa
 
 Memory safety and numerical equivalence are separate results.
 
-**Value analysis:** <code>unsupported</code> · <code>output.json#/value_analysis</code>
+**Value analysis:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L12506"><code>output.json#/value_analysis</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_requested</code>.
 
 - **Prerequisite status:** <code>unsafe_lifecycle</code>
 - **Scope:** {&quot;operation&quot;:&quot;<code>value_analysis</code>&quot;}
-- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <code>output.json#/value_analysis/diagnostics/0</code>
+- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L12513"><code>output.json#/value_analysis/diagnostics/0</code></a>
 
-**Equivalence:** <code>unsupported</code> · <code>output.json#/equivalence</code>
+**Equivalence:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L2845"><code>output.json#/equivalence</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_run</code>.
 
 - **Scope:** {&quot;operation&quot;:&quot;equivalence&quot;}
-- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <code>output.json#/equivalence/diagnostics/0</code>
+- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/output.json#L2852"><code>output.json#/equivalence/diagnostics/0</code></a>
 
 <details>
 <summary><strong>Exact value-analysis fields and large-data references</strong></summary>
@@ -3286,7 +3297,7 @@ Memory safety and numerical equivalence are separate results.
 | Cluster · blocks | <code>[2,1,1]</code> |
 | Dynamic shared memory · bytes | <code>232448</code> |
 
-**Arguments:** 13 retained entries. Exact parameter bindings, descriptors and entry name: <code>input.json#</code>.
+**Arguments:** 13 retained entries. Exact parameter bindings, descriptors and entry name: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/input.json#L1"><code>input.json#</code></a>.
 
 <details>
 <summary><strong>Exact input configuration</strong></summary>

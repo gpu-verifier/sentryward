@@ -41,7 +41,8 @@ class PublishedExplanationTests(unittest.TestCase):
                     shutil.copyfile(path, copied)
                     args += ['--' + key, display_path]
                 for key, value in case.get('render_options', {}).items():
-                    args += ['--' + key.replace('_', '-'), value]
+                    flag = '--' + key.replace('_', '-')
+                    args += [flag] if value is True else [flag, value]
                 args += ['--report', str(report)]
                 for script in ('report_facts.py', 'check_report.py'):
                     result = subprocess.run([sys.executable, str(SCRIPTS / script), *args],

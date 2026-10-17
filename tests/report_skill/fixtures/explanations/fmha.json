@@ -1,0 +1,559 @@
+{
+  "version": 2,
+  "title": "FMHA: Q-input barrier handoff",
+  "context": {
+    "title": "The reported wait guards the first Q copy",
+    "summary": "This forward-attention kernel stages `Q`, `K` and `V` in shared memory, uses tensor memory (TMEM) for matrix accumulators, and writes output `O` to global memory.\n\nThe finding concerns the **Q-input handoff**. The input-loader warp waits before its first 16 KiB `Q` copy. A separate matrix-compute warp later sends a completion notification to the same barrier. The report follows how these two source paths connect.",
+    "evidence": [
+      {
+        "kind": "input",
+        "pointer": "/entry"
+      },
+      {
+        "kind": "input",
+        "pointer": "/launch"
+      },
+      {
+        "kind": "input",
+        "pointer": "/tma_descriptors"
+      },
+      {
+        "kind": "ptx",
+        "lines": "314813-314822,314849-314859,314924-314934",
+        "contains": [
+          "cp.async.bulk.tensor"
+        ]
+      },
+      {
+        "kind": "ptx",
+        "lines": "308524-308530,315452-315459",
+        "contains": [
+          "tcgen05.mma",
+          "cp.async.bulk.tensor.5d.global"
+        ]
+      },
+      {
+        "kind": "ptx",
+        "lines": "314789-314800,310182-310187",
+        "contains": [
+          "81936"
+        ]
+      }
+    ],
+    "evidence_title": "Derivation: warp roles and configured workload",
+    "steps": [
+      {
+        "label": "Where the input and output paths meet the computation",
+        "text": "The supplied descriptor offsets identify `Q` at parameter +128, `K` at +384, `V` at +640 and `O` at +1024. Their TMA sites are PTX 314822, 314859, 314934 and 315459 respectively. The first `Q` tile is 64 × 128 f16 elements: 64 × 128 × 2 = 16,384 bytes. The matrix path builds shared-memory descriptors from the `Q` base and `K` base +32,768 before `tcgen05.mma` writes TMEM. This account follows that input handoff; it does not reconstruct the numerical attention calculation.",
+        "evidence": [
+          {
+            "kind": "input",
+            "pointer": "/tma_descriptors"
+          },
+          {
+            "kind": "ptx",
+            "lines": "314813-314822,314849-314859,314924-314934,315452-315459",
+            "contains": [
+              "128",
+              "384",
+              "640",
+              "1024"
+            ]
+          },
+          {
+            "kind": "ptx",
+            "lines": "308460-308473,308524-308530",
+            "contains": [
+              "32768",
+              "tcgen05.mma"
+            ]
+          }
+        ]
+      },
+      {
+        "label": "Which warps execute the two sides",
+        "text": "The entry computes the warp number as `tid.x >> 5`. Dispatch assigns warp 12 to role 3 and warp 13 to role 4; roles 0–2 take other compute/epilogue paths. Role 3 falls through PTX 308434–308439 to the matrix path. Role 4 branches through 310577–310578 to the loader at 314757. With 512 threads, these are threads 384–415 and 416–447. All 32 loader lanes reach the startup wait; the copy below it is elected-lane-only.",
+        "evidence": [
+          {
+            "kind": "input",
+            "pointer": "/launch/block_dim"
+          },
+          {
+            "kind": "ptx",
+            "lines": "307806-307865",
+            "contains": [
+              "%tid.x",
+              "%r2, 12",
+              "%r2, 13",
+              "%r2157, 4"
+            ]
+          },
+          {
+            "kind": "ptx",
+            "lines": "308434-308449,310576-310580,314757-314800",
+            "contains": [
+              "%p46",
+              "%p47",
+              "mbarrier.try_wait"
+            ]
+          },
+          {
+            "kind": "ptx",
+            "lines": "314813-314822",
+            "contains": [
+              "@%p57",
+              "cp.async.bulk.tensor"
+            ]
+          }
+        ]
+      },
+      {
+        "label": "The supplied configuration admits both paths",
+        "text": "Both paths load parameter offsets 0 and 4 as 256 and 256. The only CTA has `ctaid.x = 0`, so its tile origin is `0 << 8 = 0 < 256`, and the second extent is nonzero. Neither work guard exits before the handoff. The matrix path computes `(256 + 127) >> 7 = 2`; its remaining-work loop executes one body before reaching the `Q`-release commit. The loader’s bootstrap order is first `Q` tile, first `K` tile, second `Q` tile, then first `V` tile; the remaining `K`/`V` loop follows. That later loop does not revisit the startup wait at PTX 314797.",
+        "evidence": [
+          {
+            "kind": "input",
+            "pointer": "/launch/grid_dim"
+          },
+          {
+            "kind": "input",
+            "pointer": "/arguments/0"
+          },
+          {
+            "kind": "input",
+            "pointer": "/arguments/1"
+          },
+          {
+            "kind": "ptx",
+            "lines": "308444-308459,314762-314770",
+            "contains": [
+              "shl.b32"
+            ]
+          },
+          {
+            "kind": "ptx",
+            "lines": "309150-309170,310156-310187",
+            "contains": [
+              "%r2302",
+              "@%p183",
+              "tcgen05.commit"
+            ]
+          },
+          {
+            "kind": "ptx",
+            "lines": "314813-314934,314936-314955,315315-315407",
+            "contains": [
+              "%r2318",
+              "@%p85"
+            ]
+          }
+        ]
+      },
+      {
+        "label": "Keep the configured analysis boundary",
+        "text": "The input fixes ten softmax-correction branch decisions and enables representative election. The saved frontend also records an unresolved compute diamond at PTX 313193 and incomplete value semantics. These conditions remain part of the result; the source explanation below establishes the local handoff, not full numerical correctness.",
+        "evidence": [
+          {
+            "kind": "input",
+            "pointer": "/branch_decisions"
+          },
+          {
+            "kind": "input",
+            "pointer": "/assumptions/representative_election"
+          },
+          {
+            "kind": "result",
+            "pointer": "/frontend/address_value_bridge/diagnostics"
+          },
+          {
+            "kind": "result",
+            "pointer": "/semantic_program/mapping_complete"
+          },
+          {
+            "kind": "result",
+            "pointer": "/checks"
+          }
+        ]
+      }
+    ]
+  },
+  "sections": [
+    {
+      "title": "Q-ready announces available data; Q-release allows reuse",
+      "answer": "Two barriers have different jobs: **Q-ready** tells the compute warp that the input copy has finished; **Q-release** receives the compute warp’s later completion notification.\n\nThe rejected wait is on Q-release. Its test uses **parity `1`**, while initialization starts the barrier at phase `0`. That test can succeed immediately, allowing the first copy to start. The startup wait therefore does not wait for the current matrix work to finish.",
+      "evidence": [
+        {
+          "kind": "ptx",
+          "lines": "307943-307956,308373",
+          "contains": [
+            "mbarrier.init",
+            "%r92, 1",
+            "bar.sync"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "314789-314822",
+          "contains": [
+            "81936",
+            "%r236, 1",
+            "81920",
+            "16384"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "308474-308485,310182-310187",
+          "contains": [
+            "%r1581, 0",
+            "tcgen05.commit"
+          ]
+        },
+        {
+          "kind": "result",
+          "pointer": "/rejection"
+        }
+      ],
+      "comparison": {
+        "headers": [
+          "Protocol point",
+          "Q-ready · shared +81920",
+          "Q-release · shared +81936"
+        ],
+        "rows": [
+          [
+            "After initialization",
+            "Phase 0 · one arrival expected",
+            "Phase 0 · one arrival expected"
+          ],
+          [
+            "Loader’s first Q copy",
+            "Expect 16 KiB; TMA completes the bytes",
+            "Startup wait uses parity `1`"
+          ],
+          [
+            "Compute consumes Q",
+            "Wait uses parity `0`",
+            "Later `tcgen05.commit` notifies completion"
+          ]
+        ]
+      },
+      "code": {
+        "caption": "Startup gate: test Q-release with opposite parity",
+        "lines": "314789-314801",
+        "focus": [
+          "81936",
+          "%r236",
+          "mbarrier.try_wait.parity.shared::cta.b64",
+          "@P1"
+        ],
+        "operands": [
+          {
+            "token": "%r235",
+            "meaning": "Q-release barrier address"
+          },
+          {
+            "token": "%r236",
+            "meaning": "Literal parity 1"
+          }
+        ]
+      },
+      "evidence_title": "Derivation: barrier initialization and startup phase",
+      "steps": [
+        {
+          "label": "Both barrier addresses are initialized before role dispatch",
+          "text": "One elected lane of warp 0 initializes both barriers with arrival count 1. The barrier-initialization fence and CTA-wide `bar.sync 0` precede the split into loader and compute paths. PTX initializes an mbarrier at phase 0. The loader’s literal parity 1 therefore allows the first copy to start before any matrix-completion arrival; calling this wait “wait for the current computation” would reverse its startup purpose.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "307927-307956,307971-307975,308367-308373",
+              "contains": [
+                "%r88, 0",
+                "elect.sync",
+                "mbarrier.init",
+                "fence.mbarrier_init",
+                "bar.sync"
+              ]
+            }
+          ],
+          "code": {
+            "caption": "One arrival expected for Q-ready and Q-release",
+            "lines": "307945-307957",
+            "focus": [
+              "81920",
+              "81936",
+              "%r92",
+              "mbarrier.init.shared::cta.b64"
+            ]
+          }
+        },
+        {
+          "label": "The checked completion belongs to the release barrier",
+          "text": "The saved rejection names model barrier 1, generation 0. Its source mappings tie the wait to PTX 314797 and the required completion effect to 310187. The latter is a `tcgen05.commit` with address shared +81936. It arranges a completion arrival after preceding asynchronous matrix operations; issuing the commit is not that completion itself. Q-ready uses shared +81920 instead, so its TMA completion must not be confused with this later release notification.",
+          "evidence": [
+            {
+              "kind": "result",
+              "pointer": "/rejection/phase"
+            },
+            {
+              "kind": "result",
+              "pointer": "/source_events/32"
+            },
+            {
+              "kind": "result",
+              "pointer": "/source_events/33"
+            },
+            {
+              "kind": "ptx",
+              "lines": "310182-310187,314789-314822",
+              "contains": [
+                "81936",
+                "81920",
+                "tcgen05.commit"
+              ]
+            }
+          ],
+          "code": {
+            "caption": "Notify Q-release when prior matrix operations complete",
+            "lines": "310182-310187",
+            "focus": [
+              "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64",
+              "81936"
+            ],
+            "operands": [
+              {
+                "token": "%r2047",
+                "meaning": "The same Q-release address"
+              }
+            ]
+          }
+        },
+        {
+          "label": "Why startup order matters",
+          "text": "A parity bit repeats across barrier phases. The checker therefore needs the startup wait issue to precede a completion effect that advances this barrier out of its initial phase. The failed requirement is that direction: wait issue before the listed completion effect. It does not say that the completion happened first, and it does not establish a hardware race.",
+          "evidence": [
+            {
+              "kind": "result",
+              "pointer": "/rejection"
+            },
+            {
+              "kind": "ptx",
+              "lines": "314791-314800,310182-310187",
+              "contains": [
+                "%r236, 1",
+                "mbarrier.try_wait",
+                "tcgen05.commit"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Only one loader lane issues the copy",
+      "answer": "All 32 loader lanes execute the startup wait, but **only the elected lane submits the Q copy**. For that lane, source order leads from the wait to the copy; copy completion then enables the compute warp’s Q-ready wait.\n\nThe failing model event identifies the wait’s source site, but supplies **neither its lane identity nor the intervening ordering edges**. The diagram explains the source protocol. The missing lane binding prevents it from explaining the failure of that particular model event.",
+      "evidence": [
+        {
+          "kind": "ptx",
+          "lines": "314776-314822",
+          "contains": [
+            "elect.sync",
+            "@%p57",
+            "cp.async.bulk.tensor"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "307870-307912",
+          "contains": [
+            "elect.sync",
+            "%p1"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "308474-308530,310182-310187",
+          "contains": [
+            "mbarrier.try_wait",
+            "tcgen05.mma",
+            "tcgen05.commit"
+          ]
+        },
+        {
+          "kind": "result",
+          "pointer": "/source_events/33"
+        },
+        {
+          "kind": "result",
+          "pointer": "/rejection"
+        }
+      ],
+      "diagram": {
+        "kind": "mermaid",
+        "source": "flowchart TB\n  subgraph L[\"Loader warp 13\"]\n    A[\"Elected lane: startup wait\"] -->|\"local source order\"| B[\"Submit Q TMA copy\"]\n    X[\"Other 31 lanes: startup wait<br/>No Q copy\"]\n  end\n  B ==>|\"Q-ready completion\"| C[\"Compute warp 12: wait for Q\"]\n  C -->|\"local source path\"| D[\"Matrix work, then commit\"]\n  D ==>|\"async completion notification\"| E[\"Q-release phase advances\"]\n  class A,B,C,D operation\n  class E context\n  class X focus",
+        "meaning": "Single arrows show source order within the indicated participant; double arrows show the named PTX completion handoff. No ordering edge from the other loader lanes to the elected lane’s copy is assumed. This is a source-protocol view, not a replay or an observed GPU schedule."
+      },
+      "code": {
+        "caption": "Only the elected loader lane submits the Q copy",
+        "lines": "314813-314824",
+        "focus": [
+          "@%p57",
+          "128",
+          "cp.async.bulk.tensor.5d.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint"
+        ],
+        "operands": [
+          {
+            "token": "%rd22",
+            "meaning": "Q tensor-map descriptor"
+          },
+          {
+            "token": "%r245",
+            "meaning": "Shared Q tile destination"
+          },
+          {
+            "token": "%r246",
+            "meaning": "Q-ready barrier"
+          }
+        ]
+      },
+      "evidence_title": "Derivation: copy completion and loader lanes",
+      "steps": [
+        {
+          "label": "The wait includes every loader lane; submission is elected",
+          "text": "The election at PTX 314783 sets `%r233 = 1` only in its elected lane. The wait at 314797 has no lane-selection branch. After it succeeds, `%r233 == 0` branches over the copy at 314822. A separate entry election controls the single `arrive.expect_tx` at 314809 through `%p1`; under the supplied representative-election rule both elections choose the preferred lane 0. The all-lane wait is therefore distinct from the single-lane copy and arrival. There is no later explicit `bar.warp.sync` between this wait and the copy; that observation alone does not prove the model is missing an edge.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "307870-307912,314776-314822",
+              "contains": [
+                "%r233",
+                "%p1",
+                "elect.sync",
+                "@%p57"
+              ]
+            },
+            {
+              "kind": "input",
+              "pointer": "/assumptions/representative_election"
+            },
+            {
+              "kind": "result",
+              "pointer": "/frontend/frontend_assumptions/election_policy"
+            }
+          ]
+        },
+        {
+          "label": "Q-ready carries copy completion into the matrix path",
+          "text": "The loader expects 16,384 bytes on shared +81920 and supplies that same address to `cp.async.bulk.tensor`. The compute warp waits on shared +81920 with parity 0 before its first `tcgen05.mma`. This is the input-ready handoff that connects the elected loader lane to matrix work. The compute warp also waits for K and other pipeline stages; Q-ready alone is not a claim that all later matrix work is immediately executable.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "314803-314822,308474-308530",
+              "contains": [
+                "81920",
+                "16384",
+                "%r1581, 0",
+                "tcgen05.mma"
+              ]
+            }
+          ],
+          "code": {
+            "caption": "Compute waits for the first Q-ready phase",
+            "lines": "308474-308485",
+            "focus": [
+              "81920",
+              "%r1581",
+              "mbarrier.try_wait.parity.shared::cta.b64",
+              "@P1"
+            ]
+          }
+        },
+        {
+          "label": "The release notification follows the configured matrix path",
+          "text": "Warp 12 elects one lane at each matrix-issue and commit site. With the supplied extent 256, the loop counter starts at 2; after one remaining-work body, the `> 2` back-edge is false and control reaches the release commit. That site notifies shared +81936; the following commit uses shared +81944 for the second Q tile. These are distinct release barriers, not two arrivals required to finish the first barrier’s phase.",
+          "evidence": [
+            {
+              "kind": "input",
+              "pointer": "/arguments/1"
+            },
+            {
+              "kind": "ptx",
+              "lines": "308444-308459,309150-309170,310156-310208",
+              "contains": [
+                "%r2302",
+                "%p183",
+                "81936",
+                "81944",
+                "elect.sync"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "The retained replay cannot supply the missing lane-by-lane history",
+          "text": "The 32 retained executed-prefix IDs all map to the entry shuffle at PTX 307808. Neither endpoint of the failed requirement appears in that retained prefix. `source_events` separately maps the later wait and commit effect to PTX, but provides no CUDA thread field. The first unexecuted event maps to the same wait site as the failed issue. Thus the saved result locates the stop and the rejected relation; reconstructing a participant timeline around that stop requires the omitted event bindings and ordering edges, not invented steps between the sample and the stop.",
+          "evidence": [
+            {
+              "kind": "result",
+              "pointer": "/counterexample/executed_prefix"
+            },
+            {
+              "kind": "result",
+              "pointer": "/counterexample/first_unexecuted"
+            },
+            {
+              "kind": "result",
+              "pointer": "/source_events"
+            },
+            {
+              "kind": "result",
+              "pointer": "/source_events/32"
+            },
+            {
+              "kind": "result",
+              "pointer": "/source_events/33"
+            },
+            {
+              "kind": "result",
+              "pointer": "/source_events/34"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "next": {
+    "text": "Identify the loader lane bound to wait event `1290359`, then inspect its ordering edges to the Q-copy issuer, Q-ready completion and release effect `1239648`.\n\nThe saved output gives the endpoint locations and edge counts, but omits those bindings and edges. They are needed to distinguish a missing model dependency from a source synchronization problem.",
+    "evidence": [
+      {
+        "kind": "result",
+        "pointer": "/rejection"
+      },
+      {
+        "kind": "result",
+        "pointer": "/source_events/32"
+      },
+      {
+        "kind": "result",
+        "pointer": "/source_events/33"
+      },
+      {
+        "kind": "result",
+        "pointer": "/counts/edges"
+      },
+      {
+        "kind": "result",
+        "pointer": "/semantic_program"
+      },
+      {
+        "kind": "ptx",
+        "lines": "314776-314822,308474-308485,310182-310187",
+        "contains": [
+          "elect.sync",
+          "mbarrier.try_wait",
+          "tcgen05.commit"
+        ]
+      }
+    ]
+  }
+}

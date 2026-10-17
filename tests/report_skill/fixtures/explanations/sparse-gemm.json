@@ -1,0 +1,571 @@
+{
+  "version": 2,
+  "title": "Sparse GEMM · metadata copy and MMA",
+  "sections": [
+    {
+      "title": "The two reported instructions share the metadata path",
+      "answer": "This kernel multiplies compressed **A** by **B**. Sparse metadata **E** identifies which A positions are present. The reported copy moves shared-memory data into TMEM; the reported sparse MMA has a TMEM metadata operand. The diagram follows that metadata path.\n\nThe saved candidate is a **16-byte write and a 4-byte read that overlap by 4 bytes**. Both records name the same actor. The read is linked to the MMA instruction, but its exact operand is not identified in the saved record. The source-level metadata path and the recorded read effect still need to be matched.",
+      "evidence": [
+        {
+          "kind": "input",
+          "pointer": "/tma_descriptors/0/object",
+          "equals": "A.compressed"
+        },
+        {
+          "kind": "input",
+          "pointer": "/tma_descriptors/1/object",
+          "equals": "E.metadata"
+        },
+        {
+          "kind": "input",
+          "pointer": "/tma_descriptors/2/object",
+          "equals": "B"
+        },
+        {
+          "kind": "ptx",
+          "lines": "5525-5528,5670-5673,5679-5681,5701-5708",
+          "contains": [
+            "384",
+            "34816",
+            "92160",
+            "206848",
+            "cp.async.bulk.tensor.4d"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "6188-6207,6365-6404",
+          "contains": [
+            "%r925",
+            "%rd59",
+            "%r937",
+            "tcgen05.cp",
+            "tcgen05.mma.sp"
+          ]
+        },
+        {
+          "kind": "result",
+          "pointer": "/races/0/first/bytes",
+          "equals": 16
+        },
+        {
+          "kind": "result",
+          "pointer": "/races/0/second/bytes",
+          "equals": 4
+        },
+        {
+          "kind": "result",
+          "pointer": "/races/0/region/bytes",
+          "equals": 4
+        },
+        {
+          "kind": "result",
+          "pointer": "/races/0/first/actor",
+          "equals": 0
+        },
+        {
+          "kind": "result",
+          "pointer": "/races/0/second/actor",
+          "equals": 0
+        }
+      ],
+      "diagram": {
+        "kind": "mermaid",
+        "source": "flowchart LR\n E[\"E metadata<br/>in shared memory\"]:::context -->|copy · PTX 6370| T[\"Copy E into TMEM<br/>PTX 6370\"]:::focus\n T -->|metadata operand| M[\"Sparse MMA<br/>PTX 6404\"]:::focus\n AB[\"Compressed A + B<br/>in shared memory\"]:::context -->|matrix operands| M\n M -->|matrix result| D[\"Accumulator<br/>in TMEM\"]:::operation",
+        "meaning": "Arrows show source-level data roles. The two highlighted operations match the saved source locations; this diagram does not assign the saved read effect to an operand or assert completion order."
+      },
+      "code": {
+        "caption": "The reported TMEM copy and sparse MMA",
+        "lines": "6370,6403-6404",
+        "focus": [
+          "tcgen05.cp.cta_group::1.128x128b",
+          "tcgen05.mma.sp.cta_group::1.kind::f16",
+          "[%r925]",
+          "[%r937]"
+        ],
+        "operands": [
+          {
+            "token": "%rd59",
+            "meaning": "Shared-memory copy descriptor for E"
+          },
+          {
+            "token": "%r925",
+            "meaning": "TMEM destination for the metadata copy"
+          },
+          {
+            "token": "%r937",
+            "meaning": "TMEM metadata address supplied to the MMA"
+          },
+          {
+            "token": "%r943",
+            "meaning": "TMEM accumulator destination"
+          },
+          {
+            "token": "p",
+            "meaning": "Whether the MMA reads the previous accumulator"
+          }
+        ]
+      },
+      "evidence_title": "Derivation: metadata path and overlap bytes",
+      "steps": [
+        {
+          "label": "Which part of the PTX file is this explanation about?",
+          "text": "The selected sparse-GEMM kernel occupies physical PTX 4882–7362. Earlier device-function definitions are outside this local explanation. The saved input entry matches this kernel; the two reported source sites lie in its warp-zero compute path.",
+          "evidence": [
+            {
+              "kind": "input",
+              "pointer": "/entry"
+            },
+            {
+              "kind": "ptx",
+              "lines": "4882-4888,6173-6175,6370,6404,7362",
+              "contains": [
+                ".entry",
+                "setp.ne.b32",
+                "tcgen05.cp",
+                "tcgen05.mma.sp"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "How does E reach the copy source?",
+          "text": "The supplied tensor-map descriptor at parameter offset 384 names E.metadata. Warp 2 selects this descriptor and loads metadata into the shared-memory region beginning at +206848, with pipeline-slot and cluster-rank offsets. Warp 0 constructs its tcgen05.cp source descriptor from the same shared-memory region. The A and B descriptors instead use the regions +34816 and +92160. These distinct bases explain why the copy feeds sparse metadata rather than either matrix operand.",
+          "evidence": [
+            {
+              "kind": "input",
+              "pointer": "/tma_descriptors/1/offset",
+              "equals": 384
+            },
+            {
+              "kind": "input",
+              "pointer": "/tma_descriptors/1/object",
+              "equals": "E.metadata"
+            },
+            {
+              "kind": "ptx",
+              "lines": "4895-4897,5519-5528,5535-5538,5684-5708,6190-6207,6365-6368",
+              "contains": [
+                "%tid.x",
+                "384",
+                "206848",
+                "34816",
+                "92160",
+                "%rd59"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Where does that metadata enter the MMA?",
+          "text": "The allocation handle is loaded from shared +304. The copy destination is that TMEM handle +256. The sparse MMA syntax gives its fourth operand, [%r937], the metadata role; its first operand, [%r943], is the accumulator. The source derives the metadata operand from the copy destination and the current pass selector. The [PTX 9.2 sparse-MMA definition](https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-mma-instructions-mma-sp) establishes these operand meanings.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "9,6188-6189,6266-6267,6373-6374,6394-6404",
+              "contains": [
+                ".version 9.2",
+                "add.s32",
+                "%r925",
+                "%r937",
+                "%r943",
+                "tcgen05.mma.sp"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "What do the 16 bytes and 4 bytes describe?",
+          "text": "They are individual retained memory effects, not the complete copy or MMA footprint. The saved overlap is allocation-relative bytes 1032–1035 in CTA (0,0,0) TMEM. The output supplies effect identities and source lines, but no effect-to-operand mapping or per-event loop index. Consequently the report does not infer the MMA pass from the byte offset, nor convert the TMEM address operands into byte intervals.",
+          "evidence": [
+            {
+              "kind": "result",
+              "pointer": "/races/0/region/offset",
+              "equals": 1032
+            },
+            {
+              "kind": "result",
+              "pointer": "/races/0/region/bytes",
+              "equals": 4
+            },
+            {
+              "kind": "result",
+              "pointer": "/races/0/region/allocation",
+              "equals": "cta:(0, 0, 0):tensor:physical.tmem.cta.0"
+            },
+            {
+              "kind": "result",
+              "pointer": "/races/0/first/effect_index",
+              "equals": 1
+            },
+            {
+              "kind": "result",
+              "pointer": "/races/0/second/effect_index",
+              "equals": 226
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "One metadata copy serves two compute passes",
+      "answer": "For the supplied `K = 128`, the compute loop takes **two passes**, each with two sparse MMAs. The first pass copies the metadata into TMEM; the second reuses it.\n\nWithin warp 0, separate elections choose the copy and MMA issuers. The saved representative-election rule selects lane 0 when it participates. The table follows source control flow; the saved read record does not identify its pass.",
+      "evidence": [
+        {
+          "kind": "input",
+          "pointer": "/arguments/3/value",
+          "equals": 128
+        },
+        {
+          "kind": "ptx",
+          "lines": "4894-4897,5359-5363,5519-5524,5969-5972,6174-6175",
+          "contains": [
+            "%tid.x",
+            "%r7",
+            "%r4"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "6208,6214,6299-6305,6346-6364,6386-6393,6418-6425,6470-6477",
+          "contains": [
+            "%r1005",
+            "%r1004",
+            "%r1006",
+            "elect.sync",
+            "%p138"
+          ]
+        },
+        {
+          "kind": "ptx",
+          "lines": "6373-6374,6394,6403-6404,6426-6443",
+          "contains": [
+            "%r937",
+            "%r947",
+            "tcgen05.mma.sp"
+          ]
+        },
+        {
+          "kind": "result",
+          "pointer": "/assumptions/1/enabled",
+          "equals": true
+        },
+        {
+          "kind": "result",
+          "pointer": "/frontend_assumptions/election_policy/preferred_lane",
+          "equals": 0
+        }
+      ],
+      "comparison": {
+        "headers": [
+          "Compute pass",
+          "Metadata copy · PTX 6370",
+          "MMA pair · PTX 6404 / 6443"
+        ],
+        "rows": [
+          [
+            "First",
+            "Issued once by the elected lane",
+            "Initialize the accumulator, then accumulate"
+          ],
+          [
+            "Second",
+            "Skipped; reuse the metadata",
+            "Both accumulate; metadata selector advances"
+          ]
+        ]
+      },
+      "code": {
+        "caption": "The alternating pass guard controls the metadata copy",
+        "lines": "6346-6349,6363-6370",
+        "focus": [
+          "and.b32",
+          "@%p133",
+          "@%p134",
+          "tcgen05.cp.cta_group::1.128x128b"
+        ],
+        "operands": [
+          {
+            "token": "%r1005",
+            "meaning": "Pass counter: 1 on the first pass, 2 on the second"
+          },
+          {
+            "token": "%r923",
+            "meaning": "Election result: 1 only for the chosen copy issuer"
+          }
+        ]
+      },
+      "evidence_title": "Derivation: compute passes and elected issuers",
+      "steps": [
+        {
+          "label": "Why exactly two compute passes?",
+          "text": "The K parameter is loaded at offset 12. For `K=128`, the code at PTX 5359–5363 computes `(128+63)>>6 = 2`. The loop counter starts at -max(2,1), increments once per pass, and exits at zero: -2 → -1 → 0. The `K<1` bypass is false. The outer loop repeats only if launch cancellation succeeds; the saved clc_always_fails assumption makes that condition false in this modeled run.",
+          "evidence": [
+            {
+              "kind": "input",
+              "pointer": "/arguments/3/value",
+              "equals": 128
+            },
+            {
+              "kind": "input",
+              "pointer": "/declarations/3/offset",
+              "equals": 12
+            },
+            {
+              "kind": "ptx",
+              "lines": "4894,5359-5363,6208,6214,6244-6248,6283,6299-6305,6470-6477,6500-6509",
+              "contains": [
+                "%r1",
+                "%r7",
+                "%r1004",
+                "%r894",
+                "%p141"
+              ]
+            },
+            {
+              "kind": "result",
+              "pointer": "/assumptions/2/enabled",
+              "equals": true
+            },
+            {
+              "kind": "result",
+              "pointer": "/assumptions/2/text",
+              "equals": "Every cluster launch cancellation request fails."
+            }
+          ]
+        },
+        {
+          "label": "How do the copy and MMA choices change?",
+          "text": "The copy counter starts at 1 and is tested for an odd low bit, so only the first pass enters its election. The metadata selector starts at 0 and toggles to 1, changing the first MMA metadata-address expression from (copy_base + 0) & ~1 to (copy_base + 2) & ~1. A second MMA at PTX 6443 uses the adjacent selector. The first MMA enable-input-d predicate starts false and becomes true after the first pass; the second MMA always enables accumulation. These are source-derived operand choices, not byte-range reconstruction.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "6300-6304,6346-6349,6373-6374,6394-6404,6426-6443,6470-6475",
+              "contains": [
+                "%r1006",
+                "%r1005",
+                "%r1008",
+                "%r937",
+                "%r947",
+                "%r945"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Which threads reach these elections?",
+          "text": "The warp index comes from `tid.x >> 5`. Warp 0 takes the branch at PTX 5524, then the branch at PTX 5972, and falls through the warp-zero guard at PTX 6175. The compute-pass tests and preceding waits are warp-uniform here. At each full-mask `elect.sync`, the saved representative-election policy selects lane 0; the elected-only branch rejoins before the next election. The source and policy therefore support the same issuing lane for the shown copy/MMA path. This is separate from interpreting the numeric actor ID as a thread coordinate.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "4895-4897,5519-5524,5969-5972,6174-6175,6306-6349,6350-6408",
+              "contains": [
+                "%tid.x",
+                "%r4",
+                "%p55",
+                "%p87",
+                "%p97",
+                "elect.sync",
+                "-1"
+              ]
+            },
+            {
+              "kind": "result",
+              "pointer": "/frontend_assumptions/election_policy",
+              "equals": {
+                "fallback": "lowest_member",
+                "preferred_lane": 0,
+                "strategy": "preferred_member"
+              }
+            },
+            {
+              "kind": "result",
+              "pointer": "/races/0/first/actor",
+              "equals": 0
+            },
+            {
+              "kind": "result",
+              "pointer": "/races/0/second/actor",
+              "equals": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "The same-thread pipeline has an ordering guarantee",
+      "answer": "PTX 9.2 gives `tcgen05.cp → tcgen05.mma` a [pipelined ordering guarantee](https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-memory-consistency-model-pipelined-instructions) with the same `cta_group`. Its [same-thread pattern](https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-memory-consistency-model-canonical-sync-patterns-pipelined-same-thread) needs no extra ordering instruction. The inspected path uses `cta_group::1` and, under the saved election policy, the same issuing lane.\n\n**The unresolved issue is how the saved read maps to this path and how the model represents that ordering.** A missing explicit wait is therefore not an established cause. The saved `potential_race` result remains unchanged.",
+      "evidence": [
+        {
+          "kind": "ptx",
+          "lines": "9,6370,6404,6443,6466",
+          "contains": [
+            ".version 9.2",
+            "tcgen05.cp.cta_group::1",
+            "tcgen05.mma.sp.cta_group::1",
+            "tcgen05.commit.cta_group::1"
+          ]
+        },
+        {
+          "kind": "result",
+          "pointer": "/races/0/first/actor",
+          "equals": 0
+        },
+        {
+          "kind": "result",
+          "pointer": "/races/0/second/actor",
+          "equals": 0
+        },
+        {
+          "kind": "result",
+          "pointer": "/races/0/first/event",
+          "equals": 266
+        },
+        {
+          "kind": "result",
+          "pointer": "/races/0/second/event",
+          "equals": 1919
+        },
+        {
+          "kind": "result",
+          "pointer": "/result",
+          "equals": "potential_race"
+        },
+        {
+          "kind": "result",
+          "pointer": "/frontend_assumptions/election_policy/preferred_lane",
+          "equals": 0
+        }
+      ],
+      "diagram": {
+        "kind": "mermaid",
+        "source": "flowchart LR\n C[\"Copy issued<br/>PTX 6370\"]:::operation -->|local issue order| M[\"Sparse MMA issued<br/>PTX 6404 / 6443\"]:::operation\n M -->|later in the same pass| N[\"Commit notification<br/>PTX 6466\"]:::context\n C -. \"same-thread pipeline guarantee<br/>to reconcile with the retained effects\" .-> M",
+        "meaning": "Solid arrows show the inspected local issue sequence. The dotted edge names the applicable ISA ordering rule to check against the saved effects; it is not a recorded execution trace. Commit follows the MMAs and is not itself a blocking wait."
+      },
+      "evidence_title": "Derivation: pipeline ordering and the saved read",
+      "steps": [
+        {
+          "label": "Which ordering is supplied by the instruction pipeline?",
+          "text": "The official PTX 9.2 rule lists tcgen05.cp.cta_group::N → tcgen05.mma.cta_group::N for the same N. The same-thread canonical pattern supplies ordering without an explicit wait. Both reported sites use N=1, and the source elections under the recorded policy establish a common issuing lane on this path. That is stronger evidence than merely observing that one instruction appears earlier in the file.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "9,6350-6408",
+              "contains": [
+                ".version 9.2",
+                "elect.sync",
+                "tcgen05.cp.cta_group::1",
+                "tcgen05.mma.sp.cta_group::1"
+              ]
+            },
+            {
+              "kind": "result",
+              "pointer": "/frontend_assumptions/election_policy/preferred_lane",
+              "equals": 0
+            }
+          ]
+        },
+        {
+          "label": "What does the later commit do?",
+          "text": "After the two sparse MMAs, the elected lane issues a commit to the current input-stage notification barrier at base +56. This tracks prior tcgen05 operations; issuing it is not a blocking wait. The local copy-to-MMA relation must be evaluated using the pipeline guarantee, independently of this later notification.",
+          "evidence": [
+            {
+              "kind": "ptx",
+              "lines": "6308-6311,6404,6443,6447-6466",
+              "contains": [
+                "%r913",
+                "elect.sync",
+                "tcgen05.mma.sp",
+                "tcgen05.commit",
+                "56"
+              ]
+            }
+          ],
+          "code": {
+            "caption": "The commit follows the two sparse MMAs",
+            "lines": "6404,6443,6463-6467",
+            "focus": [
+              "tcgen05.mma.sp.cta_group::1.kind::f16",
+              "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64"
+            ],
+            "operands": [
+              {
+                "token": "%r954",
+                "meaning": "Notification barrier: current input-stage barrier +56"
+              }
+            ]
+          }
+        },
+        {
+          "label": "What is unresolved in the saved result?",
+          "text": "The write is event 266 / instruction 103 / effect 1; the read is event 1919 / instruction 128 / effect 226. Both name actor 0, and the source locations are exact. The saved report does not include an effect-to-MMA-operand mapping, per-event pass index or an explanation of why this pair lacks order. In particular, event numbers are identifiers, not timestamps. The result alone cannot settle whether the retained effects expose a model representation problem or another unrecorded cause.",
+          "evidence": [
+            {
+              "kind": "result",
+              "pointer": "/races/0/first/event",
+              "equals": 266
+            },
+            {
+              "kind": "result",
+              "pointer": "/races/0/first/instruction",
+              "equals": 103
+            },
+            {
+              "kind": "result",
+              "pointer": "/races/0/first/effect_index",
+              "equals": 1
+            },
+            {
+              "kind": "result",
+              "pointer": "/races/0/second/event",
+              "equals": 1919
+            },
+            {
+              "kind": "result",
+              "pointer": "/races/0/second/instruction",
+              "equals": 128
+            },
+            {
+              "kind": "result",
+              "pointer": "/races/0/second/effect_index",
+              "equals": 226
+            },
+            {
+              "kind": "result",
+              "pointer": "/diagnostics/0/code",
+              "equals": "conflicting_accesses_unordered"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "next": {
+    "text": "Trace retained read effect 226 to its MMA operand and pass, then check the model edge from copy event 266 to that read under the PTX 9.2 pipeline rule. The source already establishes the local metadata path, repeated passes and common elected issuer; adding a wait is not yet a justified fix.",
+    "evidence": [
+      {
+        "kind": "result",
+        "pointer": "/races/0/second/effect_index",
+        "equals": 226
+      },
+      {
+        "kind": "result",
+        "pointer": "/races/0/first/event",
+        "equals": 266
+      },
+      {
+        "kind": "ptx",
+        "lines": "6370,6404",
+        "contains": [
+          "tcgen05.cp",
+          "tcgen05.mma.sp"
+        ]
+      },
+      {
+        "kind": "result",
+        "pointer": "/result",
+        "equals": "potential_race"
+      }
+    ]
+  }
+}

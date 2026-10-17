@@ -4,52 +4,19 @@
 <p align="center">Shared dispatch-word publication</p>
 <h1 align="center">RACE CANDIDATE</h1>
 
-**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/tritongluon-08-ws-matmul-512.ptx) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/input.json) · launch, arguments and assumptions.
+**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/tritongluon-08-ws-matmul-512.ptx) ([raw](https://github.com/gpu-verifier/sentryward/raw/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/tritongluon-08-ws-matmul-512.ptx)) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/input.json) · launch, arguments and assumptions.
 
 **Result:** [output.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json) · saved verifier findings.
 
-<details>
-<summary><strong>Analysis records — open the saved evidence</strong></summary>
-
-Each record link opens its field in the original `output.json`. Model summaries are not full execution traces.
-
-**Check the finding**
-
-- [Diagnostic messages and details · `diagnostics`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L68)
-- [Individual check outcomes · `checks`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L56)
-
-**Check how the model was built**
-
-- [PTX translation · `frontend`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L115)
-- [Model and source bindings · `semantic_program`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L406)
-- [Synchronization-check setup · `synchronization_input`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L424)
-
-**Check values separately**
-
-- [Value-analysis status · `value_analysis`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L452)
-- [Numerical comparison · `equivalence`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L79)
-
-For the records explained in this report, see the [Evidence appendix](#evidence-appendix).
-
-</details>
-
-## 1. Verifier result
-
-Saved findings and analysis scope, formatted directly from the verifier output.
-
-### 1.1 Potentially conflicting accesses
+<table>
+<thead><tr><th align="left">VERIFIER RESULT · Potentially conflicting accesses</th></tr></thead>
+<tbody><tr><td>
 
 The verifier retained potentially conflicting memory accesses.
 
-**Saved result:** <code>potential_race</code> · <code>output.json#/result</code>.
-
-**Checks:** Synchronization <code>passed</code> · Memory <code>failed</code> · Equivalence <code>not_run</code>.
+**Synchronization:** Passed · **Memory:** Failed · **Equivalence:** Not run
 
 The synchronization check passed; the separate memory check still found a conflict. Passing one check does not clear the other.
-
-**Operation:** <code>kernel_verification</code>.
-
-**First diagnostic:** <code>conflicting_accesses_unordered</code> · <code>memory_check</code> — Conflicting accesses have no proven required ordering · <code>output.json#/diagnostics/0</code>.
 
 **Recorded totals:** 1 races · 0 warnings · 0 unresolved.
 
@@ -90,11 +57,27 @@ Actor IDs name verifier participants; this record does not itself establish CUDA
 
 **PTX mapping:** First access, Second access: no matching physical PTX location is established by the saved record.
 
-**Saved record:** <code>output.json#/races/0</code>. **Overlap check:** constant byte ranges intersect. **Allocation:** <code>cta:(0, 0, 0):shared:physical.shared.cta.0</code>. **Address space:** <code>shared</code>.
+**Saved record:** <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L344"><code>output.json#/races/0</code></a>. **Overlap check:** constant byte ranges intersect. **Allocation:** <code>cta:(0, 0, 0):shared:physical.shared.cta.0</code>. **Address space:** <code>shared</code>.
 
 </details>
 
-### 1.2 Analysis scope
+<details>
+<summary><strong>Saved status and diagnostic codes</strong></summary>
+
+**Saved result:** <code>potential_race</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L392"><code>output.json#/result</code></a>.
+
+**Operation:** <code>kernel_verification</code>.
+
+**First diagnostic:** <code>conflicting_accesses_unordered</code> · <code>memory_check</code> — Conflicting accesses have no proven required ordering · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L69"><code>output.json#/diagnostics/0</code></a>.
+
+**Checks:** Synchronization <code>passed</code> · Memory <code>failed</code> · Equivalence <code>not_run</code>.
+
+</details>
+
+</td></tr>
+<tr><td>
+
+### Analysis scope
 
 **Coverage:** Memory analysis complete: yes · Search complete: **no** · Exhaustive search: **no**.
 
@@ -103,17 +86,43 @@ The memory analysis returned a result, but its search is not complete. This find
 **Assumption-dependent:** <code>true</code>. Triggered rules: Representative election.
 
 This result applies to the supplied launch, arguments and enabled assumptions.
+
+<details>
+<summary><strong>Analysis records — open the saved evidence</strong></summary>
+
+Each record link opens its field in the original `output.json`. Model summaries are not full execution traces.
+
+**Check the finding**
+
+- [Diagnostic messages and details · `diagnostics`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L68)
+- [Individual check outcomes · `checks`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L56)
+
+**Check how the model was built**
+
+- [PTX translation · `frontend`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L115)
+- [Model and source bindings · `semantic_program`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L406)
+- [Synchronization-check setup · `synchronization_input`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L424)
+
+**Check values separately**
+
+- [Value-analysis status · `value_analysis`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L452)
+- [Numerical comparison · `equivalence`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L79)
+
+For the records explained in this report, see the [Evidence appendix](#evidence-appendix).
+
+</details>
+
+</td></tr></tbody>
+</table>
 <!-- verifier-result:end -->
 
 <!-- code-explanation:start -->
 
----
-
-## 2. Code explanation
+## Code explanation
 
 Interpretation from the PTX and saved inputs: how the reported operations fit together and what remains to check.
 
-### 2.1 Dispatch-word publication: peer stores precede the barrier
+### 1. Dispatch-word publication: peer stores precede the barrier
 
 The affected four-byte shared word tells each worker warp which role to run, then tells it to exit. Threads 0–127 all publish that word with an ordinary `st.shared.b32`; the following `barrier.sync 1` coordinates them with worker readers, but does not order the peer stores before the barrier. This remains relevant in the supplied **zero-tile configuration**: setup and exit still publish the word even though the matrix-work loops are skipped.
 
@@ -130,7 +139,9 @@ The source establishes this publication pattern at startup and exit. The saved p
 
 <p><strong>Both representative threads execute this same startup store before their next barrier</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/tritongluon-08-ws-matmul-512.ptx#L170-L171" title="Open the original PTX">physical PTX 170–171</a></p>
 
-<p><strong>Operands:</strong> Packed worker-role bytes: 02 02 00 01 (<code>16777730</code>)</p>
+<ul>
+<li><code>16777730</code> — Packed worker-role bytes: 02 02 00 01</li>
+</ul>
 
 <pre><code><strong>st.shared.b32</strong> <strong>[global_smem+213088]</strong>, 16777730;
 <strong>barrier.sync</strong> 1;</code></pre>
@@ -142,15 +153,15 @@ The source establishes this publication pattern at startup and exit. The saved p
 - **Completion:** Rows are a source-compatible ordering of selected steps, not elapsed time or a hardware trace. The remaining threads also participate in barrier 1. Neither thread passes it before the CTA arrives; a common following barrier does not choose an order between their preceding stores.
 
 <details>
-<summary><strong>Timeline support</strong></summary>
+<summary><strong>Sources for this interleaving</strong></summary>
 
 - physical PTX 52,66-69: <code>%tid.x</code>, <code>shr.u32</code>, <code>shfl.sync.idx.b32</code>, <code>setp.lt.u32</code>, <code>@!%p2 bra</code>
-- `input.json#/launch/block_dim`: <code>[256,1,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/input.json#L10"><code>input.json#/launch/block_dim</code></a>: <code>[256,1,1]</code>
 - physical PTX 170-171: <code>st.shared.b32</code>, <code>16777730</code>, <code>barrier.sync</code>
 - physical PTX 71-171: <code>st.shared.b32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init"><code>mbarrier.init</code></a>
-- `input.json#/arguments/1/value`: <code>0</code>
-- `input.json#/arguments/2/value`: <code>0</code>
-- `input.json#/launch/grid_dim`: <code>[1,1,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/input.json#L120"><code>input.json#/arguments/1/value</code></a>: <code>0</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/input.json#L125"><code>input.json#/arguments/2/value</code></a>: <code>0</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/input.json#L5"><code>input.json#/launch/grid_dim</code></a>: <code>[1,1,1]</code>
 - physical PTX 42-43,178-213: <code>%r20</code>, <code>%r21</code>, <code>%r870</code>, <code>@%p54 bra</code>
 - physical PTX 1242: <code>barrier.sync</code>
 
@@ -186,7 +197,10 @@ Each worker reads one byte at shared base + 213084 + its warp index, so warps 4�
 
 <p><strong>A worker byte selects one of four branch targets</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/tritongluon-08-ws-matmul-512.ptx#L1243-L1254" title="Open the original PTX">physical PTX 1243–1254</a></p>
 
-<p><strong>Operands:</strong> Worker warp index, from <code>tid.x</code> &gt;&gt; 5 (<code>%r4</code>) · This worker’s selector byte (<code>%r23</code>)</p>
+<ul>
+<li><code>%r4</code> — Worker warp index, from <code>tid.x</code> &gt;&gt; 5</li>
+<li><code>%r23</code> — This worker’s selector byte</li>
+</ul>
 
 <pre><code><strong>add.s32</strong> %r24, %r22, %r4;
 <strong>ld.shared.b8</strong> <strong>%r23</strong>, [%r24+213084];
@@ -227,29 +241,31 @@ All eight warps participate in each of the four configured rounds below; the ins
 
 
 <details>
-<summary><strong>Exact source references</strong></summary>
+<summary><strong>Sources: Check writer ownership, dispatch bytes and zero-work barrier rounds</strong></summary>
 
-##### Why are there 128 writers?
+<blockquote>
+
+##### Source references: Why are there 128 writers?
 
 - physical PTX 52,66-69: <code>%tid.x</code>, <code>shr.u32</code>, <code>shfl.sync.idx.b32</code>, <code>setp.lt.u32</code>, <code>@!%p2 bra</code>
-- `input.json#/launch/block_dim`: <code>[256,1,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/input.json#L10"><code>input.json#/launch/block_dim</code></a>: <code>[256,1,1]</code>
 - physical PTX 71-78,162-173,1213-1217: <code>@%p29 mbarrier.init</code>, <code>@%p40 mbarrier.init</code>, <code>st.shared.b32</code>
 
-##### What do the four bytes control?
+##### Source references: What do the four bytes control?
 
 - physical PTX 170,1216,1242-1257,1369-1380,1416-1425,1566,1717-1724: <code>16777730</code>, <code>50529027</code>, <code>ld.shared.b8</code>, <code>brx.idx</code>, <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor"><code>cp.async.bulk.tensor</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#tcgen05-mma-instructions"><code>tcgen05.mma</code></a>, <code>ret</code>
 
-##### Why do setup and exit run when no matrix tile does?
+##### Source references: Why do setup and exit run when no matrix tile does?
 
-- `input.json#/arguments/1/value`: <code>0</code>
-- `input.json#/arguments/2/value`: <code>0</code>
-- `input.json#/launch/grid_dim`: <code>[1,1,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/input.json#L120"><code>input.json#/arguments/1/value</code></a>: <code>0</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/input.json#L125"><code>input.json#/arguments/2/value</code></a>: <code>0</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/input.json#L5"><code>input.json#/launch/grid_dim</code></a>: <code>[1,1,1]</code>
 - physical PTX 42-43,178-213: <code>%r20</code>, <code>%r21</code>, <code>%r870</code>, <code>@%p54 bra</code>
-- `input.json#/arguments/0/value`: <code>0</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/input.json#L115"><code>input.json#/arguments/0/value</code></a>: <code>0</code>
 - physical PTX 1209-1227,1262-1293,1429-1460: <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group"><code>cp.async.bulk.wait_group.read</code></a>, <code>%p22</code>, <code>@%p21 bra</code>, <code>@%p4 bra</code>
-- `input.json#/tma_descriptors/0/global_shape`: <code>[512,512]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/input.json#L138"><code>input.json#/tma_descriptors/0/global_shape</code></a>: <code>[512,512]</code>
 
-##### What does barrier 1 order, and what does it leave unordered?
+##### Source references: What does barrier 1 order, and what does it leave unordered?
 
 - physical PTX 170-173,1211-1218,1229-1244,1255-1257,1292-1293,1416-1425,1459-1460,1717-1724: <code>barrier.sync</code>, <code>bar.sync</code>, <code>st.shared.b32</code>, <code>bra</code>
 
@@ -257,25 +273,27 @@ All eight warps participate in each of the four configured rounds below; the ins
 
 - physical PTX 170-171: <code>st.shared.b32</code>, <code>16777730</code>, <code>barrier.sync</code>
 - physical PTX 1213-1217,1242-1254: <code>50529027</code>, <code>ld.shared.b8</code>, <code>brx.idx</code>
-- `output.json#/races/0/region/offset`: <code>213088</code>
-- `output.json#/races/0/region/bytes`: <code>4</code>
-- `output.json#/races/0/first/location/line`: <code>541</code>
-- `output.json#/races/0/second/location/line`: <code>541</code>
-- `output.json#/assumptions/0/text`: <code>&quot;Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.&quot;</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L368"><code>output.json#/races/0/region/offset</code></a>: <code>213088</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L367"><code>output.json#/races/0/region/bytes</code></a>: <code>4</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L359"><code>output.json#/races/0/first/location/line</code></a>: <code>541</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L384"><code>output.json#/races/0/second/location/line</code></a>: <code>541</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L20"><code>output.json#/assumptions/0/text</code></a>: <code>&quot;Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.&quot;</code>
+
+</blockquote>
 
 </details>
 
 </details>
 
-### 2.2 Next check
+### 2. Next check
 
 Resolve the saved event/instruction-to-PTX binding to determine whether the retained pair comes from startup or exit publication. Then inspect the intended ownership of this compiler-generated dispatch word and the verifier’s treatment of equal-value ordinary shared stores. The source already identifies the writer set and the following barrier; an additional wait is not established as the needed change.
 
 <details>
-<summary><strong>Basis for next inspection</strong></summary>
+<summary><strong>Evidence for the next check</strong></summary>
 
-- `output.json#/races/0/first/instruction`: <code>59</code>
-- `output.json#/races/0/second/instruction`: <code>116</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L355"><code>output.json#/races/0/first/instruction</code></a>: <code>59</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L380"><code>output.json#/races/0/second/instruction</code></a>: <code>116</code>
 - physical PTX 170-171,1216-1217: <code>st.shared.b32</code>, <code>barrier.sync</code>
 
 </details>
@@ -302,7 +320,7 @@ These are saved verifier records. Truncation flags describe missing records in t
 
 
 
-Byte regions, endpoints and exact locations: <code>output.json#/races</code>.
+Byte regions, endpoints and exact locations: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L343"><code>output.json#/races</code></a>.
 
 #### Diagnostics
 
@@ -325,7 +343,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Races
 
-<code>output.json#/races</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L343"><code>output.json#/races</code></a>
 
 **Retained records:** 1.
 
@@ -381,7 +399,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Diagnostics
 
-<code>output.json#/diagnostics</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L68"><code>output.json#/diagnostics</code></a>
 
 **Retained records:** 1.
 
@@ -543,20 +561,20 @@ Execute a configured number of body iterations for unresolved recognized computa
 
 Memory safety and numerical equivalence are separate results.
 
-**Value analysis:** <code>unsupported</code> · <code>output.json#/value_analysis</code>
+**Value analysis:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L452"><code>output.json#/value_analysis</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_requested</code>.
 
 - **Prerequisite status:** <code>potential_race</code>
 - **Scope:** {&quot;operation&quot;:&quot;<code>value_analysis</code>&quot;}
-- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <code>output.json#/value_analysis/diagnostics/0</code>
+- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L459"><code>output.json#/value_analysis/diagnostics/0</code></a>
 
-**Equivalence:** <code>unsupported</code> · <code>output.json#/equivalence</code>
+**Equivalence:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L79"><code>output.json#/equivalence</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_run</code>.
 
 - **Scope:** {&quot;operation&quot;:&quot;equivalence&quot;}
-- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <code>output.json#/equivalence/diagnostics/0</code>
+- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/output.json#L86"><code>output.json#/equivalence/diagnostics/0</code></a>
 
 <details>
 <summary><strong>Exact value-analysis fields and large-data references</strong></summary>
@@ -679,7 +697,7 @@ Memory safety and numerical equivalence are separate results.
 | Cluster · blocks | <code>[1,1,1]</code> |
 | Dynamic shared memory · bytes | <code>0</code> |
 
-**Arguments:** 3 retained entries. Exact parameter bindings, descriptors and entry name: <code>input.json#</code>.
+**Arguments:** 3 retained entries. Exact parameter bindings, descriptors and entry name: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/tritongluon-08-ws-matmul-512/input.json#L1"><code>input.json#</code></a>.
 
 <details>
 <summary><strong>Exact input configuration</strong></summary>

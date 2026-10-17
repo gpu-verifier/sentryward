@@ -1012,6 +1012,7 @@ def main():
     parser.add_argument('--equivalence', type=Path, help='Link an existing numerical-check artifact from the same run; does not replace the verifier result.')
     parser.add_argument('--artifact-base', help='HTTPS repository blob URL, preferably at a fixed commit; artifact paths are relative to the current directory.')
     parser.add_argument('--bindings', action='store_true', help='Print source-analysis aids, not verifier findings.')
+    parser.add_argument('--result-panel', action='store_true', help='Use the candidate GitHub-native result panel layout.')
     args = parser.parse_args()
     try:
         artifacts = [args.input, args.result, args.ptx]
@@ -1041,7 +1042,7 @@ def main():
         if args.equivalence and not args.equivalence.is_file():
             raise ValueError('Numerical-check artifact does not exist: ' + str(args.equivalence))
         composed = compose(draft, run_input, result, ptx, artifacts, sources,
-                           report_path=args.report, source_paths=args.source, equivalence_path=args.equivalence, artifact_base=args.artifact_base)
+                           report_path=args.report, source_paths=args.source, equivalence_path=args.equivalence, artifact_base=args.artifact_base, result_panel=args.result_panel)
         if args.report is None:
             print(composed, end='')
             return

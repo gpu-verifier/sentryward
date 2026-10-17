@@ -3,8 +3,8 @@
   "title": "MoE top-k routing: a score-dependent owner test",
   "sections": [
     {
-      "title": "The selected expert determines which thread updates its candidates",
-      "answer": "This kernel turns each row of expert scores into routing weights and expert indices. A group of 16 threads holds four candidates per thread. Between the two selections configured by `k=2`, the thread that owns the first selected expert replaces that candidate in its private local array with −10000, so the next selection can choose another expert for ordinary finite inputs. The reported branch is this owner test: it skips the update when the thread’s group slot differs from the selected expert’s owner. The owner depends on loaded score values, which the supplied files do not provide; the launch and scalar parameters alone do not determine this branch.",
+      "title": "The branch asks whether this thread owns the selected expert",
+      "answer": "This kernel converts each row of expert scores into routing weights and expert indices. A 16-thread group holds four candidates per thread.\n\nWith `k = 2`, it selects twice. Between selections, the thread that owns the first winner replaces that entry in its private array with −10000, allowing another expert to be selected for ordinary finite inputs. **The reported branch decides whether this thread performs that update.**\n\nThe owner comes from the loaded scores. Those values are absent from the supplied files, so the launch and scalar parameters cannot determine which side of this branch is taken.",
       "evidence": [
         {
           "kind": "ptx",
@@ -61,19 +61,18 @@
         "branch_line": 352,
         "effect_line": 363,
         "inputs": [
-          "Thread group slot",
-          "Selected expert owner slot"
+          "Thread slot",
+          "Owner slot"
         ]
       },
       "code": {
-        "caption": "Owner mismatch skips the private candidate update; both paths advance the selection loop",
-        "lines": "350-352,360-369",
+        "caption": "Skip the candidate update in non-owner threads",
+        "lines": "350-352,360-364",
         "focus": [
           "%p68",
           "%r3",
           "%r116",
-          "st.local.u32",
-          "%p69"
+          "st.local.u32"
         ],
         "links": {
           "setp.ne.s32": "https://docs.nvidia.com/cuda/archive/13.0.0/parallel-thread-execution/index.html#comparison-and-selection-instructions-setp",
@@ -95,7 +94,7 @@
           }
         ]
       },
-      "evidence_title": "Check the row assignment, score dependency and two selection rounds",
+      "evidence_title": "Derivation: row ownership and score-dependent selection",
       "steps": [
         {
           "label": "Which scores does each thread own?",
@@ -296,6 +295,13 @@
                 "Exit selection loop"
               ]
             ]
+          },
+          "code": {
+            "caption": "Loop bookkeeping after both paths rejoin",
+            "lines": "364-369",
+            "focus": [
+              "%p69"
+            ]
           }
         },
         {
@@ -327,7 +333,7 @@
     }
   ],
   "next": {
-    "text": "Inspect how the frontend supports the data-dependent selected expert as an input to this owner branch. The unresolved item is the winner derived from the input tensor, not an unnamed launch scalar: the saved required-parameter list is empty, and no concrete branch decision is recorded. The downstream prerequisite and memory-elimination diagnostics refer to analysis that could not proceed; they do not identify additional kernel operations to repair. This stop alone supplies no basis for changing the kernel or forcing either branch.",
+    "text": "Check frontend support for the score-dependent owner branch. The missing value is the selected winner from the input tensor: the required-parameter list is empty and no concrete branch decision is saved.\n\nThe later prerequisite and memory-elimination diagnostics describe analyses that could not proceed. They do not identify additional kernel operations to repair, or justify forcing either side of the branch.",
     "evidence": [
       {
         "kind": "result",

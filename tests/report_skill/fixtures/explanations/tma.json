@@ -3,7 +3,7 @@
   "title": "Duplicate TMA output copies",
   "context": {
     "title": "The warning is in the shared-to-global output handoff",
-    "summary": "This f16 GEMM uses matrix-multiply instructions to build an accumulator in tensor memory (TMEM). Its output stage reads that accumulator, applies the epilogue scalars, stages f16 values in shared memory, and copies them to global output `D`. For the supplied `alpha = 1` and `beta = 0`, the input-`C` load path is skipped. The affected TMA instruction copies the first 4 KiB strip of `D`; the question is which threads issue that copy, not which thread computed each element.",
+    "summary": "This f16 GEMM uses matrix-multiply instructions to build an accumulator in tensor memory (TMEM). Its output stage reads that accumulator, applies the epilogue scalars, stages f16 values in shared memory, and copies them to global output `D`.\n\nFor the supplied `alpha = 1` and `beta = 0`, the input-`C` load path is skipped. The affected TMA instruction copies the first 4 KiB strip of `D`; the question is which threads issue that copy, not which thread computed each element.",
     "evidence": [
       {
         "kind": "ptx",
@@ -77,7 +77,7 @@
         "pointer": "/tma_descriptors/5"
       }
     ],
-    "evidence_title": "Check the computation and the configured scalar path",
+    "evidence_title": "Derivation: output stage and supplied scalars",
     "steps": [
       {
         "label": "Why this is a nonempty multiplication",
@@ -173,7 +173,7 @@
   "sections": [
     {
       "title": "The copy selector admits a whole warp",
-      "answer": "Within the first output-copy block, the selector admits all 32 lanes of warp 4, threads 128–159, while warps 5–7 skip the copy and rejoin the next barrier. Each admitted lane uses the same `D` descriptor, coordinates `(0, 0, 0)`, and shared source at base + 1024. Thus the source contains peer copies of one output strip, rather than disjoint per-lane output addresses. The view below is derived from PTX; the saved actor IDs are not explicitly mapped to CUDA thread coordinates in the supplied records, so it does not identify the retained pair.",
+      "answer": "Within the first output-copy block, the selector admits all 32 lanes of warp 4, threads 128–159, while warps 5–7 skip the copy and rejoin the next barrier. Each admitted lane uses the same `D` descriptor, coordinates `(0, 0, 0)`, and shared source at base + 1024.\n\nThus the source contains peer copies of one output strip, rather than disjoint per-lane output addresses. The view below is derived from PTX; the saved actor IDs are not explicitly mapped to CUDA thread coordinates in the supplied records, so it does not identify the retained pair.",
       "evidence": [
         {
           "kind": "ptx",
@@ -653,7 +653,7 @@
           }
         ]
       },
-      "evidence_title": "Check the participating warp and identical copy operands",
+      "evidence_title": "Derivation: issuing warp and shared copy operands",
       "steps": [
         {
           "label": "How the thread selector reaches the output block",
@@ -798,7 +798,7 @@
     },
     {
       "title": "The copy waits do not serialize peer writers",
-      "answer": "Each output strip has a per-issuer `cp.async.bulk.wait_group.read 1` after its copy group is committed. This waits for source reads of older groups and permits the newest group to remain pending; it is not a mutual-exclusion mechanism for the destination. The configured `beta = 0` exit skips the final `read 0` drain, and failed cluster cancellation prevents a second output-loop iteration. Those conditions explain the actual lifetime of this tile’s staging buffers; they do not turn the duplicate-write warning into evidence of a missing wait.",
+      "answer": "Each output strip has a per-issuer `cp.async.bulk.wait_group.read 1` after its copy group is committed. This waits for source reads of older groups and permits the newest group to remain pending; it is not a mutual-exclusion mechanism for the destination.\n\nThe configured `beta = 0` exit skips the final `read 0` drain, and failed cluster cancellation prevents a second output-loop iteration. Those conditions explain the actual lifetime of this tile’s staging buffers; they do not turn the duplicate-write warning into evidence of a missing wait.",
       "evidence": [
         {
           "kind": "ptx",
@@ -920,7 +920,7 @@
           "ret"
         ]
       },
-      "evidence_title": "Check all copy passes and the final-drain branch",
+      "evidence_title": "Derivation: copy passes and the final drain",
       "steps": [
         {
           "label": "All four copy predicates select the same warp",

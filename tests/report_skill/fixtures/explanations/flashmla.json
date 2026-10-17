@@ -37,7 +37,7 @@
         "pointer": "/diagnostics"
       }
     ],
-    "evidence_title": "Check how the named objects enter the code",
+    "evidence_title": "Derivation: input objects and tensor descriptors",
     "steps": [
       {
         "label": "Pointer objects and descriptor objects are separate inputs",
@@ -91,7 +91,7 @@
   "sections": [
     {
       "title": "Cluster startup: both arrivals precede both waits",
-      "answer": "The startup sequence is `arrive → arrive → wait → wait`. Both arrivals address the implicit cluster barrier, not either of the shared-memory `mbarrier` objects initialized between them. All threads take this sequence before worker dispatch. A fast warp can therefore make its second arrival while another warp has not made its first; the intervening initialization fences do not establish completion of that first cluster round. The consecutive waits also contain no new arrival between them. These source relations explain the two startup diagnostics without asserting that a GPU hang was observed.",
+      "answer": "The startup sequence is `arrive → arrive → wait → wait`. Both arrivals address the implicit cluster barrier, not either of the shared-memory `mbarrier` objects initialized between them. All threads take this sequence before worker dispatch.\n\nA fast warp can therefore make its second arrival while another warp has not made its first; the intervening initialization fences do not establish completion of that first cluster round. The consecutive waits also contain no new arrival between them. These source relations explain the two startup diagnostics without asserting that a GPU hang was observed.",
       "evidence": [
         {
           "kind": "ptx",
@@ -278,7 +278,7 @@
           "barrier.cluster.wait"
         ]
       },
-      "evidence_title": "Check the startup path and the barrier round",
+      "evidence_title": "Derivation: cluster arrivals and waits",
       "steps": [
         {
           "label": "Every startup path rejoins before the second arrival",
@@ -390,7 +390,7 @@
     },
     {
       "title": "Index-controlled copies: the unknown is the selected index value",
-      "answer": "The gather workers stage K and V data for the sparse attention computation. Each 16-byte copy uses a separate source-size operand: a selected index in `[0, 256)` chooses 16 source bytes; an invalid index chooses zero source bytes, producing zeros in the shared destination. That choice comes from global `topk_indices` data, not from the known scalar `topk=128`. The supplied configuration fixes the bound and addressing strides but supplies no index-array contents. This explains why a model requiring a statically determined source size stops here; the diagnostic alone does not establish an out-of-bounds access or an illegal hardware copy.",
+      "answer": "The gather workers stage K and V data for the sparse attention computation. Each 16-byte copy uses a separate source-size operand: a selected index in `[0, 256)` chooses 16 source bytes; an invalid index chooses zero source bytes, producing zeros in the shared destination.\n\nThat choice comes from global `topk_indices` data, not from the known scalar `topk=128`. The supplied configuration fixes the bound and addressing strides but supplies no index-array contents. This explains why a model requiring a statically determined source size stops here; the diagnostic alone does not establish an out-of-bounds access or an illegal hardware copy.",
       "evidence": [
         {
           "kind": "input",
@@ -456,7 +456,7 @@
           }
         ]
       },
-      "evidence_title": "Trace the index, participants and repeated copy sites",
+      "evidence_title": "Derivation: sparse indices and copy participants",
       "steps": [
         {
           "label": "Which threads stage the sparse inputs?",
@@ -629,7 +629,7 @@
     },
     {
       "title": "Tensor-map binding: input and output descriptors lack captured contents",
-      "answer": "The TMA operand addresses have concrete parameter origins: parameters 7 and 8 describe global-to-cluster-shared input transfers, and parameter 9 describes shared-to-global output transfers. The output source is a shared staging area populated with BF16 values after normalizing TMEM-loaded accumulators. The saved input declares all three parameters as `tensor_map`, but contains no captured descriptor payload or map-to-object binding. Consequently, the source identifies the direction and staging buffers, while the descriptor-defined global footprints and tensor layouts remain unresolved. This is a capture/binding gap, not evidence that the descriptors supplied to a real launch were invalid.",
+      "answer": "The TMA operand addresses have concrete parameter origins: parameters 7 and 8 describe global-to-cluster-shared input transfers, and parameter 9 describes shared-to-global output transfers. The output source is a shared staging area populated with BF16 values after normalizing TMEM-loaded accumulators.\n\nThe saved input declares all three parameters as `tensor_map`, but contains no captured descriptor payload or map-to-object binding. Consequently, the source identifies the direction and staging buffers, while the descriptor-defined global footprints and tensor layouts remain unresolved. This is a capture/binding gap, not evidence that the descriptors supplied to a real launch were invalid.",
       "evidence": [
         {
           "kind": "input",
@@ -699,7 +699,7 @@
           }
         ]
       },
-      "evidence_title": "Check the descriptor origins and the issuing paths",
+      "evidence_title": "Derivation: descriptor origins and transfer paths",
       "steps": [
         {
           "label": "Parameter identity is established; descriptor contents are not",

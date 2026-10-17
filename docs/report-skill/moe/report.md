@@ -4,9 +4,47 @@
 <p align="center">MoE top-k routing: a score-dependent owner test</p>
 <h1 align="center">ANALYSIS UNSUPPORTED</h1>
 
-**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/vllm__moe_topk_softmax__sm_100a.ptx) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/input.json) · launch, arguments and assumptions.
+**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/vllm__moe_topk_softmax__sm_100a.ptx) ([raw](https://github.com/gpu-verifier/sentryward/raw/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/vllm__moe_topk_softmax__sm_100a.ptx)) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/input.json) · launch, arguments and assumptions.
 
 **Result:** [output.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json) · saved verifier findings.
+
+<table>
+<thead><tr><th align="left">VERIFIER RESULT · Where analysis stopped</th></tr></thead>
+<tbody><tr><td>
+
+A required operation is unsupported. The saved checks identify which analyses completed.
+
+**Synchronization:** Not run · **Memory:** Not run · **Equivalence:** Not run
+
+**First diagnostic:** <code>control_predicate_not_static</code> · <code>ptx_execution</code> — control predicate is not statically determined · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json#L62"><code>output.json#/diagnostics/0</code></a>.
+
+**Saved source location:** <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/vllm__moe_topk_softmax__sm_100a.ptx#L352"><code>corpus/vllm__moe_topk_softmax__sm_100a.ptx</code> · source line <code>352</code></a>, column <code>0</code>.
+
+**Recorded source anchors.** These lines locate the saved events. Their guards and surrounding control flow belong to the code explanation.
+
+<p><strong>Stop location · saved source location</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/vllm__moe_topk_softmax__sm_100a.ptx#L352">physical PTX 352</a></p>
+
+<pre><code>@%p68 <strong>bra</strong> $L__BB7_23;</code></pre>
+
+<details>
+<summary><strong>Saved status and diagnostic codes</strong></summary>
+
+**Saved result:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json#L187"><code>output.json#/result</code></a>.
+
+**Operation:** <code>kernel_verification</code>.
+
+**Checks:** Synchronization <code>not_run</code> · Memory <code>not_run</code> · Equivalence <code>not_run</code>.
+
+</details>
+
+</td></tr>
+<tr><td>
+
+### Analysis scope
+
+**Coverage:** Memory analysis complete: **no** · Search complete: <code>not saved</code> · Exhaustive search: <code>not saved</code>.
+
+This result applies to the supplied launch, arguments and enabled assumptions.
 
 <details>
 <summary><strong>Analysis records — open the saved evidence</strong></summary>
@@ -32,51 +70,25 @@ For the records explained in this report, see the [Evidence appendix](#evidence-
 
 </details>
 
-## 1. Verifier result
-
-Saved findings and analysis scope, formatted directly from the verifier output.
-
-### 1.1 Where analysis stopped
-
-A required operation is unsupported. The saved checks identify which analyses completed.
-
-**Saved result:** <code>unsupported</code> · <code>output.json#/result</code>.
-
-**Checks:** Synchronization <code>not_run</code> · Memory <code>not_run</code> · Equivalence <code>not_run</code>.
-
-**Operation:** <code>kernel_verification</code>.
-
-**First diagnostic:** <code>control_predicate_not_static</code> · <code>ptx_execution</code> — control predicate is not statically determined · <code>output.json#/diagnostics/0</code>.
-
-**Saved source location:** <code>corpus/vllm__moe_topk_softmax__sm_100a.ptx</code> · source line <code>352</code>, column <code>0</code>.
-
-**Recorded source anchors.** These lines locate the saved events. Their guards and surrounding control flow belong to the code explanation.
-
-<p><strong>Stop location · saved source location</strong> · physical PTX 352</p>
-
-<pre><code>@%p68 <strong>bra</strong> $L__BB7_23;</code></pre>
-
-
-### 1.2 Analysis scope
-
-**Coverage:** Memory analysis complete: **no** · Search complete: <code>not saved</code> · Exhaustive search: <code>not saved</code>.
-
-This result applies to the supplied launch, arguments and enabled assumptions.
+</td></tr></tbody>
+</table>
 <!-- verifier-result:end -->
 
 <!-- code-explanation:start -->
 
----
-
-## 2. Code explanation
+## Code explanation
 
 Interpretation from the PTX and saved inputs: how the reported operations fit together and what remains to check.
 
-### 2.1 The selected expert determines which thread updates its candidates
+### 1. The branch asks whether this thread owns the selected expert
 
-This kernel turns each row of expert scores into routing weights and expert indices. A group of 16 threads holds four candidates per thread. Between the two selections configured by `k=2`, the thread that owns the first selected expert replaces that candidate in its private local array with −10000, so the next selection can choose another expert for ordinary finite inputs. The reported branch is this owner test: it skips the update when the thread’s group slot differs from the selected expert’s owner. The owner depends on loaded score values, which the supplied files do not provide; the launch and scalar parameters alone do not determine this branch.
+This kernel converts each row of expert scores into routing weights and expert indices. A 16-thread group holds four candidates per thread.
 
-**Test:** Thread group slot ≠ Selected expert owner slot.
+With `k = 2`, it selects twice. Between selections, the thread that owns the first winner replaces that entry in its private array with −10000, allowing another expert to be selected for ordinary finite inputs. **The reported branch decides whether this thread performs that update.**
+
+The owner comes from the loaded scores. Those values are absent from the supplied files, so the launch and scalar parameters cannot determine which side of this branch is taken.
+
+**Test:** Thread slot ≠ Owner slot.
 
 ```mermaid
 ---
@@ -94,7 +106,7 @@ config:
     fontSize: 16px
 ---
 flowchart LR
-  G{"Test<br/>PTX 351"}
+  G{"Thread slot ≠<br/>Owner slot<br/>PTX 351"}
   E["Local store<br/>PTX 363"]
   J["Continue<br/>PTX 364"]
   G -->|"false"| E
@@ -110,9 +122,13 @@ classDef operation fill:#e8f0ff,stroke:#8ca7d2,color:#254b83
 
 Arrows show local control flow, not observed execution. The comparison at PTX 351 uses <code>%r3</code> and <code>%r116</code> (≠); the branch at 352 bypasses the local store at 363 when this comparison is true. Both paths rejoin at PTX 364.
 
-<p><strong>Owner mismatch skips the private candidate update; both paths advance the selection loop</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/vllm__moe_topk_softmax__sm_100a.ptx#L350-L369" title="Open the original PTX">physical PTX 350–352, 360–369</a></p>
+<p><strong>Skip the candidate update in non-owner threads</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/vllm__moe_topk_softmax__sm_100a.ptx#L350-L364" title="Open the original PTX">physical PTX 350–352, 360–364</a></p>
 
-<p><strong>Operands:</strong> Thread slot within its row group (<code>%r3</code>) · Owner slot derived from the selected expert (<code>%r116</code>) · Selected entry in this thread’s private candidate array (<code>%rd34</code>)</p>
+<ul>
+<li><code>%r3</code> — Thread slot within its row group</li>
+<li><code>%r116</code> — Owner slot derived from the selected expert</li>
+<li><code>%rd34</code> — Selected entry in this thread’s private candidate array</li>
+</ul>
 
 <pre><code><strong>sub.s32</strong> <strong>%r116</strong>, %r111, %r115;
 <a href="https://docs.nvidia.com/cuda/archive/13.0.0/parallel-thread-execution/index.html#comparison-and-selection-instructions-setp">setp.ne.s32</a> <strong>%p68</strong>, <strong>%r3</strong>, <strong>%r116</strong>;
@@ -122,16 +138,11 @@ Arrows show local control flow, not observed execution. The comparison at PTX 35
 <strong>add.s64</strong> %rd34, %rd2, %rd33;
 <strong>mov.b32</strong> %r127, -971227136;
 <a href="https://docs.nvidia.com/cuda/archive/13.0.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st"><strong>st.local.u32</strong></a> [%rd34], %r127;
-$L__BB7_23:
-<strong>add.s32</strong> %r135, %r135, 1;
-<a href="https://docs.nvidia.com/cuda/archive/13.0.0/parallel-thread-execution/index.html#comparison-and-selection-instructions-setp">setp.ne.s32</a> <strong>%p69</strong>, %r135, 0;
-<strong>add.s32</strong> %r134, %r134, %r48;
-<strong>add.s32</strong> %r133, %r133, 1;
-@<strong>%p69</strong> <a href="https://docs.nvidia.com/cuda/archive/13.0.0/parallel-thread-execution/index.html#control-flow-instructions-bra">bra</a> $L__BB7_8;</code></pre>
+$L__BB7_23:</code></pre>
 
 
 <details>
-<summary><strong>Check the row assignment, score dependency and two selection rounds</strong></summary>
+<summary><strong>Derivation: row ownership and score-dependent selection</strong></summary>
 
 #### Which scores does each thread own?
 
@@ -229,42 +240,54 @@ $L__BB7_16:
 | First | 1 < 2 | Reached | Loop back |
 | Second | 2 ≥ 2 | Skipped | Exit selection loop |
 
+<p><strong>Loop bookkeeping after both paths rejoin</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/vllm__moe_topk_softmax__sm_100a.ptx#L364-L369" title="Open the original PTX">physical PTX 364–369</a></p>
+
+<pre><code>$L__BB7_23:
+<strong>add.s32</strong> %r135, %r135, 1;
+<strong>setp.ne.s32</strong> <strong>%p69</strong>, %r135, 0;
+<strong>add.s32</strong> %r134, %r134, %r48;
+<strong>add.s32</strong> %r133, %r133, 1;
+@<strong>%p69</strong> <strong>bra</strong> $L__BB7_8;</code></pre>
+
+
 #### What exactly does the taken branch skip?
 
 For selected expert `e` in 0..63, the sign-correction terms at lines 342–350 are zero. The comparison operand reduces to `floor(e/4)`, the slot whose four candidates contain that expert. Thus `%p68=true` takes the branch and skips the replacement; `%p68=false` falls through. The address arithmetic at lines 353–361 selects local element `e mod 4`, a byte offset of `4×(e mod 4)` within the 16-byte array. The stored integer bits `0xc61c4000` represent float −10000. Both paths then reach the same loop-counter increment. The store is to private candidate storage, not the global routing output, and it is not an asynchronous handoff.
 
 <details>
-<summary><strong>Exact source references</strong></summary>
+<summary><strong>Sources: row ownership and score-dependent selection</strong></summary>
 
-##### Which scores does each thread own?
+<blockquote>
 
-- `input.json#/launch/block_dim`: <code>[32,4,1]</code>
-- `input.json#/launch/grid_dim`: <code>[1,1,1]</code>
-- `input.json#/arguments/1/value`: <code>8</code>
+##### Source references: Which scores does each thread own?
+
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/input.json#L10"><code>input.json#/launch/block_dim</code></a>: <code>[32,4,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/input.json#L5"><code>input.json#/launch/grid_dim</code></a>: <code>[1,1,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/input.json#L31"><code>input.json#/arguments/1/value</code></a>: <code>8</code>
 - physical PTX 31,50-81: <code>__local_depot7</code>, <code>%r3</code>, <code>%rd21</code>
 - physical PTX 212,240-307: <code>st.local.v4.f32</code>, <code>4127</code>
 - physical PTX 304-337: <code>%p61</code>, <code>st.global.f32</code>, <code>st.global.u32</code>
 
-##### Why does the selected index depend on input values?
+##### Source references: Why does the selected index depend on input values?
 
 - physical PTX 70-191: <code>ld.global.v4.f32</code>, <code>ex2.approx.ftz.f32</code>, <code>rcp.rn.f32</code>
 - physical PTX 192-239: <code>%p28</code>, <code>%r10</code>
 - physical PTX 240-307: <code>%p86</code>, <code>%r22</code>
-- `input.json#/arguments/6`: <code>{&quot;parameter&quot;:10,&quot;type&quot;:&quot;pointer&quot;,&quot;value&quot;:null}</code>
-- `input.json#/declarations/0`: <code>{&quot;parameter&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;input&quot;,&quot;name&quot;:&quot;input&quot;}</code>
-- `output.json#/frontend/user_branch_decisions`: <code>[]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/input.json#L53"><code>input.json#/arguments/6</code></a>: <code>{&quot;parameter&quot;:10,&quot;type&quot;:&quot;pointer&quot;,&quot;value&quot;:null}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/input.json#L70"><code>input.json#/declarations/0</code></a>: <code>{&quot;parameter&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;input&quot;,&quot;name&quot;:&quot;input&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json#L175"><code>output.json#/frontend/user_branch_decisions</code></a>: <code>[]</code>
 
-##### Why is this test reached only between the two selections?
+##### Source references: Why is this test reached only between the two selections?
 
-- `input.json#/arguments/0`: <code>{&quot;parameter&quot;:1,&quot;type&quot;:&quot;pointer&quot;,&quot;value&quot;:null}</code>
-- `input.json#/arguments/2/value`: <code>2</code>
-- `input.json#/arguments/8`: <code>{&quot;parameter&quot;:12,&quot;type&quot;:&quot;pointer&quot;,&quot;value&quot;:null}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/input.json#L23"><code>input.json#/arguments/0</code></a>: <code>{&quot;parameter&quot;:1,&quot;type&quot;:&quot;pointer&quot;,&quot;value&quot;:null}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/input.json#L36"><code>input.json#/arguments/2/value</code></a>: <code>2</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/input.json#L63"><code>input.json#/arguments/8</code></a>: <code>{&quot;parameter&quot;:12,&quot;type&quot;:&quot;pointer&quot;,&quot;value&quot;:null}</code>
 - physical PTX 61-69: <code>%p82</code>, <code>%p15</code>
 - physical PTX 213-225: <code>%r136</code>, <code>%r135</code>
 - physical PTX 304-341: <code>%p61</code>, <code>%p63</code>, <code>%p67</code>
 - physical PTX 364-369: <code>%p69</code>
 
-##### What exactly does the taken branch skip?
+##### Source references: What exactly does the taken branch skip?
 
 - physical PTX 342-369: <code>%r116</code>, <code>%p68</code>, <code>%rd34</code>, <code>-971227136</code>, <code>st.local.u32</code>
 - physical PTX 31,50: <code>__local_depot7</code>, <code>%rd2</code>
@@ -275,25 +298,29 @@ For selected expert `e` in 0..63, the sign-correction terms at lines 342–350 a
 - physical PTX 192-239: <code>st.local.v4.f32</code>, <code>%r10</code>
 - physical PTX 240-307: <code>shfl.sync.bfly.b32</code>, <code>%r22</code>
 - physical PTX 338-369: <code>%p68</code>, <code>st.local.u32</code>
-- `output.json#/diagnostics/0/details/location/line`: <code>352</code>
-- `input.json#/declarations/0/object`: <code>&quot;input&quot;</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json#L68"><code>output.json#/diagnostics/0/details/location/line</code></a>: <code>352</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/input.json#L73"><code>input.json#/declarations/0/object</code></a>: <code>&quot;input&quot;</code>
+
+</blockquote>
 
 </details>
 
 </details>
 
-### 2.2 Next check
+### 2. Next check
 
-Inspect how the frontend supports the data-dependent selected expert as an input to this owner branch. The unresolved item is the winner derived from the input tensor, not an unnamed launch scalar: the saved required-parameter list is empty, and no concrete branch decision is recorded. The downstream prerequisite and memory-elimination diagnostics refer to analysis that could not proceed; they do not identify additional kernel operations to repair. This stop alone supplies no basis for changing the kernel or forcing either branch.
+Check frontend support for the score-dependent owner branch. The missing value is the selected winner from the input tensor: the required-parameter list is empty and no concrete branch decision is saved.
+
+The later prerequisite and memory-elimination diagnostics describe analyses that could not proceed. They do not identify additional kernel operations to repair, or justify forcing either side of the branch.
 
 <details>
-<summary><strong>Basis for next inspection</strong></summary>
+<summary><strong>Evidence for the next check</strong></summary>
 
-- `output.json#/details/required_parameters`: <code>[]</code>
-- `output.json#/frontend/user_branch_decisions`: <code>[]</code>
-- `output.json#/equivalence/diagnostics/0/code`: <code>&quot;prerequisite_check_not_passed&quot;</code>
-- `output.json#/value_analysis/diagnostics/0/code`: <code>&quot;prerequisite_check_not_passed&quot;</code>
-- `output.json#/value_analysis/scalar_fold/diagnostics/0/code`: <code>&quot;memory_elimination_not_completed&quot;</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json#L59"><code>output.json#/details/required_parameters</code></a>: <code>[]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json#L175"><code>output.json#/frontend/user_branch_decisions</code></a>: <code>[]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json#L84"><code>output.json#/equivalence/diagnostics/0/code</code></a>: <code>&quot;prerequisite_check_not_passed&quot;</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json#L242"><code>output.json#/value_analysis/diagnostics/0/code</code></a>: <code>&quot;prerequisite_check_not_passed&quot;</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json#L281"><code>output.json#/value_analysis/scalar_fold/diagnostics/0/code</code></a>: <code>&quot;memory_elimination_not_completed&quot;</code>
 - physical PTX 307,342-352: <code>%r22</code>, <code>%p68</code>
 
 </details>
@@ -329,7 +356,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Diagnostics
 
-<code>output.json#/diagnostics</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json#L61"><code>output.json#/diagnostics</code></a>
 
 **Retained records:** 1.
 
@@ -461,20 +488,20 @@ Execute a configured number of body iterations for unresolved recognized computa
 
 Memory safety and numerical equivalence are separate results.
 
-**Value analysis:** <code>unsupported</code> · <code>output.json#/value_analysis</code>
+**Value analysis:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json#L234"><code>output.json#/value_analysis</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_requested</code>.
 
 - **Prerequisite status:** <code>ptx_execution_unsupported</code>
 - **Scope:** {&quot;operation&quot;:&quot;<code>value_analysis</code>&quot;}
-- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <code>output.json#/value_analysis/diagnostics/0</code>
+- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json#L241"><code>output.json#/value_analysis/diagnostics/0</code></a>
 
-**Equivalence:** <code>unsupported</code> · <code>output.json#/equivalence</code>
+**Equivalence:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json#L76"><code>output.json#/equivalence</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_run</code>.
 
 - **Scope:** {&quot;operation&quot;:&quot;equivalence&quot;}
-- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <code>output.json#/equivalence/diagnostics/0</code>
+- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/output.json#L83"><code>output.json#/equivalence/diagnostics/0</code></a>
 
 <details>
 <summary><strong>Exact value-analysis fields and large-data references</strong></summary>
@@ -605,7 +632,7 @@ Memory safety and numerical equivalence are separate results.
 | Cluster · blocks | <code>[1,1,1]</code> |
 | Dynamic shared memory · bytes | <code>0</code> |
 
-**Arguments:** 9 retained entries. Exact parameter bindings, descriptors and entry name: <code>input.json#</code>.
+**Arguments:** 9 retained entries. Exact parameter bindings, descriptors and entry name: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/vllm__moe_topk_softmax__sm_100a/input.json#L1"><code>input.json#</code></a>.
 
 <details>
 <summary><strong>Exact input configuration</strong></summary>

@@ -1,8 +1,8 @@
 # Report evaluation
 
-## Current public examples
+## Current examples
 
-The nine reports use the saved inputs, outputs and PTX at public commit
+The reports use the saved inputs, outputs and PTX at public commit
 [`94a6b26`](https://github.com/gpu-verifier/sentryward/commit/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c).
 No verifier or kernel was rerun. All artifact links point at that commit after
 byte comparison; source excerpts remain exact.
@@ -29,10 +29,26 @@ recomposition hashes are in the [manifest](../../tests/report_skill/fixtures/exp
 | [TMA](tma/report.md) | Short warning account; recorded overlap versus copy-box size; assumption and completion scope |
 | [MoE](moe/report.md) | Input-dependent selection branch; analysis stop without inventing a kernel bug |
 
-FMHA, paired-TMEM, paged attention and clean B200 additionally exercise the
-script-only result layer. Complexity means interacting roles, objects, phases or
-concerns; it is not a warning count or a long file. The corpus retains one pair
-per `potential_race` result, so several independent races in one run remain untested.
+### Local additions: different mechanisms
+
+The main collection now uses MoE, sparse GEMM, TMA, FMHA and FlashMLA. It retains
+one multi-concern lifecycle example and adds a read/write candidate and a
+synchronization failure. Gluon and GQA remain regression cases.
+
+- **Sparse GEMM:** a TMEM copy and sparse MMA read, with same-participant ISA
+  ordering to reconcile with the retained candidate.
+- **FMHA:** two barrier roles, startup parity and a rejected model requirement;
+  its truncated replay cannot be presented as a complete participant timeline.
+
+These two explanations were developed and reviewed against the current raw
+artifacts. They are **local development results, not new independent one-shot
+trials**. Their drafts and report hashes use the same reproduction manifest.
+
+Paired-TMEM, paged attention and clean B200 exercise the script-only result
+layer. Complexity means interacting roles, objects, phases or concerns; it is
+not a warning count or a long file. PTX scale counts the complete file, which
+may contain several kernel entries. The corpus retains one pair per
+`potential_race` result, so several independent races in one run remain untested.
 
 ## Earlier independent generation
 
@@ -72,7 +88,8 @@ not presented as publicly reproducible evidence for these new inputs.
 
 ## Checks and reading review
 
-**247 tests pass; 169/169 current saved results generate and check.**
+**262 component tests pass.** The earlier corpus check generated and checked
+**169/169 saved results**; it did not test source explanations.
 [Check receipt](evaluation/current.json) records the base commit and outcome counts.
 
 Current component tests cover exact excerpts, artifact identity, saved-result

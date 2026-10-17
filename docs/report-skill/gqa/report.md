@@ -4,9 +4,75 @@
 <p align="center">Blackwell low-latency GQA</p>
 <h1 align="center">LIFECYCLE ORDERING MISSING</h1>
 
-**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass93_blackwell_low_latency_gqa.compute_100a.ptx) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/input.json) · launch, arguments and assumptions.
+**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass93_blackwell_low_latency_gqa.compute_100a.ptx) ([raw](https://github.com/gpu-verifier/sentryward/raw/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass93_blackwell_low_latency_gqa.compute_100a.ptx)) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/input.json) · launch, arguments and assumptions.
 
 **Result:** [output.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json) · saved verifier findings.
+
+<table>
+<thead><tr><th align="left">VERIFIER RESULT · Required lifecycle order</th></tr></thead>
+<tbody><tr><td>
+
+A required lifecycle happens-before relation is absent in the analyzed model.
+
+**Synchronization:** Incomplete · **Memory:** Not run · **Equivalence:** Not run
+
+**First diagnostic:** <code>access_completion_before_deallocation_not_proven</code> · <code>lifecycle_check</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L68"><code>output.json#/diagnostics/0</code></a>.
+
+tcgen05.load must complete before the allocation is deallocated
+
+```mermaid
+flowchart LR
+  F["TMEM read completes"]
+  T["Free TMEM allocation"]
+  F -. "required before: not established" .-> T
+  classDef context fill:#f6f8fa,stroke:#8c959f,color:#24292f
+  classDef operation fill:#ddf4ff,stroke:#54aeff,color:#0550ae
+  classDef focus fill:#fbefff,stroke:#c297ff,color:#6639ba
+  class F operation
+  class T focus
+```
+
+The dashed arrow is a failed requirement in the analyzed model, not a recorded execution sequence.
+
+**Failed orders:** 131,072 reported; 32 records retained; truncated: <code>true</code>.
+
+**Source attribution:** the retained orders do not map these model instructions to physical PTX sites or CUDA issuers.
+
+<details>
+<summary><strong>Check the required order and retained instruction IDs</strong></summary>
+
+**Requirement:** <code>access_completion_before_dealloc</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L1341"><code>output.json#/failed_required_orders/0</code></a>.
+
+| Required role | Model instruction |
+| --- | --- |
+| TMEM read completes | <code>15736</code> |
+| Free TMEM allocation | <code>3546</code> |
+
+Instruction IDs refer to model instructions, not physical PTX lines. The operation roles above come from the saved requirement and message. All retained orders and effect lists are in Evidence appendix → Diagnostic records.
+
+</details>
+
+<details>
+<summary><strong>Saved status and diagnostic codes</strong></summary>
+
+**Saved result:** <code>invalid_lifecycle</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L2279"><code>output.json#/result</code></a>.
+
+**Operation:** <code>kernel_verification</code>.
+
+**Checks:** Synchronization <code>incomplete</code> · Memory <code>not_run</code> · Equivalence <code>not_run</code>.
+
+</details>
+
+</td></tr>
+<tr><td>
+
+### Analysis scope
+
+**Coverage:** Memory analysis complete: **no** · Search complete: <code>not saved</code> · Exhaustive search: <code>not saved</code>.
+
+**Assumption-dependent:** <code>true</code>. Triggered rules: Representative election.
+
+This result applies to the supplied launch, arguments and enabled assumptions.
 
 <details>
 <summary><strong>Analysis records — open the saved evidence</strong></summary>
@@ -34,74 +100,17 @@ For the records explained in this report, see the [Evidence appendix](#evidence-
 
 </details>
 
-## 1. Verifier result
-
-Saved findings and analysis scope, formatted directly from the verifier output.
-
-### 1.1 Required lifecycle order
-
-A required lifecycle happens-before relation is absent in the analyzed model.
-
-**Saved result:** <code>invalid_lifecycle</code> · <code>output.json#/result</code>.
-
-**Checks:** Synchronization <code>incomplete</code> · Memory <code>not_run</code> · Equivalence <code>not_run</code>.
-
-**Operation:** <code>kernel_verification</code>.
-
-**First diagnostic:** <code>access_completion_before_deallocation_not_proven</code> · <code>lifecycle_check</code> · <code>output.json#/diagnostics/0</code>.
-
-tcgen05.load must complete before the allocation is deallocated
-
-```mermaid
-flowchart TB
-  F["TMEM read completes"]
-  T["Free TMEM allocation"]
-  F -. "required before: not established" .-> T
-  classDef context fill:#f6f8fa,stroke:#8c959f,color:#24292f
-  classDef operation fill:#ddf4ff,stroke:#54aeff,color:#0550ae
-  classDef focus fill:#fbefff,stroke:#c297ff,color:#6639ba
-  class F operation
-  class T focus
-```
-
-The dashed arrow is a failed requirement in the analyzed model, not a recorded execution sequence.
-
-**Failed orders:** 131,072 reported; 32 records retained; truncated: <code>true</code>.
-
-**Source attribution:** the retained orders do not map these model instructions to physical PTX sites or CUDA issuers.
-
-<details>
-<summary><strong>Check the required order and retained instruction IDs</strong></summary>
-
-**Requirement:** <code>access_completion_before_dealloc</code> · <code>output.json#/failed_required_orders/0</code>.
-
-| Required role | Model instruction |
-| --- | --- |
-| TMEM read completes | <code>15736</code> |
-| Free TMEM allocation | <code>3546</code> |
-
-Instruction IDs refer to model instructions, not physical PTX lines. The operation roles above come from the saved requirement and message. All retained orders and effect lists are in Evidence appendix → Diagnostic records.
-
-</details>
-
-### 1.2 Analysis scope
-
-**Coverage:** Memory analysis complete: **no** · Search complete: <code>not saved</code> · Exhaustive search: <code>not saved</code>.
-
-**Assumption-dependent:** <code>true</code>. Triggered rules: Representative election.
-
-This result applies to the supplied launch, arguments and enabled assumptions.
+</td></tr></tbody>
+</table>
 <!-- verifier-result:end -->
 
 <!-- code-explanation:start -->
 
----
-
-## 2. Code explanation
+## Code explanation
 
 Interpretation from the PTX and saved inputs: how the reported operations fit together and what remains to check.
 
-### 2.1 Where the TMEM read fits in attention
+### 1. Where the TMEM read fits in attention
 
 This GQA kernel forms query–key scores, converts them into softmax weights, and accumulates weighted values in tensor memory (TMEM). Warp 2 allocates and frees the score and output accumulators; warps 4–7 read them. The final output-accumulator read is the useful source focus for the release question. The retained model instruction IDs have no supplied PTX or issuer binding, so this walkthrough does not identify them with that site. With the saved sequence length and scalar inputs, every CTA has two 128-key tiles to process; the zero-work exits are not taken.
 
@@ -178,14 +187,16 @@ The thread selector comes from `%tid.x`, shifted right by five and broadcast wit
 Q and K TMA destinations feed the first MMA accumulator, whose handle is stored at shared offset `108128`; the output accumulator handle is at `108144`. Each allocation requests 32 TMEM columns, not 32 bytes. Score MMA starts with accumulation disabled for each tile. Readers explicitly wait for the score load, scale the values, compute maxima and exponentials, and stage BF16 weights in shared memory. The first weighted-value MMA initializes the output accumulator; the final tile accumulates into it. Between tiles, readers load, rescale and write the previous output partial. The final read stages cluster-shared partials; the subsequent shared reductions and division produce the global BF16 output `o`.
 
 <details>
-<summary><strong>Exact source references</strong></summary>
+<summary><strong>Sources: Check the workload, roles and accumulator journey</strong></summary>
 
-##### Why two tiles really execute
+<blockquote>
 
-- `input.json#/arguments/10`: <code>{&quot;parameter&quot;:0,&quot;offset&quot;:8,&quot;type&quot;:&quot;s32&quot;,&quot;value&quot;:8}</code>
-- `input.json#/arguments/15`: <code>{&quot;parameter&quot;:12,&quot;type&quot;:&quot;u32&quot;,&quot;value&quot;:0}</code>
-- `input.json#/shape_arrays/0/shapes`: <code>[[2048]]</code>
-- `input.json#/launch/grid_dim`: <code>[8,1,8]</code>
+##### Source references: Why two tiles really execute
+
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/input.json#L83"><code>input.json#/arguments/10</code></a>: <code>{&quot;parameter&quot;:0,&quot;offset&quot;:8,&quot;type&quot;:&quot;s32&quot;,&quot;value&quot;:8}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/input.json#L110"><code>input.json#/arguments/15</code></a>: <code>{&quot;parameter&quot;:12,&quot;type&quot;:&quot;u32&quot;,&quot;value&quot;:0}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/input.json#L157"><code>input.json#/shape_arrays/0/shapes</code></a>: <code>[[2048]]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/input.json#L11"><code>input.json#/launch/grid_dim</code></a>: <code>[8,1,8]</code>
 - physical PTX 4119-4143: <code>ld.param.b32</code>, <code>cp.async.ca.shared.global.L2::128B</code>
 - physical PTX 4426-4480: <code>@%p13</code>, <code>add.s32</code>
 - physical PTX 5496-5501: <code>setp.gt.s32</code>, <code>bra.uni</code>
@@ -194,19 +205,19 @@ Q and K TMA destinations feed the first MMA accumulator, whose handle is stored 
 - physical PTX 6870-6894: <code>neg.s32</code>, <code>mov.b32</code>
 - physical PTX 7277-7294: <code>add.s32</code>, <code>@%p144</code>
 
-##### Which threads own the protocol
+##### Source references: Which threads own the protocol
 
-- `input.json#/launch/block_dim`: <code>[256,1,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/input.json#L6"><code>input.json#/launch/block_dim</code></a>: <code>[256,1,1]</code>
 - physical PTX 4135-4150: <code>mov.u32</code>, <code>@%p3</code>
 - physical PTX 4486-4493: <code>setp.eq.b32</code>, <code>@%p86</code>
 - physical PTX 4805-4807: <code>setp.lt.s32</code>, <code>@%p61</code>
 - physical PTX 5495-5536: <code>setp.gt.s32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive"><code>mbarrier.arrive.shared::cta.b64</code></a>
 - physical PTX 6571-6589: <code>bra.uni</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive"><code>mbarrier.arrive.shared::cta.b64</code></a>
 
-##### How the two accumulators are used
+##### Source references: How the two accumulators are used
 
-- `input.json#/declarations`: <code>list, 5 entries; see original artifact</code>
-- `input.json#/tma_descriptors`: <code>list, 3 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/input.json#L121"><code>input.json#/declarations</code></a>: <code>list, 5 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/input.json#L164"><code>input.json#/tma_descriptors</code></a>: <code>list, 3 entries; see original artifact</code>
 - physical PTX 4121-4132: <code>ld.param.b64</code>, <code>ld.param.b32</code>
 - physical PTX 4534-4539: <code>cvta.param.u64</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor"><code>cp.async.bulk.tensor.5d.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint</code></a>
 - physical PTX 4845-4857: <code>cvta.param.u64</code>
@@ -231,13 +242,15 @@ Q and K TMA destinations feed the first MMA accumulator, whose handle is stored 
 - physical PTX 5960-5961: <code>setp.ne.b32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-mma-instructions"><code>tcgen05.mma.cta_group::1.kind::f16</code></a>
 - physical PTX 6573-6608: <code>setp.lt.s32</code>, <code>ld.shared.b32</code>
 - physical PTX 7373-7512: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-ld"><code>tcgen05.ld.sync.aligned.32x32b.x8.b32</code></a>, <code>bar.sync</code>
-- `output.json#/failed_required_orders/0`: <code>dict, 8 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L1341"><code>output.json#/failed_required_orders/0</code></a>: <code>dict, 8 entries; see original artifact</code>
+
+</blockquote>
 
 </details>
 
 </details>
 
-### 2.2 Final read: half the lanes bypass result use
+### 2. Final read: half the lanes bypass result use
 
 After the final output MMA is ready, all four reader warps issue the TMEM load. Lanes 0–15 in each warp use its eight result registers in cluster-shared stores; lanes 16–31 skip those stores. Both paths reach the same release arrival, with no intervening load-completion wait. This establishes a load-issue-to-arrival path, but the skipped stores cannot establish completion of the bypassing lanes’ reads.
 
@@ -275,7 +288,11 @@ Local source paths: the branch at PTX 7378 tests `%r960 ≠ 0`. Both paths reach
 
 <p><strong>Final read, conditional transfer, common release arrival</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass93_blackwell_low_latency_gqa.compute_100a.ptx#L7373-L7410" title="Open the original PTX">physical PTX 7373–7383, 7398–7410</a> · display wrapping added</p>
 
-<p><strong>Operands:</strong> Output-accumulator TMEM handle (<code>%r958</code>) · First loaded partial result (<code>%r962</code>) · Release barrier address (<code>%r985</code>)</p>
+<ul>
+<li><code>%r958</code> — Output-accumulator TMEM handle</li>
+<li><code>%r962</code> — First loaded partial result</li>
+<li><code>%r985</code> — Release barrier address</li>
+</ul>
 
 <pre><code><a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-ld"><strong>tcgen05.ld.sync.aligned.32x32b.x8.b32</strong></a>{%r962, %r965, %r968, %r971,%r974,
     %r977, %r980, %r983},[%r958];
@@ -390,21 +407,23 @@ DONE:
 
 
 <details>
-<summary><strong>Exact source references</strong></summary>
+<summary><strong>Sources: Check the branch and compare every TMEM read site</strong></summary>
 
-##### Why the split is exactly half of each reader warp
+<blockquote>
+
+##### Source references: Why the split is exactly half of each reader warp
 
 - physical PTX 4135: <code>mov.u32</code>
 - physical PTX 6573-6576: <code>setp.lt.s32</code>, <code>add.s32</code>
 - physical PTX 7373-7409: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-ld"><code>tcgen05.ld.sync.aligned.32x32b.x8.b32</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive"><code>mbarrier.arrive.shared::cta.b64</code></a>
 
-##### What the other load sites establish
+##### Source references: What the other load sites establish
 
 - physical PTX 6910-6915: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-ld"><code>tcgen05.ld.sync.aligned.32x32b.x8.b32</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-wait"><code>tcgen05.wait::ld.sync.aligned</code></a>
 - physical PTX 7196-7247: <code>setp.eq.b32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-wait"><code>tcgen05.wait::st.sync.aligned</code></a>
 - physical PTX 7373-7409: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-ld"><code>tcgen05.ld.sync.aligned.32x32b.x8.b32</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive"><code>mbarrier.arrive.shared::cta.b64</code></a>
 
-##### Why the preceding MMA wait does not finish this load
+##### Source references: Why the preceding MMA wait does not finish this load
 
 - physical PTX 4334-4339: <code>mov.b32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init"><code>mbarrier.init.shared::cta.b64</code></a>
 - physical PTX 6207-6212: <code>setp.eq.b32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen-async-sync-operations-commit"><code>tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64</code></a>
@@ -417,13 +436,15 @@ DONE:
 ##### Additional section references
 
 - physical PTX 6573-6608: <code>setp.lt.s32</code>, <code>ld.shared.b32</code>
-- `output.json#/semantic_assumptions`: <code>{&quot;bounded_computation_loops&quot;:false,&quot;clc_always_fails&quot;:true,&quot;duplicate_tma_store_benign&quot;:true,&quot;representative_branches&quot;:false,&quot;representative_election&quot;:true}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L2285"><code>output.json#/semantic_assumptions</code></a>: <code>{&quot;bounded_computation_loops&quot;:false,&quot;clc_always_fails&quot;:true,&quot;duplicate_tma_store_benign&quot;:true,&quot;representative_branches&quot;:false,&quot;representative_election&quot;:true}</code>
+
+</blockquote>
 
 </details>
 
 </details>
 
-### 2.3 Release handshake: the second phase waits for all readers
+### 3. Release handshake: the second phase waits for all readers
 
 The release barrier does include all 128 readers, including the lanes that skip stores. Together with 32 allocator-thread arrivals they complete its second phase; warp 2 polls parity 1 and frees both TMEM allocations only after that poll succeeds. The missing guarantee lies before notification: every reader’s asynchronous TMEM read must be complete before its release arrival can stand for “finished reading.” The arrival count proves participation, not that completion condition. This source relation explains the lifecycle question without asserting an observed premature free.
 
@@ -462,7 +483,13 @@ Solid arrows distinguish local source order, register use, and barrier participa
 
 <p><strong>Allocator waits successfully before freeing both handles</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass93_blackwell_low_latency_gqa.compute_100a.ptx#L6537-L6569" title="Open the original PTX">physical PTX 6537–6569</a></p>
 
-<p><strong>Operands:</strong> Shared release barrier (<code>%r475</code>) · Requested phase parity: 1 (<code>%r476</code>) · Score TMEM handle (<code>%r477</code>) · Output TMEM handle (<code>%r479</code>) · Allocation size: 32 columns (<code>%r478</code>)</p>
+<ul>
+<li><code>%r475</code> — Shared release barrier</li>
+<li><code>%r476</code> — Requested phase parity: 1</li>
+<li><code>%r477</code> — Score TMEM handle</li>
+<li><code>%r479</code> — Output TMEM handle</li>
+<li><code>%r478</code> — Allocation size: 32 columns</li>
+</ul>
 
 <pre><code><strong>mov.b32</strong> %r480, _ZN3TGV3gqa13shared_memoryE;
 <strong>add.s32</strong> %r475, %r480, 108080;
@@ -569,9 +596,11 @@ A thread’s second arrival cannot be assigned phase 1 merely from its position 
 After the release arrival, readers wait on cluster partial-result barriers at offsets `108096` and `108112`. Their <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st-async"><code>st.async</code></a> transactions stage statistics and output partials in shared memory; the epilogue consumes those partials and writes global `o`. These waits occur after notification to the allocator and are not a replacement for completing the TMEM read before that notification. The final CTA barrier likewise occurs after the allocator’s deallocations. The saved witness lacks source/issuer bindings, so the precise correspondence between these static sites and the retained failed orders remains open.
 
 <details>
-<summary><strong>Exact source references</strong></summary>
+<summary><strong>Sources: Check both phases and the completion boundary</strong></summary>
 
-##### The barrier is reused, with different literal parities
+<blockquote>
+
+##### Source references: The barrier is reused, with different literal parities
 
 - physical PTX 4135-4150: <code>mov.u32</code>, <code>@%p3</code>
 - physical PTX 4343-4363: <code>mov.b32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init"><code>mbarrier.init.shared::cta.b64</code></a>
@@ -580,7 +609,7 @@ After the release arrival, readers wait on cluster partial-result barriers at of
 - physical PTX 6537-6568: <code>mov.b32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-alloc-dealloc-relinquish-alloc-permit"><code>tcgen05.dealloc.cta_group::1.sync.aligned.b32</code></a>
 - physical PTX 7403-7409: <code>mov.b32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive"><code>mbarrier.arrive.shared::cta.b64</code></a>
 
-##### Why these really are separate phases
+##### Source references: Why these really are separate phases
 
 - physical PTX 4167-4171: <code>add.s32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init"><code>mbarrier.init.shared::cta.b64</code></a>
 - physical PTX 4511-4539: <code>mov.b32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor"><code>cp.async.bulk.tensor.5d.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint</code></a>
@@ -590,14 +619,14 @@ After the release arrival, readers wait on cluster partial-result barriers at of
 - physical PTX 6802-6823: <code>mov.b32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive"><code>mbarrier.arrive.shared::cta.b64</code></a>
 - physical PTX 6537-6542: <code>mov.b32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive"><code>mbarrier.arrive.shared::cta.b64</code></a>
 
-##### The later shared-memory waits serve another object
+##### Source references: The later shared-memory waits serve another object
 
 - physical PTX 6753-6767: <code>setp.gt.u32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive"><code>mbarrier.arrive.expect_tx.shared::cta.b64</code></a>
 - physical PTX 7344-7356: <code>setp.ne.b32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st-async"><code>st.async.shared::cluster.mbarrier::complete_tx::bytes.f32</code></a>
 - physical PTX 7373-7428: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-ld"><code>tcgen05.ld.sync.aligned.32x32b.x8.b32</code></a>, <code>bra</code>
 - physical PTX 7466-7512: <code>@%p156</code>, <code>bar.sync</code>
 - physical PTX 6565-6571: <code>ld.shared.b32</code>, <code>bra.uni</code>
-- `output.json#/failed_required_orders/0`: <code>dict, 8 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L1341"><code>output.json#/failed_required_orders/0</code></a>: <code>dict, 8 entries; see original artifact</code>
 
 ##### Additional section references
 
@@ -606,11 +635,13 @@ After the release arrival, readers wait on cluster partial-result barriers at of
 - physical PTX 6809-6823: <code>elect.sync</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive"><code>mbarrier.arrive.shared::cta.b64</code></a>
 - physical PTX 7373-7409: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-ld"><code>tcgen05.ld.sync.aligned.32x32b.x8.b32</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive"><code>mbarrier.arrive.shared::cta.b64</code></a>
 
-</details>
+</blockquote>
 
 </details>
 
-### 2.4 Numerical model: the score reduction is a separate limitation
+</details>
+
+### 4. Numerical model: the score reduction is a separate limitation
 
 The saved value-model diagnostic names the warp maximum reduction used while forming softmax weights. The supplied PTX shows the first reduction consuming a scaled score; it is not a TMEM deallocation operation. Its missing exact per-thread value model and the unmet lifecycle prerequisite are distinct obstacles to a numerical conclusion. Neither is evidence that this arithmetic produced an incorrect answer.
 
@@ -660,13 +691,15 @@ Arrows show source data dependencies. The saved unsupported-operation location i
 The score index is `tid.x − 128 + 256z` on the first tile and 128 greater on the second. Both are within `[0, 2048)` for the supplied grid, and parameter 12 makes the lower limit zero. The in-range branch at 6949 bypasses the negative-infinity replacement. The scale comes from parameter 11, loaded into `%r129`; multiplication produces `%r822`, then `redux.sync.max.NaN.f32` produces `%r81`. This traces the operation named by the value-model diagnostic without claiming a completed numerical comparison.
 
 <details>
-<summary><strong>Exact source references</strong></summary>
+<summary><strong>Sources: Check the reduction input and saved analysis limits</strong></summary>
 
-##### The configured score reaches the reduction
+<blockquote>
 
-- `input.json#/arguments/14`: <code>{&quot;parameter&quot;:11,&quot;type&quot;:&quot;f32&quot;,&quot;value&quot;:0.1803368777036667}</code>
-- `input.json#/arguments/15`: <code>{&quot;parameter&quot;:12,&quot;type&quot;:&quot;u32&quot;,&quot;value&quot;:0}</code>
-- `input.json#/shape_arrays/0/shapes`: <code>[[2048]]</code>
+##### Source references: The configured score reaches the reduction
+
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/input.json#L105"><code>input.json#/arguments/14</code></a>: <code>{&quot;parameter&quot;:11,&quot;type&quot;:&quot;f32&quot;,&quot;value&quot;:0.1803368777036667}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/input.json#L110"><code>input.json#/arguments/15</code></a>: <code>{&quot;parameter&quot;:12,&quot;type&quot;:&quot;u32&quot;,&quot;value&quot;:0}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/input.json#L157"><code>input.json#/shape_arrays/0/shapes</code></a>: <code>[[2048]]</code>
 - physical PTX 4131-4132: <code>ld.param.b32</code>
 - physical PTX 6827-6830: <code>setp.eq.b32</code>, <code>and.b32</code>
 - physical PTX 6870-6872: <code>neg.s32</code>, <code>add.s32</code>
@@ -675,27 +708,29 @@ The score index is `tid.x − 128 + 256z` on the first tile and 128 greater on t
 
 ##### Additional section references
 
-- `output.json#/semantic_program/value_diagnostics/0`: <code>{&quot;code&quot;:&quot;unsupported_operation&quot;,&quot;line&quot;:6969,&quot;message&quot;:&quot;No exact per-thread value model for compute operation &#x27;redux&#x27;&quot;}</code>
-- `output.json#/semantic_program/binding_diagnostics/0`: <code>{&quot;code&quot;:&quot;incomplete_value_semantics&quot;,&quot;message&quot;:&quot;unsupported_operation: No exact per-thread value model for compute operation &#x27;redux&#x27;&quot;}</code>
-- `output.json#/equivalence/result`: <code>&quot;unsupported&quot;</code>
-- `output.json#/value_analysis/scalar_fold/result`: <code>&quot;unsupported&quot;</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L2312"><code>output.json#/semantic_program/value_diagnostics/0</code></a>: <code>{&quot;code&quot;:&quot;unsupported_operation&quot;,&quot;line&quot;:6969,&quot;message&quot;:&quot;No exact per-thread value model for compute operation &#x27;redux&#x27;&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L2295"><code>output.json#/semantic_program/binding_diagnostics/0</code></a>: <code>{&quot;code&quot;:&quot;incomplete_value_semantics&quot;,&quot;message&quot;:&quot;unsupported_operation: No exact per-thread value model for compute operation &#x27;redux&#x27;&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L1331"><code>output.json#/equivalence/result</code></a>: <code>&quot;unsupported&quot;</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L3006"><code>output.json#/value_analysis/scalar_fold/result</code></a>: <code>&quot;unsupported&quot;</code>
 - physical PTX 6910-6915: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-ld"><code>tcgen05.ld.sync.aligned.32x32b.x8.b32</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-wait"><code>tcgen05.wait::ld.sync.aligned</code></a>
 - physical PTX 7115-7143: <code>shfl.sync.idx.b32</code>, <code>ex2.approx.f32</code>
 
-</details>
+</blockquote>
 
 </details>
 
-### 2.5 Next check
+</details>
+
+### 5. Next check
 
 Resolve the event-to-source and issuer binding for the retained TMEM load and frees, then check how the verifier and the PTX completion contract represent each reader’s load completion before the release arrival. The final read’s bypass lanes are the specific source path to examine; the rescale read should be distinguished using its register dependencies and store wait. Numerical work also needs an exact value model for the reported `redux` operation after its prerequisites are satisfied.
 
 <details>
-<summary><strong>Basis for next inspection</strong></summary>
+<summary><strong>Evidence for the next check</strong></summary>
 
-- `output.json#/failed_required_orders/0`: <code>dict, 8 entries; see original artifact</code>
-- `output.json#/semantic_program/value_diagnostics/0`: <code>{&quot;code&quot;:&quot;unsupported_operation&quot;,&quot;line&quot;:6969,&quot;message&quot;:&quot;No exact per-thread value model for compute operation &#x27;redux&#x27;&quot;}</code>
-- `output.json#/semantic_assumptions`: <code>{&quot;bounded_computation_loops&quot;:false,&quot;clc_always_fails&quot;:true,&quot;duplicate_tma_store_benign&quot;:true,&quot;representative_branches&quot;:false,&quot;representative_election&quot;:true}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L1341"><code>output.json#/failed_required_orders/0</code></a>: <code>dict, 8 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L2312"><code>output.json#/semantic_program/value_diagnostics/0</code></a>: <code>{&quot;code&quot;:&quot;unsupported_operation&quot;,&quot;line&quot;:6969,&quot;message&quot;:&quot;No exact per-thread value model for compute operation &#x27;redux&#x27;&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L2285"><code>output.json#/semantic_assumptions</code></a>: <code>{&quot;bounded_computation_loops&quot;:false,&quot;clc_always_fails&quot;:true,&quot;duplicate_tma_store_benign&quot;:true,&quot;representative_branches&quot;:false,&quot;representative_election&quot;:true}</code>
 - physical PTX 7230-7247: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-ld"><code>tcgen05.ld.sync.aligned.32x32b.x8.b32</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-wait"><code>tcgen05.wait::st.sync.aligned</code></a>
 - physical PTX 7373-7409: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-ld"><code>tcgen05.ld.sync.aligned.32x32b.x8.b32</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive"><code>mbarrier.arrive.shared::cta.b64</code></a>
 
@@ -756,7 +791,7 @@ These are saved verifier records. Truncation flags describe missing records in t
 
 tcgen05.load must complete before the allocation is deallocated
 
-Effect lists and per-record flags: <code>output.json#/failed_required_orders</code>.
+Effect lists and per-record flags: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L1340"><code>output.json#/failed_required_orders</code></a>.
 
 #### Diagnostics
 
@@ -782,7 +817,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Diagnostics
 
-<code>output.json#/diagnostics</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L67"><code>output.json#/diagnostics</code></a>
 
 **Retained records:** 1.
 
@@ -1413,7 +1448,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Error
 
-<code>output.json#/error</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L1336"><code>output.json#/error</code></a>
 
 ```json
 {
@@ -1424,7 +1459,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Failed required orders
 
-<code>output.json#/failed_required_orders</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L1340"><code>output.json#/failed_required_orders</code></a>
 
 **Retained records:** 32.
 
@@ -1595,20 +1630,20 @@ Execute a configured number of body iterations for unresolved recognized computa
 
 Memory safety and numerical equivalence are separate results.
 
-**Value analysis:** <code>unsupported</code> · <code>output.json#/value_analysis</code>
+**Value analysis:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L2348"><code>output.json#/value_analysis</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_requested</code>.
 
 - **Prerequisite status:** <code>unsafe_lifecycle</code>
 - **Scope:** {&quot;operation&quot;:&quot;<code>value_analysis</code>&quot;}
-- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <code>output.json#/value_analysis/diagnostics/0</code>
+- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L2355"><code>output.json#/value_analysis/diagnostics/0</code></a>
 
-**Equivalence:** <code>unsupported</code> · <code>output.json#/equivalence</code>
+**Equivalence:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L689"><code>output.json#/equivalence</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_run</code>.
 
 - **Scope:** {&quot;operation&quot;:&quot;equivalence&quot;}
-- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <code>output.json#/equivalence/diagnostics/0</code>
+- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/output.json#L696"><code>output.json#/equivalence/diagnostics/0</code></a>
 
 <details>
 <summary><strong>Exact value-analysis fields and large-data references</strong></summary>
@@ -1723,7 +1758,7 @@ Memory safety and numerical equivalence are separate results.
 | Cluster · blocks | <code>[1,1,8]</code> |
 | Dynamic shared memory · bytes | <code>108160</code> |
 
-**Arguments:** 17 retained entries. Exact parameter bindings, descriptors and entry name: <code>input.json#</code>.
+**Arguments:** 17 retained entries. Exact parameter bindings, descriptors and entry name: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass93_blackwell_low_latency_gqa.compute_100a/input.json#L1"><code>input.json#</code></a>.
 
 <details>
 <summary><strong>Exact input configuration</strong></summary>

@@ -4,48 +4,17 @@
 <p align="center">Duplicate TMA output copies</p>
 <h1 align="center">VERIFIED<br/>341,248 WARNINGS</h1>
 
-**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json) · launch, arguments and assumptions.
+**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx) ([raw](https://github.com/gpu-verifier/sentryward/raw/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx)) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json) · launch, arguments and assumptions.
 
 **Result:** [output.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json) · saved verifier findings.
 
-<details>
-<summary><strong>Analysis records — open the saved evidence</strong></summary>
-
-Each record link opens its field in the original `output.json`. Model summaries are not full execution traces.
-
-**Check the finding**
-
-- [Diagnostic messages and details · `diagnostics`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L68)
-- [Individual check outcomes · `checks`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L56)
-
-**Check how the model was built**
-
-- [PTX translation · `frontend`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25192)
-- [Model and source bindings · `semantic_program`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25502)
-- [Synchronization-check setup · `synchronization_input`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25519)
-
-**Check values separately**
-
-- [Value-analysis status · `value_analysis`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25547)
-- [Numerical comparison · `equivalence`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L69)
-
-For the records explained in this report, see the [Evidence appendix](#evidence-appendix).
-
-</details>
-
-## 1. Verifier result
-
-Saved findings and analysis scope, formatted directly from the verifier output.
-
-### 1.1 Warning to inspect
+<table>
+<thead><tr><th align="left">VERIFIER RESULT · Warning to inspect</th></tr></thead>
+<tbody><tr><td>
 
 The verifier reports verification complete for the saved scope and checks below.
 
-**Saved result:** <code>verified</code> · <code>output.json#/result</code>.
-
-**Checks:** Synchronization <code>passed</code> · Memory <code>passed</code> · Equivalence <code>passed</code>.
-
-**Operation:** <code>kernel_verification</code>.
+**Synchronization:** Passed · **Memory:** Passed · **Equivalence:** Passed
 
 **Recorded totals:** 0 races · 341,248 warnings · 0 unresolved.
 
@@ -86,46 +55,88 @@ Lines connect the two recorded accesses to their shared byte region; they do not
 
 | Access | Source operation | Model event / instruction | Actor ID |
 | --- | --- | --- | --- |
-| First access | <code>cp.async.bulk.tensor.3d.global.shared::cta.bulk_group</code><br/>PTX line <code>3339</code> | <code>107459</code> / <code>13149</code> | <code>128</code> |
-| Second access | <code>cp.async.bulk.tensor.3d.global.shared::cta.bulk_group</code><br/>PTX line <code>3339</code> | <code>109510</code> / <code>13327</code> | <code>129</code> |
+| First access | <code>cp.async.bulk.tensor.3d.global.</code><br/><code>shared::cta.bulk_group</code><br/>PTX line <code>3339</code> | <code>107459</code> / <code>13149</code> | <code>128</code> |
+| Second access | <code>cp.async.bulk.tensor.3d.global.</code><br/><code>shared::cta.bulk_group</code><br/>PTX line <code>3339</code> | <code>109510</code> / <code>13327</code> | <code>129</code> |
 
 Actor IDs name verifier participants; this record does not itself establish CUDA thread coordinates. Event and instruction IDs identify model records, not source-line numbers.
 
 **Recorded source anchors.** These lines locate the saved events. Their guards and surrounding control flow belong to the code explanation.
 
-<p><strong>First access · saved source location</strong> · physical PTX 3339 · display wrapping added</p>
+<p><strong>First access · saved source location</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx#L3339">physical PTX 3339</a> · display wrapping added</p>
 
 <pre><code><strong>cp.async.bulk.tensor.3d.global.shared::cta.bulk_group</strong> [%rd139, {%r878,
     %r719, %r16}], [%r718];</code></pre>
 
 
-**Saved record:** <code>output.json#/warnings/0</code>. **Overlap check:** constant byte ranges intersect. **Allocation:** <code>D</code>. **Address space:** <code>global</code>.
+**Saved record:** <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25681"><code>output.json#/warnings/0</code></a>. **Overlap check:** constant byte ranges intersect. **Allocation:** <code>D</code>. **Address space:** <code>global</code>.
 
 </details>
 
-### 1.2 Analysis scope
+<details>
+<summary><strong>Saved status and diagnostic codes</strong></summary>
+
+**Saved result:** <code>verified</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25488"><code>output.json#/result</code></a>.
+
+**Operation:** <code>kernel_verification</code>.
+
+**Checks:** Synchronization <code>passed</code> · Memory <code>passed</code> · Equivalence <code>passed</code>.
+
+</details>
+
+</td></tr>
+<tr><td>
+
+### Analysis scope
 
 **Coverage:** Memory analysis complete: yes · Search complete: yes · Exhaustive search: **no**.
 
 **Assumption-dependent:** <code>true</code>. Triggered rules: Duplicate TMA stores, Representative election, Failed launch cancellation.
 
 This result applies to the supplied launch, arguments and enabled assumptions.
+
+<details>
+<summary><strong>Analysis records — open the saved evidence</strong></summary>
+
+Each record link opens its field in the original `output.json`. Model summaries are not full execution traces.
+
+**Check the finding**
+
+- [Diagnostic messages and details · `diagnostics`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L68)
+- [Individual check outcomes · `checks`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L56)
+
+**Check how the model was built**
+
+- [PTX translation · `frontend`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25192)
+- [Model and source bindings · `semantic_program`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25502)
+- [Synchronization-check setup · `synchronization_input`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25519)
+
+**Check values separately**
+
+- [Value-analysis status · `value_analysis`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25547)
+- [Numerical comparison · `equivalence`](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L69)
+
+For the records explained in this report, see the [Evidence appendix](#evidence-appendix).
+
+</details>
+
+</td></tr></tbody>
+</table>
 <!-- verifier-result:end -->
 
 <!-- code-explanation:start -->
 
----
-
-## 2. Code explanation
+## Code explanation
 
 Interpretation from the PTX and saved inputs: how the reported operations fit together and what remains to check.
 
-### 2.1 The warning is in the shared-to-global output handoff
+### 1. The warning is in the shared-to-global output handoff
 
-This f16 GEMM uses matrix-multiply instructions to build an accumulator in tensor memory (TMEM). Its output stage reads that accumulator, applies the epilogue scalars, stages f16 values in shared memory, and copies them to global output `D`. For the supplied `alpha = 1` and `beta = 0`, the input-`C` load path is skipped. The affected TMA instruction copies the first 4 KiB strip of `D`; the question is which threads issue that copy, not which thread computed each element.
+This f16 GEMM uses matrix-multiply instructions to build an accumulator in tensor memory (TMEM). Its output stage reads that accumulator, applies the epilogue scalars, stages f16 values in shared memory, and copies them to global output `D`.
+
+For the supplied `alpha = 1` and `beta = 0`, the input-`C` load path is skipped. The affected TMA instruction copies the first 4 KiB strip of `D`; the question is which threads issue that copy, not which thread computed each element.
 
 <details>
-<summary><strong>Check the computation and the configured scalar path</strong></summary>
+<summary><strong>Derivation: output stage and supplied scalars</strong></summary>
 
 #### Why this is a nonempty multiplication
 
@@ -136,40 +147,46 @@ The `shape.K` declaration supplies the load at PTX 71. With `K = 128`, the calcu
 The zero beta stride at parameter offset 1296 lets the initial scalar load proceed, and the null beta pointer at 1288 selects the by-value zero at 1280. Alpha follows the analogous null-pointer path to the by-value one at 1312. At the output loop, `%p161` and `%p163` test the strides, so both reload blocks are skipped and those initial scalar values stay live. The beta-zero comparisons then give `%p242 = false`, `%p171 = true`, and `%p243 = true`; the branches at 3120 and 3164 bypass the C wait/load corridor. Later C-load corridors are likewise bypassed at 3387, 3571 and 3763. The first epilogue arithmetic multiplies TMEM values by alpha and adds beta times initially zero C registers before `stmatrix` stages the result.
 
 <details>
-<summary><strong>Exact source references</strong></summary>
+<summary><strong>Sources: output stage and supplied scalars</strong></summary>
 
-##### Why this is a nonempty multiplication
+<blockquote>
 
-- `input.json#/arguments/3`: <code>{&quot;field&quot;:&quot;shape.K&quot;,&quot;value&quot;:128}</code>
-- `input.json#/declarations/3`: <code>{&quot;name&quot;:&quot;shape.K&quot;,&quot;parameter&quot;:0,&quot;offset&quot;:12,&quot;type&quot;:&quot;s32&quot;}</code>
+##### Source references: Why this is a nonempty multiplication
+
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L35"><code>input.json#/arguments/3</code></a>: <code>{&quot;field&quot;:&quot;shape.K&quot;,&quot;value&quot;:128}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L151"><code>input.json#/declarations/3</code></a>: <code>{&quot;name&quot;:&quot;shape.K&quot;,&quot;parameter&quot;:0,&quot;offset&quot;:12,&quot;type&quot;:&quot;s32&quot;}</code>
 - physical PTX 71,1994-2007,2009,2063-2064,2078-2097,2162-2168,2194-2201,2227-2234,2260-2267,2294-2299: <code>%r1173</code>
 
-##### Why the input-C contribution is bypassed
+##### Source references: Why the input-C contribution is bypassed
 
 - physical PTX 114-139: <code>%rd4</code>, <code>%rs1</code>, <code>%rs3</code>
 - physical PTX 3021-3057: <code>%p161</code>, <code>%p163</code>, <code>%p166</code>
 - physical PTX 3086-3120,3164-3199: <code>%p171</code>, <code>%p243</code>
-- `input.json#/arguments/5`: <code>{&quot;field&quot;:&quot;beta&quot;,&quot;value&quot;:0.0}</code>
-- `input.json#/arguments/6`: <code>{&quot;field&quot;:&quot;beta.pointer&quot;,&quot;value&quot;:null}</code>
-- `input.json#/arguments/7`: <code>{&quot;field&quot;:&quot;beta.stride&quot;,&quot;value&quot;:0}</code>
-- `input.json#/arguments/8`: <code>{&quot;field&quot;:&quot;alpha&quot;,&quot;value&quot;:1.0}</code>
-- `input.json#/arguments/9`: <code>{&quot;field&quot;:&quot;alpha.pointer&quot;,&quot;value&quot;:null}</code>
-- `input.json#/arguments/10`: <code>{&quot;field&quot;:&quot;alpha.stride&quot;,&quot;value&quot;:0}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L43"><code>input.json#/arguments/5</code></a>: <code>{&quot;field&quot;:&quot;beta&quot;,&quot;value&quot;:0.0}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L47"><code>input.json#/arguments/6</code></a>: <code>{&quot;field&quot;:&quot;beta.pointer&quot;,&quot;value&quot;:null}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L51"><code>input.json#/arguments/7</code></a>: <code>{&quot;field&quot;:&quot;beta.stride&quot;,&quot;value&quot;:0}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L55"><code>input.json#/arguments/8</code></a>: <code>{&quot;field&quot;:&quot;alpha&quot;,&quot;value&quot;:1.0}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L59"><code>input.json#/arguments/9</code></a>: <code>{&quot;field&quot;:&quot;alpha.pointer&quot;,&quot;value&quot;:null}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L63"><code>input.json#/arguments/10</code></a>: <code>{&quot;field&quot;:&quot;alpha.stride&quot;,&quot;value&quot;:0}</code>
 - physical PTX 3155-3164,3240-3317,3387,3571,3763: <code>%r1204</code>, <code>%p171</code>
 
 ##### Additional section references
 
 - physical PTX 1973-1998,2094-2097,2162-2168,2294-2299: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-mma-instructions"><code>tcgen05.mma</code></a>, <code>%r1173</code>
 - physical PTX 3240-3254,3281-3288,3315-3339: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-ld"><code>tcgen05.ld</code></a>, <code>stmatrix</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor"><code>cp.async.bulk.tensor</code></a>
-- `input.json#/tma_descriptors/5`: <code>dict, 11 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L442"><code>input.json#/tma_descriptors/5</code></a>: <code>dict, 11 entries; see original artifact</code>
+
+</blockquote>
 
 </details>
 
 </details>
 
-### 2.2 The copy selector admits a whole warp
+### 2. The copy selector admits a whole warp
 
-Within the first output-copy block, the selector admits all 32 lanes of warp 4, threads 128–159, while warps 5–7 skip the copy and rejoin the next barrier. Each admitted lane uses the same `D` descriptor, coordinates `(0, 0, 0)`, and shared source at base + 1024. Thus the source contains peer copies of one output strip, rather than disjoint per-lane output addresses. The view below is derived from PTX; the saved actor IDs are not explicitly mapped to CUDA thread coordinates in the supplied records, so it does not identify the retained pair.
+Within the first output-copy block, the selector admits all 32 lanes of warp 4, threads 128–159, while warps 5–7 skip the copy and rejoin the next barrier. Each admitted lane uses the same `D` descriptor, coordinates `(0, 0, 0)`, and shared source at base + 1024.
+
+Thus the source contains peer copies of one output strip, rather than disjoint per-lane output addresses. The view below is derived from PTX; the saved actor IDs are not explicitly mapped to CUDA thread coordinates in the supplied records, so it does not identify the retained pair.
 
 **Possible interleaving.** Steps run downward; they are not a measured GPU clock or a hardware trace.
 
@@ -182,7 +199,13 @@ Within the first output-copy block, the selector admits all 32 lanes of warp 4, 
 
 <p><strong>The same copy, commit and read-wait corridor applies to both illustrated lanes</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/cutlass__dense-gemm-f16-tma-1sm__sm_100a.ptx#L3242-L3351" title="Open the original PTX">physical PTX 3242, 3330–3351</a> · display wrapping added</p>
 
-<p><strong>Operands:</strong> True for output warps 5–7, which skip the copy corridor (<code>%p176</code>) · D tensor-map address (<code>%rd139</code>) · Shared source, base + 1024 (<code>%r718</code>) · First descriptor-axis coordinate (<code>%r878</code>) · Second descriptor-axis coordinate (<code>%r719</code>)</p>
+<ul>
+<li><code>%p176</code> — True for output warps 5–7, which skip the copy corridor</li>
+<li><code>%rd139</code> — D tensor-map address</li>
+<li><code>%r718</code> — Shared source, base + 1024</li>
+<li><code>%r878</code> — First descriptor-axis coordinate</li>
+<li><code>%r719</code> — Second descriptor-axis coordinate</li>
+</ul>
 
 <pre><code><strong>setp.ne.b32</strong> <strong>%p176</strong>, %r83, 0;
 …
@@ -217,25 +240,25 @@ $L__BB0_225:
 - **Completion:** Both copy issues precede their respective commit and read-wait. No completion order between the two asynchronous writes is asserted. Read-wait 1 may leave the newest group outstanding; the following `bar.sync` rendezvous does not select one writer or impose an order between peer copy completions.
 
 <details>
-<summary><strong>Timeline support</strong></summary>
+<summary><strong>Sources for this interleaving</strong></summary>
 
 - physical PTX 72-74: <code>%tid.x</code>, <code>%r4</code>
 - physical PTX 1191-1192,1766-1769,1971-1972,2412-2415,2825-2837: <code>%p148</code>, <code>%r83</code>
-- `input.json#/launch/block_dim`: <code>[256,1,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L10"><code>input.json#/launch/block_dim</code></a>: <code>[256,1,1]</code>
 - physical PTX 3242,3330-3351: <code>%p176</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor"><code>cp.async.bulk.tensor.3d.global.shared::cta.bulk_group</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group"><code>cp.async.bulk.wait_group.read 1</code></a>, <code>bar.sync</code>
 - physical PTX 3200-3244: <code>%p175</code>, <code>%p176</code>
 - physical PTX 1099-1105,1161-1179: <code>%ctaid.x</code>, <code>%r29</code>
 - physical PTX 2856-2857,2985-2986,3336-3339: <code>1664</code>, <code>1024</code>
-- `input.json#/launch/grid_dim`: <code>[1,1,1]</code>
-- `input.json#/arguments/22`: <code>{&quot;field&quot;:&quot;scheduler.swizzle.divisor&quot;,&quot;value&quot;:0}</code>
-- `input.json#/arguments/25`: <code>{&quot;field&quot;:&quot;scheduler.raster_order&quot;,&quot;value&quot;:1}</code>
-- `input.json#/tma_descriptors/5`: <code>dict, 11 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L5"><code>input.json#/launch/grid_dim</code></a>: <code>[1,1,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L111"><code>input.json#/arguments/22</code></a>: <code>{&quot;field&quot;:&quot;scheduler.swizzle.divisor&quot;,&quot;value&quot;:0}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L123"><code>input.json#/arguments/25</code></a>: <code>{&quot;field&quot;:&quot;scheduler.raster_order&quot;,&quot;value&quot;:1}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L442"><code>input.json#/tma_descriptors/5</code></a>: <code>dict, 11 entries; see original artifact</code>
 - physical PTX 3979-3985: <code>%r30</code>, <code>%r31</code>, <code>%r16</code>
 
 </details>
 
 <details>
-<summary><strong>Check the participating warp and identical copy operands</strong></summary>
+<summary><strong>Derivation: issuing warp and shared copy operands</strong></summary>
 
 #### How the thread selector reaches the output block
 
@@ -304,45 +327,51 @@ The output roles comprise four warps, or 128 threads. They stage register values
 
 
 <details>
-<summary><strong>Exact source references</strong></summary>
+<summary><strong>Sources: issuing warp and shared copy operands</strong></summary>
 
-##### How the thread selector reaches the output block
+<blockquote>
+
+##### Source references: How the thread selector reaches the output block
 
 - physical PTX 72-74: <code>%tid.x</code>, <code>%r4</code>
 - physical PTX 1191-1192,1766-1769,1971-1972,2412-2415,2825-2837: <code>%p148</code>, <code>%r83</code>
-- `input.json#/launch/block_dim`: <code>[256,1,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L10"><code>input.json#/launch/block_dim</code></a>: <code>[256,1,1]</code>
 - physical PTX 3242,3335: <code>%p176</code>
 
-##### Why the copy operands are identical
+##### Source references: Why the copy operands are identical
 
 - physical PTX 1099-1105,1161-1179: <code>%ctaid.x</code>, <code>%r29</code>
 - physical PTX 2856-2857,2985-2986,3336-3339: <code>1664</code>, <code>1024</code>
-- `input.json#/launch/grid_dim`: <code>[1,1,1]</code>
-- `input.json#/arguments/22`: <code>{&quot;field&quot;:&quot;scheduler.swizzle.divisor&quot;,&quot;value&quot;:0}</code>
-- `input.json#/arguments/25`: <code>{&quot;field&quot;:&quot;scheduler.raster_order&quot;,&quot;value&quot;:1}</code>
-- `input.json#/tma_descriptors/5`: <code>dict, 11 entries; see original artifact</code>
-- `output.json#/warnings/0/region`: <code>{&quot;address_space&quot;:&quot;global&quot;,&quot;allocation&quot;:&quot;D&quot;,&quot;bytes&quot;:128,&quot;offset&quot;:0}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L5"><code>input.json#/launch/grid_dim</code></a>: <code>[1,1,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L111"><code>input.json#/arguments/22</code></a>: <code>{&quot;field&quot;:&quot;scheduler.swizzle.divisor&quot;,&quot;value&quot;:0}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L123"><code>input.json#/arguments/25</code></a>: <code>{&quot;field&quot;:&quot;scheduler.raster_order&quot;,&quot;value&quot;:1}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L442"><code>input.json#/tma_descriptors/5</code></a>: <code>dict, 11 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25703"><code>output.json#/warnings/0/region</code></a>: <code>{&quot;address_space&quot;:&quot;global&quot;,&quot;allocation&quot;:&quot;D&quot;,&quot;bytes&quot;:128,&quot;offset&quot;:0}</code>
 
-##### What the surrounding barrier coordinates
+##### Source references: What the surrounding barrier coordinates
 
 - physical PTX 72-74: <code>%tid.x</code>, <code>%r4</code>
 - physical PTX 1191-1192,1766-1769,1971-1972,2412-2415,2825-2837: <code>%p148</code>, <code>%r83</code>
-- `input.json#/launch/block_dim`: <code>[256,1,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L10"><code>input.json#/launch/block_dim</code></a>: <code>[256,1,1]</code>
 - physical PTX 3315-3351: <code>stmatrix</code>, <code>fence.proxy.async.shared::cta</code>, <code>bar.sync</code>
 
 ##### Additional section references
 
 - physical PTX 3242,3330-3351: <code>%p176</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor"><code>cp.async.bulk.tensor.3d.global.shared::cta.bulk_group</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group"><code>cp.async.bulk.wait_group.read 1</code></a>, <code>bar.sync</code>
-- `output.json#/warnings`: <code>list, 16 entries; see original artifact</code>
-- `output.json#/semantic_program`: <code>dict, 14 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25680"><code>output.json#/warnings</code></a>: <code>list, 16 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25502"><code>output.json#/semantic_program</code></a>: <code>dict, 14 entries; see original artifact</code>
+
+</blockquote>
 
 </details>
 
 </details>
 
-### 2.3 The copy waits do not serialize peer writers
+### 3. The copy waits do not serialize peer writers
 
-Each output strip has a per-issuer <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group"><code>cp.async.bulk.wait_group.read 1</code></a> after its copy group is committed. This waits for source reads of older groups and permits the newest group to remain pending; it is not a mutual-exclusion mechanism for the destination. The configured `beta = 0` exit skips the final `read 0` drain, and failed cluster cancellation prevents a second output-loop iteration. Those conditions explain the actual lifetime of this tile’s staging buffers; they do not turn the duplicate-write warning into evidence of a missing wait.
+Each output strip has a per-issuer <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group"><code>cp.async.bulk.wait_group.read 1</code></a> after its copy group is committed. This waits for source reads of older groups and permits the newest group to remain pending; it is not a mutual-exclusion mechanism for the destination.
+
+The configured `beta = 0` exit skips the final `read 0` drain, and failed cluster cancellation prevents a second output-loop iteration. Those conditions explain the actual lifetime of this tile’s staging buffers; they do not turn the duplicate-write warning into evidence of a missing wait.
 
 | Output strip | Shared source offset | Second descriptor coordinate | Copy / commit / read-wait |
 | --- | --- | --- | --- |
@@ -370,7 +399,7 @@ $L__BB0_278:
 
 
 <details>
-<summary><strong>Check all copy passes and the final-drain branch</strong></summary>
+<summary><strong>Derivation: copy passes and the final drain</strong></summary>
 
 #### All four copy predicates select the same warp
 
@@ -392,53 +421,57 @@ Live values: beta is still the initial by-value zero because the zero stride byp
 The `.read` qualifier concerns completion of reads from the shared source for the calling thread’s bulk groups. Waiting for zero groups, when reached, drains that source-read obligation; waiting for one may leave the latest group pending. Neither statement establishes a total order between writes issued by different lanes. The saved warning specifically describes unordered writes with matching footprints and PTX site visits. Its classification rule does not assert equal values. The separately saved numerical analysis and value checks must retain their own scope; they do not change the meaning of the warning message.
 
 <details>
-<summary><strong>Exact source references</strong></summary>
+<summary><strong>Sources: copy passes and the final drain</strong></summary>
 
-##### All four copy predicates select the same warp
+<blockquote>
+
+##### Source references: All four copy predicates select the same warp
 
 - physical PTX 2837,3242,3330-3351,3445,3531-3553,3639,3723-3745,3829,3927-3952: <code>%r83</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group"><code>cp.async.bulk.wait_group.read 1</code></a>
-- `input.json#/tma_descriptors/5`: <code>dict, 11 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L442"><code>input.json#/tma_descriptors/5</code></a>: <code>dict, 11 entries; see original artifact</code>
 
-##### Why the final read-zero wait is skipped here
+##### Source references: Why the final read-zero wait is skipped here
 
 - physical PTX 2888-2891,3973-4019: <code>%r595</code>, <code>%p196</code>, <code>%p166</code>, <code>%p197</code>, <code>%p1</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group"><code>cp.async.bulk.wait_group.read 0</code></a>
 - physical PTX 114-139: <code>%rd4</code>, <code>%rs1</code>, <code>%rs3</code>
 - physical PTX 3021-3057: <code>%p161</code>, <code>%p163</code>, <code>%p166</code>
 - physical PTX 3086-3120,3164-3199: <code>%p171</code>, <code>%p243</code>
-- `input.json#/arguments/5`: <code>{&quot;field&quot;:&quot;beta&quot;,&quot;value&quot;:0.0}</code>
-- `input.json#/arguments/6`: <code>{&quot;field&quot;:&quot;beta.pointer&quot;,&quot;value&quot;:null}</code>
-- `input.json#/arguments/7`: <code>{&quot;field&quot;:&quot;beta.stride&quot;,&quot;value&quot;:0}</code>
-- `input.json#/arguments/8`: <code>{&quot;field&quot;:&quot;alpha&quot;,&quot;value&quot;:1.0}</code>
-- `input.json#/arguments/9`: <code>{&quot;field&quot;:&quot;alpha.pointer&quot;,&quot;value&quot;:null}</code>
-- `input.json#/arguments/10`: <code>{&quot;field&quot;:&quot;alpha.stride&quot;,&quot;value&quot;:0}</code>
-- `input.json#/assumptions/clc_always_fails`: <code>true</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L43"><code>input.json#/arguments/5</code></a>: <code>{&quot;field&quot;:&quot;beta&quot;,&quot;value&quot;:0.0}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L47"><code>input.json#/arguments/6</code></a>: <code>{&quot;field&quot;:&quot;beta.pointer&quot;,&quot;value&quot;:null}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L51"><code>input.json#/arguments/7</code></a>: <code>{&quot;field&quot;:&quot;beta.stride&quot;,&quot;value&quot;:0}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L55"><code>input.json#/arguments/8</code></a>: <code>{&quot;field&quot;:&quot;alpha&quot;,&quot;value&quot;:1.0}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L59"><code>input.json#/arguments/9</code></a>: <code>{&quot;field&quot;:&quot;alpha.pointer&quot;,&quot;value&quot;:null}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L63"><code>input.json#/arguments/10</code></a>: <code>{&quot;field&quot;:&quot;alpha.stride&quot;,&quot;value&quot;:0}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L475"><code>input.json#/assumptions/clc_always_fails</code></a>: <code>true</code>
 
-##### Source-read completion is different from destination-write order
+##### Source references: Source-read completion is different from destination-write order
 
 - physical PTX 3339-3351,4019: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group"><code>cp.async.bulk.wait_group.read</code></a>
-- `output.json#/warnings/0`: <code>dict, 6 entries; see original artifact</code>
-- `output.json#/assumptions/0`: <code>dict, 6 entries; see original artifact</code>
-- `output.json#/equivalence/scope`: <code>{&quot;kind&quot;:&quot;mapped_expression_equivalence&quot;,&quot;operation&quot;:&quot;equivalence&quot;}</code>
-- `output.json#/value_analysis/duplicate_write_value_checks`: <code>21328</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25681"><code>output.json#/warnings/0</code></a>: <code>dict, 6 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L15"><code>output.json#/assumptions/0</code></a>: <code>dict, 6 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25166"><code>output.json#/equivalence/scope</code></a>: <code>{&quot;kind&quot;:&quot;mapped_expression_equivalence&quot;,&quot;operation&quot;:&quot;equivalence&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25554"><code>output.json#/value_analysis/duplicate_write_value_checks</code></a>: <code>21328</code>
 
 ##### Additional section references
 
 - physical PTX 3339-3351,3536-3553,3728-3745,3932-3952: <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group"><code>cp.async.bulk.wait_group.read 1</code></a>
 
-</details>
+</blockquote>
 
 </details>
 
-### 2.4 Next check
+</details>
+
+### 4. Next check
 
 Before relying on the duplicate-store exception, check the ISA or implementation contract for multiple same-warp TMA stores to the same destination, and associate the saved duplicate-write value checks with the relevant write pairs. The source establishes identical copy operands and the surrounding waits; the unresolved issue is whether those facts justify the benign classification for the intended execution model. Adding a wait is not a conclusion supported by this warning alone.
 
 <details>
-<summary><strong>Basis for next inspection</strong></summary>
+<summary><strong>Evidence for the next check</strong></summary>
 
-- `output.json#/assumptions/0`: <code>dict, 6 entries; see original artifact</code>
-- `output.json#/warnings/0`: <code>dict, 6 entries; see original artifact</code>
-- `output.json#/value_analysis/duplicate_write_value_checks`: <code>21328</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L15"><code>output.json#/assumptions/0</code></a>: <code>dict, 6 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25681"><code>output.json#/warnings/0</code></a>: <code>dict, 6 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25554"><code>output.json#/value_analysis/duplicate_write_value_checks</code></a>: <code>21328</code>
 - physical PTX 3242,3330-3351: <code>%p176</code>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor"><code>cp.async.bulk.tensor.3d.global.shared::cta.bulk_group</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group"><code>cp.async.bulk.wait_group.read 1</code></a>, <code>bar.sync</code>
 
 </details>
@@ -480,7 +513,7 @@ These are saved verifier records. Truncation flags describe missing records in t
 
 Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.
 
-Byte regions, endpoints and exact locations: <code>output.json#/warnings</code>.
+Byte regions, endpoints and exact locations: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25680"><code>output.json#/warnings</code></a>.
 
 <details>
 <summary><strong>Exact diagnostic records and metadata</strong></summary>
@@ -500,7 +533,7 @@ These retain their original top-level keys in `output.json`.
 
 ##### Warnings
 
-<code>output.json#/warnings</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25680"><code>output.json#/warnings</code></a>
 
 **Retained records:** 16.
 
@@ -1405,13 +1438,13 @@ Execute a configured number of body iterations for unresolved recognized computa
 
 Memory safety and numerical equivalence are separate results.
 
-**Value analysis:** <code>verified</code> · <code>output.json#/value_analysis</code>
+**Value analysis:** <code>verified</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25547"><code>output.json#/value_analysis</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_requested</code>.
 
 - **Scope:** {&quot;operation&quot;:&quot;<code>value_analysis</code>&quot;}
 
-**Equivalence:** <code>verified</code> · <code>output.json#/equivalence</code>
+**Equivalence:** <code>verified</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L69"><code>output.json#/equivalence</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>passed</code>.
 
@@ -1422,7 +1455,7 @@ Memory safety and numerical equivalence are separate results.
 - **Prerequisites:** caller must combine numerical proof with synchronization, memory and scope results
 - **Definedness:** <code>proved</code>
 
-**Verification result:** <code>race_free</code> · <code>output.json#/verification_result</code>
+**Verification result:** <code>race_free</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/output.json#L25677"><code>output.json#/verification_result</code></a>
 
 <details>
 <summary><strong>Exact value-analysis fields and large-data references</strong></summary>
@@ -1777,7 +1810,7 @@ Memory safety and numerical equivalence are separate results.
 | Cluster · blocks | <code>[1,1,1]</code> |
 | Dynamic shared memory · bytes | <code>232448</code> |
 
-**Arguments:** 27 retained entries. Exact parameter bindings, descriptors and entry name: <code>input.json#</code>.
+**Arguments:** 27 retained entries. Exact parameter bindings, descriptors and entry name: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/cutlass__dense-gemm-f16-tma-1sm__sm_100a/input.json#L1"><code>input.json#</code></a>.
 
 <details>
 <summary><strong>Exact input configuration</strong></summary>

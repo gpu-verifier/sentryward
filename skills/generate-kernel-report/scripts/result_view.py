@@ -219,11 +219,135 @@ def _json_field_lines(path):
     return lines
 
 
+def _json_pointer_lines(path, pointers):
+    """Find requested nested values in original JSON, without reformatting it.
+
+    Descend only along requested paths; do not build an index of every event
+    in large results. Object references point at their key, array items at
+    the start of the item. Unavailable paths have no invented line number.
+    """
+    if path is None or not Path(path).is_file():
+        return {}
+    tree = {}
+    for pointer in pointers:
+        if pointer and (not pointer.startswith('/') or re.search(r'~(?![01])', pointer)):
+            continue
+        node = tree
+        for token in pointer.split('/')[1:]:
+            node = node.setdefault(token.replace('~1', '/').replace('~0', '~'), {})
+        node[None] = pointer
+    if not tree:
+        return {}
+    source = Path(path).read_text(encoding='utf-8')
+    decoder = json.JSONDecoder()
+    skip = lambda pos: json.decoder.WHITESPACE.match(source, pos).end()
+    positions = {}
+
+    def visit(pos, node, anchor=None):
+        pos = skip(pos)
+        if None in node:
+            positions[node[None]] = pos if anchor is None else anchor
+        if not any(key is not None for key in node) or source[pos:pos + 1] not in ('{', '['):
+            return decoder.raw_decode(source, pos)[1]
+        is_object = source[pos] == '{'
+        close = '}' if is_object else ']'
+        pos, index = skip(pos + 1), 0
+        while source[pos:pos + 1] != close:
+            start = pos
+            if is_object:
+                key, pos = decoder.raw_decode(source, pos)
+                pos = skip(pos)
+                if not isinstance(key, str) or source[pos:pos + 1] != ':':
+                    raise ValueError('Invalid JSON object member.')
+                pos = skip(pos + 1)
+            else:
+                key = str(index)
+                index += 1
+            child = node.get(key)
+            if child is None:
+                pos = decoder.raw_decode(source, pos)[1]
+            else:
+                # JSON decoding keeps the last duplicate key, including its
+                # entire subtree; do not cite descendants of an older value.
+                pending = [child]
+                while pending:
+                    item = pending.pop()
+                    positions.pop(item.get(None), None)
+                    pending.extend(value for key, value in item.items() if key is not None)
+                pos = visit(pos, child, start)
+            pos = skip(pos)
+            if source[pos:pos + 1] == close:
+                break
+            if source[pos:pos + 1] != ',':
+                raise ValueError('Invalid JSON separator.')
+            pos = skip(pos + 1)
+        return pos + 1
+
+    end = visit(0, tree)
+    if skip(end) != len(source):
+        raise ValueError('Unexpected content after JSON.')
+    lines, previous, line = {}, 0, 1
+    for pointer, position in sorted(positions.items(), key=lambda item: item[1]):
+        line += source.count('\n', previous, position)
+        lines[pointer] = line
+        previous = position
+    return lines
+
+
+def link_references(document, ptx, artifacts, report_path=None, artifact_base=None):
+    """Link displayed citations after composition; never alter quoted evidence."""
+    parts = re.split(r'(<pre\b[^>]*>.*?</pre>|<a\b[^>]*>.*?</a>|^```[^\n]*\n.*?^```[ \t]*$)',
+                     document, flags=re.S | re.M)
+    references = re.compile(r'<code>((?:input|output)\.json#(?:/[^<]*)?)</code>|`((?:input|output)\.json#(?:/[^`]*)?)`')
+    files = dict(zip(('input.json', 'output.json'), artifacts[:2]))
+    targets = {}
+    for name, path in files.items():
+        pointers = {html.unescape(match[1] or match[2]).split('#', 1)[1]
+                    for part in parts[::2] for match in references.finditer(part)
+                    if html.unescape(match[1] or match[2]).startswith(name + '#')}
+        for pointer, line in _json_pointer_lines(path, pointers).items():
+            targets[name + '#' + pointer] = artifact_url(path, report_path, artifact_base, line)
+
+    def anchor(label, target):
+        return '<a href="' + html.escape(target, quote=True) + '">' + label + '</a>'
+
+    def reference(match):
+        label = html.unescape(match[1] or match[2])
+        target = targets.get(label)
+        return anchor(_inline(label), target) if target else match[0]
+
+    def location(match):
+        line = _matching_line({'file': html.unescape(match[1]), 'line': int(match[2])}, ptx, artifacts)
+        target = artifact_url(artifacts[2], report_path, artifact_base, line) if line else None
+        return anchor(match[0], target) if target else match[0]
+
+    def caption(match):
+        line = int(match[2])
+        if not 1 <= line <= len(ptx.splitlines()) or len(artifacts) < 3:
+            return match[0]
+        target = artifact_url(artifacts[2], report_path, artifact_base, line)
+        return match[1] + anchor('physical PTX ' + match[2], target) + (match[3] or '') + '</p>' if target else match[0]
+
+    for index in range(0, len(parts), 2):
+        part = references.sub(reference, parts[index])
+        part = re.sub(r'<code>([^<]+)</code> · source line <code>(\d+)</code>', location, part)
+        parts[index] = re.sub(r'(<p><strong>[^\n]*</strong> · )physical PTX (\d+)( · display wrapping added)?</p>', caption, part)
+    return ''.join(parts)
+
+
 def artifact_entry(result, artifacts, report_path=None, source_paths=(), equivalence_path=None, artifact_base=None):
     if not artifacts:
         return ''
     inp, out, ptx = (list(artifacts) + [None] * 3)[:3]
-    body = '**Inputs:** ' + _file_link('PTX', ptx, report_path, artifact_base) + ' · analyzed code; '
+    ptx_link = _file_link('PTX', ptx, report_path, artifact_base)
+    target = artifact_url(ptx, report_path, artifact_base)
+    if target:
+        url = urlsplit(target)
+        pieces = url.path.split('/')
+        if url.hostname == 'github.com' and len(pieces) > 5 and pieces[3] == 'blob':
+            pieces[3] = 'raw'
+            ptx_link += ' ([raw](https://github.com' + '/'.join(pieces) + '))'
+    body = '**Inputs:** ' + ptx_link + ' · analyzed code; '
     body += _file_link('input.json', inp, report_path, artifact_base) + ' · launch, arguments and assumptions.\n\n'
     body += '**Result:** ' + _file_link('output.json', out, report_path, artifact_base) + ' · saved verifier findings.\n\n'
     field_lines = _json_field_lines(out)

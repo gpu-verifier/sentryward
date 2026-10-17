@@ -4,9 +4,50 @@
 <p align="center">Sparse MLA: startup synchronization and copy-model boundaries</p>
 <h1 align="center">LIFECYCLE CHECK FAILED</h1>
 
-**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/flash_attention__fwd_mla_sparse_bf16__sm_100a.ptx) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json) · launch, arguments and assumptions.
+**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/flash_attention__fwd_mla_sparse_bf16__sm_100a.ptx) ([raw](https://github.com/gpu-verifier/sentryward/raw/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/flash_attention__fwd_mla_sparse_bf16__sm_100a.ptx)) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json) · launch, arguments and assumptions.
 
 **Result:** [output.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json) · saved verifier findings.
+
+<table>
+<thead><tr><th align="left">VERIFIER RESULT · Lifecycle diagnostics</th></tr></thead>
+<tbody><tr><td>
+
+Lifecycle checking did not complete successfully. The saved diagnostics identify the reported problems.
+
+**Synchronization:** Incomplete · **Memory:** Not run · **Equivalence:** Not run
+
+**4 diagnostic categories · 87 retained records.**
+
+Grouped by saved stage and code, not by inferred root cause or severity. Record counts are not counts of independent bugs.
+
+| Saved diagnostic | Records | Reported extent |
+| --- | ---: | --- |
+| **Cluster protocol**<br/>thread arrived twice before wait | 1 | PTX <code>360</code> |
+| **Cluster protocol**<br/>cluster wait without arrival | 1 | PTX <code>362</code> |
+| **Tensor-map capture missing**<br/>tensor operand has no matching captured map | 17 | 17 reported PTX sites |
+| **Model needs a fixed copy-control value**<br/>Operand must have a statically determined integer value | 68 | 68 reported PTX sites |
+
+Category codes, locations and array indices: Evidence appendix → Diagnostic records.
+
+<details>
+<summary><strong>Saved status and diagnostic codes</strong></summary>
+
+**Saved result:** <code>invalid_lifecycle</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L3910"><code>output.json#/result</code></a>.
+
+**Operation:** <code>kernel_verification</code>.
+
+**Checks:** Synchronization <code>incomplete</code> · Memory <code>not_run</code> · Equivalence <code>not_run</code>.
+
+</details>
+
+</td></tr>
+<tr><td>
+
+### Analysis scope
+
+**Coverage:** Memory analysis complete: **no** · Search complete: <code>not saved</code> · Exhaustive search: <code>not saved</code>.
+
+This result applies to the supplied launch, arguments and enabled assumptions.
 
 <details>
 <summary><strong>Analysis records — open the saved evidence</strong></summary>
@@ -32,49 +73,17 @@ For the records explained in this report, see the [Evidence appendix](#evidence-
 
 </details>
 
-## 1. Verifier result
-
-Saved findings and analysis scope, formatted directly from the verifier output.
-
-### 1.1 Lifecycle diagnostics
-
-Lifecycle checking did not complete successfully. The saved diagnostics identify the reported problems.
-
-**Saved result:** <code>invalid_lifecycle</code> · <code>output.json#/result</code>.
-
-**Checks:** Synchronization <code>incomplete</code> · Memory <code>not_run</code> · Equivalence <code>not_run</code>.
-
-**Operation:** <code>kernel_verification</code>.
-
-**4 diagnostic categories · 87 retained records.**
-
-Grouped by saved stage and code, not by inferred root cause or severity. Record counts are not counts of independent bugs.
-
-| Saved diagnostic | Records | Reported extent |
-| --- | ---: | --- |
-| **Cluster protocol**<br/>thread arrived twice before wait | 1 | PTX <code>360</code> |
-| **Cluster protocol**<br/>cluster wait without arrival | 1 | PTX <code>362</code> |
-| **Tensor-map capture missing**<br/>tensor operand has no matching captured map | 17 | 17 reported PTX sites |
-| **Model needs a fixed copy-control value**<br/>Operand must have a statically determined integer value | 68 | 68 reported PTX sites |
-
-Category codes, locations and array indices: Evidence appendix → Diagnostic records.
-
-### 1.2 Analysis scope
-
-**Coverage:** Memory analysis complete: **no** · Search complete: <code>not saved</code> · Exhaustive search: <code>not saved</code>.
-
-This result applies to the supplied launch, arguments and enabled assumptions.
+</td></tr></tbody>
+</table>
 <!-- verifier-result:end -->
 
 <!-- code-explanation:start -->
 
----
-
-## 2. Code explanation
+## Code explanation
 
 Interpretation from the PTX and saved inputs: how the reported operations fit together and what remains to check.
 
-### 2.1 Where the concerns occur
+### 1. Where the concerns occur
 
 The affected code prepares shared-memory synchronization objects, gathers selected K/V entries into shared tiles, and uses tensor descriptors for input and output transfers. The input file names `K`, `V`, and `topk_indices`; the descriptor-defined tensors have no captured contents from which to recover their logical identities. The following accounts separate three concerns:
 
@@ -85,24 +94,26 @@ The affected code prepares shared-memory synchronization objects, gathers select
 The source walkthrough uses physical PTX locations and static thread guards. It does not turn the saved diagnostic actor ranges into a hardware execution trace.
 
 <details>
-<summary><strong>Check how the named objects enter the code</strong></summary>
+<summary><strong>Derivation: input objects and tensor descriptors</strong></summary>
 
 #### Pointer objects and descriptor objects are separate inputs
 
 Parameters 2, 3, 4 and 6 are declared pointers to K, V, V and <code>topk_indices</code>. Their initial loads supply the ordinary gather path. Parameters 7, 8 and 9 are instead declared tensor maps and are addressed directly in parameter memory. The latter declarations do not bind their global backing tensors to K or V. This is why the discussion uses “descriptor-defined input tiles” instead of guessing query/key names for those transfers.
 
 <details>
-<summary><strong>Exact source references</strong></summary>
+<summary><strong>Sources: input objects and tensor descriptors</strong></summary>
 
-##### Pointer objects and descriptor objects are separate inputs
+<blockquote>
 
-- `input.json#/declarations/26`: <code>{&quot;parameter&quot;:7,&quot;type&quot;:&quot;tensor_map&quot;}</code>
-- `input.json#/declarations/27`: <code>{&quot;parameter&quot;:8,&quot;type&quot;:&quot;tensor_map&quot;}</code>
-- `input.json#/declarations/28`: <code>{&quot;parameter&quot;:9,&quot;type&quot;:&quot;tensor_map&quot;}</code>
-- `input.json#/declarations/29`: <code>{&quot;parameter&quot;:2,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;K&quot;}</code>
-- `input.json#/declarations/30`: <code>{&quot;parameter&quot;:3,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;V&quot;}</code>
-- `input.json#/declarations/31`: <code>{&quot;parameter&quot;:4,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;V&quot;}</code>
-- `input.json#/declarations/32`: <code>{&quot;parameter&quot;:6,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;topk_indices&quot;}</code>
+##### Source references: Pointer objects and descriptor objects are separate inputs
+
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L285"><code>input.json#/declarations/26</code></a>: <code>{&quot;parameter&quot;:7,&quot;type&quot;:&quot;tensor_map&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L289"><code>input.json#/declarations/27</code></a>: <code>{&quot;parameter&quot;:8,&quot;type&quot;:&quot;tensor_map&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L293"><code>input.json#/declarations/28</code></a>: <code>{&quot;parameter&quot;:9,&quot;type&quot;:&quot;tensor_map&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L297"><code>input.json#/declarations/29</code></a>: <code>{&quot;parameter&quot;:2,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;K&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L303"><code>input.json#/declarations/30</code></a>: <code>{&quot;parameter&quot;:3,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;V&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L309"><code>input.json#/declarations/31</code></a>: <code>{&quot;parameter&quot;:4,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;V&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L315"><code>input.json#/declarations/32</code></a>: <code>{&quot;parameter&quot;:6,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;topk_indices&quot;}</code>
 - physical PTX 51-69: <code>%rd39</code>, <code>%rd43</code>, <code>%rd47</code>, <code>%rd51</code>, <code>%rd3</code>, <code>%rd2</code>, <code>%rd1</code>
 
 ##### Additional section references
@@ -110,16 +121,20 @@ Parameters 2, 3, 4 and 6 are declared pointers to K, V, V and <code>topk_indices
 - physical PTX 338-366: <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.arrive.relaxed</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.wait</code></a>
 - physical PTX 707-762: <code>ld.global.b32</code>, <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async"><code>cp.async.cg.shared.global</code></a>
 - physical PTX 1258-1262,1286-1290,5178-5187,5525-5536: <code>cvta.param.u64</code>
-- `input.json#/declarations`: <code>list, 33 entries; see original artifact</code>
-- `output.json#/diagnostics`: <code>list, 87 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L128"><code>input.json#/declarations</code></a>: <code>list, 33 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L44"><code>output.json#/diagnostics</code></a>: <code>list, 87 entries; see original artifact</code>
+
+</blockquote>
 
 </details>
 
 </details>
 
-### 2.2 Cluster startup: both arrivals precede both waits
+### 2. Cluster startup: both arrivals precede both waits
 
-The startup sequence is `arrive → arrive → wait → wait`. Both arrivals address the implicit cluster barrier, not either of the shared-memory `mbarrier` objects initialized between them. All threads take this sequence before worker dispatch. A fast warp can therefore make its second arrival while another warp has not made its first; the intervening initialization fences do not establish completion of that first cluster round. The consecutive waits also contain no new arrival between them. These source relations explain the two startup diagnostics without asserting that a GPU hang was observed.
+The startup sequence is `arrive → arrive → wait → wait`. Both arrivals address the implicit cluster barrier, not either of the shared-memory `mbarrier` objects initialized between them. All threads take this sequence before worker dispatch.
+
+A fast warp can therefore make its second arrival while another warp has not made its first; the intervening initialization fences do not establish completion of that first cluster round. The consecutive waits also contain no new arrival between them. These source relations explain the two startup diagnostics without asserting that a GPU hang was observed.
 
 **Possible interleaving.** Steps run downward; they are not a measured GPU clock or a hardware trace.
 
@@ -146,16 +161,16 @@ The startup sequence is `arrive → arrive → wait → wait`. Both arrivals add
 - **Completion:** The first cluster round cannot complete while warp 13 has not arrived. The second arrival is the boundary of this possible schedule; no hardware behavior after that protocol violation is assumed.
 
 <details>
-<summary><strong>Timeline support</strong></summary>
+<summary><strong>Sources for this interleaving</strong></summary>
 
 - physical PTX 72-81: <code>%tid.x</code>
-- `input.json#/launch/block_dim`: <code>[512,1,1]</code>
-- `input.json#/launch`: <code>{&quot;grid_dim&quot;:[2,1,1],&quot;block_dim&quot;:[512,1,1],&quot;cluster_dim&quot;:[2,1,1],&quot;dynamic_shared_bytes&quot;:232448}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L10"><code>input.json#/launch/block_dim</code></a>: <code>[512,1,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L4"><code>input.json#/launch</code></a>: <code>{&quot;grid_dim&quot;:[2,1,1],&quot;block_dim&quot;:[512,1,1],&quot;cluster_dim&quot;:[2,1,1],&quot;dynamic_shared_bytes&quot;:232448}</code>
 - physical PTX 44,72-81,88-362: <code>.reqntid</code>, <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.wait</code></a>
 - physical PTX 337-362: <code>@%p72</code>, <code>@%p75</code>, <code>$L__BB0_72:</code>, <code>$L__BB0_75:</code>
 - physical PTX 335-366: <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.arrive.relaxed</code></a>, <code>%p78</code>, <code>%p79</code>
 - physical PTX 339-362: <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.arrive.relaxed</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.wait</code></a>
-- `input.json#/launch/cluster_dim`: <code>[2,1,1]</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L15"><code>input.json#/launch/cluster_dim</code></a>: <code>[2,1,1]</code>
 - physical PTX 72-339: <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.arrive.relaxed</code></a>
 - physical PTX 339: <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.arrive.relaxed</code></a>
 - physical PTX 337-360: <code>%p72</code>, <code>%p75</code>, <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.arrive.relaxed</code></a>
@@ -163,7 +178,7 @@ The startup sequence is `arrive → arrive → wait → wait`. Both arrivals add
 </details>
 
 <details>
-<summary><strong>Check the startup path and the barrier round</strong></summary>
+<summary><strong>Derivation: cluster arrivals and waits</strong></summary>
 
 #### Every startup path rejoins before the second arrival
 
@@ -215,40 +230,46 @@ The intermediate shared objects are base+368, initialized to count 1, and base+3
 The [PTX 9.3 cluster-barrier contract](https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster) says a round completes after all non-exited cluster threads arrive, and each thread must arrive only once before completion. A wait detects completion before the thread arrives again. The source admits the fast/lagging-warp example above; it does not establish that every schedule fails. The `.relaxed` qualifier changes memory-ordering guarantees, not the requirement that the first round complete before another arrival. No async-copy completion or TMEM-release claim is needed to explain this startup issue.
 
 <details>
-<summary><strong>Exact source references</strong></summary>
+<summary><strong>Sources: cluster arrivals and waits</strong></summary>
 
-##### Every startup path rejoins before the second arrival
+<blockquote>
+
+##### Source references: Every startup path rejoins before the second arrival
 
 - physical PTX 72-81: <code>%r3</code>
 - physical PTX 88-339: <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init"><code>mbarrier.init.shared.b64</code></a>
 - physical PTX 337-362: <code>@%p72</code>, <code>@%p75</code>
 
-##### The initialization counts belong to different barriers
+##### Source references: The initialization counts belong to different barriers
 
 - physical PTX 336-355: <code>%r290</code>, <code>%r296</code>, <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init"><code>mbarrier.init.shared.b64</code></a>
 - physical PTX 359-362: <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.wait</code></a>
 
-##### Completion must precede reuse of a cluster round
+##### Source references: Completion must precede reuse of a cluster round
 
 - physical PTX 338-362: <code>fence.mbarrier_init.release.cluster</code>, <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.arrive.relaxed</code></a>
-- `output.json#/diagnostics/0/details`: <code>{&quot;actor_ranges&quot;:[[0,1023]],&quot;occurrence_count&quot;:1024,&quot;ptx_line&quot;:360}</code>
-- `output.json#/diagnostics/1/details`: <code>{&quot;actor_ranges&quot;:[[0,1023]],&quot;occurrence_count&quot;:1024,&quot;ptx_line&quot;:362}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L47"><code>output.json#/diagnostics/0/details</code></a>: <code>{&quot;actor_ranges&quot;:[[0,1023]],&quot;occurrence_count&quot;:1024,&quot;ptx_line&quot;:360}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L62"><code>output.json#/diagnostics/1/details</code></a>: <code>{&quot;actor_ranges&quot;:[[0,1023]],&quot;occurrence_count&quot;:1024,&quot;ptx_line&quot;:362}</code>
 
 ##### Additional section references
 
 - physical PTX 88-362: <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.arrive.relaxed</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.wait</code></a>
 - physical PTX 72-81: <code>%tid.x</code>, <code>%ntid.x</code>
-- `input.json#/launch`: <code>{&quot;grid_dim&quot;:[2,1,1],&quot;block_dim&quot;:[512,1,1],&quot;cluster_dim&quot;:[2,1,1],&quot;dynamic_shared_bytes&quot;:232448}</code>
-- `output.json#/diagnostics/0`: <code>dict, 4 entries; see original artifact</code>
-- `output.json#/diagnostics/1`: <code>dict, 4 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L4"><code>input.json#/launch</code></a>: <code>{&quot;grid_dim&quot;:[2,1,1],&quot;block_dim&quot;:[512,1,1],&quot;cluster_dim&quot;:[2,1,1],&quot;dynamic_shared_bytes&quot;:232448}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L45"><code>output.json#/diagnostics/0</code></a>: <code>dict, 4 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L60"><code>output.json#/diagnostics/1</code></a>: <code>dict, 4 entries; see original artifact</code>
+
+</blockquote>
 
 </details>
 
 </details>
 
-### 2.3 Index-controlled copies: the unknown is the selected index value
+### 3. Index-controlled copies: the unknown is the selected index value
 
-The gather workers stage K and V data for the sparse attention computation. Each 16-byte copy uses a separate source-size operand: a selected index in `[0, 256)` chooses 16 source bytes; an invalid index chooses zero source bytes, producing zeros in the shared destination. That choice comes from global `topk_indices` data, not from the known scalar `topk=128`. The supplied configuration fixes the bound and addressing strides but supplies no index-array contents. This explains why a model requiring a statically determined source size stops here; the diagnostic alone does not establish an out-of-bounds access or an illegal hardware copy.
+The gather workers stage K and V data for the sparse attention computation. Each 16-byte copy uses a separate source-size operand: a selected index in `[0, 256)` chooses 16 source bytes; an invalid index chooses zero source bytes, producing zeros in the shared destination.
+
+That choice comes from global `topk_indices` data, not from the known scalar `topk=128`. The supplied configuration fixes the bound and addressing strides but supplies no index-array contents. This explains why a model requiring a statically determined source size stops here; the diagnostic alone does not establish an out-of-bounds access or an illegal hardware copy.
 
 ```mermaid
 ---
@@ -279,7 +300,11 @@ Arrows are value dependencies. They do not represent instruction completion or a
 
 <p><strong>The first retained site: index validity becomes the copy source size</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/flash_attention__fwd_mla_sparse_bf16__sm_100a.ptx#L707-L736" title="Open the original PTX">physical PTX 707–736 (selected lines; gaps marked)</a></p>
 
-<p><strong>Operands:</strong> Sparse index loaded from <code>topk_indices</code> (<code>%r329</code>) · Configured upper bound, tensor3.sequence = 256 (<code>%r191</code>) · Source bytes selected as 0 or 16; the copy size is the preceding literal 16 (<code>%r337</code>)</p>
+<ul>
+<li><code>%r329</code> — Sparse index loaded from <code>topk_indices</code></li>
+<li><code>%r191</code> — Configured upper bound, tensor3.sequence = 256</li>
+<li><code>%r337</code> — Source bytes selected as 0 or 16; the copy size is the preceding literal 16</li>
+</ul>
 
 <pre><code><strong>ld.global.b32</strong> %r329, [%rd5];
 …
@@ -296,7 +321,7 @@ Arrows are value dependencies. They do not represent instruction completion or a
 
 
 <details>
-<summary><strong>Trace the index, participants and repeated copy sites</strong></summary>
+<summary><strong>Derivation: sparse indices and copy participants</strong></summary>
 
 #### Which threads stage the sparse inputs?
 
@@ -349,50 +374,56 @@ The first group copies from parameter 2 (K). The next two groups use parameter 3
 | V, parameter 4 | L1058–1122 | L940 reload | L1123 / L1124 |
 
 <details>
-<summary><strong>Exact source references</strong></summary>
+<summary><strong>Sources: sparse indices and copy participants</strong></summary>
 
-##### Which threads stage the sparse inputs?
+<blockquote>
+
+##### Source references: Which threads stage the sparse inputs?
 
 - physical PTX 72-81,363-366,633-639: <code>%r3</code>, <code>%p97</code>
 - physical PTX 1136-1171: <code>%p136</code>
-- `input.json#/launch`: <code>{&quot;grid_dim&quot;:[2,1,1],&quot;block_dim&quot;:[512,1,1],&quot;cluster_dim&quot;:[2,1,1],&quot;dynamic_shared_bytes&quot;:232448}</code>
-- `input.json#/assumptions/clc_always_fails`: <code>true</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L4"><code>input.json#/launch</code></a>: <code>{&quot;grid_dim&quot;:[2,1,1],&quot;block_dim&quot;:[512,1,1],&quot;cluster_dim&quot;:[2,1,1],&quot;dynamic_shared_bytes&quot;:232448}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L325"><code>input.json#/assumptions/clc_always_fails</code></a>: <code>true</code>
 
-##### The scalar shape does not determine sparse-index contents
+##### Source references: The scalar shape does not determine sparse-index contents
 
-- `input.json#/arguments`: <code>list, 26 entries; see original artifact</code>
-- `input.json#/declarations/9`: <code>{&quot;name&quot;:&quot;tensor3.sequence&quot;,&quot;parameter&quot;:3,&quot;offset&quot;:8,&quot;type&quot;:&quot;s32&quot;}</code>
-- `input.json#/declarations/24`: <code>{&quot;name&quot;:&quot;index.sequence_stride&quot;,&quot;parameter&quot;:6,&quot;offset&quot;:24,&quot;type&quot;:&quot;s64&quot;}</code>
-- `input.json#/declarations/25`: <code>{&quot;name&quot;:&quot;index.batch_stride&quot;,&quot;parameter&quot;:6,&quot;offset&quot;:32,&quot;type&quot;:&quot;s64&quot;}</code>
-- `input.json#/declarations/32`: <code>{&quot;parameter&quot;:6,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;topk_indices&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L22"><code>input.json#/arguments</code></a>: <code>list, 26 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L183"><code>input.json#/declarations/9</code></a>: <code>{&quot;name&quot;:&quot;tensor3.sequence&quot;,&quot;parameter&quot;:3,&quot;offset&quot;:8,&quot;type&quot;:&quot;s32&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L273"><code>input.json#/declarations/24</code></a>: <code>{&quot;name&quot;:&quot;index.sequence_stride&quot;,&quot;parameter&quot;:6,&quot;offset&quot;:24,&quot;type&quot;:&quot;s64&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L279"><code>input.json#/declarations/25</code></a>: <code>{&quot;name&quot;:&quot;index.batch_stride&quot;,&quot;parameter&quot;:6,&quot;offset&quot;:32,&quot;type&quot;:&quot;s64&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L315"><code>input.json#/declarations/32</code></a>: <code>{&quot;parameter&quot;:6,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;topk_indices&quot;}</code>
 - physical PTX 58,64-66,132,340,638-639,675-707,940: <code>%rd51</code>, <code>%r329</code>, <code>%r411</code>
 
-##### The shuffle selects validity and address together
+##### Source references: The shuffle selects validity and address together
 
 - physical PTX 82-87,646-666,720-760: <code>%r32</code>, <code>%r34</code>, <code>%r35</code>, <code>%r36</code>, <code>6175</code>, <code>%r337</code>
 
-##### Both V paths use the same kind of dynamic source-size choice
+##### Source references: Both V paths use the same kind of dynamic source-size choice
 
 - physical PTX 54-63,724-762,774-882,940-1124: <code>cp.async.commit_group</code>, <code>cp.async.mbarrier.arrive.noinc.shared.b64</code>
-- `input.json#/declarations/29`: <code>{&quot;parameter&quot;:2,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;K&quot;}</code>
-- `input.json#/declarations/30`: <code>{&quot;parameter&quot;:3,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;V&quot;}</code>
-- `input.json#/declarations/31`: <code>{&quot;parameter&quot;:4,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;V&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L297"><code>input.json#/declarations/29</code></a>: <code>{&quot;parameter&quot;:2,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;K&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L303"><code>input.json#/declarations/30</code></a>: <code>{&quot;parameter&quot;:3,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;V&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L309"><code>input.json#/declarations/31</code></a>: <code>{&quot;parameter&quot;:4,&quot;offset&quot;:0,&quot;type&quot;:&quot;pointer&quot;,&quot;object&quot;:&quot;V&quot;}</code>
 
 ##### Additional section references
 
-- `input.json#/arguments/0`: <code>{&quot;field&quot;:&quot;topk&quot;,&quot;value&quot;:128}</code>
-- `input.json#/arguments/9`: <code>{&quot;field&quot;:&quot;tensor3.sequence&quot;,&quot;value&quot;:256}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L23"><code>input.json#/arguments/0</code></a>: <code>{&quot;field&quot;:&quot;topk&quot;,&quot;value&quot;:128}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L59"><code>input.json#/arguments/9</code></a>: <code>{&quot;field&quot;:&quot;tensor3.sequence&quot;,&quot;value&quot;:256}</code>
 - physical PTX 58,64-66,690-736: <code>%r191</code>, <code>%rd51</code>, <code>%r329</code>, <code>%r337</code>
-- `output.json#/diagnostics/19`: <code>dict, 4 entries; see original artifact</code>
-- `output.json#/semantic_program/value_diagnostics/0`: <code>{&quot;code&quot;:&quot;unsupported_async_copy&quot;,&quot;line&quot;:736,&quot;message&quot;:&quot;cp.async size/source-size must be statically determined legal byte counts&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L398"><code>output.json#/diagnostics/19</code></a>: <code>dict, 4 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L3942"><code>output.json#/semantic_program/value_diagnostics/0</code></a>: <code>{&quot;code&quot;:&quot;unsupported_async_copy&quot;,&quot;line&quot;:736,&quot;message&quot;:&quot;cp.async size/source-size must be statically determined legal byte counts&quot;}</code>
+
+</blockquote>
 
 </details>
 
 </details>
 
-### 2.4 Tensor-map binding: input and output descriptors lack captured contents
+### 4. Tensor-map binding: input and output descriptors lack captured contents
 
-The TMA operand addresses have concrete parameter origins: parameters 7 and 8 describe global-to-cluster-shared input transfers, and parameter 9 describes shared-to-global output transfers. The output source is a shared staging area populated with BF16 values after normalizing TMEM-loaded accumulators. The saved input declares all three parameters as `tensor_map`, but contains no captured descriptor payload or map-to-object binding. Consequently, the source identifies the direction and staging buffers, while the descriptor-defined global footprints and tensor layouts remain unresolved. This is a capture/binding gap, not evidence that the descriptors supplied to a real launch were invalid.
+The TMA operand addresses have concrete parameter origins: parameters 7 and 8 describe global-to-cluster-shared input transfers, and parameter 9 describes shared-to-global output transfers. The output source is a shared staging area populated with BF16 values after normalizing TMEM-loaded accumulators.
+
+The saved input declares all three parameters as `tensor_map`, but contains no captured descriptor payload or map-to-object binding. Consequently, the source identifies the direction and staging buffers, while the descriptor-defined global footprints and tensor layouts remain unresolved. This is a capture/binding gap, not evidence that the descriptors supplied to a real launch were invalid.
 
 ```mermaid
 ---
@@ -421,7 +452,11 @@ Each arrow maps a parameter address to the operations that use it as their tenso
 
 <p><strong>Descriptor addresses enter both transfer directions</strong> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/flash_attention__fwd_mla_sparse_bf16__sm_100a.ptx#L1258-L5181" title="Open the original PTX">physical PTX 1258–5181 (selected lines; gaps marked)</a> · display wrapping added</p>
 
-<p><strong>Operands:</strong> Address of descriptor parameter 7 (<code>%rd3</code>) · Address of descriptor parameter 8 (<code>%rd2</code>) · Address of descriptor parameter 9 (<code>%rd1</code>)</p>
+<ul>
+<li><code>%rd3</code> — Address of descriptor parameter 7</li>
+<li><code>%rd2</code> — Address of descriptor parameter 8</li>
+<li><code>%rd1</code> — Address of descriptor parameter 9</li>
+</ul>
 
 <pre><code><strong>cvta.param.u64</strong> %rd161, %rd3;
 …
@@ -440,7 +475,7 @@ Each arrow maps a parameter address to the operations that use it as their tenso
 
 
 <details>
-<summary><strong>Check the descriptor origins and the issuing paths</strong></summary>
+<summary><strong>Derivation: descriptor origins and transfer paths</strong></summary>
 
 #### Parameter identity is established; descriptor contents are not
 
@@ -537,58 +572,62 @@ The epilogue admits warps 4–7, local threads 128–255, by `(warp_id & -4) == 
 The input-producer work coordinates begin with <code>ctaid.x</code> >> 1 and <code>ctaid.z</code>, which are zero for this launch; the two CTA ranks set the second descriptor-axis coordinate to 0 or 64. The output path similarly begins with third/fourth coordinates zero and second coordinate 0 or 64. All listed copies occur before the respective cancellation-dependent loop back edges. With `clc_always_fails=true`, those back edges at L1414 and L5595 are not taken, so later work-item coordinates are not needed for this configured explanation. Earlier startup rejection still prevents treating these static paths as a validated hardware execution.
 
 <details>
-<summary><strong>Exact source references</strong></summary>
+<summary><strong>Sources: descriptor origins and transfer paths</strong></summary>
 
-##### Parameter identity is established; descriptor contents are not
+<blockquote>
+
+##### Source references: Parameter identity is established; descriptor contents are not
 
 - physical PTX 24-26,67-69: <code>_param_7</code>, <code>_param_8</code>, <code>_param_9</code>
 - physical PTX 1258,1286,1295,1304,1313,1340,1349,1358,1367,5178,5525: <code>cvta.param.u64</code>
-- `input.json#/declarations`: <code>list, 33 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L128"><code>input.json#/declarations</code></a>: <code>list, 33 entries; see original artifact</code>
 
-##### Input transfers are issued by an elected lane of warp 8
+##### Source references: Input transfers are issued by an elected lane of warp 8
 
 - physical PTX 72-83,1204-1237,1248-1371: <code>%p141</code>, <code>elect.sync</code>, <code>%rd2</code>, <code>%rd3</code>
-- `input.json#/assumptions/representative_election`: <code>true</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L324"><code>input.json#/assumptions/representative_election</code></a>: <code>true</code>
 
-##### Output transfers use all lanes of warp 4, after four warps stage data
+##### Source references: Output transfers use all lanes of warp 4, after four warps stage data
 
 - physical PTX 3986-3987,4781-4810,4835-4860,4928-4929,5116-5131,5175-5195,5522-5547: <code>%p363</code>, <code>%p365</code>, <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group"><code>cp.async.bulk.wait_group.read</code></a>, <code>elect.sync</code>
 
-##### Configured work reaches the initial copy groups
+##### Source references: Configured work reaches the initial copy groups
 
-- `input.json#/launch`: <code>{&quot;grid_dim&quot;:[2,1,1],&quot;block_dim&quot;:[512,1,1],&quot;cluster_dim&quot;:[2,1,1],&quot;dynamic_shared_bytes&quot;:232448}</code>
-- `input.json#/assumptions/clc_always_fails`: <code>true</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L4"><code>input.json#/launch</code></a>: <code>{&quot;grid_dim&quot;:[2,1,1],&quot;block_dim&quot;:[512,1,1],&quot;cluster_dim&quot;:[2,1,1],&quot;dynamic_shared_bytes&quot;:232448}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L325"><code>input.json#/assumptions/clc_always_fails</code></a>: <code>true</code>
 - physical PTX 82-87,132-133,340,1207,1231-1237,1384-1414,4785-4792,4811-4834,5561-5595: <code>%r2137</code>, <code>%r2171</code>, <code>%p169</code>, <code>%p369</code>
 
 ##### Additional section references
 
-- `input.json#/declarations/26`: <code>{&quot;parameter&quot;:7,&quot;type&quot;:&quot;tensor_map&quot;}</code>
-- `input.json#/declarations/27`: <code>{&quot;parameter&quot;:8,&quot;type&quot;:&quot;tensor_map&quot;}</code>
-- `input.json#/declarations/28`: <code>{&quot;parameter&quot;:9,&quot;type&quot;:&quot;tensor_map&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L285"><code>input.json#/declarations/26</code></a>: <code>{&quot;parameter&quot;:7,&quot;type&quot;:&quot;tensor_map&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L289"><code>input.json#/declarations/27</code></a>: <code>{&quot;parameter&quot;:8,&quot;type&quot;:&quot;tensor_map&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L293"><code>input.json#/declarations/28</code></a>: <code>{&quot;parameter&quot;:9,&quot;type&quot;:&quot;tensor_map&quot;}</code>
 - physical PTX 67-69,1258-1262,1286-1290,5178-5187,5525-5536: <code>cvta.param.u64</code>
 - physical PTX 4840-4860,4928-4929,5116-5131: <code>rcp.approx.ftz.f32</code>, <code>cvt.rn.bf16x2.f32</code>
-- `output.json#/diagnostics/2`: <code>dict, 4 entries; see original artifact</code>
-- `output.json#/diagnostics/10`: <code>dict, 4 entries; see original artifact</code>
-- `output.json#/diagnostics/11`: <code>dict, 4 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L75"><code>output.json#/diagnostics/2</code></a>: <code>dict, 4 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L227"><code>output.json#/diagnostics/10</code></a>: <code>dict, 4 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L246"><code>output.json#/diagnostics/11</code></a>: <code>dict, 4 entries; see original artifact</code>
+
+</blockquote>
 
 </details>
 
 </details>
 
-### 2.5 Next check
+### 5. Next check
 
 First resolve whether the generated startup should contain two distinct cluster rounds, and make each round’s completion boundary explicit before reusing it. Separately, check the capture/binding path for descriptor parameters 7–9 and the frontend’s handling of a source-size value selected from sparse-index data. The missing evidence is the descriptor payload/binding and the index contents or supported value semantics—not the already supplied shape scalars. These source findings identify where to investigate; no corrected kernel or successful verification is claimed.
 
 <details>
-<summary><strong>Basis for next inspection</strong></summary>
+<summary><strong>Evidence for the next check</strong></summary>
 
 - physical PTX 339-362: <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.arrive.relaxed</code></a>, <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.wait</code></a>
 - physical PTX 707-736: <code>%r337</code>
-- `input.json#/declarations/26`: <code>{&quot;parameter&quot;:7,&quot;type&quot;:&quot;tensor_map&quot;}</code>
-- `input.json#/declarations/27`: <code>{&quot;parameter&quot;:8,&quot;type&quot;:&quot;tensor_map&quot;}</code>
-- `input.json#/declarations/28`: <code>{&quot;parameter&quot;:9,&quot;type&quot;:&quot;tensor_map&quot;}</code>
-- `output.json#/semantic_program`: <code>dict, 14 entries; see original artifact</code>
-- `output.json#/checks`: <code>{&quot;equivalence&quot;:&quot;not_run&quot;,&quot;memory&quot;:&quot;not_run&quot;,&quot;synchronization&quot;:&quot;incomplete&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L285"><code>input.json#/declarations/26</code></a>: <code>{&quot;parameter&quot;:7,&quot;type&quot;:&quot;tensor_map&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L289"><code>input.json#/declarations/27</code></a>: <code>{&quot;parameter&quot;:8,&quot;type&quot;:&quot;tensor_map&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L293"><code>input.json#/declarations/28</code></a>: <code>{&quot;parameter&quot;:9,&quot;type&quot;:&quot;tensor_map&quot;}</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L3922"><code>output.json#/semantic_program</code></a>: <code>dict, 14 entries; see original artifact</code>
+- <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L39"><code>output.json#/checks</code></a>: <code>{&quot;equivalence&quot;:&quot;not_run&quot;,&quot;memory&quot;:&quot;not_run&quot;,&quot;synchronization&quot;:&quot;incomplete&quot;}</code>
 
 </details>
 
@@ -652,7 +691,7 @@ Operand must have a statically determined integer value
 
 ##### Diagnostics
 
-<code>output.json#/diagnostics</code>
+<a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L44"><code>output.json#/diagnostics</code></a>
 
 **Retained records:** 87.
 
@@ -2552,20 +2591,20 @@ Execute a configured number of body iterations for unresolved recognized computa
 
 Memory safety and numerical equivalence are separate results.
 
-**Value analysis:** <code>unsupported</code> · <code>output.json#/value_analysis</code>
+**Value analysis:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L3972"><code>output.json#/value_analysis</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_requested</code>.
 
 - **Prerequisite status:** <code>program_constraint_violation</code>
 - **Scope:** {&quot;operation&quot;:&quot;<code>value_analysis</code>&quot;}
-- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <code>output.json#/value_analysis/diagnostics/0</code>
+- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L3979"><code>output.json#/value_analysis/diagnostics/0</code></a>
 
-**Equivalence:** <code>unsupported</code> · <code>output.json#/equivalence</code>
+**Equivalence:** <code>unsupported</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L1827"><code>output.json#/equivalence</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_run</code>.
 
 - **Scope:** {&quot;operation&quot;:&quot;equivalence&quot;}
-- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <code>output.json#/equivalence/diagnostics/0</code>
+- **Diagnostic:** <code>prerequisite_check_not_passed</code> · <code>pipeline</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/output.json#L1834"><code>output.json#/equivalence/diagnostics/0</code></a>
 
 <details>
 <summary><strong>Exact value-analysis fields and large-data references</strong></summary>
@@ -2653,7 +2692,7 @@ Memory safety and numerical equivalence are separate results.
 | Cluster · blocks | <code>[2,1,1]</code> |
 | Dynamic shared memory · bytes | <code>232448</code> |
 
-**Arguments:** 26 retained entries. Exact parameter bindings, descriptors and entry name: <code>input.json#</code>.
+**Arguments:** 26 retained entries. Exact parameter bindings, descriptors and entry name: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json#L1"><code>input.json#</code></a>.
 
 <details>
 <summary><strong>Exact input configuration</strong></summary>

@@ -322,7 +322,7 @@ def check(report, ptx, result, identity=None):
     return issues
 
 
-def check_current(report, ptx_path, input_path, result_path, draft_path=None, identity=None, source_paths=(), equivalence_path=None, artifact_base=None):
+def check_current(report, ptx_path, input_path, result_path, draft_path=None, identity=None, source_paths=(), equivalence_path=None, artifact_base=None, result_panel=False):
     """Check current composition and citation validity, not semantic correctness."""
     from report_layout import compose, MARKER
     from report_facts import verify_identity
@@ -334,7 +334,7 @@ def check_current(report, ptx_path, input_path, result_path, draft_path=None, id
     draft = json.loads(draft_path.read_text()) if draft_path else None
     expected = compose(draft, json.loads(input_path.read_text()), json.loads(result_path.read_text()),
                        ptx_path.read_text(), artifacts, {p.name:p.read_text() for p in source_paths},
-                       report_path=report, source_paths=source_paths, equivalence_path=equivalence_path, artifact_base=artifact_base)
+                       report_path=report, source_paths=source_paths, equivalence_path=equivalence_path, artifact_base=artifact_base, result_panel=result_panel)
     issues = []
     if source != expected:
         issues.append('Report differs from saved facts or its explanation plan. Recompose; do not edit Markdown.')
@@ -360,6 +360,7 @@ def main():
     parser.add_argument('--source', type=Path, action='append', default=[])
     parser.add_argument('--equivalence', type=Path)
     parser.add_argument('--artifact-base')
+    parser.add_argument('--result-panel', action='store_true')
     args = parser.parse_args()
     try:
         from report_layout import validate_inputs
@@ -373,7 +374,7 @@ def main():
             return 0
         if not args.input:
             parser.error('--report requires --input for fact preservation checks.')
-        issues = check_current(args.report,args.ptx,args.input,args.result,args.draft,args.identity,args.source,args.equivalence,args.artifact_base)
+        issues = check_current(args.report,args.ptx,args.input,args.result,args.draft,args.identity,args.source,args.equivalence,args.artifact_base,args.result_panel)
         for issue in issues:
             print('FAIL:',issue)
         if not issues:

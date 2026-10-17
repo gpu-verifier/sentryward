@@ -30,6 +30,8 @@ Follow a thread register back to its special-register source before decoding a m
 
 For repeated/unrolled accesses, make a compact phase-to-source lookup: relevant copy, commit and wait sites; address or coordinate changes; any materially different final predicate. Compare distinct copy/wait predicates through their definitions and intervening assignments. Different names alone do not imply different conditions.
 
+For a retained access pair, record each operation's instruction family, address space, issue/completion milestone and participant binding. Equal actor IDs do not eliminate an async hazard; unequal IDs alone do not identify CUDA threads. Check the supplied PTX version's guarantees for the exact instruction pair, including same-thread or collective scope and group qualifiers. If a guarantee could order the source operations, explain it alongside the candidate and identify the access/effect mapping needed to reconcile them. Do not infer a missing wait just from absent wait syntax or treat a source guarantee as a verifier rerun.
+
 ## Configured completion and exit
 
 Find relevant final waits/drains in the entry. For each one you mention, inspect **all incoming branches**, not just the branch immediately above it. Reduce their predicates using the configured scalar sources and reload conditions. A direct jump into the wait and a later branch around the wait are different paths; do not join their conditions with “or” unless the actual control flow supports that relation.
@@ -64,6 +66,8 @@ Build a small **barrier ledger** in scratch before writing a release claim:
 Count threads admitted by a role, not merely warps or instruction sites. An opposite-parity wait can pass during startup because the initialized barrier already has a different phase; do not automatically describe it as waiting for the next arrival. A complete arrival count explains the barrier protocol; it does not alone prove that an earlier asynchronous load completed. Show the derived protocol as a short comparison when it helps the reader; do not copy this authoring checklist into the report.
 
 Separate a source's first/later arrival from a proven barrier phase. A thread's second arrival is not automatically in phase 1: establish completion of the previous phase before assigning it. Otherwise label rows as source rounds, give the literal wait parities, and leave the unestablished transition explicit. Never turn a count match into a release edge.
+
+When a rejected check names the next phase, distinguish its required model edge from what the source wait tests. Resolve the barrier's initial phase and the first literal parity before describing a startup wait as waiting for new work. Name separate ready/reuse barriers by purpose and address derivation; nearby waits do not necessarily refer to the same object. A phase-comparison view may explain this more accurately than a fabricated participant timeline.
 
 If a relation remains unknown, name that gap beside it; do not draw an established release edge. Missing event-to-thread bindings do not prevent tracing static warp roles. For a forward conditional operation followed by a shared continuation, use the `guarded-path` component in [draft-format.md](draft-format.md). It derives polarity and draws the bypass from the selected PTX. For other graphs, put guards on the edges themselves: a paragraph elsewhere does not qualify an unconditional arrow. Never merge a conditional store and an unconditional arrival into one mandatory stage.
 

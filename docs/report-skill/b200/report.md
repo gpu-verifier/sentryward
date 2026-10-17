@@ -4,9 +4,41 @@
 <p align="center">thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a</p>
 <h1 align="center">VERIFIED</h1>
 
-**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a.ptx) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a/input.json) · launch, arguments and assumptions.
+**Inputs:** [PTX](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a.ptx) ([raw](https://github.com/gpu-verifier/sentryward/raw/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/corpus/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a.ptx)) · analyzed code; [input.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a/input.json) · launch, arguments and assumptions.
 
 **Result:** [output.json](https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a/output.json) · saved verifier findings.
+
+<table>
+<thead><tr><th align="left">VERIFIER RESULT · Recorded outcome</th></tr></thead>
+<tbody><tr><td>
+
+The verifier reports verification complete for the saved scope and checks below.
+
+**Synchronization:** Passed · **Memory:** Passed · **Equivalence:** Passed
+
+**Recorded totals:** 0 races · 0 warnings · 0 unresolved.
+
+<details>
+<summary><strong>Saved status and diagnostic codes</strong></summary>
+
+**Saved result:** <code>verified</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a/output.json#L11081"><code>output.json#/result</code></a>.
+
+**Operation:** <code>kernel_verification</code>.
+
+**Checks:** Synchronization <code>passed</code> · Memory <code>passed</code> · Equivalence <code>passed</code>.
+
+</details>
+
+</td></tr>
+<tr><td>
+
+### Analysis scope
+
+**Coverage:** Memory analysis complete: yes · Search complete: yes · Exhaustive search: **no**.
+
+**Assumption-dependent:** <code>true</code>. Triggered rules: Representative election, Failed launch cancellation.
+
+This result applies to the supplied launch, arguments and enabled assumptions.
 
 <details>
 <summary><strong>Analysis records — open the saved evidence</strong></summary>
@@ -33,29 +65,8 @@ For the records explained in this report, see the [Evidence appendix](#evidence-
 
 </details>
 
-## 1. Verifier result
-
-Saved findings and analysis scope, formatted directly from the verifier output.
-
-### 1.1 Recorded outcome
-
-The verifier reports verification complete for the saved scope and checks below.
-
-**Saved result:** <code>verified</code> · <code>output.json#/result</code>.
-
-**Checks:** Synchronization <code>passed</code> · Memory <code>passed</code> · Equivalence <code>passed</code>.
-
-**Operation:** <code>kernel_verification</code>.
-
-**Recorded totals:** 0 races · 0 warnings · 0 unresolved.
-
-### 1.2 Analysis scope
-
-**Coverage:** Memory analysis complete: yes · Search complete: yes · Exhaustive search: **no**.
-
-**Assumption-dependent:** <code>true</code>. Triggered rules: Representative election, Failed launch cancellation.
-
-This result applies to the supplied launch, arguments and enabled assumptions.
+</td></tr></tbody>
+</table>
 <!-- verifier-result:end -->
 
 <!-- verifier-evidence:start -->
@@ -231,13 +242,13 @@ Execute a configured number of body iterations for unresolved recognized computa
 
 Memory safety and numerical equivalence are separate results.
 
-**Value analysis:** <code>verified</code> · <code>output.json#/value_analysis</code>
+**Value analysis:** <code>verified</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a/output.json#L11140"><code>output.json#/value_analysis</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>not_requested</code>.
 
 - **Scope:** {&quot;operation&quot;:&quot;<code>value_analysis</code>&quot;}
 
-**Equivalence:** <code>verified</code> · <code>output.json#/equivalence</code>
+**Equivalence:** <code>verified</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a/output.json#L69"><code>output.json#/equivalence</code></a>
 
 **Checks:** Synchronization <code>not_requested</code> · Memory <code>not_requested</code> · Equivalence <code>passed</code>.
 
@@ -248,7 +259,7 @@ Memory safety and numerical equivalence are separate results.
 - **Prerequisites:** caller must combine numerical proof with synchronization, memory and scope results
 - **Definedness:** <code>proved</code>
 
-**Verification result:** <code>race_free</code> · <code>output.json#/verification_result</code>
+**Verification result:** <code>race_free</code> · <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a/output.json#L11270"><code>output.json#/verification_result</code></a>
 
 <details>
 <summary><strong>Exact value-analysis fields and large-data references</strong></summary>
@@ -608,7 +619,7 @@ Memory safety and numerical equivalence are separate results.
 | Cluster · blocks | <code>[2,1,1]</code> |
 | Dynamic shared memory · bytes | <code>222208</code> |
 
-**Arguments:** 6 retained entries. Exact parameter bindings, descriptors and entry name: <code>input.json#</code>.
+**Arguments:** 6 retained entries. Exact parameter bindings, descriptors and entry name: <a href="https://github.com/gpu-verifier/sentryward/blob/94a6b26b1990a4b9df7ded3727acc4b4cc36f23c/examples/thunderkittens__thunderkittens_bf16_b200_gemm__sm_100a/input.json#L1"><code>input.json#</code></a>.
 
 <details>
 <summary><strong>Exact input configuration</strong></summary>

@@ -156,8 +156,8 @@ def code_view(code, ptx, width=72, *, source_url=None):
             token = literal_token(item['token'])
             if not list(occurrences(mask_noncode(selected), token)):
                 raise ValueError('Named operand is absent from the selected instructions: ' + token)
-            names.append(html.escape(text(item['meaning'], 'Operand meaning')) + ' (<code>' + html.escape(token) + '</code>)')
-        guide = '<p><strong>Operands:</strong> ' + ' · '.join(names) + '</p>\n\n'
+            names.append('<li><code>' + html.escape(token) + '</code> — ' + html.escape(text(item['meaning'], 'Operand meaning')) + '</li>')
+        guide = '<ul>\n' + '\n'.join(names) + '\n</ul>\n\n'
         rendered = rendered.replace('<pre><code>', guide + '<pre><code>', 1)
     return rendered
 
@@ -211,7 +211,7 @@ def branch_diagram(diagram, ptx):
     taken, fallthrough = ('false','true') if branch[1] else ('true','false')
     condition = html.escape(left + ' ' + operator + ' ' + right, quote=True)
     source = ('flowchart LR\n'
-              f'  G{{"Test<br/>PTX {compare_line}"}}\n'
+              f'  G{{"{html.escape(left, quote=True)} {html.escape(operator)}<br/>{html.escape(right, quote=True)}<br/>PTX {compare_line}"}}\n'
               f'  E["{action}<br/>PTX {effect_line}"]\n'
               f'  J["Continue<br/>PTX {target}"]\n'
               f'  G -->|"{fallthrough}"| E\n'
@@ -481,15 +481,20 @@ def timeline_view(diagram, run_input, result, ptx, sources=None, code=''):
             rows.append(['…'] + ['Further events omitted / not retained'] + ['—'] * (len(ids) - 1))
     caption = '**' + basis.capitalize() + '.** Steps run downward; they are not a measured GPU clock or a hardware trace.'
     references = '\n'.join(dict.fromkeys(line for block in support for line in block.splitlines()))
-    return caption + '\n\n' + table_view({'headers':['Step'] + labels, 'rows':rows}) + '\n\n' + code + '\n\n' + '\n'.join(conditions) + '\n\n' + disclosure('Timeline support', references)
+    reference_title = 'Sources for this interleaving' if basis == 'possible interleaving' else 'Saved sequence and source mappings'
+    return caption + '\n\n' + table_view({'headers':['Step'] + labels, 'rows':rows}) + '\n\n' + code + '\n\n' + '\n'.join(conditions) + '\n\n' + disclosure(reference_title, references)
 
 
-def disclosure(title, body):
-    return '<details>\n<summary><strong>' + html.escape(title) + '</strong></summary>\n\n' + body.strip() + '\n\n</details>'
+def disclosure(title, body, *, inset=False):
+    content = body.strip()
+    if inset:
+        content = '<blockquote>\n\n' + content + '\n\n</blockquote>'
+    return '<details>\n<summary><strong>' + html.escape(title) + '</strong></summary>\n\n' + content + '\n\n</details>'
 
 
 def derivation_view(section, run_input, result, ptx, sources=None, *, default_title='Derivation and source references', source_url=None):
     refs = evidence_view(section['evidence'], run_input, result, ptx, sources)
+    title = text(section.get('evidence_title', default_title), 'Evidence title')
     steps, citations, step_refs = [], [], set()
     for step in section.get('steps', []):
         fields(step, ('label', 'text', 'evidence'), ('code', 'comparison', 'diagram'))
@@ -501,17 +506,17 @@ def derivation_view(section, run_input, result, ptx, sources=None, *, default_ti
         if 'code' in step:
             steps.append(code_view(step['code'], ptx, source_url=source_url))
         supporting_refs = evidence_view(step['evidence'], run_input, result, ptx, sources)
-        citations.append('##### ' + text(step['label'], 'Derivation step') + '\n\n' + supporting_refs)
+        citations.append('##### Source references: ' + text(step['label'], 'Derivation step') + '\n\n' + supporting_refs)
         step_refs.update(supporting_refs.splitlines())
     if steps:
         # Parent references can be broader than individual derivation steps.
         extra_refs = '\n'.join(line for line in refs.splitlines() if line not in step_refs)
         if extra_refs:
             citations.append('##### Additional section references\n\n' + extra_refs)
-        steps.append(disclosure('Exact source references', '\n\n'.join(citations)))
+        source_title = 'Sources: ' + title.removeprefix('Derivation: ') if 'evidence_title' in section else 'Sources: derivation references'
+        steps.append(disclosure(source_title, '\n\n'.join(citations), inset=True))
     else:
         steps.append(refs)
-    title = text(section.get('evidence_title', default_title), 'Evidence title')
     return disclosure(title, '\n\n'.join(steps))
 
 
@@ -561,13 +566,13 @@ def explanation(draft, run_input, result, ptx, sources=None, *, source_url=None)
         fields(draft['next'], ('text', 'evidence'))
         refs = evidence_view(draft['next']['evidence'], run_input, result, ptx, sources)
         parts += ['### 2.' + str(number) + ' Next check', text(draft['next']['text'], 'Next inspection')]
-        parts.append(disclosure('Basis for next inspection', refs))
+        parts.append(disclosure('Evidence for the next check', refs))
     parts.append(EXPLANATION_END)
     return technical_prose('\n\n'.join(parts), instruction_docs(ptx))
 
 
-def compose(draft, run_input, result, ptx, artifacts, sources=None, *, report_path=None, source_paths=(), equivalence_path=None, artifact_base=None):
-    from result_view import render_result, render_evidence, artifact_url
+def compose(draft, run_input, result, ptx, artifacts, sources=None, *, report_path=None, source_paths=(), equivalence_path=None, artifact_base=None, result_panel=False):
+    from result_view import render_result, render_evidence, artifact_url, link_references
     validate_inputs(run_input, result, ptx)
     # Validate the entire authored layer before rendering or replacing an artifact.
     source_url = artifact_url(artifacts[2], report_path, artifact_base) if len(artifacts) > 2 else None
@@ -578,4 +583,9 @@ def compose(draft, run_input, result, ptx, artifacts, sources=None, *, report_pa
     if authored:
         parts.append(authored)
     parts.append(render_evidence(run_input, result, ptx, artifacts, **links))
-    return '\n\n'.join(part.strip() for part in parts if part) + '\n'
+    document = '\n\n'.join(part.strip() for part in parts if part) + '\n'
+    document = link_references(document, ptx, artifacts, report_path, artifact_base)
+    if result_panel:
+        from result_panel import render
+        document = render(document)
+    return document
