@@ -1437,6 +1437,12 @@ struct Arena {
     }
     auto b=nodes[source].bounds;
     if(nodes[source].facts.finite && b && b->first>=Q(-half) && b->second<Q(half))return source;
+    // signed_w(word_w(x)) is x when x already fits w signed bits (e.g. a sign-extended s8 load stored as s32).
+    if(nodes[source].op=="word" && nodes[source].data[0]==Q(width)) {
+      Id inner=nodes[source].args[0];
+      auto ib=nodes[inner].bounds;
+      if(nodes[inner].facts.finite && ib && ib->first>=Q(-half) && ib->second<Q(half))return inner;
+    }
     Id bits=source;
     if(!b || b->first<0 || b->second>=Q(modulus)) {
       bits=intern("word",{source},{Q(width)},"",{nodes[source].facts.finite,false,true},

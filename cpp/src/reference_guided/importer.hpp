@@ -502,7 +502,28 @@ struct Importer {
         ++a.stats["typed_output_transport_reads"];
         return *interpreted;
       }
+    // A signed integer reference output (e.g. torch.int32) compares with the kernel's stored word of the
+    // same width read as signed: the stored bits are the same, only their interpretation differs.
+    if (mapping.value("output_value_semantics", "") == "ideal_real" && signed_integer_width(expected_type)) {
+      const auto own = family_type(f);
+      const unsigned w = *signed_integer_width(expected_type);
+      if ((own.starts_with("u") || own.starts_with("b")) && own.size() > 1 && std::isdigit(static_cast<unsigned char>(own[1])) &&
+          std::stoul(own.substr(1)) == w) {
+        ++a.stats["signed_output_transport_reads"];
+        // Stored bits that are an initial input cell (copied through, e.g. via shared memory) are that typed read.
+        if (a.nodes[n].op == "readbits" || a.nodes[n].op == "extractbits")
+          if (auto read = initial_typed_bits(n, expected_type))
+            return *read;
+        return a.signed_word(n, w);
+      }
+    }
     return n;
+  }
+  /** The width of a signed integer type name ("s32" -> 32), or none. */
+  static std::optional<unsigned> signed_integer_width(const std::string &type) {
+    if (type.size() < 2 || type[0] != 's' || !std::all_of(type.begin() + 1, type.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); }))
+      return {};
+    return static_cast<unsigned>(std::stoul(type.substr(1)));
   }
   std::string family_type(const J &f) const {
     const auto &body=f.at("body");
@@ -1683,8 +1704,14 @@ struct Importer {
       Id var = body.at(f.level);
       Q count = Q(f.count);
       const std::string &reducer = f.reducer;
-      return a.intern("fold", x, {Q(var), count}, reducer,
-                      a.fold_facts(x[0],x[1],count,reducer=="Max",var));
+      Id fold = a.intern("fold", x, {Q(var), count}, reducer,
+                         a.fold_facts(x[0],x[1],count,reducer=="Max",var));
+      // An integer sum wraps like integer Add (e.g. torch.sum(dtype=int32), Java int accumulation).
+      if (reducer == "Sum" && t.size() > 1 && (t[0] == 's' || t[0] == 'u') && std::isdigit(static_cast<unsigned char>(t[1]))) {
+        const unsigned w = width(t);
+        return t[0] == 's' ? a.signed_word(fold, w) : word(fold, w);
+      }
+      return fold;
     }
     if (k != "Operation")
       throw Unsupported("node kind " + k);

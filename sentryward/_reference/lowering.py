@@ -12,7 +12,8 @@ class Unsupported(ValueError):
 
 TYPES = {torch.float16: "f16", torch.bfloat16: "bf16", torch.float32: "f32",
          torch.float64: "f64", torch.float8_e4m3fn: "e4m3", torch.float8_e5m2: "e5m2",
-         torch.uint8: "u8", torch.int32: "s32", torch.int64: "s64", torch.bool: "pred"}
+         torch.uint8: "u8", torch.int8: "s8", torch.int16: "s16", torch.int32: "s32", torch.int64: "s64",
+         torch.bool: "pred"}
 
 
 def tensor_type(value):
