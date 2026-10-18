@@ -195,6 +195,9 @@ a report from the current output when needed.
   tensor data unless explicit representative-control assumptions are enabled;
   see [Representative branches](docs/assumptions.md#representative-branches),
   off by default.
+- Atomics (`atom`, `red`) are analyzed only under
+  [Order-independent atomics](docs/assumptions.md#order-independent-atomics),
+  off by default.
 - Fences and the full PTX memory model are not modeled. The hardware model
   follows our reading of the PTX documentation, which does not specify every
   detail.

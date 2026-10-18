@@ -99,6 +99,33 @@ establish all-path correctness.
 The former combined `representative_data_branches` key is retired. Choose either
 or both new keys explicitly; the old visit-count branch heuristic is not retained.
 
+## Order-independent atomics
+
+Configuration key: `order_independent_atomics` (default `false`).
+
+Assume that the kernel is correct for every order in which concurrent atomics
+(`atom`, `red`) on the same element take effect. Each atomic is then one
+indivisible read-modify-write of its 2-, 4- or 8-byte element, complete before
+the thread's next instruction; a packed half pair (`.f16x2`, `.bf16x2`) is one
+4-byte element. Two atomics on the same element do not race when their scopes
+include both threads: `.gpu` and `.sys` include every thread, `.cta` only threads
+of the same CTA. `.cluster` is treated as `.cta`. An atomic and an ordinary
+access to the same bytes race unless ordered. Results count executed atomics
+under `frontend_assumptions.atomic_uses`.
+
+Concurrent atomics are not data races, so results that depend on their order are
+not reported: a floating-point sum that differs between runs, the value a
+concurrent `exch` or `cas` leaves behind, or the order of tickets. Some
+simplifications can only report more races: memory-order qualifiers
+(`.acquire`, `.release`) add no ordering, `ld.acquire`/`ld.relaxed` count as
+ordinary accesses, and returned values are unknown, so a branch on one needs the
+data or Representative branches. Vector, 128-bit and `.async` forms, `multimem`
+and surface reductions remain unsupported.
+
+- **Enabled:** analyze `atom`/`red` as atomic accesses.
+- **Disabled:** report the first `atom` or `red` as unsupported, with a
+  suggestion to enable Order-independent atomics.
+
 ## Address invariants
 
 Input key: `address_invariants` (optional array; default `[]`).

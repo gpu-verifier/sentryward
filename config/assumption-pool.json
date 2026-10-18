@@ -23,5 +23,10 @@
     "label": "Bounded computation loops",
     "key": "bounded_computation_loops",
     "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete."
+  },
+  {
+    "label": "Order-independent atomics",
+    "key": "order_independent_atomics",
+    "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race."
   }
 ]

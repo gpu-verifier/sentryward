@@ -890,6 +890,8 @@ std::string RenderReport(Json& report) {
       triggered = frontend["representative_branch_uses"] > 0;
     if (enabled && entry.key == "bounded_computation_loops" && frontend.contains("bounded_loop_uses"))
       triggered = frontend["bounded_loop_uses"] > 0;
+    if (enabled && entry.key == "order_independent_atomics" && frontend.contains("atomic_uses"))
+      triggered = frontend["atomic_uses"] > 0;
     usage.push_back({{"label", entry.label}, {"key", entry.key}, {"category", "analysis assumption"},
         {"text", entry.text}, {"enabled", enabled}, {"triggered", triggered}});
   }

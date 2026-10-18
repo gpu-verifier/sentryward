@@ -675,7 +675,7 @@ struct SemanticProgramBuilder::Impl {
   Impl(const Module& m, const Function& f, std::function<void()> poll, SemanticProgramOptions options)
       : module(m), function(f),
         branch_capture(options.capture_branch_scope ? std::make_unique<BranchScopeCapture>(graph) : nullptr),
-        values(graph, true, true, branch_capture.get()), model(m, f, poll, true), poll(std::move(poll)), options(options) {}
+        values(graph, true, true, branch_capture.get()), model(m, f, poll, true, options.atomics), poll(std::move(poll)), options(options) {}
 };
 
 SemanticProgramBuilder::SemanticProgramBuilder(const Module& module, const Function& function,

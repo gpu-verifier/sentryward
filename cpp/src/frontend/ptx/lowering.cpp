@@ -110,6 +110,7 @@ struct TmemAddress {
 } // namespace
 struct ModelLowerer::Impl {
   bool retain_matrix_layout = false;
+  bool atomics = false;  // order_independent_atomics
   std::size_t generated_memory_instances=0,generated_address_rows=0,generated_body_rows=0;
   std::vector<MmaValueLayout> mma_layouts;
   const Module &module;
@@ -1482,7 +1483,23 @@ void ModelLowerer::Impl::Instruction(Thread &t, const ExecutedInstruction &e) {
                              {"reader_line",source.instruction(t.reads.at(reg).front().instruction).location.line},
                              {"dependency","pending_register_read"}});
   }
-  if (s.atomic_add && (s.category == "memory" || !s.modeled))
+  // atom/red that order_independent_atomics models: one synchronous read-modify-write
+  // of a 2-, 4- or 8-byte element; a packed half pair (.f16x2, .bf16x2) is one 4-byte
+  // element. Vector, 128-bit and .async forms keep the rejections below.
+  const auto atomic_width = Has(i, "f16x2") || Has(i, "bf16x2") ? std::optional<std::uint32_t>(4)
+                                                                 : i.memory_width;
+  const bool atomic_rmw =
+      s.category == "memory" && s.memory_mode == "atomic" && (i.opcode == "atom" || i.opcode == "red") &&
+      !i.address_lanes && !Has(i, "async") && atomic_width &&
+      (*atomic_width == 2 || *atomic_width == 4 || *atomic_width == 8) &&
+      std::none_of(i.modifiers.begin(), i.modifiers.end(), [](const std::string &m) {
+        return m.starts_with("v") && m.size() > 1 && std::isdigit(static_cast<unsigned char>(m[1]));
+      });
+  if (atomic_rmw && !atomics)
+    throw SemanticError("assumption_required_order_independent_atomics",
+        "Atomic read-modify-writes are unsupported. Enable order_independent_atomics "
+        "to analyze them as indivisible accesses.");
+  if (s.atomic_add && !atomic_rmw && (s.category == "memory" || !s.modeled))
     throw SemanticError("atomic_add_memory_semantics_unsupported",
                         "Atomic add memory semantics are unsupported");
   if (!s.modeled)
@@ -1493,6 +1510,25 @@ void ModelLowerer::Impl::Instruction(Thread &t, const ExecutedInstruction &e) {
     auto space = s.memory_space.value_or("generic");
     if (space == "param" || space == "const")
       return;
+    if (atomic_rmw) {
+      // An atomic write of the element, complete before the thread's next instruction.
+      // Overlapping atomics in a scope that includes both threads do not race; an atomic
+      // and an ordinary access do. Memory-order qualifiers add no ordering here, which
+      // can only report more races.
+      auto brackets = Brackets(ops);
+      if (brackets.empty())
+        throw SemanticError("missing_memory_operand", "missing address/width");
+      auto [a, n] = resources->Memory(e, brackets[0], contract, *atomic_width, space);
+      if (n != *atomic_width)
+        throw SemanticError("immediate_access_size", "footprint extent disagrees with opcode");
+      // .cluster is narrowed to .cta: conservative, since a cluster contains the CTA.
+      const auto scope = Has(i, "sys") ? AtomicScope::kSys
+                         : Has(i, "cta") || Has(i, "cluster") ? AtomicScope::kCta
+                         : AtomicScope::kGpu;
+      auto id = Async(t, e, {{{MemoryEffect{AccessMode::kWrite, a, *n, scope}}}});
+      Emit(t, e, Await{{Ref(id, Milestone::kComplete)}});
+      return;
+    }
     if (s.memory_mode != "read" && s.memory_mode != "write")
       throw SemanticError("atomic_memory_semantics",
                           "atomic/RMW not ordinary access");
@@ -2662,9 +2698,11 @@ LoweringResult ModelLowerer::Impl::Finish() {
   return result;
 }
 ModelLowerer::ModelLowerer(const Module &m, const Function &f,
-                           std::function<void()> poll, bool retain_matrix_layout)
+                           std::function<void()> poll, bool retain_matrix_layout,
+                           bool atomics)
     : impl_(std::make_unique<Impl>(m, f, std::move(poll))) {
   impl_->retain_matrix_layout = retain_matrix_layout;
+  impl_->atomics = atomics;
 }
 ModelLowerer::~ModelLowerer() = default;
 void ModelLowerer::AddCta(std::uint32_t cta, Coordinates coords,
