@@ -6,7 +6,6 @@ bounded comparison/branch relations come directly from the supplied artifacts.
 import html
 import json
 import re
-from pathlib import Path
 from code_excerpt import excerpt, select_lines, instruction_opcodes, mask_noncode, occurrences, literal_token
 
 MARKER = '<!-- report-layout:v2 -->'

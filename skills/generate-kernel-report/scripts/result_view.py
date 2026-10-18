@@ -6,12 +6,13 @@ Its two public renderers return GFM fragments for the single-file composer.
 """
 import hashlib
 import html
-import importlib.util
 import json
 import os
 from pathlib import Path
 import re
 from urllib.parse import quote, urlsplit
+
+from code_excerpt import excerpt, instruction_opcodes, mask_noncode
 
 FACTS_START = '<!-- verifier-result:start -->'
 FACTS_END = '<!-- verifier-result:end -->'
@@ -50,9 +51,6 @@ RESULTS = {
 _VIEWS = {'verified': 'race_free', 'not_wellsynced': 'synchronization_candidate',
           'potential_race': 'race_candidate', 'invalid_lifecycle': 'unsafe_lifecycle',
           'unsupported': 'memory_model_unsupported'}
-_spec = importlib.util.spec_from_file_location('_result_code_excerpt', Path(__file__).with_name('code_excerpt.py'))
-_code = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_code)
 
 
 def _encoded(value):
@@ -392,10 +390,6 @@ def artifact_entry(result, artifacts, report_path=None, source_paths=(), equival
     return body
 
 
-def _fields(mapping):
-    return '\n'.join('- ' + _inline(key) + ': ' + _inline(value) for key, value in mapping.items()) + '\n'
-
-
 def _diagram(nodes, edges, caption, focus=None, direction='LR'):
     # Labels are escaped to Mermaid entities; diagram text cannot supply syntax.
     def label(value):
@@ -459,7 +453,7 @@ def _snippets(locations, ptx, artifacts):
             selected.append((label, line))
     body = ('**Recorded source anchors.** These lines locate the saved events. Their guards and surrounding control flow belong to the code explanation.\n\n' if selected else '')
     for label, line in selected[:3]:
-        body += _code.excerpt(ptx, str(line), caption=label + ' · saved source location') + '\n\n'
+        body += excerpt(ptx, str(line), caption=label + ' · saved source location') + '\n\n'
     if missing:
         body += '**PTX mapping:** ' + ', '.join(html.escape(label) for label in missing) + ': no matching physical PTX location is established by the saved record.\n\n'
     return body
@@ -471,9 +465,9 @@ def _source_operations(locations, ptx, artifacts):
     selected.discard(None)
     if not selected:
         return {}
-    lines = _code.mask_noncode(ptx).splitlines()
+    lines = mask_noncode(ptx).splitlines()
     return {line: ', '.join(lines[line - 1][first:last]
-                           for first, last in _code.instruction_opcodes(lines[line - 1]))
+                           for first, last in instruction_opcodes(lines[line - 1]))
             for line in selected}
 
 

@@ -3,10 +3,11 @@
 import argparse
 from bisect import bisect_left, bisect_right
 from collections import defaultdict, deque
-import importlib.util
 import json
 from pathlib import Path
 import re
+
+from parameter_analysis import parameter_bindings
 
 # Limits bound displayed evidence, not the source range that is indexed.
 MAX_CHARS = 48000
@@ -419,9 +420,6 @@ def coords(items, limit=24):
 
 def supplied_parameter_bindings(run_input, ptx):
     """Reuse the report's parameter-load index for supplied argument entrances."""
-    spec = importlib.util.spec_from_file_location('_report_parameter_facts', Path(__file__).with_name('report_facts.py'))
-    facts = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(facts)
     declarations = list(run_input.get('declarations', []))
     by_name = {d.get('name'):d for d in declarations if isinstance(d, dict) and d.get('name')}
     values = {}
@@ -438,7 +436,7 @@ def supplied_parameter_bindings(run_input, ptx):
         values[label] = {'parameter': parameter, 'offset': offset, 'value': argument['value'],
                          'type': argument.get('type', declaration.get('type', 'unspecified'))}
     enriched = {**run_input, 'declarations': declarations}
-    return values, facts.parameter_bindings(enriched, ptx)
+    return values, parameter_bindings(enriched, ptx)
 
 
 def render(run_input, result, ptx, ptx_path='kernel.ptx', at=()):

@@ -13,7 +13,7 @@ A minimal plan (fictitious names and lines; obtain yours from evidence):
     "answer": "Explain the scoped relationship established by these instructions.",
     "evidence": [
       {"kind":"ptx","lines":"12-14","contains":["cp.async.bulk.wait_group.read"]},
-      {"kind":"result","pointer":"/status","equals":"race_candidate"}
+      {"kind":"result","pointer":"/result","equals":"potential_race"}
     ],
     "code": {"caption":"Copy and source-read wait","lines":"12-14","focus":["cp.async.bulk.wait_group.read"]},
     "steps": [{
@@ -25,7 +25,7 @@ A minimal plan (fictitious names and lines; obtain yours from evidence):
 }
 ```
 
-Each section requires `title`, `answer` and nonempty `evidence`. `code`, `steps`, `diagram`, `comparison` and `evidence_title` are optional. Steps require `label`, `text` and their own evidence; they become headings inside the section's evidence fold. A step may also carry `code` in the same format as a section: use this for supporting setup, dispatch or longer excerpts. Keep only the decisive short excerpt in the default view. Use `evidence_title` to name a reader's check, e.g. `Check the arrival count and phase`. A `comparison` has `headers` and equal-width `rows` of short cells, supported by the section's evidence. Use it for parallel sites or phases, not long explanations. Titles name the operation or relation; avoid a general architecture lesson. Keep answers short enough to read together. Length is guidance, not permission to drop a decisive condition.
+Each section requires `title`, `answer` and nonempty `evidence`. `code`, `steps`, `diagram`, `comparison` and `evidence_title` are optional. Steps require `label`, `text` and their own evidence; they become headings inside the section's evidence fold. A step may also carry `code` in the same format as a section: use this for supporting setup, dispatch or longer excerpts. Keep only the decisive short excerpt in the default view. Use `evidence_title` to name a reader's check, e.g. `Derivation: arrival count and phase`. A `comparison` has `headers` and equal-width `rows` of short cells, supported by the section's evidence. Use it for parallel sites or phases, not long explanations. Titles name the operation or relation; avoid a general architecture lesson. Keep answers short enough to read together. Length is guidance, not permission to drop a decisive condition.
 
 Attach supporting code to the step that explains it. A step may also carry a `comparison` in the same format as a section; use it when parallel phase or binding details support a derivation rather than the default reading path. Do not add a generic final step repeating all section references. The renderer groups exact references by step in an `Exact source references` disclosure after the derivation, retaining additional section references there once. This is the second disclosure level; use the first level to explain the reasoning, not to repeat token lists.
 
