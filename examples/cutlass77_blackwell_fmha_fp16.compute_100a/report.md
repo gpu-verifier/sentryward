@@ -208,6 +208,8 @@ The input fixes ten softmax-correction branch decisions and enables representati
 
 </details>
 
+<a id="code-section-1" name="user-content-code-section-1"></a>
+
 ### 2. Q-ready announces available data; Q-release allows reuse
 
 Two barriers have different jobs: **Q-ready** tells the compute warp that the input copy has finished; **Q-release** receives the compute warp’s later completion notification.
@@ -321,6 +323,8 @@ A parity bit repeats across barrier phases. The checker therefore needs the star
 </details>
 
 </details>
+
+<a id="code-section-2" name="user-content-code-section-2"></a>
 
 ### 3. Only one loader lane issues the copy
 

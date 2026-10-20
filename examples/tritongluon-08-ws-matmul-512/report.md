@@ -122,6 +122,8 @@ For the records explained in this report, see the [Evidence appendix](#evidence-
 
 Interpretation from the PTX and saved inputs: how the reported operations fit together and what remains to check.
 
+<a id="code-section-1" name="user-content-code-section-1"></a>
+
 ### 1. Dispatch-word publication: peer stores precede the barrier
 
 The affected four-byte shared word tells each worker warp which role to run, then tells it to exit. Threads 0–127 all publish that word with an ordinary `st.shared.b32`; the following `barrier.sync 1` coordinates them with worker readers, but does not order the peer stores before the barrier. This remains relevant in the supplied **zero-tile configuration**: setup and exit still publish the word even though the matrix-work loops are skipped.

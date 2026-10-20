@@ -16,16 +16,24 @@ def verify_identity(identity, artifacts):
     if identity is None:
         return
     manifest = json.loads(identity.read_text())
-    for name, item in manifest.get("files", {}).items():
+    files = manifest.get("files")
+    if not isinstance(files, dict) or not files:
+        raise ValueError("Identity must identify the supplied files.")
+    digests = {}
+    for name, item in files.items():
         path = (identity.parent / name).resolve()
         if not path.is_relative_to(identity.parent.resolve()):
             raise ValueError("Identity path escapes its directory: " + name)
         if hashlib.sha256(path.read_bytes()).hexdigest() != item.get("sha256"):
             raise ValueError("Identity mismatch: " + name)
-        supplied = [p for p in artifacts if p.name == path.name]
-        for actual in supplied:
-            if hashlib.sha256(actual.read_bytes()).hexdigest() != item["sha256"]:
-                raise ValueError("Supplied artifact differs from identity: " + name)
+        digests.setdefault(path.name, set()).add(item["sha256"])
+    known = set().union(*digests.values())
+    for actual in artifacts:
+        expected = digests.get(actual.name, known)
+        if hashlib.sha256(actual.read_bytes()).hexdigest() not in expected:
+            raise ValueError(
+                "Supplied artifact is not covered by identity: " + str(actual)
+            )
 
 
 def main():

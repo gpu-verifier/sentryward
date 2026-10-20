@@ -80,6 +80,8 @@ For the records explained in this report, see the [Evidence appendix](#evidence-
 
 Interpretation from the PTX and saved inputs: how the reported operations fit together and what remains to check.
 
+<a id="code-section-1" name="user-content-code-section-1"></a>
+
 ### 1. The branch asks whether this thread owns the selected expert
 
 This kernel converts each row of expert scores into routing weights and expert indices. A 16-thread group holds four candidates per thread.
@@ -87,8 +89,6 @@ This kernel converts each row of expert scores into routing weights and expert i
 With `k = 2`, it selects twice. Between selections, the thread that owns the first winner replaces that entry in its private array with −10000, allowing another expert to be selected for ordinary finite inputs. **The reported branch decides whether this thread performs that update.**
 
 The owner comes from the loaded scores. Those values are absent from the supplied files, so the launch and scalar parameters cannot determine which side of this branch is taken.
-
-**Test:** Thread slot ≠ Owner slot.
 
 ```mermaid
 ---
@@ -106,11 +106,11 @@ config:
     fontSize: 16px
 ---
 flowchart LR
-  G{"Thread slot ≠<br/>Owner slot<br/>PTX 351"}
+  G{"Compare operands<br/>PTX 351"}
   E["Local store<br/>PTX 363"]
   J["Continue<br/>PTX 364"]
-  G -->|"false"| E
-  G -->|"true: skip"| J
+  G -->|"Thread slot = Owner slot"| E
+  G -->|"Thread slot ≠ Owner slot · skip"| J
   E --> J
   class G context
   class E focus

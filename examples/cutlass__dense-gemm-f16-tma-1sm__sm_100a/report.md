@@ -182,6 +182,8 @@ The zero beta stride at parameter offset 1296 lets the initial scalar load proce
 
 </details>
 
+<a id="code-section-1" name="user-content-code-section-1"></a>
+
 ### 2. The copy selector admits a whole warp
 
 Within the first output-copy block, the selector admits all 32 lanes of warp 4, threads 128–159, while warps 5–7 skip the copy and rejoin the next barrier. Each admitted lane uses the same `D` descriptor, coordinates `(0, 0, 0)`, and shared source at base + 1024.
@@ -366,6 +368,8 @@ The output roles comprise four warps, or 128 threads. They stage register values
 </details>
 
 </details>
+
+<a id="code-section-2" name="user-content-code-section-2"></a>
 
 ### 3. The copy waits do not serialize peer writers
 

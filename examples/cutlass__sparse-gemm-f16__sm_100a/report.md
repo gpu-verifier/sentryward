@@ -130,6 +130,8 @@ For the records explained in this report, see the [Evidence appendix](#evidence-
 
 Interpretation from the PTX and saved inputs: how the reported operations fit together and what remains to check.
 
+<a id="code-section-1" name="user-content-code-section-1"></a>
+
 ### 1. The two reported instructions share the metadata path
 
 This kernel multiplies compressed **A** by **B**. Sparse metadata **E** identifies which A positions are present. The reported copy moves shared-memory data into TMEM; the reported sparse MMA has a TMEM metadata operand. The diagram follows that metadata path.
@@ -243,6 +245,8 @@ They are individual retained memory effects, not the complete copy or MMA footpr
 
 </details>
 
+<a id="code-section-2" name="user-content-code-section-2"></a>
+
 ### 2. One metadata copy serves two compute passes
 
 For the supplied `K = 128`, the compute loop takes **two passes**, each with two sparse MMAs. The first pass copies the metadata into TMEM; the second reuses it.
@@ -328,6 +332,8 @@ The warp index comes from `tid.x >> 5`. Warp 0 takes the branch at PTX 5524, the
 </details>
 
 </details>
+
+<a id="code-section-3" name="user-content-code-section-3"></a>
 
 ### 3. The same-thread pipeline has an ordering guarantee
 

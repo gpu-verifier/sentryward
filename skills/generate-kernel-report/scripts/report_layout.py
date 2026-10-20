@@ -168,7 +168,7 @@ def forward_branch(diagram, ptx):
     if not all(type(n) is int and 1 <= n <= len(lines) for n in numbers):
         raise ValueError('Branch diagram needs valid physical source lines.')
     compare_line, branch_line, effect_line = numbers
-    compare = re.fullmatch(r'\s*setp\.(eq|ne|lt|le|gt|ge)\.[\w.]+\s+(%p\d+),\s*([^,;]+),\s*([^;]+);\s*', lines[compare_line-1])
+    compare = re.fullmatch(r'\s*setp\.(eq|ne|lt|le|gt|ge)\.[\w.]+\s+(%p\d+),\s*([^,;]+),\s*([^,;]+);\s*', lines[compare_line-1])
     branch = re.fullmatch(r'\s*@(!?)(%p\d+)\s+bra(?:\.uni)?\s+([^; ]+);\s*', lines[branch_line-1])
     if not compare or not branch or compare[2] != branch[2] or compare_line >= branch_line:
         raise ValueError('Branch diagram needs the literal comparison feeding its matching conditional branch.')
@@ -190,15 +190,41 @@ def forward_branch(diagram, ptx):
     return lines, compare, branch, target
 
 
-def branch_diagram(diagram, ptx):
-    fields(diagram, ('kind', 'comparison_line', 'branch_line', 'effect_line', 'inputs'))
-    lines, compare, branch, target = forward_branch(diagram, ptx)
-    compare_line, branch_line, effect_line = (diagram[k] for k in ('comparison_line','branch_line','effect_line'))
+def branch_labels(diagram, comparison, comparison_source):
+    """Name paths by their conditions without changing predicate semantics."""
     inputs = diagram['inputs']
     if not isinstance(inputs, list) or len(inputs) != 2:
         raise ValueError('Name the two comparison operands in order.')
-    left, right = [label(x) for x in inputs]
-    operator = {'eq':'=','ne':'≠','lt':'<','le':'≤','gt':'>','ge':'≥'}[compare[1]]
+    left, right = [label(value) for value in inputs]
+    operators = {'eq':'=', 'ne':'≠', 'lt':'<', 'le':'≤', 'gt':'>', 'ge':'≥'}
+    inverse = {'eq':'ne', 'ne':'eq', 'lt':'ge', 'le':'gt', 'gt':'le', 'ge':'lt'}
+    operator = operators[comparison[1]]
+    condition = left + ' ' + operator + ' ' + right
+    # Ordered floating-point comparisons can be false for NaNs. Their false
+    # branch is not generally the opposite ordered comparison.
+    integer = re.match(r'\s*setp\.[\w.]+\.[bsu]\d+\s', comparison_source)
+    complement = (left + ' ' + operators[inverse[comparison[1]]] + ' ' + right
+                  if integer else 'not (' + condition + ')')
+    paths = {'true': condition, 'false': complement}
+    if 'path_labels' in diagram:
+        fields(diagram['path_labels'], ('true', 'false'))
+        paths = {key: label(value) for key, value in diagram['path_labels'].items()}
+    return operator, {
+        key: html.escape(value, quote=True) for key, value in paths.items()}
+
+
+def operation_label(diagram, role, fallback, allowed):
+    labels = diagram.get('operation_labels', {})
+    fields(labels, (), allowed)
+    return html.escape(label(labels[role]), quote=True) if role in labels else fallback
+
+
+def branch_diagram(diagram, ptx):
+    fields(diagram, ('kind', 'comparison_line', 'branch_line', 'effect_line', 'inputs'),
+           ('path_labels', 'operation_labels'))
+    lines, compare, branch, target = forward_branch(diagram, ptx)
+    compare_line, branch_line, effect_line = (diagram[k] for k in ('comparison_line','branch_line','effect_line'))
+    operator, paths = branch_labels(diagram, compare, lines[compare_line-1])
     effect = lines[effect_line-1].strip()
     operation = re.match(r'(st|ld)\.(local|shared|global)\.', effect)
     if operation:
@@ -208,26 +234,27 @@ def branch_diagram(diagram, ptx):
     else:
         raise ValueError('The bounded branch diagram supports an exact memory load, store or copy.')
     taken, fallthrough = ('false','true') if branch[1] else ('true','false')
-    condition = html.escape(left + ' ' + operator + ' ' + right, quote=True)
+    effect_name = operation_label(diagram, 'effect', action, ('effect', 'join'))
+    join_name = operation_label(diagram, 'join', 'Continue', ('effect', 'join'))
     source = ('flowchart LR\n'
-              f'  G{{"{html.escape(left, quote=True)} {html.escape(operator)}<br/>{html.escape(right, quote=True)}<br/>PTX {compare_line}"}}\n'
-              f'  E["{action}<br/>PTX {effect_line}"]\n'
-              f'  J["Continue<br/>PTX {target}"]\n'
-              f'  G -->|"{fallthrough}"| E\n'
-              f'  G -->|"{taken}: skip"| J\n'
+              f'  G{{"Compare operands<br/>PTX {compare_line}"}}\n'
+              f'  E["{effect_name}<br/>PTX {effect_line}"]\n'
+              f'  J["{join_name}<br/>PTX {target}"]\n'
+              f'  G -->|"{paths[fallthrough]}"| E\n'
+              f'  G -->|"{paths[taken]} · skip"| J\n'
               '  E --> J\n  class G context\n  class E focus\n  class J operation')
     meaning = ('Arrows show local control flow, not observed execution. The comparison at PTX ' + str(compare_line) +
                ' uses ' + compare[3].strip() + ' and ' + compare[4].strip() +
                ' (' + operator + '); the branch at ' + str(branch_line) + ' bypasses the ' + action.lower() +
                ' at ' + str(effect_line) + ' when this comparison is ' + taken +
                '. Both paths rejoin at PTX ' + str(target) + '.')
-    return '**Test:** ' + condition + '.\n\n' + diagram_view({'kind':'mermaid','source':source,'meaning':meaning}, compact=True)
+    return diagram_view({'kind':'mermaid','source':source,'meaning':meaning}, compact=True)
 
 
 def guarded_path(diagram, ptx):
     """Show both sides of a source branch, including their common operation."""
     fields(diagram, ('kind', 'comparison_line', 'branch_line', 'effect_line', 'join_line', 'inputs'),
-           ('before_line', 'path_labels'))
+           ('before_line', 'path_labels', 'operation_labels'))
     lines, compare, branch, target = forward_branch(diagram, ptx)
     join = diagram['join_line']
     if type(join) is not int or not target < join <= len(lines):
@@ -237,28 +264,23 @@ def guarded_path(diagram, ptx):
         raise ValueError('The common operation must be reached without an intervening control transfer.')
     if lines[join-1].lstrip().startswith('@'):
         raise ValueError('The common operation is predicated, not shared by both paths.')
-    if not isinstance(diagram['inputs'], list) or len(diagram['inputs']) != 2:
-        raise ValueError('Name the two comparison operands in order.')
-    left, right = [label(x) for x in diagram['inputs']]
-    operator = {'eq':'=','ne':'≠','lt':'<','le':'≤','gt':'>','ge':'≥'}[compare[1]]
+    operator, paths = branch_labels(diagram, compare, lines[diagram['comparison_line']-1])
 
-    def operation(number):
+    roles = ('before', 'effect', 'join') if 'before_line' in diagram else ('effect', 'join')
+
+    def operation(number, role):
         # Labels identify an issue site. They deliberately do not imply completion.
         match = re.match(r'\s*((?:st|ld)\.async|tcgen05\.(?:ld|st|cp|commit|dealloc)|'
                          r'cp\.async(?:\.bulk(?:\.tensor)?)?|mbarrier\.(?:arrive|try_wait)|'
                          r'(?:st|ld)\.(?:local|shared|global))\.', lines[number-1])
         if not match:
             raise ValueError('Guarded paths need an exact memory, async or barrier operation at each selected site.')
-        return match[1] + '<br/>PTX ' + str(number)
+        return operation_label(diagram, role, match[1], roles) + '<br/>PTX ' + str(number)
 
     selected = diagram['effect_line']
     taken, fallthrough = ('false', 'true') if branch[1] else ('true', 'false')
-    paths = diagram.get('path_labels', {'true':'true', 'false':'false'})
-    fields(paths, ('true', 'false'))
-    paths = {key: label(value) for key, value in paths.items()}
-    condition = html.escape(left + ' ' + operator + ' ' + right, quote=True)
     origin, origin_class = 'G', 'context'
-    start = f'  G{{"{condition}"}}\n'
+    start = f'  G{{"Compare operands<br/>PTX {diagram["comparison_line"]}"}}\n'
     if 'before_line' in diagram:
         before = diagram['before_line']
         if type(before) is not int or not 1 <= before < diagram['comparison_line']:
@@ -266,7 +288,7 @@ def guarded_path(diagram, ptx):
         if any(re.search(r'\b(?:bra(?:\.uni)?|ret|exit|trap)\b|^\s*\.(?:entry|func)\b', line)
                for line in lines[before:diagram['comparison_line']-1]):
             raise ValueError('The preceding operation must reach the comparison without a control transfer.')
-        preceding = f'  P["{operation(before)}"]'
+        preceding = f'  P["{operation(before, "before")}"]'
         if 'path_labels' in diagram:
             # Named outcomes carry the split; retain its exact predicate in the caption.
             origin, origin_class = 'P', 'operation'
@@ -274,8 +296,8 @@ def guarded_path(diagram, ptx):
         else:
             start = preceding + ' --> G\n' + start + '  class P operation\n'
     source = ('flowchart TB\n' + start +
-              f'  E["{operation(selected)}"]\n'
-              f'  J["{operation(join)}"]\n'
+              f'  E["{operation(selected, "effect")}"]\n'
+              f'  J["{operation(join, "join")}"]\n'
               f'  {origin} -->|"{paths[fallthrough]}"| E\n'
               f'  {origin} -->|"{paths[taken]} · skip"| J\n'
               f'  E --> J\n  class {origin} {origin_class}\n  class E focus\n  class J operation')
@@ -519,6 +541,23 @@ def derivation_view(section, run_input, result, ptx, sources=None, *, default_ti
     return disclosure(title, '\n\n'.join(steps))
 
 
+def link_section_topics(summary, sections):
+    """Link explicit topic names to unique sections; never infer a relationship."""
+    topics = {}
+    for index, section in enumerate(sections, 1):
+        title = text(section['title'], 'Explanation title')
+        topic = title.split(':', 1)[0].strip().casefold()
+        topics.setdefault(topic, []).append(index)
+
+    def replace(match):
+        targets = topics.get(match[1].strip().removesuffix(':').strip().casefold(), [])
+        if len(targets) != 1:
+            return match[0]
+        return '[' + match[0] + '](#user-content-code-section-' + str(targets[0]) + ')'
+
+    return re.sub(r'(?<!\[)\*\*([^*\n]+)\*\*(?!\])', replace, summary)
+
+
 def explanation(draft, run_input, result, ptx, sources=None, *, source_url=None):
     fields(draft, ('version', 'title', 'sections'), ('context', 'next'))
     if draft['version'] != 2:
@@ -533,7 +572,7 @@ def explanation(draft, run_input, result, ptx, sources=None, *, source_url=None)
         fields(context, ('summary', 'evidence'), ('title', 'shapes', 'operators', 'caption', 'diagram', 'steps', 'evidence_title'))
         parts.append('### 2.' + str(number) + ' ' + text(context.get('title', 'Code context'), 'Context title'))
         number += 1
-        parts.append(text(context['summary'], 'Relevant computation'))
+        parts.append(link_section_topics(text(context['summary'], 'Relevant computation'), sections))
         if 'shapes' in context:
             parts.append(shape_view(context['shapes'], context.get('operators', [])))
         if 'diagram' in context:
@@ -541,9 +580,12 @@ def explanation(draft, run_input, result, ptx, sources=None, *, source_url=None)
         if 'caption' in context:
             parts.append(text(context['caption'], 'Context caption'))
         parts.append(derivation_view(context, run_input, result, ptx, sources, default_title='Context evidence', source_url=source_url))
-    for section in sections:
+    for section_index, section in enumerate(sections, 1):
         fields(section, ('title', 'answer', 'evidence'), ('diagram', 'comparison', 'code', 'steps', 'evidence_title'))
-        parts += ['### 2.' + str(number) + ' ' + text(section['title'], 'Explanation title'), text(section['answer'], 'Explanation answer')]
+        # GitHub prefixes HTML IDs; the name also supports ordinary HTML views.
+        parts += ['<a id="code-section-' + str(section_index) + '" name="user-content-code-section-' + str(section_index) + '"></a>',
+                  '### 2.' + str(number) + ' ' + text(section['title'], 'Explanation title'),
+                  text(section['answer'], 'Explanation answer')]
         number += 1
         if 'diagram' in section:
             diagram = section['diagram']

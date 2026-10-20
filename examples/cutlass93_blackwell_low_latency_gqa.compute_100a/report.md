@@ -250,6 +250,8 @@ Q and K TMA destinations feed the first MMA accumulator, whose handle is stored 
 
 </details>
 
+<a id="code-section-1" name="user-content-code-section-1"></a>
+
 ### 2. Final read: half the lanes bypass result use
 
 After the final output MMA is ready, all four reader warps issue the TMEM load. Lanes 0–15 in each warp use its eight result registers in cluster-shared stores; lanes 16–31 skip those stores. Both paths reach the same release arrival, with no intervening load-completion wait. This establishes a load-issue-to-arrival path, but the skipped stores cannot establish completion of the bypassing lanes’ reads.
@@ -443,6 +445,8 @@ DONE:
 </details>
 
 </details>
+
+<a id="code-section-2" name="user-content-code-section-2"></a>
 
 ### 3. Release handshake: the second phase waits for all readers
 
@@ -640,6 +644,8 @@ After the release arrival, readers wait on cluster partial-result barriers at of
 </details>
 
 </details>
+
+<a id="code-section-3" name="user-content-code-section-3"></a>
 
 ### 4. Numerical model: the score reduction is a separate limitation
 

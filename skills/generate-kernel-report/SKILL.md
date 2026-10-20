@@ -41,6 +41,8 @@ Write a scratch explanation plan using [draft-format.md](references/draft-format
 
 Introduce the relevant computation and object before registers. Follow one relationship from finding to operation, decisive condition and evidence. Name operations consistently across prose, diagrams and exact code. Choose a view that explains the relationship: overlap, dependency, guarded path, phase comparison or supported participant sequence. Do not invent temporal order from listing order.
 
+Use source-supported action names in diagrams. Branches should show what each condition permits or skips, rather than requiring the reader to decode bare true/false labels. For multiple concerns, reuse section topic names in the overview; unique bold topic names link to their sections automatically.
+
 Keep conditions that change the conclusion visible; put their derivations in named disclosures. Each expanded derivation begins with its answer, then supporting code and references. Use at most two disclosure levels. Code remains verbatim, with instruction-manual and physical-source links; annotations belong outside it. Use code spans for registers, predicates, fields and rule IDs.
 
 ## 4. Compose and review

@@ -4,11 +4,14 @@ import html
 import json
 import re
 
+from code_excerpt import mask_noncode
+
 MISSING = object()
 
 
 def parameter_bindings(run_input, ptx):
     """Index parameter loads in the selected entry; no branch execution inferred."""
+    ptx = mask_noncode(ptx)
     entry = run_input.get("entry")
     if not isinstance(entry, str):
         return []
@@ -40,10 +43,15 @@ def parameter_bindings(run_input, ptx):
     for number, line in enumerate(ptx[:end].splitlines(), 1):
         if number <= ptx[:opening].count("\n"):
             continue
-        code = line.split("//", 1)[0]
-        assignment = re.search(r"\b[\w.]+\s+(%\w+)\s*,", code)
-        alias = re.search(
-            r"\bmov\.\w+\s+(%\w+),\s*" + re.escape(entry) + r"_param_(\d+)\s*;", code
+        code = line.strip()
+        if re.match(
+            r"[A-Za-z_$][\w$]*:|(?:@!?%\w+\s+)?(?:bra(?:\.uni)?|brx|call|ret|exit|trap)\b",
+            code,
+        ):
+            aliases.clear()
+        assignment = re.match(r"(?:@!?%\w+\s+)?[\w.]+\s+(%\w+)\s*,", code)
+        alias = re.fullmatch(
+            r"mov\.\w+\s+(%\w+),\s*" + re.escape(entry) + r"_param_(\d+)\s*;", code
         )
         if assignment:
             aliases.pop(assignment.group(1), None)
@@ -78,6 +86,7 @@ def parameter_bindings(run_input, ptx):
 
 def constant_predicates(run_input, ptx, bindings):
     """Fold integer-scalar predicates with unique definitions; no CFG inference."""
+    ptx = mask_noncode(ptx)
     entry = run_input.get("entry", "")
     start = re.search(r"\.entry\s+" + re.escape(entry) + r"(?=\s|\()", ptx)
     if not start:
@@ -87,12 +96,15 @@ def constant_predicates(run_input, ptx, bindings):
     lines = ptx[:end].splitlines()
     first_line = ptx[: start.start()].count("\n") + 1
     definitions = {}
+    guarded = set()
     for number, line in enumerate(lines, 1):
         if number < first_line:
             continue
         code = line.split("//", 1)[0].strip()
         match = re.match(r"(?:@!?%\w+\s+)?([\w.]+)\s+(%\w+),\s*(.*?)\s*;", code)
         if match:
+            if code.startswith("@"):
+                guarded.add(match.group(2))
             definitions.setdefault(match.group(2), []).append(
                 (number, match.group(1), match.group(3))
             )
@@ -119,6 +131,8 @@ def constant_predicates(run_input, ptx, bindings):
     named_inputs = {}
     for binding in bindings:
         register = binding["register"]
+        if register in guarded:
+            continue
         value = arguments.get(binding["field"])
         width = re.fullmatch(r"[us](\d+)", str(types.get(binding["field"])))
         load = definitions.get(register, [])
@@ -158,7 +172,7 @@ def constant_predicates(run_input, ptx, bindings):
     for register, instructions in sorted(
         definitions.items(), key=lambda item: item[1][0][0]
     ):
-        if len(instructions) != 1:
+        if len(instructions) != 1 or register in guarded:
             continue
         number, opcode, raw = instructions[0]
         operands = [part.strip() for part in raw.split(",")]

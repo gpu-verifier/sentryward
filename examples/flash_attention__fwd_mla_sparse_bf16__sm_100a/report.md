@@ -87,9 +87,9 @@ Interpretation from the PTX and saved inputs: how the reported operations fit to
 
 The affected code prepares shared-memory synchronization objects, gathers selected K/V entries into shared tiles, and uses tensor descriptors for input and output transfers. The input file names `K`, `V`, and `topk_indices`; the descriptor-defined tensors have no captured contents from which to recover their logical identities. The following accounts separate three concerns:
 
-- **Cluster startup:** the order of cluster-wide arrivals and waits before worker dispatch.
-- **Index-controlled copies:** sparse-index values select whether a shared tile receives source data or zeros.
-- **Tensor-map binding:** descriptor addresses are traceable, but their tensor layouts and global bindings are not supplied.
+- [**Cluster startup:**](#user-content-code-section-1) the order of cluster-wide arrivals and waits before worker dispatch.
+- [**Index-controlled copies:**](#user-content-code-section-2) sparse-index values select whether a shared tile receives source data or zeros.
+- [**Tensor-map binding:**](#user-content-code-section-3) descriptor addresses are traceable, but their tensor layouts and global bindings are not supplied.
 
 The source walkthrough uses physical PTX locations and static thread guards. It does not turn the saved diagnostic actor ranges into a hardware execution trace.
 
@@ -129,6 +129,8 @@ Parameters 2, 3, 4 and 6 are declared pointers to K, V, V and <code>topk_indices
 </details>
 
 </details>
+
+<a id="code-section-1" name="user-content-code-section-1"></a>
 
 ### 2. Cluster startup: both arrivals precede both waits
 
@@ -264,6 +266,8 @@ The [PTX 9.3 cluster-barrier contract](https://docs.nvidia.com/cuda/archive/13.3
 </details>
 
 </details>
+
+<a id="code-section-2" name="user-content-code-section-2"></a>
 
 ### 3. Index-controlled copies: the unknown is the selected index value
 
@@ -418,6 +422,8 @@ The first group copies from parameter 2 (K). The next two groups use parameter 3
 </details>
 
 </details>
+
+<a id="code-section-3" name="user-content-code-section-3"></a>
 
 ### 4. Tensor-map binding: input and output descriptors lack captured contents
 
