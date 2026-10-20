@@ -9,11 +9,13 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 [![Target](https://img.shields.io/badge/target-NVIDIA%20Blackwell%20sm__100-76B900)](corpus/)
+[![Slack](https://img.shields.io/badge/slack-join-4A154B)](https://sentryward.io/slack/)
 
 [Features](#features) ·
 [Results](#results) ·
 [Getting started](#getting-started) ·
-[How it works](#how-it-works)
+[How it works](#how-it-works) ·
+[Community](#community)
 
 </div>
 
@@ -223,6 +225,11 @@ config/             Default and available analysis assumptions
 skills/             Agent skills for preparing inputs and explaining results
 tools/              Example regression tooling
 ```
+
+## Community
+
+Questions, bug reports and feedback are welcome in the [SentryWard Slack workspace](https://sentryward.io/slack/)
+and in [GitHub issues](https://github.com/gpu-verifier/sentryward/issues).
 
 ## License
 
