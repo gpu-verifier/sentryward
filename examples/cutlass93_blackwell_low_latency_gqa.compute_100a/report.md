@@ -131,22 +131,19 @@ config:
     fontFamily: Arial
     fontSize: 16px
 ---
-flowchart TB
- QK["Q and K · shared"] --> S["Score TMEM"]
- S --> P["Softmax weights"]
- P --> O["Output TMEM<br/>weighted accumulation / rescale"]
- V["V · shared"] --> O
- O --> R["Final read<br/>warps 4–7"]
- R --> C["Shared partials → normalize → o"]
- class QK,V context
- class S,P,O,C operation
+flowchart LR
+ I["Q · K · V<br/>shared tiles"] --> A["Attention computation<br/>score and output TMEM"]
+ A --> R["Final output read<br/>warps 4–7"]
+ R --> O["Shared partials<br/>normalize → o"]
+ class I context
+ class A,O operation
  class R focus
 classDef focus fill:#f0ebfa,stroke:#bba6d9,color:#513477
 classDef context fill:#f6f8fa,stroke:#abb5c0,color:#344251
 classDef operation fill:#e8f0ff,stroke:#8ca7d2,color:#254b83
 ```
 
-Arrows show data dependencies, not execution or completion order. The output accumulator carries partial results across the two tiles, including later-tile rescaling. The release question starts at the final read; shared-memory output processing can continue after its release notification.
+Arrows summarize data dependencies, not execution or completion order. The computation forms scores, softmax weights and weighted-value partials, including rescaling across the two tiles. The release question starts at the final output read; shared-memory output processing can continue after its release notification.
 
 <details>
 <summary><strong>Check the workload, roles and accumulator journey</strong></summary>
@@ -271,7 +268,7 @@ config:
     fontFamily: Arial
     fontSize: 16px
 ---
-flowchart TB
+flowchart LR
   P["Issue final TMEM read<br/>PTX 7373"]
   E["Stage loaded results<br/>PTX 7380"]
   J["Notify release barrier<br/>PTX 7409"]

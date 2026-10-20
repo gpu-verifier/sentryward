@@ -295,7 +295,7 @@ def guarded_path(diagram, ptx):
             start = preceding + '\n'
         else:
             start = preceding + ' --> G\n' + start + '  class P operation\n'
-    source = ('flowchart TB\n' + start +
+    source = ('flowchart LR\n' + start +
               f'  E["{operation(selected, "effect")}"]\n'
               f'  J["{operation(join, "join")}"]\n'
               f'  {origin} -->|"{paths[fallthrough]}"| E\n'

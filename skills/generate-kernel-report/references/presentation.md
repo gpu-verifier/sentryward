@@ -26,6 +26,8 @@ Give every arrow a meaning: control flow, dependency, saved order or required or
 
 Use neutral context, blue operations and purple focus sparingly; labels carry meaning without color. Draw dimensions only when they locate the affected region, with labels attached to the corresponding axes. Avoid duplicating diagram values in prose.
 
+Keep an overview at the scale of the question: combine internal stages when their details do not change the finding, then explain them locally. Short source paths should fit beside their explanation; prefer a horizontal view over a tall stack of a few operations. Inspect the rendered size, not just the diagram source.
+
 Choose the shortest exact snippet that establishes its caption. Include decisive operands, guards, retry branches or both sides of a relationship. Highlight opcodes/operands without altering instructions; put annotations outside the code. Preserve both instruction-manual links and physical PTX source jumps. Name operand purposes before registers and use a small operand guide when useful. Registers, predicates, fields and rule IDs use code spans.
 
 Tables compare parallel properties. Put long reasoning outside cells. Prefer short semantic labels and keep exact long identifiers in adjacent references.
