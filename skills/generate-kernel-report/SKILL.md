@@ -9,7 +9,7 @@ Use the supplied `input.json`, `output.json` and matching PTX to create **one En
 
 Scripts present saved findings; the agent explains relevant code. Keep those parts visibly separate. A reader should understand the finding, affected object and operations, supporting relationship, and any unresolved next check. Keep clean results short; explain one local finding directly; connect interacting findings through shared context.
 
-Create only `report.md` at the requested destination, or default to an unused `build/skill-output/<kernel>/`. Keep scratch elsewhere. In an existing example directory, leave other files unchanged. Do not rerun verification, change inputs, install dependencies or publish.
+Create only `report.md` at the requested destination, or default to an unused `build/skill-output/<kernel>/`. Generate on demand and leave generated reports uncommitted unless requested. Keep scratch elsewhere. In an existing example directory, leave other files unchanged. Do not rerun verification, change inputs, install dependencies or publish.
 
 ## 1. Preserve the saved result
 
