@@ -4,9 +4,13 @@ The composer separates the **Verifier result**, **Code explanation** and **Evide
 
 ## Reading order
 
-Lead with what the tool found or where it stopped. Keep links to PTX, configuration and verifier output at the opening. For source interpretation, introduce the affected object's purpose, then follow **operation → relationship → decisive condition → evidence**. Several findings share context but retain their own short names and local explanations.
+Lead with what the tool found or where it stopped. Keep links to PTX, configuration and verifier output at the opening. Source interpretation follows the affected object through the relevant part of the computation: **what it is for → what the operations require → what is established → what this means for the finding**. The object may be a value, memory region, descriptor or synchronization notification. Follow only the part that explains this result.
 
-A title names the relationship; its paragraph answers it. Use the same semantic names in the overview, diagrams and code captions. Explain why the next section follows when the connection is not obvious. A clean result needs no invented investigation; a complex result needs connected explanations rather than one oversized diagram.
+A title names the relationship; its opening answers it. The view and short code excerpt establish that answer. An optional section `conclusion`, rendered after them and before the derivation, states the consequence or hands the established premise to the next section. Move reasoning there rather than duplicating the opening. A decisive limitation stays with the claim it limits, never only in the fold or final check.
+
+Use the same semantic names in the overview, diagrams and code captions. Shared context locates several concerns; it does not make them one causal chain. A release question may follow a buffer from final use to notification to reclamation. A data-dependent analysis stop may only need to follow the value into its branch. Independent startup, gather and descriptor concerns need separate paths from the same kernel context. These are choices about the evidence, not mandatory report shapes.
+
+Read neighboring sections without opening details: what has the reader learned, and why does the next question follow? Keep the answer explicit where the transition would otherwise require kernel knowledge. A clean result needs no invented investigation; complexity comes from interacting roles, paths or guarantees, not report length or diagnostic count alone.
 
 ## Views and code
 

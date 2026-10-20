@@ -83,15 +83,15 @@ For the records explained in this report, see the [Evidence appendix](#evidence-
 
 Interpretation from the PTX and saved inputs: how the reported operations fit together and what remains to check.
 
-### 1. Where the concerns occur
+### 1. Three concerns in the sparse-attention kernel
 
-The affected code prepares shared-memory synchronization objects, gathers selected K/V entries into shared tiles, and uses tensor descriptors for input and output transfers. The input file names `K`, `V`, and `topk_indices`; the descriptor-defined tensors have no captured contents from which to recover their logical identities. The following accounts separate three concerns:
+The relevant paths prepare synchronization, gather selected K/V entries into shared tiles, and transfer descriptor-defined tiles into or out of shared memory. They raise three separate questions:
 
-- [**Cluster startup:**](#user-content-code-section-1) the order of cluster-wide arrivals and waits before worker dispatch.
-- [**Index-controlled copies:**](#user-content-code-section-2) sparse-index values select whether a shared tile receives source data or zeros.
-- [**Tensor-map binding:**](#user-content-code-section-3) descriptor addresses are traceable, but their tensor layouts and global bindings are not supplied.
+- [**Cluster startup:**](#user-content-code-section-1) can the cluster barrier be reused before its first round completes?
+- [**Index-controlled copies:**](#user-content-code-section-2) which sparse-index value selects data versus zero fill?
+- [**Tensor-map binding:**](#user-content-code-section-3) which global layout and region does each descriptor describe?
 
-The source walkthrough uses physical PTX locations and static thread guards. It does not turn the saved diagnostic actor ranges into a hardware execution trace.
+These concerns share the kernel, but none is presented as the cause of the others. The named `K`, `V` and `topk_indices` pointer inputs do not supply the missing tensor-map payloads. The walkthrough uses physical PTX and source thread guards, not a hardware trace or a reconstruction of saved actor IDs.
 
 <details>
 <summary><strong>Derivation: input objects and tensor descriptors</strong></summary>
@@ -134,9 +134,9 @@ Parameters 2, 3, 4 and 6 are declared pointers to K, V, V and <code>topk_indices
 
 ### 2. Cluster startup: both arrivals precede both waits
 
-The startup sequence is `arrive → arrive → wait → wait`. Both arrivals address the implicit cluster barrier, not either of the shared-memory `mbarrier` objects initialized between them. All threads take this sequence before worker dispatch.
+Before worker dispatch, all threads follow `arrive → arrive → wait → wait` on the implicit cluster barrier. The shared-memory `mbarrier` objects initialized between those arrivals are different objects.
 
-A fast warp can therefore make its second arrival while another warp has not made its first; the intervening initialization fences do not establish completion of that first cluster round. The consecutive waits also contain no new arrival between them. These source relations explain the two startup diagnostics without asserting that a GPU hang was observed.
+A fast warp can make its second cluster arrival while another warp has not made its first. The initialization fences between them do not complete that first cluster round.
 
 **Possible interleaving.** Steps run downward; they are not a measured GPU clock or a hardware trace.
 
@@ -157,10 +157,10 @@ A fast warp can therefore make its second arrival while another warp has not mad
 <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><strong>barrier.cluster.wait</strong></a>;</code></pre>
 
 
-- **Participants:** These are two concrete warps of the first 512-thread CTA. All their lanes are non-exited at startup; the other CTA and warps remain participants in the cluster barrier. The schedule is source-derived and is not an actor-ID reconstruction.
-- **Branches:** Both selected warps have warp ID different from zero. At L341 and L350 they take the branches to L347 and L356, skipping only the two mbarrier initializations. No intervening instruction waits for another warp.
-- **Iterations:** This is straight-line startup before the work loops and role dispatch at L363–366. Sparse indices, topk, and later cluster-launch cancellation decisions do not guard it.
-- **Completion:** The first cluster round cannot complete while warp 13 has not arrived. The second arrival is the boundary of this possible schedule; no hardware behavior after that protocol violation is assumed.
+- **Participants:** Two warps of CTA 0, each with 32 non-exited lanes. All other cluster threads still participate. These source-selected warps are not reconstructed actor IDs.
+- **Branches:** Both warp IDs are nonzero. The branches at L341 and L350 skip only the two mbarrier initializations, rejoining at L347 and L356. Neither path waits for another warp.
+- **Iterations:** Straight-line startup before role dispatch at L363–366 and all work loops. Sparse indices, topk and later cancellation decisions do not guard it.
+- **Completion:** The first round cannot complete while warp 13 has not arrived. The schedule ends at the fast warp’s second arrival; behavior after that protocol violation is not assumed.
 
 <details>
 <summary><strong>Sources for this interleaving</strong></summary>
@@ -178,6 +178,8 @@ A fast warp can therefore make its second arrival while another warp has not mad
 - physical PTX 337-360: <code>%p72</code>, <code>%p75</code>, <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster"><code>barrier.cluster.arrive.relaxed</code></a>
 
 </details>
+
+**Implication.** Reuse needs the previous cluster round to finish; this source path permits another arrival before that condition holds. The two consecutive waits also have no new arrival between them. These relations explain the two startup diagnostics without claiming that a GPU hang was observed.
 
 <details>
 <summary><strong>Derivation: cluster arrivals and waits</strong></summary>
@@ -271,9 +273,9 @@ The [PTX 9.3 cluster-barrier contract](https://docs.nvidia.com/cuda/archive/13.3
 
 ### 3. Index-controlled copies: the unknown is the selected index value
 
-The gather workers stage K and V data for the sparse attention computation. Each 16-byte copy uses a separate source-size operand: a selected index in `[0, 256)` chooses 16 source bytes; an invalid index chooses zero source bytes, producing zeros in the shared destination.
+The gather workers stage K and V for sparse attention. For each 16-byte copy, a selected index in `[0, 256)` chooses 16 source bytes; an invalid index chooses zero source bytes and zero-fills the shared destination.
 
-That choice comes from global `topk_indices` data, not from the known scalar `topk=128`. The supplied configuration fixes the bound and addressing strides but supplies no index-array contents. This explains why a model requiring a statically determined source size stops here; the diagnostic alone does not establish an out-of-bounds access or an illegal hardware copy.
+The configured scalar `topk = 128` gives the sparse-index list length. A loaded `topk_indices` entry determines this copy’s source size.
 
 ```mermaid
 ---
@@ -323,6 +325,8 @@ Arrows are value dependencies. They do not represent instruction completion or a
 <strong>selp.b32</strong> <strong>%r337</strong>, 0, 16, %p102;
 <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async"><strong>cp.async.cg.shared.global</strong></a> [%r33], [%rd87], 16, <strong>%r337</strong>;</code></pre>
 
+
+**Implication.** The configuration fixes the bound and strides but omits the index-array contents. The unknown is the selected value, not the meaning of the copy operand. This explains the fixed-source-size model limitation; it does not establish an out-of-bounds access or an illegal hardware copy.
 
 <details>
 <summary><strong>Derivation: sparse indices and copy participants</strong></summary>
@@ -427,9 +431,9 @@ The first group copies from parameter 2 (K). The next two groups use parameter 3
 
 ### 4. Tensor-map binding: input and output descriptors lack captured contents
 
-The TMA operand addresses have concrete parameter origins: parameters 7 and 8 describe global-to-cluster-shared input transfers, and parameter 9 describes shared-to-global output transfers. The output source is a shared staging area populated with BF16 values after normalizing TMEM-loaded accumulators.
+Parameters 7 and 8 supply descriptor addresses for global-to-cluster-shared input transfers. Parameter 9 supplies the descriptor address for shared-to-global output transfers. That output path stages normalized, BF16-converted TMEM results in shared memory before copying them out.
 
-The saved input declares all three parameters as `tensor_map`, but contains no captured descriptor payload or map-to-object binding. Consequently, the source identifies the direction and staging buffers, while the descriptor-defined global footprints and tensor layouts remain unresolved. This is a capture/binding gap, not evidence that the descriptors supplied to a real launch were invalid.
+The saved input declares these parameters as `tensor_map`, but supplies neither captured descriptor payloads nor their bindings to global objects.
 
 ```mermaid
 ---
@@ -479,6 +483,8 @@ Each arrow maps a parameter address to the operations that use it as their tenso
 <a href="https://docs.nvidia.com/cuda/archive/13.3.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor"><strong>cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.L2::cache_hint</strong></a>
     [%rd447, {%r1730, %r189, %r188, %r2170}], [%r1+149504], %rd448;</code></pre>
 
+
+**Implication.** The source establishes transfer directions and shared staging buffers. Recovering descriptor-defined global footprints and tensor layouts requires the missing payloads and bindings. This is a capture gap, not evidence that the real launch used invalid descriptors; the separate startup and gather findings remain relevant.
 
 <details>
 <summary><strong>Derivation: descriptor origins and transfer paths</strong></summary>

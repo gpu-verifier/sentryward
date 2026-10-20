@@ -581,7 +581,7 @@ def explanation(draft, run_input, result, ptx, sources=None, *, source_url=None)
             parts.append(text(context['caption'], 'Context caption'))
         parts.append(derivation_view(context, run_input, result, ptx, sources, default_title='Context evidence', source_url=source_url))
     for section_index, section in enumerate(sections, 1):
-        fields(section, ('title', 'answer', 'evidence'), ('diagram', 'comparison', 'code', 'steps', 'evidence_title'))
+        fields(section, ('title', 'answer', 'evidence'), ('conclusion', 'diagram', 'comparison', 'code', 'steps', 'evidence_title'))
         # GitHub prefixes HTML IDs; the name also supports ordinary HTML views.
         parts += ['<a id="code-section-' + str(section_index) + '" name="user-content-code-section-' + str(section_index) + '"></a>',
                   '### 2.' + str(number) + ' ' + text(section['title'], 'Explanation title'),
@@ -602,6 +602,9 @@ def explanation(draft, run_input, result, ptx, sources=None, *, source_url=None)
             parts.append(table_view(section['comparison']))
         if 'code' in section and section.get('diagram', {}).get('kind') != 'timeline':
             parts.append(code_view(section['code'], ptx, source_url=source_url))
+        if 'conclusion' in section:
+            parts.append('**Implication.** ' + link_section_topics(
+                text(section['conclusion'], 'Section conclusion'), sections))
         parts.append(derivation_view(section, run_input, result, ptx, sources, source_url=source_url))
     if 'next' in draft:
         fields(draft['next'], ('text', 'evidence'))

@@ -126,9 +126,9 @@ Interpretation from the PTX and saved inputs: how the reported operations fit to
 
 ### 1. Dispatch-word publication: peer stores precede the barrier
 
-The affected four-byte shared word tells each worker warp which role to run, then tells it to exit. Threads 0–127 all publish that word with an ordinary `st.shared.b32`; the following `barrier.sync 1` coordinates them with worker readers, but does not order the peer stores before the barrier. This remains relevant in the supplied **zero-tile configuration**: setup and exit still publish the word even though the matrix-work loops are skipped.
+The affected four-byte shared word tells each worker warp which role to run, then tells it to exit. Threads 0–127 publish that same word using ordinary `st.shared.b32` instructions. The following `barrier.sync 1` coordinates writers with worker readers; it does not order the peer writes before it.
 
-The source establishes this publication pattern at startup and exit. The saved pair has no supplied event-to-PTX or actor-to-thread binding that selects either site. The example below therefore uses two independently derived writer threads; it does not identify the retained pair. Both write the same literal value, which creates no ordering edge. The saved duplicate-TMA-store rule applies to TMA stores, whereas these instructions are ordinary shared-memory stores.
+This still matters in the supplied **zero-tile configuration**: the matrix-work loops are bypassed, but setup and exit publish the word. The saved pair has no event-to-PTX or actor-to-thread binding selecting either site. The view below therefore uses source-derived representative writers, not the retained pair.
 
 **Possible interleaving.** Steps run downward; they are not a measured GPU clock or a hardware trace.
 
@@ -149,10 +149,10 @@ The source establishes this publication pattern at startup and exit. The saved p
 <strong>barrier.sync</strong> 1;</code></pre>
 
 
-- **Participants:** These are representative lane-zero threads of two different writer warps. All lanes in warps 0–3 reach the unpredicated store; this example does not equate them with the saved actor IDs.
-- **Branches:** The writer condition is warp index < 4. Both threads take the fallthrough at PTX 69; there is no branch or store predicate between that selection and the startup store.
-- **Iterations:** The example covers the single startup publication before the work-count test. The supplied zero count skips the work loop, not this publication.
-- **Completion:** Rows are a source-compatible ordering of selected steps, not elapsed time or a hardware trace. The remaining threads also participate in barrier 1. Neither thread passes it before the CTA arrives; a common following barrier does not choose an order between their preceding stores.
+- **Participants:** Lane-zero representatives of two different writer warps. All lanes in warps 0–3 reach the unpredicated store; these representatives are not mapped from saved actor IDs.
+- **Branches:** Both threads satisfy `warp index < 4` and fall through at L69. No branch or store predicate narrows the startup publication.
+- **Iterations:** Single startup publication before the zero-work test. The supplied zero count bypasses matrix work, not this publication.
+- **Completion:** Rows show a source-compatible schedule, not elapsed time. The other CTA threads also join barrier 1; neither representative passes before all participants arrive. The barrier supplies no order between their preceding peer stores.
 
 <details>
 <summary><strong>Sources for this interleaving</strong></summary>
@@ -168,6 +168,8 @@ The source establishes this publication pattern at startup and exit. The saved p
 - physical PTX 1242: <code>barrier.sync</code>
 
 </details>
+
+**Implication.** The common barrier makes the dispatch word available to readers without establishing an order between its writers. Equal literal values add no ordering edge, and the saved duplicate-TMA-store rule does not cover these ordinary shared stores. The retained pair’s source binding is needed to attribute it to startup or exit.
 
 <details>
 <summary><strong>Check writer ownership, dispatch bytes and zero-work barrier rounds</strong></summary>

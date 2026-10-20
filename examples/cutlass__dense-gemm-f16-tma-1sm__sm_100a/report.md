@@ -184,11 +184,11 @@ The zero beta stride at parameter offset 1296 lets the initial scalar load proce
 
 <a id="code-section-1" name="user-content-code-section-1"></a>
 
-### 2. The copy selector admits a whole warp
+### 2. Copy issuers: a whole warp targets one output strip
 
-Within the first output-copy block, the selector admits all 32 lanes of warp 4, threads 128–159, while warps 5–7 skip the copy and rejoin the next barrier. Each admitted lane uses the same `D` descriptor, coordinates `(0, 0, 0)`, and shared source at base + 1024.
+The first output-copy selector admits all 32 lanes of warp 4, threads 128–159. Warps 5–7 bypass the copy and rejoin the next barrier. Every admitted lane uses the same `D` descriptor, coordinates `(0, 0, 0)`, and shared source at base + 1024.
 
-Thus the source contains peer copies of one output strip, rather than disjoint per-lane output addresses. The view below is derived from PTX; the saved actor IDs are not explicitly mapped to CUDA thread coordinates in the supplied records, so it does not identify the retained pair.
+These are peer copies of one strip, not disjoint per-lane output addresses. This is source analysis; the supplied records do not bind saved actors to CUDA thread coordinates, so these representative lanes are not identified with the retained pair.
 
 **Possible interleaving.** Steps run downward; they are not a measured GPU clock or a hardware trace.
 
@@ -236,10 +236,10 @@ $L__BB0_225:
 <strong>bar.sync</strong> %r721, %r722;</code></pre>
 
 
-- **Participants:** These are two of the 32 lanes admitted by the same warp-level selector. The other 126 output threads also participate in the surrounding counted barriers; they are omitted from the two-column view. Rows that expand the same warp instruction do not imply a measured lane issue order.
-- **Branches:** This starts after the first output preparation barrier, for threads reaching that block after setup, assertions and accumulator availability. Both selected threads have `(tid.x & 96) = 0`, so `%p176` is false. No elected-lane predicate appears on this copy corridor.
-- **Iterations:** The example uses the first strip of the initial tile. The initial CTA coordinates are zero, the configured swizzle branch is bypassed, and the raster transform preserves zero. Later scheduler coordinates do not replace the current tile coordinates until 3979–3985.
-- **Completion:** Both copy issues precede their respective commit and read-wait. No completion order between the two asynchronous writes is asserted. Read-wait 1 may leave the newest group outstanding; the following `bar.sync` rendezvous does not select one writer or impose an order between peer copy completions.
+- **Participants:** Two of the 32 admitted lanes. The other 126 output threads still join the counted barriers. Separate table rows for a warp instruction do not imply a measured lane issue order.
+- **Branches:** Both lanes reach the block after setup, assertions, accumulator availability and the preparation barrier. Their `(tid.x & 96) = 0` makes `%p176` false. No elected-lane predicate narrows this copy corridor.
+- **Iterations:** First strip of the initial tile. CTA coordinates start at zero; the configured swizzle/raster path preserves them. Scheduler coordinates replace them only later, at L3979–3985.
+- **Completion:** Each issue precedes that issuer’s commit and read-wait. `read 1` may leave its newest group pending. The following `bar.sync` neither selects one writer nor orders peer write completions; no such completion order is asserted.
 
 <details>
 <summary><strong>Sources for this interleaving</strong></summary>
@@ -258,6 +258,8 @@ $L__BB0_225:
 - physical PTX 3979-3985: <code>%r30</code>, <code>%r31</code>, <code>%r16</code>
 
 </details>
+
+**Implication.** The selector establishes multiple issuers with identical copy operands. The next question is what the [**Copy waits**](#user-content-code-section-2) actually order; a following rendezvous does not by itself choose a writer.
 
 <details>
 <summary><strong>Derivation: issuing warp and shared copy operands</strong></summary>
@@ -371,11 +373,11 @@ The output roles comprise four warps, or 128 threads. They stage register values
 
 <a id="code-section-2" name="user-content-code-section-2"></a>
 
-### 3. The copy waits do not serialize peer writers
+### 3. Copy waits: source-read completion does not serialize peer writers
 
-Each output strip has a per-issuer <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group"><code>cp.async.bulk.wait_group.read 1</code></a> after its copy group is committed. This waits for source reads of older groups and permits the newest group to remain pending; it is not a mutual-exclusion mechanism for the destination.
+After committing each output-strip group, each issuer executes <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group"><code>cp.async.bulk.wait_group.read 1</code></a>. This waits for source reads of older groups and permits the newest group to remain pending. It does not provide mutual exclusion at the destination.
 
-The configured `beta = 0` exit skips the final `read 0` drain, and failed cluster cancellation prevents a second output-loop iteration. Those conditions explain the actual lifetime of this tile’s staging buffers; they do not turn the duplicate-write warning into evidence of a missing wait.
+With the supplied `beta = 0`, the final `read 0` drain is bypassed. Failed cluster cancellation prevents a second output-loop iteration.
 
 | Output strip | Shared source offset | Second descriptor coordinate | Copy / commit / read-wait |
 | --- | --- | --- | --- |
@@ -401,6 +403,8 @@ $L__BB0_277:
 $L__BB0_278:
 <strong>ret</strong>;</code></pre>
 
+
+**Implication.** The source establishes duplicate copy operands and the staging-buffer wait path. Whether these writes qualify for the saved benign duplicate-store classification still needs the ISA or implementation contract and a binding to the saved pairs. Adding a wait is not justified by this warning alone.
 
 <details>
 <summary><strong>Derivation: copy passes and the final drain</strong></summary>

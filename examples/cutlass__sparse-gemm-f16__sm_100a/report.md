@@ -132,11 +132,11 @@ Interpretation from the PTX and saved inputs: how the reported operations fit to
 
 <a id="code-section-1" name="user-content-code-section-1"></a>
 
-### 1. The two reported instructions share the metadata path
+### 1. Metadata path: the copy feeds sparse matrix work
 
 This kernel multiplies compressed **A** by **B**. Sparse metadata **E** identifies which A positions are present. The reported copy moves shared-memory data into TMEM; the reported sparse MMA has a TMEM metadata operand. The diagram follows that metadata path.
 
-The saved candidate is a **16-byte write and a 4-byte read that overlap by 4 bytes**. Both records name the same actor. The read is linked to the MMA instruction, but its exact operand is not identified in the saved record. The source-level metadata path and the recorded read effect still need to be matched.
+The saved candidate is a **16-byte write and a 4-byte read that overlap by 4 bytes**. Both records name the same actor. The read is linked to the MMA instruction, but the saved record does not identify its exact operand.
 
 ```mermaid
 ---
@@ -180,6 +180,8 @@ Arrows show source-level data roles. The two highlighted operations match the sa
 <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-mma-instructions"><strong>tcgen05.mma.sp.cta_group::1.kind::f16</strong></a> [%r943], %rd60, %rd61, <strong>[%r937]</strong>,
     %r935, {%r936, %r936, %r936, %r936}, p;</code></pre>
 
+
+**Implication.** A shared metadata path explains why these instructions are related. Matching that path to the retained read effect still requires its operand and pass. The [**Compute passes**](#user-content-code-section-2) below establish where the copy is made and where it is reused.
 
 <details>
 <summary><strong>Derivation: metadata path and overlap bytes</strong></summary>
@@ -247,11 +249,11 @@ They are individual retained memory effects, not the complete copy or MMA footpr
 
 <a id="code-section-2" name="user-content-code-section-2"></a>
 
-### 2. One metadata copy serves two compute passes
+### 2. Compute passes: one metadata copy serves two passes
 
-For the supplied `K = 128`, the compute loop takes **two passes**, each with two sparse MMAs. The first pass copies the metadata into TMEM; the second reuses it.
+For the supplied `K = 128`, the compute loop takes **two passes**, each with two sparse MMAs. The first pass copies metadata into TMEM; the second reuses it.
 
-Within warp 0, separate elections choose the copy and MMA issuers. The saved representative-election rule selects lane 0 when it participates. The table follows source control flow; the saved read record does not identify its pass.
+Separate elections within warp 0 select the copy and MMA issuers. Under the saved representative-election rule, lane 0 is selected when it participates. The table follows source control flow; the saved read does not identify its pass.
 
 | Compute pass | Metadata copy · PTX 6370 | MMA pair · PTX 6404 / 6443 |
 | --- | --- | --- |
@@ -279,6 +281,8 @@ Within warp 0, separate elections choose the copy and MMA issuers. The saved rep
 // begin inline asm
 <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-cp"><strong>tcgen05.cp.cta_group::1.128x128b</strong></a> [%r925], %rd59;</code></pre>
 
+
+**Implication.** On the inspected path, the metadata is copied once and used by the same representative issuer across both passes. The [**Pipeline ordering**](#user-content-code-section-3) question is which instruction guarantee applies to those uses, rather than whether every pass contains an explicit wait.
 
 <details>
 <summary><strong>Derivation: compute passes and elected issuers</strong></summary>
@@ -335,11 +339,9 @@ The warp index comes from `tid.x >> 5`. Warp 0 takes the branch at PTX 5524, the
 
 <a id="code-section-3" name="user-content-code-section-3"></a>
 
-### 3. The same-thread pipeline has an ordering guarantee
+### 3. Pipeline ordering: the inspected path has an ISA guarantee
 
 PTX 9.2 gives `tcgen05.cp → tcgen05.mma` a [pipelined ordering guarantee](https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-memory-consistency-model-pipelined-instructions) with the same `cta_group`. Its [same-thread pattern](https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-memory-consistency-model-canonical-sync-patterns-pipelined-same-thread) needs no extra ordering instruction. The inspected path uses `cta_group::1` and, under the saved election policy, the same issuing lane.
-
-**The unresolved issue is how the saved read maps to this path and how the model represents that ordering.** A missing explicit wait is therefore not an established cause. The saved `potential_race` result remains unchanged.
 
 ```mermaid
 ---
@@ -365,6 +367,8 @@ classDef operation fill:#e8f0ff,stroke:#8ca7d2,color:#254b83
 ```
 
 Solid arrows show the inspected local issue sequence. The dotted edge names the applicable ISA ordering rule to check against the saved effects; it is not a recorded execution trace. Commit follows the MMAs and is not itself a blocking wait.
+
+**Implication.** The remaining task is to bind the retained read effect to this operand and pass, then reconcile the model’s ordering with the ISA rule. The saved `potential_race` is unchanged; the absence of an explicit wait is not an established cause or a justified fix.
 
 <details>
 <summary><strong>Derivation: pipeline ordering and the saved read</strong></summary>

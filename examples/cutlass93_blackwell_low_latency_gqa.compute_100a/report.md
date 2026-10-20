@@ -112,7 +112,9 @@ Interpretation from the PTX and saved inputs: how the reported operations fit to
 
 ### 1. Where the TMEM read fits in attention
 
-This GQA kernel forms query–key scores, converts them into softmax weights, and accumulates weighted values in tensor memory (TMEM). Warp 2 allocates and frees the score and output accumulators; warps 4–7 read them. The final output-accumulator read is the useful source focus for the release question. The retained model instruction IDs have no supplied PTX or issuer binding, so this walkthrough does not identify them with that site. With the saved sequence length and scalar inputs, every CTA has two 128-key tiles to process; the zero-work exits are not taken.
+This GQA kernel forms query–key scores, turns them into softmax weights, and accumulates weighted values in TMEM. Warp 2 allocates and frees the score and output accumulators; warps 4–7 read them. The supplied configuration gives each CTA two 128-key tiles, so the zero-work exits do not bypass this computation.
+
+The lifecycle question is whether a reader’s notification means its TMEM read has finished. Follow [**Final read**](#user-content-code-section-1) into the [**Release handshake**](#user-content-code-section-2). The [**Numerical model**](#user-content-code-section-3) concern belongs to score processing and is separate. The retained model instruction IDs have no supplied PTX or issuer binding; the final-read path below is source analysis, not an identification of those events.
 
 ```mermaid
 ---
@@ -130,13 +132,11 @@ config:
     fontSize: 16px
 ---
 flowchart TB
- QK["Q and K · shared"] --> S["Score TMEM<br/>warp 2"]
- S --> P["Softmax / rescale<br/>warps 4–7"]
- P -->|"weights feed MMA"| O["Output TMEM<br/>warp 2"]
- P -->|"later-tile rescale writes TMEM"| O
+ QK["Q and K · shared"] --> S["Score TMEM"]
+ S --> P["Softmax weights"]
+ P --> O["Output TMEM<br/>weighted accumulation / rescale"]
  V["V · shared"] --> O
- O -->|"prior partial: rescale for later tile"| P
- O --> R["Final TMEM read<br/>warps 4–7"]
+ O --> R["Final read<br/>warps 4–7"]
  R --> C["Shared partials → normalize → o"]
  class QK,V context
  class S,P,O,C operation
@@ -146,7 +146,7 @@ classDef context fill:#f6f8fa,stroke:#abb5c0,color:#344251
 classDef operation fill:#e8f0ff,stroke:#8ca7d2,color:#254b83
 ```
 
-Arrows show data dependencies, not execution order or completion. The feedback edge is the later-tile rescaling of the existing output accumulator. TMEM release occurs after the final-read notification while shared-memory output processing can still continue.
+Arrows show data dependencies, not execution or completion order. The output accumulator carries partial results across the two tiles, including later-tile rescaling. The release question starts at the final read; shared-memory output processing can continue after its release notification.
 
 <details>
 <summary><strong>Check the workload, roles and accumulator journey</strong></summary>
@@ -254,7 +254,7 @@ Q and K TMA destinations feed the first MMA accumulator, whose handle is stored 
 
 ### 2. Final read: half the lanes bypass result use
 
-After the final output MMA is ready, all four reader warps issue the TMEM load. Lanes 0–15 in each warp use its eight result registers in cluster-shared stores; lanes 16–31 skip those stores. Both paths reach the same release arrival, with no intervening load-completion wait. This establishes a load-issue-to-arrival path, but the skipped stores cannot establish completion of the bypassing lanes’ reads.
+After the final output MMA is ready, all four reader warps issue the TMEM load. Lanes 0–15 in each warp use its eight result registers in cluster-shared stores; lanes 16–31 bypass those stores. **Both paths reach the same release arrival without an intervening load-completion wait.**
 
 ```mermaid
 ---
@@ -272,9 +272,9 @@ config:
     fontSize: 16px
 ---
 flowchart TB
-  P["tcgen05.ld<br/>PTX 7373"]
-  E["st.async<br/>PTX 7380"]
-  J["mbarrier.arrive<br/>PTX 7409"]
+  P["Issue final TMEM read<br/>PTX 7373"]
+  E["Stage loaded results<br/>PTX 7380"]
+  J["Notify release barrier<br/>PTX 7409"]
   P -->|"Lanes 0–15"| E
   P -->|"Lanes 16–31 · skip"| J
   E --> J
@@ -327,6 +327,8 @@ $L__BB4_215:
 <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive"><strong>mbarrier.arrive.shared::cta.b64</strong></a> state, [%r985];
 }</code></pre>
 
+
+**Implication.** The bypass path reaches notification without using the loaded values, so the stores cannot establish completion for those lanes. The [**Release handshake**](#user-content-code-section-2) must now be read with that distinction: participation in the barrier and completion of the read are different requirements.
 
 <details>
 <summary><strong>Check the branch and compare every TMEM read site</strong></summary>
@@ -450,7 +452,9 @@ DONE:
 
 ### 3. Release handshake: the second phase waits for all readers
 
-The release barrier does include all 128 readers, including the lanes that skip stores. Together with 32 allocator-thread arrivals they complete its second phase; warp 2 polls parity 1 and frees both TMEM allocations only after that poll succeeds. The missing guarantee lies before notification: every reader’s asynchronous TMEM read must be complete before its release arrival can stand for “finished reading.” The arrival count proves participation, not that completion condition. This source relation explains the lifecycle question without asserting an observed premature free.
+All 128 readers contribute to the release barrier, including the lanes that bypass stores. Their arrivals and 32 allocator-thread arrivals complete its second phase. Warp 2 polls parity 1 and frees both TMEM allocations only after that poll succeeds.
+
+The question is therefore what the reader arrivals guarantee, rather than whether those readers were counted.
 
 ```mermaid
 ---
@@ -529,6 +533,8 @@ DONE:
 <a href="https://docs.nvidia.com/cuda/archive/13.2.0/parallel-thread-execution/index.html#tcgen05-instructions-tcgen05-alloc-dealloc-relinquish-alloc-permit"><strong>tcgen05.dealloc.cta_group::1.sync.aligned.b32</strong></a> %r479, %r478;
 }</code></pre>
 
+
+**Implication.** The handshake accounts for all readers, but safe release also requires every asynchronous TMEM read to finish before its notification. That is the relation to reconcile with the lifecycle result; this source walkthrough does not show an observed premature free. The [**Numerical model**](#user-content-code-section-3) limitation below concerns a different operation.
 
 <details>
 <summary><strong>Check both phases and the completion boundary</strong></summary>
@@ -649,7 +655,7 @@ After the release arrival, readers wait on cluster partial-result barriers at of
 
 ### 4. Numerical model: the score reduction is a separate limitation
 
-The saved value-model diagnostic names the warp maximum reduction used while forming softmax weights. The supplied PTX shows the first reduction consuming a scaled score; it is not a TMEM deallocation operation. Its missing exact per-thread value model and the unmet lifecycle prerequisite are distinct obstacles to a numerical conclusion. Neither is evidence that this arithmetic produced an incorrect answer.
+While forming softmax weights, the kernel scales a waited score and performs a warp maximum reduction. This `redux` operation is the one named by the saved value-model diagnostic; it is not a TMEM deallocation operation.
 
 ```mermaid
 ---
@@ -688,6 +694,8 @@ Arrows show source data dependencies. The saved unsupported-operation location i
 @%p117 <strong>bra</strong> $L__BB4_169;
 <strong>st.shared.b32</strong> [%r80+101360], <strong>%r81</strong>;</code></pre>
 
+
+**Implication.** An exact per-thread value model for the reduction is missing. Numerical analysis also has an unmet lifecycle prerequisite. These are distinct obstacles to a numerical conclusion; neither establishes an incorrect attention result.
 
 <details>
 <summary><strong>Check the reduction input and saved analysis limits</strong></summary>

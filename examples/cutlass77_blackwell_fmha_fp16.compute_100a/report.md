@@ -136,9 +136,9 @@ Interpretation from the PTX and saved inputs: how the reported operations fit to
 
 ### 1. The reported wait guards the first Q copy
 
-This forward-attention kernel stages `Q`, `K` and `V` in shared memory, uses tensor memory (TMEM) for matrix accumulators, and writes output `O` to global memory.
+This forward-attention kernel stages `Q`, `K` and `V` in shared memory, uses TMEM for matrix accumulators, and writes `O` to global memory.
 
-The finding concerns the **Q-input handoff**. The input-loader warp waits before its first 16 KiB `Q` copy. A separate matrix-compute warp later sends a completion notification to the same barrier. The report follows how these two source paths connect.
+The finding is in the **Q-input handoff**: a loader waits before its first 16 KiB Q copy, and a compute warp later notifies the same barrier. First distinguish the [**Barrier roles**](#user-content-code-section-1), then follow the [**Copy issuer**](#user-content-code-section-2) across the handoff. The source protocol must finally be compared with the particular wait event retained by the model.
 
 <details>
 <summary><strong>Derivation: warp roles and configured workload</strong></summary>
@@ -210,11 +210,11 @@ The input fixes ten softmax-correction branch decisions and enables representati
 
 <a id="code-section-1" name="user-content-code-section-1"></a>
 
-### 2. Q-ready announces available data; Q-release allows reuse
+### 2. Barrier roles: Q-ready publishes data; Q-release permits reuse
 
-Two barriers have different jobs: **Q-ready** tells the compute warp that the input copy has finished; **Q-release** receives the compute warp’s later completion notification.
+**Q-ready** tells the compute warp that the input copy has finished. **Q-release** receives the compute warp’s later completion notification so that the loader can reuse the Q buffer.
 
-The rejected wait is on Q-release. Its test uses **parity `1`**, while initialization starts the barrier at phase `0`. That test can succeed immediately, allowing the first copy to start. The startup wait therefore does not wait for the current matrix work to finish.
+The rejected wait is on Q-release. Initialization starts that barrier at phase `0`; the startup wait tests parity `1`, so it can succeed immediately.
 
 | Protocol point | Q-ready · shared +81920 | Q-release · shared +81936 |
 | --- | --- | --- |
@@ -243,6 +243,8 @@ LAB_WAIT:
 DONE:
 }</code></pre>
 
+
+**Implication.** The first successful Q-release test permits the initial copy into a fresh buffer; it does not mean matrix work has already finished. The [**Copy issuer**](#user-content-code-section-2) is the next distinction: all loader lanes wait, but only one submits the copy.
 
 <details>
 <summary><strong>Derivation: barrier initialization and startup phase</strong></summary>
@@ -326,11 +328,11 @@ A parity bit repeats across barrier phases. The checker therefore needs the star
 
 <a id="code-section-2" name="user-content-code-section-2"></a>
 
-### 3. Only one loader lane issues the copy
+### 3. Copy issuer: one elected lane connects the loader to compute
 
-All 32 loader lanes execute the startup wait, but **only the elected lane submits the Q copy**. For that lane, source order leads from the wait to the copy; copy completion then enables the compute warp’s Q-ready wait.
+All 32 loader lanes execute the startup wait; only the elected lane submits the Q copy. For that lane, source order leads from wait to copy, copy completion enables the compute warp’s Q-ready wait, and the compute path later sends its Q-release notification.
 
-The failing model event identifies the wait’s source site, but supplies **neither its lane identity nor the intervening ordering edges**. The diagram explains the source protocol. The missing lane binding prevents it from explaining the failure of that particular model event.
+The other loader lanes do not submit that copy. The source path therefore does not supply the same ordering chain for every loader lane.
 
 ```mermaid
 ---
@@ -386,6 +388,8 @@ Single arrows show source order within the indicated participant; double arrows 
 
 $L__BB37_241:</code></pre>
 
+
+**Implication.** The failed model event is bound to the wait’s source site, but not to a particular lane or the intervening ordering edges. That missing binding determines whether this source chain explains that event. The saved rejection stands; the source diagram alone cannot resolve it or justify adding a wait.
 
 <details>
 <summary><strong>Derivation: copy completion and loader lanes</strong></summary>

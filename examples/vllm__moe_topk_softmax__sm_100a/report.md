@@ -84,11 +84,9 @@ Interpretation from the PTX and saved inputs: how the reported operations fit to
 
 ### 1. The branch asks whether this thread owns the selected expert
 
-This kernel converts each row of expert scores into routing weights and expert indices. A 16-thread group holds four candidates per thread.
+This kernel turns each row of expert scores into routing weights and expert indices. A 16-thread group holds four candidates per thread. With `k = 2`, it selects twice.
 
-With `k = 2`, it selects twice. Between selections, the thread that owns the first winner replaces that entry in its private array with −10000, allowing another expert to be selected for ordinary finite inputs. **The reported branch decides whether this thread performs that update.**
-
-The owner comes from the loaded scores. Those values are absent from the supplied files, so the launch and scalar parameters cannot determine which side of this branch is taken.
+Between selections, only the thread that owns the first winner replaces that entry in its private array with −10000. For ordinary finite inputs, this allows another expert to be selected. **The reported branch chooses which thread performs that update.**
 
 ```mermaid
 ---
@@ -107,10 +105,10 @@ config:
 ---
 flowchart LR
   G{"Compare operands<br/>PTX 351"}
-  E["Local store<br/>PTX 363"]
-  J["Continue<br/>PTX 364"]
-  G -->|"Thread slot = Owner slot"| E
-  G -->|"Thread slot ≠ Owner slot · skip"| J
+  E["Suppress the first winner<br/>PTX 363"]
+  J["Continue selection loop<br/>PTX 364"]
+  G -->|"Owner thread"| E
+  G -->|"Not the owner · skip"| J
   E --> J
   class G context
   class E focus
@@ -140,6 +138,8 @@ Arrows show local control flow, not observed execution. The comparison at PTX 35
 <a href="https://docs.nvidia.com/cuda/archive/13.0.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st"><strong>st.local.u32</strong></a> [%rd34], %r127;
 $L__BB7_23:</code></pre>
 
+
+**Implication.** The branch needs the winning expert index, which comes from the loaded scores. Neither the launch nor `k = 2` supplies that value. This explains the analysis stop; it does not identify a memory race.
 
 <details>
 <summary><strong>Derivation: row ownership and score-dependent selection</strong></summary>

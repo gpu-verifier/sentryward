@@ -39,7 +39,11 @@ Use saved access pairs, `counterexample`, `rejection`, `source_events` and faile
 
 Write a scratch explanation plan using [draft-format.md](references/draft-format.md). It contains interpretation, visual relationships and checked evidence references; it cannot replace tool results. Follow [presentation.md](references/presentation.md) for code, diagrams and disclosure hierarchy.
 
-Introduce the relevant computation and object before registers. Follow one relationship from finding to operation, decisive condition and evidence. Name operations consistently across prose, diagrams and exact code. Choose a view that explains the relationship: overlap, dependency, guarded path, phase comparison or supported participant sequence. Do not invent temporal order from listing order.
+Choose the reading path before the views: **finding → object's role in the computation → required relationship → what the source establishes → implication for the kernel**. Follow the relevant value, buffer or notification across operations; stop where its meaning for the finding is clear. Introduce that role before registers. A local finding can do this in one section; a clean result needs no added story.
+
+For a larger case, give shared context once, then divide by questions that change the conclusion. Connect sections when one establishes the premise for the next; keep independent concerns separate rather than suggesting causation. End a section with a short `conclusion` when the reader needs its consequence or a bridge to the next relationship. Keep decisive uncertainty beside the claim it limits.
+
+Name operations consistently across prose, diagrams and exact code. Choose a view that answers the current question: overlap, dependency, guarded path, phase comparison or supported participant sequence. Show the required relationship beside the established one when that makes the gap clear. Do not invent temporal order from listing order or repeat the entire kernel in every view.
 
 Use source-supported action names in diagrams. Branches should show what each condition permits or skips, rather than requiring the reader to decode bare true/false labels. For multiple concerns, reuse section topic names in the overview; unique bold topic names link to their sections automatically.
 
@@ -54,6 +58,6 @@ python3 SKILL_DIR/scripts/check_report.py --input INPUT --result RESULT --ptx PT
 
 Use the same optional `--identity IDENTITY`, `--source FILE` and `--equivalence FILE` on both commands, only for supplied files. For GitHub links, `--artifact-base HTTPS_BLOB_URL_AT_COMMIT` must identify the same artifact bytes; paths are relative to the working directory. Otherwise preserve relative file layout when sharing.
 
-Read the entire report, including expanded derivations. Check participant identity, predicate polarity, configured paths, barrier rounds, issue versus completion, and source-to-event attribution. Calculate conversions rather than guessing. Check that neighboring sections form a connected explanation and that code actually supports its caption. Inspect GitHub rendering when available, including wrapping, links and disclosures.
+Read the default view as a developer new to the kernel: can you locate the finding, follow the affected object's role, and say what each section adds to the conclusion? Then expand the derivations and check participant identity, predicate polarity, configured paths, barrier rounds, issue versus completion, and source-to-event attribution. Calculate conversions rather than guessing. Check that code supports its caption and that each view answers its neighboring text. Inspect GitHub rendering when available, including wrapping, links and disclosures.
 
 Correct the plan and recompose; do not hand-edit generated Markdown. A failed plan leaves the existing report intact. The checker verifies composition, identities, citations and disclosure structure; semantic correctness and readability require review. If source interpretation remains unsupported, retain the useful base report and name the unresolved relationship. Return the report path and checks performed.
