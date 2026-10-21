@@ -1,82 +1,63 @@
 ---
 name: generate-kernel-report
-description: Explain existing sentryward output to a kernel user in a concise Markdown report, with relevant PTX and local synchronization diagrams. Use after verifier output is available, not to run verification or debug the verifier implementation.
+description: Generate one readable English report.md from saved SentryWard input, verifier output and matching PTX. Present tool findings separately from source-supported code explanations for GPU developers unfamiliar with the kernel.
 ---
 
 # Generate a kernel report
 
-## Audience and inputs
+Use the supplied `input.json`, `output.json` and matching PTX to create **one English `report.md`**. Existing source, identity and numerical-check files are optional. The reader knows GPU programming but has not read this kernel.
 
-Explain the verifier's findings to the kernel user. Take the recorded verifier
-output, the corresponding PTX, and the input configuration when available.
-Upstream source and artifacts from that run (events, HB graph, trace) are optional.
-Use the verifier's reported conclusion as the basis of the explanation. Preserve
-its status, severity, conditional scope, and distinction between candidates and
-established results. Do not turn the report into a review of verifier internals.
+Scripts present saved findings; the agent explains relevant code. Keep those parts visibly separate. A reader should understand the finding, affected object and operations, supporting relationship, and any unresolved next check. Keep clean results short; explain one local finding directly; connect interacting findings through shared context.
 
-Existing `examples/` files are read-only examples. Generate a new English
-Markdown file at the requested new path; otherwise use a fresh directory under
-`build/skill-output/`. Do not replace existing examples, configs, or reports.
+Create only `report.md` at the requested destination, or default to an unused `build/skill-output/<kernel>/`. Generate on demand and leave generated reports uncommitted unless requested. Keep scratch elsewhere. In an existing example directory, leave other files unchanged. Do not rerun verification, change inputs, install dependencies or publish.
 
-## Read the evidence
+## 1. Preserve the saved result
 
-- Identify the kernel entry and repository-relative PTX path. Check that supplied
-  artifacts refer to the same input/run; compare recorded hashes when available.
-  State mismatches rather than combining evidence from different runs.
-- Read the actual output, including errors, warnings, assumption labels and keys,
-  branch restrictions, and whether memory analysis ran or completed.
-- Use the output's `semantic_assumptions` and usage records for the run's effective
-  choices. `config/default-assumptions.json` describes new runs, not historical
-  outputs. Consult `docs/assumptions.md` for meanings; never infer a missing recorded
-  choice from today's defaults or reclassify a saved error using them. Explain
-  assumption-related warnings and applicable enable-option hints from the output.
-- Inspect the relevant PTX instructions and sufficient surrounding control flow.
-  If upstream source is available, locate the corresponding block and link its
-  public repository file, preferably at a fixed revision. PTX alone is sufficient
-  when source is unavailable; do not invent a source mapping.
-- Read existing event/HB/trace artifacts when needed. If evidence needed for an
-  explanation is absent, name the missing information and the resulting limit.
-  Preserve the reported result; do not invent HB edges or a witness schedule.
-  Do not rerun the tool, change inputs, or modify implementation in this workflow.
+Run from the repository root, substituting literal paths:
 
-## Write findings first
+```sh
+python3 SKILL_DIR/scripts/report_facts.py --input INPUT --result RESULT --ptx PTX --report OUTPUT/report.md --result-panel
+```
 
-Keep the result status separate from warnings. In current outputs, `race_free`
-may coexist with warnings under the recorded assumptions; do not rename it to a
-warning-only result. Preserve the status stored in historical outputs.
+The composer reads outcomes, diagnostics, counts, scope and assumptions directly from the artifacts. Identity conflicts are errors; missing values are not zero or success. See [outcomes.md](references/outcomes.md) to interpret the supplied result and check outcomes.
 
-Begin with the reported result and the minimum input scope needed to interpret it.
-Explain errors/findings before warnings. Group repeated findings with the same
-cause and code location; give a representative instance and the reported affected
-range. Explain distinct locations or causes separately. Cover the supplied output,
-not findings that would require additional searches. Mark truncated output as such.
+Inventory every diagnostic category, retained access pair and per-check outcome. Categories help navigation; repeated records are not independent bugs. Numerical analysis has a separate outcome and must not hide memory warnings. For a completed clean run with no unresolved diagnostics, check the base report without `--draft` and finish.
 
-For each group, use this compact structure:
+## 2. Trace the relevant code
 
-1. **What happens:** a concrete one-sentence explanation.
-2. **Code:** a short PTX excerpt with file and line locations; source excerpt if
-   available and useful. Keep instructions exact and omissions explicit.
-3. **Why this is reported:** explain the particular accesses, counters, or waits
-   that lead to the finding. Relate addresses to their buffers where evidence allows.
-4. **Local diagram:** for synchronization or race findings, show the relevant HB
-   relations or a supported execution sequence, not the entire kernel.
+```sh
+python3 SKILL_DIR/scripts/source_context.py --input INPUT --result RESULT --ptx PTX > SCRATCH/source-context.md
+```
 
-Use descriptive node names such as “Write final statistics” and “Consumer wait
-returns”; put instruction names and source locations beside them. In an HB graph,
-`A -> B` means A happens before B. Keep address-overlap annotations visually
-distinct from directed HB edges. Distinguish an instruction's issue from its async
-execution when relevant. Show unordered conflicting accesses explicitly. Label a
-trace sequence as a schedule rather than implying every step is an HB relation.
-Mermaid in Markdown is suitable. Do not force a graph into an unsupported-feature
-or missing-input report.
+Read **Supplied parameter entrances** and **Focus evidence**, then inspect the original PTX. Use `--at LINE,LINE` for additional slices. The index supplies definition candidates and local source deductions, not reaching definitions, execution records or feasibility proofs.
 
-## Keep the report focused
+Establish the affected object's purpose, participants, admitting guards and relevant completion boundary. Substitute supplied scalar values before describing a path; inspect available definitions and branch/loop conditions. For asynchronous work, barrier reuse or release, use [source-trace.md](references/source-trace.md). Consult [evidence.md](references/evidence.md) for access identities, source mappings and ISA guarantees.
 
-- Use short paragraphs and specific subjects; explain necessary numeric identifiers.
-- State assumption IDs and their recorded meaning only where they qualify a finding.
-- If no finding exists, briefly state the result and scope; an interrupted,
-  unsupported, or first-witness run does not establish exhaustive race freedom.
-- Omit implementation architecture, speculative model diagnoses, generic background,
-  and repair advice unless the user separately asks for them.
-- Keep reproduction provenance compact: PTX/input links and available run/version
-  identifiers. Do not replace the explanation with counters or hash inventories.
+Use saved access pairs, `counterexample`, `rejection`, `source_events` and failed orders first. Physical PTX lines, source lines, instruction IDs, event IDs and actor IDs are distinct coordinates. A **verifier witness** is a saved model execution; a source-derived schedule is a **possible interleaving**. Preserve truncated intervals. Missing runtime traces do not prevent source reasoning, but an unestablished mapping must stay explicit.
+
+## 3. Explain the finding
+
+Write a scratch explanation plan using [draft-format.md](references/draft-format.md). It contains interpretation, visual relationships and checked evidence references; it cannot replace tool results. Follow [presentation.md](references/presentation.md) for code, diagrams and disclosure hierarchy.
+
+Choose the reading path before the views: **finding → object's role in the computation → required relationship → what the source establishes → implication for the kernel**. Follow the relevant value, buffer or notification across operations; stop where its meaning for the finding is clear. Introduce that role before registers. A local finding can do this in one section; a clean result needs no added story.
+
+For a larger case, give shared context once, then divide by questions that change the conclusion. Connect sections when one establishes the premise for the next; keep independent concerns separate rather than suggesting causation. End a section with a short `conclusion` when the reader needs its consequence or a bridge to the next relationship. Keep decisive uncertainty beside the claim it limits.
+
+Name operations consistently across prose, diagrams and exact code. Choose a view that answers the current question: overlap, dependency, guarded path, phase comparison or supported participant sequence. Show the required relationship beside the established one when that makes the gap clear. Do not invent temporal order from listing order or repeat the entire kernel in every view.
+
+Use source-supported action names in diagrams. Branches should show what each condition permits or skips, rather than requiring the reader to decode bare true/false labels. For multiple concerns, reuse section topic names in the overview; unique bold topic names link to their sections automatically.
+
+Keep conditions that change the conclusion visible; put their derivations in named disclosures. Each expanded derivation begins with its answer, then supporting code and references. Use at most two disclosure levels. Code remains verbatim, with instruction-manual and physical-source links; annotations belong outside it. Use code spans for registers, predicates, fields and rule IDs.
+
+## 4. Compose and review
+
+```sh
+python3 SKILL_DIR/scripts/report_facts.py --input INPUT --result RESULT --ptx PTX --draft SCRATCH/draft.json --report OUTPUT/report.md --result-panel
+python3 SKILL_DIR/scripts/check_report.py --input INPUT --result RESULT --ptx PTX --draft SCRATCH/draft.json --report OUTPUT/report.md --result-panel
+```
+
+Use the same optional `--identity IDENTITY`, `--source FILE` and `--equivalence FILE` on both commands, only for supplied files. For GitHub links, `--artifact-base HTTPS_BLOB_URL_AT_COMMIT` must identify the same artifact bytes; paths are relative to the working directory. Otherwise preserve relative file layout when sharing.
+
+Read the default view as a developer new to the kernel: can you locate the finding, follow the affected object's role, and say what each section adds to the conclusion? Then expand the derivations and check participant identity, predicate polarity, configured paths, barrier rounds, issue versus completion, and source-to-event attribution. Calculate conversions rather than guessing. Check that code supports its caption and that each view answers its neighboring text. Inspect GitHub rendering when available, including wrapping, links and disclosures.
+
+Correct the plan and recompose; do not hand-edit generated Markdown. A failed plan leaves the existing report intact. The checker verifies composition, identities, citations and disclosure structure; semantic correctness and readability require review. If source interpretation remains unsupported, retain the useful base report and name the unresolved relationship. Return the report path and checks performed.
