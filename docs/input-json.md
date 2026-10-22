@@ -41,6 +41,18 @@ size at parameter 1. Change the ABI and launch to match the actual PTX.
 Omitted record arrays are empty. Missing values needed during analysis produce
 diagnostics; omission does not give a parameter an arbitrary concrete value.
 
+## Partial-warp blocks
+
+The verifier models a CTA as complete 32-lane warps. A `block_dim` whose thread count is not a
+multiple of 32 is verified only when the kernel cannot observe the difference: no barriers
+(`bar`, `barrier`, `mbarrier`), warp collectives (`shfl`, `vote`, `match`, `redux`, `activemask`,
+`elect`), lane or warp identities (`%laneid`, `%warpid`, `%lanemask_*`), asynchronous or
+tensor-core operations, or calls. Such a kernel is verified at a block padded in `z` to whole
+warps, in which the padded threads (`%tid.z` at or above the launched `z`) exit at entry and
+`%ntid.z` reads the launched `z`; `x` and `y`, and so every thread's indices, are unchanged. The
+result carries a `partial_warp_padded` warning with both block shapes. Witness locations are
+those of the original PTX. Any other partial-warp kernel is refused with `partial_warp_launch`.
+
 ## ABI fields and scalar values
 
 A `parameter` selector is a zero-based PTX parameter index or its nonempty name.
