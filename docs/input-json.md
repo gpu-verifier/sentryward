@@ -161,7 +161,9 @@ For example, this fragment opts into representative data-dependent control:
 ```
 
 See [assumptions.md](assumptions.md) for each assumption's exact scope and
-limitations. `address_invariants` are separate trusted constraints, not Boolean
+limitations. CLI `--assume` / `--no-assume` and Python `verify(..., assumptions=)`
+override the same keys for one invocation without editing this file.
+`address_invariants` are separate trusted constraints, not Boolean
 assumptions; their [forms and examples](assumptions.md#address-invariants)
 are documented there. Neither assumptions nor address invariants are established
 by the verifier merely because they appear in the configuration.

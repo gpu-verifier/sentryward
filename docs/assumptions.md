@@ -4,6 +4,14 @@ These assumptions can be enabled or disabled to select the behavior analyzed by
 the verifier. The pool is defined in [config/assumption-pool.json](../config/assumption-pool.json);
 defaults are maintained in [config/default-assumptions.json](../config/default-assumptions.json).
 
+## Invocation overrides
+
+Persisted choices belong in the kernel input `assumptions` object. For one run,
+`--assume KEY` / `--no-assume KEY` and Python `verify(..., assumptions={...})`
+override those keys. Defaults apply first, then the input file, then these
+overrides. `sentryward --list-assumptions` prints the accepted keys and the
+repository defaults as JSON and does not require a PTX file.
+
 
 Immediate visibility remains a fixed premise of the current model; removing its
 configuration switch did not add weak-memory analysis. Do not put
