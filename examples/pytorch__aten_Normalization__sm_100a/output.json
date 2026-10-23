@@ -110,7 +110,7 @@
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
       "arena_nodes": 12986,
-      "comparison_elapsed_seconds": 0.163447435,
+      "comparison_elapsed_seconds": 0.163848767,
       "context_declaration": {
         "assumptions": [],
         "fixed_inputs": [],
@@ -207,7 +207,7 @@
         "status": "proved"
       },
       "diagnostics": [],
-      "elapsed_s": 0.156628721,
+      "elapsed_s": 0.156710273,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -265,7 +265,7 @@
       "normalized_reachable_nodes": 903,
       "numerical_result": "verified",
       "pattern_nodes": 21,
-      "peak_rss_kib": 148896,
+      "peak_rss_kib": 148968,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
       "piece_nodes": 1408,
       "piece_union": {
@@ -286,110 +286,130 @@
         4869
       ],
       "reference_term_patterns": 10,
-      "rows": [
+      "row_groups": [
         {
-          "affine_state_pattern_s": 3.359999999999995e-06,
-          "cumulative_elapsed_s": 0.013764858,
-          "equivalence_contract": "existing_total_value_proof",
-          "family": 0,
-          "left_import_s": 0.00013057,
-          "left_normalize_s": 6.857000000000044e-05,
-          "parametric_state_s": 5.700000000000843e-07,
-          "piece_union_record_s": 2.1000000000048757e-07,
-          "piece_union_seal_s": 3.099999999998937e-07,
-          "right_import_s": 0.0055642,
-          "right_normalize_s": 0.0029479699999999994,
-          "scalar_engine": "mandatory_exponential_polynomial",
-          "state_pattern_proof": {
-            "count": "256",
-            "coverage": "exact_multiplicity_one",
-            "domain": [
-              {
-                "coordinate": 0,
-                "count": "2"
-              },
-              {
-                "coordinate": 1,
-                "fixed": "var[output:0,0,1]()"
-              },
-              {
-                "coordinate": 2,
-                "count": "128"
-              }
-            ],
-            "local_merge_rules": 257,
-            "local_update_rules": 0,
-            "method": "welford_fixed_state_certificate",
-            "projection": "mean",
-            "sample_recipe": "input\nreal:bf16",
-            "work": 5401
+          "count": 1,
+          "families": [
+            [
+              0,
+              0
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "count": "256",
+              "coverage": "exact_multiplicity_one",
+              "domain": [
+                {
+                  "coordinate": 0,
+                  "count": "2"
+                },
+                {
+                  "coordinate": 1,
+                  "fixed": "var[output:0,0,1]()"
+                },
+                {
+                  "coordinate": 2,
+                  "count": "128"
+                }
+              ],
+              "local_merge_rules": 257,
+              "local_update_rules": 0,
+              "method": "welford_fixed_state_certificate",
+              "projection": "mean",
+              "sample_recipe": "input\nreal:bf16",
+              "work": 5401
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
           },
-          "state_pattern_s": 0.004361305000000001,
-          "status": "equivalent",
-          "total_definedness": "proved",
-          "unary_reduction_s": 2.059999999999909e-06
+          "timing_s": {
+            "affine_state_pattern_s": 4.409999999999831e-06,
+            "cumulative_elapsed_s": 0.013736223,
+            "left_import_s": 0.00013394099999999994,
+            "left_normalize_s": 7.14699999999997e-05,
+            "parametric_state_s": 6.499999999996092e-07,
+            "piece_union_record_s": 2.400000000003094e-07,
+            "piece_union_seal_s": 3.8000000000034534e-07,
+            "right_import_s": 0.005607684,
+            "right_normalize_s": 0.0029040479999999994,
+            "state_pattern_s": 0.004320116000000001,
+            "unary_reduction_s": 2.339999999999981e-06
+          }
         },
         {
-          "affine_state_pattern_s": 3.2000000000156903e-07,
-          "cumulative_elapsed_s": 0.156427591,
-          "equivalence_contract": "existing_total_value_proof",
-          "family": 1,
-          "left_import_s": 7.868099999999885e-05,
-          "left_normalize_s": 5.070999999999895e-05,
-          "parametric_state_s": 3.099999999998937e-07,
-          "piece_union_record_s": 5.000000000143778e-08,
-          "piece_union_seal_s": 6.999999999784956e-08,
-          "right_import_s": 0.0020869270000000006,
-          "right_normalize_s": 0.12530618100000002,
-          "scalar_engine": "mandatory_exponential_polynomial",
-          "state_pattern_proof": {
-            "count": "256",
-            "coverage": "exact_multiplicity_one",
-            "domain": [
-              {
-                "coordinate": 0,
-                "count": "2"
-              },
-              {
-                "coordinate": 1,
-                "fixed": "var[output:0,0,1]()"
-              },
-              {
-                "coordinate": 2,
-                "count": "128"
-              }
-            ],
-            "local_merge_rules": 257,
-            "local_update_rules": 0,
-            "method": "welford_fixed_state_certificate",
-            "projection": "inverse_std",
-            "sample_recipe": "input\nreal:bf16",
-            "work": 46272
+          "count": 1,
+          "families": [
+            [
+              1,
+              1
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "count": "256",
+              "coverage": "exact_multiplicity_one",
+              "domain": [
+                {
+                  "coordinate": 0,
+                  "count": "2"
+                },
+                {
+                  "coordinate": 1,
+                  "fixed": "var[output:0,0,1]()"
+                },
+                {
+                  "coordinate": 2,
+                  "count": "128"
+                }
+              ],
+              "local_merge_rules": 257,
+              "local_update_rules": 0,
+              "method": "welford_fixed_state_certificate",
+              "projection": "inverse_std",
+              "sample_recipe": "input\nreal:bf16",
+              "work": 46272
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
           },
-          "state_pattern_s": 0.010747017999999997,
-          "status": "equivalent",
-          "total_definedness": "proved",
-          "unary_reduction_s": 0.003748282999999991
+          "timing_s": {
+            "affine_state_pattern_s": 4.899999999988247e-07,
+            "cumulative_elapsed_s": 0.156495262,
+            "left_import_s": 8.433099999999999e-05,
+            "left_normalize_s": 5.566000000000251e-05,
+            "parametric_state_s": 4.2000000000097515e-07,
+            "piece_union_record_s": 5.000000000143778e-08,
+            "piece_union_seal_s": 2.7999999999833713e-07,
+            "right_import_s": 0.0021575829999999994,
+            "right_normalize_s": 0.125107732,
+            "state_pattern_s": 0.010833155999999983,
+            "unary_reduction_s": 0.0038317830000000053
+          }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 3.680000000001564e-06,
+        "affine_state_pattern_s": 4.8999999999986554e-06,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.00020925099999999884,
-        "left_normalize_s": 0.00011927999999999939,
-        "parametric_state_s": 8.79999999999978e-07,
-        "piece_union_record_s": 2.6000000000192536e-07,
+        "left_import_s": 0.00021827199999999993,
+        "left_normalize_s": 0.0001271300000000022,
+        "parametric_state_s": 1.0700000000005844e-06,
+        "piece_union_record_s": 2.900000000017472e-07,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 3.7999999999774325e-07,
+        "piece_union_seal_s": 6.599999999986825e-07,
         "proof_reuse_s": 0.0,
-        "right_import_s": 0.007651127000000001,
-        "right_normalize_s": 0.128254151,
-        "state_pattern_s": 0.015108322999999998
+        "right_import_s": 0.007765266999999999,
+        "right_normalize_s": 0.12801178,
+        "state_pattern_s": 0.015153271999999983
       },
       "timings": {
-        "load_and_scope_analysis": 0.000520482
+        "load_and_scope_analysis": 0.000521723
       },
       "total_output_families": 2,
       "transport": "in_memory_cpp_objects",
@@ -405,7 +425,7 @@
         "unavailable": 0,
         "value_lowering": {
           "final_templates": 7,
-          "graph_nodes": 3793,
+          "graph_nodes": 3800,
           "splits": 0,
           "template_steps": 2155
         },
@@ -589,7 +609,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 5688,
-      "hb_query_seconds": 0.00014885999999999998,
+      "hb_query_seconds": 0.00015031,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -597,7 +617,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 145.3359375,
+    "peak_footprint_mib": 145.4921875,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -621,7 +641,7 @@
       "synchronization_groups": 696,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 0,
-      "thread_prefix_groups": 5624,
+      "thread_prefix_groups": 5631,
       "value_diagnostic_count": 0,
       "value_diagnostics": []
     },
@@ -681,9 +701,9 @@
           "semantics": "ideal_exp2"
         },
         {
-          "converted_instances": 53143,
+          "converted_instances": 53655,
           "name": "type_edges",
-          "removed_nodes": 802
+          "removed_nodes": 809
         },
         {
           "name": "memory_elimination"
@@ -714,14 +734,14 @@
         "output_families_merged": 2,
         "output_family_count": 2,
         "output_root_count": 2,
-        "peak_construction_nodes": 4615,
+        "peak_construction_nodes": 4616,
         "shared_view_projection_hits": 292,
         "source_outputs": 2,
         "spatial_families_projected": 0,
         "spatial_outputs_projected": 0,
         "spatial_template_operations": 0,
         "statistics": {
-          "constants": 278,
+          "constants": 279,
           "edges": 9301,
           "folds": 0,
           "indices": 1,
@@ -730,10 +750,10 @@
           "logical_iterations_overflow": false,
           "max_fold_nesting": 0,
           "nodes": 4868,
-          "nodes_before_final_collection": 9105,
-          "nodes_reclaimed": 4237,
+          "nodes_before_final_collection": 9106,
+          "nodes_reclaimed": 4238,
           "operations": 4332,
-          "parameters": 1,
+          "parameters": 0,
           "range_descriptions": 0,
           "storage_nodes": 4868,
           "unique_fold_bodies": 0
@@ -743,19 +763,19 @@
         "action_patterns": 110,
         "binding_patterns": 110,
         "domain_refinements": 187272,
-        "elapsed_seconds": 0.086550874,
-        "event_families": 12703,
+        "elapsed_seconds": 0.088013826,
+        "event_families": 12704,
         "expanded_event_records": 0,
         "largest_batch_members": 248,
         "logical_actions": 354,
-        "logical_events": 349544,
-        "peak_rss_mib_at_completion": 144.75390625,
+        "logical_events": 349545,
+        "peak_rss_mib_at_completion": 144.80078125,
         "reachability_queries": 0,
-        "relations": 111587,
-        "rss_mib_at_completion": 145.20703125,
-        "scheduled_batches": 12703,
-        "singleton_batches": 2418,
-        "value_families": 2283
+        "relations": 111588,
+        "rss_mib_at_completion": 145.421875,
+        "scheduled_batches": 12704,
+        "singleton_batches": 2419,
+        "value_families": 2284
       },
       "shared_read_families": 0,
       "shared_read_instances": 0,
@@ -764,11 +784,11 @@
     "value_ir_instance_count": 218366,
     "value_ir_node_count": 2991,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 0.510631348,
+    "verification_elapsed_seconds": 0.511042909,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 145.40625,
-  "pipeline_elapsed_seconds": 0.884498614,
+  "peak_rss_mib": 145.4921875,
+  "pipeline_elapsed_seconds": 0.887956192,
   "result": "verified",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -780,5 +800,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.561
+  "whole_pipeline_timeout_seconds": 498.513
 }
