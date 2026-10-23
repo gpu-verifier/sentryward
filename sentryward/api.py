@@ -4,18 +4,22 @@ import json
 import subprocess
 import sys
 import time
+from .assumptions import validate_assumptions
 from .frontend.ptx_native import _positive, _run_ptx
 from .results import failure, normalize
 
 
 def verify(ptx, *, input, reference=None,
-           reference_binding=None, timeout_seconds=600, memory_limit_mib=None):
+           reference_binding=None, timeout_seconds=600, memory_limit_mib=None,
+           assumptions=None):
     """Return a complete result/diagnostics dictionary.
 
     Paths identify PTX, kernel input JSON and an optional Python reference.
     Reference arguments are derived from kernel input and reference_binding.json.
     timeout_seconds covers this entire call, including reference capture.
     The default total time budget is 600 seconds; memory is unlimited by default.
+    assumptions maps configuration keys to booleans and overrides the same keys
+    in the kernel input for this invocation only.
     """
     started = time.monotonic()
     stage = 'input_validation'
@@ -26,6 +30,9 @@ def verify(ptx, *, input, reference=None,
             raise ValueError('memory_limit_mib must be None or a positive integer MiB budget')
         if reference is None and (reference_binding is not None):
             raise ValueError('reference_binding requires reference')
+        overrides = None if assumptions is None else validate_assumptions(assumptions)
+        if overrides == {}:
+            overrides = None
         deadline = started + timeout_seconds
         ptx, config = Path(ptx), Path(input)
         for path in (ptx, config):
@@ -79,7 +86,8 @@ def verify(ptx, *, input, reference=None,
                           reference_failure=reference_failure,
                           pipeline_timeout_seconds=remaining,
                           wellsync_timeout_seconds=remaining,
-                          rss_limit_mib=memory_limit_mib)
+                          rss_limit_mib=memory_limit_mib,
+                          semantic_assumptions=overrides)
         result.pop('_process', None)
         result['elapsed_seconds'] = time.monotonic() - started
         if result['elapsed_seconds'] > timeout_seconds and result.get('result') != 'timeout':
