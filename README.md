@@ -48,6 +48,10 @@ that the kernel computes the same function.
 Results for every kernel in our benchmark, with diagnostics and evidence, are
 in [Kernel verification results](https://sentryward.io/results/).
 
+[Continuous verification](docs/automation.md) publishes versioned evidence and
+checked reports to a separate `results` branch. Publication requires repository
+and storage configuration.
+
 ### Bugs in popular kernel libraries
 
 SentryWard has found synchronization bugs in popular kernel libraries, such as
@@ -212,6 +216,7 @@ a report from the current output when needed.
 - [input.json](docs/input-json.md): launch configuration, ABI arguments, tensor maps and assumptions.
 - [reference_binding.json](docs/reference-binding-json.md): reference arguments, input/output correspondence and the equivalence contract.
 - [output.json](docs/output-json.md): result categories, checks, diagnostics and warnings.
+- [Continuous verification and reports](docs/automation.md): workflow configuration, evidence storage and recovery.
 
 ## Repository layout
 

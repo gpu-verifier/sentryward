@@ -615,20 +615,22 @@ def explanation(draft, run_input, result, ptx, sources=None, *, source_url=None)
     return technical_prose('\n\n'.join(parts), instruction_docs(ptx))
 
 
-def compose(draft, run_input, result, ptx, artifacts, sources=None, *, report_path=None, source_paths=(), equivalence_path=None, artifact_base=None, result_panel=False):
+def compose(draft, run_input, result, ptx, artifacts, sources=None, *, report_path=None, source_paths=(), equivalence_path=None, artifact_base=None, result_panel=False, identity=None):
     from result_view import render_result, render_evidence, artifact_url, link_references
+    from artifact_links import verify_identity
     validate_inputs(run_input, result, ptx)
+    artifact_links = verify_identity(identity, artifacts)
     # Validate the entire authored layer before rendering or replacing an artifact.
-    source_url = artifact_url(artifacts[2], report_path, artifact_base) if len(artifacts) > 2 else None
+    source_url = artifact_url(artifacts[2], report_path, artifact_base, artifact_links=artifact_links) if len(artifacts) > 2 else None
     authored = explanation(draft, run_input, result, ptx, sources, source_url=source_url) if draft is not None else ''
     title = text(draft['title'], 'Kernel name') if draft is not None else None
-    links = dict(report_path=report_path, source_paths=source_paths, equivalence_path=equivalence_path, artifact_base=artifact_base)
+    links = dict(report_path=report_path, source_paths=source_paths, equivalence_path=equivalence_path, artifact_base=artifact_base, artifact_links=artifact_links)
     parts = [MARKER, render_result(run_input, result, ptx, artifacts, title=title, **links)]
     if authored:
         parts.append(authored)
     parts.append(render_evidence(run_input, result, ptx, artifacts, **links))
     document = '\n\n'.join(part.strip() for part in parts if part) + '\n'
-    document = link_references(document, ptx, artifacts, report_path, artifact_base)
+    document = link_references(document, ptx, artifacts, report_path, artifact_base, artifact_links=artifact_links)
     if result_panel:
         from result_panel import render
         document = render(document)
