@@ -13,6 +13,8 @@
 #include "sentryward/algorithm/memory/family_access.h"
 
 namespace sentryward::algorithm {
+struct LaunchUnits;
+struct UnitQuotient;
 
 enum class MemoryRaceStatus { kRaceFound, kRaceFree, kUnresolved };
 
@@ -56,9 +58,20 @@ struct MemoryRaceOptions final {
   // finding. Keep one witness; do not enumerate/count all conflicting pairs.
   // Requires strict conflict-order support; incompatible modes fail explicitly.
   bool continue_after_race = false;
+  // Cross-CTA class mode (null otherwise): the program holds the representative units only.
+  // Duplicate-store warnings are weighted by class size, and after a search without a
+  // race the cross-unit pass checks every pair with a member unit (cross_unit_races.h); an Unknown
+  // or a work cap there throws UnitClassRestart.
+  UnitQuotient* units = nullptr;
+  // The launch's units when the per-unit path analyses a multi-unit launch (null otherwise; class
+  // mode reads them from `units`): repeated entries are reported per unit (source_json.cpp).
+  const LaunchUnits* launch_units = nullptr;
 };
 
 struct MemoryRaceResult final {
+  // Cross-CTA class mode: set when races[0] was found by the cross-unit pass (its accesses are the
+  // representatives').
+  std::optional<CrossUnitEvidence> cross_unit_race;
   struct FamilyStats {
     std::size_t logical_accesses=0,access_families=0,candidate_relations=0;
     std::size_t affine_member_rows=0,hb_member_enumerations=0,hb_frontier_pieces=0;

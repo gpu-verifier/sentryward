@@ -75,6 +75,68 @@
     {
       "field": "scheduler.split.shift_right",
       "value": 0
+    },
+    {
+      "field": "ptr_o_acc",
+      "value": null
+    },
+    {
+      "field": "stride_page_table",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 8,
+      "type": "f32",
+      "value": 0.041666666666666664
+    },
+    {
+      "parameter": 0,
+      "offset": 132,
+      "type": "s32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 136,
+      "type": "s32",
+      "value": 128
+    },
+    {
+      "parameter": 0,
+      "offset": 160,
+      "type": "s64",
+      "value": 512
+    },
+    {
+      "parameter": 0,
+      "offset": 168,
+      "type": "s64",
+      "value": 65536
+    },
+    {
+      "parameter": 0,
+      "offset": 192,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 200,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 208,
+      "type": "s32",
+      "value": 128
+    },
+    {
+      "parameter": 0,
+      "offset": 216,
+      "type": "f32",
+      "value": 1.0
     }
   ],
   "declarations": [
@@ -173,11 +235,203 @@
       "offset": 120,
       "type": "pointer",
       "object": "page_table"
+    },
+    {
+      "name": "ptr_o_acc",
+      "parameter": 0,
+      "offset": 152,
+      "type": "pointer"
+    },
+    {
+      "name": "stride_page_table",
+      "parameter": 0,
+      "offset": 128,
+      "type": "s32"
+    },
+    {
+      "parameter": 0,
+      "offset": 144,
+      "type": "pointer",
+      "object": "out"
+    }
+  ],
+  "shape_arrays": [
+    {
+      "parameter": 0,
+      "offset": 112,
+      "element_type": "s32",
+      "shapes": [
+        [
+          128
+        ]
+      ]
     }
   ],
   "assumptions": {
     "duplicate_tma_store_benign": true,
     "representative_election": true,
     "clc_always_fails": true
-  }
+  },
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "offset": 256,
+      "object": "q_nope",
+      "element_type": "f16",
+      "global_shape": [
+        512,
+        128,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        1024,
+        131072
+      ],
+      "box_shape": [
+        64,
+        64,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 512,
+      "object": "q_pe",
+      "element_type": "f16",
+      "global_shape": [
+        64,
+        128,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        128,
+        16384
+      ],
+      "box_shape": [
+        64,
+        64,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 768,
+      "object": "kv_c_and_k_pe_cache",
+      "element_type": "f16",
+      "global_shape": [
+        512,
+        128,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        1152,
+        147456
+      ],
+      "box_shape": [
+        64,
+        64,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 1024,
+      "object": "kv_c_and_k_pe_cache",
+      "base_byte_offset": 1024,
+      "element_type": "f16",
+      "global_shape": [
+        64,
+        128,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        1152,
+        147456
+      ],
+      "box_shape": [
+        64,
+        64,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 0,
+      "offset": 1280,
+      "object": "kv_c_and_k_pe_cache",
+      "element_type": "f16",
+      "global_shape": [
+        512,
+        128,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        1152,
+        147456
+      ],
+      "box_shape": [
+        64,
+        32,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "tensor_properties": [
+    {
+      "object": "page_table",
+      "element_type": "s32",
+      "property": "lower_bound",
+      "value": 0
+    },
+    {
+      "object": "page_table",
+      "element_type": "s32",
+      "property": "upper_bound",
+      "value": 0
+    }
+  ]
 }

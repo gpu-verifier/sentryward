@@ -27,6 +27,21 @@ class MemoryModel {
   [[nodiscard]] virtual std::optional<FamilyFootprint> familyFootprint(
       const MemoryAccessFamily&) { return std::nullopt; }
 
+  // Class mode's cross-unit pass: familyFootprint, plus strided regions with tensor-property
+  // lookups (FamilyFootprint::region_axes), which the family checker never receives.
+  [[nodiscard]] virtual std::optional<FamilyFootprint> crossUnitFootprint(const MemoryAccessFamily &family) {
+    return familyFootprint(family);
+  }
+
+  // Class mode's cross-unit pass: whether some member of `a` placed at `x` and some member of `b`
+  // placed at `y` overlap, where the footprints' offsets and lookup arguments are already
+  // translated to their units. Disjoint covers every member pair; Unknown declines.
+  [[nodiscard]] virtual OverlapResult translatedFamilyOverlap(
+      const MemoryAccessFamily&, const FamilyFootprint&, const MemoryAccessFamily&, const FamilyFootprint&) {
+    return OverlapResult::Unknown("translated family footprints need a symbolic address model",
+                                  "translated_family_unsupported");
+  }
+
   [[nodiscard]] virtual std::optional<MemoryAnalysisError> validate() const {
     return std::nullopt;
   }

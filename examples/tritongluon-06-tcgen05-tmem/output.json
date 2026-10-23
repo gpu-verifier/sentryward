@@ -1,14 +1,4 @@
 {
-  "address_model": {
-    "address_invariants": [],
-    "kind": "symbolic",
-    "layers": [
-      0,
-      2
-    ],
-    "solver": "z3",
-    "solver_timeout_ms": 100
-  },
   "assumption_dependent": true,
   "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
@@ -51,207 +41,82 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "not_run",
-    "memory": "failed",
-    "synchronization": "passed"
-  },
-  "counts": {
-    "edges": 237877,
-    "events": 92919,
-    "instructions": 24041,
-    "memory_accesses": 56705,
-    "threads": 128
+    "synchronization": "failed"
   },
   "diagnostics": [
     {
       "code": "conflicting_accesses_unordered",
       "details": {
         "count": 1,
+        "internal_stage": "memory_check",
         "witnesses_path": "races"
       },
       "message": "Conflicting accesses have no proven required ordering",
-      "stage": "memory_check"
+      "stage": "synchronization"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
+  "evidence": {
+    "race_count": 1,
+    "race_samples_truncated": false,
+    "races": [
       {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "failed",
-            "synchronization": "passed"
+        "first": {
+          "access_index": 0,
+          "actor": 0,
+          "bytes": 16,
+          "effect_index": 0,
+          "endpoint": {
+            "address": 0,
+            "kind": "memory"
           },
-          "prerequisite_diagnostics": [
-            {
-              "code": "conflicting_accesses_unordered",
-              "details": {
-                "count": 1,
-                "witnesses_path": "races"
-              },
-              "message": "Conflicting accesses have no proven required ordering",
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "potential_race"
+          "event": 143,
+          "instruction": 70,
+          "location": {
+            "column": 13,
+            "file": "/raid/user_data/ziweizho/wasp-cand-20260927/worktrees/triton-c01b6774/python/tutorials/gluon/06-tcgen05.py",
+            "line": 122
+          },
+          "mode": "write"
         },
-        "stage": "pipeline"
+        "overlap": "constant byte ranges intersect",
+        "region": {
+          "address_space": "shared",
+          "allocation": "cta:(0, 0, 0):shared:physical.shared.cta.0",
+          "bytes": 16,
+          "offset": 0
+        },
+        "second": {
+          "access_index": 0,
+          "actor": 64,
+          "bytes": 16,
+          "effect_index": 0,
+          "endpoint": {
+            "address": 0,
+            "kind": "memory"
+          },
+          "event": 50728,
+          "instruction": 14147,
+          "location": {
+            "column": 13,
+            "file": "/raid/user_data/ziweizho/wasp-cand-20260927/worktrees/triton-c01b6774/python/tutorials/gluon/06-tcgen05.py",
+            "line": 122
+          },
+          "mode": "write"
+        }
       }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
-  },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [],
-      "first_unavailable_reason": "",
-      "queries": 0,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": true
-    },
-    "cluster_completion_joins": 0,
-    "cta_count": 1,
-    "dependency_compression": {
-      "tcgen_load_wait": {
-        "consumers": 128,
-        "emitted_references": 128,
-        "original_references": 128,
-        "prefix_effects": 0
-      },
-      "tcgen_store_wait": {
-        "consumers": 128,
-        "emitted_references": 128,
-        "original_references": 128,
-        "prefix_effects": 0
-      }
-    },
-    "diagnostic_sample_count": 0,
-    "executed_records": 57056,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 0,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
-    },
-    "implementation": "cpp",
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "A",
-        "offset": 0,
-        "parameter": "tmem_example_kernel_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "B",
-        "offset": 0,
-        "parameter": "tmem_example_kernel_param_1",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "C",
-        "offset": 0,
-        "parameter": "tmem_example_kernel_param_2",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "D",
-        "offset": 0,
-        "parameter": "tmem_example_kernel_param_3",
-        "source": "declaration"
-      }
-    ],
-    "lowered_instruction_count": 24041,
-    "reached_opcodes": {
-      "add.s32": 3712,
-      "add.s64": 16384,
-      "and.b32": 1408,
-      "bar.sync": 768,
-      "bfe.s32": 128,
-      "ld.global.b32": 8192,
-      "ld.param.b64": 256,
-      "ld.shared.b32": 128,
-      "ldmatrix.sync.aligned.m8n8.x4.shared.b16": 3072,
-      "mov.b32": 128,
-      "mov.pred": 128,
-      "mov.u32": 8320,
-      "mul.wide.u32": 640,
-      "or.b32": 1664,
-      "ret": 128,
-      "setp.eq.b32": 128,
-      "setp.lt.u32": 128,
-      "shfl.sync.idx.b32": 128,
-      "shl.b32": 1792,
-      "shr.u32": 128,
-      "st.global.b32": 4096,
-      "st.shared::cta.v4.b32": 3072,
-      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 32,
-      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 32,
-      "tcgen05.ld.sync.aligned.16x32bx2.x32.b32": 128,
-      "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 32,
-      "tcgen05.st.sync.aligned.16x32bx2.x32.b32": 128,
-      "tcgen05.wait::ld.sync.aligned": 128,
-      "tcgen05.wait::st.sync.aligned": 128,
-      "xor.b32": 1920
-    },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 0,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 4,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 24041,
-      "stored_bindings": 7665
-    },
-    "source_edge_storage": {
-      "binding_templates": 255,
-      "logical_edges": 23913,
-      "stored_bindings": 255
-    },
-    "thread_count": 128,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": []
+    ]
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -259,6 +124,7 @@
       "__assertfail"
     ],
     "assertion_uses": 0,
+    "atomic_uses": 0,
     "bounded_loop_uses": 0,
     "clc_failure": true,
     "clc_uses": 0,
@@ -280,250 +146,380 @@
     "representative_branch_uses": 0,
     "trap_only_equality_assertions_hold": true
   },
-  "hb_queries": {
-    "memory": {
-      "algorithm": "not-built",
-      "batches": 0,
-      "cache_hits": 0,
-      "dfs_queries": 0,
-      "edge_visits": 0,
-      "filtered_queries": 0,
-      "queries": 0,
-      "shared_peak_index_bytes": 0
-    },
-    "required_orders": {
-      "algorithm": "member-relations",
-      "batches": 1,
-      "edge_visits": 8320,
-      "member_enumerations": 0,
-      "request_construction": {
-        "concrete_pair_materializations": 0,
-        "endpoint_reads": 681,
-        "family_requests": 17,
-        "logical_orders": 6432,
-        "owner_bindings": 393,
-        "stored_orders": 201
-      }
-    }
-  },
-  "implementation": "cpp",
-  "memory_analysis": {
-    "address_candidates": 566,
+  "internal": {
     "address_model": {
-      "cache_hits": 0,
-      "ground_disjoint": 0,
-      "ground_overlap": 0,
-      "layer0_disjoint": 0,
-      "refined_pairs": 0,
-      "solver_queries": 0,
-      "solver_sat": 0,
-      "solver_unknown": 0,
-      "solver_unsat": 0
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
     },
-    "candidate_generation_fallback": false,
-    "exhaustive": false,
-    "family_analysis": {
-      "access_families": 14946,
-      "affine_member_rows": 0,
-      "candidate_relations": 242,
-      "hb_frontier_pieces": 236,
-      "hb_member_enumerations": 0,
-      "logical_accesses": 56705
+    "counts": {
+      "edges": 233781,
+      "events": 92919,
+      "instructions": 24041,
+      "memory_accesses": 56705,
+      "threads": 128
     },
-    "first_race_seconds": 0.009538908,
-    "hb_algorithm": "member-relations",
-    "hb_batches": 2,
-    "hb_cache_hits": 0,
-    "hb_dfs_queries": 0,
-    "hb_edge_visits": 9736,
-    "hb_filtered_queries": 0,
-    "hb_peak_index_bytes": 0,
-    "hb_queries": 566,
-    "hb_query_seconds": 0.001810625,
-    "overlap_queries": 1,
-    "strategy": "conflict-family",
-    "unordered_candidates_examined": 1
-  },
-  "memory_analysis_complete": true,
-  "mma_operand_ordering": {},
-  "mode": "verify",
-  "peak_footprint_mib": 68.359375,
-  "peak_rss_mib": 96.0625,
-  "pipeline_elapsed_seconds": 0.450873818,
-  "race_count": 1,
-  "race_samples_truncated": false,
-  "races": [
-    {
-      "first": {
-        "access_index": 0,
-        "actor": 0,
-        "bytes": 16,
-        "effect_index": 0,
-        "endpoint": {
-          "address": 0,
-          "kind": "memory"
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "failed",
+              "synchronization": "passed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "conflicting_accesses_unordered",
+                "details": {
+                  "count": 1,
+                  "witnesses_path": "races"
+                },
+                "message": "Conflicting accesses have no proven required ordering",
+                "stage": "memory_check"
+              }
+            ],
+            "prerequisite_result": "potential_race"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_lowering": {
+          "final_templates": 7,
+          "graph_nodes": 10939,
+          "splits": 4,
+          "template_steps": 2581
         },
-        "event": 143,
-        "instruction": 70,
-        "location": {
-          "column": 13,
-          "file": "/raid/user_data/ziweizho/wasp-cand-20260927/worktrees/triton-c01b6774/python/tutorials/gluon/06-tcgen05.py",
-          "line": 122
-        },
-        "mode": "write"
+        "value_view_complete": true
       },
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "shared",
-        "allocation": "cta:(0, 0, 0):shared:physical.shared.cta.0",
-        "bytes": 16,
-        "offset": 0
+      "cluster_completion_joins": 0,
+      "cta_count": 1,
+      "dependency_compression": {
+        "tcgen_load_wait": {
+          "consumers": 128,
+          "emitted_references": 128,
+          "original_references": 128,
+          "prefix_effects": 0
+        },
+        "tcgen_store_wait": {
+          "consumers": 128,
+          "emitted_references": 128,
+          "original_references": 128,
+          "prefix_effects": 0
+        }
       },
-      "second": {
-        "access_index": 0,
-        "actor": 64,
-        "bytes": 16,
-        "effect_index": 0,
-        "endpoint": {
-          "address": 0,
-          "kind": "memory"
+      "diagnostic_sample_count": 0,
+      "executed_records": 57056,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
         },
-        "event": 50728,
-        "instruction": 14147,
-        "location": {
-          "column": 13,
-          "file": "/raid/user_data/ziweizho/wasp-cand-20260927/worktrees/triton-c01b6774/python/tutorials/gluon/06-tcgen05.py",
-          "line": 122
+        "election_uses": 0,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
         },
-        "mode": "write"
+        "representative_branch_uses": 0,
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "A",
+          "offset": 0,
+          "parameter": "tmem_example_kernel_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "B",
+          "offset": 0,
+          "parameter": "tmem_example_kernel_param_1",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "C",
+          "offset": 0,
+          "parameter": "tmem_example_kernel_param_2",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "D",
+          "offset": 0,
+          "parameter": "tmem_example_kernel_param_3",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 24041,
+      "reached_opcodes": {
+        "add.s32": 3712,
+        "add.s64": 16384,
+        "and.b32": 1408,
+        "bar.sync": 768,
+        "bfe.s32": 128,
+        "ld.global.b32": 8192,
+        "ld.param.b64": 256,
+        "ld.shared.b32": 128,
+        "ldmatrix.sync.aligned.m8n8.x4.shared.b16": 3072,
+        "mov.b32": 128,
+        "mov.pred": 128,
+        "mov.u32": 8320,
+        "mul.wide.u32": 640,
+        "or.b32": 1664,
+        "ret": 128,
+        "setp.eq.b32": 128,
+        "setp.lt.u32": 128,
+        "shfl.sync.idx.b32": 128,
+        "shl.b32": 1792,
+        "shr.u32": 128,
+        "st.global.b32": 4096,
+        "st.shared::cta.v4.b32": 3072,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 32,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 32,
+        "tcgen05.ld.sync.aligned.16x32bx2.x32.b32": 128,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 32,
+        "tcgen05.st.sync.aligned.16x32bx2.x32.b32": 128,
+        "tcgen05.wait::ld.sync.aligned": 128,
+        "tcgen05.wait::st.sync.aligned": 128,
+        "xor.b32": 1920
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 4,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 24041,
+        "stored_bindings": 7665
+      },
+      "source_edge_storage": {
+        "binding_templates": 255,
+        "logical_edges": 23913,
+        "stored_bindings": 255
+      },
+      "thread_count": 128,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      },
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 1,
+        "edge_visits": 8320,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 681,
+          "family_requests": 17,
+          "logical_orders": 6432,
+          "owner_bindings": 393,
+          "stored_orders": 201
+        }
       }
-    }
-  ],
-  "required_order_domains": 201,
-  "required_orders": 6432,
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 321,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 14946,
+        "affine_member_rows": 0,
+        "candidate_relations": 73,
+        "hb_frontier_pieces": 30,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 56705
+      },
+      "first_race_seconds": 0.01413735,
+      "hb_algorithm": "member-relations",
+      "hb_batches": 2,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 703,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 321,
+      "hb_query_seconds": 0.001112498,
+      "overlap_queries": 1,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 1
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 94.76953125,
+    "required_order_domains": 201,
+    "required_orders": 6432,
+    "search_complete": false,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 5,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 32058,
+      "memory_binding_templates": 10057,
+      "memory_bindings": 45185,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 441,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 105,
+      "thread_prefix_groups": 13357,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "stage": "memory_check",
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 1,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 61440,
+      "path_entries": 1370,
+      "record_bindings": 1293,
+      "record_nodes": 954,
+      "splits": 2,
+      "template_steps": 1022,
+      "thread_memberships": 128,
+      "value_nodes": 520
+    },
+    "thread_record_compression": {
+      "completed_ctas": 1,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 57056,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "failed",
+              "synchronization": "passed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "conflicting_accesses_unordered",
+                "details": {
+                  "count": 1,
+                  "witnesses_path": "races"
+                },
+                "message": "Conflicting accesses have no proven required ordering",
+                "stage": "memory_check"
+              }
+            ],
+            "prerequisite_result": "potential_race",
+            "prerequisite_status": "potential_race"
+          },
+          "stage": "pipeline"
+        }
+      ],
+      "equivalence_check": "blocked",
+      "prerequisite_status": "potential_race",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      }
+    },
+    "value_ir_instance_count": 221892,
+    "value_ir_node_count": 10939,
+    "value_view_complete": true
+  },
+  "peak_rss_mib": 186.73828125,
+  "pipeline_elapsed_seconds": 0.308302766,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "search_complete": false,
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 0,
-    "binding_diagnostics": [],
-    "execution_cohorts": 5,
-    "mapping_complete": true,
-    "memory_binding_stored_rows": 32058,
-    "memory_binding_templates": 10056,
-    "memory_bindings": 45185,
-    "memory_linking_templates_used": true,
-    "synchronization_groups": 441,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 105,
-    "thread_prefix_groups": 13350,
-    "value_diagnostic_count": 0,
-    "value_diagnostics": []
-  },
-  "source_violations": [],
-  "stage": "memory_check",
-  "synchronization_input": {
-    "compute_access_binding": "after_happens_before",
-    "kind": "ordering_endpoints",
-    "memory_address_payloads": false
-  },
-  "template_execution": {
-    "completed_ctas": 1,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 61440,
-    "path_entries": 1370,
-    "record_bindings": 1293,
-    "record_nodes": 954,
-    "splits": 2,
-    "template_steps": 1022,
-    "thread_memberships": 128,
-    "value_nodes": 520
-  },
-  "thread_record_compression": {
-    "completed_ctas": 1,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 57056,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "unresolved_count": 0,
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "failed",
-            "synchronization": "passed"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "conflicting_accesses_unordered",
-              "details": {
-                "count": 1,
-                "witnesses_path": "races"
-              },
-              "message": "Conflicting accesses have no proven required ordering",
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "potential_race",
-          "prerequisite_status": "potential_race"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "potential_race",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    }
-  },
-  "value_ir_instance_count": 221764,
-  "value_ir_node_count": 10932,
-  "value_view_complete": true,
   "verification_limitations": [],
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.586
 }

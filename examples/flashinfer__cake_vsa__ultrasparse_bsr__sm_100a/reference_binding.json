@@ -1,0 +1,263 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V",
+      "6:global11:bsr_indices": "bsr_indices"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1024,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1024,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global11:bsr_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          6
+        ],
+        "source_strides_bytes": [
+          24,
+          4
+        ],
+        "target_strides_bytes": [
+          24,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V",
+      "6:global11:bsr_indices": "bsr_indices"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1024,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1024,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global11:bsr_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          6
+        ],
+        "source_strides_bytes": [
+          24,
+          4
+        ],
+        "target_strides_bytes": [
+          24,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global3:out",
+    "right_allocation": "6:global3:out",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      1,
+      128,
+      1,
+      128
+    ],
+    "left_strides_bytes": [
+      32768,
+      256,
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      32768,
+      256,
+      256,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "q",
+        "allocation": "6:global1:Q",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "k",
+        "allocation": "6:global1:K",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "v",
+        "allocation": "6:global1:V",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "bsr_indices",
+        "allocation": "6:global11:bsr_indices",
+        "dtype": "int32"
+      },
+      {
+        "name": "nb",
+        "value": {
+          "input": "/arguments/1/value"
+        }
+      },
+      {
+        "name": "scale_log2",
+        "value": {
+          "input": "/arguments/8/value"
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "source": "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_vsa/cake_vsa_ultrasparse_bsr_sm_100a.cu",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_vsa/cake_vsa_ultrasparse_bsr_sm_100a.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_vsa/cake_vsa_ultrasparse_bsr_host.cpp",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/cake_vsa.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/attention/test_cake_vsa.py"
+    ],
+    "scope": "mb=1, nb=8, selected_blocks=6, total_tiles=1, Hq=Hkv=1, grid 1; Q [128,1,128] and K/V [1024,1,128] from tma_descriptors; out [128,1,128] pointer; return_softmax_lse=return_temperature_lse=0 (lse, temperature_lse not written). The input's branch decision (PTX line 2713, lazy-rescale branch, random seed 0) restricts the analyzed executions; the reference is independent of that choice.",
+    "scope_branch_choices": [
+      {
+        "line": 2713,
+        "taken": "random",
+        "seed": 0,
+        "note": "User-selected scenario: reproducible random selection of the softmax rescaling branch. This samples branch choices; it does not verify all choices. Revisit when dynamic branches are supported."
+      }
+    ],
+    "scope_shape_arrays": [],
+    "optimized_input_sha256": "06bdf68db8ccc31df279f4830273ba3dce5e67bcf00e0a039c86bdbbf0f74c96",
+    "ptx_sha256": "4a20dd4fe56c913bc63f41aa1228020443a7820a4e0907df5b4fe2fa4b7861f2"
+  }
+}

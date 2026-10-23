@@ -5,6 +5,7 @@
 #include "floating_idiom_pass.hpp"
 #include "packed_decode.hpp"
 #include "xor_coordinate.hpp"
+#include <memory>
 #include <regex>
 namespace rg {
 inline bool floating(const std::string &t) {
@@ -41,13 +42,100 @@ inline std::string mapped_name(const J &mapping, const char *section,
   auto value = table->find(name);
   return value == table->end() ? name : value->get<std::string>();
 }
+// The one key-hash formula of sibling_binders and ImportMemo; a vector key
+// converts to the span implicitly.
 struct VecHash {
-  size_t operator()(const std::vector<Id> &v) const {
+  size_t operator()(std::span<const Id> v) const {
     size_t h = 0;
     for (Id x : v)
       mix(h, x);
     return h;
   }
+};
+// The importer's (raw id, projected free environment) -> id memo. Each key is
+// stored once as [size, value, ids...] in fixed-size word chunks that never
+// move, and a slot keeps VecHash's hash and a pointer to the stored key in a
+// power-of-two table probed linearly at load <= 3/4 from Arena::index_home.
+// No node per entry, no key vector per probe and no copy of stored keys on
+// growth. Never erased or iterated; emplace keeps an existing value, as
+// unordered_map::emplace, and at() keeps unordered_map::at's exception.
+class ImportMemo {
+  struct Slot {
+    size_t hash;
+    const Id *key;
+  };
+  static constexpr size_t chunk_words = size_t(1) << 16;
+  std::vector<Slot> slots;
+  std::vector<std::unique_ptr<Id[]>> chunks;
+  Id *cursor = nullptr, *limit = nullptr;
+  size_t entries = 0;
+  unsigned shift = 64;
+  const Id *find(std::span<const Id> k, size_t h) const {
+    if (slots.empty())
+      return nullptr;
+    for (size_t m = slots.size() - 1, i = Arena::index_home(h, shift);; i = (i + 1) & m) {
+      const Slot &s = slots[i];
+      if (!s.key)
+        return nullptr;
+      if (s.hash == h && s.key[0] == k.size() && std::equal(k.begin(), k.end(), s.key + 2))
+        return s.key + 1;
+    }
+  }
+  // Grow before writing: a failed allocation leaves the stored entries intact.
+  void reserve_slot() {
+    if (4 * (entries + 1) <= 3 * slots.size())
+      return;
+    const size_t n = slots.empty() ? 256 : 2 * slots.size();
+    std::vector<Slot> grown(n, Slot{0, nullptr});
+    const unsigned grown_shift = 64 - unsigned(std::countr_zero(n));
+    for (const auto &x : slots)
+      if (x.key)
+        place(grown, grown_shift, x);
+    slots.swap(grown);
+    shift = grown_shift;
+  }
+  static void place(std::vector<Slot> &v, unsigned home_shift, Slot s) noexcept {
+    for (size_t m = v.size() - 1, i = Arena::index_home(s.hash, home_shift);; i = (i + 1) & m)
+      if (!v[i].key) {
+        v[i] = s;
+        return;
+      }
+  }
+public:
+  // Slots, cursor and limit point into chunks, so the memo is neither copied
+  // nor moved (the deleted copy also suppresses the implicit move).
+  ImportMemo() = default;
+  ImportMemo(const ImportMemo &) = delete;
+  ImportMemo &operator=(const ImportMemo &) = delete;
+  // A returned value pointer stays valid: stored entries never move or change.
+  const Id *find(std::span<const Id> k) const { return find(k, VecHash{}(k)); }
+  bool contains(std::span<const Id> k) const { return find(k); }
+  Id at(std::span<const Id> k) const {
+    if (const Id *v = find(k))
+      return *v;
+    throw std::out_of_range("unordered_map::at");
+  }
+  void emplace(std::span<const Id> k, Id value) {
+    const size_t h = VecHash{}(k);
+    if (find(k, h))
+      return;
+    reserve_slot();
+    const size_t n = k.size() + 2;
+    if (size_t(limit - cursor) < n) {
+      const size_t words = std::max(chunk_words, n);
+      chunks.push_back(std::unique_ptr<Id[]>(new Id[words]));
+      cursor = chunks.back().get();
+      limit = cursor + words;
+    }
+    Id *w = cursor;
+    cursor += n;
+    w[0] = Id(k.size());
+    w[1] = value;
+    std::copy(k.begin(), k.end(), w + 2);
+    place(slots, shift, {h, w});
+    ++entries;
+  }
+  size_t size() const { return entries; }
 };
 struct Importer {
   Arena &a;
@@ -82,7 +170,7 @@ struct Importer {
   std::unordered_map<std::vector<Id>, Id, VecHash> sibling_binders;
   uint64_t scope_binder_bank = 0, scope_binder_serial = 0;
   static constexpr size_t scope_binder_limit = 4096, scope_environment_limit = 16;
-  std::unordered_map<std::vector<Id>, Id, VecHash> cache;
+  ImportMemo cache;
   std::map<std::string, Bounds> ranges;
   using Env = std::map<Id, Id>;
   Importer(Arena &ar, Document d, const J &mp, std::string s, const InputContract *premises = nullptr)
@@ -247,17 +335,24 @@ struct Importer {
   }
   Importer(Arena &ar, Document d, const J &mp, std::string s, const PreparedContext &ctx)
       : Importer(ar,std::move(d),mp,std::move(s),&ctx.contract) { context=&ctx; }
-  std::vector<Id> key(Id i, const Env &env) {
+  // Fills k with the memo key [i, env[v] for each free level v of i]; the hot
+  // import() loop reuses its buffers instead of allocating a key per probe.
+  std::span<const Id> key(std::vector<Id> &k, Id i, const Env &env) const {
     if (i >= ns.size())
       throw Unsupported("raw node reference outside input DAG");
-    std::vector<Id> k{i};
-    k.reserve(1 + free[i].size());
+    k.assign(1, i);
     for (Id v : free[i]) {
       auto it = env.find(v);
       if (it == env.end())
         throw Unsupported("unbound index level " + std::to_string(v));
       k.push_back(it->second);
     }
+    return k;
+  }
+  std::vector<Id> key(Id i, const Env &env) const {
+    std::vector<Id> k;
+    k.reserve(1 + (i < ns.size() ? free[i].size() : 0));
+    key(k, i, env);
     return k;
   }
   // The ordinary raw-id/projected-free-environment memo key above is unchanged.
@@ -559,12 +654,15 @@ struct Importer {
       bool ready;
     };
     std::vector<Frame> todo{{root, env, false}};
+    // Reused key buffers: k holds this frame's key for the whole iteration,
+    // probe the transient child keys. The cold log2, scale-guard and proved
+    // Select paths below build their own keys.
+    std::vector<Id> k, probe;
     while (!todo.empty()) {
       a.check();
       Frame f = std::move(todo.back());
       todo.pop_back();
-      auto k = key(f.i, f.env);
-      if (cache.contains(k))
+      if (cache.contains(key(k, f.i, f.env)))
         continue;
       const auto &n = ns[f.i];
       const auto &edges = n.operands;
@@ -584,7 +682,7 @@ struct Importer {
         Id x=cache.at(input_key);
         if(a.nodes[x].facts.finite && a.nodes[x].facts.pos) {
           auto result=a.logarithm(x,true);
-          cache.emplace(std::move(k),context?context->apply(a,result):result);
+          cache.emplace(k,context?context->apply(a,result):result);
           ++a.stats["ideal_compiler_log2_polynomials"];continue;
         }
       }
@@ -607,7 +705,7 @@ struct Importer {
           todo.push_back({chosen.node,f.env,false});
           continue;
         }
-        cache.emplace(std::move(k),edge(cache.at(chosen_key),chosen));
+        cache.emplace(k,edge(cache.at(chosen_key),chosen));
         ++a.stats["finite_"+read->second+"_nan_branches_eliminated"];
         continue;
       }
@@ -627,7 +725,7 @@ struct Importer {
             todo.push_back({f.i,f.env,false});todo.push_back({chosen.node,f.env,false});continue;
           }
           Id selected=edge(cache.at(selected_key),chosen);
-          cache.emplace(std::move(k),context?context->apply(a,selected):selected);
+          cache.emplace(k,context?context->apply(a,selected):selected);
           ++a.stats["proved_select_arms_imported"];continue;
         }
       }
@@ -636,7 +734,7 @@ struct Importer {
         for (size_t j = len; j-- > 0;) {
           const Env &ctx = fold && j == 1 ? body : f.env;
           Id r = edges[j].node;
-          if (!cache.contains(key(r, ctx)))
+          if (!cache.contains(key(probe, r, ctx)))
             todo.push_back({r, ctx, false});
         }
         continue;
@@ -644,7 +742,7 @@ struct Importer {
       std::vector<Id> xs;
       for (size_t j = 0; j < len; ++j) {
         const Env &ctx = fold && j == 1 ? body : f.env;
-        Id operand=cache.at(key(edges[j].node,ctx));
+        Id operand=cache.at(key(probe,edges[j].node,ctx));
         xs.push_back(fp_idioms.is_power(f.i) && j==0 ? operand : edge(operand,edges[j]));
       }
       Id result;
@@ -673,10 +771,10 @@ struct Importer {
               });
         result=normalize_packed_decoder(result);
       }
-      cache.emplace(std::move(k), context ? context->apply(a,result) : result);
-      ++a.stats["imported_context_nodes"];
+      cache.emplace(k, context ? context->apply(a,result) : result);
+      ++a.counter(Arena::Hot::imported_context_nodes);
     }
-    return cache.at(key(root, env));
+    return cache.at(key(probe, root, env));
   }
   // Recognize one complete binary32 compiler LSE tail under ideal_real.
   // This node means ln(mass) + ln(2)*pivot_in_log2_units. Only the
@@ -697,14 +795,14 @@ struct Importer {
       if (node.kind != "Constant" || node.type != "f32" || !node.operands.empty()) return false;
       // Constants have no free indices. Reuse their checked binary32 value;
       // probing this optional idiom must not reparse infinity/hex spellings.
-      auto found = cache.find(std::vector<Id>{raw});
-      if (found == cache.end()) return false;
-      auto decoded = a.value(found->second);
+      const Id *found = cache.find(std::span<const Id>(&raw, 1));
+      if (!found) return false;
+      auto decoded = a.value(*found);
       return decoded && *decoded == value;
     };
     auto imported = [&](Id raw) -> std::optional<Id> {
-      auto found = cache.find(key(raw, env));
-      return found == cache.end() ? std::optional<Id>{} : found->second;
+      const Id *found = cache.find(key(raw, env));
+      return found ? std::optional<Id>{*found} : std::optional<Id>{};
     };
     if (!operation(root, "Multiply", 2)) return {};
     static const Q compiler_ln2(1453635, 2097152);
@@ -1597,9 +1695,9 @@ struct Importer {
     std::vector<Id> natural, binary;
     size_t work = 0;
     auto imported = [&](const Edge &e) -> std::optional<Id> {
-      auto it = cache.find(key(e.node,ctx));
-      if (it == cache.end()) return {};
-      return edge(it->second,e);
+      const Id *found = cache.find(key(e.node,ctx));
+      if (!found) return {};
+      return edge(*found,e);
     };
     while (!todo.empty()) {
       if (++work > 32) return {};

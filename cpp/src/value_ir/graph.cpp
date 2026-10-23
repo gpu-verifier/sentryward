@@ -46,7 +46,24 @@ const Instance* Node::storedInstance(std::size_t index) const {
 }
 Instance Node::readInstance(std::size_t index) const {
   if (const auto* stored=storedInstance(index)) return *stored;
-  return instance_template_(index);
+  return materialize(index);
+}
+Instance Node::materialize(std::size_t index) const {
+  const auto& base=*instances_.at(0);
+  Instance result{origin_template_(index),operand_template_?operand_template_(index):base.operands,
+                  base.result_types,base.element_types};
+  if (types_template_) {
+    const auto& types=types_template_(index);
+    result.result_types=types.results; result.element_types=types.elements;
+  }
+  return result;
+}
+OperandsRef Node::instanceOperands(std::size_t index) const {
+  if (const auto* stored=storedInstance(index)) return OperandsRef(stored->operands);
+  // Fail as materialize would; only a template has non-stored members.
+  if (!origin_template_) throw std::bad_function_call();
+  if (!operand_template_) return OperandsRef(instances_.at(0)->operands);
+  return OperandsRef(operand_template_(index));
 }
 SourceOrigin Node::readOrigin(std::size_t index) const {
   if (const auto* stored=storedInstance(index)) return stored->origin;
@@ -61,7 +78,7 @@ void Node::forEachInstancePattern(const std::function<void(
   for(const auto& [index,instance]:instances_) {
     if(index>cursor) visit(*instances_.at(0),cursor,index-cursor,rebind_operands_);
     // The first stored record is the prototype, not an exceptional member.
-    if(index==0 && instance_template_) continue;
+    if(index==0 && origin_template_) continue;
     visit(*instance,index,1,false);cursor=index+1;
   }
   if(cursor<instance_count_)visit(*instances_.at(0),cursor,instance_count_-cursor,rebind_operands_);
@@ -114,17 +131,12 @@ const Node& Graph::addCollective(std::unique_ptr<const Operation> operation,
   }
   const auto& result=add(std::move(operation),std::move(operands),members.front());
   auto& node=*storage_->nodes[result.id()];
-  const auto base=node.instances_.at(0);
   auto origins=std::make_shared<const std::vector<SourceOrigin>>(std::move(members));
   node.collective_origins_=origins;
   node.instance_threads_=ThreadMembers(std::move(threads));
   node.instance_count_=origins->size();
+  // Members share the prototype operands; no operand_template_.
   node.origin_template_=[origins](std::size_t index) { return origins->at(index); };
-  node.instance_template_=[base,origins](std::size_t index) {
-    auto instance=*base;
-    instance.origin=origins->at(index);
-    return instance;
-  };
   return result;
 }
 namespace {
@@ -152,7 +164,7 @@ const Instance& LocalRewriteMatch::instance(Value value) {
   const auto& root_node=graph_.definingNode(root_);
   bool source_varies=false;
   if(count_>1) {
-    const bool uniform=source.instances().size()==1 || source.hasUniformThreadTemplate();
+    const bool uniform=source.instanceCount()==1 || source.hasUniformThreadTemplate();
     const auto& source_threads=source.instanceThreads();
     const auto& root_threads=root_node.instanceThreads();
     bool same_member_map=source_threads.storageIdentity()==root_threads.storageIdentity();
@@ -162,7 +174,7 @@ const Instance& LocalRewriteMatch::instance(Value value) {
       same_member_map=graph_.groupContains(*source.groupId(),*root_node.groupId());
     // Constants have the same literal and static type throughout a node.
     const bool constant=dynamic_cast<const ConstantOp*>(&source.operation());
-    const bool fixed=!rebind_ || source.instances().size()==1 ||
+    const bool fixed=!rebind_ || source.instanceCount()==1 ||
         !root_node.origin().cta || source.origin().cta!=root_node.origin().cta ||
         !root_node.origin().thread || source_threads.empty() ||
         source_threads.at(value.instanceIndex())!=root_node.origin().thread;
@@ -185,7 +197,7 @@ const Instance& LocalRewriteMatch::instance(Value value) {
       const bool same_thread=child.origin().cta==root_node.origin().cta &&
           !child.instanceThreads().empty() &&
           child.instanceThreads().at(operand.instanceIndex())==root_node.origin().thread;
-      if(annotated || (same_thread && child.instances().size()>1)) {
+      if(annotated || (same_thread && child.instanceCount()>1)) {
         ++statistics_.domain_rejections;throw LocalRewriteBoundary{};
       }
     }
@@ -217,7 +229,7 @@ bool Graph::rewritePure(std::size_t id, std::unique_ptr<const Operation> operati
   for(const auto& [index,stored]:target.instances_) {
     const auto& instance=*stored;
     ++counters.patterns;
-    const auto count=index==0 && target.instance_template_?target.instance_count_:1;
+    const auto count=index==0 && target.origin_template_?target.instance_count_:1;
     LocalRewriteMatch match(*this,target.result(0,index),instance,count,
                             target.rebind_operands_,counters);
     std::optional<std::vector<Value>> operands;
@@ -250,19 +262,11 @@ bool Graph::rewritePure(std::size_t id, std::unique_ptr<const Operation> operati
   storage_->rewriting = true;
   target.operation_ = std::move(operation);
   target.instances_=std::move(replacements);
-  if (target.instance_template_) {
-    const std::shared_ptr<const Instance> base = target.instances_.at(0);
-    auto* storage = storage_.get();
-    auto* node = &target;
-    target.instance_template_ = [storage,base,node](std::size_t i) {
-      Instance result = *base;
-      result.origin = node->origin_template_(i);
-      if(node->rebind_operands_)
-        for (auto& operand : result.operands)
-          operand = Graph::rebindThread(*storage,operand,*base->origin.cta,*base->origin.thread,*result.origin.thread);
-      return result;
-    };
-  }
+  // Members follow the new prototype; collective members share its operands.
+  // Its result types are scalar and unparameterized (checked above), so the
+  // node has no types_template_.
+  if (target.origin_template_ && target.rebind_operands_)
+    target.operand_template_=memberOperands(*storage_,target.instances_.at(0),target);
   return true;
 }
 
@@ -462,8 +466,8 @@ NodeUse Graph::addInstance(std::unique_ptr<const Operation> operation,
       auto slot=node.instance_count_;
       node.instance_threads_.push_back(*instance.origin.thread);
       bool compressed=false;
-      if(node.instance_template_) {
-        const auto expected=node.instance_template_(slot);
+      if(node.origin_template_) {
+        const auto expected=node.materialize(slot);
         compressed=expected.origin==instance.origin && expected.operands==instance.operands &&
             std::ranges::equal(expected.result_types,instance.result_types) &&
             std::ranges::equal(expected.element_types,instance.element_types);
@@ -523,16 +527,20 @@ void Graph::setInstanceTemplate(const Node& node,ThreadGroupId group_id,ThreadMe
     storage->bound_types.emplace(key,&result);
     return result;
   };
-  target.instance_template_ = [storage,base,node_ptr](std::size_t index) {
-    Instance result = *base;
-    result.origin = node_ptr->origin_template_(index);
-    for (auto& operand : result.operands)
-      operand = Graph::rebindThread(*storage,operand,*base->origin.cta,*base->origin.thread,*result.origin.thread);
-    if (node_ptr->types_template_) {
-      const auto& types=node_ptr->types_template_(index);
-      result.result_types=types.results; result.element_types=types.elements;
-    }
-    return result;
+  target.operand_template_=memberOperands(*storage,base,target);
+}
+// The one owner of rebound member operands. The member thread is the binding
+// that origin_template_ assigns to origin.thread, so values and lookup
+// failures equal a rebinding of the materialized record, without its origin.
+std::function<std::vector<Value>(std::size_t)> Graph::memberOperands(
+    Storage& owner, std::shared_ptr<const Instance> base, const Node& member) {
+  return [storage=&owner,base=std::move(base),node=&member](std::size_t index) {
+    const auto cta=*base->origin.cta,from=*base->origin.thread;
+    const auto to=*storage->thread_bindings.at({cta,node->instance_threads_.at(index)}).thread;
+    std::vector<Value> operands;
+    operands.reserve(base->operands.size());
+    for (const auto& operand:base->operands) operands.push_back(Graph::rebindThread(*storage,operand,cta,from,to));
+    return operands;
   };
 }
 ThreadGroupId Graph::observeOccurrence(const SourceOrigin& origin) {
@@ -648,6 +656,41 @@ Value Graph::fromThread(Value value, Value selector) const {
   value.thread_selector_ = std::make_shared<const Value>(selector);
   return value;
 }
+Value Graph::addThreadUnion(const SourceOrigin& base, const std::vector<std::uint64_t>& threads,
+                            std::vector<Value> values) {
+  if (!storage_) storage_ = std::make_unique<Storage>();
+  if (threads.empty() || threads.size() != values.size() || !base.cta)
+    throw std::invalid_argument("thread union needs one value per thread of one CTA");
+  if (storage_->rewriting) throw std::logic_error("Cannot resume extraction after value rewriting");
+  storage_->requireOpen(base);
+  const auto value_type = type(values.front());
+  for (const auto& value : values)
+    if (type(value) != value_type) throw std::invalid_argument("thread union values differ in type");
+  std::vector<std::uint64_t> sorted(threads);
+  std::sort(sorted.begin(), sorted.end());
+  if (std::adjacent_find(sorted.begin(), sorted.end()) != sorted.end())
+    throw std::invalid_argument("thread union repeats a thread");
+  const auto origin = [&](std::uint64_t thread) {
+    const auto& binding = storage_->thread_bindings.at({*base.cta, thread});
+    auto result = base;
+    result.thread = binding.thread; result.warp = binding.warp; result.lane = binding.lane;
+    result.thread_coordinates = binding.thread_coordinates; result.coordinate_value.reset();
+    return result;
+  };
+  const auto& node = add(std::make_unique<ThreadForwardOp>(value_type), {values.front()}, origin(threads.front()));
+  auto& target = *storage_->nodes.at(node.id());
+  const auto& types = storage_->typesFor(target.operation().resultTypes());
+  for (std::size_t k = 1; k < threads.size(); ++k)
+    target.instances_.emplace(k, std::make_shared<Instance>(makeInstance(origin(threads[k]), {values[k]}, types)));
+  target.instance_threads_ = ThreadMembers(threads);
+  target.instance_count_ = threads.size();
+  return node.result(0, 0);
+}
+Value Graph::forwarded(Value value) const {
+  const auto& node = definingNode(value);
+  if (!dynamic_cast<const ThreadForwardOp*>(&node.operation())) return value;
+  return instanceOperands(value).at(0);
+}
 Graph::ThreadBindingRelation Graph::threadBindingRelation(Value value,Value context) const {
   using Relation=ThreadBindingRelation;
   context=resolve(context);
@@ -671,7 +714,7 @@ Graph::ThreadBindingRelation Graph::threadBindingRelation(Value value,Value cont
     // instance. A singleton cannot switch to another context member.
     // Rewritten/aliased values can retain a historical thread-members table;
     // it is not the cardinality of the retained numerical value domain.
-    if(node.instances().size()>1 && members.size()>1 && node.origin().cta==cta && x.instanceIndex()<members.size() &&
+    if(node.instanceCount()>1 && members.size()>1 && node.origin().cta==cta && x.instanceIndex()<members.size() &&
        members.at(x.instanceIndex())==thread) {
       if(members.storageIdentity()!=parent.instanceThreads().storageIdentity() ||
          x.instanceIndex()!=context.instanceIndex())return Relation::Unknown;
@@ -722,7 +765,7 @@ std::optional<Graph::ThreadBindingMap> Graph::threadBindingMap(Value value,Value
   const auto base=__int128(*start),stride=c.size()>1?difference/(c.size()-1):0;
   const auto last=base+stride*(c.size()-1);
   if(base+stride*context.instanceIndex()!=value.instanceIndex())return {};
-  if(base<0 || last<0 || base>=producer.instances().size() || last>=producer.instances().size() ||
+  if(base<0 || last<0 || base>=producer.instanceCount() || last>=producer.instanceCount() ||
       base>INT64_MAX || stride<INT64_MIN || stride>INT64_MAX)return {};
   if(!stride) {
     if(*cs)return {};
@@ -776,23 +819,46 @@ Value Graph::rebindThread(Storage& storage, Value value, std::uint64_t cta,
   }
   return value;
 }
-Instance Graph::instance(Value value) const {
-  value = resolve(value);
-  return definingNode(value).readInstance(value.instanceIndex());
+// resolveStorage returns a handle with a live slot unchanged, so these
+// accessors use such a handle in place. Only an alias of a lowered conversion
+// is resolved, and it then takes the former resolve/definingNode path.
+std::pair<const Node*,std::size_t> Graph::locate(const Value& value) const {
+  if (!contains(value)) throw std::invalid_argument("Value is invalid, stale, or belongs to another graph");
+  if (const auto& slot = storage_->nodes[value.node_id_]) return {slot.get(),value.instance_index_};
+  const auto resolved = resolveStorage(*storage_, value);
+  return {&definingNode(resolved),resolved.instance_index_};
 }
-bool Graph::contains(Value value) const noexcept {
+Instance Graph::instance(const Value& value) const {
+  const auto [node,index] = locate(value);
+  return node->readInstance(index);
+}
+OperandsRef Graph::instanceOperands(const Value& value) const {
+  const auto [node,index] = locate(value);
+  return node->instanceOperands(index);
+}
+SourceOrigin Graph::instanceOrigin(const Value& value) const {
+  const auto [node,index] = locate(value);
+  return node->instanceOrigin(index);
+}
+bool Graph::contains(const Value& value) const noexcept {
   if (!storage_ || value.owner_ != storage_->identity || value.node_id_ >= storage_->nodes.size()) return false;
   const auto& node = storage_->nodes[value.node_id_];
-  if (node) return value.result_index_ < node->resultCount() && value.instance_index_ < node->instances().size();
+  if (node) return value.result_index_ < node->resultCount() && value.instance_index_ < node->instance_count_;
   auto alias = storage_->aliases.find(value.node_id_);
   return alias != storage_->aliases.end() && value.result_index_ == 0 &&
       value.instance_index_ < alias->second.count;
 }
-const ValueType& Graph::type(Value value) const {
-  value = resolve(value);
+const ValueType& Graph::type(const Value& value) const {
+  if (!contains(value)) throw std::invalid_argument("Value is invalid, stale, or belongs to another graph");
+  if (const auto& slot = storage_->nodes[value.node_id_]) return resolvedType(value, slot.get());
+  // The returned type lives in its node or conversion spec, not in this handle.
+  const auto resolved = resolveStorage(*storage_, value);
+  return resolvedType(resolved, resolved.conversion() ? nullptr : &definingNode(resolved));
+}
+const ValueType& Graph::resolvedType(const Value& value, const Node* producer) const {
   if (value.conversion())
     return value.indices().empty() ? value.conversion()->spec->target : value.conversion()->spec->element;
-  const auto& node = definingNode(value);
+  const auto& node = *producer;
   const auto* stored = node.storedInstance(value.instanceIndex());
   if (!stored && node.types_template_) {
     const auto& types=node.types_template_(value.instanceIndex());
@@ -802,9 +868,10 @@ const ValueType& Graph::type(Value value) const {
   return value.indices_.empty() ? instance.result_types[value.result_index_]
                                : instance.element_types[value.result_index_];
 }
-const Node& Graph::definingNode(Value value) const {
-  value = resolve(value);
-  return *storage_->nodes[value.node_id_];
+const Node& Graph::definingNode(const Value& value) const {
+  if (!contains(value)) throw std::invalid_argument("Value is invalid, stale, or belongs to another graph");
+  if (const auto& slot = storage_->nodes[value.node_id_]) return *slot;
+  return *storage_->nodes[resolveStorage(*storage_, value).node_id_];
 }
 const Node& Graph::node(std::size_t id) const {
   if (!storage_ || id >= storage_->nodes.size() || !storage_->nodes[id])
@@ -934,19 +1001,14 @@ TypeEdgeStatistics Graph::lowerTypeConversions() {
   }
   if (!stats.nodes) return stats;
   storage_->rewriting = true;
+  // Template members need no wrapper: their operands are the prototype's
+  // (instances_.at(0), resolved here) or its rebinding, which keeps node IDs.
+  // Every resolved handle has a live slot, so resolveStorage returns each
+  // member operand unchanged. A later lowering resolves the prototype again.
   for (auto& slot : storage_->nodes) {
     if (!slot) continue;
     for (auto& [index,instance] : slot->instances_)
       if (instance) for (auto& operand : instance->operands) operand = resolve(operand);
-    if (slot->instance_template_) {
-      auto generate = std::move(slot->instance_template_);
-      auto* storage = storage_.get();
-      slot->instance_template_ = [storage,generate=std::move(generate)](std::size_t index) {
-        auto instance = generate(index);
-        for (auto& operand : instance.operands) operand = Graph::resolveStorage(*storage,operand);
-        return instance;
-      };
-    }
   }
   return stats;
 }

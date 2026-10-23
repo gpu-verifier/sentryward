@@ -1,12 +1,17 @@
 #include "sentryward/algorithm/source_ir/validator.h"
 
 #include <algorithm>
+#include <bit>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <map>
+#include <numeric>
+#include <optional>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -51,27 +56,28 @@ struct CollectiveCall final {
 
 void AddDiagnostic(std::vector<Diagnostic>& diagnostics,
                    DiagnosticClass classification, DiagnosticCode code,
-                   std::string message,
+                   DiagnosticMessage message,
                    const SourceInstruction* instruction = nullptr) {
   diagnostics.push_back(Diagnostic{
       classification,
       code,
-      std::move(message),
+      std::move(message.text),
       instruction == nullptr ? std::nullopt
                              : std::optional<InstId>(instruction->id),
       instruction == nullptr
           ? std::nullopt
           : std::optional<SourceLocation>(instruction->location),
+      std::move(message.ids),
   });
 }
 
 template <typename Id>
-std::string IdValue(Id id) {
-  return std::to_string(id.value());
+DiagnosticMessage IdValue(Id id) {
+  return MessageIdText(id);
 }
 
 void AddDiagnostic(std::vector<Diagnostic>& out, DiagnosticClass classification,
-    DiagnosticCode code, std::string message, SourceInstructions::Handle ref) {
+    DiagnosticCode code, DiagnosticMessage message, SourceInstructions::Handle ref) {
   const auto instruction=*ref;
   AddDiagnostic(out,classification,code,std::move(message),&instruction);
 }
@@ -101,6 +107,59 @@ bool IsDenseMemoryChains(const SourceProgram& program,
     previous=instruction.actor;
   }
   return edge==program.edges.end();
+}
+
+// Rank r is the r-th smallest unique instruction ID; the first record declaring it owns it.
+struct InstructionIndex final {
+  std::vector<InstId> ids;
+  std::vector<ActorId> actors;
+  std::vector<std::size_t> records;  // empty when every rank is its own record
+  bool dense=false;
+  std::size_t record(std::size_t rank) const{return records.empty()?rank:records[rank];}
+  std::optional<std::size_t> find(InstId id) const {
+    if(dense)return id.value()<ids.size()?std::optional<std::size_t>(id.value()):std::nullopt;
+    const auto it=std::lower_bound(ids.begin(),ids.end(),id);
+    if(it==ids.end() || *it!=id)return std::nullopt;
+    return static_cast<std::size_t>(it-ids.begin());
+  }
+};
+
+// Declared edge kinds per (from rank, to rank) pair. Capacity is fixed: each edge adds at most
+// one key, so the load stays at most 1/2 and probing terminates.
+class EdgeKindSet final {
+ public:
+  explicit EdgeKindSet(std::size_t edges)
+      : keys_(capacity(edges)),kinds_(keys_.size()),shift_(64-std::countr_zero(keys_.size())) {}
+  // Returns the pair's kind mask before adding kind.
+  std::uint8_t insert(std::uint64_t key,unsigned kind) {
+    if(kind>=8)throw std::logic_error("source edge kind outside the kind mask");
+    const auto bit=static_cast<std::uint8_t>(1u<<kind);
+    for(auto i=static_cast<std::size_t>((key*0x9e3779b97f4a7c15ULL)>>shift_);;i=(i+1)&(keys_.size()-1)) {
+      if(!kinds_[i]){keys_[i]=key;kinds_[i]=bit;return 0;}
+      if(keys_[i]==key){const auto before=kinds_[i];kinds_[i]|=bit;return before;}
+    }
+  }
+ private:
+  static std::size_t capacity(std::size_t edges) {
+    if(edges>(std::size_t{1}<<60))throw std::length_error("source edge table size");
+    return std::bit_ceil(std::max<std::size_t>(16,2*edges));
+  }
+  std::vector<std::uint64_t> keys_;
+  std::vector<std::uint8_t> kinds_;
+  unsigned shift_;
+};
+
+using RankPairs=std::vector<std::pair<std::uint32_t,std::uint32_t>>;
+struct Adjacency final { std::vector<std::size_t> offsets; std::vector<std::uint32_t> targets; };
+
+// Successor lists of ranks [0, ranks) in pair order (stable counting sort by source).
+Adjacency MakeAdjacency(std::size_t ranks,RankPairs pairs) {
+  Adjacency result{std::vector<std::size_t>(ranks+1),std::vector<std::uint32_t>(pairs.size())};
+  for(const auto& pair:pairs)++result.offsets[pair.first+1];
+  std::partial_sum(result.offsets.begin(),result.offsets.end(),result.offsets.begin());
+  std::vector<std::size_t> next(result.offsets.begin(),result.offsets.end()-1);
+  for(const auto& pair:pairs)result.targets[next[pair.first]++]=pair.second;
+  return result;
 }
 
 }  // namespace
@@ -138,28 +197,64 @@ std::vector<Diagnostic> SourceValidator::Validate(
 
   if(diagnostics.empty() && IsDenseMemoryChains(program,actors))return diagnostics;
 
-  std::map<InstId, SourceInstructions::Handle> instructions;
-  for (std::size_t i=0;i<program.instructions.size();++i) {
-    const auto id = program.instructions.id(i);
-    const auto actor = program.instructions.actor(i);
-    if (!instructions.emplace(id, program.instructions.ref(i)).second) {
-      const auto instruction_view = program.instructions.view(i);
-      AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
-                    DiagnosticCode::kDuplicateInstructionId,
-                    "instruction " + IdValue(id) +
-                        " is declared more than once",
-                    &*instruction_view);
+  // Rank the instruction IDs once; ID-keyed lookups become rank-indexed arrays.
+  InstructionIndex ranks;
+  {
+    const auto n=program.instructions.size();
+    std::vector<InstId> record_ids(n);
+    std::vector<ActorId> record_actors(n);
+    bool ascending=true;
+    for (std::size_t i=0;i<n;++i) {
+      record_ids[i]=program.instructions.id(i);record_actors[i]=program.instructions.actor(i);
+      ascending=ascending && (!i || record_ids[i-1]<record_ids[i]);
     }
-    if (!actors.contains(actor)) {
-      const auto instruction_view = program.instructions.view(i);
-      AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
-                    DiagnosticCode::kUnknownInstructionActor,
-                    "instruction " + IdValue(id) +
-                        " references unknown actor " +
-                        IdValue(actor),
-                    &*instruction_view);
+    std::vector<bool> duplicate;  // per record; strictly ascending IDs have none
+    if (!ascending) {
+      // Sorting by (ID, record) puts the record std::map::emplace kept first.
+      std::vector<std::pair<InstId,std::size_t>> order(n);
+      for(std::size_t i=0;i<n;++i)order[i]={record_ids[i],i};
+      std::sort(order.begin(),order.end());
+      duplicate.assign(n,false);
+      ranks.ids.reserve(n);ranks.actors.reserve(n);ranks.records.reserve(n);
+      for (std::size_t k=0;k<n;++k) {
+        if(k && order[k].first==order[k-1].first){duplicate[order[k].second]=true;continue;}
+        ranks.ids.push_back(order[k].first);ranks.actors.push_back(record_actors[order[k].second]);
+        ranks.records.push_back(order[k].second);
+      }
     }
+    std::optional<ActorId> checked_actor;
+    bool known_actor=false;
+    for (std::size_t i=0;i<n;++i) {
+      if (!duplicate.empty() && duplicate[i]) {
+        const auto instruction_view = program.instructions.view(i);
+        AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
+                      DiagnosticCode::kDuplicateInstructionId,
+                      "instruction " + IdValue(record_ids[i]) +
+                          " is declared more than once",
+                      &*instruction_view);
+      }
+      if(checked_actor!=record_actors[i]){checked_actor=record_actors[i];known_actor=actors.contains(record_actors[i]);}
+      if (!known_actor) {
+        const auto instruction_view = program.instructions.view(i);
+        AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
+                      DiagnosticCode::kUnknownInstructionActor,
+                      "instruction " + IdValue(record_ids[i]) +
+                          " references unknown actor " +
+                          IdValue(record_actors[i]),
+                      &*instruction_view);
+      }
+    }
+    if(ascending){ranks.ids=std::move(record_ids);ranks.actors=std::move(record_actors);}
+    // Unique ascending IDs are 0..m-1 exactly when the largest is m-1.
+    ranks.dense=ranks.ids.empty() || std::size_t(ranks.ids.back().value())+1==ranks.ids.size();
   }
+  const auto handle=[&](std::size_t rank){return program.instructions.ref(ranks.record(rank));};
+  // Every caller's ID is a declared one, as the former ID-keyed map's at() required.
+  const auto handleOf=[&](InstId id) {
+    const auto rank=ranks.find(id);
+    if(!rank)throw std::out_of_range("instruction ID without a rank");
+    return handle(*rank);
+  };
 
   std::map<AsyncOpId, const SourceInstruction*> async_operations;
   std::map<BarrierLifetimeId, SourceInstructions::Handle> barrier_initializers;
@@ -169,16 +264,22 @@ std::vector<Diagnostic> SourceValidator::Validate(
   std::vector<StateUse> state_uses;
   std::vector<TxContribution> tx_contributions;
   std::map<SyncId, std::vector<CollectiveCall>> collective_calls;
+  // Collective ID per record, sized at the first collective call; empty without one.
+  std::vector<std::optional<SyncId>> record_syncs;
 
+  const auto recordSync = [&](std::size_t record, SyncId sync) {
+    if (record_syncs.empty()) record_syncs.resize(program.instructions.size());
+    record_syncs[record] = sync;
+  };
   const auto recordBarrierUse = [&](BarrierLifetimeId barrier,
                                     const SourceInstruction& instruction) {
-    barrier_uses.try_emplace(barrier, instructions.at(instruction.id));
+    barrier_uses.try_emplace(barrier, handleOf(instruction.id));
   };
   const auto recordStateDefinition = [&](BarrierLifetimeId barrier,
                                          StateId state,
                                          const SourceInstruction& instruction) {
     if (!state_definitions
-             .emplace(state, StateDefinition{barrier, instructions.at(instruction.id)})
+             .emplace(state, StateDefinition{barrier, handleOf(instruction.id)})
              .second) {
       AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
                     DiagnosticCode::kDuplicateStateDefinition,
@@ -199,7 +300,7 @@ std::vector<Diagnostic> SourceValidator::Validate(
   const auto recordCompletion = [&](const MBarrierCompletion& completion,
                                     const SourceInstruction& instruction) {
     recordBarrierUse(completion.barrier, instruction);
-    tx_contributions.push_back(TxContribution{completion.bytes, instructions.at(instruction.id)});
+    tx_contributions.push_back(TxContribution{completion.bytes, handleOf(instruction.id)});
   };
   const auto validateParity = [&](std::uint8_t parity,
                                   const SourceInstruction& instruction) {
@@ -214,20 +315,21 @@ std::vector<Diagnostic> SourceValidator::Validate(
 
   const auto validateRef = [&](const MilestoneRef& ref,
                                const SourceInstruction* user) {
-    const auto found = instructions.find(ref.instruction);
-    bool valid = found != instructions.end();
+    const auto rank = ranks.find(ref.instruction);
+    bool valid = rank.has_value();
     if (valid) {
+      const auto found = handle(*rank);
       switch (ref.milestone) {
         case Milestone::kIssue:
         case Milestone::kComplete:
           valid = ref.effect_index == 0;
           break;
         case Milestone::kReadsComplete:
-          valid = found->second.holdsOperation<AsyncOp>() && ref.effect_index == 0;
+          valid = found.holdsOperation<AsyncOp>() && ref.effect_index == 0;
           break;
         case Milestone::kEffect:
-          valid = found->second.holdsOperation<AsyncOp>() &&
-                  ref.effect_index < found->second.effectCount();
+          valid = found.holdsOperation<AsyncOp>() &&
+                  ref.effect_index < found.effectCount();
           break;
         default:
           valid = false;
@@ -329,7 +431,7 @@ std::vector<Diagnostic> SourceValidator::Validate(
                           [&](const CompleteTxEffect& completion) {
                             recordBarrierUse(completion.barrier, instruction);
                             tx_contributions.push_back(
-                                {completion.bytes, instructions.at(instruction.id)});
+                                {completion.bytes, handleOf(instruction.id)});
                           }},
                       *effect.completion);
                 }
@@ -359,7 +461,7 @@ std::vector<Diagnostic> SourceValidator::Validate(
                                   " has zero expected arrivals",
                               &instruction);
               }
-              if (!barrier_initializers.emplace(operation.barrier, instructions.at(instruction.id))
+              if (!barrier_initializers.emplace(operation.barrier, handleOf(instruction.id))
                        .second) {
                 AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
                               DiagnosticCode::kDuplicateBarrierInitialization,
@@ -378,12 +480,12 @@ std::vector<Diagnostic> SourceValidator::Validate(
             [&](const MBarrierExpectTx& operation) {
               recordBarrierUse(operation.barrier, instruction);
               tx_contributions.push_back(
-                  TxContribution{operation.bytes, instructions.at(instruction.id)});
+                  TxContribution{operation.bytes, handleOf(instruction.id)});
             },
             [&](const MBarrierArriveExpectTx& operation) {
               recordBarrierUse(operation.barrier, instruction);
               tx_contributions.push_back(
-                  TxContribution{operation.bytes, instructions.at(instruction.id)});
+                  TxContribution{operation.bytes, handleOf(instruction.id)});
               if (operation.result.has_value()) {
                 recordStateDefinition(operation.barrier, *operation.result,
                                       instruction);
@@ -392,7 +494,7 @@ std::vector<Diagnostic> SourceValidator::Validate(
             [&](const MBarrierCompleteTx& operation) {
               recordBarrierUse(operation.barrier, instruction);
               tx_contributions.push_back(
-                  TxContribution{operation.bytes, instructions.at(instruction.id)});
+                  TxContribution{operation.bytes, handleOf(instruction.id)});
             },
             [&](const MBarrierAddArrivals& operation) {
               recordBarrierUse(operation.barrier, instruction);
@@ -400,7 +502,7 @@ std::vector<Diagnostic> SourceValidator::Validate(
             [&](const MBarrierWaitState& operation) {
               recordBarrierUse(operation.barrier, instruction);
               state_uses.push_back(
-                  StateUse{operation.barrier, operation.state, instructions.at(instruction.id)});
+                  StateUse{operation.barrier, operation.state, handleOf(instruction.id)});
             },
             [&](const MBarrierWaitParity& operation) {
               recordBarrierUse(operation.barrier, instruction);
@@ -409,7 +511,7 @@ std::vector<Diagnostic> SourceValidator::Validate(
             [&](const MBarrierTryWaitState& operation) {
               recordBarrierUse(operation.barrier, instruction);
               state_uses.push_back(
-                  StateUse{operation.barrier, operation.state, instructions.at(instruction.id)});
+                  StateUse{operation.barrier, operation.state, handleOf(instruction.id)});
               AddDiagnostic(diagnostics, DiagnosticClass::kUnsupported,
                             DiagnosticCode::kRawTryWaitUnsupported,
                             "raw state try_wait is outside the v1 model",
@@ -425,11 +527,13 @@ std::vector<Diagnostic> SourceValidator::Validate(
             },
             [&](const SyncThreads& operation) {
               collective_calls[operation.sync_id].push_back(CollectiveCall{
-                  instructions.at(instruction.id), CollectiveKind::kThreads, std::nullopt});
+                  handleOf(instruction.id), CollectiveKind::kThreads, std::nullopt});
+              recordSync(i, operation.sync_id);
             },
             [&](const SyncWarp& operation) {
               collective_calls[operation.sync_id].push_back(CollectiveCall{
-                  instructions.at(instruction.id), CollectiveKind::kWarp, operation.lane_mask});
+                  handleOf(instruction.id), CollectiveKind::kWarp, operation.lane_mask});
+              recordSync(i, operation.sync_id);
             },
         },
         instruction.op);
@@ -475,130 +579,122 @@ std::vector<Diagnostic> SourceValidator::Validate(
     }
   }
 
-  std::set<std::tuple<InstId, InstId, int>> exact_edges;
-  std::set<std::pair<InstId, InstId>> graph_edges;
-  std::map<InstId, std::vector<InstId>> successors;
-  std::map<InstId, std::vector<InstId>> program_order_successors;
-  std::map<InstId, std::size_t> indegrees;
-  for (const auto& [id, instruction] : instructions) {
-    static_cast<void>(instruction);
-    indegrees.emplace(id, 0);
-    program_order_successors.emplace(id, std::vector<InstId>{});
-  }
-
-  for (const SourceEdge& edge : program.edges) {
-    if (!IsValidEdgeKind(edge.kind)) {
-      AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
-                    DiagnosticCode::kInvalidEdgeKind,
-                    "source edge has an unknown dependency kind");
-      continue;
-    }
-
-    const auto from = instructions.find(edge.from);
-    const auto to = instructions.find(edge.to);
-    if (from == instructions.end() || to == instructions.end()) {
-      AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
-                    DiagnosticCode::kUnknownEdgeEndpoint,
-                    "source edge references an unknown instruction");
-      continue;
-    }
-
-    const auto exact =
-        std::tuple(edge.from, edge.to, static_cast<int>(edge.kind));
-    if (!exact_edges.insert(exact).second) {
-      AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
-                    DiagnosticCode::kDuplicateEdge,
-                    "source edge is declared more than once", to->second);
-      continue;
-    }
-
-    if (edge.kind == SourceEdgeKind::kProgramOrder &&
-        from->second.actor() != to->second.actor()) {
-      AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
-                    DiagnosticCode::kProgramOrderCrossesActors,
-                    "program-order edge connects different actors", to->second);
-    } else if (edge.kind == SourceEdgeKind::kProgramOrder) {
-      program_order_successors[edge.from].push_back(edge.to);
-    }
-
-    if (graph_edges.emplace(edge.from, edge.to).second) {
-      successors[edge.from].push_back(edge.to);
-      ++indegrees.at(edge.to);
-    }
-  }
-
-  std::set<InstId> ready;
-  for (const auto& [id, indegree] : indegrees) {
-    if (indegree == 0) {
-      ready.insert(id);
-    }
-  }
-  std::size_t visited = 0;
-  while (!ready.empty()) {
-    const InstId current = *ready.begin();
-    ready.erase(ready.begin());
-    ++visited;
-    for (InstId successor : successors[current]) {
-      std::size_t& indegree = indegrees.at(successor);
-      --indegree;
-      if (indegree == 0) {
-        ready.insert(successor);
-      }
-    }
-  }
-  if (visited != instructions.size()) {
-    AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
-                  DiagnosticCode::kCyclicSourceGraph,
-                  "the union of source dependency edges contains a cycle");
-  }
-
-  std::map<ActorId, std::vector<InstId>> actor_instructions;
-  std::map<ActorId, std::vector<InstId>> actor_order;
-  for (const auto& [id, instruction] : instructions) {
-    actor_instructions[instruction.actor()].push_back(id);
-  }
-  for (const auto& [actor, actor_program] : actor_instructions) {
-    std::map<InstId, std::size_t> actor_indegrees;
-    for (InstId instruction : actor_program) {
-      actor_indegrees.emplace(instruction, 0);
-    }
-    for (InstId instruction : actor_program) {
-      for (InstId successor : program_order_successors[instruction]) {
-        ++actor_indegrees.at(successor);
-      }
-    }
-
-    std::set<InstId> actor_ready;
-    for (const auto& [instruction, indegree] : actor_indegrees) {
-      if (indegree == 0) {
-        actor_ready.insert(instruction);
-      }
-    }
-    bool reported_incomparability = false;
-    while (!actor_ready.empty()) {
-      if (actor_ready.size() > 1 && !reported_incomparability) {
-        const InstId first = *actor_ready.begin();
-        const InstId second = *std::next(actor_ready.begin());
+  // Edges in declaration order, as rank pairs; a pair enters the graph with its first kind.
+  const auto m=ranks.ids.size();
+  RankPairs graph_pairs,program_order_pairs;
+  std::vector<std::size_t> indegrees(m),order_indegrees(m);
+  {
+    EdgeKindSet declared(program.edges.size());
+    for (const SourceEdge& edge : program.edges) {
+      if (!IsValidEdgeKind(edge.kind)) {
         AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
-                      DiagnosticCode::kIncompleteThreadProgramOrder,
-                      "instructions " + IdValue(first) + " and " +
-                          IdValue(second) + " of actor " + IdValue(actor) +
-                          " are unordered in the source graph",
-                      instructions.at(second));
-        reported_incomparability = true;
+                      DiagnosticCode::kInvalidEdgeKind,
+                      "source edge has an unknown dependency kind");
+        continue;
       }
 
-      const InstId current = *actor_ready.begin();
-      actor_ready.erase(actor_ready.begin());
-      actor_order[actor].push_back(current);
-      for (InstId successor : program_order_successors[current]) {
-        std::size_t& indegree = actor_indegrees.at(successor);
-        --indegree;
-        if (indegree == 0) {
-          actor_ready.insert(successor);
-        }
+      const auto from = ranks.find(edge.from);
+      const auto to = ranks.find(edge.to);
+      if (!from || !to) {
+        AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
+                      DiagnosticCode::kUnknownEdgeEndpoint,
+                      "source edge references an unknown instruction");
+        continue;
+      }
+
+      const auto kind=static_cast<unsigned>(edge.kind);
+      const auto before=declared.insert((std::uint64_t(*from)<<32)|*to,kind);
+      if ((before>>kind)&1u) {
+        AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
+                      DiagnosticCode::kDuplicateEdge,
+                      "source edge is declared more than once", handle(*to));
+        continue;
+      }
+
+      if (edge.kind == SourceEdgeKind::kProgramOrder &&
+          ranks.actors[*from] != ranks.actors[*to]) {
+        AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
+                      DiagnosticCode::kProgramOrderCrossesActors,
+                      "program-order edge connects different actors", handle(*to));
+      } else if (edge.kind == SourceEdgeKind::kProgramOrder) {
+        program_order_pairs.emplace_back(std::uint32_t(*from),std::uint32_t(*to));
+        ++order_indegrees[*to];
+      }
+
+      if (!before) {
+        graph_pairs.emplace_back(std::uint32_t(*from),std::uint32_t(*to));
+        ++indegrees[*to];
       }
     }
+  }
+
+  {
+    // The processed set (instructions without a cyclic ancestor) does not depend on the order.
+    const auto successors=MakeAdjacency(m,std::move(graph_pairs));
+    std::vector<std::uint32_t> ready;
+    for(std::size_t rank=0;rank<m;++rank)if(!indegrees[rank])ready.push_back(std::uint32_t(rank));
+    std::size_t visited = 0;
+    while (!ready.empty()) {
+      const auto current=ready.back();ready.pop_back();++visited;
+      for(auto k=successors.offsets[current];k<successors.offsets[current+1];++k)
+        if(!--indegrees[successors.targets[k]])ready.push_back(successors.targets[k]);
+    }
+    if (visited != m) {
+      AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
+                    DiagnosticCode::kCyclicSourceGraph,
+                    "the union of source dependency edges contains a cycle");
+    }
+    indegrees=std::vector<std::size_t>{};
+  }
+
+  // Consecutive collective calls of each actor in its program order.
+  std::vector<std::pair<SyncId, SyncId>> collective_order;
+  {
+    // Accepted program-order pairs join instructions of one actor, so global program-order
+    // indegrees restricted to an actor are that actor's. Actors without a root pop nothing.
+    const auto successors=MakeAdjacency(m,std::move(program_order_pairs));
+    std::map<ActorId, std::vector<std::uint32_t>> actor_roots;
+    std::vector<std::uint32_t>* roots=nullptr;
+    for (std::size_t rank=0;rank<m;++rank) {
+      if(order_indegrees[rank])continue;
+      if(!roots || ranks.actors[rank]!=ranks.actors[roots->back()])roots=&actor_roots[ranks.actors[rank]];
+      roots->push_back(std::uint32_t(rank));
+    }
+    // Min-heap of ranks (rank order is ID order); its two smallest are ready[0] and
+    // min(ready[1], ready[2]).
+    std::vector<std::uint32_t> ready;
+    for (auto& [actor, actor_program] : actor_roots) {
+      ready=std::move(actor_program);
+      std::make_heap(ready.begin(),ready.end(),std::greater<>{});
+      bool reported_incomparability = false;
+      std::optional<SyncId> previous;
+      while (!ready.empty()) {
+        if (ready.size() > 1 && !reported_incomparability) {
+          const auto first = ready[0];
+          const auto second = ready.size()==2 ? ready[1] : std::min(ready[1],ready[2]);
+          AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
+                        DiagnosticCode::kIncompleteThreadProgramOrder,
+                        "instructions " + IdValue(ranks.ids[first]) + " and " +
+                            IdValue(ranks.ids[second]) + " of actor " + IdValue(actor) +
+                            " are unordered in the source graph",
+                        handle(second));
+          reported_incomparability = true;
+        }
+
+        std::pop_heap(ready.begin(),ready.end(),std::greater<>{});
+        const auto current=ready.back();ready.pop_back();
+        if (!record_syncs.empty())
+          if (const auto sync=record_syncs[ranks.record(current)]) {
+            if(previous)collective_order.emplace_back(*previous,*sync);
+            previous=sync;
+          }
+        for (auto k=successors.offsets[current];k<successors.offsets[current+1];++k)
+          if (!--order_indegrees[successors.targets[k]]) {
+            ready.push_back(successors.targets[k]);std::push_heap(ready.begin(),ready.end(),std::greater<>{});
+          }
+      }
+    }
+    order_indegrees=std::vector<std::size_t>{};
   }
 
   std::map<SyncId, const CollectiveSpec*> collective_specs;
@@ -742,26 +838,10 @@ std::vector<Diagnostic> SourceValidator::Validate(
     static_cast<void>(calls);
     collective_pending.emplace(sync, 0);
   }
-  for (const auto& [actor, order] : actor_order) {
-    static_cast<void>(actor);
-    std::optional<SyncId> previous;
-    for (InstId id : order) {
-      const auto handle = instructions.at(id);
-      if (!handle.holdsOperation<SyncThreads>() && !handle.holdsOperation<SyncWarp>()) continue;
-      const auto instruction_view=instructions.at(id).operator->();
-      const auto& instruction=*instruction_view;
-      const SourceOp& op = instruction.op;
-      std::optional<SyncId> current;
-      if (const auto* threads = std::get_if<SyncThreads>(&op))
-        current = threads->sync_id;
-      else if (const auto* warp = std::get_if<SyncWarp>(&op))
-        current = warp->sync_id;
-      if (!current) continue;
-      if (previous && collective_edges.emplace(*previous, *current).second) {
-        collective_successors[*previous].push_back(*current);
-        ++collective_pending.at(*current);
-      }
-      previous = current;
+  for (const auto& [previous, current] : collective_order) {
+    if (collective_edges.emplace(previous, current).second) {
+      collective_successors[previous].push_back(current);
+      ++collective_pending.at(current);
     }
   }
   std::vector<SyncId> collective_ready;

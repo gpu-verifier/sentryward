@@ -184,7 +184,7 @@ bool rewrite(v::Graph& graph,std::size_t id,std::unique_ptr<const v::Operation> 
     audit->add(AuditCounter::rewrite_local_operand_reads,local.operand_reads);
     audit->add(AuditCounter::rewrite_budget_rejections,local.budget_rejections);
     audit->add(AuditCounter::rewrite_domain_rejections,local.domain_rejections));
-  if(changed){++stats.nodes;stats.instances+=graph.node(id).instances().size();}
+  if(changed){++stats.nodes;stats.instances+=graph.node(id).instanceCount();}
   return changed;
 }
 }  // namespace

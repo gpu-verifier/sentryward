@@ -1,14 +1,4 @@
 {
-  "address_model": {
-    "address_invariants": [],
-    "kind": "symbolic",
-    "layers": [
-      0,
-      2
-    ],
-    "solver": "z3",
-    "solver_timeout_ms": 100
-  },
   "assumption_dependent": true,
   "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
@@ -51,18 +41,19 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "not_run",
-    "memory": "not_run",
-    "synchronization": "incomplete"
-  },
-  "counts": {
-    "edges": 7876864,
-    "events": 2708336,
-    "instructions": 426720,
-    "threads": 4096
+    "synchronization": "failed"
   },
   "diagnostics": [
     {
@@ -70,6 +61,7 @@
       "details": {
         "constraint": "mbarrier_final_invalidation",
         "count": 48,
+        "internal_stage": "lifecycle_check",
         "witnesses": [
           {
             "failed_target_count": 1,
@@ -299,757 +291,239 @@
         "witnesses_truncated": true
       },
       "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "stage": "lifecycle_check"
+      "stage": "synchronization"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
+  "evidence": {
+    "failed_required_orders": [
       {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "incomplete"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "barrier_completion_before_invalidation_not_proven",
-              "details": {
-                "constraint": "mbarrier_final_invalidation",
-                "count": 48,
-                "witnesses": [
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 22835,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 169
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 22851,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 173
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 22819,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 177
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 49505,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 26839
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 49521,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 26843
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 49489,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 26847
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 76175,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 53509
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 76191,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 53513
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 76159,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 53517
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 102845,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 80179
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 102861,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 80183
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 102829,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 80187
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 129515,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 106849
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 129531,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 106853
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 129499,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 106857
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 156185,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 133519
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 156201,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 133523
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 156169,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 133527
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 182855,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 160189
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 182871,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 160193
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 182839,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 160197
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 209525,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 186859
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 209541,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 186863
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 209509,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 186867
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 236195,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 213529
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 236211,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 213533
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 236179,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 213537
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 262865,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 240199
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 262881,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 240203
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 262849,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 240207
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 289535,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 266869
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 289551,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 266873
-                  }
-                ],
-                "witnesses_truncated": true
-              },
-              "message": "Every operation on the mbarrier must finish before its final invalidation.",
-              "stage": "lifecycle_check"
-            }
-          ],
-          "prerequisite_result": "invalid_lifecycle"
-        },
-        "stage": "pipeline"
+        "failed_target_count": 1,
+        "from_instruction": 22835,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 169
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 22851,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 173
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 22819,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 177
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 49505,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 26839
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 49521,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 26843
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 49489,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 26847
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 76175,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 53509
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 76191,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 53513
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 76159,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 53517
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 102845,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 80179
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 102861,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 80183
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 102829,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 80187
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 129515,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 106849
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 129531,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 106853
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 129499,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 106857
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 156185,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 133519
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 156201,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 133523
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 156169,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 133527
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 182855,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 160189
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 182871,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 160193
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 182839,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 160197
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 209525,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 186859
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 209541,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 186863
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 209509,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 186867
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 236195,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 213529
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 236211,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 213533
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 236179,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 213537
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 262865,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 240199
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 262881,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 240203
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 262849,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 240207
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 289535,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 266869
+      },
+      {
+        "failed_target_count": 1,
+        "from_instruction": 289551,
+        "kind": "mbarrier_final_invalidation",
+        "message": "Every operation on the mbarrier must finish before its final invalidation.",
+        "to_instruction": 266873
       }
     ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
-  },
-  "error": {
-    "code": "barrier_completion_before_invalidation_not_proven",
-    "message": "Every operation on the mbarrier must finish before its final invalidation."
-  },
-  "failed_required_orders": [
-    {
-      "failed_target_count": 1,
-      "from_instruction": 22835,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 169
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 22851,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 173
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 22819,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 177
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 49505,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 26839
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 49521,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 26843
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 49489,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 26847
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 76175,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 53509
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 76191,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 53513
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 76159,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 53517
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 102845,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 80179
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 102861,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 80183
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 102829,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 80187
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 129515,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 106849
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 129531,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 106853
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 129499,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 106857
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 156185,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 133519
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 156201,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 133523
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 156169,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 133527
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 182855,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 160189
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 182871,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 160193
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 182839,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 160197
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 209525,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 186859
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 209541,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 186863
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 209509,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 186867
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 236195,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 213529
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 236211,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 213533
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 236179,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 213537
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 262865,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 240199
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 262881,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 240203
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 262849,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 240207
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 289535,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 266869
-    },
-    {
-      "failed_target_count": 1,
-      "from_instruction": 289551,
-      "kind": "mbarrier_final_invalidation",
-      "message": "Every operation on the mbarrier must finish before its final invalidation.",
-      "to_instruction": 266873
-    }
-  ],
-  "failed_required_orders_count": 48,
-  "failed_required_orders_sample_limit": 32,
-  "failed_required_orders_truncated": true,
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [
-        {
-          "code": "unsupported_operation",
-          "details": {
-            "cta": 0,
-            "instruction": "@%p26 tensormap.replace.tile.global_address.shared::cta.b1024.b64 [ %rd27 + 0 ], %rd28;",
-            "instruction_index": 44,
-            "location": {
-              "file": "corpus/triton__triton_ws.exact-3.8.0__sm_100a.ptx",
-              "line": 96
-            },
-            "occurrence": 0,
-            "thread": 0
-          },
-          "message": "No value-IR model for 'tensormap' (including its memory effects/results)",
-          "stage": "value_lowering"
-        }
-      ],
-      "first_unavailable_reason": "",
-      "queries": 0,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": false
-    },
-    "cluster_completion_joins": 0,
-    "cta_count": 16,
-    "dependency_compression": {
-      "bulk_full_wait": {
-        "consumers": 2048,
-        "emitted_references": 32,
-        "original_references": 32,
-        "prefix_effects": 0
-      },
-      "bulk_read_wait": {
-        "consumers": 1536,
-        "emitted_references": 0,
-        "original_references": 0,
-        "prefix_effects": 0
-      },
-      "tcgen_commit": {
-        "consumers": 144,
-        "emitted_references": 784,
-        "original_references": 2816,
-        "prefix_effects": 144
-      },
-      "tcgen_load_wait": {
-        "consumers": 2048,
-        "emitted_references": 2048,
-        "original_references": 2048,
-        "prefix_effects": 0
-      },
-      "tcgen_store_wait": {
-        "consumers": 2048,
-        "emitted_references": 2048,
-        "original_references": 2048,
-        "prefix_effects": 0
-      }
-    },
-    "diagnostic_sample_count": 0,
-    "discharged_codes": [
-      "mma_memory_effect_refinement",
-      "tcgen_pipeline_effect_refinement",
-      "tcgen_commit_notification_order_refinement"
-    ],
-    "executed_records": 1260976,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 55808,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
-    },
-    "implementation": "cpp",
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "A",
-        "offset": 0,
-        "parameter": "matmul_tma_ws_kernel_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "B",
-        "offset": 0,
-        "parameter": "matmul_tma_ws_kernel_param_1",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "C",
-        "offset": 0,
-        "parameter": "matmul_tma_ws_kernel_param_2",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "descriptor_scratch",
-        "offset": 0,
-        "parameter": "matmul_tma_ws_kernel_param_9",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "profile_scratch",
-        "offset": 0,
-        "parameter": "matmul_tma_ws_kernel_param_10",
-        "source": "declaration"
-      }
-    ],
-    "lowered_instruction_count": 426720,
-    "mma_refinement": {
-      "blocked": [],
-      "discharged": 512
-    },
-    "reached_opcodes": {
-      "add.s32": 149504,
-      "add.s64": 28672,
-      "and.b32": 11264,
-      "and.pred": 51200,
-      "bar.sync": 59392,
-      "bar.warp.sync": 14848,
-      "barrier.sync": 16384,
-      "bfe.u32": 8192,
-      "bra": 10240,
-      "bra.uni": 7680,
-      "brx.idx": 4096,
-      "cp.async.bulk.commit_group": 3584,
-      "cp.async.bulk.tensor.2d.global.shared::cta.bulk_group": 32,
-      "cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes": 256,
-      "cp.async.bulk.wait_group": 2048,
-      "cp.async.bulk.wait_group.read": 1536,
-      "cvt.rn.f16x2.f32": 131072,
-      "cvt.u64.u32": 16384,
-      "cvta.global.u64": 6144,
-      "div.s32": 4096,
-      "elect.sync": 55808,
-      "fence.proxy.async.shared::cta": 10240,
-      "fence.proxy.tensormap::generic.acquire.gpu": 1536,
-      "ld.param.b32": 14336,
-      "ld.param.b64": 8192,
-      "ld.shared.b32": 8192,
-      "ld.shared.b64": 1024,
-      "ld.shared.b8": 4096,
-      "mad.lo.s64": 4096,
-      "mad.wide.u32": 2048,
-      "mbarrier.arrive.expect_tx.shared::cta.b64": 128,
-      "mbarrier.arrive.shared::cta.b64": 16,
-      "mbarrier.init.shared::cta.b64": 128,
-      "mbarrier.inval.shared::cta.b64": 128,
-      "mbarrier.try_wait.parity.shared::cta.b64": 16384,
-      "min.s32": 2048,
-      "mov.b32": 20992,
-      "mov.b64": 262144,
-      "mov.pred": 6656,
-      "mov.u32": 14336,
-      "mul.lo.s32": 2048,
-      "mul.wide.s32": 6144,
-      "or.b32": 4096,
-      "or.b64": 9216,
-      "rem.s32": 2048,
-      "ret": 4096,
-      "selp.b32": 23552,
-      "setmaxnreg.dec.sync.aligned.u32": 2048,
-      "setmaxnreg.inc.sync.aligned.u32": 12288,
-      "setp.eq.b32": 24064,
-      "setp.gt.u32": 4096,
-      "setp.lt.s32": 2048,
-      "setp.lt.u32": 20480,
-      "setp.ne.b32": 15872,
-      "shfl.sync.idx.b32": 10240,
-      "shl.b32": 44032,
-      "shl.b64": 1024,
-      "shr.s32": 11264,
-      "shr.u32": 9728,
-      "shr.u64": 2048,
-      "st.shared.b32": 12288,
-      "st.shared.b64": 2048,
-      "st.shared.v4.b32": 32768,
-      "st.shared::cta.b32": 1536,
-      "sub.s32": 4096,
-      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 512,
-      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 144,
-      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 512,
-      "tcgen05.ld.sync.aligned.32x32b.x128.b32": 2048,
-      "tcgen05.mma.cta_group::1.kind::f16": 512,
-      "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 512,
-      "tcgen05.st.sync.aligned.32x32b.x128.b32": 2048,
-      "tcgen05.wait::ld.sync.aligned": 2048,
-      "tcgen05.wait::st.sync.aligned": 2048,
-      "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned": 1536,
-      "tensormap.replace.tile.box_dim.shared::cta.b1024.b32": 96,
-      "tensormap.replace.tile.element_stride.shared::cta.b1024.b32": 96,
-      "tensormap.replace.tile.elemtype.shared::cta.b1024.b32": 48,
-      "tensormap.replace.tile.fill_mode.shared::cta.b1024.b32": 48,
-      "tensormap.replace.tile.global_address.shared::cta.b1024.b64": 48,
-      "tensormap.replace.tile.global_dim.shared::cta.b1024.b32": 96,
-      "tensormap.replace.tile.global_stride.shared::cta.b1024.b64": 48,
-      "tensormap.replace.tile.interleave_layout.shared::cta.b1024.b32": 48,
-      "tensormap.replace.tile.rank.shared::cta.b1024.b32": 48,
-      "tensormap.replace.tile.swizzle_mode.shared::cta.b1024.b32": 48,
-      "xor.b32": 26112
-    },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 10752,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 160,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 426720,
-      "stored_bindings": 39232
-    },
-    "source_edge_storage": {
-      "binding_templates": 4464,
-      "logical_edges": 422624,
-      "stored_bindings": 4464
-    },
-    "tcgen_history_refinement": {
-      "blocked": [],
-      "notifications": 144,
-      "operations": 512
-    },
-    "thread_count": 4096,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": []
+    "failed_required_orders_count": 48,
+    "failed_required_orders_sample_limit": 32,
+    "failed_required_orders_truncated": true
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -1057,6 +531,7 @@
       "__assertfail"
     ],
     "assertion_uses": 0,
+    "atomic_uses": 0,
     "bounded_loop_uses": 0,
     "clc_failure": true,
     "clc_uses": 0,
@@ -1078,392 +553,888 @@
     "representative_branch_uses": 0,
     "trap_only_equality_assertions_hold": true
   },
-  "frontend_value_validation": {
-    "required_orders": 10752,
-    "status": "pending"
-  },
-  "hb_queries": {
-    "required_orders": {
-      "algorithm": "member-relations",
-      "batches": 33,
-      "edge_visits": 20790542,
-      "member_enumerations": 0,
-      "request_construction": {
-        "concrete_pair_materializations": 0,
-        "endpoint_reads": 86544,
-        "family_requests": 12576,
-        "logical_orders": 149664,
-        "owner_bindings": 35776,
-        "stored_orders": 32112
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "counts": {
+      "edges": 7614720,
+      "events": 2708336,
+      "instructions": 426720,
+      "threads": 4096
+    },
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "incomplete"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "barrier_completion_before_invalidation_not_proven",
+                "details": {
+                  "constraint": "mbarrier_final_invalidation",
+                  "count": 48,
+                  "witnesses": [
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 22835,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 169
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 22851,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 173
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 22819,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 177
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 49505,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 26839
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 49521,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 26843
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 49489,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 26847
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 76175,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 53509
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 76191,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 53513
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 76159,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 53517
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 102845,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 80179
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 102861,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 80183
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 102829,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 80187
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 129515,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 106849
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 129531,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 106853
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 129499,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 106857
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 156185,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 133519
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 156201,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 133523
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 156169,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 133527
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 182855,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 160189
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 182871,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 160193
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 182839,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 160197
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 209525,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 186859
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 209541,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 186863
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 209509,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 186867
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 236195,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 213529
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 236211,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 213533
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 236179,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 213537
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 262865,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 240199
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 262881,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 240203
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 262849,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 240207
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 289535,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 266869
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 289551,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 266873
+                    }
+                  ],
+                  "witnesses_truncated": true
+                },
+                "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                "stage": "lifecycle_check"
+              }
+            ],
+            "prerequisite_result": "invalid_lifecycle"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "error": {
+      "code": "barrier_completion_before_invalidation_not_proven",
+      "message": "Every operation on the mbarrier must finish before its final invalidation."
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_lowering": {
+          "final_templates": 144,
+          "graph_nodes": 917152,
+          "splits": 0,
+          "template_steps": 48336
+        },
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 16,
+      "dependency_compression": {
+        "bulk_full_wait": {
+          "consumers": 2048,
+          "emitted_references": 32,
+          "original_references": 32,
+          "prefix_effects": 0
+        },
+        "bulk_read_wait": {
+          "consumers": 1536,
+          "emitted_references": 0,
+          "original_references": 0,
+          "prefix_effects": 0
+        },
+        "tcgen_commit": {
+          "consumers": 144,
+          "emitted_references": 784,
+          "original_references": 2816,
+          "prefix_effects": 144
+        },
+        "tcgen_load_wait": {
+          "consumers": 2048,
+          "emitted_references": 2048,
+          "original_references": 2048,
+          "prefix_effects": 0
+        },
+        "tcgen_store_wait": {
+          "consumers": 2048,
+          "emitted_references": 2048,
+          "original_references": 2048,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 1260976,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 55808,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "A",
+          "offset": 0,
+          "parameter": "matmul_tma_ws_kernel_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "B",
+          "offset": 0,
+          "parameter": "matmul_tma_ws_kernel_param_1",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "C",
+          "offset": 0,
+          "parameter": "matmul_tma_ws_kernel_param_2",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "descriptor_scratch",
+          "offset": 0,
+          "parameter": "matmul_tma_ws_kernel_param_9",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "profile_scratch",
+          "offset": 0,
+          "parameter": "matmul_tma_ws_kernel_param_10",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 426720,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 512
+      },
+      "reached_opcodes": {
+        "add.s32": 149504,
+        "add.s64": 28672,
+        "and.b32": 11264,
+        "and.pred": 51200,
+        "bar.sync": 59392,
+        "bar.warp.sync": 14848,
+        "barrier.sync": 16384,
+        "bfe.u32": 8192,
+        "bra": 10240,
+        "bra.uni": 7680,
+        "brx.idx": 4096,
+        "cp.async.bulk.commit_group": 3584,
+        "cp.async.bulk.tensor.2d.global.shared::cta.bulk_group": 32,
+        "cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes": 256,
+        "cp.async.bulk.wait_group": 2048,
+        "cp.async.bulk.wait_group.read": 1536,
+        "cvt.rn.f16x2.f32": 131072,
+        "cvt.u64.u32": 16384,
+        "cvta.global.u64": 6144,
+        "div.s32": 4096,
+        "elect.sync": 55808,
+        "fence.proxy.async.shared::cta": 10240,
+        "fence.proxy.tensormap::generic.acquire.gpu": 1536,
+        "ld.param.b32": 14336,
+        "ld.param.b64": 8192,
+        "ld.shared.b32": 8192,
+        "ld.shared.b64": 1024,
+        "ld.shared.b8": 4096,
+        "mad.lo.s64": 4096,
+        "mad.wide.u32": 2048,
+        "mbarrier.arrive.expect_tx.shared::cta.b64": 128,
+        "mbarrier.arrive.shared::cta.b64": 16,
+        "mbarrier.init.shared::cta.b64": 128,
+        "mbarrier.inval.shared::cta.b64": 128,
+        "mbarrier.try_wait.parity.shared::cta.b64": 16384,
+        "min.s32": 2048,
+        "mov.b32": 20992,
+        "mov.b64": 262144,
+        "mov.pred": 6656,
+        "mov.u32": 14336,
+        "mul.lo.s32": 2048,
+        "mul.wide.s32": 6144,
+        "or.b32": 4096,
+        "or.b64": 9216,
+        "rem.s32": 2048,
+        "ret": 4096,
+        "selp.b32": 23552,
+        "setmaxnreg.dec.sync.aligned.u32": 2048,
+        "setmaxnreg.inc.sync.aligned.u32": 12288,
+        "setp.eq.b32": 24064,
+        "setp.gt.u32": 4096,
+        "setp.lt.s32": 2048,
+        "setp.lt.u32": 20480,
+        "setp.ne.b32": 15872,
+        "shfl.sync.idx.b32": 10240,
+        "shl.b32": 44032,
+        "shl.b64": 1024,
+        "shr.s32": 11264,
+        "shr.u32": 9728,
+        "shr.u64": 2048,
+        "st.shared.b32": 12288,
+        "st.shared.b64": 2048,
+        "st.shared.v4.b32": 32768,
+        "st.shared::cta.b32": 1536,
+        "sub.s32": 4096,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 512,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 144,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 512,
+        "tcgen05.ld.sync.aligned.32x32b.x128.b32": 2048,
+        "tcgen05.mma.cta_group::1.kind::f16": 512,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 512,
+        "tcgen05.st.sync.aligned.32x32b.x128.b32": 2048,
+        "tcgen05.wait::ld.sync.aligned": 2048,
+        "tcgen05.wait::st.sync.aligned": 2048,
+        "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned": 1536,
+        "tensormap.replace.tile.box_dim.shared::cta.b1024.b32": 96,
+        "tensormap.replace.tile.element_stride.shared::cta.b1024.b32": 96,
+        "tensormap.replace.tile.elemtype.shared::cta.b1024.b32": 48,
+        "tensormap.replace.tile.fill_mode.shared::cta.b1024.b32": 48,
+        "tensormap.replace.tile.global_address.shared::cta.b1024.b64": 48,
+        "tensormap.replace.tile.global_dim.shared::cta.b1024.b32": 96,
+        "tensormap.replace.tile.global_stride.shared::cta.b1024.b64": 48,
+        "tensormap.replace.tile.interleave_layout.shared::cta.b1024.b32": 48,
+        "tensormap.replace.tile.rank.shared::cta.b1024.b32": 48,
+        "tensormap.replace.tile.swizzle_mode.shared::cta.b1024.b32": 48,
+        "xor.b32": 26112
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 10752,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 160,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 426720,
+        "stored_bindings": 39232
+      },
+      "source_edge_storage": {
+        "binding_templates": 4464,
+        "logical_edges": 422624,
+        "stored_bindings": 4464
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 144,
+        "operations": 512
+      },
+      "thread_count": 4096,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "frontend_value_validation": {
+      "required_orders": 10752,
+      "status": "pending"
+    },
+    "hb_queries": {
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 33,
+        "edge_visits": 20790627,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 86544,
+          "family_requests": 12576,
+          "logical_orders": 149664,
+          "owner_bindings": 35776,
+          "stored_orders": 32112
+        }
       }
-    }
+    },
+    "implementation": "cpp",
+    "memory_analysis_complete": false,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 4228.0546875,
+    "required_order_domains": 32112,
+    "required_orders": 149664,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 1,
+      "binding_diagnostics": [
+        {
+          "code": "unsupported_memory_binding_domain",
+          "message": "Source and Value domains have different coverage"
+        }
+      ],
+      "execution_cohorts": 256,
+      "mapping_complete": false,
+      "memory_binding_stored_rows": 16799,
+      "memory_binding_templates": 48,
+      "memory_bindings": 17775,
+      "memory_linking_templates_used": false,
+      "synchronization_groups": 14832,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 192,
+      "thread_prefix_groups": 963904,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "stage": "lifecycle_check",
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 16,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 1470976,
+      "path_entries": 46656,
+      "record_bindings": 61056,
+      "record_nodes": 37600,
+      "splits": 128,
+      "template_steps": 41472,
+      "thread_memberships": 4096,
+      "value_nodes": 29495
+    },
+    "thread_record_compression": {
+      "completed_ctas": 16,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 1260976,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "incomplete"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "barrier_completion_before_invalidation_not_proven",
+                "details": {
+                  "constraint": "mbarrier_final_invalidation",
+                  "count": 48,
+                  "witnesses": [
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 22835,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 169
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 22851,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 173
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 22819,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 177
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 49505,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 26839
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 49521,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 26843
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 49489,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 26847
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 76175,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 53509
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 76191,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 53513
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 76159,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 53517
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 102845,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 80179
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 102861,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 80183
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 102829,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 80187
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 129515,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 106849
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 129531,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 106853
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 129499,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 106857
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 156185,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 133519
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 156201,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 133523
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 156169,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 133527
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 182855,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 160189
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 182871,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 160193
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 182839,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 160197
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 209525,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 186859
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 209541,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 186863
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 209509,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 186867
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 236195,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 213529
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 236211,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 213533
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 236179,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 213537
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 262865,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 240199
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 262881,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 240203
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 262849,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 240207
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 289535,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 266869
+                    },
+                    {
+                      "failed_target_count": 1,
+                      "from_instruction": 289551,
+                      "kind": "mbarrier_final_invalidation",
+                      "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                      "to_instruction": 266873
+                    }
+                  ],
+                  "witnesses_truncated": true
+                },
+                "message": "Every operation on the mbarrier must finish before its final invalidation.",
+                "stage": "lifecycle_check"
+              }
+            ],
+            "prerequisite_result": "invalid_lifecycle",
+            "prerequisite_status": "unsafe_lifecycle"
+          },
+          "stage": "pipeline"
+        }
+      ],
+      "equivalence_check": "blocked",
+      "prerequisite_status": "unsafe_lifecycle",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      }
+    },
+    "value_ir_instance_count": 4092448,
+    "value_ir_node_count": 917152,
+    "value_view_complete": true
   },
-  "implementation": "cpp",
-  "memory_analysis_complete": false,
-  "mma_operand_ordering": {},
-  "mode": "verify",
-  "peak_footprint_mib": 2709.1953125,
-  "peak_rss_mib": 2956.21484375,
-  "pipeline_elapsed_seconds": 24.415651146,
-  "required_order_domains": 32112,
-  "required_orders": 149664,
+  "peak_rss_mib": 4237.1171875,
+  "pipeline_elapsed_seconds": 24.082665864,
   "result": "invalid_lifecycle",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 1,
-    "binding_diagnostics": [
-      {
-        "code": "incomplete_value_semantics",
-        "message": "unsupported_operation: No value-IR model for 'tensormap' (including its memory effects/results)"
-      }
-    ],
-    "execution_cohorts": 256,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 14832,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 192,
-    "thread_prefix_groups": 983,
-    "value_diagnostic_count": 1,
-    "value_diagnostics": [
-      {
-        "code": "unsupported_operation",
-        "line": 96,
-        "message": "No value-IR model for 'tensormap' (including its memory effects/results)"
-      }
-    ]
-  },
-  "source_violations": [],
-  "stage": "lifecycle_check",
-  "synchronization_input": {
-    "compute_access_binding": "after_happens_before",
-    "kind": "ordering_endpoints",
-    "memory_address_payloads": false
-  },
-  "template_execution": {
-    "completed_ctas": 16,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 1470976,
-    "path_entries": 46656,
-    "record_bindings": 61056,
-    "record_nodes": 37600,
-    "splits": 128,
-    "template_steps": 41472,
-    "thread_memberships": 4096,
-    "value_nodes": 29495
-  },
-  "thread_record_compression": {
-    "completed_ctas": 16,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 1260976,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "incomplete"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "barrier_completion_before_invalidation_not_proven",
-              "details": {
-                "constraint": "mbarrier_final_invalidation",
-                "count": 48,
-                "witnesses": [
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 22835,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 169
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 22851,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 173
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 22819,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 177
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 49505,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 26839
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 49521,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 26843
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 49489,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 26847
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 76175,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 53509
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 76191,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 53513
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 76159,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 53517
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 102845,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 80179
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 102861,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 80183
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 102829,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 80187
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 129515,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 106849
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 129531,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 106853
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 129499,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 106857
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 156185,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 133519
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 156201,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 133523
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 156169,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 133527
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 182855,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 160189
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 182871,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 160193
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 182839,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 160197
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 209525,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 186859
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 209541,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 186863
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 209509,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 186867
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 236195,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 213529
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 236211,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 213533
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 236179,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 213537
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 262865,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 240199
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 262881,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 240203
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 262849,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 240207
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 289535,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 266869
-                  },
-                  {
-                    "failed_target_count": 1,
-                    "from_instruction": 289551,
-                    "kind": "mbarrier_final_invalidation",
-                    "message": "Every operation on the mbarrier must finish before its final invalidation.",
-                    "to_instruction": 266873
-                  }
-                ],
-                "witnesses_truncated": true
-              },
-              "message": "Every operation on the mbarrier must finish before its final invalidation.",
-              "stage": "lifecycle_check"
-            }
-          ],
-          "prerequisite_result": "invalid_lifecycle",
-          "prerequisite_status": "unsafe_lifecycle"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "unsafe_lifecycle",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    }
-  },
-  "value_ir_instance_count": 11182,
-  "value_ir_node_count": 526,
-  "value_view_complete": false,
   "verification_limitations": [],
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.571
 }

@@ -119,6 +119,17 @@ void partition(const Document& left,const Document& right,const J& m,Builder& a,
   // certificate falsely requires every individual family to be dense.
   bool rectangular=false;for(const auto& f:families)if(f.at("shape").size()!=1)rectangular=true;
   if(rectangular) {
+    // A packed family (element_bytes = P * width) is P families of width-byte
+    // elements at byte offsets slot * width; emit extracts each slot exactly.
+    std::vector<std::pair<J,uint64_t>> pieces;
+    for(const auto& f:families) {
+      const auto packed=input_unsigned(f.at("element_bytes"));
+      if(!packed || packed%width)throw Unsupported("invalid rectangular output");
+      for(uint64_t slot=0;slot<packed/width;++slot) {
+        auto piece=f;piece["offset"]=checked(Z(input_unsigned(f.at("offset")))+Z(slot)*width);
+        pieces.emplace_back(std::move(piece),slot);
+      }
+    }
     // Refine physical tensor axes by the declared family strides. A block
     // [3,30] at strides [64,2] is rectangular in (row, column/32, column%32),
     // even though it is not an AP in the original column axis. Only exact
@@ -128,7 +139,7 @@ void partition(const Document& left,const Document& right,const J& m,Builder& a,
     std::vector<Axis> grid_axes;
     for(const auto& axis:tensor_axes) {
       std::vector<uint64_t> cuts{1,axis.size};
-      for(const auto& f:families) {
+      for(const auto& [f,slot]:pieces) {
         auto fs=f.at("shape").get<std::vector<uint64_t>>(),st=f.at("strides_bytes").get<std::vector<uint64_t>>();
         if(fs.size()!=st.size())throw Unsupported("invalid output axes");
         for(unsigned i=0;i<fs.size();++i)if(fs[i]>1 && st[i]%axis.stride==0) {
@@ -149,9 +160,9 @@ void partition(const Document& left,const Document& right,const J& m,Builder& a,
     struct Term {unsigned dim;uint64_t divisor,radix,slope,count;};
     struct Box {std::vector<uint64_t> base,count,step;std::vector<std::vector<Term>> bindings;};
     std::vector<Box> boxes;Z total=0;
-    for(const auto& f:families) {
+    for(const auto& [f,slot]:pieces) {
       auto fs=f.at("shape").get<std::vector<uint64_t>>(),st=f.at("strides_bytes").get<std::vector<uint64_t>>();
-      if(f.at("element_bytes")!=width || fs.empty() || fs.size()!=st.size())throw Unsupported("invalid rectangular output");
+      if(fs.empty() || fs.size()!=st.size())throw Unsupported("invalid rectangular output");
       Box box{std::vector<uint64_t>(grid_shape.size()),std::vector<uint64_t>(grid_shape.size(),1),std::vector<uint64_t>(grid_shape.size(),1),std::vector<std::vector<Term>>(grid_shape.size())};
       auto rem=checked(Z(input_unsigned(f.at("offset")))-origin);
       for(auto it=axes.rbegin();it!=axes.rend();++it){box.base[it->index]=rem/it->stride;rem%=it->stride;if(box.base[it->index]>=it->size)throw Unsupported("output outside tensor");}
@@ -182,14 +193,29 @@ void partition(const Document& left,const Document& right,const J& m,Builder& a,
         if(Z(box.base[axis])+Z(step)*(count-1)>=grid_shape[axis])throw Unsupported("output extent outside tensor");
         box.count[axis]=count;box.step[axis]=step;
       }
-      for(const auto& prev:boxes){bool overlap=true;for(unsigned i=0;i<grid_shape.size() && overlap;++i)
-        overlap=intersects({box.base[i],checked(Z(box.base[i])+Z(box.step[i])*(box.count[i]-1)),box.step[i]},
-                           {prev.base[i],checked(Z(prev.base[i])+Z(prev.step[i])*(prev.count[i]-1)),prev.step[i]});
-        if(overlap)throw Unsupported("overlapping outputs");}
       total+=product(box.count);boxes.push_back(std::move(box));
     }
+    // Pairwise disjointness, swept along the widest grid axis: only boxes whose
+    // ranges on that axis meet are compared on every axis (not all pairs).
+    std::vector<std::vector<Range>> ranges(boxes.size());
+    for(std::size_t b=0;b<boxes.size();++b)for(unsigned i=0;i<grid_shape.size();++i) {
+      const auto& box=boxes[b];
+      ranges[b].push_back({box.base[i],checked(Z(box.base[i])+Z(box.step[i])*(box.count[i]-1)),box.step[i]});
+    }
+    unsigned sweep=0;
+    for(unsigned i=1;i<grid_shape.size();++i)if(grid_shape[i]>grid_shape[sweep])sweep=i;
+    std::vector<std::size_t> order(boxes.size());std::iota(order.begin(),order.end(),std::size_t(0));
+    std::sort(order.begin(),order.end(),[&](std::size_t x,std::size_t y){return ranges[x][sweep].first<ranges[y][sweep].first;});
+    std::vector<std::size_t> active;
+    for(auto b:order) {
+      std::erase_if(active,[&](std::size_t p){return ranges[p][sweep].last<ranges[b][sweep].first;});
+      for(auto p:active){bool overlap=true;for(unsigned i=0;i<grid_shape.size() && overlap;++i)
+        overlap=intersects(ranges[b][i],ranges[p][i]);
+        if(overlap)throw Unsupported("overlapping outputs");}
+      active.push_back(b);
+    }
     if(total!=product(shape))throw Unsupported("incomplete output coverage");
-    for(size_t i=0;i<families.size();++i) {
+    for(size_t i=0;i<pieces.size();++i) {
       auto& box=boxes[i];std::vector<Edge> coords(shape.size(),a.constant(0)),right_coords;
       std::vector<Edge> grid_coords;
       for(unsigned axis=0;axis<grid_shape.size();++axis){auto c=a.constant(box.base[axis]);for(auto t:box.bindings[axis]){auto x=a.index(t.dim);if(t.divisor!=1)x=a.op("Divide",x,a.constant(t.divisor));if(t.radix)x=a.op("Remainder",x,a.constant(t.radix));if(t.slope!=1)x=a.op("Multiply",x,a.constant(t.slope));c=a.op("Add",c,x);}grid_coords.push_back(c);}
@@ -200,8 +226,9 @@ void partition(const Document& left,const Document& right,const J& m,Builder& a,
         if(factor!=1)x=a.op("Multiply",x,a.constant(factor));
         coords[parent->index]=a.op("Add",coords[parent->index],x);
       }
-      for(unsigned j=0;j<families[i].at("shape").size();++j)right_coords.push_back(b.index(j));
-      emit(families[i],coords,right_coords,families[i].at("shape").get<std::vector<uint64_t>>());
+      const auto& [f,slot]=pieces[i];
+      for(unsigned j=0;j<f.at("shape").size();++j)right_coords.push_back(b.index(j));
+      emit(f,coords,right_coords,f.at("shape").get<std::vector<uint64_t>>(),slot);
     }
     return;
   }

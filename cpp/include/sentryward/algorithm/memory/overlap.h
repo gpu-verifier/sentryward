@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -17,6 +18,17 @@ struct ByteOverlap final {
   std::uint64_t bytes;
 
   friend bool operator==(const ByteOverlap&, const ByteOverlap&) = default;
+};
+
+// Cross-CTA class mode: a race between two launch units found by the cross-unit pass. The
+// race's accesses are the representatives'; this names the units, their CTAs (same rank) and the
+// δ of the allocation in each unit.
+struct CrossUnitEvidence final {
+  std::array<std::uint32_t, 3> first_unit{}, first_cta{}, second_unit{}, second_cta{};
+  std::string allocation;
+  std::int64_t first_delta = 0, second_delta = 0;
+
+  friend bool operator==(const CrossUnitEvidence&, const CrossUnitEvidence&) = default;
 };
 
 struct OverlapEvidence final {

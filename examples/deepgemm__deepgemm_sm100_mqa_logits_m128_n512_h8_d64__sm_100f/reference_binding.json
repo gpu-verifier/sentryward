@@ -1,0 +1,1072 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global12:Q_tensor_map": "Q_tensor_map",
+      "6:global13:KV_tensor_map": "KV_tensor_map",
+      "6:global15:SFKV_tensor_map": "SFKV_tensor_map",
+      "6:global18:weights_tensor_map": "weights_tensor_map",
+      "6:global18:cu_seq_len_k_start": "cu_seq_len_k_start",
+      "6:global16:cu_seq_len_k_end": "cu_seq_len_k_end"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global12:Q_tensor_map": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          8,
+          64
+        ],
+        "source_strides_bytes": [
+          512,
+          64,
+          1
+        ],
+        "target_strides_bytes": [
+          512,
+          64,
+          1
+        ]
+      },
+      "6:global13:KV_tensor_map": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          512,
+          64
+        ],
+        "source_strides_bytes": [
+          64,
+          1
+        ],
+        "target_strides_bytes": [
+          64,
+          1
+        ]
+      },
+      "6:global15:SFKV_tensor_map": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          512
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global18:weights_tensor_map": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128,
+          8
+        ],
+        "source_strides_bytes": [
+          32,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4
+        ]
+      },
+      "6:global18:cu_seq_len_k_start": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global16:cu_seq_len_k_end": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global12:Q_tensor_map": "Q_tensor_map",
+      "6:global13:KV_tensor_map": "KV_tensor_map",
+      "6:global15:SFKV_tensor_map": "SFKV_tensor_map",
+      "6:global18:weights_tensor_map": "weights_tensor_map",
+      "6:global18:cu_seq_len_k_start": "cu_seq_len_k_start",
+      "6:global16:cu_seq_len_k_end": "cu_seq_len_k_end"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global12:Q_tensor_map": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          128,
+          8,
+          64
+        ],
+        "source_strides_bytes": [
+          512,
+          64,
+          1
+        ],
+        "target_strides_bytes": [
+          512,
+          64,
+          1
+        ]
+      },
+      "6:global13:KV_tensor_map": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          512,
+          64
+        ],
+        "source_strides_bytes": [
+          64,
+          1
+        ],
+        "target_strides_bytes": [
+          64,
+          1
+        ]
+      },
+      "6:global15:SFKV_tensor_map": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          512
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global18:weights_tensor_map": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128,
+          8
+        ],
+        "source_strides_bytes": [
+          32,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4
+        ]
+      },
+      "6:global18:cu_seq_len_k_start": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global16:cu_seq_len_k_end": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global6:logits",
+    "right_allocation": "6:global6:logits",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      128,
+      512
+    ],
+    "left_strides_bytes": [
+      1024,
+      2
+    ],
+    "right_strides_bytes": [
+      1024,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "Q",
+        "allocation": "6:global12:Q_tensor_map",
+        "dtype": "float8_e4m3fn"
+      },
+      {
+        "name": "KV",
+        "allocation": "6:global13:KV_tensor_map",
+        "dtype": "float8_e4m3fn"
+      },
+      {
+        "name": "SFKV",
+        "allocation": "6:global15:SFKV_tensor_map",
+        "dtype": "float32"
+      },
+      {
+        "name": "weights",
+        "allocation": "6:global18:weights_tensor_map",
+        "dtype": "float32"
+      },
+      {
+        "name": "cu_seq_len_k_start",
+        "allocation": "6:global18:cu_seq_len_k_start",
+        "dtype": "int32"
+      },
+      {
+        "name": "cu_seq_len_k_end",
+        "allocation": "6:global16:cu_seq_len_k_end",
+        "dtype": "int32"
+      }
+    ]
+  },
+  "provenance": {
+    "source": "DeepGEMM sm100_mqa_logits<8,64,false,false,16,256,3,5,148,128,256,e4m3,bf16,float>; FP8 contiguous-KV MQA logits",
+    "upstream": [
+      "https://github.com/deepseek-ai/DeepGEMM/blob/559d79fb6994a58b8a15b4b93bf13ccc16edf247/deep_gemm/include/deep_gemm/impls/sm100_mqa_logits.cuh",
+      "https://github.com/deepseek-ai/DeepGEMM/blob/559d79fb6994a58b8a15b4b93bf13ccc16edf247/deep_gemm/include/deep_gemm/scheduler/sm100_mqa_logits.cuh",
+      "https://github.com/deepseek-ai/DeepGEMM/blob/559d79fb6994a58b8a15b4b93bf13ccc16edf247/csrc/jit_kernels/impls/sm100_mqa_logits.hpp",
+      "https://github.com/deepseek-ai/DeepGEMM/blob/559d79fb6994a58b8a15b4b93bf13ccc16edf247/tests/test_attention.py"
+    ],
+    "scope": "num_q_tokens=128, num_kv_tokens=512, stride_logits=512, H=8, D=64; cu_seq_len_k_start=0 and cu_seq_len_k_end=512 for all rows (shape_arrays), so all 128x512 logits are written; no -inf masking in this kernel (done by clean_logits). SFQ_tensor_map unused for FP8.",
+    "optimized_input_sha256": "2fec5f436a7e1e5fa267f31d4e00ad881d24bf6d70c52a6429e14f29a8e5889a",
+    "ptx_sha256": "972d8986e0cd82efb5ee80ec54945c75ba34aaa54b36e04ff3959dd8dc40530f",
+    "scope_shape_arrays": [
+      {
+        "parameter": 3,
+        "offset": 0,
+        "element_type": "u32",
+        "shapes": [
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ]
+        ]
+      },
+      {
+        "parameter": 4,
+        "offset": 0,
+        "element_type": "u32",
+        "shapes": [
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ],
+          [
+            512
+          ]
+        ]
+      }
+    ]
+  }
+}

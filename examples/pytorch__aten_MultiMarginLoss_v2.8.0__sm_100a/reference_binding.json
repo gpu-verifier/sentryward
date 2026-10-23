@@ -1,0 +1,270 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global5:input": "input",
+      "6:global6:target": "target",
+      "6:global10:gradOutput": "gradOutput"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          8
+        ],
+        "source_strides_bytes": [
+          32,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4
+        ]
+      },
+      "6:global6:target": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global10:gradOutput": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global5:input": "input",
+      "6:global6:target": "target",
+      "6:global10:gradOutput": "gradOutput"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          8
+        ],
+        "source_strides_bytes": [
+          32,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4
+        ]
+      },
+      "6:global6:target": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global10:gradOutput": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN2at6native51_GLOBAL__N__c9c52750_18_MultiMarginLoss_cu_b86932df31MultiMarginLoss_backward_kernelILi1EfEEvPT0_PKS3_S6_PKlS6_iibS3_b_param_5+0": {
+        "type": "u32",
+        "literal": "1"
+      },
+      "_ZN2at6native51_GLOBAL__N__c9c52750_18_MultiMarginLoss_cu_b86932df31MultiMarginLoss_backward_kernelILi1EfEEvPT0_PKS3_S6_PKlS6_iibS3_b_param_6+0": {
+        "type": "u32",
+        "literal": "8"
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global9:gradInput",
+    "right_allocation": "6:global9:gradInput",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+      1,
+      8
+    ],
+    "left_strides_bytes": [
+      32,
+      4
+    ],
+    "right_strides_bytes": [
+      32,
+      4
+    ]
+  },
+  "checker_context": {
+    "predicates": [
+      {
+        "source": "Restates this input's own user-authorized branch decision (PTX line 115 taken; all-positive-margin scenario) exactly as the sibling pytorch__aten_MultiMarginLoss__sm_100a checker_context: forall i in [0,7], 1-input[0,5]+input[0,i]>0, with margin=1 (parameter 8) and target[0]=5 from shape_arrays.",
+        "binders": [
+          {
+            "min_inclusive": 0,
+            "max_inclusive": 7
+          }
+        ],
+        "nodes": [
+          {
+            "op": "constant",
+            "value": 0
+          },
+          {
+            "op": "constant",
+            "value": 5
+          },
+          {
+            "op": "constant",
+            "value": 1
+          },
+          {
+            "op": "index",
+            "binder": 0
+          },
+          {
+            "op": "read",
+            "object": "input",
+            "element_type": "f32",
+            "coordinates": [
+              0,
+              1
+            ]
+          },
+          {
+            "op": "read",
+            "object": "input",
+            "element_type": "f32",
+            "coordinates": [
+              0,
+              3
+            ]
+          },
+          {
+            "op": "subtract",
+            "args": [
+              2,
+              4
+            ]
+          },
+          {
+            "op": "add",
+            "args": [
+              6,
+              5
+            ]
+          },
+          {
+            "op": "compare",
+            "predicate": "gt",
+            "args": [
+              7,
+              0
+            ]
+          }
+        ],
+        "root": 8
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "input",
+        "allocation": "6:global5:input",
+        "dtype": "float32"
+      },
+      {
+        "name": "target",
+        "allocation": "6:global6:target",
+        "dtype": "int64"
+      },
+      {
+        "name": "gradOutput",
+        "allocation": "6:global10:gradOutput",
+        "dtype": "float32"
+      },
+      {
+        "name": "margin",
+        "parameter": 8
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/pytorch__aten_MultiMarginLoss_v2.8.0__sm_100a.ptx",
+    "optimized_input": "examples/pytorch__aten_MultiMarginLoss_v2.8.0__sm_100a/input.json",
+    "optimized_input_sha256": "f30ac419e457c2db4927f6aee24d52747664fbb292de2b4199dd6fa0b661815e",
+    "ptx_sha256": "da5d13c3d952259ad179cf00d35d68e721a57201b7b74d3e0b654b1febc1d841",
+    "source": "// Source: https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/aten/src/ATen/native/cuda/MultiMarginLoss.cu",
+    "upstream": [
+      "https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/aten/src/ATen/native/cuda/MultiMarginLoss.cu#L68-L127",
+      "https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/aten/src/ATen/native/cuda/MultiMarginLoss.cu#L297-L402"
+    ],
+    "scope": "Current fixed launch and input JSON; all mathematical outputs retained. nframe=1, dim=8, sizeAverage=reduce=true, margin=1, weights=null.",
+    "notes": "Same reference as pytorch__aten_MultiMarginLoss__sm_100a. v2.8.0 lacks the __syncthreads() between thread 0's gradInput[target] write and the gradOutput scaling loop (added by line 125 of the 2b3ec348 version), so the kernel has a genuine race on gradInput[target]; the reference is the intended gradient.",
+    "scope_branch_choices": [
+      {
+        "line": 115,
+        "taken": true,
+        "note": "MultiMarginLoss backward: the margin term z = margin - input[target] + input[i] is positive for every class i (all margins violated), so the gradient path is executed. User-authorized scenario for the race example."
+      }
+    ],
+    "scope_shape_arrays": [
+      {
+        "parameter": 3,
+        "element_type": "s64",
+        "shapes": [
+          [
+            5
+          ]
+        ]
+      }
+    ]
+  }
+}

@@ -56,6 +56,7 @@ add_library(sentryward_algorithm STATIC
   cpp/src/analysis/family_relation_query.cpp
   cpp/src/memory/family_access.cpp
   cpp/src/checker/family_memory_checker.cpp
+  cpp/src/checker/cross_unit_races.cpp
   cpp/src/memory/family_conflict_order.cpp
   cpp/src/analysis/family_hb_reachability.cpp
   cpp/src/diagnostics/scoped_deadline.cpp
@@ -159,7 +160,7 @@ if(SENTRYWARD_ENABLE_SANITIZERS)
   endif()
 endif()
 
-add_library(sentryward_io STATIC cpp/src/io/source_json.cpp cpp/src/io/tmem_recovery.cpp
+add_library(sentryward_io STATIC cpp/src/io/source_json.cpp
   cpp/src/io/source_storage.cpp
 )
 target_link_libraries(sentryward_io PUBLIC sentryward::algorithm)
@@ -243,12 +244,16 @@ add_library(sentryward_ptx STATIC
   cpp/src/frontend/ptx/execution.cpp
   cpp/src/frontend/ptx/execution_records.cpp
   cpp/src/frontend/ptx/shared_execution.cpp
-  cpp/src/frontend/ptx/named_phases.cpp
+  cpp/src/frontend/ptx/unit_facts.cpp
+  cpp/src/frontend/ptx/unit_frame.cpp
+  cpp/src/frontend/ptx/unit_classes.cpp
+  cpp/src/frontend/ptx/query_log.cpp
   cpp/src/frontend/ptx/tensor_maps.cpp
   cpp/src/frontend/ptx/layouts.cpp
   cpp/src/frontend/ptx/known_bits.cpp
   cpp/src/frontend/ptx/tmem_lifetime.cpp
   cpp/src/frontend/ptx/resources.cpp
+  cpp/src/frontend/ptx/slot_resolver.cpp
   cpp/src/frontend/ptx/matrix.cpp
   cpp/src/frontend/ptx/refinement.cpp
   cpp/src/frontend/ptx/lowering.cpp

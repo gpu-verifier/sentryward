@@ -1,6 +1,7 @@
 #include "sentryward/scalar_fold/graph.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <limits>
 #include <ostream>
@@ -10,8 +11,14 @@
 
 namespace sentryward::scalar_fold {
 namespace {
+constexpr Id kNoNode = std::numeric_limits<Id>::max();
 void combine(std::size_t& h, std::size_t value) {
   h ^= value + std::size_t{0x9e3779b9} + (h << 6) + (h >> 2);
+}
+// Mix every hash bit into the probe start of a power-of-two table.
+std::size_t homeSlot(std::size_t hash, std::size_t mask) {
+  const auto x = static_cast<std::uint64_t>(hash) * 0x9e3779b97f4a7c15ULL;
+  return static_cast<std::size_t>(x ^ (x >> 32)) & mask;
 }
 void hashString(std::size_t& h, const std::string& value) {
   combine(h, std::hash<std::string>{}(value));
@@ -36,6 +43,49 @@ std::size_t hashNode(const Node& n) {
   }
   return h;
 }
+// validateRoots visits a node once per lexical binder depth.
+struct Visit {
+  Id id;
+  std::uint32_t depth;
+  bool operator==(const Visit&) const = default;
+};
+struct VisitHash {
+  std::size_t operator()(const Visit& v) const {
+    std::size_t h = v.id;
+    combine(h, v.depth);
+    return h;
+  }
+};
+// Insert-only open addressing over visits: the membership answers of an
+// unordered_set, without a heap node per visit. Power-of-two capacity at
+// load <= 1/2, linear probing; an id of kNoNode marks an empty slot. Its size
+// is bounded by the visits of one call, never by the graph.
+class VisitSet {
+ public:
+  bool insert(const Visit& v) {
+    if (2 * (size_ + 1) > slots_.size()) grow();
+    const auto mask = slots_.size() - 1;
+    for (auto i = homeSlot(VisitHash{}(v), mask);; i = (i + 1) & mask) {
+      if (slots_[i].id == kNoNode) {
+        slots_[i] = v;
+        ++size_;
+        return true;
+      }
+      if (slots_[i] == v) return false;
+    }
+  }
+
+ private:
+  void grow() {
+    std::vector<Visit> old(slots_.empty() ? std::size_t{64} : 2 * slots_.size(), Visit{kNoNode, 0});
+    old.swap(slots_);
+    size_ = 0;
+    for (const auto& v : old)
+      if (v.id != kNoNode) insert(v);
+  }
+  std::vector<Visit> slots_;
+  std::size_t size_ = 0;
+};
 std::vector<Id> reachable(const Graph& graph, std::span<const Ref> roots,std::uint32_t outer_binders,
                           std::span<const std::uint32_t> root_binders) {
   graph.validateRoots(roots,outer_binders,root_binders);
@@ -119,41 +169,75 @@ std::size_t Graph::collect(std::span<Ref> roots,std::span<std::optional<Id>> wea
     for(auto& root:roots)root.owner=owner_;
     return 0;
   }
+  // Allocate first and move nodes only after the observer: any throw still
+  // leaves this graph intact, as copying did. Retained IDs keep live order.
   retained.nodes_.reserve(live_count);
-  retained.buckets_.reserve(live_count);
-  std::vector<Id> map(nodes_.size(),std::numeric_limits<Id>::max());
-  const auto remap=[&](Ref value) {
-    value.node=map[value.node];value.owner=retained.owner_;return value;
-  };
-  for(Id id=0;id<nodes_.size();++id)if(live[id]) {
-    auto copy=nodes_[id];
-    for(auto& child:copy.operands)child=remap(child);
-    // Injective ID remapping preserves structural uniqueness.
-    const auto next=retained.nodes_.size();
-    retained.buckets_[hashNode(copy)].push_back(next);
-    retained.nodes_.push_back(std::move(copy));
-    map[id]=next;
-  }
-  const auto removed=nodes_.size()-retained.size();
-  for(auto& root:roots)root=remap(root);
+  retained.reserveIndex(live_count);
+  std::vector<Id> map(nodes_.size(),kNoNode);
+  for(Id id=0,next=0;id<map.size();++id)if(live[id])map[id]=next++;
+  const auto removed=nodes_.size()-live_count;
+  for(auto& root:roots){root.node=map[root.node];root.owner=retained.owner_;}
   for(auto& id:weak_nodes)if(id) {
     if(live[*id])*id=map[*id];
     else id.reset();
   }
   if(observer)observer(map,retained.owner_);
+  // Injective ID remapping preserves structural uniqueness. Moves into the
+  // reserved storage and index cannot throw. Random home slots dominate the
+  // index rebuild: a node is indexed `ahead` moves after its hash is known
+  // and its slot prefetched. Inserts keep new-ID order, so the index is the
+  // one direct insertion builds; the pipeline holds only `ahead` hashes.
+  constexpr std::size_t ahead=8;
+  std::array<std::size_t,ahead> hashes{};
+  const auto mask=retained.index_.size()-1;
+  std::size_t moved=0;
+  for(Id id=0;id<map.size();++id)if(live[id]) {
+    auto& node=retained.nodes_.emplace_back(std::move(nodes_[id]));
+    for(auto& child:node.operands){child.node=map[child.node];child.owner=retained.owner_;}
+    const auto hash=hashNode(node);
+    __builtin_prefetch(&retained.index_[homeSlot(hash,mask)]);
+    if(moved>=ahead)retained.indexNode({hashes[moved%ahead],moved-ahead});
+    hashes[moved%ahead]=hash;++moved;
+  }
+  for(auto next=moved>ahead?moved-ahead:0;next<moved;++next)retained.indexNode({hashes[next%ahead],next});
   *this=std::move(retained);
   return removed;
+}
+Id Graph::findNode(std::size_t hash, const Node& n) const {
+  if (index_.empty()) return kNoNode;
+  const auto mask = index_.size() - 1;
+  for (auto i = homeSlot(hash, mask);; i = (i + 1) & mask) {
+    const auto& slot = index_[i];
+    if (slot.id == kNoNode) return kNoNode;
+    if (slot.hash == hash && nodes_[slot.id] == n) return slot.id;
+  }
+}
+void Graph::reserveIndex(std::size_t nodes) {
+  // O(1) unless the table grows; growth rehashes the stored hashes only.
+  if (2 * nodes <= index_.size()) return;
+  auto capacity = index_.empty() ? std::size_t{16} : 2 * index_.size();
+  while (capacity < 2 * nodes) capacity *= 2;
+  std::vector<IndexSlot> grown(capacity, IndexSlot{0, kNoNode});
+  grown.swap(index_);
+  for (const auto& slot : grown)
+    if (slot.id != kNoNode) indexNode(slot);
+}
+void Graph::indexNode(IndexSlot slot) noexcept {
+  const auto mask = index_.size() - 1;
+  auto i = homeSlot(slot.hash, mask);
+  while (index_[i].id != kNoNode) i = (i + 1) & mask;
+  index_[i] = slot;
 }
 
 Ref Graph::intern(Node n) {
   for (const auto& child : n.operands) validateRef(child);
+  // Nodes are unique, so any exact match is the one existing ID.
   const auto hash = hashNode(n);
-  auto& bucket = buckets_[hash];
-  for (const auto id : bucket)
-    if (nodes_[id] == n) return ref(id);
+  if (const auto found = findNode(hash, n); found != kNoNode) return ref(found);
+  reserveIndex(nodes_.size() + 1);
   const Id id = nodes_.size();
   nodes_.push_back(std::move(n));
-  bucket.push_back(id);
+  indexNode({hash, id});
   return ref(id);
 }
 Ref Graph::constant(std::string type, std::string literal) {
@@ -270,20 +354,8 @@ void Graph::validateRoots(std::span<const Ref> roots, std::uint32_t outer_binder
                           std::span<const std::uint32_t> root_binders) const {
   if(!root_binders.empty() && root_binders.size()!=roots.size())
     throw std::invalid_argument("root binder count mismatch");
-  struct Visit {
-    Id id;
-    std::uint32_t depth;
-    bool operator==(const Visit&) const = default;
-  };
-  struct Hash {
-    std::size_t operator()(const Visit& v) const {
-      std::size_t h = v.id;
-      combine(h, v.depth);
-      return h;
-    }
-  };
   std::vector<Visit> pending;
-  std::unordered_set<Visit, Hash> seen;
+  VisitSet seen;
   for (std::size_t i=0;i<roots.size();++i) {
     const auto& root=roots[i];
     validateRef(root);
@@ -292,7 +364,7 @@ void Graph::validateRoots(std::span<const Ref> roots, std::uint32_t outer_binder
   while (!pending.empty()) {
     const auto v = pending.back();
     pending.pop_back();
-    if (!seen.insert(v).second) continue;
+    if (!seen.insert(v)) continue;
     const auto& n = node(v.id);
     if (n.kind == Kind::Index && n.index_level >= v.depth)
       throw std::invalid_argument("free scalar-fold index k" +

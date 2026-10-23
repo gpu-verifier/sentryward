@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "sentryward/frontend/ptx/execution.h"
+#include "sentryward/frontend/ptx/unit_facts.h"
 
 namespace sentryward::frontend::ptx {
 struct TmemAllocationId {
@@ -74,53 +75,42 @@ struct TmemOrderObligation {
   auto operator<=>(const TmemOrderObligation &) const = default;
 };
 using ResolvedTmemOperand = std::variant<std::monostate, Integer, TmemPointer>;
-using TmemLaneExecutions =
-    std::vector<std::pair<std::uint32_t, const ExecutedInstruction *>>;
+// (lane id, record with its values) per lane of one atom: the Expanded element,
+// or (T3) a Full read the analysis holds.
+using TmemLaneExecutions = std::vector<std::pair<std::uint32_t, RecordView>>;
 struct TmemAnalysisOptions {
   std::map<TmemAllocationId, TmemAllocationId> publication_resolution;
   bool allow_ambiguous_publications = false, allow_cta_group2 = false;
   std::function<void()> poll;
 };
-// ExecutionProgram and its lane records must remain alive and unmoved while
-// this index is queried. Snapshots retain only pointer registers referenced by
-// each static tcgen instruction, instead of copying a whole register map per
-// event.
+// The facts, their program and its lane records must remain alive and
+// unmoved while this index is queried. Snapshots retain only pointer registers
+// referenced by each static tcgen instruction, instead of copying a whole
+// register map per event. They are keyed by the position of the record they
+// precede. Resolve looks one up for an Expanded view and, when `positioned`
+// (T3, which reads lanes without expanding them), for a Full or Slice read of
+// that position: the views lowering holds where an expanded lane gave it the
+// Expanded element. Other kinds (a prototype, a copy) get none.
 struct TmemProvenanceIndex {
-  const ExecutionProgram *program = nullptr;
+  const FactSource *facts = nullptr;
+  bool positioned = false;
   std::vector<TmemAllocation> allocations;
   std::set<TmemAllocationId> zero_based_allocations;
   using Snapshot = std::vector<std::pair<std::string_view, TmemPointer>>;
-  std::unordered_map<const ExecutedInstruction *, Snapshot>
-      register_state_before;
+  std::unordered_map<RecordRef, Snapshot> register_state_before;
   std::vector<TmemPublicationRead> publication_reads;
   std::vector<TmemPublicationCandidates> publication_candidates;
   std::vector<TmemLifetimeIssue> issues;
   [[nodiscard]] ResolvedTmemOperand Resolve(std::uint32_t warp,
-                                            const ExecutedInstruction &,
+                                            const RecordView &,
                                             std::string_view operand,
                                             std::uint32_t lane) const;
   [[nodiscard]] ResolvedTmemOperand Resolve(std::uint32_t warp,
-                                            const ExecutedInstruction &,
+                                            const RecordView &,
                                             std::size_t operand,
                                             std::uint32_t lane) const;
-  [[nodiscard]] ResolvedTmemOperand
-  ResolveUniform(std::uint32_t warp, const TmemLaneExecutions &,
-                 std::string_view operand) const;
-  [[nodiscard]] ResolvedTmemOperand ResolveUniform(std::uint32_t warp,
-                                                   const TmemLaneExecutions &,
-                                                   std::size_t operand) const;
   [[nodiscard]] std::optional<TmemPointer>
   NormalizeTaddr(const ResolvedTmemOperand &) const;
-  [[nodiscard]] std::optional<TmemPointer>
-  ResolveUniformTaddr(std::uint32_t warp, const TmemLaneExecutions &lanes,
-                      std::string_view operand) const {
-    return NormalizeTaddr(ResolveUniform(warp, lanes, operand));
-  }
-  [[nodiscard]] std::optional<TmemPointer>
-  ResolveUniformTaddr(std::uint32_t warp, const TmemLaneExecutions &lanes,
-                      std::size_t operand) const {
-    return NormalizeTaddr(ResolveUniform(warp, lanes, operand));
-  }
   [[nodiscard]] const TmemAllocation *AllocationById(TmemAllocationId) const;
 };
 struct TmemLifetimeAnalysis {
@@ -136,22 +126,10 @@ struct TmemLifetimeAnalysis {
            !cluster_pairing_required;
   }
 };
-struct TmemSiteCertificate {
-  TmemAtomSite site;
-  std::string operation;
-  std::optional<TmemAllocationId> allocation;
-  // Shared analysis owns the issue and obligation inventories, avoiding their
-  // repeated allocation at every lifetime atom.
-  const TmemLifetimeAnalysis *analysis = nullptr;
-  bool representable = false, fully_proven = false;
-};
-[[nodiscard]] TmemProvenanceIndex
-BuildTmemProvenance(const ExecutionProgram &, const TmemAnalysisOptions & = {});
+// T1 expands every lane of `facts`, at the same points as the per-lane loops
+// did before the expansion was made explicit. T3 expands none: its passes walk
+// metadata and read a record's values only where a step uses them.
 [[nodiscard]] TmemLifetimeAnalysis
-AnalyzeTmemLifetimes(const ExecutionProgram &,
+AnalyzeTmemLifetimes(const CtaFacts &, ExpansionSite,
                      const TmemAnalysisOptions & = {});
-[[nodiscard]] std::map<TmemAllocationId, TmemSiteCertificate>
-BuildTmemSiteCertificates(const ExecutionProgram &,
-                          const TmemLifetimeAnalysis &);
-[[nodiscard]] nlohmann::json TmemLifetimeJson(const TmemLifetimeAnalysis &);
 } // namespace sentryward::frontend::ptx

@@ -42,6 +42,8 @@ class OriginMap final {
   std::size_t reserved_events_ = 0;
   std::map<InstId, Milestones> by_instruction_;
   CompactIdMap<EventId, InstId> by_event_;
+  // One past every recorded instruction and event; a record beyond both cannot collide.
+  std::uint64_t instruction_end_ = 0, event_end_ = 0;
 };
 
 }  // namespace sentryward::algorithm

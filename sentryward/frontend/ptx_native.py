@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from sentryward.results import ResultArgumentParser, failure
 
-from sentryward.results import normalize, failure, RESULTS
+from sentryward.results import normalize, failure, publish, RESULTS
 
 import argparse
 from contextlib import ExitStack
@@ -175,15 +175,15 @@ def run_ptx(ptx, config, *, executable=None, report_path=None,
     """Verify PTX and return the common result/diagnostics contract."""
     arguments=locals()
     try:
-        return _run_ptx(**arguments)
+        return publish(_run_ptx(**arguments))
     except FileNotFoundError as error:
-        return failure("tool_failure", "executable_missing", error)
+        return publish(failure("tool_failure", "executable_missing", error))
     except ValueError as error:
-        return failure("invalid_input", "invalid_configuration", error)
+        return publish(failure("invalid_input", "invalid_configuration", error))
     except MemoryError as error:
-        return failure("allocation_failed", "memory_allocation_failed", error)
+        return publish(failure("allocation_failed", "memory_allocation_failed", error))
     except OSError as error:
-        return failure("tool_failure", "process_or_io_failure", error)
+        return publish(failure("tool_failure", "process_or_io_failure", error))
 
 
 def _exit_code(result):

@@ -619,16 +619,9 @@ struct Checker {
       if (p.op == "var" && p.args.empty()) {
         // An invariant variable outside read coordinates remains a literal
         // pattern leaf. Reuse its exact Arena identity; do not invent facts.
-        auto it = a.table.find(Arena::hash(p.op, p.args, p.data, p.tag));
-        Id existing = invalid;
-        if (it != a.table.end()) for (Id candidate : it->second) {
-          const auto &n = a.nodes[candidate];
-          if (n.op == p.op && n.args == p.args && n.data == p.data && n.tag == p.tag) {
-            existing = candidate; break;
-          }
-        }
-        if (existing == invalid) return {};
-        memo[id] = existing; continue;
+        auto existing = a.find_node(p.op, p.args, p.data, p.tag);
+        if (!existing) return {};
+        memo[id] = *existing; continue;
       }
       if (p.op != "const" && p.op != "add" && p.op != "mul" &&
           p.op != "idiv" && p.op != "imod") return {};
@@ -785,7 +778,7 @@ struct Checker {
           schedule(s, choices[0]);
           continue;
         }
-        ++a.stats["pattern_node_visits"];
+        ++a.counter(Arena::Hot::pattern_node_visits);
         if (!task.predicate_structural && pn.op == "compare" &&
             (an.op == "compare" || task.target == a.zero || task.target == a.one) &&
             affine_predicate_slots(task.pattern)) {
@@ -1083,9 +1076,7 @@ struct Checker {
           ++a.stats["ep_body_call_rebuilds"];
         }
         else {
-          auto it=a.table.find(Arena::hash(n.op,xs,n.data,n.tag));
-          if(it!=a.table.end())for(Id candidate:it->second){const auto &v=a.nodes[candidate];
-            if(v.op==n.op && v.args==xs && v.data==n.data && v.tag==n.tag){out=candidate;break;}}
+          if(auto hit=a.find_node(n.op,xs,n.data,n.tag))out=*hit;
           if(out==invalid)++a.stats["ep_body_missing_opaque_"+n.op];
         }
       }
@@ -1112,7 +1103,7 @@ struct Checker {
     auto anchors=[&](Arena &arena,Id root,bool pattern)->const std::vector<Id>&{
       auto &cache=pattern?pattern_anchor_cache:target_anchor_cache;
       if(auto found=cache.find(root);found!=cache.end()) {
-        ++a.stats[pattern?"ep_body_pattern_anchor_cache_hits":"ep_body_target_anchor_cache_hits"];
+        ++a.counter(pattern?Arena::Hot::ep_body_pattern_anchor_cache_hits:Arena::Hot::ep_body_target_anchor_cache_hits);
         return found->second;
       }
       // Coordinates in a direct operand must not be starved by one sibling's
@@ -1210,7 +1201,7 @@ struct Checker {
         // every admitted candidate still requires the complete body proof.
         if(!discovered && !deferred_definition &&
             (pn.op=="read" || pn.op=="readbits" || pn.op=="packedbits"))
-          ++a.stats["ep_body_read_anchor_rejections"];
+          ++a.counter(Arena::Hot::ep_body_read_anchor_rejections);
         if(!discovered && deferred_definition && std::find(next.begin(),next.end(),cap)==next.end()) {
           next.push_back(cap);
           ++a.stats["ep_body_deferred_unmatched_anchors"];
@@ -1930,7 +1921,7 @@ struct Checker {
       }
       if (empty) {
         canonical_cache.emplace(id, canonical_cache.at(n.args[0]));
-        ++a.stats["canonical_node_visits"];
+        ++a.counter(Arena::Hot::canonical_node_visits);
         continue;
       }
       std::vector<Id> args;
@@ -1944,7 +1935,7 @@ struct Checker {
       } else {
         canonical_cache.emplace(id, result == id ? id : canonical_cache.at(result));
       }
-      ++a.stats["canonical_node_visits"];
+      ++a.counter(Arena::Hot::canonical_node_visits);
     }
     return canonical_cache.at(root);
   }
@@ -2093,7 +2084,7 @@ struct Checker {
         if(exponential_mode && (a.nodes[n].op=="add" || a.nodes[n].op=="mul" || a.nodes[n].op=="recip" || a.nodes[n].op=="exp" || a.nodes[n].op=="exp2"))
           for(Id sid:active)if(candidates.size()<64 && std::find(candidates.begin(),candidates.end(),sid)==candidates.end())candidates.push_back(sid);
         for (Id sid : candidates) {
-            ++a.stats["local_pattern_candidates"];
+            ++a.counter(Arena::Hot::local_pattern_candidates);
             for (const auto &m : match_term(sid, n)) {
               Key k{sid, m.params, m.coef, neutral(sid)};
               Id p = leaf(m.index);
@@ -2106,7 +2097,7 @@ struct Checker {
           }
       }
       cache.emplace(old, Entry{n, std::move(summary)});
-      ++a.stats["normalization_node_visits"];
+      ++a.counter(Arena::Hot::normalization_node_visits);
     }
     if (reference) {
       active_byroot.clear();

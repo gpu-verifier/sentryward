@@ -10,7 +10,7 @@ Scalar Operand(const ExecutionProgram &program,const ExecutedInstruction &event,
   text=Trim(text); if (text.starts_with('[') && text.ends_with(']')) text=Trim(std::string_view(text).substr(1,text.size()-2));
   auto split=SplitAddress(text); if (!split) return {};
   Scalar value;
-  if (auto known=program.KnownRegister(event,split->first)) value=*known;
+  if (auto known=detail::ExecutionStorage::Value(program,event,split->first)) value=*known;
   else if (program.config.parameters.contains(split->first)) value=program.config.parameters.at(split->first);
   else if (auto number=ParseInteger(split->first)) value=*number;
   if (auto pointer=std::get_if<AllocationPointer>(&value)) { pointer->offset+=split->second; return value; }
@@ -147,10 +147,10 @@ void RecoverTensorMaps(ExecutionProgram &program) {
   for (const auto &lane : program.lane_traces) {
     std::map<Integer,TensorMapFields> fields;
     for (std::size_t index=0;index<lane.instructions.size();++index) {
-      const auto &metadata=lane.instructions.metadata(index);
+      const auto &metadata=detail::ExecutionStorage::Metadata(lane.instructions,index);
       const auto &i=program.function->instructions[metadata.instruction_id()];
       if (i.opcode!="tensormap") continue;
-      const auto event=lane.instructions.read(index);
+      const auto event=detail::ExecutionStorage::Read(lane.instructions,index);
       const auto ops=OperandTexts(*program.module,i);
       auto value=[&](std::size_t k){return Operand(program,event,ops.at(k));};
       if (Has(i,"replace") && Has(i,"tile")) {

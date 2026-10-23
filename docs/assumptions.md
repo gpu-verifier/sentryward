@@ -14,6 +14,20 @@ The removed `warp_tmem_load_completion: false` override can also be omitted.
 A former `true` override must not be silently dropped: its TMEM completion
 semantics require review.
 
+TMEM completion follows the PTX ISA (tcgen05 memory consistency) and is not
+configurable. A `tcgen05.ld` delivers its registers to true register
+dependencies, but its TMEM read completes only at `tcgen05.wait::ld`; using the
+loaded registers does not order the read before later memory operations,
+releases or deallocation. From the same warp, `tcgen05.ld`/`tcgen05.st` pairs
+(ld then st, st then ld, st then st) access TMEM in issue order.
+
+A data-dependent forward branch over a straight-line block that contains only
+register computation, private reads and `tcgen05.ld`/`tcgen05.st`/`tcgen05.wait`
+is analyzed through the block (its accesses include the skipping path's) when
+its predicate is provably warp-uniform and the block's registers are not used
+after it. This needs no assumption; such kernels report the equivalence stage as
+unsupported (`two_arm_merge_values`).
+
 ## Duplicate TMA stores
 
 Configuration key: `duplicate_tma_store_benign`.
@@ -166,7 +180,6 @@ Each array entry is an object of one of these forms:
 | Form | Meaning |
 | --- | --- |
 | `{"term": T, "lower_bound": L, "upper_bound": U, "multiple_of": M}` | `L <= T <= U` and `T` is divisible by `M` (a positive integer). At least one of the three fields is required; bounds are inclusive. |
-| `{"gather": "g", "injective": true, "lower_bound": L, "upper_bound": U}` | Every lookup in table `g` lies in `[L, U]`. If injective, different ground arguments give different results. |
 | `{"joint_injective": ["r", "s", ...]}` | For different ground arguments, at least one of the named tables gives different results. |
 | `{"distinct_allocations": ["A", "B", ...]}` | The named allocations are pairwise distinct storage. |
 
@@ -192,15 +205,16 @@ where the tensor map is stored. Unresolved-pair diagnostics print these names.
 Two tensor-map targets are never assumed equal or distinct without an
 invariant.
 
-Example: page table `pages` maps logical blocks to distinct physical pages, and
-the tensor read through one tensor map does not alias a workspace:
+Example: the tensor read through one tensor map does not alias a workspace:
 
 ```json
 "address_invariants": [
-  {"gather": "pages", "injective": true, "lower_bound": 0},
   {"distinct_allocations": ["tensor_map_target(input.arg0.1184+0)", "epilogue.tensormaps"]}
 ]
 ```
+
+Bounds and injectivity of the elements of an input object, such as a page table,
+are stated as [tensor properties](input-json.md#tensor-properties).
 
 The PTX frontend does not yet emit `param` or `gather` atoms. Today the SMT
 layer applies to operand-derived offsets and to source JSON produced by other

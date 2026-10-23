@@ -1,0 +1,177 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global12:A.compressed": "A.compressed",
+      "6:global10:E.metadata": "E.metadata",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global12:A.compressed": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          512,
+          64
+        ],
+        "source_strides_bytes": [
+          64,
+          1
+        ],
+        "target_strides_bytes": [
+          64,
+          1
+        ]
+      },
+      "6:global10:E.metadata": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          8192
+        ],
+        "source_strides_bytes": [
+          1
+        ],
+        "target_strides_bytes": [
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          512,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global12:A.compressed": "A.compressed",
+      "6:global10:E.metadata": "E.metadata",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global12:A.compressed": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          512,
+          64
+        ],
+        "source_strides_bytes": [
+          64,
+          1
+        ],
+        "target_strides_bytes": [
+          64,
+          1
+        ]
+      },
+      "6:global10:E.metadata": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          8192
+        ],
+        "source_strides_bytes": [
+          1
+        ],
+        "target_strides_bytes": [
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          512,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      512,
+      512
+    ],
+    "left_strides_bytes": [
+      1024,
+      2
+    ],
+    "right_strides_bytes": [
+      1024,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global12:A.compressed"
+      },
+      {
+        "name": "E",
+        "dtype": "uint8",
+        "allocation": "6:global10:E.metadata"
+      },
+      {
+        "name": "B",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:B"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/cutlass__sparse-gemm-runtime-fp8-family__sm_100a.ptx",
+    "optimized_input": "examples/cutlass__sparse-gemm-runtime-fp8-family__sm_100a/input.json",
+    "optimized_input_sha256": "7d07b9cb2b85a806d38752c98faa2b360ea8a527f12ed504187ab724bd4161a0",
+    "ptx_sha256": "a6e3917b343caff903e44b93f7c9d35adaf218e25dc2827d4a45eed855869bc8",
+    "upstream": [
+      "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cutlass/gemm/kernel/sm100_sparse_gemm_tma_warpspecialized.hpp",
+      "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cutlass/gemm/collective/builders/sm1xx_sparse_config.inl",
+      "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cutlass/transform/kernel/sm90_sparse_gemm_compressor.hpp",
+      "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/python/cutlass_library/generator.py",
+      "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cute/arch/mma_sm100_desc.hpp",
+      "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cutlass/gemm/collective/sm100_sparse_mma_warpspecialized.hpp"
+    ],
+    "semantics": "ideal_real; fixed saved configuration; reference written from the pinned upstream source (see NOTES.md); all semantic output tensors",
+    "scope": "M=512 N=512 K=128 L=1, alpha=1, C void, runtime formats a=b=0 (E4M3)",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

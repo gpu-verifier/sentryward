@@ -18,11 +18,27 @@ struct MemoryAccessFamily {
   }
   MemberSet members() const { return MemberRange(extent,first_member,first_member+count); }
 };
+// One term of a symbolic suffix that is a tensor-property lookup: coefficient x the element of
+// `object` at byte `arg` (address-model symbol `symbol`). `uniform`: the model constrains every
+// element of the symbol alike (no address invariant names one), so a decision depends only on
+// which lookups coincide, not on their byte offsets.
+struct GatherTerm {
+  std::string symbol,object;
+  address_solver::Int arg=0,coefficient=0;
+  bool uniform=false;
+};
 struct FamilyFootprint {
   std::string space,allocation,alias,symbolic;
   address_solver::Int offset=0,step=0;
   std::uint64_t bytes=0;
   bool affine=false,empty=false;
+  // The symbolic suffix as lookups, when all of its terms are tensor-property lookups (else empty).
+  std::vector<GatherTerm> gathers;
+  // A strided region (a TMA box; MemoryModel::crossUnitFootprint only): each member covers
+  // `region_element` bytes at every offset + sum of stride x index (index < extent), within
+  // `bytes` from its first byte. Empty: each member is `bytes` contiguous bytes.
+  std::vector<std::pair<std::uint64_t,std::uint64_t>> region_axes = {};
+  std::uint64_t region_element = 0;
 };
 // A differing symbolic suffix remains Unknown; equal suffixes cancel exactly.
 struct FamilyOverlap {

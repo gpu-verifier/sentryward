@@ -61,6 +61,38 @@ class InstanceView final : public std::ranges::transform_view<
   }
 };
 
+// Read-only operands of one logical instance, equal to its record's operands.
+// Stored records and collective members are borrowed (valid until the next
+// non-const Graph call); a rebound template member owns its list. Temporaries
+// return copies, so no reference outlives an owned list.
+class OperandsRef final {
+ public:
+  using const_iterator = std::vector<Value>::const_iterator;
+  [[nodiscard]] bool borrowed() const noexcept { return !owned_; }
+  [[nodiscard]] std::size_t size() const noexcept { return list().size(); }
+  [[nodiscard]] bool empty() const noexcept { return list().empty(); }
+  [[nodiscard]] std::span<const Value> span() const& noexcept { return list(); }
+  void span() const&& = delete;
+  [[nodiscard]] const_iterator begin() const& noexcept { return list().begin(); }
+  [[nodiscard]] const_iterator end() const& noexcept { return list().end(); }
+  void begin() const&& = delete;
+  void end() const&& = delete;
+  [[nodiscard]] const Value& operator[](std::size_t index) const& noexcept { return list()[index]; }
+  [[nodiscard]] Value operator[](std::size_t index) const&& { return list()[index]; }
+  [[nodiscard]] const Value& at(std::size_t index) const& { return list().at(index); }
+  [[nodiscard]] Value at(std::size_t index) const&& { return list().at(index); }
+  [[nodiscard]] const Value& front() const& { return list().front(); }
+  [[nodiscard]] Value front() const&& { return list().front(); }
+  [[nodiscard]] std::vector<Value> toVector() && { if (owned_) return std::move(*owned_); return *borrowed_; }
+ private:
+  friend class Node;
+  explicit OperandsRef(const std::vector<Value>& stored) noexcept : borrowed_(&stored) {}
+  explicit OperandsRef(std::vector<Value>&& rebound) : owned_(std::move(rebound)) {}
+  const std::vector<Value>& list() const noexcept { return owned_ ? *owned_ : *borrowed_; }
+  const std::vector<Value>* borrowed_ = nullptr;
+  std::optional<std::vector<Value>> owned_;
+};
+
 class Node final {
  public:
   Node(Node&&) noexcept = default;
@@ -77,14 +109,19 @@ class Node final {
     if (index >= instance_count_) throw std::out_of_range("value instance index out of range");
     return readOrigin(index);
   }
+  // Exactly instances().at(index).operands, with the same range check, but
+  // without building the origin or types; see OperandsRef for borrowing.
+  [[nodiscard]] OperandsRef instanceOperands(std::size_t index) const;
+  // Records built on demand. Counts use instanceCount(), operands instanceOperands().
   [[nodiscard]] InstanceView instances() const { return InstanceView(instance_count_, [this](std::size_t i) { return readInstance(i); }); }
+  [[nodiscard]] std::size_t instanceCount() const noexcept { return instance_count_; }
   [[nodiscard]] std::size_t storedInstanceCount() const noexcept;
   // Visit stored operand patterns, never the logical thread instances. A
   // parameterized pattern rebinds same-thread operands using instanceThreads().
   void forEachInstancePattern(const std::function<void(
       const Instance&, std::size_t, std::size_t, bool)>&) const;
   [[nodiscard]] bool hasUniformThreadTemplate() const noexcept {
-    return bool(instance_template_) && instances_.size()==1;
+    return bool(origin_template_) && instances_.size()==1;
   }
   // This is the one collective occurrence emitted by addCollective, whose
   // operands are shared exactly. It is not ordinary thread-template sharing.
@@ -105,9 +142,13 @@ class Node final {
   std::uint64_t owner_;
   std::size_t id_;
   std::unique_ptr<const Operation> operation_;
-  std::map<std::size_t,std::shared_ptr<Instance>> instances_;
   std::size_t instance_count_=1;
-  std::function<Instance(std::size_t)> instance_template_;
+  std::map<std::size_t,std::shared_ptr<Instance>> instances_;
+  // A non-stored member is the prototype instances_.at(0) with these parts.
+  // origin_template_ marks every template; operand_template_ is the one owner
+  // of rebound member operands and is empty for collective members, which
+  // share the prototype operands exactly.
+  std::function<std::vector<Value>(std::size_t)> operand_template_;
   std::function<SourceOrigin(std::size_t)> origin_template_;
   std::function<const InstanceTypes&(std::size_t)> types_template_;
   // Retain the already-stored collective provenance for lossless checkpoints.
@@ -117,6 +158,8 @@ class Node final {
   ThreadMembers instance_threads_;
   const Instance* storedInstance(std::size_t index) const;
   Instance readInstance(std::size_t index) const;
+  // Record of a non-stored member. No range check: extraction probes the next slot.
+  Instance materialize(std::size_t index) const;
   SourceOrigin readOrigin(std::size_t index) const;
   std::optional<ThreadGroupId> group_id_;
 };
@@ -246,7 +289,17 @@ class Graph final {
   [[nodiscard]] Value component(Value matrix, std::vector<Value> indices) const;
   [[nodiscard]] Value asPointer(Value value, PointerProperties pointer) const;
   [[nodiscard]] Value fromThread(Value value, Value selector) const;
-  [[nodiscard]] Instance instance(Value value) const;
+  // A ThreadForward node outside any template: one stored instance per thread
+  // of `threads` (distinct, of base's CTA), instance k forwarding values[k], with
+  // base's origin moved to that thread. Its instance 0, for fromThread readers.
+  Value addThreadUnion(const SourceOrigin& base, const std::vector<std::uint64_t>& threads,
+                       std::vector<Value> values);
+  // The operand a ThreadForward instance forwards; any other value unchanged.
+  [[nodiscard]] Value forwarded(Value value) const;
+  [[nodiscard]] Instance instance(const Value& value) const;
+  // Exactly instance(value).operands / .origin, without building the other parts.
+  [[nodiscard]] OperandsRef instanceOperands(const Value& value) const;
+  [[nodiscard]] SourceOrigin instanceOrigin(const Value& value) const;
   [[nodiscard]] Value resolve(Value value) const;
   // Drop only bitcast chains that return to an identical type. Numeric
   // conversion, selection and pointer provenance remain semantic boundaries.
@@ -258,9 +311,9 @@ class Graph final {
   [[nodiscard]] std::string structuralTypeKey(const ValueType& type, const SourceOrigin& consumer) const;
   // Explicit launch metadata, visited once when building a coordinate index.
   void forEachThreadBinding(const std::function<void(const SourceOrigin&)>&) const;
-  [[nodiscard]] bool contains(Value value) const noexcept;
-  [[nodiscard]] const ValueType& type(Value value) const;
-  [[nodiscard]] const Node& definingNode(Value value) const;
+  [[nodiscard]] bool contains(const Value& value) const noexcept;
+  [[nodiscard]] const ValueType& type(const Value& value) const;
+  [[nodiscard]] const Node& definingNode(const Value& value) const;
   [[nodiscard]] const Node& node(std::size_t id) const;
   [[nodiscard]] NodeView nodes() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;
@@ -275,6 +328,10 @@ class Graph final {
   struct Storage;
   static Value resolveStorage(Storage&, Value value);
   static Value rebindThread(Storage&, Value value, std::uint64_t cta, std::uint64_t from, std::uint64_t to);
+  static std::function<std::vector<Value>(std::size_t)> memberOperands(
+      Storage&, std::shared_ptr<const Instance> base, const Node&);
+  std::pair<const Node*,std::size_t> locate(const Value& value) const;
+  const ValueType& resolvedType(const Value& resolved, const Node* producer) const;
   void setInstanceTemplate(const Node&, ThreadGroupId, ThreadMembers);
   std::unique_ptr<Storage> storage_;
 };

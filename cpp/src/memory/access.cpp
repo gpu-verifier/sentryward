@@ -224,13 +224,20 @@ Extraction ExtractFromEvents(const EventRecords& events,const SourceProgram& sou
   for (const auto& actor : source.actors) ctas.emplace(actor.id, actor.cta);
   std::optional<ActorId> previous;
   std::size_t begin = 0;
+  // Threads may be lowered by cohort, not by ID. A family's actor progression
+  // must not decrease, so a thread joins its predecessor only in ascending order.
+  std::uintptr_t ascending = 1;
   const auto finish = [&] {
     if (!previous) return;
     const auto cta = ctas.find(*previous);
-    if (cta != ctas.end()) (void)accesses.compressThreadTail(begin, cta->second.value(), 1, true);
+    if (cta != ctas.end()) (void)accesses.compressThreadTail(begin, cta->second.value(), ascending, true);
   };
   auto result=VisitEvents(events,source,[&](const MemoryAccess& access) -> std::optional<MemoryAnalysisError> {
-    if (previous != access.actor) { finish(); begin = accesses.beginThread(); previous = access.actor; }
+    if (previous != access.actor) {
+      finish();
+      if (previous && access.actor.value() < previous->value()) ++ascending;
+      begin = accesses.beginThread(); previous = access.actor;
+    }
     accesses.push_back(access);return std::nullopt;
   });
   finish();

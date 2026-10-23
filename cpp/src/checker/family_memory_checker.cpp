@@ -1,11 +1,13 @@
 #include "sentryward/algorithm/checker/family_memory_checker.h"
 #include "sentryward/algorithm/checker/duplicate_tma_stores.h"
+#include "sentryward/algorithm/checker/unit_quotient.h"
 #include "sentryward/algorithm/analysis/family_relation_query.h"
 #include "sentryward/algorithm/memory/family_conflict_order.h"
 #include "sentryward/algorithm/diagnostics/performance_profile.h"
 #include <chrono>
 #include <map>
 #include <numeric>
+#include <optional>
 #include <unordered_map>
 
 namespace sentryward::algorithm {
@@ -94,6 +96,10 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
   const auto start=std::chrono::steady_clock::now();
   const auto& graph=certificate.happensBeforeGraph;
   DuplicateTmaStores duplicate(source);
+  // Class mode: a duplicate pair lies in one CTA and stands for that pair in every unit of the
+  // CTA's class.
+  std::optional<ActorWeights> weights;
+  if(options.units)weights.emplace(*options.units,source.actors);
   std::vector<MemoryAccessFamily> extracted_families;
   if (!supplied_families) {
     auto extracted=ProfileCall("memory.family.extract_accesses",[&]{return ExtractMemoryAccessFamilies(graph,source);});
@@ -328,7 +334,23 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
           }
         });
         if(same_actor) {declined=true;return {};}
-        const auto pairs=cardinality(relation);
+        auto pairs=cardinality(relation);
+        if(weights) {
+          // One weight when the first family lies in one CTA (its actors are affine in the member);
+          // otherwise per row, as the same-actor check above.
+          const auto& w=*weights;
+          const auto row=relation.diagonal?std::size_t(1):relation.right.count();
+          const auto front=first.at(first.first_member).actor,back=first.at(first.first_member+first.count-1).actor;
+          std::size_t weighted=0;
+          const auto add=[&](std::uint64_t weight,std::size_t count) {
+            if(count && weight>SIZE_MAX/count)throw std::overflow_error("warning count overflow");
+            if(weight*count>SIZE_MAX-weighted)throw std::overflow_error("warning count overflow");
+            weighted+=weight*count;
+          };
+          if(w.Cta(front)==w.Cta(back))add(w(front),pairs);
+          else relation.left.forEach([&](auto x){add(w(first.at(x).actor),row);});
+          pairs=weighted;
+        }
         if(pairs>SIZE_MAX-result.warning_count)throw std::overflow_error("warning count overflow");
         result.warning_count+=pairs;
         if(options.collect_duplicate_write_groups) {

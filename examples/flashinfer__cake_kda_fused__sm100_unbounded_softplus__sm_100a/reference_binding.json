@@ -1,0 +1,577 @@
+{
+ "schema": "spverify.equivalence-mapping.v1",
+ "output_value_semantics": "ideal_real",
+ "left_inputs": {
+  "allocations": {
+   "6:global1:q": "q",
+   "6:global1:k": "k",
+   "6:global1:v": "v",
+   "6:global1:g": "g",
+   "6:global4:beta": "beta",
+   "6:global11:beta_padded": "beta_padded",
+   "6:global5:A_log": "A_log",
+   "6:global7:dt_bias": "dt_bias",
+   "6:global10:cu_seqlens": "cu_seqlens",
+   "6:global25:checkpoint_cu_starts_addr": "checkpoint_cu_starts_addr"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global1:q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     131,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:k": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     131,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:v": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     131,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:g": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     131,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global4:beta": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     131,
+     1
+    ],
+    "source_strides_bytes": [
+     2,
+     2
+    ],
+    "target_strides_bytes": [
+     2,
+     2
+    ]
+   },
+   "6:global11:beta_padded": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     131,
+     8
+    ],
+    "source_strides_bytes": [
+     16,
+     2
+    ],
+    "target_strides_bytes": [
+     16,
+     2
+    ]
+   },
+   "6:global5:A_log": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global7:dt_bias": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     512,
+     4
+    ],
+    "target_strides_bytes": [
+     512,
+     4
+    ]
+   },
+   "6:global10:cu_seqlens": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 8,
+    "shape": [
+     2
+    ],
+    "source_strides_bytes": [
+     8
+    ],
+    "target_strides_bytes": [
+     8
+    ]
+   },
+   "6:global25:checkpoint_cu_starts_addr": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 8,
+    "shape": [
+     2
+    ],
+    "source_strides_bytes": [
+     8
+    ],
+    "target_strides_bytes": [
+     8
+    ]
+   }
+  }
+ },
+ "right_inputs": {
+  "allocations": {
+   "6:global1:q": "q",
+   "6:global1:k": "k",
+   "6:global1:v": "v",
+   "6:global1:g": "g",
+   "6:global4:beta": "beta",
+   "6:global11:beta_padded": "beta_padded",
+   "6:global5:A_log": "A_log",
+   "6:global7:dt_bias": "dt_bias",
+   "6:global10:cu_seqlens": "cu_seqlens",
+   "6:global25:checkpoint_cu_starts_addr": "checkpoint_cu_starts_addr"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global1:q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     131,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:k": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     131,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:v": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     131,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:g": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     131,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global4:beta": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     131,
+     1
+    ],
+    "source_strides_bytes": [
+     2,
+     2
+    ],
+    "target_strides_bytes": [
+     2,
+     2
+    ]
+   },
+   "6:global11:beta_padded": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     131,
+     8
+    ],
+    "source_strides_bytes": [
+     16,
+     2
+    ],
+    "target_strides_bytes": [
+     16,
+     2
+    ]
+   },
+   "6:global5:A_log": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global7:dt_bias": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     512,
+     4
+    ],
+    "target_strides_bytes": [
+     512,
+     4
+    ]
+   },
+   "6:global10:cu_seqlens": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 8,
+    "shape": [
+     2
+    ],
+    "source_strides_bytes": [
+     8
+    ],
+    "target_strides_bytes": [
+     8
+    ]
+   },
+   "6:global25:checkpoint_cu_starts_addr": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 8,
+    "shape": [
+     2
+    ],
+    "source_strides_bytes": [
+     8
+    ],
+    "target_strides_bytes": [
+     8
+    ]
+   }
+  }
+ },
+ "outputs": {
+  "kind": "dense_tensors",
+  "tensors": [
+   {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global3:out",
+    "right_allocation": "6:global3:out",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     131,
+     1,
+     128
+    ],
+    "left_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "right_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global11:final_state",
+    "right_allocation": "6:global11:final_state",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     1,
+     128,
+     128
+    ],
+    "left_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ],
+    "right_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ]
+   },
+   {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global22:state_checkpoints_addr",
+    "right_allocation": "6:global22:state_checkpoints_addr",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     2,
+     1,
+     128,
+     128
+    ],
+    "left_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ],
+    "right_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ]
+   }
+  ]
+ },
+ "reference": {
+  "arguments": [
+   {
+    "name": "q",
+    "allocation": "6:global1:q",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "k",
+    "allocation": "6:global1:k",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "v",
+    "allocation": "6:global1:v",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "g",
+    "allocation": "6:global1:g",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "beta",
+    "allocation": "6:global4:beta",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "beta_padded",
+    "allocation": "6:global11:beta_padded",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "A_log",
+    "allocation": "6:global5:A_log",
+    "dtype": "float32"
+   },
+   {
+    "name": "dt_bias",
+    "allocation": "6:global7:dt_bias",
+    "dtype": "float32"
+   },
+   {
+    "name": "seq_start",
+    "value": {
+     "input": "/shape_arrays/0/shapes/0/0"
+    }
+   },
+   {
+    "name": "seq_end",
+    "value": {
+     "input": "/shape_arrays/0/shapes/1/0"
+    }
+   },
+   {
+    "name": "checkpoint_start",
+    "value": {
+     "input": "/shape_arrays/1/shapes/0/0"
+    }
+   },
+   {
+    "name": "scale",
+    "parameter": 21
+   },
+   {
+    "name": "checkpoint_every",
+    "parameter": 29
+   }
+  ]
+ },
+ "provenance": {
+  "source": "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/kda/cake_kda_bf16_fused_m128_unbounded_softplus.cu",
+  "upstream": [
+   "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/kda/cake_kda_bf16_fused_m128_unbounded_softplus.cu",
+   "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/kda/cake_kda_bf16_fused_m128_unbounded_softplus_binding.cu",
+   "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/kda/cake_kda_binding_common.cuh",
+   "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/kda_prefill.py",
+   "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/kda.py",
+   "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/kda/test_recurrent_kda_prefill.py"
+  ],
+  "scope": "One packed sequence of 131 tokens (the longer sequence of the upstream test_frozen_unbounded_softplus_tp_shapes_strided_beta_state_and_checkpoints case, H = 1), one head, grid 1, use_initial_state 0, store_final_state 1, use_state_indices 0, checkpoint every 128 tokens (rows 0 and 1), seq_order bounded to [0, 0]. beta_padded is the head-padded TMA copy of beta (separate object); cu_seqlens and checkpoint_cu_starts are bound on both sides as fixed shape arrays.",
+  "optimized_input_sha256": "61c6158e271731e3ce5486cdd5b06417df370d201cec8ee22ec54cc57a7128b8",
+  "ptx_sha256": "1ec1d4af7151a3fb17623d0c309f9e2665acd8881ca875962c9414c452365d7f",
+  "scope_branch_choices": [],
+  "scope_shape_arrays": [
+   {
+    "parameter": 12,
+    "offset": 0,
+    "element_type": "s64",
+    "shapes": [
+     [
+      0
+     ],
+     [
+      131
+     ]
+    ]
+   },
+   {
+    "parameter": 25,
+    "offset": 0,
+    "element_type": "s64",
+    "shapes": [
+     [
+      0
+     ],
+     [
+      2
+     ]
+    ]
+   }
+  ]
+ }
+}

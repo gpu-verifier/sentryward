@@ -508,8 +508,8 @@ class Serializer {
     while(!pending.empty()) {
       const auto id=pending.back();pending.pop_back();if(!needed.insert(id).second)continue;
       const auto& node=program_.values.node(id);
-      value_events_.emplace(id,addFamily(node.instances().size()));
-      if(reads_.contains(id))load_inputs_.emplace(id,addFamily(node.instances().size()));
+      value_events_.emplace(id,addFamily(node.instanceCount()));
+      if(reads_.contains(id))load_inputs_.emplace(id,addFamily(node.instanceCount()));
       node.forEachInstancePattern([&](const auto& pattern,auto,auto,bool) {
         for(auto value:pattern.operands)enqueue(enqueue,value);
       });

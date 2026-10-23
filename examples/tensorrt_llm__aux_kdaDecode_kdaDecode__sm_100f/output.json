@@ -1,14 +1,4 @@
 {
-  "address_model": {
-    "address_invariants": [],
-    "kind": "symbolic",
-    "layers": [
-      0,
-      2
-    ],
-    "solver": "z3",
-    "solver_timeout_ms": 100
-  },
   "assumption_dependent": true,
   "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
@@ -51,338 +41,82 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "not_run",
-    "memory": "failed",
-    "synchronization": "passed"
-  },
-  "counts": {
-    "edges": 1079538,
-    "events": 716877,
-    "instructions": 244489,
-    "memory_accesses": 158025,
-    "threads": 256
+    "synchronization": "failed"
   },
   "diagnostics": [
     {
       "code": "conflicting_accesses_unordered",
       "details": {
         "count": 1,
+        "internal_stage": "memory_check",
         "witnesses_path": "races"
       },
       "message": "Conflicting accesses have no proven required ordering",
-      "stage": "memory_check"
+      "stage": "synchronization"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
+  "evidence": {
+    "race_count": 1,
+    "race_samples_truncated": false,
+    "races": [
       {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "failed",
-            "synchronization": "passed"
+        "first": {
+          "access_index": 0,
+          "actor": 0,
+          "bytes": 4,
+          "effect_index": 0,
+          "endpoint": {
+            "address": 56,
+            "kind": "memory"
           },
-          "prerequisite_diagnostics": [
-            {
-              "code": "conflicting_accesses_unordered",
-              "details": {
-                "count": 1,
-                "witnesses_path": "races"
-              },
-              "message": "Conflicting accesses have no proven required ordering",
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "potential_race"
+          "event": 472,
+          "instruction": 171,
+          "location": {
+            "column": 2,
+            "file": "corpus/tensorrt_llm__aux_kdaDecode_kdaDecode__sm_100f.ptx",
+            "line": 6290
+          },
+          "mode": "write"
         },
-        "stage": "pipeline"
+        "overlap": "constant byte ranges intersect",
+        "region": {
+          "address_space": "shared",
+          "allocation": "cta:(0, 0, 0):shared:physical.shared.cta.0",
+          "bytes": 4,
+          "offset": 2564
+        },
+        "second": {
+          "access_index": 0,
+          "actor": 1,
+          "bytes": 4,
+          "effect_index": 0,
+          "endpoint": {
+            "address": 56,
+            "kind": "memory"
+          },
+          "event": 3490,
+          "instruction": 1216,
+          "location": {
+            "column": 2,
+            "file": "corpus/tensorrt_llm__aux_kdaDecode_kdaDecode__sm_100f.ptx",
+            "line": 6264
+          },
+          "mode": "read"
+        }
       }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
-  },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [],
-      "first_unavailable_reason": "",
-      "queries": 0,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": true
-    },
-    "cluster_completion_joins": 0,
-    "cta_count": 1,
-    "dependency_compression": {
-      "cp_async_wait": {
-        "consumers": 1024,
-        "emitted_references": 4096,
-        "original_references": 10240,
-        "prefix_effects": 0
-      }
-    },
-    "diagnostic_sample_count": 0,
-    "executed_records": 301183,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 0,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
-    },
-    "implementation": "cpp",
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "x_q",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "x_k",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_1",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "x_v",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_2",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "w_q",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_3",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "w_k",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_4",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "w_v",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_5",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "bias_q",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_6",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "bias_k",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_7",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "bias_v",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_8",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "cs_q",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_9",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "cs_k",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_10",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "cs_v",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_11",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "a_log",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_12",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "g",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_13",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "dt_bias",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_14",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "beta",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_15",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "onorm_g",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_16",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "onorm_weight",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_17",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "state_indices",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_18",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "state",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_20",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "out",
-        "offset": 0,
-        "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_23",
-        "source": "declaration"
-      }
-    ],
-    "lowered_instruction_count": 244489,
-    "reached_opcodes": {
-      "add.ftz.f32": 43905,
-      "add.s32": 17536,
-      "add.s64": 18561,
-      "and.b32": 8704,
-      "bar.sync": 1792,
-      "bar.warp.sync": 1024,
-      "bra": 5889,
-      "cp.async.cg.shared.global": 4096,
-      "cp.async.commit_group": 1024,
-      "cp.async.wait_group": 1024,
-      "cvt.f32.bf16": 3713,
-      "cvt.rn.bf16.f32": 128,
-      "cvt.u64.u32": 9216,
-      "cvta.to.global.u64": 2437,
-      "div.approx.ftz.f32": 128,
-      "ex2.approx.ftz.f32": 773,
-      "fma.rn.ftz.f32": 42592,
-      "griddepcontrol.launch_dependents": 256,
-      "griddepcontrol.wait": 256,
-      "ld.global.b16": 1152,
-      "ld.global.nc.b16": 2561,
-      "ld.global.nc.b32": 260,
-      "ld.param.b32": 768,
-      "ld.param.b64": 7168,
-      "ld.shared.b32": 6160,
-      "ld.shared.v4.b32": 4864,
-      "mad.lo.s64": 640,
-      "mov.b32": 11488,
-      "mov.u32": 512,
-      "mul.ftz.f32": 31141,
-      "mul.lo.s64": 385,
-      "mul.wide.u32": 384,
-      "or.b32": 256,
-      "rcp.approx.ftz.f32": 641,
-      "ret": 256,
-      "rsqrt.approx.ftz.f32": 384,
-      "setp.gt.u32": 1600,
-      "setp.lt.u32": 4096,
-      "setp.ne.b32": 1856,
-      "shfl.sync.bfly.b32": 42720,
-      "shfl.sync.idx.b32": 128,
-      "shl.b32": 2688,
-      "shl.b64": 5377,
-      "shr.u32": 256,
-      "st.global.b16": 1280,
-      "st.global.v4.b32": 4096,
-      "st.shared.b32": 916,
-      "sub.ftz.f32": 4096
-    },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 0,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 256,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 244489,
-      "stored_bindings": 244489
-    },
-    "source_edge_storage": {
-      "binding_templates": 256,
-      "logical_edges": 244233,
-      "stored_bindings": 256
-    },
-    "thread_count": 256,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": []
+    ]
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -390,6 +124,7 @@
       "__assertfail"
     ],
     "assertion_uses": 0,
+    "atomic_uses": 0,
     "bounded_loop_uses": 0,
     "clc_failure": true,
     "clc_uses": 0,
@@ -411,236 +146,497 @@
     "representative_branch_uses": 0,
     "trap_only_equality_assertions_hold": true
   },
-  "hb_queries": {
-    "memory": {
-      "algorithm": "not-built",
-      "batches": 0,
-      "cache_hits": 0,
-      "dfs_queries": 0,
-      "edge_visits": 0,
-      "filtered_queries": 0,
-      "queries": 0,
-      "shared_peak_index_bytes": 0
-    }
-  },
-  "implementation": "cpp",
-  "memory_analysis": {
-    "address_candidates": 1417,
+  "internal": {
     "address_model": {
-      "cache_hits": 0,
-      "ground_disjoint": 0,
-      "ground_overlap": 0,
-      "layer0_disjoint": 0,
-      "refined_pairs": 0,
-      "solver_queries": 0,
-      "solver_sat": 0,
-      "solver_unknown": 0,
-      "solver_unsat": 0
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
     },
-    "candidate_generation_fallback": false,
-    "exhaustive": false,
-    "family_analysis": {
-      "access_families": 158025,
-      "affine_member_rows": 0,
-      "candidate_relations": 1417,
-      "hb_frontier_pieces": 464,
-      "hb_member_enumerations": 0,
-      "logical_accesses": 158025
+    "counts": {
+      "edges": 1079538,
+      "events": 716877,
+      "instructions": 244489,
+      "memory_accesses": 158025,
+      "threads": 256
     },
-    "first_race_seconds": 1.108112236,
-    "hb_algorithm": "member-relations",
-    "hb_batches": 2,
-    "hb_cache_hits": 0,
-    "hb_dfs_queries": 0,
-    "hb_edge_visits": 510189,
-    "hb_filtered_queries": 0,
-    "hb_peak_index_bytes": 0,
-    "hb_queries": 1417,
-    "hb_query_seconds": 0.16877836,
-    "overlap_queries": 1,
-    "strategy": "conflict-family",
-    "unordered_candidates_examined": 1
-  },
-  "memory_analysis_complete": true,
-  "mma_operand_ordering": {},
-  "mode": "verify",
-  "peak_footprint_mib": 2329.35546875,
-  "peak_rss_mib": 2329.35546875,
-  "pipeline_elapsed_seconds": 8.829383951,
-  "race_count": 1,
-  "race_samples_truncated": false,
-  "races": [
-    {
-      "first": {
-        "access_index": 0,
-        "actor": 0,
-        "bytes": 4,
-        "effect_index": 0,
-        "endpoint": {
-          "address": 56,
-          "kind": "memory"
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "failed",
+              "synchronization": "passed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "conflicting_accesses_unordered",
+                "details": {
+                  "count": 1,
+                  "witnesses_path": "races"
+                },
+                "message": "Conflicting accesses have no proven required ordering",
+                "stage": "memory_check"
+              }
+            ],
+            "prerequisite_result": "potential_race"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_lowering": {
+          "final_templates": 8,
+          "graph_nodes": 27002,
+          "splits": 0,
+          "template_steps": 11687
         },
-        "event": 472,
-        "instruction": 171,
-        "location": {
-          "column": 2,
-          "file": "corpus/tensorrt_llm__aux_kdaDecode_kdaDecode__sm_100f.ptx",
-          "line": 6290
-        },
-        "mode": "write"
+        "value_view_complete": true
       },
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "shared",
-        "allocation": "cta:(0, 0, 0):shared:physical.shared.cta.0",
-        "bytes": 4,
-        "offset": 2564
+      "cluster_completion_joins": 0,
+      "cta_count": 1,
+      "dependency_compression": {
+        "cp_async_wait": {
+          "consumers": 1024,
+          "emitted_references": 4096,
+          "original_references": 10240,
+          "prefix_effects": 0
+        }
       },
-      "second": {
-        "access_index": 0,
-        "actor": 1,
-        "bytes": 4,
-        "effect_index": 0,
-        "endpoint": {
-          "address": 56,
-          "kind": "memory"
+      "diagnostic_sample_count": 0,
+      "executed_records": 301183,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
         },
-        "event": 3490,
-        "instruction": 1216,
-        "location": {
-          "column": 2,
-          "file": "corpus/tensorrt_llm__aux_kdaDecode_kdaDecode__sm_100f.ptx",
-          "line": 6264
+        "election_uses": 0,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
         },
-        "mode": "read"
+        "representative_branch_uses": 0,
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "x_q",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "x_k",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_1",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "x_v",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_2",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "w_q",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_3",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "w_k",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_4",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "w_v",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_5",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "bias_q",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_6",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "bias_k",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_7",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "bias_v",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_8",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "cs_q",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_9",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "cs_k",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_10",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "cs_v",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_11",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "a_log",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_12",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "g",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_13",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "dt_bias",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_14",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "beta",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_15",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "onorm_g",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_16",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "onorm_weight",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_17",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "state_indices",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_18",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "state",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_20",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "out",
+          "offset": 0,
+          "parameter": "_ZN12tensorrt_llm3_v17kernels9kdaDecode45_GLOBAL__N__9647ee9b_12_kdaDecode_cu_5d58dc4438kda_decode_fusion_compact_heads_kernelILb1ELb1ELb1ELi1ELi1ELb0ELb0ELb0ELb1ELb0ELb1ELb1ELb1ELb1EEEvPK13__nv_bfloat16S7_S7_S7_S7_S7_S7_S7_S7_PS5_S8_S8_PKfS7_SA_S7_S7_SA_PKiSC_PfllS8_iiifffNS2_17KdaDecodeIoLayoutE_param_23",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 244489,
+      "reached_opcodes": {
+        "add.ftz.f32": 43905,
+        "add.s32": 17536,
+        "add.s64": 18561,
+        "and.b32": 8704,
+        "bar.sync": 1792,
+        "bar.warp.sync": 1024,
+        "bra": 5889,
+        "cp.async.cg.shared.global": 4096,
+        "cp.async.commit_group": 1024,
+        "cp.async.wait_group": 1024,
+        "cvt.f32.bf16": 3713,
+        "cvt.rn.bf16.f32": 128,
+        "cvt.u64.u32": 9216,
+        "cvta.to.global.u64": 2437,
+        "div.approx.ftz.f32": 128,
+        "ex2.approx.ftz.f32": 773,
+        "fma.rn.ftz.f32": 42592,
+        "griddepcontrol.launch_dependents": 256,
+        "griddepcontrol.wait": 256,
+        "ld.global.b16": 1152,
+        "ld.global.nc.b16": 2561,
+        "ld.global.nc.b32": 260,
+        "ld.param.b32": 768,
+        "ld.param.b64": 7168,
+        "ld.shared.b32": 6160,
+        "ld.shared.v4.b32": 4864,
+        "mad.lo.s64": 640,
+        "mov.b32": 11488,
+        "mov.u32": 512,
+        "mul.ftz.f32": 31141,
+        "mul.lo.s64": 385,
+        "mul.wide.u32": 384,
+        "or.b32": 256,
+        "rcp.approx.ftz.f32": 641,
+        "ret": 256,
+        "rsqrt.approx.ftz.f32": 384,
+        "setp.gt.u32": 1600,
+        "setp.lt.u32": 4096,
+        "setp.ne.b32": 1856,
+        "shfl.sync.bfly.b32": 42720,
+        "shfl.sync.idx.b32": 128,
+        "shl.b32": 2688,
+        "shl.b64": 5377,
+        "shr.u32": 256,
+        "st.global.b16": 1280,
+        "st.global.v4.b32": 4096,
+        "st.shared.b32": 916,
+        "sub.ftz.f32": 4096
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 8,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 244489,
+        "stored_bindings": 17222
+      },
+      "source_edge_storage": {
+        "binding_templates": 256,
+        "logical_edges": 244233,
+        "stored_bindings": 256
+      },
+      "thread_count": 256,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
       }
-    }
-  ],
-  "required_order_domains": 0,
-  "required_orders": 0,
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 1473,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 12245,
+        "affine_member_rows": 0,
+        "candidate_relations": 218,
+        "hb_frontier_pieces": 40,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 158025
+      },
+      "first_race_seconds": 0.054297504,
+      "hb_algorithm": "member-relations",
+      "hb_batches": 3,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 29904,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 1473,
+      "hb_query_seconds": 0.009471143,
+      "overlap_queries": 1,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 1
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 1212.7734375,
+    "required_order_domains": 0,
+    "required_orders": 0,
+    "search_complete": false,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 15,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 16940,
+      "memory_binding_templates": 8266,
+      "memory_bindings": 56361,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 6560,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 0,
+      "thread_prefix_groups": 36582,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "stage": "memory_check",
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 1,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 302846,
+      "path_entries": 10087,
+      "record_bindings": 8135,
+      "record_nodes": 6806,
+      "splits": 7,
+      "template_steps": 6867,
+      "thread_memberships": 256,
+      "value_nodes": 6922
+    },
+    "thread_record_compression": {
+      "completed_ctas": 1,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 301183,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "failed",
+              "synchronization": "passed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "conflicting_accesses_unordered",
+                "details": {
+                  "count": 1,
+                  "witnesses_path": "races"
+                },
+                "message": "Conflicting accesses have no proven required ordering",
+                "stage": "memory_check"
+              }
+            ],
+            "prerequisite_result": "potential_race",
+            "prerequisite_status": "potential_race"
+          },
+          "stage": "pipeline"
+        }
+      ],
+      "equivalence_check": "blocked",
+      "prerequisite_status": "potential_race",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      }
+    },
+    "value_ir_instance_count": 830179,
+    "value_ir_node_count": 27002,
+    "value_view_complete": true
+  },
+  "peak_rss_mib": 1240.99609375,
+  "pipeline_elapsed_seconds": 3.229398258,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "search_complete": false,
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 0,
-    "binding_diagnostics": [],
-    "execution_cohorts": 15,
-    "mapping_complete": true,
-    "memory_binding_stored_rows": 56361,
-    "memory_binding_templates": 1,
-    "memory_bindings": 56361,
-    "memory_linking_templates_used": true,
-    "synchronization_groups": 6560,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 0,
-    "thread_prefix_groups": 367878,
-    "value_diagnostic_count": 0,
-    "value_diagnostics": []
-  },
-  "source_violations": [],
-  "stage": "memory_check",
-  "synchronization_input": {
-    "compute_access_binding": "after_happens_before",
-    "kind": "ordering_endpoints",
-    "memory_address_payloads": false
-  },
-  "template_execution": {
-    "completed_ctas": 1,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 302846,
-    "path_entries": 55147,
-    "record_bindings": 43421,
-    "record_nodes": 35898,
-    "splits": 42,
-    "template_steps": 36104,
-    "thread_memberships": 256,
-    "value_nodes": 38860
-  },
-  "thread_record_compression": {
-    "completed_ctas": 1,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 301183,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "unresolved_count": 0,
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "failed",
-            "synchronization": "passed"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "conflicting_accesses_unordered",
-              "details": {
-                "count": 1,
-                "witnesses_path": "races"
-              },
-              "message": "Conflicting accesses have no proven required ordering",
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "potential_race",
-          "prerequisite_status": "potential_race"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "potential_race",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    }
-  },
-  "value_ir_instance_count": 792383,
-  "value_ir_node_count": 269831,
-  "value_view_complete": true,
   "verification_limitations": [],
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.385
+  "whole_pipeline_timeout_seconds": 498.375
 }

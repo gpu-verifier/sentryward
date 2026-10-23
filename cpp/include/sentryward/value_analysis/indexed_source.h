@@ -1,12 +1,61 @@
 #pragma once
 #include "sentryward/value_analysis/memory_elimination.h"
 #include <memory>
+#include <unordered_map>
 
 namespace sentryward::value_analysis {
 struct IndexedSourceLimit : std::runtime_error {
   std::string code;
   explicit IndexedSourceLimit(std::string message, std::string reason = "source_index_limit_exceeded")
       : std::runtime_error(std::move(message)), code(std::move(reason)) {}
+};
+// Cumulative byte ends of immutable AssembledRead pieces. One pass owns one
+// index and lends it to every consumer of the same raw reads, so a reused
+// assembly is measured once in O(P) and each slice is an O(log P) search.
+// Keys are stable substitution addresses: the raw read map must outlive the
+// index and stay unchanged. Each consumer keeps its own policy for a piece
+// whose extent is not representable.
+class AssembledPieceEnds final {
+ public:
+  enum class Stop : unsigned char { None, Dynamic, Overflow };
+  struct Extents {
+    // Ends of the leading representable pieces. Unless stop is None, piece
+    // ends.size() is descriptor-sized (Dynamic) or ends past UINT64_MAX.
+    std::vector<std::uint64_t> ends;
+    Stop stop = Stop::None;
+    bool built = false, requested = false;
+  };
+  const Extents& extents(const AssembledRead& read) {
+    auto& entry = entries_[&read];
+    if (!entry.built) build(read, entry);
+    return entry;
+  }
+  // Every end of a representable assembly, or null when the caller should
+  // scan instead: an unrepresentable extent, or a small assembly's first
+  // request. A single-use small assembly does not pay for an O(P) index.
+  const std::vector<std::uint64_t>* reusedEnds(const AssembledRead& read) {
+    auto& entry = entries_[&read];
+    if (!entry.built) {
+      if (read.pieces.size() <= 8 && !entry.requested) { entry.requested = true; return nullptr; }
+      build(read, entry);
+    }
+    return entry.stop == Stop::None ? &entry.ends : nullptr;
+  }
+
+ private:
+  static void build(const AssembledRead& read, Extents& entry) {
+    entry.ends.reserve(read.pieces.size());
+    std::uint64_t end = 0;
+    for (const auto& piece : read.pieces) {
+      // Exactly the types whose bitSize() throws; record the piece instead.
+      if (!piece.type.hasStaticShape() || piece.type.element().isParameterized()) { entry.stop = Stop::Dynamic; break; }
+      const auto bytes = piece.type.bitSize() / 8;
+      if (bytes > UINT64_MAX - end) { entry.stop = Stop::Overflow; break; }
+      entry.ends.push_back(end += bytes);
+    }
+    entry.built = true;
+  }
+  std::unordered_map<const AssembledRead*, Extents> entries_;
 };
 // A disjoint domain of existing finite source records. A null source denotes
 // one exact record. result_stride permits interleaved domains without a table.
@@ -56,6 +105,8 @@ std::vector<IndexedSourceDomain> mapSourceTemplates(
 class IndexedSourceMatcher {
  public:
   IndexedSourceMatcher(const value_ir::Graph&, const MemoryEliminationResult&);
+  // Shares the pass's assembled-read extents; the owner must outlive this.
+  IndexedSourceMatcher(const value_ir::Graph&, const MemoryEliminationResult&, AssembledPieceEnds&);
   ~IndexedSourceMatcher();
   std::optional<IndexedSource> match(std::span<const value_ir::Value>);
   std::optional<IndexedSource> matchTemplate(const IndexedSourceTemplate&);

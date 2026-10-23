@@ -43,7 +43,7 @@
     {
       "parameter": 22,
       "type": "f32",
-      "value": -5.0
+      "value": 0.0
     },
     {
       "parameter": 26,
@@ -177,5 +177,230 @@
     "duplicate_tma_store_benign": true,
     "representative_election": true,
     "clc_always_fails": true
-  }
+  },
+  "shape_arrays": [
+    {
+      "parameter": 12,
+      "offset": 0,
+      "element_type": "s64",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          131
+        ]
+      ]
+    },
+    {
+      "parameter": 25,
+      "offset": 0,
+      "element_type": "s64",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          2
+        ]
+      ]
+    }
+  ],
+  "tensor_properties": [
+    {
+      "object": "seq_order",
+      "element_type": "s32",
+      "property": "lower_bound",
+      "value": 0
+    },
+    {
+      "object": "seq_order",
+      "element_type": "s32",
+      "property": "upper_bound",
+      "value": 0
+    },
+    {
+      "object": "seq_order",
+      "element_type": "s32",
+      "property": "injective"
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 1,
+      "object": "q",
+      "element_type": "bf16",
+      "rank": 4,
+      "global_shape": [
+        64,
+        131,
+        1,
+        2
+      ],
+      "box_shape": [
+        64,
+        32,
+        1,
+        2
+      ],
+      "global_strides_bytes": [
+        256,
+        256,
+        128
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 3,
+      "object": "k",
+      "element_type": "bf16",
+      "rank": 4,
+      "global_shape": [
+        64,
+        131,
+        1,
+        2
+      ],
+      "box_shape": [
+        64,
+        32,
+        1,
+        2
+      ],
+      "global_strides_bytes": [
+        256,
+        256,
+        128
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 5,
+      "object": "v",
+      "element_type": "bf16",
+      "rank": 3,
+      "global_shape": [
+        128,
+        1,
+        131
+      ],
+      "box_shape": [
+        128,
+        1,
+        32
+      ],
+      "global_strides_bytes": [
+        256,
+        256
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "none",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 7,
+      "object": "g",
+      "element_type": "bf16",
+      "rank": 3,
+      "global_shape": [
+        128,
+        1,
+        131
+      ],
+      "box_shape": [
+        128,
+        1,
+        32
+      ],
+      "global_strides_bytes": [
+        256,
+        256
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "none",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 9,
+      "object": "beta_padded",
+      "element_type": "bf16",
+      "rank": 2,
+      "global_shape": [
+        8,
+        131
+      ],
+      "box_shape": [
+        8,
+        32
+      ],
+      "global_strides_bytes": [
+        16
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "none",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 16,
+      "object": "out",
+      "element_type": "bf16",
+      "rank": 4,
+      "global_shape": [
+        64,
+        131,
+        1,
+        2
+      ],
+      "box_shape": [
+        64,
+        32,
+        1,
+        2
+      ],
+      "global_strides_bytes": [
+        256,
+        256,
+        128
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ]
 }

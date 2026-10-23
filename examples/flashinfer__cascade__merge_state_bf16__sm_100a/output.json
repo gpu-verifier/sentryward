@@ -1,14 +1,4 @@
 {
-  "address_model": {
-    "address_invariants": [],
-    "kind": "symbolic",
-    "layers": [
-      0,
-      2
-    ],
-    "solver": "z3",
-    "solver_timeout_ms": 100
-  },
   "assumption_dependent": true,
   "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
@@ -51,208 +41,82 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "not_run",
-    "memory": "failed",
-    "synchronization": "passed"
-  },
-  "counts": {
-    "edges": 2816,
-    "events": 3072,
-    "instructions": 1536,
-    "memory_accesses": 1536,
-    "threads": 256
+    "synchronization": "failed"
   },
   "diagnostics": [
     {
       "code": "conflicting_accesses_unordered",
       "details": {
         "count": 1,
+        "internal_stage": "memory_check",
         "witnesses_path": "races"
       },
       "message": "Conflicting accesses have no proven required ordering",
-      "stage": "memory_check"
+      "stage": "synchronization"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
+  "evidence": {
+    "race_count": 1,
+    "race_samples_truncated": false,
+    "races": [
       {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "failed",
-            "synchronization": "passed"
+        "first": {
+          "access_index": 0,
+          "actor": 1,
+          "bytes": 4,
+          "effect_index": 0,
+          "endpoint": {
+            "address": 5,
+            "kind": "memory"
           },
-          "prerequisite_diagnostics": [
-            {
-              "code": "conflicting_accesses_unordered",
-              "details": {
-                "count": 1,
-                "witnesses_path": "races"
-              },
-              "message": "Conflicting accesses have no proven required ordering",
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "potential_race"
+          "event": 23,
+          "instruction": 11,
+          "location": {
+            "column": 2,
+            "file": "corpus/flashinfer__cascade__merge_state_bf16__sm_100a.ptx",
+            "line": 197
+          },
+          "mode": "write"
         },
-        "stage": "pipeline"
+        "overlap": "constant byte ranges intersect",
+        "region": {
+          "address_space": "global",
+          "allocation": "s_merged",
+          "bytes": 4,
+          "offset": 0
+        },
+        "second": {
+          "access_index": 0,
+          "actor": 0,
+          "bytes": 4,
+          "effect_index": 0,
+          "endpoint": {
+            "address": 5,
+            "kind": "memory"
+          },
+          "event": 11,
+          "instruction": 5,
+          "location": {
+            "column": 2,
+            "file": "corpus/flashinfer__cascade__merge_state_bf16__sm_100a.ptx",
+            "line": 197
+          },
+          "mode": "write"
+        }
       }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
-  },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [],
-      "first_unavailable_reason": "",
-      "queries": 0,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": true
-    },
-    "cluster_completion_joins": 0,
-    "cta_count": 4,
-    "dependency_compression": {},
-    "diagnostic_sample_count": 0,
-    "executed_records": 25344,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 0,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
-    },
-    "implementation": "cpp",
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "v_a",
-        "offset": 0,
-        "parameter": "_ZN10flashinfer16MergeStateKernelILj8E13__nv_bfloat16S1_EEvPT0_PfS3_S4_PT1_S4_jj_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "s_a",
-        "offset": 0,
-        "parameter": "_ZN10flashinfer16MergeStateKernelILj8E13__nv_bfloat16S1_EEvPT0_PfS3_S4_PT1_S4_jj_param_1",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "v_b",
-        "offset": 0,
-        "parameter": "_ZN10flashinfer16MergeStateKernelILj8E13__nv_bfloat16S1_EEvPT0_PfS3_S4_PT1_S4_jj_param_2",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "s_b",
-        "offset": 0,
-        "parameter": "_ZN10flashinfer16MergeStateKernelILj8E13__nv_bfloat16S1_EEvPT0_PfS3_S4_PT1_S4_jj_param_3",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "v_merged",
-        "offset": 0,
-        "parameter": "_ZN10flashinfer16MergeStateKernelILj8E13__nv_bfloat16S1_EEvPT0_PfS3_S4_PT1_S4_jj_param_4",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "s_merged",
-        "offset": 0,
-        "parameter": "_ZN10flashinfer16MergeStateKernelILj8E13__nv_bfloat16S1_EEvPT0_PfS3_S4_PT1_S4_jj_param_5",
-        "source": "declaration"
-      }
-    ],
-    "lowered_instruction_count": 1536,
-    "reached_opcodes": {
-      "add.f32": 512,
-      "add.s64": 1792,
-      "cvt.f32.bf16": 4096,
-      "cvt.rn.bf16x2.f32": 1024,
-      "cvt.u64.u32": 512,
-      "cvta.to.global.u64": 1536,
-      "div.rn.f32": 512,
-      "ex2.approx.ftz.f32": 512,
-      "fma.rn.f32": 2048,
-      "ld.global.nc.f32": 512,
-      "ld.global.nc.v4.u32": 512,
-      "ld.param.u32": 512,
-      "ld.param.u64": 1792,
-      "lg2.approx.ftz.f32": 256,
-      "mad.lo.s32": 256,
-      "max.f32": 768,
-      "mov.b32": 2048,
-      "mov.u32": 768,
-      "mul.f32": 2048,
-      "mul.lo.s32": 256,
-      "mul.wide.u32": 256,
-      "ret": 256,
-      "selp.f32": 512,
-      "setp.eq.s64": 256,
-      "setp.gt.f32": 256,
-      "shl.b32": 256,
-      "shl.b64": 256,
-      "st.global.f32": 256,
-      "st.global.v4.u32": 256,
-      "sub.f32": 512
-    },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 0,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 4,
-      "generated_address_rows": 192,
-      "generated_body_rows": 24,
-      "generated_memory_instances": 1536,
-      "logical_instructions": 1536,
-      "stored_bindings": 0
-    },
-    "source_edge_storage": {
-      "binding_templates": 256,
-      "logical_edges": 1280,
-      "stored_bindings": 256
-    },
-    "thread_count": 256,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": []
+    ]
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -260,6 +124,7 @@
       "__assertfail"
     ],
     "assertion_uses": 0,
+    "atomic_uses": 0,
     "bounded_loop_uses": 0,
     "clc_failure": true,
     "clc_uses": 0,
@@ -281,236 +146,367 @@
     "representative_branch_uses": 0,
     "trap_only_equality_assertions_hold": true
   },
-  "hb_queries": {
-    "memory": {
-      "algorithm": "not-built",
-      "batches": 0,
-      "cache_hits": 0,
-      "dfs_queries": 0,
-      "edge_visits": 0,
-      "filtered_queries": 0,
-      "queries": 0,
-      "shared_peak_index_bytes": 0
-    }
-  },
-  "implementation": "cpp",
-  "memory_analysis": {
-    "address_candidates": 4352,
+  "internal": {
     "address_model": {
-      "cache_hits": 0,
-      "ground_disjoint": 0,
-      "ground_overlap": 0,
-      "layer0_disjoint": 0,
-      "refined_pairs": 0,
-      "solver_queries": 0,
-      "solver_sat": 0,
-      "solver_unknown": 0,
-      "solver_unsat": 0
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
     },
-    "candidate_generation_fallback": false,
-    "exhaustive": false,
-    "family_analysis": {
-      "access_families": 144,
-      "affine_member_rows": 0,
-      "candidate_relations": 48,
-      "hb_frontier_pieces": 0,
-      "hb_member_enumerations": 0,
-      "logical_accesses": 1536
+    "counts": {
+      "edges": 704,
+      "events": 768,
+      "instructions": 384,
+      "memory_accesses": 384,
+      "threads": 64
     },
-    "first_race_seconds": 0.000268831,
-    "hb_algorithm": "member-relations",
-    "hb_batches": 0,
-    "hb_cache_hits": 0,
-    "hb_dfs_queries": 0,
-    "hb_edge_visits": 0,
-    "hb_filtered_queries": 0,
-    "hb_peak_index_bytes": 0,
-    "hb_queries": 4352,
-    "hb_query_seconds": 2.449e-05,
-    "overlap_queries": 1,
-    "strategy": "conflict-family",
-    "unordered_candidates_examined": 1
-  },
-  "memory_analysis_complete": true,
-  "mma_operand_ordering": {},
-  "mode": "verify",
-  "peak_footprint_mib": 20.19140625,
-  "peak_rss_mib": 35.76171875,
-  "pipeline_elapsed_seconds": 0.02182485,
-  "race_count": 1,
-  "race_samples_truncated": false,
-  "races": [
-    {
-      "first": {
-        "access_index": 0,
-        "actor": 1,
-        "bytes": 4,
-        "effect_index": 0,
-        "endpoint": {
-          "address": 5,
-          "kind": "memory"
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "failed",
+              "synchronization": "passed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "conflicting_accesses_unordered",
+                "details": {
+                  "count": 1,
+                  "witnesses_path": "races"
+                },
+                "message": "Conflicting accesses have no proven required ordering",
+                "stage": "memory_check"
+              }
+            ],
+            "prerequisite_result": "potential_race"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_lowering": {
+          "final_templates": 1,
+          "graph_nodes": 251,
+          "splits": 0,
+          "template_steps": 99
         },
-        "event": 23,
-        "instruction": 11,
-        "location": {
-          "column": 2,
-          "file": "corpus/flashinfer__cascade__merge_state_bf16__sm_100a.ptx",
-          "line": 197
-        },
-        "mode": "write"
+        "value_view_complete": true
       },
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "s_merged",
-        "bytes": 4,
-        "offset": 0
+      "cluster_completion_joins": 0,
+      "cta_count": 4,
+      "dependency_compression": {},
+      "diagnostic_sample_count": 0,
+      "executed_records": 25344,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 0,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "trap_only_equality_assertions_hold": true
       },
-      "second": {
-        "access_index": 0,
-        "actor": 0,
-        "bytes": 4,
-        "effect_index": 0,
-        "endpoint": {
-          "address": 5,
-          "kind": "memory"
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "v_a",
+          "offset": 0,
+          "parameter": "_ZN10flashinfer16MergeStateKernelILj8E13__nv_bfloat16S1_EEvPT0_PfS3_S4_PT1_S4_jj_param_0",
+          "source": "declaration"
         },
-        "event": 11,
-        "instruction": 5,
-        "location": {
-          "column": 2,
-          "file": "corpus/flashinfer__cascade__merge_state_bf16__sm_100a.ptx",
-          "line": 197
+        {
+          "bytes": 8,
+          "object": "s_a",
+          "offset": 0,
+          "parameter": "_ZN10flashinfer16MergeStateKernelILj8E13__nv_bfloat16S1_EEvPT0_PfS3_S4_PT1_S4_jj_param_1",
+          "source": "declaration"
         },
-        "mode": "write"
+        {
+          "bytes": 8,
+          "object": "v_b",
+          "offset": 0,
+          "parameter": "_ZN10flashinfer16MergeStateKernelILj8E13__nv_bfloat16S1_EEvPT0_PfS3_S4_PT1_S4_jj_param_2",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "s_b",
+          "offset": 0,
+          "parameter": "_ZN10flashinfer16MergeStateKernelILj8E13__nv_bfloat16S1_EEvPT0_PfS3_S4_PT1_S4_jj_param_3",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "v_merged",
+          "offset": 0,
+          "parameter": "_ZN10flashinfer16MergeStateKernelILj8E13__nv_bfloat16S1_EEvPT0_PfS3_S4_PT1_S4_jj_param_4",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "s_merged",
+          "offset": 0,
+          "parameter": "_ZN10flashinfer16MergeStateKernelILj8E13__nv_bfloat16S1_EEvPT0_PfS3_S4_PT1_S4_jj_param_5",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 384,
+      "reached_opcodes": {
+        "add.f32": 512,
+        "add.s64": 1792,
+        "cvt.f32.bf16": 4096,
+        "cvt.rn.bf16x2.f32": 1024,
+        "cvt.u64.u32": 512,
+        "cvta.to.global.u64": 1536,
+        "div.rn.f32": 512,
+        "ex2.approx.ftz.f32": 512,
+        "fma.rn.f32": 2048,
+        "ld.global.nc.f32": 512,
+        "ld.global.nc.v4.u32": 512,
+        "ld.param.u32": 512,
+        "ld.param.u64": 1792,
+        "lg2.approx.ftz.f32": 256,
+        "mad.lo.s32": 256,
+        "max.f32": 768,
+        "mov.b32": 2048,
+        "mov.u32": 768,
+        "mul.f32": 2048,
+        "mul.lo.s32": 256,
+        "mul.wide.u32": 256,
+        "ret": 256,
+        "selp.f32": 512,
+        "setp.eq.s64": 256,
+        "setp.gt.f32": 256,
+        "shl.b32": 256,
+        "shl.b64": 256,
+        "st.global.f32": 256,
+        "st.global.v4.u32": 256,
+        "sub.f32": 512
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 1,
+        "generated_address_rows": 48,
+        "generated_body_rows": 6,
+        "generated_memory_instances": 384,
+        "logical_instructions": 384,
+        "stored_bindings": 0
+      },
+      "source_edge_storage": {
+        "binding_templates": 64,
+        "logical_edges": 320,
+        "stored_bindings": 64
+      },
+      "thread_count": 256,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
       }
-    }
-  ],
-  "required_order_domains": 0,
-  "required_orders": 0,
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 1088,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 36,
+        "affine_member_rows": 0,
+        "candidate_relations": 12,
+        "hb_frontier_pieces": 0,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 384
+      },
+      "first_race_seconds": 0.00011229,
+      "hb_algorithm": "member-relations",
+      "hb_batches": 0,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 0,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 1088,
+      "hb_query_seconds": 1.338e-05,
+      "overlap_queries": 1,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 1
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 19.05078125,
+    "required_order_domains": 0,
+    "required_orders": 0,
+    "search_complete": false,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 1,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 120,
+      "memory_binding_templates": 120,
+      "memory_bindings": 960,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 6,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 0,
+      "thread_prefix_groups": 351,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "stage": "memory_check",
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 4,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 25600,
+      "path_entries": 396,
+      "record_bindings": 148,
+      "record_nodes": 396,
+      "splits": 0,
+      "template_steps": 400,
+      "thread_memberships": 256,
+      "value_nodes": 169
+    },
+    "thread_record_compression": {
+      "completed_ctas": 4,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 25344,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "failed",
+              "synchronization": "passed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "conflicting_accesses_unordered",
+                "details": {
+                  "count": 1,
+                  "witnesses_path": "races"
+                },
+                "message": "Conflicting accesses have no proven required ordering",
+                "stage": "memory_check"
+              }
+            ],
+            "prerequisite_result": "potential_race",
+            "prerequisite_status": "potential_race"
+          },
+          "stage": "pipeline"
+        }
+      ],
+      "equivalence_check": "blocked",
+      "prerequisite_status": "potential_race",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      }
+    },
+    "value_ir_instance_count": 16064,
+    "value_ir_node_count": 251,
+    "value_view_complete": true
+  },
+  "peak_rss_mib": 107.8125,
+  "pipeline_elapsed_seconds": 0.011852424,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "search_complete": false,
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 0,
-    "binding_diagnostics": [],
-    "execution_cohorts": 4,
-    "mapping_complete": true,
-    "memory_binding_stored_rows": 480,
-    "memory_binding_templates": 480,
-    "memory_bindings": 3840,
-    "memory_linking_templates_used": true,
-    "synchronization_groups": 24,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 0,
-    "thread_prefix_groups": 1404,
-    "value_diagnostic_count": 0,
-    "value_diagnostics": []
-  },
-  "source_violations": [],
-  "stage": "memory_check",
-  "synchronization_input": {
-    "compute_access_binding": "after_happens_before",
-    "kind": "ordering_endpoints",
-    "memory_address_payloads": false
-  },
-  "template_execution": {
-    "completed_ctas": 4,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 25600,
-    "path_entries": 396,
-    "record_bindings": 148,
-    "record_nodes": 396,
-    "splits": 0,
-    "template_steps": 400,
-    "thread_memberships": 256,
-    "value_nodes": 169
-  },
-  "thread_record_compression": {
-    "completed_ctas": 4,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 25344,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "unresolved_count": 0,
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "failed",
-            "synchronization": "passed"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "conflicting_accesses_unordered",
-              "details": {
-                "count": 1,
-                "witnesses_path": "races"
-              },
-              "message": "Conflicting accesses have no proven required ordering",
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "potential_race",
-          "prerequisite_status": "potential_race"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "potential_race",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    }
-  },
-  "value_ir_instance_count": 64256,
-  "value_ir_node_count": 1004,
-  "value_view_complete": true,
   "verification_limitations": [],
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.526
 }

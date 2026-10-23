@@ -1,20 +1,9 @@
 {
-  "assumption_hints": [
-    {
-      "key": "representative_branches",
-      "label": "Representative branches",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    },
-    {
-      "key": "bounded_computation_loops",
-      "label": "Bounded computation loops",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    }
-  ],
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "duplicate_tma_store_benign",
       "label": "Duplicate TMA stores",
@@ -22,20 +11,23 @@
       "triggered": null
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "representative_election",
       "label": "Representative election",
       "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
-      "triggered": null
+      "triggered": true
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "clc_always_fails",
       "label": "Failed launch cancellation",
       "text": "Every cluster launch cancellation request fails.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "representative_branches",
       "label": "Representative branches",
@@ -43,251 +35,1248 @@
       "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "bounded_computation_loops",
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "not_run",
-    "memory": "not_run",
-    "synchronization": "not_run"
-  },
-  "details": {
-    "required_parameters": []
+    "synchronization": "failed"
   },
   "diagnostics": [
     {
-      "code": "control_predicate_not_static",
+      "code": "not_wellsynced",
       "details": {
-        "location": {
-          "column": 0,
-          "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
-          "line": 1252
-        },
-        "required_parameters": []
+        "internal_stage": "synchronization_check"
       },
-      "message": "control predicate is not statically determined",
-      "stage": "ptx_execution"
+      "message": "A barrier effect is not ordered after all previous-phase effects.",
+      "stage": "synchronization"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
+  "evidence": {
+    "counterexample": {
+      "candidate_order": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          3105,
+          3108,
+          3106,
+          3107,
+          3109,
+          3110,
+          3111,
+          6186,
+          6189,
+          6187,
+          6188,
+          6190,
+          6191,
+          6192,
+          9267,
+          9270,
+          9268,
+          9269,
+          9271,
+          9272,
+          9273,
+          12348,
+          12351,
+          12349,
+          12350
+        ],
+        "total": 945334,
+        "truncated": true
+      },
+      "candidate_order_preserved": true,
+      "executed_prefix": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          3105,
+          3108,
+          3106,
+          3107,
+          3109,
+          3110,
+          3111,
+          6186,
+          6189,
+          6187,
+          6188,
+          6190,
+          6191,
+          6192,
+          9267,
+          9270,
+          9268,
+          9269,
+          9271,
+          9272,
+          9273,
+          12348,
+          12351,
+          12349,
+          12350
+        ],
+        "total": 945266,
+        "truncated": true
+      },
+      "replayed_candidate_order": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          3105,
+          3108,
+          3106,
+          3107,
+          3109,
+          3110,
+          3111,
+          6186,
+          6189,
+          6187,
+          6188,
+          6190,
+          6191,
+          6192,
+          9267,
+          9270,
+          9268,
+          9269,
+          9271,
+          9272,
+          9273,
+          12348,
+          12351,
+          12349,
+          12350
+        ],
+        "total": 945004,
+        "truncated": true
+      },
+      "unexecuted_candidate": {
+        "events": [],
+        "total": 0,
+        "truncated": false
+      }
     },
-    "diagnostics": [
+    "provenance_events_total": 945334,
+    "rejection": {
+      "counterexample_schedule": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          3105,
+          3108,
+          3106,
+          3107,
+          3109,
+          3110,
+          3111,
+          6186,
+          6189,
+          6187,
+          6188,
+          6190,
+          6191,
+          6192,
+          9267,
+          9270,
+          9268,
+          9269,
+          9271,
+          9272,
+          9273,
+          12348,
+          12351,
+          12349,
+          12350
+        ],
+        "total": 945334,
+        "truncated": true
+      },
+      "effect": 478735,
+      "message": "A barrier effect is not ordered after all previous-phase effects.",
+      "phase": {
+        "barrier": 32,
+        "generation": 1
+      },
+      "previous_phase": {
+        "barrier": 32,
+        "generation": 0
+      },
+      "unordered_previous_effects": {
+        "events": [
+          3104,
+          6185,
+          9266,
+          12347,
+          15428,
+          18509,
+          21590,
+          24671,
+          27752,
+          30833,
+          33914,
+          36995,
+          40076,
+          43157,
+          46238,
+          49319,
+          52400,
+          55481,
+          58562,
+          61643,
+          64724,
+          67805,
+          70886,
+          73967,
+          77048,
+          80129,
+          83210,
+          86291,
+          89372,
+          92453,
+          95534,
+          98615
+        ],
+        "total": 160,
+        "truncated": true
+      }
+    },
+    "rejection_kind": "previous_phase_separation",
+    "source_event_scope": "reported_witness_events",
+    "source_events": [
       {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
-                  "line": 1252
-                },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported"
-        },
-        "stage": "pipeline"
+        "column": 2,
+        "event": 0,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 0,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 1,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 0,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 2,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 0,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 3,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 0,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 4,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 1,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 5,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 1,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 6,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 2,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 3104,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 896,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 3105,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 897,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 3106,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 897,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 3107,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 897,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 3108,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 897,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 3109,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 898,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 3110,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 898,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 3111,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 899,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 6185,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 1769,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 6186,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 1770,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 6187,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 1770,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 6188,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 1770,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 6189,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 1770,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 6190,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 1771,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 6191,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 1771,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 6192,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 1772,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 9266,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 2642,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 9267,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 2643,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 9268,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 2643,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 9269,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 2643,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 9270,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 2643,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 9271,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 2644,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 9272,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 2644,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 9273,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 2645,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 12347,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 3515,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 12348,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 3516,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 12349,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 3516,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 12350,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 3516,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 12351,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 3516,
+        "line": 109
+      },
+      {
+        "column": 2,
+        "event": 15428,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 4388,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 18509,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 5261,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 21590,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 6134,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 24671,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 7007,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 27752,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 7880,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 30833,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 8753,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 33914,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 9626,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 36995,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 10499,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 40076,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 11372,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 43157,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 12245,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 46238,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 13118,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 49319,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 13991,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 52400,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 14864,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 55481,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 15737,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 58562,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 16610,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 61643,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 17483,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 64724,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 18356,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 67805,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 19229,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 70886,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 20102,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 73967,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 20975,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 77048,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 21848,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 80129,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 22721,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 83210,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 23594,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 86291,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 24467,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 89372,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 25340,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 92453,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 26213,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 95534,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 27086,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 98615,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 27959,
+        "line": 16884
+      },
+      {
+        "column": 2,
+        "event": 478735,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "instruction": 126359,
+        "line": 16884
       }
     ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
+    "synthetic_events": [],
+    "unmapped_witness_events": [],
+    "witness_event_list_limit": 32,
+    "witness_event_lists_truncated": true
   },
-  "frontend": {
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 256,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 4736,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "shape_input_contract": {
+      "kind": "fixed_read_only",
+      "origin": "shape_arrays",
+      "regions": [
+        {
+          "allocation": "sequence_lengths",
+          "byte_offset": 0,
+          "bytes": 4,
+          "resource": "input.arg0.112"
+        }
       ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 0,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
+      "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
     },
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "sequence_lengths",
-        "offset": 112,
-        "parameter": "_ZN7cutlass13device_kernelINS_4fmha6kernel36Sm100FmhaMlaKernelTmaWarpspecializedIN4cute5tupleIJNS4_1CILi128EEES7_NS5_IJNS6_ILi512EEENS6_ILi64EEEEEEEEENS_6half_tEfSC_fNS2_31Sm100MlaPersistentTileSchedulerELb0EEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "page_table",
-        "offset": 120,
-        "parameter": "_ZN7cutlass13device_kernelINS_4fmha6kernel36Sm100FmhaMlaKernelTmaWarpspecializedIN4cute5tupleIJNS4_1CILi128EEES7_NS5_IJNS6_ILi512EEENS6_ILi64EEEEEEEEENS_6half_tEfSC_fNS2_31Sm100MlaPersistentTileSchedulerELb0EEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "input.arg0.192",
-        "offset": 192,
-        "parameter": "_ZN7cutlass13device_kernelINS_4fmha6kernel36Sm100FmhaMlaKernelTmaWarpspecializedIN4cute5tupleIJNS4_1CILi128EEES7_NS5_IJNS6_ILi512EEENS6_ILi64EEEEEEEEENS_6half_tEfSC_fNS2_31Sm100MlaPersistentTileSchedulerELb0EEEEEvNT_6ParamsE_param_0",
-        "source": "address_use"
-      }
-    ],
-    "required_parameters": [],
-    "user_branch_decisions": []
-  },
-  "implementation": "cpp",
-  "location": {
-    "column": 0,
-    "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
-    "line": 1252
-  },
-  "memory_analysis_complete": false,
-  "peak_footprint_mib": 129.8125,
-  "peak_rss_mib": 161.21875,
-  "pipeline_elapsed_seconds": 0.471141575,
-  "result": "unsupported",
-  "rss_limit_mib": null,
-  "scope": {
-    "operation": "kernel_verification"
-  },
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "execution_cohorts": 0,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 0,
-    "synchronization_groups_materialized": false,
-    "synthetic_synchronization_nodes": 0,
-    "thread_prefix_groups": 0
-  },
-  "stage": "ptx_execution",
-  "template_execution": {
-    "completed_ctas": 0,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 0,
-    "path_entries": 0,
-    "record_bindings": 0,
-    "record_nodes": 0,
-    "splits": 0,
-    "template_steps": 0,
-    "thread_memberships": 0,
-    "value_nodes": 0
-  },
-  "thread_record_compression": {
-    "completed_ctas": 0,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 0,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
-                  "line": 1252
-                },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported",
-          "prerequisite_status": "ptx_execution_unsupported"
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "s32",
+          "object": "page_table",
+          "property": "lower_bound",
+          "value": 0
         },
-        "stage": "pipeline"
+        {
+          "element_type": "s32",
+          "object": "page_table",
+          "property": "upper_bound",
+          "value": 0
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "page_table",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg0.120"
+        }
+      ],
+      "text": "Objects with tensor properties keep their elements within the stated properties and are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [
+      {
+        "lines": [
+          1425,
+          1516,
+          1607,
+          1698,
+          1789,
+          1880,
+          1971,
+          2062,
+          2153,
+          6067,
+          6147,
+          6225,
+          6304,
+          6382,
+          6461,
+          6539,
+          6618
+        ],
+        "object": "page_table"
       }
     ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "ptx_execution_unsupported",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
+    "trap_only_equality_assertions_hold": true
+  },
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "counts": {
+      "edges": 1993449,
+      "events": 945266,
+      "instructions": 257412,
+      "threads": 512
+    },
+    "equivalence": {
       "diagnostics": [
         {
-          "code": "memory_elimination_not_completed",
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "failed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "not_wellsynced",
+                "message": "A barrier effect is not ordered after all previous-phase effects.",
+                "stage": "synchronization_check"
+              }
+            ],
+            "prerequisite_result": "not_wellsynced"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_lowering": {
+          "final_templates": 28,
+          "graph_nodes": 139541,
+          "splits": 0,
+          "template_steps": 32353
+        },
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 2,
+      "cta_count": 2,
+      "dependency_compression": {
+        "tcgen_commit": {
+          "consumers": 20,
+          "emitted_references": 111,
+          "original_references": 1360,
+          "prefix_effects": 20
+        },
+        "tcgen_load_wait": {
+          "consumers": 512,
+          "emitted_references": 2560,
+          "original_references": 3072,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 501321,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 256,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 4736,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "shape_input_contract": {
+          "kind": "fixed_read_only",
+          "origin": "shape_arrays",
+          "regions": [
+            {
+              "allocation": "sequence_lengths",
+              "byte_offset": 0,
+              "bytes": 4,
+              "resource": "input.arg0.112"
+            }
+          ],
+          "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+        },
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "s32",
+              "object": "page_table",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s32",
+              "object": "page_table",
+              "property": "upper_bound",
+              "value": 0
+            }
+          ],
+          "regions": [
+            {
+              "allocation": "page_table",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg0.120"
+            }
+          ],
+          "text": "Objects with tensor properties keep their elements within the stated properties and are not written during the analyzed execution."
+        },
+        "tensor_property_decisions": [
+          {
+            "lines": [
+              1425,
+              1516,
+              1607,
+              1698,
+              1789,
+              1880,
+              1971,
+              2062,
+              2153,
+              6067,
+              6147,
+              6225,
+              6304,
+              6382,
+              6461,
+              6539,
+              6618
+            ],
+            "object": "page_table"
+          }
+        ],
+        "trap_only_equality_assertions_hold": true
+      },
+      "group2_progress": {
+        "blocked": [],
+        "checked_pairs": 2,
+        "premises": [
+          "Baseline synchronization and asynchronous work must independently make progress.",
+          "Resident peer CTAs must be scheduled fairly and have admitted TMEM capacity.",
+          "Allocation placement and retirement RequiredOrders are separate obligations.",
+          "Source references, actor ordering, and collective participation must be validated."
+        ]
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "sequence_lengths",
+          "offset": 112,
+          "parameter": "_ZN7cutlass13device_kernelINS_4fmha6kernel36Sm100FmhaMlaKernelTmaWarpspecializedIN4cute5tupleIJNS4_1CILi128EEES7_NS5_IJNS6_ILi512EEENS6_ILi64EEEEEEEEENS_6half_tEfSC_fNS2_31Sm100MlaPersistentTileSchedulerELb0EEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "page_table",
+          "offset": 120,
+          "parameter": "_ZN7cutlass13device_kernelINS_4fmha6kernel36Sm100FmhaMlaKernelTmaWarpspecializedIN4cute5tupleIJNS4_1CILi128EEES7_NS5_IJNS6_ILi512EEENS6_ILi64EEEEEEEEENS_6half_tEfSC_fNS2_31Sm100MlaPersistentTileSchedulerELb0EEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "out",
+          "offset": 144,
+          "parameter": "_ZN7cutlass13device_kernelINS_4fmha6kernel36Sm100FmhaMlaKernelTmaWarpspecializedIN4cute5tupleIJNS4_1CILi128EEES7_NS5_IJNS6_ILi512EEENS6_ILi64EEEEEEEEENS_6half_tEfSC_fNS2_31Sm100MlaPersistentTileSchedulerELb0EEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 257412,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 52
+      },
+      "reached_opcodes": {
+        "add.f32": 768,
+        "add.f32x2": 7936,
+        "add.s32": 30849,
+        "add.s64": 1642,
+        "and.b16": 1024,
+        "and.b32": 6914,
+        "bar.arrive": 768,
+        "bar.sync": 576,
+        "bar.warp.sync": 64,
+        "barrier.cluster.arrive.aligned": 512,
+        "barrier.cluster.arrive.relaxed.aligned": 512,
+        "barrier.cluster.wait.aligned": 1024,
+        "bra": 21296,
+        "bra.uni": 610,
+        "cp.async.bulk.tensor.3d.cta_group::2.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 68,
+        "cvt.rn.f16.f32": 65536,
+        "cvt.rn.f16x2.f32": 8192,
+        "cvt.rn.f32.s32": 256,
+        "cvt.s64.s32": 256,
+        "cvt.u16.u32": 2048,
+        "cvt.u32.u64": 512,
+        "cvt.u64.u32": 864,
+        "cvta.param.u64": 66,
+        "cvta.to.global.u64": 928,
+        "div.rn.f32": 512,
+        "div.s32": 352,
+        "elect.sync": 4736,
+        "ex2.approx.f32": 16640,
+        "fence.mbarrier_init.release.cluster": 2560,
+        "fence.proxy.async.shared::cta": 256,
+        "fma.rn.f32": 3328,
+        "ld.global.b32": 386,
+        "ld.param.b32": 1280,
+        "ld.param.b64": 2048,
+        "ld.param.v2.b32": 512,
+        "ld.param.v2.b64": 512,
+        "ld.param.v4.b32": 1024,
+        "ld.shared.b32": 576,
+        "mad.lo.s64": 1024,
+        "max.f32": 16384,
+        "mbarrier.arrive.expect_tx.shared::cta.b64": 17,
+        "mbarrier.arrive.shared::cluster.b64": 768,
+        "mbarrier.expect_tx.shared::cta.b64": 9,
+        "mbarrier.init.shared::cta.b64": 72,
+        "mbarrier.try_wait.parity.shared::cta.b64": 2496,
+        "min.s32": 352,
+        "mov.b16": 512,
+        "mov.b32": 26334,
+        "mov.b64": 10098,
+        "mov.pred": 2424,
+        "mov.s32": 4884,
+        "mov.u32": 10080,
+        "mul.f32": 83200,
+        "mul.hi.u32": 1056,
+        "mul.lo.s32": 1440,
+        "mul.wide.s32": 1312,
+        "neg.s32": 512,
+        "not.pred": 736,
+        "or.b16": 64,
+        "or.b32": 3328,
+        "or.b64": 640,
+        "or.pred": 1792,
+        "prefetch.tensormap": 10,
+        "ret": 512,
+        "selp.b16": 1664,
+        "selp.b32": 20096,
+        "selp.f32": 3328,
+        "setp.eq.b32": 15006,
+        "setp.eq.b64": 1792,
+        "setp.eq.f32": 256,
+        "setp.ge.s32": 384,
+        "setp.gt.s32": 768,
+        "setp.gt.u32": 256,
+        "setp.le.s32": 352,
+        "setp.lt.f32": 512,
+        "setp.lt.s32": 448,
+        "setp.lt.u32": 16448,
+        "setp.ne.b16": 576,
+        "setp.ne.b32": 4850,
+        "shfl.sync.idx.b32": 3584,
+        "shl.b32": 8482,
+        "shl.b64": 512,
+        "shr.s32": 704,
+        "shr.u32": 2848,
+        "shr.u64": 512,
+        "st.global.v2.b16": 32768,
+        "st.shared.b32": 512,
+        "st.shared.v4.b32": 2048,
+        "sub.f32": 16640,
+        "sub.s32": 1952,
+        "tcgen05.alloc.cta_group::2.sync.aligned.shared::cta.b32": 64,
+        "tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 20,
+        "tcgen05.dealloc.cta_group::2.sync.aligned.b32": 64,
+        "tcgen05.ld.sync.aligned.32x32b.x32.b32": 2560,
+        "tcgen05.mma.cta_group::2.kind::f16": 52,
+        "tcgen05.wait::ld.sync.aligned": 512,
+        "xor.b32": 2752
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 30,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 257412,
+        "stored_bindings": 20816
+      },
+      "source_edge_storage": {
+        "binding_templates": 645,
+        "logical_edges": 256900,
+        "stored_bindings": 648
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 20,
+        "operations": 52
+      },
+      "thread_count": 512,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "implementation": "cpp",
+    "memory_analysis_complete": false,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 934.96875,
+    "required_order_domains": 5304,
+    "required_orders": 253312,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 54,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 242606,
+      "memory_binding_templates": 8410,
+      "memory_bindings": 301188,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 15474,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 84,
+      "thread_prefix_groups": 171546,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "stage": "synchronization_check",
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 2,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 509537,
+      "path_entries": 31977,
+      "record_bindings": 47197,
+      "record_nodes": 30845,
+      "splits": 26,
+      "template_steps": 31301,
+      "thread_memberships": 512,
+      "value_nodes": 25316
+    },
+    "thread_record_compression": {
+      "completed_ctas": 2,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 501321,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "failed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "not_wellsynced",
+                "message": "A barrier effect is not ordered after all previous-phase effects.",
+                "stage": "synchronization_check"
+              }
+            ],
+            "prerequisite_result": "not_wellsynced",
+            "prerequisite_status": "not_wellsynced"
+          },
           "stage": "pipeline"
         }
       ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
+      "equivalence_check": "blocked",
+      "prerequisite_status": "not_wellsynced",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
       }
     },
-    "scope": {
-      "operation": "value_analysis"
-    }
+    "value_ir_instance_count": 1108461,
+    "value_ir_node_count": 139541,
+    "value_view_complete": true
   },
-  "value_ir_instance_count": 0,
-  "value_ir_node_count": 0,
-  "value_view_complete": false,
+  "peak_rss_mib": 935.59765625,
+  "pipeline_elapsed_seconds": 5.183180562,
+  "result": "not_wellsynced",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "verification_limitations": [],
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.52
 }

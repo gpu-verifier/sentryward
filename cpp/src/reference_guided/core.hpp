@@ -1,8 +1,8 @@
 #pragma once
 #include <algorithm>
+#include <array>
 #include <bit>
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/rational.hpp>
+#include "rational.hpp"
 #include <chrono>
 #include <climits>
 #include <cmath>
@@ -14,17 +14,30 @@
 #include <numeric>
 #include <optional>
 #include <set>
+#include <span>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 namespace rg {
 using J = nlohmann::json;
-using Z = boost::multiprecision::cpp_int;
-using Q = boost::rational<Z>;
+using Q = Rational; // Z and Rational come from rational.hpp
 using Id = uint32_t;
 constexpr Id invalid = UINT32_MAX;
+// String/literal equality for all of namespace rg: libstdc++'s own
+// operator==(const string&, const char*) formula, forced inline so that a
+// literal's length folds; GCC otherwise calls one out-of-line copy (plus
+// strlen) from large functions. As a non-template it is preferred over std's
+// template for every rg string == literal, its reversed form and rewritten !=.
+[[nodiscard, gnu::always_inline]] inline constexpr bool operator==(const std::string &lhs,
+                                                                   const char *rhs) {
+  return lhs.size() == std::char_traits<char>::length(rhs) &&
+         !std::char_traits<char>::compare(lhs.data(), rhs, lhs.size());
+}
+// A null operand stays ill-formed (std's template cannot deduce from it).
+bool operator==(const std::string &, std::nullptr_t) = delete;
 struct Unsupported : std::runtime_error {
   std::string code = "expression_form_unsupported";
   J details = J::object();
@@ -35,15 +48,44 @@ struct Unsupported : std::runtime_error {
 struct Timeout : std::runtime_error {
   Timeout() : runtime_error("wall clock deadline") {};
 };
-inline Z floorz(Z n, const Z &d) {
+// One-limb operands take one hardware divide or gcd; each result equals the
+// cpp_int formula below it.
+inline Z floorz(const Z &n, const Z &d) {
+  rational_detail::Limb a, b;
+  bool na, nb;
+  if (rational_detail::limb(n, a, na) && rational_detail::limb(d, b, nb) && b != 0) {
+    // Truncated quotient, minus one when the truncated remainder (sign of n) is negative.
+    const rational_detail::SignedWide q(a / b), v = (na != nb ? -q : q) - (na && a % b != 0);
+    return rational_detail::make(rational_detail::Wide(v < 0 ? -v : v), v < 0);
+  }
   Z q = n / d, r = n % d;
   if (r < 0)
     --q;
   return q;
 }
-inline Z modz(const Z &n, const Z &d) { return n - floorz(n, d) * d; }
+inline Z modz(const Z &n, const Z &d) {
+  rational_detail::Limb a, b;
+  bool na, nb;
+  if (rational_detail::limb(n, a, na) && rational_detail::limb(d, b, nb) && !nb && b != 0) {
+    // d > 0: n - floorz(n, d)*d is the truncated remainder, plus d when it is negative.
+    const rational_detail::Limb r = a % b;
+    return Z((na && r != 0) ? rational_detail::Limb(b - r) : r);
+  }
+  return n - floorz(n, d) * d;
+}
 inline Z floorq(const Q &q) { return floorz(q.numerator(), q.denominator()); }
-inline Z pow2(unsigned w) { return Z(1) << w; }
+inline Z pow2(unsigned w) {
+  return w < rational_detail::limb_bits ? Z(rational_detail::Limb(1) << w) : Z(Z(1) << w);
+}
+// gcd(|x|, |y|). Every caller passes x >= 0, where this equals the former
+// boost::multiprecision::gcd(x, abs(y)) and gcd(x, y) for y > 0.
+inline Z gcdz(const Z &x, const Z &y) {
+  rational_detail::Limb a, b;
+  bool na, nb;
+  if (rational_detail::limb(x, a, na) && rational_detail::limb(y, b, nb))
+    return Z(rational_detail::Limb(std::gcd(a, b)));
+  return boost::multiprecision::gcd(boost::multiprecision::abs(x), boost::multiprecision::abs(y));
+}
 inline std::string str(const Q &q) {
   return q.numerator().str() +
          (q.denominator() == 1 ? "" : "/" + q.denominator().str());
@@ -122,8 +164,34 @@ struct Arena {
   std::map<std::pair<Id,Id>,Id> coordinate_witness_cache;
   std::map<std::tuple<Id,Id,bool>,bool> reduction_witness_cache;
   std::deque<Node> nodes;
-  std::unordered_map<size_t, std::vector<Id>> table;
+  // Flat intern index: one (key hash, id) slot per node, linear probing over a
+  // power-of-two table at load <= 3/4. Nodes are never erased and an equal key
+  // is never inserted twice, so a probe returns the one id the former per-hash
+  // bucket scan returned. A probe tests the stored hash before touching any
+  // Node; growth walks slots only.
+  struct IndexSlot {
+    size_t hash;
+    Id id;
+  };
+  std::vector<IndexSlot> intern_index;
+  unsigned intern_index_shift = 64;
   std::map<std::string, uint64_t> stats;
+  // Hot counters keep a pointer to their own stats entry, created by the first
+  // increment exactly where stats[key] would create it. stats is never erased
+  // and an Arena is neither copied nor moved, so the pointers stay valid and
+  // the counters report remains a plain dump of stats.
+  enum class Hot : unsigned char {
+    intern_requests, add_term_visits, pattern_node_visits, imported_context_nodes,
+    canonical_node_visits, normalization_node_visits, local_pattern_candidates,
+    ep_body_pattern_anchor_cache_hits, ep_body_target_anchor_cache_hits,
+    ep_body_read_anchor_rejections, count
+  };
+  static constexpr std::array<const char *, size_t(Hot::count)> hot_keys{
+      "intern_requests", "add_term_visits", "pattern_node_visits",
+      "imported_context_nodes", "canonical_node_visits", "normalization_node_visits",
+      "local_pattern_candidates", "ep_body_pattern_anchor_cache_hits",
+      "ep_body_target_anchor_cache_hits", "ep_body_read_anchor_rejections"};
+  std::array<uint64_t *, size_t(Hot::count)> hot_slots{};
   std::chrono::steady_clock::time_point deadline;
   Id zero, one;
   uint64_t ticks = 0;
@@ -135,31 +203,74 @@ struct Arena {
     stats["select_max_probe_temporary_nodes"] = 0;
     stats["select_max_probe_ancestor_nodes"] = 0;
   }
+  Arena(const Arena &) = delete;
+  Arena &operator=(const Arena &) = delete;
+  uint64_t &counter(Hot key) {
+    auto &slot = hot_slots[size_t(key)];
+    if (!slot)
+      slot = &stats[hot_keys[size_t(key)]];
+    return *slot;
+  }
   void check() {
     if ((++ticks & 4095) == 0 && std::chrono::steady_clock::now() > deadline)
       throw Timeout();
   }
-  static size_t hash(const std::string &op, const std::vector<Id> &as,
-                     const std::vector<Q> &ds, const std::string &tag) {
-    size_t h = std::hash<std::string>{}(op);
-    mix(h, std::hash<std::string>{}(tag));
+  // std::hash<string_view> equals std::hash<string> on the same characters.
+  static size_t hash(std::string_view op, std::span<const Id> as,
+                     std::span<const Q> ds, std::string_view tag) {
+    size_t h = std::hash<std::string_view>{}(op);
+    mix(h, std::hash<std::string_view>{}(tag));
     for (auto x : as)
       mix(h, x);
     for (const auto &x : ds)
       mix(h, hashq(x));
     return h;
   }
-  Id intern(std::string op, std::vector<Id> as = {}, std::vector<Q> ds = {},
-            std::string tag = "", Facts f = {}, Bounds b = {}) {
-    check();
-    ++stats["intern_requests"];
-    size_t h = hash(op, as, ds, tag);
-    auto &bucket = table[h];
-    for (Id i : bucket) {
-      const auto &n = nodes[i];
-      if (n.op == op && n.args == as && n.data == ds && n.tag == tag)
-        return i;
+  static size_t index_home(size_t h, unsigned shift) {
+    return size_t((uint64_t(h) * 0x9E3779B97F4A7C15ULL) >> shift);
+  }
+  std::optional<Id> find_node(size_t h, std::string_view op, std::span<const Id> as,
+                              std::span<const Q> ds, std::string_view tag) const {
+    if (intern_index.empty())
+      return {};
+    for (size_t m = intern_index.size() - 1, i = index_home(h, intern_index_shift);;
+         i = (i + 1) & m) {
+      const auto &s = intern_index[i];
+      if (s.id == invalid)
+        return {};
+      if (s.hash != h)
+        continue;
+      const auto &n = nodes[s.id];
+      if (n.op == op && std::equal(n.args.begin(), n.args.end(), as.begin(), as.end()) &&
+          std::equal(n.data.begin(), n.data.end(), ds.begin(), ds.end()) && n.tag == tag)
+        return s.id;
     }
+  }
+  std::optional<Id> find_node(std::string_view op, std::span<const Id> as,
+                              std::span<const Q> ds = {}, std::string_view tag = "") const {
+    return find_node(hash(op, as, ds, tag), op, as, ds, tag);
+  }
+  // Every node request takes this one path: check(), intern_requests, probe.
+  // A hit returns the existing id and never reads facts or bounds, so make(h)
+  // builds them (and the owned key vectors) on a miss only, then insert_node.
+  template <class Make>
+  Id intern_lazy(std::string_view op, std::span<const Id> as, std::span<const Q> ds,
+                 std::string_view tag, Make &&make) {
+    check();
+    ++counter(Hot::intern_requests);
+    const size_t h = hash(op, as, ds, tag);
+    if (auto hit = find_node(h, op, as, ds, tag))
+      return *hit;
+    return make(h);
+  }
+  Id intern(std::string_view op, std::vector<Id> as = {}, std::vector<Q> ds = {},
+            std::string_view tag = "", Facts f = {}, Bounds b = {}) {
+    return intern_lazy(op, as, ds, tag, [&](size_t h) {
+      return insert_node(h, op, std::move(as), std::move(ds), tag, f, std::move(b));
+    });
+  }
+  Id insert_node(size_t h, std::string_view op, std::vector<Id> as, std::vector<Q> ds,
+                 std::string_view tag, Facts f, Bounds b) {
     if (nodes.size() >= invalid)
       throw Unsupported("arena ID capacity");
     Id id = Id(nodes.size());
@@ -181,22 +292,32 @@ struct Arena {
                      nodes[as[0]].free.end(), std::back_inserter(tmp));
       fs.swap(tmp);
     }
-    nodes.push_back({std::move(op), std::move(tag), std::move(as),
+    // Grow before appending: a failed allocation leaves nodes and the index
+    // unchanged, and placing the new slot after push_back cannot throw.
+    reserve_index();
+    nodes.push_back({std::string(op), std::string(tag), std::move(as),
                      std::move(ds), f, std::move(b), std::move(fs)});
-    bucket.push_back(id);
+    place_index(intern_index, intern_index_shift, {h, id});
     return id;
   }
-  std::optional<Id> lookup(const std::string &o, const std::vector<Id> &as,
-                           const std::vector<Q> &ds = {}) const {
-    auto it = table.find(hash(o, as, ds, ""));
-    if (it == table.end())
-      return {};
-    for (Id i : it->second) {
-      auto &n = nodes[i];
-      if (n.op == o && n.args == as && n.data == ds && n.tag.empty())
-        return i;
-    }
-    return {};
+  void reserve_index() {
+    if (4 * (nodes.size() + 1) <= 3 * intern_index.size())
+      return;
+    const size_t size = intern_index.empty() ? 256 : 2 * intern_index.size();
+    std::vector<IndexSlot> grown(size, IndexSlot{0, invalid});
+    const unsigned shift = 64 - unsigned(std::countr_zero(size));
+    for (const auto &s : intern_index)
+      if (s.id != invalid)
+        place_index(grown, shift, s);
+    intern_index.swap(grown);
+    intern_index_shift = shift;
+  }
+  static void place_index(std::vector<IndexSlot> &slots, unsigned shift, IndexSlot s) noexcept {
+    for (size_t m = slots.size() - 1, i = index_home(s.hash, shift);; i = (i + 1) & m)
+      if (slots[i].id == invalid) {
+        slots[i] = s;
+        return;
+      }
   }
   bool depends(Id n, Id v) const {
     return std::binary_search(nodes[n].free.begin(), nodes[n].free.end(), v);
@@ -294,8 +415,10 @@ struct Arena {
       positive=positive_at_zero(body,axis,count.numerator());
     return {finite,positive,nn,extended};
   }
-  Id constant(Q q) {
-    return intern("const", {}, {q}, "", {true, q > 0, q >= 0}, std::pair(q, q));
+  Id constant(const Q &q) {
+    return intern_lazy("const", {}, std::span<const Q>(&q, 1), "", [&](size_t h) {
+      return insert_node(h, "const", {}, {q}, "", {true, q > 0, q >= 0}, std::pair(q, q));
+    });
   }
   std::optional<Q> value(Id n) const {
     if (nodes[n].op == "const")
@@ -355,9 +478,9 @@ struct Arena {
                       {false,false,false,finite_or_neginf});
     std::map<Id, Q> ts;
     for (Id i : xs)
-      for (auto [n, c] : terms(i)) {
+      for (const auto &[n, c] : terms(i)) {
         ts[n] += c;
-        ++stats["add_term_visits"];
+        ++counter(Hot::add_term_visits);
         check();
       }
     std::vector<Id> keys;
@@ -369,12 +492,12 @@ struct Arena {
       auto it = ts.find(n);
       if (x.op != "imod" || it == ts.end() || it->second == 0)
         continue;
-      auto d = lookup("idiv", x.args, x.data);
+      auto d = find_node("idiv", x.args, x.data);
       if (d && ts.contains(*d) && ts[*d] == it->second * x.data[0]) {
         Q c = it->second;
         ts.erase(n);
         ts.erase(*d);
-        for (auto [t, k] : terms(x.args[0]))
+        for (const auto &[t, k] : terms(x.args[0]))
           ts[t] += c * k;
       }
     }
@@ -389,24 +512,32 @@ struct Arena {
       return mul({constant(ts.begin()->second), ts.begin()->first});
     std::vector<Id> as;
     std::vector<Q> ds;
-    Facts f{true, false, true};
-    Bounds b = std::pair(Q(0), Q(0));
+    as.reserve(ts.size());
+    ds.reserve(ts.size());
     for (auto &[n, c] : ts) {
       as.push_back(n);
-      ds.push_back(c);
-      auto &x = nodes[n];
-      f.finite &= x.facts.finite;
-      f.nn &= c >= 0 && x.facts.nn;
-      f.pos |= c > 0 && x.facts.pos;
-      if (b && x.bounds) {
-        Q l = x.bounds->first * c, h = x.bounds->second * c;
-        b->first += std::min(l, h);
-        b->second += std::max(l, h);
-      } else
-        b = {};
+      ds.push_back(std::move(c));
     }
-    f.pos &= f.nn;
-    return intern("add", std::move(as), std::move(ds), "", f, b);
+    // Facts and bounds read only stored nodes and these terms, in key order.
+    return intern_lazy("add", as, ds, "", [&](size_t hashed) {
+      Facts f{true, false, true};
+      Bounds b = std::pair(Q(0), Q(0));
+      for (size_t i = 0; i < as.size(); ++i) {
+        const Q &c = ds[i];
+        const auto &x = nodes[as[i]];
+        f.finite &= x.facts.finite;
+        f.nn &= c >= 0 && x.facts.nn;
+        f.pos |= c > 0 && x.facts.pos;
+        if (b && x.bounds) {
+          Q l = x.bounds->first * c, h = x.bounds->second * c;
+          b->first += std::min(l, h);
+          b->second += std::max(l, h);
+        } else
+          b = {};
+      }
+      f.pos &= f.nn;
+      return insert_node(hashed, "add", std::move(as), std::move(ds), "", f, std::move(b));
+    });
   }
   Id neg(Id n) { return mul({constant(-1), n}); }
   Id sub(Id a, Id b) { return add({a, neg(b)}); }
@@ -491,38 +622,41 @@ struct Arena {
       }
     }
     std::sort(rest.begin(), rest.end());
-    Facts f{true, scalar > 0, scalar >= 0};
-    bool extended_product=scalar>0; unsigned extended_factors=0;
-    Bounds b = std::pair(scalar, scalar);
-    for (Id i : rest) {
-      const auto &n = nodes[i];
-      f.finite &= n.facts.finite;
-      f.pos &= n.facts.pos;
-      f.nn &= n.facts.nn;
-      if (!n.facts.finite) {
-        ++extended_factors;
-        extended_product &= n.facts.finite_or_negative_infinity();
-      } else extended_product &= n.facts.pos;
-      if (b && n.bounds) {
-        std::array<Q, 4> vs{
-            b->first * n.bounds->first, b->first * n.bounds->second,
-            b->second * n.bounds->first, b->second * n.bounds->second};
-        b = std::pair(*std::min_element(vs.begin(), vs.end()),
-                      *std::max_element(vs.begin(), vs.end()));
-      } else
-        b = {};
-    }
-    f.finite_or_neginf=extended_product && extended_factors==1;
-    if(f.finite && scalar>=0 && !f.nn) {
-      bool nonnegative=true;
-      for(size_t i=0;i<rest.size();) {
-        size_t end=i+1;while(end<rest.size() && rest[end]==rest[i])++end;
-        if((end-i)%2 && !nodes[rest[i]].facts.nn) {nonnegative=false;break;}
-        i=end;
+    // Facts and bounds read only stored factor nodes and the scalar.
+    return intern_lazy("mul", rest, std::span<const Q>(&scalar, 1), "", [&](size_t hashed) {
+      Facts f{true, scalar > 0, scalar >= 0};
+      bool extended_product=scalar>0; unsigned extended_factors=0;
+      Bounds b = std::pair(scalar, scalar);
+      for (Id i : rest) {
+        const auto &n = nodes[i];
+        f.finite &= n.facts.finite;
+        f.pos &= n.facts.pos;
+        f.nn &= n.facts.nn;
+        if (!n.facts.finite) {
+          ++extended_factors;
+          extended_product &= n.facts.finite_or_negative_infinity();
+        } else extended_product &= n.facts.pos;
+        if (b && n.bounds) {
+          std::array<Q, 4> vs{
+              b->first * n.bounds->first, b->first * n.bounds->second,
+              b->second * n.bounds->first, b->second * n.bounds->second};
+          b = std::pair(*std::min_element(vs.begin(), vs.end()),
+                        *std::max_element(vs.begin(), vs.end()));
+        } else
+          b = {};
       }
-      f.nn=nonnegative;
-    }
-    return intern("mul", std::move(rest), {scalar}, "", f, b);
+      f.finite_or_neginf=extended_product && extended_factors==1;
+      if(f.finite && scalar>=0 && !f.nn) {
+        bool nonnegative=true;
+        for(size_t i=0;i<rest.size();) {
+          size_t end=i+1;while(end<rest.size() && rest[end]==rest[i])++end;
+          if((end-i)%2 && !nodes[rest[i]].facts.nn) {nonnegative=false;break;}
+          i=end;
+        }
+        f.nn=nonnegative;
+      }
+      return insert_node(hashed, "mul", std::move(rest), {scalar}, "", f, std::move(b));
+    });
   }
   Id floor_value(Id n, Bounds established = {}) {
     if(auto v=value(n))return constant(Q(floorq(*v)));
@@ -722,11 +856,11 @@ struct Arena {
     }
     Z denominator=1;
     for(const auto &[_,c]:form->coefficients)
-      denominator=denominator/boost::multiprecision::gcd(denominator,c.denominator())*c.denominator();
+      denominator=denominator/gcdz(denominator,c.denominator())*c.denominator();
     Z divisor=0;
     for(const auto &[_,c]:form->coefficients) {
       Z v=c.numerator()*(denominator/c.denominator());
-      divisor=boost::multiprecision::gcd(divisor,boost::multiprecision::abs(v));
+      divisor=gcdz(divisor,v);
     }
     Q scale(denominator,divisor);
     if(form->coefficients.begin()->second<0){scale=-scale;op=reverse_comparison(op);}
@@ -867,8 +1001,11 @@ struct Arena {
         }
       }
     }
-    return intern("compare", {a, b}, {}, p, {true, false, true},
-                  std::pair(Q(0), Q(1)));
+    const std::array<Id, 2> operands{a, b};
+    return intern_lazy("compare", operands, {}, p, [&](size_t hashed) {
+      return insert_node(hashed, "compare", {a, b}, {}, p, {true, false, true},
+                         std::pair(Q(0), Q(1)));
+    });
   }
   Id select(Id p, Id a, Id b, bool infer_bounds = false) {
     if (p == one)
@@ -1570,8 +1707,7 @@ struct Arena {
         g = 1;
         break;
       }
-      g = boost::multiprecision::gcd(g,
-                                     boost::multiprecision::abs(c.numerator()));
+      g = gcdz(g, c.numerator());
     }
     if (g > 1) {
       std::vector<Id> rs;
@@ -1649,8 +1785,7 @@ struct Arena {
         g = 1;
         break;
       }
-      g = boost::multiprecision::gcd(g,
-                                     boost::multiprecision::abs(c.numerator()));
+      g = gcdz(g, c.numerator());
     }
     if (g > 1) {
       std::vector<Id> rs;

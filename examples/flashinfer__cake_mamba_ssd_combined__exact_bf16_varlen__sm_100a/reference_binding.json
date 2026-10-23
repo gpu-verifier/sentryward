@@ -1,0 +1,667 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global5:x_map": "X",
+      "6:global5:b_map": "B",
+      "6:global5:c_map": "C",
+      "6:global17:delta_precomputed": "delta",
+      "6:global18:cumsum_precomputed": "cumsum",
+      "6:global14:initial_states": "initial_states",
+      "6:global13:chunk_indices": "chunk_indices",
+      "6:global13:chunk_offsets": "chunk_offsets",
+      "6:global16:seq_chunk_cumsum": "seq_chunk_cumsum"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:x_map": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          64
+        ],
+        "source_strides_bytes": [
+          32768,
+          128,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          32768,
+          128,
+          128,
+          2
+        ]
+      },
+      "6:global5:b_map": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global5:c_map": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global17:delta_precomputed": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          3,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global18:cumsum_precomputed": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          3,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          512,
+          512,
+          4
+        ],
+        "target_strides_bytes": [
+          512,
+          512,
+          4
+        ]
+      },
+      "6:global14:initial_states": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1,
+          64,
+          128
+        ],
+        "source_strides_bytes": [
+          16384,
+          16384,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          16384,
+          16384,
+          256,
+          2
+        ]
+      },
+      "6:global13:chunk_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          3
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global13:chunk_offsets": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          3
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global16:seq_chunk_cumsum": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          3
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global5:x_map": "X",
+      "6:global5:b_map": "B",
+      "6:global5:c_map": "C",
+      "6:global17:delta_precomputed": "delta",
+      "6:global18:cumsum_precomputed": "cumsum",
+      "6:global14:initial_states": "initial_states",
+      "6:global13:chunk_indices": "chunk_indices",
+      "6:global13:chunk_offsets": "chunk_offsets",
+      "6:global16:seq_chunk_cumsum": "seq_chunk_cumsum"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:x_map": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          64
+        ],
+        "source_strides_bytes": [
+          32768,
+          128,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          32768,
+          128,
+          128,
+          2
+        ]
+      },
+      "6:global5:b_map": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global5:c_map": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          65536,
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global17:delta_precomputed": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          3,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global18:cumsum_precomputed": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          3,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          512,
+          512,
+          4
+        ],
+        "target_strides_bytes": [
+          512,
+          512,
+          4
+        ]
+      },
+      "6:global14:initial_states": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1,
+          64,
+          128
+        ],
+        "source_strides_bytes": [
+          16384,
+          16384,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          16384,
+          16384,
+          256,
+          2
+        ]
+      },
+      "6:global13:chunk_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          3
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global13:chunk_offsets": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          3
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global16:seq_chunk_cumsum": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          3
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "left_allocation": "6:global10:out_native",
+        "right_allocation": "6:global10:out_native",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          64
+        ],
+        "left_strides_bytes": [
+          32768,
+          128,
+          128,
+          2
+        ],
+        "right_strides_bytes": [
+          32768,
+          2,
+          32768,
+          512
+        ]
+      },
+      {
+        "left_allocation": "6:global12:final_states",
+        "right_allocation": "6:global12:final_states",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1,
+          64,
+          128
+        ],
+        "left_strides_bytes": [
+          16384,
+          16384,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          16384,
+          16384,
+          256,
+          2
+        ]
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "X",
+        "allocation": "6:global5:x_map",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "B",
+        "allocation": "6:global5:b_map",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "C",
+        "allocation": "6:global5:c_map",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "delta",
+        "allocation": "6:global17:delta_precomputed",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "cumsum",
+        "allocation": "6:global18:cumsum_precomputed",
+        "dtype": "float32"
+      },
+      {
+        "name": "initial_states",
+        "allocation": "6:global14:initial_states",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "chunk_indices",
+        "allocation": "6:global13:chunk_indices",
+        "dtype": "int32"
+      },
+      {
+        "name": "chunk_offsets",
+        "allocation": "6:global13:chunk_offsets",
+        "dtype": "int32"
+      },
+      {
+        "name": "seq_chunk_cumsum",
+        "allocation": "6:global16:seq_chunk_cumsum",
+        "dtype": "int32"
+      },
+      {
+        "name": "chunk_index_0",
+        "value": {
+          "input": "/shape_arrays/0/shapes/0/0"
+        }
+      },
+      {
+        "name": "chunk_index_1",
+        "value": {
+          "input": "/shape_arrays/0/shapes/1/0"
+        }
+      },
+      {
+        "name": "chunk_index_2",
+        "value": {
+          "input": "/shape_arrays/0/shapes/2/0"
+        }
+      },
+      {
+        "name": "chunk_offset_0",
+        "value": {
+          "input": "/shape_arrays/1/shapes/0/0"
+        }
+      },
+      {
+        "name": "chunk_offset_1",
+        "value": {
+          "input": "/shape_arrays/1/shapes/1/0"
+        }
+      },
+      {
+        "name": "chunk_offset_2",
+        "value": {
+          "input": "/shape_arrays/1/shapes/2/0"
+        }
+      },
+      {
+        "name": "seq_chunk_0",
+        "value": {
+          "input": "/shape_arrays/2/shapes/0/0"
+        }
+      },
+      {
+        "name": "seq_chunk_1",
+        "value": {
+          "input": "/shape_arrays/2/shapes/1/0"
+        }
+      },
+      {
+        "name": "seq_chunk_2",
+        "value": {
+          "input": "/shape_arrays/2/shapes/2/0"
+        }
+      },
+      {
+        "name": "nheads",
+        "parameter": 25
+      },
+      {
+        "name": "ngroups",
+        "parameter": 26
+      },
+      {
+        "name": "batch",
+        "parameter": 27
+      },
+      {
+        "name": "seqlen",
+        "parameter": 28
+      },
+      {
+        "name": "nchunks",
+        "parameter": 29
+      },
+      {
+        "name": "sequence_count",
+        "parameter": 30
+      },
+      {
+        "name": "num_logical_chunks",
+        "parameter": 31
+      },
+      {
+        "name": "mode_varlen",
+        "parameter": 32
+      },
+      {
+        "name": "has_seq_chunk_cumsum",
+        "parameter": 33
+      },
+      {
+        "name": "seq_idx_int64",
+        "parameter": 34
+      },
+      {
+        "name": "D_mode",
+        "parameter": 35
+      },
+      {
+        "name": "has_z",
+        "parameter": 36
+      },
+      {
+        "name": "has_initial",
+        "parameter": 37
+      },
+      {
+        "name": "write_final_states",
+        "parameter": 41
+      },
+      {
+        "name": "checkpoint_state_count",
+        "parameter": 42
+      }
+    ]
+  },
+  "provenance": {
+    "source": "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_mamba_ssd_combined/generated/device/sm_100a/mamba_ssd_q_tmem_alias_bf16_varlen_351b79a64d.cu",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_mamba_ssd_combined/generated/device/sm_100a/mamba_ssd_q_tmem_alias_bf16_varlen_351b79a64d.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/mamba/cake_ssd_combined.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_mamba_ssd_combined/generated/host/sm_100a/mamba_ssd_combined_exact_bf16_varlen.cpp",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/mamba/test_cake_ssd_combined.py"
+    ],
+    "source_lines": "device kernel 430-1610 (routing 1107-1144, factors 1041-1055, initial 1082-1102, state 1183-1280, final 1308-1325, intra 1391-1411, output 1514-1578); wrapper routing 47-69, grid 124-138/1002-1012, args 1046-1096; test case 45-131, 463-495",
+    "sha256": "b94a3d0e9b9c5754d9a6e03e2104d3fb1f9400b670b79133a764f3aa8e9482a2",
+    "optimized_input_sha256": "b94a3d0e9b9c5754d9a6e03e2104d3fb1f9400b670b79133a764f3aa8e9482a2",
+    "ptx_sha256": "a9795d69e4a85f844ec2152a8a2a0489741bb8fb0ae3be0ad2d9edb05aaa85a1",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [
+      {
+        "parameter": 21,
+        "offset": 0,
+        "element_type": "s32",
+        "shapes": [
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            1
+          ]
+        ]
+      },
+      {
+        "parameter": 22,
+        "offset": 0,
+        "element_type": "s32",
+        "shapes": [
+          [
+            0
+          ],
+          [
+            96
+          ],
+          [
+            0
+          ]
+        ]
+      },
+      {
+        "parameter": 23,
+        "offset": 0,
+        "element_type": "s32",
+        "shapes": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            3
+          ]
+        ]
+      }
+    ],
+    "scope": "Upstream varlen test case _case(nheads=1, ngroups=1, varlen=True): batch 1, seqlen 256 (2 physical chunks), sequence lengths (96, 160), logical chunks chunk_indices [0,0,1], chunk_offsets [0,96,0], seq_chunk_cumsum [0,1,3], grid 2 (one CTA per sequence/head), bf16 initial states, write_final_states; D_mode 0 and has_z 0 kept from the corpus input. x/B/C via tensor maps x_map/b_map/c_map (contiguous)."
+  }
+}

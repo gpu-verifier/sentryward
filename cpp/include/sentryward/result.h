@@ -1,5 +1,7 @@
 #pragma once
 #include <nlohmann/json.hpp>
+#include <initializer_list>
+#include <set>
 #include <string>
 #include <string_view>
 namespace sentryward::results {
@@ -73,13 +75,15 @@ inline void Diagnostics(Json& out) {
    }
  }
 }
+// Child reports that Normalize gives their own result/checks/diagnostics.
+inline constexpr const char* kSections[]={"equivalence","value_analysis","scalar_fold","expression_export","partial_report","native_result","partial_native_result","expression_diagnostic"};
 // Mutates only report metadata and bounded child reports. Witnesses/expression DAGs
 // are not traversed or copied; work is linear in report/diagnostic metadata.
 inline void Normalize(Json& out,const std::string& operation="") {
  if(!out.is_object()){out=Failure("tool_failure","invalid_result_object","Expected a JSON object");return;}
  if(out.contains("result") && IsResult(out.value("result","")) && !out.contains("status") && out.contains("diagnostics") && out.contains("checks") && out.contains("scope") && !out.contains("reason") && !out.contains("message")) {
    if(!out["diagnostics"].is_array())out=Failure("tool_failure","invalid_result_contract","Unknown result or missing diagnostics");
-   for(auto key:{"equivalence","value_analysis","scalar_fold","expression_export","partial_report","native_result","partial_native_result","expression_diagnostic"})
+   for(auto key:kSections)
      if(out.contains(key) && out[key].is_object() && (out[key].contains("status") || out[key].contains("result")))Normalize(out[key],key);
    Diagnostics(out);
    return;
@@ -89,7 +93,7 @@ inline void Normalize(Json& out,const std::string& operation="") {
  auto reason=out.value("reason",std::string{});
  if(reason.empty())for(auto key:{"rejection","error","diagnostic"})
    if(out.contains(key) && out[key].is_object() && !out[key].value("code",std::string{}).empty()){reason=out[key]["code"];break;}
- const auto stage=out.value("stage",out.value("blocked_stage",out.value("active_stage",std::string("pipeline"))));
+ const auto stage=out.value("stage",out.value("blocked_stage",out.value("active_stage",std::string(operation=="equivalence"?"equivalence_check":"pipeline"))));
  auto result=Category(status,reason,out.value("resource",Json::object()));
  out.erase("status");out.erase("result");out.erase("reason");
  if(out.contains("numerical_status")){out["numerical_result"]=Category(out.value("numerical_status",""));out.erase("numerical_status");}
@@ -110,7 +114,7 @@ inline void Normalize(Json& out,const std::string& operation="") {
  } else if(status=="not_wellsynced") {checks["synchronization"]="failed";checks["memory"]="not_run";checks["equivalence"]="not_run";}
  else if(out.value("mode","")=="verify" || out.contains("verification_performed")){checks["synchronization"]="incomplete";checks["memory"]="not_run";}
  if(!verified.empty())out["verification_result"]=Category(verified);
- for(auto key:{"equivalence","value_analysis","scalar_fold","expression_export","partial_report","native_result","partial_native_result","expression_diagnostic"})
+ for(auto key:kSections)
    if(out.contains(key) && out[key].is_object() && (out[key].contains("status") || out[key].contains("result")))
      Normalize(out[key],std::string(key)=="equivalence"?"equivalence":key);
  if(operation=="equivalence" || status=="equivalent" || status=="not_proven" || status=="partial_scope_equivalent" || status=="translation_or_supported_fragment_blocked") {
@@ -153,4 +157,71 @@ inline void Normalize(Json& out,const std::string& operation="") {
  if(!out["scope"].contains("operation"))out["scope"]["operation"]=operation.empty()?(out["checks"]["synchronization"]!="not_requested"?"verification":"analysis"):operation;
 }
 inline Json Report(Json report,const std::string& operation=""){Normalize(report,operation);return report;}
+
+// Public stage of an internal stage name: the user input, the synchronization
+// check (well-synchronization, memory races, lifecycle), the equivalence check
+// (value analysis, scalar fold, reference import and comparison) or the pipeline.
+inline std::string PublicStage(const std::string& s) {
+ const auto starts=[&](std::initializer_list<const char*> prefixes){for(auto p:prefixes)if(s.starts_with(p))return true;return false;};
+ if(s=="input_validation" || s=="input_configuration" || s=="cli_arguments" || s=="file_io" || s=="ptx_parser" || s=="launch_binding" || s.starts_with("ptx_input"))return "input";
+ if(s=="memory_effect_binding" || starts({"value_","semantic_ir","scalar_","expression","equivalence","reference_","left_","right_"}) || s.ends_with("_s"))return "equivalence";
+ if(starts({"ptx_execution","source_ir","event_view","memory_","synchronization","lifecycle","cluster_","shared_memory","verification","frontend"}))return "synchronization";
+ return "pipeline";
+}
+inline bool IsPublic(const Json& out) {
+ return out.is_object() && (out.contains("internal") || (out.contains("checks") && out["checks"].is_object() &&
+   out["checks"].contains("synchronization") && !out["checks"].contains("memory")));
+}
+// Internal sections keep their diagnostics but no conclusion of their own.
+inline void StripSections(Json& section) {
+ for(auto key:kSections)if(section.contains(key) && section[key].is_object()) {
+   auto& child=section[key];
+   child.erase("result");child.erase("checks");child.erase("scope");
+   StripSections(child);
+ }
+}
+// Projects a normalized report onto the public contract (docs/output-json.md):
+// two checks, diagnostics with public stages, failure evidence, assumptions and
+// resource figures; everything else moves under "internal". Linear in the number
+// of top-level fields and diagnostics; large values are moved, not copied.
+inline void Publish(Json& out) {
+ if(!out.is_object() || IsPublic(out))return;
+ static const std::set<std::string> kPublic={"schema","scope","result","checks","diagnostics","warnings","warning_count",
+   "warning_samples_truncated","warnings_complete","assumptions","assumption_dependent","assumption_reporting","assumption_hints",
+   "frontend_assumptions","verification_limitations","pipeline_elapsed_seconds","elapsed_seconds","peak_rss_mib","rss_limit_mib",
+   "wellsync_timeout_seconds","whole_pipeline_timeout_seconds","resource","timeout_scope"};
+ static const std::set<std::string> kEvidence={"races","race_count","race_samples_truncated","failed_required_orders",
+   "failed_required_orders_count","failed_required_orders_sample_limit","failed_required_orders_truncated","counterexample",
+   "rejection","rejection_kind","source_events","synthetic_events","source_event_scope","provenance_events_total",
+   "unmapped_witness_events","witness_event_list_limit","witness_event_lists_truncated","unsupported_memory_pair"};
+ const Json checks=out.value("checks",Json::object());
+ const auto check=[&](const char* key,const char* fallback){return checks.contains(key) && checks[key].is_string()?checks[key].get<std::string>():std::string(fallback);};
+ const auto sync=check("synchronization","not_run"),memory=check("memory",sync.c_str());
+ const auto merged=out.value("result","")=="invalid_lifecycle" || sync=="failed" || memory=="failed"?std::string("failed"):
+   sync=="passed"?std::string(memory=="passed"?"passed":"incomplete"):sync;
+ if(out.contains("diagnostics") && out["diagnostics"].is_array())
+   for(auto& d:out["diagnostics"]) {
+     if(!d.is_object())continue;
+     const auto internal=d.contains("stage") && d["stage"].is_string()?d["stage"].get<std::string>():std::string("pipeline");
+     const auto stage=PublicStage(internal);
+     if(stage!=internal) {
+       if(!d.contains("details") || !d["details"].is_object())d["details"]=d.contains("details")?Json{{"evidence",std::move(d["details"])}}:Json::object();
+       d["details"]["internal_stage"]=internal;
+     }
+     d["stage"]=stage;
+   }
+ Json published=Json::object(),evidence=Json::object(),internal=Json::object();
+ for(auto it=out.begin();it!=out.end();++it) {
+   const auto& key=it.key();
+   if(kPublic.contains(key) || key.starts_with("_"))published[key]=std::move(it.value());
+   else if(kEvidence.contains(key))evidence[key]=std::move(it.value());
+   else internal[key]=std::move(it.value());
+ }
+ published["checks"]={{"synchronization",merged},{"equivalence",check("equivalence","not_requested")}};
+ if(!evidence.empty())published["evidence"]=std::move(evidence);
+ StripSections(internal);
+ if(!internal.empty())published["internal"]=std::move(internal);
+ out=std::move(published);
+}
+inline Json PublicReport(Json report,const std::string& operation=""){Normalize(report,operation);Publish(report);return report;}
 }
