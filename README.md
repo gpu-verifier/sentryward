@@ -83,7 +83,10 @@ C++20 compiler, OpenSSL, Boost headers and, optionally, Z3.
 
 ```bash
 # Check synchronization and memory
-sentryward kernel.ptx --input input.json > output.json
+sentryward kernel.ptx --input input.json --output output.json
+
+# Compact listing on stdout; JSON still goes to --output
+sentryward kernel.ptx --input input.json --output output.json --format summary --fail-on findings
 
 # Also check equivalence to a PyTorch reference
 sentryward kernel.ptx \
@@ -94,10 +97,11 @@ sentryward kernel.ptx \
   --memory-limit-mib 81920 > output.json
 ```
 
-The same check from Python:
+The same check from Python. `summarize` returns compact text for a result
+dictionary; it does not change the JSON object.
 
 ```python
-from sentryward import verify
+from sentryward import summarize, verify
 
 result = verify(
     "kernel.ptx",
@@ -108,6 +112,7 @@ result = verify(
     memory_limit_mib=None,                       # unlimited
 )
 print(result["result"], result["checks"])
+print(summarize(result), end="")
 ```
 
 | CLI | Python | Description |
@@ -117,6 +122,9 @@ print(result["result"], result["checks"])
 | `--reference-binding` | `reference_binding` | Optional. Maps the reference to the kernel's inputs and outputs. Defaults to `reference_binding.json` next to the reference, then in its parent directory. |
 | `--timeout` | `timeout_seconds` | Total budget for the whole call, including reference capture. Default: 600 seconds. |
 | `--memory-limit-mib` | `memory_limit_mib` | Memory budget as a positive integer in MiB, e.g. 81920 for 80 GiB. Default: unlimited. |
+| `--output` | | Optional. Write the JSON result object to this path. stdout still prints `--format`. |
+| `--format` | `summarize(result)` | Optional. `json` (default) writes the result object to stdout. `summary` writes a compact text listing of `result`, `checks`, diagnostics, and warning counts. |
+| `--fail-on` | | Optional, repeatable. Exit 1 when `result` matches a public category. `findings` selects `not_wellsynced`, `potential_race`, `invalid_lifecycle`, and `equivalence_not_proven`. `any` selects every category other than `verified` and `race_free`. Default exit codes are unchanged. |
 
 The reference takes no separate input file. Its arguments are derived from the
 kernel's input configuration and the binding; anything that cannot be derived
@@ -128,8 +136,8 @@ Python paths accept strings or `pathlib.Path`. A reference binding requires a
 reference function. Timeout values must be positive and finite; explicit memory
 limits must be positive integers and apply to both capture and verification.
 The reference function executes as Python code during capture.
-The public Python package exports `verify`; the CLI accepts the PTX path directly,
-without a subcommand.
+The public Python package exports `verify` and `summarize`; the CLI accepts the
+PTX path directly, without a subcommand.
 
 ### Read the result
 
@@ -148,6 +156,9 @@ as a dictionary:
 
 CLI exit code 0 can also accompany findings or inconclusive checks; inspect
 `result` and `checks` instead of using the exit code as a correctness verdict.
+`--fail-on findings` or `--fail-on any` makes those categories a nonzero exit
+without changing the JSON object. `--output` writes that object to a file;
+`--format summary` prints the compact listing on stdout.
 See [output.json](docs/output-json.md) for the complete result format.
 
 ## Build from source
