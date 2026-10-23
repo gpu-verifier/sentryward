@@ -2,38 +2,13 @@
 """Compose report.md from saved verifier artifacts and an optional source explanation."""
 
 import argparse
-import hashlib
 import json
 import os
 from pathlib import Path
 import tempfile
 
 from report_layout import MARKER, compose, validate_inputs
-
-
-def verify_identity(identity, artifacts):
-    """Validate the optional supplied manifest before writing a report."""
-    if identity is None:
-        return
-    manifest = json.loads(identity.read_text())
-    files = manifest.get("files")
-    if not isinstance(files, dict) or not files:
-        raise ValueError("Identity must identify the supplied files.")
-    digests = {}
-    for name, item in files.items():
-        path = (identity.parent / name).resolve()
-        if not path.is_relative_to(identity.parent.resolve()):
-            raise ValueError("Identity path escapes its directory: " + name)
-        if hashlib.sha256(path.read_bytes()).hexdigest() != item.get("sha256"):
-            raise ValueError("Identity mismatch: " + name)
-        digests.setdefault(path.name, set()).add(item["sha256"])
-    known = set().union(*digests.values())
-    for actual in artifacts:
-        expected = digests.get(actual.name, known)
-        if hashlib.sha256(actual.read_bytes()).hexdigest() not in expected:
-            raise ValueError(
-                "Supplied artifact is not covered by identity: " + str(actual)
-            )
+from artifact_links import verify_identity
 
 
 def main():
@@ -80,13 +55,13 @@ def main():
     args = parser.parse_args()
     try:
         artifacts = [args.input, args.result, args.ptx]
-        verify_identity(args.identity, artifacts)
         run_input, result = (
             json.loads(args.input.read_text()),
             json.loads(args.result.read_text()),
         )
         ptx = args.ptx.read_text()
         if args.bindings:
+            verify_identity(args.identity, artifacts)
             validate_inputs(run_input, result, ptx)
             if args.report or args.draft:
                 parser.error(
@@ -116,6 +91,7 @@ def main():
             equivalence_path=args.equivalence,
             artifact_base=args.artifact_base,
             result_panel=args.result_panel,
+            identity=args.identity,
         )
         if args.report is None:
             print(composed, end="")

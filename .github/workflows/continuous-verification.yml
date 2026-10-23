@@ -1,0 +1,187 @@
+name: Continuous verification
+
+on:
+  pull_request:
+    paths-ignore: ['docs/**', 'README.md', 'LICENSE', 'assets/**']
+  push:
+    branches: [main]
+    paths-ignore: ['docs/**', 'README.md', 'LICENSE', 'assets/**']
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+    inputs:
+      kernel:
+        description: 'One kernel name; empty selects the full catalog'
+        type: string
+        default: ''
+      force:
+        description: 'Refresh verification even when matching evidence exists'
+        type: boolean
+        default: false
+      publish:
+        description: 'Publish results (requires enabled repository and main)'
+        type: boolean
+        default: false
+
+# No pull_request_target, self-hosted runner, release event or implicit write token.
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s tests/automation -v
+
+  prepare:
+    needs: contracts
+    # A disabled repository still permits an explicit, credential-free manual preview.
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || vars.SENTRYWARD_AUTOMATION_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      source: ${{ steps.plan.outputs.source }}
+      publish: ${{ steps.plan.outputs.publish }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Build the pinned CPU runtime
+        run: |
+          mkdir -p "$RUNNER_TEMP/automation"
+          docker build -f tools/automation/Dockerfile -t sentryward-worker .
+          docker run --rm --network=none --read-only --tmpfs /tmp --entrypoint python sentryward-worker -c 'import json; from tools.automation.pipeline import runtime_identity; print(json.dumps(runtime_identity()))' > "$RUNNER_TEMP/automation/runtime.json"
+      - name: Compare the immutable baseline with this checkout
+        id: plan
+        env:
+          EVIDENCE_URL: ${{ vars.SENTRYWARD_EVIDENCE_URL }}
+          SELECTED_KERNEL: ${{ inputs.kernel }}
+          FORCE: ${{ inputs.force }}
+          PUBLISH: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.SENTRYWARD_AUTOMATION_ENABLED == 'true' && (github.event_name != 'workflow_dispatch' || inputs.publish) }}
+        run: |
+          python3 -m tools.automation baseline --repository "$GITHUB_REPOSITORY" --out "$RUNNER_TEMP/automation/baseline.json"
+          arguments=()
+          if [ -n "$SELECTED_KERNEL" ]; then arguments+=(--name "$SELECTED_KERNEL"); fi
+          if [ "$FORCE" = true ]; then arguments+=(--force); fi
+          python3 -m tools.automation plan --runtime "$RUNNER_TEMP/automation/runtime.json" --baseline "$RUNNER_TEMP/automation/baseline.json" --run-id "gh-$GITHUB_RUN_ID" --repository "$GITHUB_REPOSITORY" --evidence-url "${EVIDENCE_URL:-https://evidence.invalid/sentryward}" --out "$RUNNER_TEMP/automation/plan.json" "${arguments[@]}"
+          echo "source=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+      - name: Save the exact worker image
+        run: docker save sentryward-worker | gzip -1 > "$RUNNER_TEMP/automation/worker.tar.gz"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verification-plan
+          path: ${{ runner.temp }}/automation/*.json
+          overwrite: true
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verification-image
+          path: ${{ runner.temp }}/automation/worker.tar.gz
+          compression-level: 0
+          overwrite: true
+          retention-days: 2
+
+  verify:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.source }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: verification-*
+          path: ${{ runner.temp }}/automation
+          merge-multiple: true
+      - run: gunzip -c "$RUNNER_TEMP/automation/worker.tar.gz" | docker load
+      - name: Execute serially with a separate sandbox per kernel
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: python3 -m tools.automation.ci_shard --plan "$RUNNER_TEMP/automation/plan.json" --work "$RUNNER_TEMP/work" --export "$RUNNER_TEMP/artifacts" --shard "$SHARD"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: raw-shard-${{ matrix.shard }}
+          path: ${{ runner.temp }}/artifacts/
+          overwrite: true
+          retention-days: 14
+
+  report:
+    needs: [prepare, verify]
+    if: always() && !cancelled() && needs.prepare.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    outputs:
+      artifact: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.source }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: verification-plan
+          path: ${{ runner.temp }}/automation
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: raw-shard-*
+          path: ${{ runner.temp }}/work
+          merge-multiple: true
+      - name: Compose and check reports from saved evidence
+        run: python3 -m tools.automation report --plan "$RUNNER_TEMP/automation/plan.json" --work "$RUNNER_TEMP/work"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        id: upload
+        if: always()
+        with:
+          name: reports-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/work/
+          retention-days: 14
+
+  publish:
+    needs: [prepare, report]
+    if: always() && !cancelled() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.prepare.outputs.publish == 'true' && needs.report.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    environment: automation-publish
+    permissions:
+      contents: write
+    concurrency:
+      group: sentryward-results-publisher
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.source }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: verification-plan
+          path: ${{ runner.temp }}/automation
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          artifact-ids: ${{ needs.report.outputs.artifact }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/work
+      - name: Verify evidence, then advance the immutable snapshot pointer
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SENTRYWARD_S3_ENDPOINT: ${{ vars.SENTRYWARD_S3_ENDPOINT }}
+          SENTRYWARD_S3_BUCKET: ${{ vars.SENTRYWARD_S3_BUCKET }}
+          SENTRYWARD_EVIDENCE_URL: ${{ vars.SENTRYWARD_EVIDENCE_URL }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        run: python3 -m tools.automation publish --plan "$RUNNER_TEMP/automation/plan.json" --work "$RUNNER_TEMP/work"

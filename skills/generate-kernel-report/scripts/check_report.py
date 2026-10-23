@@ -25,7 +25,6 @@ def check_current(
 ):
     """Check current composition and citation validity, not semantic correctness."""
     artifacts = [input_path, result_path, ptx_path]
-    verify_identity(identity, artifacts)
     source = report.read_text()
     if not source.startswith(MARKER):
         return ["Expected a version-2 report. Recompose through the current skill."]
@@ -42,6 +41,7 @@ def check_current(
         equivalence_path=equivalence_path,
         artifact_base=artifact_base,
         result_panel=result_panel,
+        identity=identity,
     )
     issues = []
     if source != expected:
