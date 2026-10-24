@@ -1,9 +1,8 @@
 #pragma once
 // The single typed boundary through which frontend consumers read one CTA's
-// execution facts. Storage stays ExecutionProgram: every accessor below is the
-// InstructionSequence/ExecutionProgram expression its call site used before
-// the boundary existed, so a routed read returns the same object or value by
-// construction.
+// execution facts. Storage stays ExecutionProgram: every accessor below is one
+// InstructionSequence/ExecutionProgram expression, so a read through it returns
+// the same object or value as that expression.
 //
 //  - FactSource: the shared, concrete and non-virtual read core. Resources, the
 //    address-value extractor and ValueTemplateExtractor read through it.
@@ -20,8 +19,8 @@
 // private to FactSource/CtaFacts (and detail::ExecutionStorage for producers).
 //
 // Path identity is the executor's PathId or the lane, never an address, and
-// the lowering reads that once depended on expansion read the shared
-// prototype.
+// lowering's path-uniform reads read the shared prototype, so they do not
+// depend on expansion.
 #include "sentryward/algorithm/base/strong_id.h"
 #include "sentryward/frontend/ptx/execution.h"
 #include "sentryward/frontend/ptx/unit_frame.h"
@@ -80,7 +79,7 @@ class ExecutorFacts;
 class RecordHolder;
 class ExpandedRecords;
 
-// Which object today's code holds at a site. Value reads depend only on this
+// Which object a view reads at a site. Value reads depend only on this
 // object; metadata is shared by every representation of one record.
 enum class RecordKind : std::uint8_t {
   Prototype,     // metadata(pos) on an unexpanded lane: the arena's shared record
@@ -92,7 +91,7 @@ enum class RecordKind : std::uint8_t {
 };
 
 // Non-owning and trivially copyable. Metadata only: values go through FactSource.
-// A positioned view's ref() is (lane(), position); a Detached view, and the
+// A positioned view's ref() is its (lane, position); a Detached view, and the
 // view of an empty RecordHolder, have none.
 class RecordView {
 public:
@@ -116,7 +115,6 @@ public:
   [[nodiscard]] const auto &opaque_compute_register_writes() const noexcept { return record_->opaque_compute_register_writes(); }
   [[nodiscard]] const auto &merged_arm_join() const noexcept { return record_->merged_arm_join(); }
   [[nodiscard]] DynamicKey Key() const { return record_->Key(); }
-  [[nodiscard]] LaneRef lane() const noexcept { return lane_; }
   [[nodiscard]] std::optional<RecordRef> ref() const noexcept {
     return has_ref_ ? std::optional<RecordRef>(RecordRef{lane_, pos_}) : std::nullopt;
   }
@@ -143,11 +141,11 @@ private:
   bool has_ref_ = false;
 };
 
-// Copyable owner of a PrototypeCopy / Full / Slice copy, held exactly where
-// today's code holds a copy. Copying it copies the record's two shared_ptrs.
+// Copyable owner of a PrototypeCopy / Full / Slice copy, for a consumer that
+// keeps a copy. Copying it copies the record's two shared_ptrs.
 // An empty holder views a default ExecutedInstruction, which is what a
-// default-constructed cache entry held today if its read threw; that view is
-// unpositioned (ref() is empty), as it was before the RecordRef views.
+// default-constructed cache entry holds if its read threw; that view is
+// unpositioned (ref() is empty).
 class RecordHolder {
 public:
   RecordHolder() = default;
@@ -173,22 +171,23 @@ private:
 
 // A holder's copy without its view metadata (FactSource::Keep), for objects
 // that keep many copies (Resources' Definition caches) or one per extractor
-// (the value view's current record). It has the size of the ExecutedInstruction
-// those objects kept before this boundary, so their allocations do not grow; the
-// keeper supplies the read's position, kind and slice again (FactSource::View).
+// (the value view's current record). It has the size of an ExecutedInstruction,
+// so keeping it costs no more than keeping the record itself; the keeper
+// supplies the read's position, kind and slice again (FactSource::ViewFull,
+// ViewSlice, ViewPrototypeCopy).
 class RecordCopy {
 public:
   RecordCopy() = default;
 
 private:
   friend class FactSource;
-  // FactSource::Keep: move-constructs, as the formerly kept copy was built.
+  // FactSource::Keep: move-constructs from the holder's record.
   explicit RecordCopy(ExecutedInstruction &&record) noexcept : record_(std::move(record)) {}
   ExecutedInstruction record_;
 };
 
 // The records of one lane CtaFacts::ExpandLane expanded, in order, as Expanded
-// views: the range-for over that lane's records which the call replaces.
+// views, for a range-for over that lane's records.
 class ExpandedRecords {
 public:
   class Iterator {
@@ -333,11 +332,10 @@ struct ConsumerTag {
   Consumer kind = Consumer::Driver;
   std::uint16_t resources = 0; // Resources instance id; 0 = none
 };
-enum class MemoKind : std::uint8_t { EvaluatedAddress, UniformGlobal, Owner, GenericOwner };
+// An entry of lowering's evaluated-address memo.
 struct MemoRef {
-  MemoKind kind;
-  RecordRef at; // position of the fill or of the hit
-  std::variant<std::uint64_t /*evaluation key*/, DynamicKey /*owner origin*/, std::size_t /*position*/> key;
+  RecordRef at;      // position of the fill or of the hit
+  std::uint64_t key; // the evaluation key
 };
 struct SlotQuery;         // resources.h
 struct ResolvedFootprint; // resources.h
@@ -402,10 +400,10 @@ protected:
 
 // ---- Partition facts --------------------------------------------------------
 // The static rule of one instruction the value view's Partition whitelists:
-// the fragments of the per-member key in the order the former key loop
-// appended them (warp, issuer, bulk/param tokens, tcgen05.mma tokens, tensor
-// contract, copy tokens, election, shuffle). Function text only: the value view
-// builds it once per function and shares it with every CTA; never consumer state.
+// the fragments of the per-member key, in key order (warp, issuer, bulk/param
+// tokens, tcgen05.mma tokens, tensor contract, copy tokens, election,
+// shuffle). Function text only: the value view builds it once per function and
+// shares it with every CTA; never consumer state.
 struct PartitionFragment {
   enum Kind : std::uint8_t {
     Warp,     // "warp:" Warp(member)
@@ -436,16 +434,15 @@ class PartitionCursor;
 std::string Trim(std::string_view);
 bool Has(const Instruction &, std::string_view);
 // The source lane of shfl.sync for `at.lane` at `at.pos` and whether it is
-// valid (the value view's former own computation, verbatim). Throws
+// valid (the shuffle rule of the value view's key). Throws
 // std::invalid_argument when the selector, clamp or member mask is not known
 // or the lane or its source is outside the member mask.
 [[nodiscard]] std::pair<unsigned, bool> ShuffleSource(const FactSource &facts, RecordRef at);
 
 // A shared-value site relative to the consuming CTA's cluster.
-// `owner` is TryRankOf(absolute): absent for a CTA outside the cluster.
+// `owner` is TryRankOf of the site's CTA: absent for a CTA outside the cluster.
 struct SharedSiteRef {
   std::optional<CtaRank> owner;
-  Coordinates absolute{};
   std::uint32_t thread{};
   DynamicKey instruction;
 };
@@ -462,8 +459,8 @@ public:
   // Whether the program names its module and function (every specialized one does).
   [[nodiscard]] bool Specialized() const noexcept { return program_->module && program_->function; }
   [[nodiscard]] const LaunchView &launch() const noexcept { return launch_; }
-  // One name -> id table, built lazily on first use (first id wins, as every
-  // table it replaces). Views into register_names, final before any read.
+  // One name -> id table, built lazily on first use (first id wins). Views
+  // into register_names, final before any read.
   // Stored as one sorted array (binary search), not one node per register, so
   // the table lives in a single allocation of 24 bytes per register.
   [[nodiscard]] std::optional<RegId> Reg(std::string_view exact_name) const;
@@ -482,7 +479,7 @@ public:
   // CtaFacts: kLane | the lane_traces index; ExecutorFacts: | the registration index.
   [[nodiscard]] PathKey Path(LaneRef lane) const;
   [[nodiscard]] PeerToken PeerPathToken(LaneRef lane) const;
-  // The former peer gate, restated without addresses: an unexpanded
+  // The address-value extractor's peer gate, without addresses: an unexpanded
   // token aligns with an unexpanded peer on the same path; an expanded token
   // only with itself, still expanded. So after expansion every peer demand
   // fails except the self-peer.
@@ -495,7 +492,7 @@ public:
   // == readRegisters(pos, regs); `regs` must outlive the holder.
   [[nodiscard]] RecordHolder ReadSlice(RecordRef at, std::span<const RegId> regs) const;
   // The holder's copy, moved out (a default record for an empty holder), for
-  // an object that keeps it where today's code kept an ExecutedInstruction.
+  // an object that keeps the copy beyond the holder.
   [[nodiscard]] RecordCopy Keep(RecordHolder &&holder) const noexcept {
     return holder.record_ ? RecordCopy(std::move(*holder.record_)) : RecordCopy{};
   }
@@ -523,22 +520,21 @@ public:
 
   // values (event H1)
   [[nodiscard]] const Scalar *Value(const RecordView &view, RegId reg) const; // first binding with id == reg
-  // == ExecutionProgram::KnownRegister, verbatim: the same string-compare scan.
+  // The first binding whose register name is `name` (a string compare per binding).
   [[nodiscard]] const Scalar *Value(const RecordView &view, std::string_view name) const;
   // == readRegisters(pos, {reg}) + the first binding with id == reg.
   [[nodiscard]] std::optional<Scalar> ValueAt(RecordRef at, RegId reg) const;
-  // == ExecutionProgram::RegisterOrigin, verbatim. Structure, never an event.
+  // The first register origin whose register name is `name`. Structure, never an event.
   [[nodiscard]] const DynamicKey *Origin(const RecordView &view, std::string_view name) const;
   // == config.special_registers lookup (event H4). Takes the caller's string:
   // the map is not transparent, so a string_view key would allocate per read.
   [[nodiscard]] std::optional<Integer> Special(const std::string &name) const;
 
-  // Legacy: ValueTemplateExtractor::Known(text, uniform_only=true) only,
-  // reached from selp in cohort-template mode. Today's expression verbatim:
-  // the leader's shared template record (sharedMetadata, which expansion
-  // never replaces) when its sequence has one; otherwise every member's
-  // metadata() value must be known and agree. Empty `members` means
-  // {leader}. Event H2.
+  // For ValueTemplateExtractor::Known(text, uniform_only=true) only, reached
+  // from selp in cohort-template mode: the value in the leader's shared
+  // template record (sharedMetadata, which expansion never replaces) when its
+  // sequence has one; otherwise every member's metadata() value must be known
+  // and agree. Empty `members` means {leader}. Event H2.
   [[nodiscard]] std::optional<Integer> LegacyUniformOnlyValue(RecordRef leader, std::span<const LaneRef> members,
                                                             std::string_view name) const;
 
@@ -564,6 +560,16 @@ protected:
   // The trace a LaneRef names: CtaFacts, a lane_traces index (bounds-checked);
   // ExecutorFacts, a registration.
   [[nodiscard]] const LaneTrace &TraceOf(LaneRef lane) const;
+  // The sequence's shared template record regardless of expansion; null for a
+  // lane-path sequence (InstructionSequence::sharedMetadata).
+  [[nodiscard]] const ExecutedInstruction *PrototypeRecord(RecordRef at) const {
+    return TraceOf(at.lane).instructions.sharedMetadata(at.pos);
+  }
+  [[nodiscard]] const Scalar *ById(const ExecutedInstruction &record, RegId reg) const {
+    for (const auto &[id, value] : record.known_registers())
+      if (id == reg) return &value;
+    return nullptr;
+  }
   const ExecutionProgram *program_;
   const std::deque<const LaneTrace *> *registered_;
   LaunchView launch_;
@@ -579,14 +585,8 @@ private:
   friend class SlotResolver; // TensorMaps: SlotResolver::TensorMap only (inside Tma)
   // == config.tma_descriptors, including the executed.* and runtime.* maps.
   [[nodiscard]] const nlohmann::json &TensorMaps() const noexcept { return program_->config.tma_descriptors; }
-  // The sequence's shared template record regardless of expansion; null for a
-  // lane-path sequence (InstructionSequence::sharedMetadata).
-  [[nodiscard]] const ExecutedInstruction *PrototypeRecord(RecordRef at) const {
-    return TraceOf(at.lane).instructions.sharedMetadata(at.pos);
-  }
   // The LaneRef of a trace: its lane_traces index, or ExecutorFacts::Register.
   [[nodiscard]] LaneRef LaneOf(const LaneTrace &trace) const;
-  [[nodiscard]] const Scalar *ById(const ExecutedInstruction &record, RegId reg) const;
   [[nodiscard]] const Scalar *ByName(const ExecutedInstruction &record, std::string_view name) const {
     for (const auto &[id, value] : record.known_registers())
       if (program_->register_names[id] == name) return &value;
@@ -655,9 +655,9 @@ private:
 // The fact stage of one Partition call, evaluated member by
 // member so that the consumer stage of a member runs right after its fact
 // stage and before the next member's: vetoes and exceptions happen at the
-// member and at the point where the former single key loop raised them.
-// Next() is the member's stage-1 key: byte-identical to what that loop had
-// appended before its first consumer-state part. Class(k) is the answer:
+// member and at the fragment that raises them.
+// Next() is the member's stage-1 key: the part of its key before the first
+// consumer-state part. Class(k) is the answer:
 // first-occurrence numbering of the evaluated members' stage-1 keys, computed
 // for every member (the value view groups by it).
 class PartitionCursor {
@@ -700,7 +700,7 @@ private:
 // ---- the consumer facade: one per consumed program --------------------------
 class CtaFacts final : public FactSource {
 public:
-  // `linear`: run.cpp's linear CTA id, narrowed to uint32 as every consumer did.
+  // `linear`: run.cpp's linear CTA id, narrowed to uint32 for every consumer.
   CtaFacts(const ExecutionProgram &program, const UnitFrame &frame, std::uint32_t linear) noexcept
       : FactSource(program, nullptr), frame_(frame), linear_(linear) {}
   [[nodiscard]] const UnitFrame &frame() const noexcept { return frame_; }
@@ -757,17 +757,17 @@ public:
     return program_->static_execution_counts;
   }
 
-  // The only consumer path to records(): expands the whole lane at the
-  // point where the range-for it replaces called begin(), and returns those
-  // records in order (each Meta({lane, pos}): the same element, kind Expanded).
+  // The only consumer path to records(): expands the whole lane when called
+  // and returns its records in order (each Meta({lane, pos}): the same
+  // element, kind Expanded).
   ExpandedRecords ExpandLane(LaneRef lane, ExpansionSite site) const;
 
   // Path-uniform reads for lowering's generated memory, one call
   // site each; independent of expansion. Reached only on unexpanded lanes,
-  // where they equal the former per-lane reads.
+  // where they equal the lane's own metadata reads.
   // uniform_global: whether the template record at `at` binds `reg` uniformly
   // (the shared prototype, which expansion never replaces); without a
-  // template, metadata(pos) as before. Event H3.
+  // template, whether metadata(pos) binds it. Event H3.
   [[nodiscard]] bool PathUniformBinding(RecordRef at, RegId reg) const;
   // The memo key: the arena node of the template binding of `reg` at `at`; none without a template.
   [[nodiscard]] std::optional<std::size_t> PathEvaluationKey(RecordRef at, RegId reg) const {
@@ -785,23 +785,18 @@ public:
 
   // Class mode: the driver attaches a recorder before a representative CTA's
   // consumers run and detaches it (nullptr) after them.
-  void Attach(QuerySink *sink, CtaRank rank) noexcept {
-    sink_ = sink;
-    rank_ = rank;
-  }
-  [[nodiscard]] CtaRank AttachedRank() const noexcept { return rank_; }
+  void Attach(QuerySink *sink) noexcept { sink_ = sink; }
 
 private:
   UnitFrame frame_;
   std::uint32_t linear_;
-  CtaRank rank_{};
 };
 
 // ---- the producer's view of its in-progress program (never recorded) --------
 class ExecutorFacts final : public FactSource {
 public:
-  // Declared before the Resources built over it; the same lifetime assumption
-  // as Resources::program today.
+  // Declared before the Resources built over it, which keeps a reference to
+  // it (Resources::facts).
   explicit ExecutorFacts(const ExecutionProgram &in_progress) noexcept : FactSource(in_progress, &lanes_) {}
   // Any trace, including RunCluster's coroutine-local ones; dedup by address.
   [[nodiscard]] LaneRef Register(const LaneTrace &trace) const;
@@ -832,7 +827,7 @@ inline const LaneTrace &FactSource::TraceOf(LaneRef lane) const {
   return program_->lane_traces.at(lane.index);
 }
 inline PathKey FactSource::Path(LaneRef lane) const {
-  const auto path = TraceOf(lane).instructions.templatePath();
+  const auto path = TemplatePath(lane);
   return PathKey(path ? std::uint64_t(path->value) : PathKey::kLane | lane.index);
 }
 inline PeerToken FactSource::PeerPathToken(LaneRef lane) const {
@@ -849,15 +844,6 @@ inline RecordView FactSource::Meta(RecordRef at) const {
   const auto &sequence = TraceOf(at.lane).instructions;
   const auto *record = &sequence.metadata(at.pos);
   return RecordView(record, at, sequence.materialized() ? RecordKind::Expanded : RecordKind::Prototype);
-}
-inline const Scalar *FactSource::ById(const ExecutedInstruction &record, RegId reg) const {
-  const Scalar *answer = nullptr;
-  for (const auto &[id, value] : record.known_registers())
-    if (id == reg) {
-      answer = &value;
-      break;
-    }
-  return answer;
 }
 inline const Scalar *FactSource::Value(const RecordView &view, RegId reg) const {
   const auto *answer = ById(*view.record_, reg);

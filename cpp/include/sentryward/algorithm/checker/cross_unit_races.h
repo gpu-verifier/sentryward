@@ -56,10 +56,8 @@ struct CrossUnitOutcome {
   std::uint64_t region_offset = 0, region_bytes = 0;
   std::string reason; // kUnknown / kCap: why
 };
-// Unit-private spaces (owner-qualified or per thread): never shared across units.
-[[nodiscard]] bool UnitPrivateSpace(std::string_view space) noexcept;
 // Every pair with at least one member unit is decided exactly; parts outside global memory are
-// ignored, unplaceable ones are Unknown. Without `model`, lookup parts are unplaceable.
+// ignored, unplaceable ones are Unknown.
 [[nodiscard]] CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const UnitQuotient &quotient,
-                                              MemoryModel *model = nullptr, const CrossUnitLimits &limits = {});
+                                              MemoryModel &model, const CrossUnitLimits &limits = {});
 } // namespace sentryward::algorithm

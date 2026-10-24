@@ -6,13 +6,15 @@
 // Every BlockIndex leaf becomes the parameter "%unit.ctaid.<axis>", spelled
 // "%unit.ctaid.<axis>+<k>" for a CTA k CTAs from its unit's origin along the
 // axis (its %cluster_ctaid), so a body depends on the unit origin only, never
-// on which rank of the unit it came from. Before today's consolidation every
-// representative body is instantiated for its own unit and, for every member
-// of its class, copied: the parameters become the unit's coordinates,
+// on which rank of the unit it came from. In class mode only the
+// representative units are analysed. At consolidation every representative
+// body is instantiated for its own unit in place and, for every member of its
+// class, appended as a copy: the parameters become the unit's coordinates,
 // representative-absolute global offsets move by the unit's δ and CTA-owned
-// pointer provenance is renamed. A body the instantiation cannot reproduce
-// exactly refuses lifting (scalar_fold_unit_parameter_unsupported), and the
-// driver restarts the launch per unit.
+// pointer provenance is renamed to the unit's CTA ids. A body the
+// instantiation cannot reproduce exactly refuses lifting
+// (scalar_fold_unit_parameter_unsupported), and the driver restarts the launch
+// per unit.
 //
 // The site counters count, per process (one launch per process), where a
 // BlockIndex value was declined (read as unknown) or read numerically. They
@@ -66,15 +68,11 @@ inline std::map<std::string, std::set<std::uint64_t>> &UnitRowModuli() {
 }
 
 // The launch geometry and class tables lifting needs
-// (ScalarFoldOptions::unit_lifting). Class mode (`classes`, set by the
-// driver): only the representative units were analysed; every representative
-// output is instantiated for its own unit in place and, for every member of
-// its class, appended as a copy at the member's origin, δ and CTA ids.
-// Without `classes` the lowering refuses lifting.
+// (ScalarFoldOptions::unit_lifting), consolidated as described at the top of
+// this file.
 struct UnitLifting {
   using Origin = std::array<std::uint64_t, 3>;
   std::array<std::uint64_t, 3> grid{1, 1, 1}, unit_shape{1, 1, 1};
-  bool classes = false;
   struct Member {
     Origin origin{};                             // the member unit's first CTA (its %unit.ctaid)
     std::map<std::string, std::int64_t> delta;   // per global allocation, keyed as ConstantRegion::allocation

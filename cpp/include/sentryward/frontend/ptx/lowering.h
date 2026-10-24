@@ -27,7 +27,8 @@ struct LoweringResult {
   nlohmann::json metadata;
   nlohmann::json diagnostics = nlohmann::json::array();
   std::vector<MmaValueLayout> mma_layouts;
-  // The consumed CTAs' tensormap.cp_fenceproxy destinations ((I.5c), run.cpp).
+  // The consumed CTAs' tensormap.cp_fenceproxy destinations, checked against
+  // input tensor maps in run.cpp.
   std::vector<TensormapRegion> tensormap_destinations;
 };
 // One CTA's execution/provenance is consumed at a time; model storage is

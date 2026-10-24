@@ -77,12 +77,10 @@ inline Z floorq(const Q &q) { return floorz(q.numerator(), q.denominator()); }
 inline Z pow2(unsigned w) {
   return w < rational_detail::limb_bits ? Z(rational_detail::Limb(1) << w) : Z(Z(1) << w);
 }
-// gcd(|x|, |y|). Every caller passes x >= 0, where this equals the former
-// boost::multiprecision::gcd(x, abs(y)) and gcd(x, y) for y > 0.
+// gcd(|x|, |y|) with a one-limb fast path.
 inline Z gcdz(const Z &x, const Z &y) {
   rational_detail::Limb a, b;
-  bool na, nb;
-  if (rational_detail::limb(x, a, na) && rational_detail::limb(y, b, nb))
+  if (rational_detail::limb(x, a) && rational_detail::limb(y, b))
     return Z(rational_detail::Limb(std::gcd(a, b)));
   return boost::multiprecision::gcd(boost::multiprecision::abs(x), boost::multiprecision::abs(y));
 }
@@ -166,9 +164,8 @@ struct Arena {
   std::deque<Node> nodes;
   // Flat intern index: one (key hash, id) slot per node, linear probing over a
   // power-of-two table at load <= 3/4. Nodes are never erased and an equal key
-  // is never inserted twice, so a probe returns the one id the former per-hash
-  // bucket scan returned. A probe tests the stored hash before touching any
-  // Node; growth walks slots only.
+  // is never inserted twice, so a probe finds at most one match. A probe tests
+  // the stored hash before touching any Node; growth walks slots only.
   struct IndexSlot {
     size_t hash;
     Id id;
@@ -1683,6 +1680,16 @@ struct Arena {
     return intern("extractbits",{source},{Q(lo),Q(count)},"",{true,false,true},
                   std::pair(Q(0),Q(pow2(count)-1)));
   }
+  // gcd of d and every integer coefficient of ts; 1 when a coefficient is not
+  // an integer.
+  static Z common_factor(const std::vector<std::pair<Id, Q>> &ts, Z d) {
+    for (const auto &[_, c] : ts) {
+      if (c.denominator() != 1)
+        return 1;
+      d = gcdz(d, c.numerator());
+    }
+    return d;
+  }
   Id idiv(Id n, Z d) {
     if (d <= 0)
       throw Unsupported("index divisor must be positive");
@@ -1701,14 +1708,7 @@ struct Arena {
       if(shift%8==0 && bits%8==0) return bit_slice(n,shift,bits-shift);
     }
     auto ts = terms(n);
-    Z g = d;
-    for (auto &[_, c] : ts) {
-      if (c.denominator() != 1) {
-        g = 1;
-        break;
-      }
-      g = gcdz(g, c.numerator());
-    }
+    Z g = common_factor(ts, d);
     if (g > 1) {
       std::vector<Id> rs;
       for (auto &[t, c] : ts)
@@ -1779,14 +1779,7 @@ struct Arena {
     if (nodes[n].op == "word" && modz(pow2(nodes[n].data[0].numerator().convert_to<unsigned>()), d) == 0)
       return imod(nodes[n].args[0], d);
     auto ts = terms(n);
-    Z g = d;
-    for (auto &[_, c] : ts) {
-      if (c.denominator() != 1) {
-        g = 1;
-        break;
-      }
-      g = gcdz(g, c.numerator());
-    }
+    Z g = common_factor(ts, d);
     if (g > 1) {
       std::vector<Id> rs;
       for (auto &[t, c] : ts)

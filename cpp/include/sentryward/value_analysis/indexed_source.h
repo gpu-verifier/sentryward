@@ -104,7 +104,6 @@ std::vector<IndexedSourceDomain> mapSourceTemplates(
 // Source interval indices and resolved slices are reused across prefix matches.
 class IndexedSourceMatcher {
  public:
-  IndexedSourceMatcher(const value_ir::Graph&, const MemoryEliminationResult&);
   // Shares the pass's assembled-read extents; the owner must outlive this.
   IndexedSourceMatcher(const value_ir::Graph&, const MemoryEliminationResult&, AssembledPieceEnds&);
   ~IndexedSourceMatcher();
@@ -152,8 +151,4 @@ class IndexedSourceMatcher {
   struct Impl;
   std::unique_ptr<Impl> impl_;
 };
-// Validates every member. A failed prefix match leaves the sources independent.
-std::optional<IndexedSource> matchIndexedSource(
-    const value_ir::Graph& graph, const MemoryEliminationResult& memory,
-    std::span<const value_ir::Value> values);
 }

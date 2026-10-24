@@ -4,7 +4,7 @@
 // representative unit. The tables say how the analysed program, built from the representative
 // units only, stands for the whole launch: every consumed CTA belongs to a representative unit,
 // and consumers use the tables to weight per-occurrence evidence by class size, to expand
-// bounded samples in today's order and to run the cross-unit global race pass. Every pointer to
+// bounded samples in the per-unit path's order and to run the cross-unit global race pass. Every pointer to
 // it is null when class mode is off, and then nothing below is consulted.
 //
 // Cost: every query is O(1) or O(log) in units; nothing here enumerates members except
@@ -13,7 +13,6 @@
 
 #include <algorithm>
 #include <array>
-#include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <map>
@@ -61,9 +60,8 @@ struct UnitQuotient : LaunchUnits {
   std::vector<Unit> units;    // unit order (z, y, x over the unit grid)
   std::vector<Class> classes; // creation order
 
-  // Filled by lowering at Finish: the CTA of every required order (that of its `from` actor) and how
-  // many orders the per-CTA lowering emitted before Finish (lifecycle witness expansion).
-  std::vector<std::uint32_t> order_ctas;
+  // Filled by lowering at Finish: how many orders the per-CTA lowering emitted before Finish
+  // (lifecycle witness expansion).
   std::size_t add_time_orders = 0;
 
   [[nodiscard]] const Class &ClassOf(std::uint32_t linear) const { return classes.at(units.at(UnitOf(linear)).klass); }
@@ -72,14 +70,6 @@ struct UnitQuotient : LaunchUnits {
   // The same-rank CTA of the representative of `linear`'s class (itself for a representative CTA).
   [[nodiscard]] std::uint32_t RepresentativeCta(std::uint32_t linear) const {
     return units.at(ClassOf(linear).units.front()).ctas.at(RankOf(linear));
-  }
-  // The class's units as [first, last] runs of unit indices (the "members" field of repeated entries).
-  [[nodiscard]] std::vector<std::pair<std::uint32_t, std::uint32_t>> UnitRuns(std::uint32_t klass) const {
-    std::vector<std::pair<std::uint32_t, std::uint32_t>> runs;
-    for (const auto unit : classes.at(klass).units)
-      if (!runs.empty() && runs.back().second + 1 == unit) runs.back().second = unit;
-      else runs.emplace_back(unit, unit);
-    return runs;
   }
   [[nodiscard]] bool Shared() const noexcept { return classes.size() < units.size(); }
   // Whether the analysed program numbers the representative CTA `linear` (its instruction, actor and
@@ -124,7 +114,7 @@ private:
   std::vector<std::uint64_t> weights_;
 };
 
-// Class mode cannot finish exactly (unit closure, a cross-unit Unknown or a work cap, (I.5)): the
+// Class mode cannot finish exactly (unit closure, a cross-unit Unknown or a work cap): the
 // driver drops the quotient and re-runs the launch per unit. Deliberately not a
 // std::exception, so that no analysis stage converts it into a report.
 struct UnitClassRestart {

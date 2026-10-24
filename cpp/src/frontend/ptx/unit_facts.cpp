@@ -248,11 +248,8 @@ ExpandedRecords CtaFacts::ExpandLane(LaneRef lane, ExpansionSite site) const {
 }
 
 bool CtaFacts::PathUniformBinding(RecordRef at, RegId reg) const {
-  const auto &sequence = TraceOf(at.lane).instructions;
-  const auto *shared = sequence.sharedMetadata(at.pos);
-  const auto &record = shared ? *shared : sequence.metadata(at.pos);
-  const bool present = std::any_of(record.known_registers().begin(), record.known_registers().end(),
-                                   [&](const auto &binding) { return binding.first == reg; });
+  const auto *shared = PrototypeRecord(at);
+  const bool present = ById(shared ? *shared : TraceOf(at.lane).instructions.metadata(at.pos), reg) != nullptr;
   if (recording()) [[unlikely]]
     Note(query::UniformBinding{at, reg, present});
   return present;
@@ -260,7 +257,7 @@ bool CtaFacts::PathUniformBinding(RecordRef at, RegId reg) const {
 
 void CtaFacts::PrototypeRegisterIds(RecordRef at, std::vector<RegId> &out) const {
   out.clear();
-  if (const auto *shared = TraceOf(at.lane).instructions.sharedMetadata(at.pos))
+  if (const auto *shared = PrototypeRecord(at))
     for (const auto &[id, value] : shared->known_registers()) {
       (void)value;
       out.push_back(id);
@@ -272,7 +269,7 @@ std::vector<SharedSiteRef> CtaFacts::SharedSitesRelative() const {
   std::vector<SharedSiteRef> sites;
   sites.reserve(program_->shared_constant_writes.size() + 2 * program_->shared_value_dependencies.size());
   const auto add = [&](const SharedValueSite &site) {
-    sites.push_back({frame_.TryRankOf(site.cta), site.cta, site.thread, site.instruction});
+    sites.push_back({frame_.TryRankOf(site.cta), site.thread, site.instruction});
   };
   for (const auto &site : program_->shared_constant_writes) add(site);
   for (const auto &dependency : program_->shared_value_dependencies) {

@@ -3,6 +3,9 @@
 #include "sentryward/algorithm/memory/address_solver.h"
 #include "sentryward/algorithm/analysis/member_relation.h"
 
+#include <algorithm>
+#include <utility>
+
 namespace sentryward::algorithm {
 struct MemoryAccessFamily {
   MemoryAccess first;
@@ -40,6 +43,15 @@ struct FamilyFootprint {
   std::vector<std::pair<std::uint64_t,std::uint64_t>> region_axes = {};
   std::uint64_t region_element = 0;
 };
+// The bytes [lo, hi) that the members of an affine footprint start in, plus `bytes`: from the
+// lowest member's offset to the highest member's offset + bytes.
+inline std::pair<address_solver::Int,address_solver::Int> FootprintSpan(const MemoryAccessFamily& family,
+    const FamilyFootprint& footprint) {
+  using I=address_solver::Int;
+  const I a=footprint.offset+footprint.step*I(family.first_member),
+      b=footprint.offset+footprint.step*I(family.first_member+family.count-1);
+  return {std::min(a,b),std::max(a,b)+I(footprint.bytes)};
+}
 // A differing symbolic suffix remains Unknown; equal suffixes cancel exactly.
 struct FamilyOverlap {
   std::vector<MemberRelation> overlap,unknown;

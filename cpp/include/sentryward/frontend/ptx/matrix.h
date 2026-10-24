@@ -13,7 +13,7 @@ namespace sentryward::frontend::ptx {
 // One instance per specialized CTA. The facts, their program and its lane
 // storage must outlive the resolver and remain unchanged while cached
 // occurrences exist. For ldmatrix/stmatrix kernels the constructor expands
-// every lane (T2).
+// every lane (ExpansionSite::Matrix).
 class MatrixResolver {
 public:
   explicit MatrixResolver(const CtaFacts &facts);

@@ -27,8 +27,6 @@ struct CrossUnitEvidence final {
   std::array<std::uint32_t, 3> first_unit{}, first_cta{}, second_unit{}, second_cta{};
   std::string allocation;
   std::int64_t first_delta = 0, second_delta = 0;
-
-  friend bool operator==(const CrossUnitEvidence&, const CrossUnitEvidence&) = default;
 };
 
 struct OverlapEvidence final {

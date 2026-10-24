@@ -2,18 +2,11 @@
 
 #include "sentryward/frontend/ptx/unit_facts.h"
 
-#include <array>
 #include <cstring>
 #include <type_traits>
 #include <utility>
 
 namespace sentryward::frontend::ptx {
-std::optional<UnitClassMode> ParseUnitClassMode(std::string_view text) noexcept {
-  if (text == "off") return UnitClassMode::Off;
-  if (text == "on") return UnitClassMode::On;
-  return std::nullopt;
-}
-
 // ---- precondition (I) -------------------------------------------------------
 namespace {
 bool In(std::string_view value, std::initializer_list<std::string_view> set) noexcept {
@@ -46,8 +39,7 @@ SemScope SemScopeOf(const std::vector<std::string> &mods) noexcept {
 bool Wide(std::string_view scope) noexcept { return scope == "gpu" || scope == "sys"; }
 } // namespace
 
-PreconditionReport PreconditionScan(const Module &module, const Function &function) {
-  (void)module;
+PreconditionReport PreconditionScan(const Function &function) {
   PreconditionReport report;
   const auto violation = [&] { report.holds = false; };
   for (std::size_t index = 0; index < function.instructions.size(); ++index) {
@@ -69,8 +61,7 @@ PreconditionReport PreconditionScan(const Module &module, const Function &functi
     } else if (op == "multimem") {
       violation(); // R-multimem
     } else if (op == "fence") {
-      const auto [sem, scope] = SemScopeOf(mods);
-      (void)sem;
+      const auto scope = SemScopeOf(mods).scope;
       if (!Wide(scope)) continue;
       // (I.3'): proxy fences only restrict base causality order; memory
       // fences (sc, acq_rel, acquire, release, mbarrier_init) stay rejected.
@@ -106,23 +97,13 @@ bool TensormapInputOverlap(const std::vector<TensormapRegion> &regions,
 }
 
 // ---- units and the plan -----------------------------------------------------
-std::uint32_t UnitPlan::UnitOf(Coordinates cta) const noexcept {
-  const Coordinates k{cta[0] / unit_shape[0], cta[1] / unit_shape[1], cta[2] / unit_shape[2]};
-  return k[0] + unit_grid[0] * (k[1] + unit_grid[1] * k[2]);
-}
-std::uint32_t UnitPlan::RankOf(Coordinates cta) const noexcept {
-  const Coordinates l{cta[0] % unit_shape[0], cta[1] % unit_shape[1], cta[2] % unit_shape[2]};
-  return l[0] + unit_shape[0] * (l[1] + unit_shape[1] * l[2]);
-}
-
-UnitPlan PlanUnits(UnitClassMode mode, const FrontendConfig &config, const Module &module,
-                   const Function &function, const UnitGates &gates) {
+UnitPlan PlanUnits(const FrontendConfig &config, const Function &function,
+                   const UnitGates &gates) {
   UnitPlan plan;
-  const auto [grid, block] = LaunchDimensions(config);
-  (void)block;
+  const auto grid = LaunchDimensions(config).first;
   plan.grid = grid;
   plan.unit_shape = config.cluster_dim.value_or(Coordinates{1, 1, 1});
-  plan.precondition = PreconditionScan(module, function);
+  plan.precondition = PreconditionScan(function);
   // An allocation_location names a launch resource; the slot resolver binds it to the resource's
   // concrete allocation object at its base offset (slot_resolver.cpp MemoryResource), or to the
   // resource id itself for a pointer without one. An unknown resource cannot be placed (empty name).
@@ -155,31 +136,30 @@ UnitPlan PlanUnits(UnitClassMode mode, const FrontendConfig &config, const Modul
     }
   }
   bool exact = true;
+  Coordinates unit_grid{1, 1, 1};
   for (int axis = 0; axis < 3; ++axis) {
     if (plan.unit_shape[axis] == 0 || grid[axis] % plan.unit_shape[axis]) exact = false;
-    else plan.unit_grid[axis] = grid[axis] / plan.unit_shape[axis];
+    else unit_grid[axis] = grid[axis] / plan.unit_shape[axis];
   }
-  const std::uint64_t units = exact ? std::uint64_t(plan.unit_grid[0]) * plan.unit_grid[1] * plan.unit_grid[2] : 0;
-  // Class mode needs mode on (off: SENTRYWARD_UNIT_CLASSES=off, run.cpp), a
-  // cluster grid that tiles the launch, more than one unit, none of the run
-  // options in UnitGates and precondition (I). Values are lifted through the
-  // scalar fold; without it nothing lifts them.
-  const bool allowed = mode == UnitClassMode::On && exact && units > 1 && !gates.value_thread_range &&
-                       !gates.trusted_reference && !gates.value_dump && !gates.branch_scope &&
-                       !gates.scalar_fold_dump && !gates.exhaustive_search && !gates.continue_search &&
-                       !gates.development_exports && !gates.reference_stdin && plan.precondition.holds &&
-                       !(gates.value_analysis && !gates.scalar_fold);
-  plan.lift_values = gates.value_analysis && gates.scalar_fold && allowed;
+  const std::uint64_t units = exact ? std::uint64_t(unit_grid[0]) * unit_grid[1] * unit_grid[2] : 0;
   // The units of every multi-unit launch with whole-CTA analysis, including
   // the ones class mode keeps off.
   plan.active = exact && units > 1 && !gates.value_thread_range;
-  plan.class_mode = allowed;
+  // Class mode needs a cluster grid that tiles the launch, more than one unit, none of the run
+  // options in UnitGates and precondition (I). Values are lifted through the
+  // scalar fold; without it nothing lifts them.
+  plan.class_mode = plan.active && !gates.trusted_reference && !gates.value_dump &&
+                    !gates.branch_scope && !gates.scalar_fold_dump && !gates.exhaustive_search &&
+                    !gates.continue_search && !gates.development_exports && !gates.reference_stdin &&
+                    plan.precondition.holds && !(gates.value_analysis && !gates.scalar_fold);
+  // Class mode with value analysis implies the scalar fold.
+  plan.lift_values = plan.class_mode && gates.value_analysis;
   if (!plan.active) return plan;
   plan.units.reserve(units);
   const auto &d = plan.unit_shape;
-  for (std::uint32_t z = 0; z < plan.unit_grid[2]; ++z)
-    for (std::uint32_t y = 0; y < plan.unit_grid[1]; ++y)
-      for (std::uint32_t x = 0; x < plan.unit_grid[0]; ++x) {
+  for (std::uint32_t z = 0; z < unit_grid[2]; ++z)
+    for (std::uint32_t y = 0; y < unit_grid[1]; ++y)
+      for (std::uint32_t x = 0; x < unit_grid[0]; ++x) {
         LaunchUnit unit;
         unit.index = static_cast<std::uint32_t>(plan.units.size());
         unit.kappa = {x, y, z};
@@ -283,13 +263,10 @@ StructureKey ComputeStructureKey(const CtaFacts &facts) {
     w.U64(facts.Size(lane));
   }
   const auto tree = facts.TemplatePaths();
-  w.U64(tree.size());
-  for (const auto &node : tree) w.Put(node);
-  w.U64(facts.GroupPaths().size());
-  for (const auto path : facts.GroupPaths()) w.U64(path.value);
+  w.Put(tree);
+  w.Put(facts.GroupPaths());
   const auto groups = facts.TemplateGroups();
-  w.U64(groups.size());
-  for (const auto &group : groups) w.Put(group);
+  w.Put(groups);
   // One metadata sequence per path (a member of its finished group), or per lane on the lane path.
   std::vector<RegId> bound;
   const auto sequence = [&](LaneRef lane, bool prototype) {
@@ -317,9 +294,7 @@ StructureKey ComputeStructureKey(const CtaFacts &facts) {
     w.Put(aggregates.opaque_regions);
     w.Put(aggregates.data_branch_decisions);
   }
-  const auto counts = facts.StaticCounts();
-  w.U64(counts.size());
-  for (const auto count : counts) w.U64(count);
+  w.Put(facts.StaticCounts());
   const auto sites = facts.SharedSitesRelative();
   w.U64(sites.size());
   for (const auto &site : sites) {

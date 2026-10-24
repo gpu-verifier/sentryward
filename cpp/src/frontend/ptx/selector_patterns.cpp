@@ -10,6 +10,11 @@ namespace v=value_ir;namespace a=algorithm;
 using Piece=SelectorPatterns::Piece;using Pieces=std::vector<Piece>;using I=__int128;
 void Check(bool yes){if(!yes)throw std::invalid_argument("thread selector has no supported exact index pattern");}
 I Last(const Piece& p){return p.first+p.step*I(p.threads.count-1);}
+// Pieces hold unsigned representatives: a piece of a signed `element` operand
+// must stay below its sign bit. Always true for other elements.
+bool BelowSignBit(const Piece& p,const v::ElementType& element) {
+  return element.kind()!=v::ElementKind::SignedInteger || std::max(p.first,Last(p))<(I(1)<<(element.width()-1));
+}
 Pieces Coalesce(Pieces pieces) {
   for(auto& piece:pieces)if(piece.threads.count==1)piece.threads.step=1;
   std::sort(pieces.begin(),pieces.end(),[](const Piece& x,const Piece& y) {
@@ -307,14 +312,9 @@ std::vector<SelectorPatterns::Piece> SelectorPatterns::evaluateImpl(v::Value val
     Check(element.isInteger() && instance.operands[1].type(graph_).element()==element);
     auto left=evaluate(instance.operands[0],cta,base,threads,variable,depth+1,cache);
     auto right=evaluate(instance.operands[1],cta,base,threads,variable,depth+1,cache);Pieces result;
-    // Pieces hold unsigned representatives; signed operands must stay below the sign bit.
-    const auto representable=[&](const Piece& part) {
-      return element.kind()!=v::ElementKind::SignedInteger ||
-          std::max(part.first,Last(part))<(I(1)<<(element.width()-1));
-    };
     for(auto l:left)for(auto r:right)if(auto m=a::IntersectAffine(l.threads,r.threads);m.count) {
       auto x=Restrict(l,m.left,m.left_step,m.count),y=Restrict(r,m.right,m.right_step,m.count);
-      Check(representable(x) && representable(y));
+      Check(BelowSignBit(x,element) && BelowSignBit(y,element));
       x.first-=y.first;x.step-=y.step;
       auto parts=Compare(x,compare->predicate());result.insert(result.end(),parts.begin(),parts.end());
     }
@@ -328,9 +328,7 @@ std::vector<SelectorPatterns::Piece> SelectorPatterns::evaluateImpl(v::Value val
     auto x=Restrict(l,m.left,m.left_step,m.count),y=Restrict(r,m.right,m.right_step,m.count);
     Piece out=x;Pieces parts;
     const auto nonnegative_signed=[&](const Piece& part,v::Value operand) {
-      const auto& element=operand.type(graph_).element();
-      return element.kind()!=v::ElementKind::SignedInteger ||
-          std::max(part.first,Last(part))<(I(1)<<(element.width()-1));
+      return BelowSignBit(part,operand.type(graph_).element());
     };
     switch(binary->opcode()) {
       case v::BinaryOpcode::Add:out.first+=y.first;out.step+=y.step;break;

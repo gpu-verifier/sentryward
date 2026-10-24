@@ -129,6 +129,13 @@ class Node final {
     return bool(collective_origins_) && hasUniformThreadTemplate() && !rebind_operands_;
   }
   [[nodiscard]] const ThreadMembers& instanceThreads() const noexcept { return instance_threads_; }
+  // The instance of `thread`: its index in instanceThreads(), or 0 for a node
+  // without members whose prototype origin is that thread; none otherwise.
+  [[nodiscard]] std::optional<std::size_t> memberIndex(std::uint64_t thread) const {
+    auto member = instance_threads_.indexOf(thread);
+    if (instance_threads_.empty() && origin().thread == thread) member = 0;
+    return member;
+  }
   [[nodiscard]] std::optional<ThreadGroupId> groupId() const noexcept { return group_id_; }
   [[nodiscard]] std::size_t resultCount() const noexcept;
   [[nodiscard]] Value result(std::size_t index = 0, std::size_t instance = 0) const;

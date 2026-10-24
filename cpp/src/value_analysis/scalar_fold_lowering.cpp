@@ -38,13 +38,18 @@
 #include <tuple>
 #include <stdexcept>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
 namespace sentryward::value_analysis {
 namespace {
 namespace v = value_ir;
 namespace s = scalar_fold;
+// Compression-audit builds also compute state that only their reports read.
+#if defined(SENTRYWARD_ENABLE_COMPRESSION_AUDIT)
+constexpr bool audit_build=true;
+#else
+constexpr bool audit_build=false;
+#endif
 struct Failure : std::runtime_error {
   std::string code;
   bool literal=false; // the message is a string literal at its fail() site (first-item rule, run.cpp)
@@ -76,6 +81,13 @@ std::int64_t integer(std::uint64_t x){
 template<std::integral T> void appendDecimal(std::string& out,T n) {
   char digits[24];
   out.append(digits,std::to_chars(digits,digits+sizeof digits,n).ptr);
+}
+// The integer std::from_chars reads from the whole of `text`; nullopt when it
+// fails or leaves characters over.
+template<std::integral T> std::optional<T> exactInteger(std::string_view text) {
+  T value{};const auto parsed=std::from_chars(text.data(),text.data()+text.size(),value);
+  if(parsed.ec!=std::errc{} || parsed.ptr!=text.data()+text.size())return std::nullopt;
+  return value;
 }
 // Affine coefficients by binder level, ascending: the std::map interface this
 // file uses (ordered iteration, operator[] inserting 0, find, erase) over a
@@ -346,7 +358,7 @@ std::size_t keySlot(std::size_t hash,std::size_t mask) {
   const auto x=static_cast<std::uint64_t>(hash)*0x9e3779b97f4a7c15ULL;
   return static_cast<std::size_t>(x^(x>>32))&mask;
 }
-// A projection key is its former text, interned once per request: two live
+// A projection key is its text, interned once per request: two live
 // handles have equal IDs exactly when their texts are equal (a probe hit
 // compares the whole text). Handles are counted; an ID is reused only after
 // its last holder (handle, KeySet member or memo entry) is gone. The memoized
@@ -365,15 +377,11 @@ class ProjectionKey {
     return *this;
   }
   ~ProjectionKey();
-  std::uint32_t id()const noexcept;
-  friend bool operator==(const ProjectionKey& a,const ProjectionKey& b) noexcept {
-    const bool same=a.id()==b.id();
-    return same;
-  }
+  std::uint32_t id()const noexcept{return id_;}
+  friend bool operator==(const ProjectionKey& a,const ProjectionKey& b) noexcept {return a.id()==b.id();}
   // Maps keyed by ProjectionKey are ordered by ID; their consumers are order-free.
   friend std::strong_ordering operator<=>(const ProjectionKey& a,const ProjectionKey& b) noexcept {
-    const auto order=a.id()<=>b.id();
-    return order;
+    return a.id()<=>b.id();
   }
  private:
   friend class ProjectionKeys;
@@ -382,7 +390,6 @@ class ProjectionKey {
   ProjectionKeys* keys_=nullptr;
   std::uint32_t id_=none;
 };
-struct ProjectionKeyHash {std::size_t operator()(const ProjectionKey& k)const noexcept{return k.id();}};
 class ProjectionKeys {
  public:
   ProjectionKeys()=default;
@@ -391,9 +398,9 @@ class ProjectionKeys {
   ProjectionKey intern(std::string_view text);
   const std::string& text(const ProjectionKey& k)const{return slot(k.id()).text;}
   const std::string& textOf(std::uint32_t id)const{return slot(id).text;}
-  // Memoized results with the former unordered_map<std::string,s::Ref>
-  // contract: emplace inserts only an absent key; at() throws its exception.
-  s::Ref* find(const ProjectionKey& k);
+  // Memoized results with unordered_map's contract: emplace inserts only an
+  // absent key; at() throws the std::out_of_range unordered_map::at throws.
+  s::Ref* find(const ProjectionKey& k){return findId(k.id());}
   s::Ref& at(const ProjectionKey& k) {
     if(auto* value=find(k))return *value;
     throw std::out_of_range("unordered_map::at");
@@ -404,7 +411,7 @@ class ProjectionKeys {
   // erased position, so positions hold only while no entry is added or erased.
   std::size_t size()const{return cached_.size();}
   s::Ref& valueAt(std::size_t i){return slot(cached_[i]).value;}
-  const s::Ref* findId(std::uint32_t id);
+  s::Ref* findId(std::uint32_t id);
   // Stable compaction: keep(id,value) is called once per entry, in order.
   template<class Keep> void retainIf(Keep&& keep);
  private:
@@ -429,7 +436,6 @@ class ProjectionKeys {
   void grow();
   void index(std::uint32_t tag,std::uint32_t id) noexcept;
   void unindex(std::uint32_t tag,std::uint32_t id) noexcept;
-  ProjectionKey handle(std::uint32_t id,std::string_view text,bool reused);
   // Fixed chunks: slots never move, and growth never copies the records.
   std::vector<std::unique_ptr<Slot[]>> chunks_;
   std::uint32_t used_=0;
@@ -442,15 +448,12 @@ ProjectionKey::ProjectionKey(ProjectionKeys* keys,std::uint32_t id) noexcept:key
 ProjectionKey::ProjectionKey(const ProjectionKey& o) noexcept:keys_(o.keys_),id_(o.id())
 {if(keys_)keys_->retain(id_);}
 ProjectionKey::~ProjectionKey(){if(keys_)keys_->release(id_);}
-std::uint32_t ProjectionKey::id()const noexcept {
-  return id_;
-}
 ProjectionKey ProjectionKeys::intern(std::string_view text) {
   const auto tag=tagOf(std::hash<std::string_view>{}(text));
   if(!index_.empty()) {
     const auto mask=index_.size()-1;
     for(auto i=keySlot(tag,mask);index_[i].id!=ProjectionKey::none;i=(i+1)&mask)
-      if(index_[i].tag==tag && slot(index_[i].id).text==text)return handle(index_[i].id,text,true);
+      if(index_[i].tag==tag && slot(index_[i].id).text==text)return ProjectionKey(this,index_[i].id);
   }
   // Allocate before publishing anything: a throw leaves the table unchanged.
   if(2*(indexed_+1)>index_.size())grow();
@@ -464,11 +467,7 @@ ProjectionKey ProjectionKeys::intern(std::string_view text) {
   auto& s=slot(id);
   s.text.assign(text);  // may throw: the ID stays free
   free_.pop_back();s.tag=tag;s.refs=0;index(tag,id);++indexed_;
-  return handle(id,text,false);
-}
-ProjectionKey ProjectionKeys::handle(std::uint32_t id,[[maybe_unused]] std::string_view text,[[maybe_unused]] bool reused) {
-  ProjectionKey key(this,id);
-  return key;
+  return ProjectionKey(this,id);
 }
 void ProjectionKeys::release(std::uint32_t id) noexcept {
   auto& s=slot(id);
@@ -495,11 +494,7 @@ void ProjectionKeys::unindex(std::uint32_t tag,std::uint32_t id) noexcept {
     if(((j-keySlot(index_[j].tag,mask))&mask)>=((j-i)&mask)){index_[i]=index_[j];i=j;}
   index_[i]={0,ProjectionKey::none};
 }
-s::Ref* ProjectionKeys::find(const ProjectionKey& k) {
-  auto& s=slot(k.id());
-  return s.cache_pos?&s.value:nullptr;
-}
-const s::Ref* ProjectionKeys::findId(std::uint32_t id) {
+s::Ref* ProjectionKeys::findId(std::uint32_t id) {
   auto& s=slot(id);
   return s.cache_pos?&s.value:nullptr;
 }
@@ -556,10 +551,9 @@ class KeySet {
   void insert(const KeySet& other);
   bool contains(const ProjectionKey& k)const;
   bool contains(std::uint32_t id)const;
-  bool erase(const ProjectionKey& k);   // releases an erased member
+  void erase(const ProjectionKey& k);   // releases an erased member
   void clear() noexcept;                // releases every member; keeps the table
   std::size_t size()const{return size_;}
-  bool empty()const{return !size_;}
   template<class F> void forEachId(F&& f)const {
     for(const auto id:ids_)if(id!=ProjectionKey::none)f(id);
   }
@@ -599,24 +593,14 @@ bool KeySet::insertId(ProjectionKeys* keys,std::uint32_t id) {
     if(ids_[i]==ProjectionKey::none){ids_[i]=id;++size_;keys_=keys;keys->retain(id);return true;}
   }
 }
-bool KeySet::insert(const ProjectionKey& k) {
-  const bool inserted=insertId(k.keys_,k.id());
-  return inserted;
-}
+bool KeySet::insert(const ProjectionKey& k) {return insertId(k.keys_,k.id());}
 void KeySet::insert(const KeySet& other) {
   for(const auto id:other.ids_)if(id!=ProjectionKey::none)insertId(other.keys_,id);
 }
-bool KeySet::contains(const ProjectionKey& k)const {
-  const bool found=find(k.id());
-  return found;
-}
-bool KeySet::contains(std::uint32_t id)const {
-  const bool found=find(id);
-  return found;
-}
-bool KeySet::erase(const ProjectionKey& k) {
+bool KeySet::contains(const ProjectionKey& k)const {return find(k.id());}
+bool KeySet::contains(std::uint32_t id)const {return find(id);}
+void KeySet::erase(const ProjectionKey& k) {
   const auto id=k.id();
-  bool erased=false;
   if(size_) {
     const auto mask=ids_.size()-1;
     auto i=keySlot(id,mask);
@@ -625,10 +609,9 @@ bool KeySet::erase(const ProjectionKey& k) {
       // Backward-shift deletion: every remaining probe chain stays unbroken.
       for(auto j=(i+1)&mask;ids_[j]!=ProjectionKey::none;j=(j+1)&mask)
         if(((j-keySlot(ids_[j],mask))&mask)>=((j-i)&mask)){ids_[i]=ids_[j];i=j;}
-      ids_[i]=ProjectionKey::none;--size_;keys_->release(id);erased=true;
+      ids_[i]=ProjectionKey::none;--size_;keys_->release(id);
     }
   }
-  return erased;
 }
 void KeySet::clear() noexcept {
   if(!size_)return;
@@ -691,7 +674,6 @@ class Lower {
   // Interned projection keys with their memoized results. Declared before
   // every key holder below, so it is destroyed after all of them.
   ProjectionKeys keys;
-  std::unordered_map<ProjectionKey,std::pair<Failure,std::optional<MemoryInstance>>,ProjectionKeyHash> failed_projections;
   struct ViewInterval {
     std::uint64_t begin,end,prefix_end;
     std::size_t block;
@@ -1037,7 +1019,7 @@ class Lower {
     // Initialization may itself request a child. Publish the frame only after
     // its initial accumulator has actually been constructed.
     auto initial=initialize();
-    // The accumulator key is the former text "$reduction:"+key, interned.
+    // The accumulator key is the text "$reduction:"+key, interned.
     auto [found,inserted]=reduction_progress.emplace(key,
         ReductionProgress{0,keys.intern("$reduction:"+keys.text(key)),{}});
     if(!inserted)throw std::logic_error("duplicate reduction continuation");
@@ -1395,15 +1377,16 @@ class Lower {
   [[noreturn]] void liftRefuse(std::string message) {
     fail("scalar_fold_unit_parameter_unsupported",std::move(message));
   }
-  bool liftedCoordinate(const v::Operation& op) const {
-    if(!options.unit_lifting)return false;
+  // `op` as the BlockIndex coordinate it is in lifting mode; else null.
+  const v::CoordinateOp* liftedCoordinate(const v::Operation& op) const {
+    if(!options.unit_lifting)return nullptr;
     const auto* coordinate=dynamic_cast<const v::CoordinateOp*>(&op);
-    return coordinate && coordinate->kind()==v::CoordinateKind::BlockIndex;
+    return coordinate && coordinate->kind()==v::CoordinateKind::BlockIndex?coordinate:nullptr;
   }
   // The unit parameter of a BlockIndex value: `coordinate` is its CTA's ctaid
   // on `axis`, so the name carries the CTA's offset from its unit's origin
-  // (its %cluster_ctaid). Instantiation substitutes today's literal, of the
-  // type today's site uses.
+  // (its %cluster_ctaid). Instantiation substitutes the literal the unlifted
+  // lowering emits, of the type its site uses.
   s::Ref unitCoordinate(v::Axis axis,std::uint64_t coordinate,std::string type) {
     const auto a=static_cast<unsigned>(axis);
     const auto shape=options.unit_lifting->unit_shape.at(a);
@@ -1412,14 +1395,16 @@ class Lower {
     return result.graph.parameter(std::move(type),UnitCoordinateParameter(a,coordinate%shape));
   }
   // An indexed binding whose leaf is BlockIndex maps every position to that
-  // leaf's own coordinate (stride 0): today one u64 literal.
-  bool liftedBindingCoordinate(const IndexedValueBinding& binding,const Offset& position) {
-    if(!options.unit_lifting || !liftedCoordinate(input.definingNode(binding.leaf).operation()))return false;
+  // leaf's own coordinate (stride 0): without lifting, one u64 literal.
+  // Returns the leaf's BlockIndex operation when the binding is lifted; else null.
+  const v::CoordinateOp* liftedBindingCoordinate(const IndexedValueBinding& binding,const Offset& position) {
+    const auto* lifted=options.unit_lifting?liftedCoordinate(input.definingNode(binding.leaf).operation()):nullptr;
+    if(!lifted)return nullptr;
     const auto coordinate=input.instanceOrigin(binding.leaf).coordinate_value;
     if(position.expression || !position.terms.empty() || !coordinate || position.base<0 ||
        std::uint64_t(position.base)!=*coordinate)
       liftRefuse("BlockIndex binding is not its leaf's coordinate");
-    return true;
+    return lifted;
   }
   // The InitialCell sites, classified for δ (every InitialCell of the lowering
   // is built through one of these two). Representative-absolute: the offset
@@ -1454,12 +1439,14 @@ class Lower {
   // Class mode: an output built from the records [begin, end) of
   // memory.outputs (those flagged in `members`, when given) belongs to one
   // unit only if every record's store does; otherwise its unit is unknown
-  // and lifting refuses at instantiation. O(end - begin), class mode only.
+  // and lifting refuses at instantiation. Callers bound `end` by
+  // memory.outputs.size(), and `members` has one flag per record.
+  // O(end - begin), class mode only.
   void includeRecordUnits(std::size_t begin,std::size_t end,const std::vector<bool>* members=nullptr) {
-    if(!options.unit_lifting || !options.unit_lifting->classes || !output_cta.writer)return;
+    if(!options.unit_lifting || !output_cta.writer)return;
     const auto unit=unitOrigin(*output_cta.writer);
-    for(auto k=begin;k<end && k<memory.outputs.size();++k) {
-      if(members && (k>=members->size() || !(*members)[k]))continue;
+    for(auto k=begin;k<end;++k) {
+      if(members && !(*members)[k])continue;
       const auto& writer=memory.outputs[k].writer;
       const auto cta=input.node(writer.node).instanceOrigin(writer.instance).cta_coordinates;
       if(!cta || unitOrigin(*cta)!=unit){output_cta.writer.reset();return;}
@@ -1513,9 +1500,9 @@ class Lower {
     if(!fields)liftRefuse("unparsed pointer provenance");
     const auto cta=std::string_view(use.pointer_provenance).substr(fields->cta_begin,fields->cta_end-fields->cta_begin);
     if(unit.ctas && cta!="none") {
-      std::uint64_t id=0;const auto parsed=std::from_chars(cta.data(),cta.data()+cta.size(),id);
-      if(parsed.ec!=std::errc{} || parsed.ptr!=cta.data()+cta.size())liftRefuse("unparsed provenance CTA");
-      const auto renamed=unit.ctas->find(id);
+      const auto id=exactInteger<std::uint64_t>(cta);
+      if(!id)liftRefuse("unparsed provenance CTA");
+      const auto renamed=unit.ctas->find(*id);
       if(renamed==unit.ctas->end())liftRefuse("provenance CTA outside the unit");
       use.pointer_provenance.replace(fields->cta_begin,cta.size(),std::to_string(renamed->second));
     }
@@ -1525,10 +1512,10 @@ class Lower {
       // allocation name (semantic_program.cpp AllocationIdentity).
       const auto delta=deltaOf(unit,std::to_string(fields->addressing.size())+':'+std::string(fields->addressing)+
           std::to_string(fields->identity.size())+':'+std::string(fields->identity));
-      std::int64_t value=0;const auto parsed=std::from_chars(node.name.data(),node.name.data()+node.name.size(),value);
-      if(parsed.ec!=std::errc{} || parsed.ptr!=node.name.data()+node.name.size())liftRefuse("unparsed slot constant");
+      const auto value=exactInteger<std::int64_t>(node.name);
+      if(!value)liftRefuse("unparsed slot constant");
       if(delta) {
-        auto moved=result.graph.constant(node.type,std::to_string(add(value,delta)));
+        auto moved=result.graph.constant(node.type,std::to_string(add(*value,delta)));
         moved.conversion=use.conversion;moved.converted_type=use.converted_type;
         moved.pointer_provenance=use.pointer_provenance;use=moved;
       }
@@ -1548,9 +1535,7 @@ class Lower {
     const auto node=result.graph.node(offset);
     const auto literal=[&](const s::Node& n)->std::optional<std::int64_t> {
       if(n.kind!=s::Kind::Constant || n.type!="u64")return std::nullopt;
-      std::int64_t value=0;const auto parsed=std::from_chars(n.name.data(),n.name.data()+n.name.size(),value);
-      if(parsed.ec!=std::errc{} || parsed.ptr!=n.name.data()+n.name.size())return std::nullopt;
-      return value;
+      return exactInteger<std::int64_t>(n.name);
     };
     const auto plain=[](const s::Ref& r){return r.conversion.empty() && r.converted_type.empty() && r.pointer_provenance.empty();};
     if(const auto value=literal(node))return result.graph.constant("u64",std::to_string(add(*value,delta)));
@@ -1575,7 +1560,7 @@ class Lower {
   // in `depends` (one ascending pass: node IDs are topological) are rebuilt,
   // bottom-up through emitOperation, the lowering's own constant-folding path;
   // `memo` shares them within the unit and hash-consing shares everything
-  // else. A rebuild that today's construction would not have produced the
+  // else. A rebuild that the unlifted construction would not produce the
   // same way refuses: a real-valued operation or a Fold over a unit parameter
   // (built by the real-expression and reduction builders, whose decisions read
   // literal operands). δ alone moves cells, never decisions, so a Fold over
@@ -1585,7 +1570,7 @@ class Lower {
     // A use's decorations apply on top of the rebuilt node, as graph.convert
     // and withPointer applied them to the parametric node. A folded Select
     // stands for its selected operand, which may carry its own conversion; a
-    // use converting it again is not rebuilt (today's convert would compose).
+    // use converting it again is not rebuilt (the unlifted convert would compose).
     const auto rebuilt=[&](const s::Ref& old) {
       if(!depends[old.node])return instantiateUse(old,unit);
       auto value=memo.at(old.node);
@@ -1616,10 +1601,9 @@ class Lower {
           const auto axis=std::string_view("xyz").find(name.at(kUnitCoordinatePrefix.size()));
           std::uint64_t offset=0;
           if(name.size()>kUnitCoordinatePrefix.size()+1) {
-            const auto digits=name.substr(kUnitCoordinatePrefix.size()+2);
-            const auto parsed=std::from_chars(digits.data(),digits.data()+digits.size(),offset);
-            if(name[kUnitCoordinatePrefix.size()+1]!='+' || parsed.ec!=std::errc{} ||
-               parsed.ptr!=digits.data()+digits.size())liftRefuse("malformed unit parameter "+node.name);
+            const auto digits=exactInteger<std::uint64_t>(name.substr(kUnitCoordinatePrefix.size()+2));
+            if(name[kUnitCoordinatePrefix.size()+1]!='+' || !digits)liftRefuse("malformed unit parameter "+node.name);
+            offset=*digits;
           }
           if(axis>2)liftRefuse("malformed unit parameter "+node.name);
           value=result.graph.constant(node.type,std::to_string(unit.origin[axis]+offset));
@@ -1692,15 +1676,11 @@ class Lower {
     }
     return marks;
   }
-  // Instantiate every pending output (class mode: instantiateClasses). Lifting
-  // without the class tables has no instantiation (the per-unit singleton
-  // gate mode that used it was removed): it refuses, so the launch re-runs
-  // per unit.
+  // Instantiate every pending output (instantiateClasses).
   void instantiatePending() {
     if(!options.unit_lifting)return;
     if(instantiated_end>=result.outputs.size()){output_ctas.clear();return;}
-    if(options.unit_lifting->classes){instantiateClasses();return;}
-    liftRefuse("unit lifting without class tables");
+    instantiateClasses();
   }
   // Class mode: every pending output is a
   // representative's. For each member of its class (unit order) a copy is
@@ -1759,7 +1739,6 @@ class Lower {
            __builtin_mul_overflow(std::int64_t(domain->shape[axis]-1),std::int64_t(domain->strides[axis]),&step) ||
            __builtin_add_overflow(last,step,&last))refuse();
       }
-      end=std::max(end,last);
     }
     return static_cast<std::uint64_t>(begin);
   }
@@ -1866,8 +1845,7 @@ class Lower {
     const auto& n=input.definingNode(value);
     const auto cta=input.instanceOrigin(value).cta;
     if(n.origin().cta==cta) {
-      auto j=n.instanceThreads().indexOf(static_cast<std::uint64_t>(*thread));
-      if(n.instanceThreads().empty() && n.origin().thread==std::optional<std::uint64_t>(*thread))j=0;
+      const auto j=n.memberIndex(static_cast<std::uint64_t>(*thread));
       if(j) {
         auto result=n.result(value.resultIndex(),*j);
         // A ThreadForward instance is that source thread's own value.
@@ -3379,7 +3357,7 @@ class Lower {
         auto offsets=spatialOffsets(values);
         if(lift) {
           // BlockIndex is constant across one CTA's members: the parameter plus
-          // the zero-stride spatial offset (today: one u64 literal, converted).
+          // the zero-stride spatial offset (without lifting: one u64 literal, converted).
           if(offsets.expression || !offsets.terms.empty())liftRefuse("spatial BlockIndex members differ");
           return result.graph.convert(unitCoordinate(coordinate_op->axis(),values.front(),"u64"),
               type.element().toString(),"Convert");
@@ -3537,10 +3515,10 @@ class Lower {
       if(bounds(offset)!=std::pair<std::int64_t,std::int64_t>{0,0} ||
           desired.width()!=input.type(value).element().width())
         fail("scalar_fold_invalid_index","coordinate projection requires the full scalar");
-      if(liftedCoordinate(op)) {
-        // One CTA's BlockIndex members are equal (stride 0): today one u64 literal.
+      if(const auto* lifted=liftedCoordinate(op)) {
+        // One CTA's BlockIndex members are equal (stride 0): without lifting, one u64 literal.
         if(segment->stride)liftRefuse("BlockIndex member domain is not constant");
-        return result.graph.convert(unitCoordinate(dynamic_cast<const v::CoordinateOp&>(op).axis(),
+        return result.graph.convert(unitCoordinate(lifted->axis(),
             coordinates.at(segment->begin),"u64"),desired.toString(),"Convert");
       }
       return result.graph.convert(offsetValue(plus(Offset(integer(coordinates.at(segment->begin))),
@@ -3861,9 +3839,9 @@ class Lower {
               [&]{return project(*binding.producer,plus(position,offset),field);});
           return binding.numerical_field?result.graph.convert(r,desired.toString(),"NumericInterpretation"):r;
         }
-        auto scalar=liftedBindingCoordinate(binding,position)?
-            result.graph.convert(unitCoordinate(dynamic_cast<const v::CoordinateOp&>(
-                input.definingNode(binding.leaf).operation()).axis(),std::uint64_t(position.base),"u64"),
+        const auto* lifted=liftedBindingCoordinate(binding,position);
+        auto scalar=lifted?
+            result.graph.convert(unitCoordinate(lifted->axis(),std::uint64_t(position.base),"u64"),
                 t.element().toString(),"Convert"):
             result.graph.convert(offsetValue(position),t.element().toString(),"Convert");
         if(binding.power_of_two) {
@@ -4102,10 +4080,6 @@ class Lower {
       if(shared_view)++result.shared_view_projection_hits;
       return *hit;
     }
-    const auto failed=failed_projections.find(key);
-    if(failed!=failed_projections.end()) {
-      current=failed->second.second;throw failed->second.first;
-    }
     // `value` is not read below; the request owns it.
     Projection request{std::move(value),std::move(offset),type,domains,key};
     request.indexed=indexed_context;
@@ -4139,8 +4113,8 @@ class Lower {
           --owner.projection_depth;--owner.inline_projection_depth;
           owner.visiting.erase(request.key);owner.domains=std::move(saved_domains);
           if(completed)owner.current=saved_current;
-          // After this frame's cleanup and before request's own destructor:
-          // the order and contents a per-level catch/rethrow produced.
+          // After this frame's cleanup and before request's own destructor;
+          // unwinding records the inline frames innermost first.
           else if(owner.suspending)owner.suspended_projections.push_back(std::move(request));
         }
       } frame{*this,request,domains,current};
@@ -4235,11 +4209,6 @@ class Lower {
             enqueue(std::move(*i));
           suspended_projections.clear();
           enqueue(std::move(child));
-        } catch(const Failure& error) {
-          if(error.code!="scalar_fold_non_affine_projection")throw;
-          failed_projections.insert_or_assign(task.key,std::make_pair(error,current));
-          visiting.erase(task.key);work.pop_back();requested=nullptr;
-          if(work.empty())throw;
         }
       }
       domains=outer_domains;
@@ -4290,10 +4259,7 @@ class Lower {
     // the dependency set holds: build it only under pressure (audit builds
     // also report its size).
     KeySet needed;
-#if !defined(SENTRYWARD_ENABLE_COMPRESSION_AUDIT)
-    if(!headroom)
-#endif
-    {
+    if(!headroom || audit_build) {
       needed.insert(root);
       for(const auto& task:work)needed.insert(task.dependencies);
       for(const auto& [key,progress]:reduction_progress) {
@@ -4314,7 +4280,7 @@ class Lower {
       while(!pending.empty()) {
         const auto id=pending.back();pending.pop_back();
         if(isLive(id))continue;
-        const auto& node=result.graph.node(id);  // an invalid ID throws here, as before
+        const auto& node=result.graph.node(id);  // an invalid ID throws here
         live[id]=1;++live_count;
         for(const auto& child:node.operands)pending.push_back(child.node);
       }
@@ -4385,7 +4351,7 @@ class Lower {
     SENTRYWARD_AUDIT(audit->add(AuditCounter::gc_calls);
       audit->add(AuditCounter::gc_input_nodes,result.graph.size());
       audit->event("CACHE_COLLECTION","completed_output_weak_projections",keys.size(),result.outputs.size()));
-    // Lifting: completed outputs are consolidated as today, so instantiate them first.
+    // Lifting: consolidation takes instantiated outputs, so instantiate them first.
     instantiatePending();
     std::vector<s::Ref> roots;
     for(const auto& out:result.outputs)roots.push_back(out.value);
@@ -4402,7 +4368,6 @@ class Lower {
       if(reductions.hasMatchingState(value))weak_cache.emplace_back(std::nullopt);
       else weak_cache.emplace_back(value.node);
     }
-    failed_projections.clear();
     result.nodes_reclaimed+=real_expressions.collect(roots, {}, weak_cache);
     for(std::size_t i=0;i<roots.size();++i)result.outputs[i].value=roots[i];
     if(!output_domains.empty()) {
@@ -5055,7 +5020,7 @@ class Lower {
             collectCompletedOutputs();
         }
       }
-      // Lifting: every body for its unit, then today's tail.
+      // Lifting: every body for its unit, then the output tail the unlifted lowering runs.
       stop.phase='f';
       instantiatePending();
       if(output_domains.empty())coalesceFragments(result.graph,result.outputs);
@@ -5101,24 +5066,22 @@ class Lower {
       const auto delta=[&](UnitSite site){return sites[std::size_t(site)]-sites_at_start[std::size_t(site)];};
       result.lifting.declined=delta(UnitSite::FoldKnown)+delta(UnitSite::FoldSpecialization)+
           delta(UnitSite::FoldTemplateLeaf);
-      // A lowering that never met a BlockIndex value ran exactly today's
-      // course, so its failure is today's. Otherwise the failure may be the
-      // lifting's own (an unknown coordinate): refuse, and the driver restarts
-      // per unit.
+      // A lowering that never met a BlockIndex value ran exactly the unlifted
+      // lowering's course, so its failure is the unlifted lowering's. Otherwise
+      // the failure may be the lifting's own (an unknown coordinate): refuse,
+      // and the driver restarts per unit.
       if(result.diagnostic && (result.diagnostic->code=="scalar_fold_unit_parameter_unsupported" ||
                                result.lifting.parameters || result.lifting.declined))
-        result.lifting.refused=result.diagnostic;
+        result.lifting.refused=true;
       // Class mode: the bodies also stand for members that were never
       // analysed, so any failure may be one the members' own lowering would
       // report differently (or not at all), and a BlockIndex value read
       // numerically by any instance in the fold baked the representative's
       // coordinate into a body: refuse.
-      if(options.unit_lifting->classes && !result.lifting.refused) {
+      if(!result.lifting.refused) {
         const auto numeric=delta(UnitSite::ValueSpecialization)+delta(UnitSite::ValueTemplateLeaf)+
             delta(UnitSite::FoldBindingKnown);
-        if(result.diagnostic)result.lifting.refused=result.diagnostic;
-        else if(numeric)result.lifting.refused=ScalarFoldDiagnostic{"scalar_fold_unit_parameter_unsupported",
-            std::to_string(numeric)+" BlockIndex reads answered numerically during the fold",std::nullopt};
+        if(result.diagnostic || numeric)result.lifting.refused=true;
       }
     }
     if(sentryward::debug::environment("SENTRYWARD_SCALAR_NODE_HISTOGRAM")) {

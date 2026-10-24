@@ -8,6 +8,7 @@
 #include <limits>
 #include <optional>
 #include <stdexcept>
+#include <type_traits>
 
 namespace sentryward::scalar_fold {
 namespace {
@@ -370,7 +371,7 @@ std::size_t ReductionBuilder::collect(std::span<Ref> live_roots,
   while(!work.empty()) {
     const auto id=work.back();work.pop_back();
     if(isLive(id))continue;
-    const auto& node=graph_.node(id);live[id]=1;  // an invalid ID throws here, as before
+    const auto& node=graph_.node(id);live[id]=1;  // an invalid ID throws here
     for(const auto& child:node.operands)work.push_back(child.node);
   }
   // Live matcher entries leave their tables as node handles, in iteration
@@ -393,27 +394,32 @@ std::size_t ReductionBuilder::collect(std::span<Ref> live_roots,
   std::vector<decltype(pending_)::node_type> pending;
   std::vector<decltype(blocks_)::node_type> blocks;
   extractLive(runs_,runs);extractLive(pending_,pending);extractLive(blocks_,blocks);
-  auto count=live_roots.size()+5*runs.size()+3*pending.size();
-  for(const auto& e:blocks) {
-    const auto& b=e.mapped();
-    count+=2+(b.count?1:0)+b.terms.size()+b.prefixes.size()+b.first.size()+b.second.size();
-  }
+  // Every Ref of an extracted entry, in one fixed order per table kind.
+  // Counting, flattening into roots and restoring all walk this order, so
+  // each Ref returns from its own root position.
+  const auto forEachRef=[](auto& e,auto&& f) {
+    auto& v=e.mapped();
+    using Value=std::remove_reference_t<decltype(v)>;
+    f(e.key());f(v.initial);
+    if constexpr(std::is_same_v<Value,Run>){f(v.first);f(v.second);f(v.body);}
+    else if constexpr(std::is_same_v<Value,Pending>)f(v.first);
+    else {
+      static_assert(std::is_same_v<Value,Block>);
+      if(v.count)f(v.body);
+      for(auto* values:{&v.terms,&v.prefixes,&v.first,&v.second})
+        for(auto& value:*values)f(value);
+    }
+  };
+  const auto forEachEntryRef=[&](auto&& f) {
+    for(auto& e:runs)forEachRef(e,f);
+    for(auto& e:pending)forEachRef(e,f);
+    for(auto& e:blocks)forEachRef(e,f);
+  };
+  auto count=live_roots.size();
+  forEachEntryRef([&](Ref&){++count;});
   std::vector<Ref> roots;roots.reserve(count);
   for(auto& r:live_roots)roots.push_back(std::move(r));
-  for(auto& e:runs) {
-    auto& r=e.mapped();
-    for(Ref* x:{&e.key(),&r.initial,&r.first,&r.second,&r.body})roots.push_back(std::move(*x));
-  }
-  for(auto& e:pending) {
-    auto& p=e.mapped();
-    for(Ref* x:{&e.key(),&p.initial,&p.first})roots.push_back(std::move(*x));
-  }
-  for(auto& e:blocks) {
-    auto& b=e.mapped();roots.push_back(std::move(e.key()));roots.push_back(std::move(b.initial));
-    if(b.count)roots.push_back(std::move(b.body));
-    for(auto* values:{&b.terms,&b.prefixes,&b.first,&b.second})
-      for(auto& value:*values)roots.push_back(std::move(value));
-  }
+  forEachEntryRef([&](Ref& x){roots.push_back(std::move(x));});
   const auto removed=graph_.collect(roots,weak_nodes,
       [&](std::span<const Id> remap,std::uint64_t owner) {
         // These caches describe immutable nodes, not a scheduling epoch.
@@ -445,26 +451,14 @@ std::size_t ReductionBuilder::collect(std::span<Ref> live_roots,
   parameter_roots_.clear();parameter_keys_.clear();parameter_trees_={{std::nullopt,{}}};
   std::size_t position=0;
   for(auto& r:live_roots)r=std::move(roots[position++]);
-  // Same keys reinserted in the same order into tables whose bucket count
-  // clear() kept: the layout emplace produced, reusing the survivors' nodes.
+  // The same keys go back in the same order into tables whose bucket count
+  // clear() keeps, so each table's layout matches emplacing those entries;
+  // the survivors' nodes are reused.
   runs_.clear();pending_.clear();
-  for(auto& e:runs) {
-    auto& r=e.mapped();
-    for(Ref* x:{&e.key(),&r.initial,&r.first,&r.second,&r.body})*x=std::move(roots[position++]);
-    runs_.insert(std::move(e));
-  }
-  for(auto& e:pending) {
-    auto& p=e.mapped();
-    for(Ref* x:{&e.key(),&p.initial,&p.first})*x=std::move(roots[position++]);
-    pending_.insert(std::move(e));
-  }
-  for(auto& e:blocks) {
-    auto& b=e.mapped();e.key()=std::move(roots[position++]);b.initial=std::move(roots[position++]);
-    if(b.count)b.body=std::move(roots[position++]);
-    for(auto* values:{&b.terms,&b.prefixes,&b.first,&b.second})
-      for(auto& value:*values)value=std::move(roots[position++]);
-    blocks_.insert(std::move(e));
-  }
+  const auto restore=[&](Ref& x){x=std::move(roots[position++]);};
+  for(auto& e:runs){forEachRef(e,restore);runs_.insert(std::move(e));}
+  for(auto& e:pending){forEachRef(e,restore);pending_.insert(std::move(e));}
+  for(auto& e:blocks){forEachRef(e,restore);blocks_.insert(std::move(e));}
   stats_.reclaimed+=removed;
   return removed;
 }

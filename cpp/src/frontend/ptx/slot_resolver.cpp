@@ -9,18 +9,19 @@ namespace sentryward::frontend::ptx {
 
 using Json = nlohmann::json;
 namespace {
+// `n` as int64, or nothing when it does not fit.
+std::optional<std::int64_t> Int64(const Integer &n) {
+  if (n < INT64_MIN || n > INT64_MAX) return std::nullopt;
+  return n.convert_to<std::int64_t>();
+}
 // The offset of a bounded pointer (tensor_properties), or nothing when a value
 // does not fit int64.
 std::optional<AbstractAffine> AffineOffset(const AffineForm &form, const Integer &displacement) {
-  const auto number = [](const Integer &n) -> std::optional<std::int64_t> {
-    if (n < INT64_MIN || n > INT64_MAX) return std::nullopt;
-    return n.convert_to<std::int64_t>();
-  };
-  const auto constant = number(form.constant + displacement);
+  const auto constant = Int64(form.constant + displacement);
   if (!constant) return std::nullopt;
   AbstractAffine result{*constant, {}};
   for (const auto &[atom, coefficient] : form.terms) {
-    const auto factor = number(coefficient), offset = number(atom.byte_offset);
+    const auto factor = Int64(coefficient), offset = Int64(atom.byte_offset);
     if (!factor || !offset) return std::nullopt;
     result.terms.push_back({atom.object, atom.element_type, *offset, *factor});
   }
@@ -68,8 +69,7 @@ SlotOutcome<ResolvedFootprint> SlotResolver::Memory(const RecordView &e, const M
   // A successful resolution keeps its prefix (the fallback's base binding).
   if (!prefix.empty()) outcome.prefix = std::move(prefix);
   if (core_.facts.recording()) [[unlikely]] {
-    const SlotQuery slot_query{{config_.consumer, core_.id_}, e, &request, nullptr, bool(config_.bridge),
-                               core_.active_lane_};
+    const SlotQuery slot_query{{config_.consumer, core_.id_}, e, &request, nullptr, core_.active_lane_};
     core_.facts.Note(query::SlotMemory{&slot_query, &outcome});
   }
   return outcome;
@@ -84,8 +84,7 @@ SlotOutcome<ResolvedTma> SlotResolver::Tma(const RecordView &e, const TmaRequest
     return SlotTerminal<ResolvedTma>(std::move(resolved));
   });
   if (core_.facts.recording()) [[unlikely]] {
-    const SlotQuery slot_query{{config_.consumer, core_.id_}, e, nullptr, &request, bool(config_.bridge),
-                               core_.active_lane_};
+    const SlotQuery slot_query{{config_.consumer, core_.id_}, e, nullptr, &request, core_.active_lane_};
     core_.facts.Note(query::SlotTma{&slot_query, &outcome});
   }
   return outcome;
@@ -165,6 +164,16 @@ ConstantStep SlotResolver::MemoryResource(std::string id, std::uint64_t offset,
   memory_resources_.emplace(std::move(id),MemoryResourceInfo{space,std::move(object),base,extent});
   return result;
 }
+std::optional<Json> SlotResolver::ExtractAddress(const RecordView &e, std::string_view operand) {
+  if (!address_values_) address_values_ = std::make_unique<AddressValueExtractor>(core_.facts, core_.frame);
+  return address_values_->Extract(*core_.active_lane_, e, operand, [this](LaneRef lane, DynamicKey key) {
+    const auto previous = core_.active_lane_;
+    core_.SetLane(lane);
+    const auto result = core_.Definition(key, true);
+    core_.SetLane(*previous);
+    return result;
+  });
+}
 SlotTerminal<ResolvedFootprint> SlotResolver::MemoryBody(const RecordView &e, const MemoryRequest &request,
                                                          std::vector<SlotStep> &prefix, FallbackUse &fallback) {
   const auto &facts = core_.facts;
@@ -203,12 +212,11 @@ SlotTerminal<ResolvedFootprint> SlotResolver::MemoryBody(const RecordView &e, co
       }
   auto region = contract.value("region", Json::object());
   std::string id = contract.value("resource", "");
-  // The step's own space (SpaceOf), not the table: the binding interned for
+  // The step's own space (its key's), not the table: the binding interned for
   // it has that space (E2). A mismatch leaves the step interned.
   auto checked = [&](ConstantStep &&step, std::uint64_t size) {
-    const auto got = SpaceOf(step.key);
     auto want = space == "cluster_shared" ? "shared" : space;
-    if (!space.empty() && space != "generic" && got != want) {
+    if (!space.empty() && space != "generic" && step.key.space != want) {
       prefix.push_back({std::move(step)});
       throw SemanticError("memory_space_mismatch",
                           "resource space disagrees with instruction");
@@ -323,16 +331,8 @@ SlotTerminal<ResolvedFootprint> SlotResolver::MemoryBody(const RecordView &e, co
       fallback = FallbackUse::Bridge;
       value_expression = config_.bridge(*core_.active_lane_, e, text);
     } else {
-    fallback = FallbackUse::Extractor;
-    if (!address_values_) address_values_ = std::make_unique<AddressValueExtractor>(facts, frame);
-    value_expression = address_values_->Extract(*core_.active_lane_, e, text,
-        [this](LaneRef lane, DynamicKey key) {
-          const auto previous = core_.active_lane_;
-          core_.SetLane(lane);
-          const auto result = core_.Definition(key, true);
-          core_.SetLane(*previous);
-          return result;
-        });
+      fallback = FallbackUse::Extractor;
+      value_expression = ExtractAddress(e, text);
     }
     if (value_expression && value_expression->contains("allocation") && space == "global") {
       const auto resource = value_expression->at("allocation").get<std::string>();
@@ -343,7 +343,8 @@ SlotTerminal<ResolvedFootprint> SlotResolver::MemoryBody(const RecordView &e, co
       const auto binding_offset = placement.offset;
       prefix.push_back({std::move(placement)});
       if (binding_offset == 0) {
-        // Abstract over the base binding's formatted strings (the former re-Bind quirk).
+        // Abstract over the base binding's formatted strings: the step binds the
+        // formatted space and allocation name again, as a resource at offset 0.
         const auto &offset = value_expression->at("offset");
         auto step = core_.BindStep(binding.space, binding.allocation, 0, bytes, {});
         const auto stored = frame.Format(step.key);
@@ -463,24 +464,24 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
   const auto store = request.store;
   const auto &i = facts.function().instructions[e.instruction_id()];
   const auto ops = OperandTexts(facts.module(), i);
-  std::set<std::string> allowed{"async",
-                                "bulk",
-                                "tensor",
-                                "1d",
-                                "2d",
-                                "3d",
-                                "4d",
-                                "5d",
-                                "tile",
-                                "shared::cta",
-                                "shared::cluster",
-                                "global",
-                                "bulk_group",
-                                "mbarrier::complete_tx::bytes",
-                                "cta_group::1",
-                                "cta_group::2",
-                                "multicast::cluster",
-                                "L2::cache_hint"};
+  static const std::set<std::string> allowed{"async",
+                                             "bulk",
+                                             "tensor",
+                                             "1d",
+                                             "2d",
+                                             "3d",
+                                             "4d",
+                                             "5d",
+                                             "tile",
+                                             "shared::cta",
+                                             "shared::cluster",
+                                             "global",
+                                             "bulk_group",
+                                             "mbarrier::complete_tx::bytes",
+                                             "cta_group::1",
+                                             "cta_group::2",
+                                             "multicast::cluster",
+                                             "L2::cache_hint"};
   std::set<std::string> seen;
   std::vector<std::string> spaces;
   std::uint32_t rank = 0, ranks = 0;
@@ -556,12 +557,7 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
     if (!core_.active_lane_) throw SemanticError("active_thread_context_missing", "TMA coordinate has no thread");
     // Every extractor call precedes every step (E3).
     fallback = FallbackUse::Extractor;
-    if (!address_values_) address_values_ = std::make_unique<AddressValueExtractor>(facts, frame);
-    auto expression = address_values_->Extract(*core_.active_lane_, e, "[" + token + "]",
-        [this](LaneRef lane, DynamicKey key) {
-          const auto previous = core_.active_lane_; core_.SetLane(lane);
-          const auto result = core_.Definition(key, true); core_.SetLane(*previous); return result;
-        });
+    auto expression = ExtractAddress(e, "[" + token + "]");
     // If extraction is unavailable, a fresh occurrence-scoped atom is a sound
     // relaxation. Never conflate independent threads or repeated dynamic reads.
     // Coordinates interpret register bits as signed s32. Keep that identity
@@ -649,13 +645,13 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
         if (!affine_coordinates[dim]) { constant += Integer(origins[dim]) * stride; continue; }
         constant += Integer(affine_coordinates[dim]->constant) * stride;
         for (const auto &term : affine_coordinates[dim]->terms) {
-          const Integer coefficient = Integer(term.coefficient) * stride;
-          if (coefficient < INT64_MIN || coefficient > INT64_MAX) { exact = false; break; }
-          terms.push_back({term.object, term.element_type, term.offset, coefficient.convert_to<std::int64_t>()});
+          const auto coefficient = Int64(Integer(term.coefficient) * stride);
+          if (!coefficient) { exact = false; break; }
+          terms.push_back({term.object, term.element_type, term.offset, *coefficient});
         }
       }
-      if (exact && constant >= INT64_MIN && constant <= INT64_MAX)
-        result.region_affine = AbstractAffine{constant.convert_to<std::int64_t>(), std::move(terms)};
+      if (const auto fitted = exact ? Int64(constant) : std::nullopt)
+        result.region_affine = AbstractAffine{*fitted, std::move(terms)};
     }
   }
   result.pairs.reserve(mapping.segments.size());

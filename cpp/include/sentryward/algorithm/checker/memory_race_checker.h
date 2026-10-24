@@ -62,7 +62,7 @@ struct MemoryRaceOptions final {
   // Duplicate-store warnings are weighted by class size, and after a search without a
   // race the cross-unit pass checks every pair with a member unit (cross_unit_races.h); an Unknown
   // or a work cap there throws UnitClassRestart.
-  UnitQuotient* units = nullptr;
+  const UnitQuotient* units = nullptr;
   // The launch's units when the per-unit path analyses a multi-unit launch (null otherwise; class
   // mode reads them from `units`): repeated entries are reported per unit (source_json.cpp).
   const LaunchUnits* launch_units = nullptr;

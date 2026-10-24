@@ -1137,20 +1137,19 @@ std::optional<std::string> ValidateSharedConstantWrites(const SourceArtifact& in
 // for every unit of its CTA's class.
 class QuotientEvidence {
  public:
-  QuotientEvidence(UnitQuotient& quotient, const SourceProgram& program)
+  QuotientEvidence(const UnitQuotient& quotient, const SourceProgram& program)
       : quotient_(quotient), program_(program), actors_(quotient, program.actors) {}
   // The CTA of an instruction (its actor's); instruction ids are dense in emission order.
   [[nodiscard]] std::uint32_t Cta(InstId id) const {
     if (id.value() >= program_.instructions.size()) throw std::logic_error("instruction outside the program");
-    const auto instruction = program_.instructions[id.value()];
-    if (instruction.id != id) throw std::logic_error("instruction ids are not dense");
-    return actors_.Cta(instruction.actor);
+    if (program_.instructions.id(id.value()) != id) throw std::logic_error("instruction ids are not dense");
+    return actors_.Cta(program_.instructions.actor(id.value()));
   }
   [[nodiscard]] std::uint64_t Weight(std::uint32_t cta) const { return quotient_.Weight(cta); }
-  [[nodiscard]] UnitQuotient& quotient() const noexcept { return quotient_; }
+  [[nodiscard]] const UnitQuotient& quotient() const noexcept { return quotient_; }
 
  private:
-  UnitQuotient& quotient_;
+  const UnitQuotient& quotient_;
   const SourceProgram& program_;
   ActorWeights actors_;
 };
@@ -1268,7 +1267,7 @@ class RepeatedEntries {
   };
   // `layout`: the launch's units (null: units are not defined and entries stay as listed);
   // `quotient`: class mode (then `layout` is it).
-  RepeatedEntries(const LaunchUnits* layout, UnitQuotient* quotient, CtaRelativeIds& ids)
+  RepeatedEntries(const LaunchUnits* layout, const UnitQuotient* quotient, CtaRelativeIds& ids)
       : layout_(layout), quotient_(quotient), ids_(ids) {}
   void Add(Json item, std::uint32_t cta, std::initializer_list<IdField> fields,
            const std::vector<MessageId>& message_ids = {}) {
@@ -1387,7 +1386,7 @@ class RepeatedEntries {
     return std::to_string(layout_->RankOf(cta)) + ' ' + relative.dump(-1, ' ', false, Json::error_handler_t::replace);
   }
   const LaunchUnits* layout_;
-  UnitQuotient* quotient_;
+  const UnitQuotient* quotient_;
   CtaRelativeIds& ids_;
   std::size_t next_ = 0;
   std::vector<Group> groups_;
@@ -1642,8 +1641,29 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
             kind=="tmem_group2_access_before_dealloc"?"paired_access_completion_before_deallocation_not_proven":
             kind=="shared_constant_read_from"?"shared_constant_dependency_unproven":kind+"_not_proven";
       };
+      // The witness of failed required order `index`: its first failed target.
+      const auto failed_order_witness=[&](std::size_t index) {
+        const auto& order=input.required_orders[index];
+        const auto& [family,members]=*ordered[index].failed.begin();
+        const auto& f=static_hb->relations().families().families()[family];
+        const auto event=EventId(f.first.value()+f.stride*members.first());
+        const auto target=lifecycle_origins.origin(event);
+        if(!target)throw std::logic_error("required-order witness lacks source origin");
+        Json witness={{"kind",order.kind.str()},{"message",order.message.str()},
+          {"from_instruction",order.from.instruction.value()},{"to_instruction",target->value()},
+          {"failed_target_count",ordered[index].count()}};
+        if(order.from_effects) {
+          auto effects=Json::array();
+          const auto count=order.from_effects->size();
+          for(std::size_t i=0;i<std::min(count,effect_sample_limit);++i)effects.push_back((*order.from_effects)[i]);
+          witness["from_effects"]=std::move(effects);
+          witness["from_effects_count"]=count;
+          witness["from_effects_truncated"]=count>effect_sample_limit;
+        }
+        return witness;
+      };
       // Class mode: a failed order of a representative CTA fails in every unit of its class
-      // (counts weighted; samples drawn from that expansion in today's order).
+      // (counts weighted; samples drawn from that expansion in the per-unit path's order).
       std::vector<std::pair<std::size_t,std::uint32_t>> class_failures; // (order, its CTA)
       for (std::size_t index = 0; index < input.required_orders.size(); ++index) {
         const auto& order = input.required_orders[index];
@@ -1666,22 +1686,7 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
           failure_count+=failed;
           evidence["count"]=evidence["count"].get<std::size_t>()+failed;
           if(evidence["witnesses"].size()<failure_sample_limit || unresolved.size()<failure_sample_limit) {
-            const auto& [family,members]=*ordered[index].failed.begin();
-            const auto& f=static_hb->relations().families().families()[family];
-            const auto event=EventId(f.first.value()+f.stride*members.first());
-            const auto target=lifecycle_origins.origin(event);
-            if(!target)throw std::logic_error("required-order witness lacks source origin");
-            Json witness={{"kind",kind},{"message",order.message.str()},
-              {"from_instruction",order.from.instruction.value()},{"to_instruction",target->value()},
-              {"failed_target_count",failed}};
-            if(order.from_effects) {
-              auto effects=Json::array();
-              const auto count=order.from_effects->size();
-              for(std::size_t i=0;i<std::min(count,effect_sample_limit);++i)effects.push_back((*order.from_effects)[i]);
-              witness["from_effects"]=std::move(effects);
-              witness["from_effects_count"]=count;
-              witness["from_effects_truncated"]=count>effect_sample_limit;
-            }
+            auto witness=failed_order_witness(index);
             if(unresolved.size()<failure_sample_limit)unresolved.push_back(witness);
             if(evidence["witnesses"].size()<failure_sample_limit)evidence["witnesses"].push_back(std::move(witness));
           }
@@ -1689,7 +1694,7 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
         }
       }
       if(units && !class_failures.empty()) {
-        // The expansion in today's order: orders emitted while a CTA was lowered, CTA by CTA in launch
+        // The expansion in the per-unit path's order: orders emitted while a CTA was lowered, CTA by CTA in launch
         // order (each CTA's are its representative CTA's), then those emitted at Finish, unit by unit.
         // Each instance carries the representative's witness (its numbering). Bounded: it stops once
         // every sample list is full.
@@ -1701,31 +1706,15 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
         std::size_t open=1+lifecycle_diagnostics.size();
         const auto emit=[&](std::size_t index) {
           auto [cached,fresh]=witnesses.try_emplace(index);
-          if(fresh) {
-            const auto& order=input.required_orders[index];
-            const auto& [family,members]=*ordered[index].failed.begin();
-            const auto& f=static_hb->relations().families().families()[family];
-            const auto event=EventId(f.first.value()+f.stride*members.first());
-            const auto target=lifecycle_origins.origin(event);
-            if(!target)throw std::logic_error("required-order witness lacks source origin");
-            Json witness={{"kind",order.kind.str()},{"message",order.message.str()},
-              {"from_instruction",order.from.instruction.value()},{"to_instruction",target->value()},
-              {"failed_target_count",ordered[index].count()}};
-            if(order.from_effects) {
-              auto effects=Json::array();
-              const auto count=order.from_effects->size();
-              for(std::size_t i=0;i<std::min(count,effect_sample_limit);++i)effects.push_back((*order.from_effects)[i]);
-              witness["from_effects"]=std::move(effects);
-              witness["from_effects_count"]=count;
-              witness["from_effects_truncated"]=count>effect_sample_limit;
-            }
-            cached->second=std::move(witness);
-          }
-          auto& list=lifecycle_diagnostics[code_of(input.required_orders[index].kind.str())]["details"]["witnesses"];
-          if(unresolved.size()<failure_sample_limit && unresolved.size()+1==failure_sample_limit)--open;
-          if(unresolved.size()<failure_sample_limit)unresolved.push_back(cached->second);
-          if(list.size()<failure_sample_limit && list.size()+1==failure_sample_limit)--open;
-          if(list.size()<failure_sample_limit)list.push_back(cached->second);
+          if(fresh)cached->second=failed_order_witness(index);
+          // Appends to a sample list; filling it closes one of the open lists.
+          const auto sample=[&](Json& list) {
+            if(list.size()>=failure_sample_limit)return;
+            list.push_back(cached->second);
+            if(list.size()==failure_sample_limit)--open;
+          };
+          sample(unresolved);
+          sample(lifecycle_diagnostics[code_of(input.required_orders[index].kind.str())]["details"]["witnesses"]);
           return open!=0;
         };
         bool more=true;

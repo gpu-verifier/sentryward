@@ -25,7 +25,7 @@ struct ScalarFoldOptions {
   std::size_t construction_collection_interval = std::numeric_limits<std::size_t>::max();
   // Cross-CTA value lifting mode (unit_lifting.h): BlockIndex stays a unit
   // parameter and every body is instantiated for its unit before the output
-  // tail. Null: today's lowering, unchanged.
+  // tail. Null: no lifting (BlockIndex values are literals).
   const UnitLifting* unit_lifting = nullptr;
 };
 struct ScalarFoldOutput {
@@ -57,7 +57,7 @@ struct ScalarFoldResult {
     std::size_t parameters = 0; // unit coordinate leaves emitted
     std::size_t declined = 0;   // BlockIndex reads answered "unknown"
     // Set when lifting cannot finish exactly: the driver restarts per unit.
-    std::optional<ScalarFoldDiagnostic> refused;
+    bool refused = false;
   } lifting;
   // Where the lowering stopped when `diagnostic` is set (for class mode's
   // first-item rule, run.cpp). Phases 'a'..'f':

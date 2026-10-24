@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include <cstring>
-#include <iostream>
 #include <limits>
 #include <mutex>
 #include <typeinfo>
@@ -178,7 +177,6 @@ struct SignedOffset {
   std::int64_t value;
 };
 struct RequestCopy {
-  bool tma = false;
   std::string operand;
   Json contract;
   std::uint64_t bytes = 0;
@@ -200,7 +198,6 @@ struct RankLog {
   // (I.5a): this CTA's tensormap.cp_fenceproxy global destinations.
   std::vector<GlobalOffset> fences;
   bool fence_nonconstant = false;
-  bool recorded = false;
 };
 // The logs of one unit (all its ranks) and their pools. A class keeps its
 // representative's; a member's is dropped once it is admitted.
@@ -269,6 +266,14 @@ void Put(std::string &out, std::uint64_t value) {
   out += std::to_string(value);
   out += ',';
 }
+// An allocation key after its kind (a writer that encodes the kind puts it first).
+void PutKey(std::string &out, const AllocationKey &key) {
+  Put(out, key.space);
+  Put(out, key.owner.value);
+  Put(out, key.thread);
+  Put(out, key.object);
+  Put(out, key.alias);
+}
 void PutStep(Canon &canon, const InternStep &step) {
   auto &out = canon.shape;
   std::visit(
@@ -277,11 +282,7 @@ void PutStep(Canon &canon, const InternStep &step) {
         if constexpr (std::is_same_v<T, ConstantStep>) {
           out += 'C';
           Put(out, std::uint64_t(s.key.kind));
-          Put(out, s.key.space);
-          Put(out, s.key.owner.value);
-          Put(out, s.key.thread);
-          Put(out, s.key.object);
-          Put(out, s.key.alias);
+          PutKey(out, s.key);
           if (s.key.kind == AllocationKey::Kind::Plain && s.key.space == "global") {
             out += 'G';
             canon.globals.emplace_back(s.key.object, s.offset);
@@ -316,6 +317,21 @@ void PutError(Canon &canon, const SlotError &error) {
     Put(out, "unknown");
   }
 }
+// An affine form in tensor-property elements: its structure (element objects, types, coefficients)
+// in the shape; its constant (the δ of `object`) and each element read's byte offset (its input
+// object's δ) as shifts.
+void PutAffine(Canon &canon, const std::string &object, const AbstractAffine &affine) {
+  auto &out = canon.shape;
+  out += 'A';
+  Put(out, std::uint64_t(affine.terms.size()));
+  canon.shifts.emplace_back(object, affine.constant);
+  for (const auto &term : affine.terms) {
+    Put(out, term.object);
+    Put(out, term.element_type);
+    Put(out, std::to_string(term.coefficient));
+    canon.shifts.emplace_back(term.object, term.offset);
+  }
+}
 // A bounded-pointer footprint (tensor_properties): its placement and base, both at offset 0 of the
 // target allocation, are anchors in the shape; the structure (element objects, types, coefficients)
 // must be equal; the offset's constant (the allocation's δ) and each element read's byte offset (its
@@ -332,25 +348,29 @@ bool CanonicalizeAffine(const std::vector<SlotStep> &prefix, const ResolvedFootp
   for (const auto *s : {placement, &base}) {
     out += 'Z';
     Put(out, std::uint64_t(s->key.kind));
-    Put(out, s->key.space);
-    Put(out, s->key.owner.value);
-    Put(out, s->key.thread);
-    Put(out, s->key.object);
-    Put(out, s->key.alias);
+    PutKey(out, s->key);
   }
   out += 'F';
   Put(out, std::uint64_t(resolved.kind));
   Put(out, resolved.bytes);
-  out += 'A';
-  Put(out, std::uint64_t(resolved.affine->terms.size()));
-  canon.shifts.emplace_back(base.key.object, resolved.affine->constant);
-  for (const auto &term : resolved.affine->terms) {
-    Put(out, term.object);
-    Put(out, term.element_type);
-    Put(out, std::to_string(term.coefficient));
-    canon.shifts.emplace_back(term.object, term.offset);
-  }
+  PutAffine(canon, base.key.object, *resolved.affine);
   return true;
+}
+// A TMA terminal's pairs and completions.
+void PutTmaTail(std::string &out, const ResolvedTma &resolved) {
+  out += '|';
+  for (const auto &pair : resolved.pairs) {
+    Put(out, pair.global ? *pair.global + 1 : 0);
+    Put(out, pair.shared);
+    Put(out, pair.bytes);
+    Put(out, pair.logical_offset);
+    Put(out, pair.target_rank);
+  }
+  out += '|';
+  for (const auto &[step, bytes] : resolved.completions) {
+    Put(out, step);
+    Put(out, bytes);
+  }
 }
 // A TMA region whose symbolic coordinates are all affine in tensor-property elements
 // (ResolvedTma::region_affine): each abstract segment's expression and patch are the region
@@ -379,11 +399,7 @@ bool CanonicalizeAffineTma(const ResolvedTma &resolved, Canon &canon) {
         return false;
       object = placement->key.object;
       out += 'X';
-      Put(out, placement->key.space);
-      Put(out, placement->key.owner.value);
-      Put(out, placement->key.thread);
-      Put(out, placement->key.object);
-      Put(out, placement->key.alias);
+      PutKey(out, placement->key);
       k += 2;
       continue;
     }
@@ -391,29 +407,8 @@ bool CanonicalizeAffineTma(const ResolvedTma &resolved, Canon &canon) {
     PutStep(local, step);
   }
   if (object.empty() || !local.unliftable.empty()) return false;
-  const auto &affine = *resolved.region_affine;
-  out += 'A';
-  Put(out, std::uint64_t(affine.terms.size()));
-  local.shifts.emplace_back(object, affine.constant);
-  for (const auto &term : affine.terms) {
-    Put(out, term.object);
-    Put(out, term.element_type);
-    Put(out, std::to_string(term.coefficient));
-    local.shifts.emplace_back(term.object, term.offset);
-  }
-  out += '|';
-  for (const auto &pair : resolved.pairs) {
-    Put(out, pair.global ? *pair.global + 1 : 0);
-    Put(out, pair.shared);
-    Put(out, pair.bytes);
-    Put(out, pair.logical_offset);
-    Put(out, pair.target_rank);
-  }
-  out += '|';
-  for (const auto &[step, bytes] : resolved.completions) {
-    Put(out, step);
-    Put(out, bytes);
-  }
+  PutAffine(local, object, *resolved.region_affine);
+  PutTmaTail(out, resolved);
   canon = std::move(local);
   return true;
 }
@@ -422,7 +417,7 @@ template <class T> void Canonicalize(const SlotOutcome<T> &outcome, Canon &canon
   canon.shape += 'P';
   if constexpr (std::is_same_v<T, ResolvedFootprint>) {
     if (const auto *resolved = std::get_if<0>(&outcome.terminal);
-        resolved && resolved->affine && CanonicalizeAffine(outcome.prefix, *resolved, canon))
+        resolved && CanonicalizeAffine(outcome.prefix, *resolved, canon))
       return;
   }
   for (const auto &step : outcome.prefix) PutStep(canon, step.step);
@@ -443,19 +438,7 @@ template <class T> void Canonicalize(const SlotOutcome<T> &outcome, Canon &canon
     Put(canon.shape, resolved.store ? 1 : 0);
     Put(canon.shape, resolved.descriptor);
     for (const auto &step : resolved.steps) PutStep(canon, step.step);
-    canon.shape += '|';
-    for (const auto &pair : resolved.pairs) {
-      Put(canon.shape, pair.global ? *pair.global + 1 : 0);
-      Put(canon.shape, pair.shared);
-      Put(canon.shape, pair.bytes);
-      Put(canon.shape, pair.logical_offset);
-      Put(canon.shape, pair.target_rank);
-    }
-    canon.shape += '|';
-    for (const auto &[step, bytes] : resolved.completions) {
-      Put(canon.shape, step);
-      Put(canon.shape, bytes);
-    }
+    PutTmaTail(canon.shape, resolved);
   }
 }
 
@@ -487,9 +470,8 @@ struct PairHash {
 
 class Recorder final : public QuerySink {
 public:
-  Recorder(UnitLog &log, std::uint32_t rank, const CtaFacts &facts) : log_(log), rank_(log.ranks.at(rank)), facts_(facts) {
-    rank_.recorded = true;
-  }
+  Recorder(UnitLog &log, std::uint32_t rank, const CtaFacts &facts)
+      : log_(log), rank_(log.ranks.at(rank)), facts_(facts) {}
   void On(const QueryEvent &event, ConsumerTag consumer, bool in_slot, bool in_partition) noexcept override {
     try {
       if (consumer.kind == Consumer::Driver || consumer.kind == Consumer::Executor) return;
@@ -498,17 +480,11 @@ public:
       Close("recorder_failure");
     }
   }
-  // The log is complete: entries in replay order, dedup state released.
+  // The log is complete: entries in replay order.
   void Seal() {
     std::sort(rank_.values.begin(), rank_.values.end(), [](const ValueEntry &a, const ValueEntry &b) {
       return std::tie(a.lane, a.pos, a.kind, a.slice, a.reg) < std::tie(b.lane, b.pos, b.kind, b.slice, b.reg);
     });
-    uniform_seen_ = {};
-    lane_seen_ = {};
-    special_seen_ = {};
-    legacy_seen_ = {};
-    fills_ = {};
-    align_seen_ = {};
   }
 
 private:
@@ -528,24 +504,33 @@ private:
     const auto &instructions = facts_.function().instructions;
     return instruction < instructions.size() ? instructions[instruction].line : 0;
   }
+  // Whether `key` is asked for the first time; a repeated question with another
+  // answer closes the log.
+  template <class Seen> bool First(Seen &seen, const typename Seen::key_type &key, std::uint32_t answer) {
+    const auto [it, added] = seen.try_emplace(key, answer);
+    if (!added && it->second != answer) Close("inconsistent_answer");
+    return added;
+  }
+  // How a member re-reads `view`, a positioned record of `lane` that is not
+  // Detached; a Slice's registers are interned into `slice`.
+  ReadKind KindOf(const RecordView &view, LaneRef lane, std::uint32_t &slice) {
+    switch (view.kind()) {
+    case RecordKind::Prototype: return ReadKind::Meta;
+    case RecordKind::PrototypeCopy: return facts_.Expanded(lane) ? ReadKind::Full : ReadKind::Meta;
+    case RecordKind::Slice: slice = log_.Slice(view.slice()); return ReadKind::Slice;
+    default: return ReadKind::Full;
+    }
+  }
   void Value(RecordRef at, RegId reg, ReadKind kind, std::uint32_t slice, std::uint32_t answer) {
     std::uint32_t pos;
     if (!Position(at.pos, pos)) return;
     if (kind == ReadKind::Meta) {
       // Path-uniform: one lane of the path answers for all of them.
-      const auto [it, added] = uniform_seen_.try_emplace({facts_.Path(at.lane), pos, reg, 0}, answer);
-      if (!added) {
-        if (it->second != answer) Close("inconsistent_answer");
-        return;
-      }
+      if (!First(uniform_seen_, {facts_.Path(at.lane), pos, reg, 0}, answer)) return;
     } else {
       const LaneKey key{(std::uint64_t(at.lane.index) << 32) | pos,
                         (std::uint64_t(reg) << 32) ^ (std::uint64_t(slice) << 8) ^ std::uint64_t(kind)};
-      const auto [it, added] = lane_seen_.try_emplace(key, answer);
-      if (!added) {
-        if (it->second != answer) Close("inconsistent_answer");
-        return;
-      }
+      if (!First(lane_seen_, key, answer)) return;
     }
     rank_.values.push_back({at.lane.index, pos, reg, slice, kind, answer});
   }
@@ -558,19 +543,9 @@ private:
       if (e.answer) Close("unpositioned_read");
       return;
     }
-    ReadKind kind = ReadKind::Full;
+    if (e.view.kind() == RecordKind::Detached) return Close("detached_read");
     std::uint32_t slice = 0;
-    switch (e.view.kind()) {
-    case RecordKind::Prototype: kind = ReadKind::Meta; break;
-    case RecordKind::PrototypeCopy: kind = facts_.Expanded(ref->lane) ? ReadKind::Full : ReadKind::Meta; break;
-    case RecordKind::Expanded:
-    case RecordKind::Full: kind = ReadKind::Full; break;
-    case RecordKind::Slice:
-      kind = ReadKind::Slice;
-      slice = log_.Slice(e.view.slice());
-      break;
-    case RecordKind::Detached: Close("detached_read"); return;
-    }
+    const auto kind = KindOf(e.view, ref->lane, slice);
     Value(*ref, e.reg, kind, slice, log_.answers.Id(e.answer));
   }
   void Handle(const query::ValueAtRead &e, ConsumerTag, bool in_slot, bool in_partition) {
@@ -583,35 +558,23 @@ private:
     if (!Position(e.leader.pos, pos)) return;
     const LegacyEntry entry{e.leader.lane.index, pos, log_.Members(e.members), log_.strings.Id(e.name),
                             log_.answers.Id(e.answer)};
-    const auto [it, added] =
-        legacy_seen_.try_emplace({(std::uint64_t(entry.lane) << 32) | pos, (std::uint64_t(entry.members) << 32) | entry.name},
-                                 entry.answer);
-    if (!added) {
-      if (it->second != entry.answer) Close("inconsistent_answer");
+    if (!First(legacy_seen_, {(std::uint64_t(entry.lane) << 32) | pos, (std::uint64_t(entry.members) << 32) | entry.name},
+               entry.answer))
       return;
-    }
     rank_.legacy.push_back(entry);
   }
   void Handle(const query::UniformBinding &e, ConsumerTag, bool in_slot, bool in_partition) {
     if (in_slot || in_partition || Closed()) return;
     std::uint32_t pos;
     if (!Position(e.at.pos, pos)) return;
-    const auto [it, added] = uniform_seen_.try_emplace({facts_.Path(e.at.lane), pos, e.reg, 1}, e.present ? 1u : 0u);
-    if (!added) {
-      if (it->second != (e.present ? 1u : 0u)) Close("inconsistent_answer");
-      return;
-    }
+    if (!First(uniform_seen_, {facts_.Path(e.at.lane), pos, e.reg, 1}, e.present ? 1u : 0u)) return;
     rank_.uniforms.push_back({e.at.lane.index, pos, e.reg, e.present});
   }
   void Handle(const query::SpecialRead &e, ConsumerTag, bool in_slot, bool in_partition) {
     if (in_slot || in_partition || Closed()) return;
     const auto name = log_.strings.Id(e.name);
     const auto answer = log_.answers.Id(e.answer);
-    const auto [it, added] = special_seen_.try_emplace(name, answer);
-    if (!added) {
-      if (it->second != answer) Close("inconsistent_answer");
-      return;
-    }
+    if (!First(special_seen_, name, answer)) return;
     rank_.specials.push_back({name, answer});
   }
   void Handle(const query::SlotBegin &, ConsumerTag, bool, bool) {}
@@ -640,18 +603,7 @@ private:
     entry.consumer = q.consumer.kind;
     entry.resources = q.consumer.resources;
     entry.memory = memory;
-    entry.slice = 0;
-    switch (q.site.kind()) {
-    case RecordKind::Prototype: entry.site_kind = ReadKind::Meta; break;
-    case RecordKind::PrototypeCopy:
-      entry.site_kind = facts_.Expanded(ref->lane) ? ReadKind::Full : ReadKind::Meta;
-      break;
-    case RecordKind::Slice:
-      entry.site_kind = ReadKind::Slice;
-      entry.slice = log_.Slice(q.site.slice());
-      break;
-    default: entry.site_kind = ReadKind::Full; break;
-    }
+    entry.site_kind = KindOf(q.site, ref->lane, entry.slice);
     entry.active_lane = q.active_lane ? q.active_lane->index : kNone;
     entry.site_lane = ref->lane.index;
     if (!Position(ref->pos, entry.site_pos)) return;
@@ -671,7 +623,6 @@ private:
     const auto [found, added] = log_.request_ids.try_emplace(key, static_cast<std::uint32_t>(log_.requests.size()));
     if (added) {
       RequestCopy copy;
-      copy.tma = q.tma != nullptr;
       if (q.memory) {
         copy.operand = std::string(q.memory->operand);
         copy.contract = q.memory->contract;
@@ -698,17 +649,17 @@ private:
   void Handle(const query::SlotMemory &e, ConsumerTag, bool, bool) { Slot(*e.query, *e.outcome); }
   void Handle(const query::SlotTma &e, ConsumerTag, bool, bool) { Slot(*e.query, *e.outcome); }
   void Handle(const query::MemoFill &e, ConsumerTag consumer, bool, bool) {
-    if (Closed() || e.memo.kind != MemoKind::EvaluatedAddress) return;
+    if (Closed()) return;
     std::uint32_t pos;
     if (!Position(e.memo.at.pos, pos)) return;
-    const auto key = std::get<0>(e.memo.key);
+    const auto key = e.memo.key;
     fills_[{(std::uint64_t(consumer.resources) << 32) | e.memo.at.lane.index, key}] = pos;
   }
   void Handle(const query::MemoHit &e, ConsumerTag consumer, bool, bool) {
-    if (Closed() || e.memo.kind != MemoKind::EvaluatedAddress) return;
+    if (Closed()) return;
     std::uint32_t pos;
     if (!Position(e.memo.at.pos, pos)) return;
-    const auto key = std::get<0>(e.memo.key);
+    const auto key = e.memo.key;
     const auto fill = fills_.find({(std::uint64_t(consumer.resources) << 32) | e.memo.at.lane.index, key});
     if (fill == fills_.end()) return Close("memo_hit_without_fill");
     rank_.memos.push_back({e.memo.at.lane.index, fill->second, pos, e.reg});
@@ -856,45 +807,42 @@ bool Replay(const UnitLog &log, std::uint32_t rank, const CtaFacts &facts, UnitD
         if (cursor.Class(k) != e.classes[k] || derived.shuffle != e.shuffles[k]) return false;
       }
     }
-    // H1, one record read per (lane, pos, kind, slice) group (the log is sorted).
-    // The log is lane-major: a lane's value caches are dropped once its reads
-    // are done, so a replay holds one lane's memoized values at a time.
-    // A Full group is read as a Slice over its own registers, the only ones compared:
-    // those answers are the Full read's, without evaluating the record's other values.
-    RecordHolder holder;
-    std::optional<RecordView> view;
-    const ValueEntry *group = nullptr;
-    std::vector<RegId> group_regs;
-    for (std::size_t k = 0; k < r.values.size(); ++k) {
-      const auto &e = r.values[k];
-      if (group && group->lane != e.lane) facts.ReleaseValues(LaneRef{group->lane});
-      if (e.kind == ReadKind::At) {
-        const auto answer = facts.ValueAt({{e.lane}, e.pos}, e.reg);
-        if (!log.answers.Same(e.answer, answer ? &*answer : nullptr)) return false;
-        continue;
-      }
-      if (!group || group->lane != e.lane || group->pos != e.pos || group->kind != e.kind || group->slice != e.slice) {
-        group = &e;
-        if (e.kind == ReadKind::Full) {
-          group_regs.clear();
-          for (std::size_t j = k; j < r.values.size() && r.values[j].lane == e.lane && r.values[j].pos == e.pos &&
-                                  r.values[j].kind == e.kind && r.values[j].slice == e.slice; ++j)
-            group_regs.push_back(r.values[j].reg);
-          view = MemberRecord(facts, {{e.lane}, e.pos}, ReadKind::Slice, group_regs, holder);
-        } else {
-          const std::span<const RegId> slice =
-              e.kind == ReadKind::Slice ? std::span<const RegId>(log.slices.at(e.slice)) : std::span<const RegId>();
-          view = MemberRecord(facts, {{e.lane}, e.pos}, e.kind, slice, holder);
+    {
+      // H1, one record read per (lane, pos, kind, slice) group (the log is sorted).
+      // The log is lane-major: a lane's value caches are dropped once its reads
+      // are done, so a replay holds one lane's memoized values at a time.
+      // A Full group is read as a Slice over its own registers, the only ones compared:
+      // those answers are the Full read's, without evaluating the record's other values.
+      RecordHolder holder;
+      std::optional<RecordView> view;
+      const ValueEntry *group = nullptr;
+      std::vector<RegId> group_regs;
+      for (std::size_t k = 0; k < r.values.size(); ++k) {
+        const auto &e = r.values[k];
+        if (group && group->lane != e.lane) facts.ReleaseValues(LaneRef{group->lane});
+        if (e.kind == ReadKind::At) {
+          const auto answer = facts.ValueAt({{e.lane}, e.pos}, e.reg);
+          if (!log.answers.Same(e.answer, answer ? &*answer : nullptr)) return false;
+          continue;
         }
+        if (!group || group->lane != e.lane || group->pos != e.pos || group->kind != e.kind || group->slice != e.slice) {
+          group = &e;
+          if (e.kind == ReadKind::Full) {
+            group_regs.clear();
+            for (std::size_t j = k; j < r.values.size() && r.values[j].lane == e.lane && r.values[j].pos == e.pos &&
+                                    r.values[j].kind == e.kind && r.values[j].slice == e.slice; ++j)
+              group_regs.push_back(r.values[j].reg);
+            view = MemberRecord(facts, {{e.lane}, e.pos}, ReadKind::Slice, group_regs, holder);
+          } else {
+            const std::span<const RegId> slice =
+                e.kind == ReadKind::Slice ? std::span<const RegId>(log.slices.at(e.slice)) : std::span<const RegId>();
+            view = MemberRecord(facts, {{e.lane}, e.pos}, e.kind, slice, holder);
+          }
+        }
+        if (!log.answers.Same(e.answer, facts.Value(*view, e.reg))) return false;
       }
-      if (!log.answers.Same(e.answer, facts.Value(*view, e.reg))) return false;
     }
-  } catch (const std::exception &) {
-    return false;
-  }
-  // C3: every logged slot re-run on the member, then compared up to δ.
-  bool ok = true;
-  try {
+    // C3: every logged slot re-run on the member, then compared up to δ.
     ReplayContexts contexts(facts);
     // Slots follow lowering's lane order: as in H1, a lane's value caches are
     // dropped when the sites move to another lane (a return recomputes them).
@@ -928,28 +876,25 @@ bool Replay(const UnitLog &log, std::uint32_t rank, const CtaFacts &facts, UnitD
         Canonicalize(resources.ReplayTma(site, copy), canon);
       }
       if (!canon.unliftable.empty() || canon.shape != log.strings.At(e.shape) || canon.globals.size() != e.offsets_count ||
-          canon.shifts.size() != e.shifts_count) {
-        ok = false;
-        break;
-      }
-      for (std::uint32_t k = 0; k < e.offsets_count && ok; ++k) {
+          canon.shifts.size() != e.shifts_count)
+        return false;
+      for (std::uint32_t k = 0; k < e.offsets_count; ++k) {
         const auto &rep = r.offsets[e.offsets_begin + k];
         const auto &object = log.strings.At(rep.object);
         if (canon.globals[k].first != object || !AddDelta(delta, object, canon.globals[k].second, rep.offset))
-          ok = false;
+          return false;
       }
-      for (std::uint32_t k = 0; k < e.shifts_count && ok; ++k) {
+      for (std::uint32_t k = 0; k < e.shifts_count; ++k) {
         const auto &rep = r.shifts[e.shifts_begin + k];
         const auto &object = log.strings.At(rep.object);
         if (canon.shifts[k].first != object || !AddSignedDelta(delta, object, canon.shifts[k].second, rep.value))
-          ok = false;
+          return false;
       }
-      if (!ok) break;
     }
   } catch (const std::exception &) {
-    ok = false;
+    return false;
   }
-  return ok;
+  return true;
 }
 bool AlignOk(const UnitLog &log, const UnitDelta &delta) {
   for (const auto &r : log.ranks)
@@ -961,28 +906,37 @@ bool AlignOk(const UnitLog &log, const UnitDelta &delta) {
     }
   return true;
 }
+// C1: equal structure keys on every rank (hash first, then bytes).
+bool SameStructure(const std::vector<StructureKey> &a, const std::vector<StructureKey> &b) {
+  if (a.size() != b.size()) return false;
+  for (std::size_t k = 0; k < a.size(); ++k)
+    if (a[k].hash != b[k].hash || a[k].bytes != b[k].bytes) return false;
+  return true;
+}
+// C2, C3 (every rank's log replayed, δ accumulating) and H8 (AbsoluteCheck) of a
+// unit against one class log.
+bool Admits(const UnitLog &log, std::span<const CtaFacts *const> facts, UnitDelta &delta) {
+  for (std::uint32_t rank = 0; rank < facts.size(); ++rank)
+    if (!Replay(log, rank, *facts[rank], delta)) return false;
+  return AlignOk(log, delta);
+}
 } // namespace
 
 // ---- the classes of one launch ----------------------------------------------
 struct UnitClasses::Impl {
   const UnitPlan &plan;
   std::uint64_t budget;
-  struct Candidate {
-    std::uint32_t klass;
-    UnitDelta delta;
-  };
+  using Keys = std::shared_ptr<const std::vector<StructureKey>>;
   struct Pending {
     std::unique_ptr<UnitLog> log;
-    std::vector<std::unique_ptr<Recorder>> recorders;
+    std::unique_ptr<Recorder> recorder; // the recorded rank's, from Record to Recorded
     std::vector<StructureKey> keys;
-    std::vector<Candidate> viable;
   };
   struct ClassInfo {
     std::uint32_t rep;
-    std::vector<StructureKey> keys;
+    Keys keys;
     std::shared_ptr<UnitLog> log; // null once closed (no admission needs it); never changes once set
     std::string closed;
-    std::uint64_t log_bytes = 0;
     std::vector<std::uint32_t> members; // admitted units, in order
     std::vector<UnitDelta> deltas;
     std::vector<std::pair<std::string, std::uint64_t>> fences; // (I.5a) representative regions
@@ -997,7 +951,7 @@ struct UnitClasses::Impl {
   // The classes with logs as of the last Found, for PreAdmit off the main thread.
   struct SnapshotClass {
     std::uint32_t klass;
-    std::vector<StructureKey> keys;
+    Keys keys;
     std::shared_ptr<const UnitLog> log;
   };
   struct Snapshot {
@@ -1013,26 +967,27 @@ struct UnitClasses::Impl {
   void Found(std::uint32_t unit, Pending &p) {
     ClassInfo info;
     info.rep = unit;
-    info.keys = std::move(p.keys);
+    info.keys = std::make_shared<const std::vector<StructureKey>>(std::move(p.keys));
+    std::uint64_t log_bytes = 0;
     if (p.log) {
       for (const auto &r : p.log->ranks) {
         for (const auto &f : r.fences) info.fences.emplace_back(p.log->strings.At(f.object), f.offset);
         info.fence_nonconstant |= r.fence_nonconstant;
       }
-      info.log_bytes = p.log->Bytes();
+      log_bytes = p.log->Bytes();
     }
     if (futility) info.closed = "futility";
     else if (!p.log) info.closed = "not_recorded";
-    else if (class_bytes + info.log_bytes > budget) info.closed = "log_budget";
+    else if (class_bytes + log_bytes > budget) info.closed = "log_budget";
     else if (!p.log->closed.empty()) info.closed = p.log->closed;
     else {
       info.log = std::move(p.log);
-      class_bytes += info.log_bytes;
+      class_bytes += log_bytes;
     }
     membership.at(unit) = {static_cast<std::uint32_t>(classes.size()), 0};
     classes.push_back(std::move(info));
     if (admitted == 0 && classes.size() >= 16) futility = true;
-    // Publish the class (its keys copied once per founded class).
+    // Publish the class (the snapshot shares its keys and log).
     std::shared_ptr<const Snapshot> previous;
     {
       std::lock_guard lock(snapshot_mutex);
@@ -1057,27 +1012,20 @@ struct UnitClasses::Impl {
     std::uint64_t begin;
     std::uint32_t unit;
   };
-  struct LocalityDetail {
-    bool holds = true, constant = true, unknown = false, cross_overlap = false, input_overlap = false;
-  };
-  LocalityDetail Locality() const {
-    LocalityDetail result;
-    if (!plan.precondition.tensormap_copies) return result;
+  bool Locality() const {
+    if (!plan.precondition.tensormap_copies) return true;
     std::vector<Region> regions;
     for (const auto &c : classes) {
-      if (c.fence_nonconstant) result.constant = false;
+      if (c.fence_nonconstant) return false; // (I.5a)
       for (const auto &[object, offset] : c.fences) {
         regions.push_back({object, offset, c.rep});
         for (std::size_t m = 0; m < c.members.size(); ++m) {
           const auto found = c.deltas[m].find(object);
-          if (found == c.deltas[m].end()) {
-            result.unknown = true; // never expected: the member's own slot fixes δ
-            continue;
-          }
+          if (found == c.deltas[m].end()) return false; // never expected: the member's own slot fixes δ
           regions.push_back({object, std::uint64_t(std::int64_t(offset) + found->second), c.members[m]});
         }
       }
-      if (c.closed == "futility" || c.closed == "log_budget" || c.closed == "not_recorded") result.unknown = true;
+      if (c.closed == "futility" || c.closed == "log_budget" || c.closed == "not_recorded") return false; // unknown
     }
     // (I.5b): no two units' 128-byte tensormap regions overlap; (I.5c): none
     // overlaps an input map's location (an absolute address cannot be placed).
@@ -1088,15 +1036,12 @@ struct UnitClasses::Impl {
       for (std::size_t j = i + 1; j < regions.size() && regions[j].object == regions[i].object &&
                                   regions[j].begin < regions[i].begin + 128;
            ++j)
-        if (regions[j].unit != regions[i].unit) result.cross_overlap = true;
-    if (!regions.empty() && !plan.input_maps.empty()) {
-      std::vector<TensormapRegion> placed;
-      placed.reserve(regions.size());
-      for (const auto &region : regions) placed.push_back({region.object, region.begin});
-      result.input_overlap = TensormapInputOverlap(placed, plan.input_maps);
-    }
-    result.holds = result.constant && !result.unknown && !result.cross_overlap && !result.input_overlap;
-    return result;
+        if (regions[j].unit != regions[i].unit) return false;
+    if (regions.empty() || plan.input_maps.empty()) return true;
+    std::vector<TensormapRegion> placed;
+    placed.reserve(regions.size());
+    for (const auto &region : regions) placed.push_back({region.object, region.begin});
+    return !TensormapInputOverlap(placed, plan.input_maps);
   }
 };
 
@@ -1118,14 +1063,9 @@ UnitClasses::PreAdmission UnitClasses::PreAdmit(std::span<const CtaFacts *const>
   const auto size = s.plan.UnitSize();
   if (facts.size() != size || keys.size() != size) throw std::logic_error("pre-admission needs every rank");
   for (const auto &candidate : snapshot->logged) {
-    bool ok = candidate.keys.size() == size;
-    for (std::uint32_t k = 0; ok && k < size; ++k)
-      ok = candidate.keys[k].hash == keys[k].hash && candidate.keys[k].bytes == keys[k].bytes;
-    if (!ok) continue;
+    if (!SameStructure(*candidate.keys, keys)) continue;
     UnitDelta delta;
-    for (std::uint32_t rank = 0; ok && rank < size; ++rank) ok = Replay(*candidate.log, rank, *facts[rank], delta);
-    if (ok && !AlignOk(*candidate.log, delta)) ok = false;
-    if (ok) {
+    if (Admits(*candidate.log, facts, delta)) {
       result.joined = candidate.klass;
       result.delta = std::move(delta);
       return result;
@@ -1135,80 +1075,53 @@ UnitClasses::PreAdmission UnitClasses::PreAdmit(std::span<const CtaFacts *const>
 }
 
 std::optional<std::uint32_t> UnitClasses::Admit(std::uint32_t unit, std::span<const CtaFacts *const> facts,
-                                                std::vector<StructureKey> keys, std::optional<PreAdmission> pre) {
+                                                std::vector<StructureKey> keys, PreAdmission pre) {
   auto &s = *impl_;
   const auto size = s.plan.UnitSize();
   if (facts.size() != size) throw std::logic_error("class-mode admission needs every rank of the unit");
-  if (!keys.empty() && keys.size() != size) throw std::logic_error("class-mode admission needs every rank's key");
-  auto &p = s.pending[unit];
-  p.keys = std::move(keys);
-  if (p.keys.empty()) {
-    p.keys.reserve(size);
-    for (const auto *f : facts) p.keys.push_back(ComputeStructureKey(*f));
-  }
-  // Classes [0, pre->classes) are decided by the look-ahead: the first of them that admits
+  if (keys.size() != size) throw std::logic_error("class-mode admission needs every rank's key");
+  // Classes [0, pre.classes) are decided by the look-ahead: the first of them that admits
   // the unit is the sequential first (earlier ones fail on these facts either way).
-  std::uint32_t first = 0;
-  if (pre) {
-    if (pre->classes > s.classes.size()) throw std::logic_error("pre-admission saw a later class");
-    if (pre->joined) {
-      s.Join(unit, *pre->joined, std::move(pre->delta));
-      s.pending.erase(unit);
-      return pre->joined;
-    }
-    first = pre->classes;
+  if (pre.classes > s.classes.size()) throw std::logic_error("pre-admission saw a later class");
+  if (pre.joined) {
+    s.Join(unit, *pre.joined, std::move(pre.delta));
+    return pre.joined;
   }
-  // C1: candidate classes in creation order (hash first, then bytes, every rank).
-  for (std::uint32_t c = first; c < s.classes.size(); ++c) {
-    const auto &keys = s.classes[c].keys;
-    bool same = keys.size() == size;
-    for (std::uint32_t k = 0; same && k < size; ++k)
-      same = keys[k].hash == p.keys[k].hash && keys[k].bytes == p.keys[k].bytes;
-    if (!same) continue;
-    if (s.classes[c].log) p.viable.push_back({c, {}});
-  }
-  std::optional<std::uint32_t> joined;
-  if (!p.viable.empty()) {
-    for (auto &candidate : p.viable) {
-      bool ok = true;
-      for (std::uint32_t rank = 0; ok && rank < size; ++rank)
-        ok = Replay(*s.classes[candidate.klass].log, rank, *facts[rank], candidate.delta);
-      if (ok && !AlignOk(*s.classes[candidate.klass].log, candidate.delta)) ok = false; // H8 (AbsoluteCheck)
-      // Class mode with values: value lifting adds no admission condition.
-      // The only modulus a value stage applies to an absolute global offset
-      // is an audited row width R (a row map's row width), known only after
-      // value analysis; run.cpp then
-      // re-checks every member's δ against it and restarts per unit on a
-      // violation. The offset bounds are checked where δ is applied.
-      if (ok) {
-        joined = candidate.klass;
-        s.Join(unit, candidate.klass, std::move(candidate.delta));
-        break;
-      }
+  // C1, then C2, C3 and H8: the later candidate classes in creation order.
+  // Class mode with values: value lifting adds no admission condition.
+  // The only modulus a value stage applies to an absolute global offset
+  // is an audited row width R (a row map's row width), known only after
+  // value analysis; run.cpp then
+  // re-checks every member's δ against it and restarts per unit on a
+  // violation. The offset bounds are checked where δ is applied.
+  for (std::uint32_t c = pre.classes; c < s.classes.size(); ++c) {
+    const auto &candidate = s.classes[c];
+    if (!candidate.log || !SameStructure(*candidate.keys, keys)) continue;
+    UnitDelta delta;
+    if (Admits(*candidate.log, facts, delta)) {
+      s.Join(unit, c, std::move(delta));
+      return c;
     }
   }
-  if (joined) s.pending.erase(unit);
-  else p.viable.clear();
-  return joined;
+  s.pending[unit].keys = std::move(keys);
+  return std::nullopt;
 }
 
 QuerySink *UnitClasses::Record(std::uint32_t unit, std::uint32_t rank, const CtaFacts &facts) {
   auto &s = *impl_;
   auto &p = s.pending.at(unit);
-  const auto size = s.plan.UnitSize();
-  if (p.recorders.empty()) p.recorders.resize(size);
   if (s.futility) return nullptr; // futile: no new log
-  if (!p.log) p.log = std::make_unique<UnitLog>(size);
-  p.recorders[rank] = std::make_unique<Recorder>(*p.log, rank, facts);
-  return p.recorders[rank].get();
+  if (!p.log) p.log = std::make_unique<UnitLog>(s.plan.UnitSize());
+  p.recorder = std::make_unique<Recorder>(*p.log, rank, facts);
+  return p.recorder.get();
 }
 
 void UnitClasses::Recorded(std::uint32_t unit, std::uint32_t rank) {
   auto &s = *impl_;
   auto &p = s.pending.at(unit);
-  if (rank < p.recorders.size() && p.recorders[rank]) {
-    p.recorders[rank]->Seal();
-    p.recorders[rank].reset();
+  if (p.recorder) {
+    p.recorder->Seal();
+    p.recorder.reset();
   }
   if (rank + 1 == s.plan.UnitSize()) {
     s.Found(unit, p);
@@ -1244,8 +1157,5 @@ algorithm::UnitQuotient UnitClasses::Quotient() const {
   return q;
 }
 
-UnitClasses::Locality UnitClasses::TensormapLocality() const {
-  const auto detail = impl_->Locality();
-  return {detail.holds, detail.input_overlap};
-}
+bool UnitClasses::TensormapLocality() const { return impl_->Locality(); }
 } // namespace sentryward::frontend::ptx

@@ -504,9 +504,7 @@ ExpressionStep Resources::AbstractExpression(const std::string &space, const std
   Json expression = {{"address", {{"base", {{"identity", allocation},
       {"space", space}}}, {"offset", offset}, {"view", nullptr}}},
       {"byte_count", bytes ? Json(*bytes) : Json(nullptr)}};
-  auto serialized = expression.dump();
-  // Braced: the name copy is taken before the expression is moved.
-  return ExpressionStep{space, serialized, alias, allocation, std::move(serialized)};
+  return SerializedExpressionStep(space, expression.dump(), alias, allocation);
 }
 Fragment Resources::Abstract(std::string space, std::string resource,
                              const Json &offset, std::optional<std::uint64_t> bytes,

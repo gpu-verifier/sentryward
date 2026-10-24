@@ -15,8 +15,11 @@ struct MmaPlan {
   unsigned cta_group = 0;
   std::map<std::uint32_t, std::pair<std::string, std::uint64_t>> operand_addresses;
   std::vector<std::pair<std::uint32_t, MilestoneRef>> copy_links;
-  // The subset of copy_links accepted because the operand read lies inside the
-  // copy's written TMEM bytes (see CopyFeedsOperandBase).
+  // The subset of copy_links accepted only because the operand read lies inside
+  // the copy's written TMEM bytes (CopyFeedsOperandBase rejects the copy, e.g. one
+  // starting before the operand's base): "same address" means the MMA reads what
+  // the copy wrote (e.g. CUTLASS copies a two-tile scale-factor atom and each N
+  // tile reads its half).
   std::vector<std::pair<std::uint32_t, MilestoneRef>> contained_copy_links;
 };
 struct TcgenCopyPlan {
@@ -30,10 +33,7 @@ struct TcgenCopyPlan {
 // PTX pairs a non-4x256b tcgen05.cp with an MMA reading the "same address".
 // An operand wider than one copy is filled by several copies at and after its
 // base, so accept copies in the operand's lanes starting at or after its base
-// column. A copy starting before the base also feeds the operand when the
-// operand's read bytes lie inside the copy's written bytes (user decision
-// 2026-10-21: "same address" = the MMA reads what the copy wrote; e.g. CUTLASS
-// copies a two-tile scale-factor atom and each N tile reads its half).
+// column.
 [[nodiscard]] inline bool CopyFeedsOperandBase(std::uint64_t copy,
                                                std::uint64_t base) {
   return copy >> 16 == base >> 16 && (copy & 0xffff) >= (base & 0xffff);

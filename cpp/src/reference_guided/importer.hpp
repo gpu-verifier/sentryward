@@ -135,7 +135,6 @@ public:
     place(slots, shift, {h, w});
     ++entries;
   }
-  size_t size() const { return entries; }
 };
 struct Importer {
   Arena &a;
@@ -801,8 +800,8 @@ struct Importer {
       return decoded && *decoded == value;
     };
     auto imported = [&](Id raw) -> std::optional<Id> {
-      const Id *found = cache.find(key(raw, env));
-      return found ? std::optional<Id>{*found} : std::optional<Id>{};
+      if (const Id *found = cache.find(key(raw, env))) return *found;
+      return {};
     };
     if (!operation(root, "Multiply", 2)) return {};
     static const Q compiler_ln2(1453635, 2097152);

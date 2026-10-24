@@ -185,8 +185,7 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
     // Nonconstant common terms cannot be compared across distinct expressions.
     if(p.space.empty() || p.allocation.empty() || !p.symbolic.empty() || !p.affine)
       return std::pair<I,I>{-(I(1)<<125),I(1)<<125};
-    auto a=p.offset+p.step*I(f.first_member),b=p.offset+p.step*I(f.first_member+f.count-1);
-    return std::pair{std::min(a,b),std::max(a,b)+I(p.bytes)};
+    return FootprintSpan(f,p);
   };
   ProfileCall("memory.family.candidate_index",[&] {
     for(std::size_t i=0;i<families.size();++i)if(!footprints[i].empty) {
@@ -340,7 +339,7 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
           // otherwise per row, as the same-actor check above.
           const auto& w=*weights;
           const auto row=relation.diagonal?std::size_t(1):relation.right.count();
-          const auto front=first.at(first.first_member).actor,back=first.at(first.first_member+first.count-1).actor;
+          const auto front=first.first.actor,back=first.at(first.first_member+first.count-1).actor;
           std::size_t weighted=0;
           const auto add=[&](std::uint64_t weight,std::size_t count) {
             if(count && weight>SIZE_MAX/count)throw std::overflow_error("warning count overflow");

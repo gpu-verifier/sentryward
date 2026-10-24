@@ -71,15 +71,15 @@ std::optional<CompleteTxEffect> lowerCompletion(
 
 // The key is the whole record, so equivalent edges are equal values; Lowerer::Run sorts
 // edge values on that basis. The binding stops compiling if SourceEdge gains a field.
-bool lessSourceEdge(const SourceEdge* left, const SourceEdge* right) {
-  const auto& [from, to, kind] = *left;
-  if (from != right->from) {
-    return from < right->from;
+bool lessSourceEdge(const SourceEdge& left, const SourceEdge& right) {
+  const auto& [from, to, kind] = left;
+  if (from != right.from) {
+    return from < right.from;
   }
-  if (to != right->to) {
-    return to < right->to;
+  if (to != right.to) {
+    return to < right.to;
   }
-  return static_cast<int>(kind) < static_cast<int>(right->kind);
+  return static_cast<int>(kind) < static_cast<int>(right.kind);
 }
 
 bool lessCollectiveSpec(const CollectiveSpec* left,
@@ -471,7 +471,7 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
   finish_thread();
 
   const auto resolve = [&](const MilestoneRef& ref) -> EventId {
-    // Scalar lookup first; the copying path below keeps the old failures.
+    // Scalar lookup first; on a miss, the path below raises the direct lookup's exceptions.
     if (const auto event = origins.resolve(ref)) return *event;
     const Milestones milestones = *origins.findMilestones(ref.instruction);
     switch (ref.milestone) {
@@ -486,8 +486,8 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
     }
     throw std::logic_error("validated source has an invalid milestone");
   };
-  // Loop 1's transitions (the same rule from the same empty start), replayed in step order
-  // around the requirement holders: the graph sees the same group and edge call sequence.
+  // The lowering loop's thread transitions, replayed in step order around the requirement
+  // holders: the graph sees the edge groups in the lowering loop's sequence.
   std::size_t transition=0;
   const auto replay_transitions=[&](std::size_t until) {
     for(;transition<transitions.size() && transitions[transition].step<=until;++transition) {
@@ -522,7 +522,7 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
   }
   replay_transitions(std::numeric_limits<std::size_t>::max());
   graph.endEdgeGroup();
-  // Release the loop-1 tables now (assigning {} would keep their capacity).
+  // Release the lowering loop's tables now (assigning {} would keep their capacity).
   decltype(transitions)().swap(transitions);decltype(requirement_holders)().swap(requirement_holders);
   for (const EndpointDependency& dependency : source.dependencies) {
     addRequiredEdge(graph, resolve(dependency.from), resolve(dependency.to),
@@ -532,7 +532,7 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
   }
 
   const auto lower_source_edge=[&](const SourceEdge& edge) {
-    // Endpoint events only, looked up in the old order (source, target, then the kind check).
+    // Endpoint events only, looked up source, then target, then the kind check.
     const auto source_milestone=(edge.kind==SourceEdgeKind::kProgramOrder &&
         nonblocking_instructions.contains(edge.from)) ? Milestone::kIssue : Milestone::kComplete;
     const EventId source_event = *origins.resolve({edge.from, source_milestone});
@@ -569,9 +569,8 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
       covered+=count;
     });
     if(covered!=ordered_edges.size())throw std::logic_error("source edge families do not cover every edge");
-    const auto less=[](const SourceEdge& left,const SourceEdge& right){return lessSourceEdge(&left,&right);};
-    if(!std::is_sorted(ordered_edges.begin(),ordered_edges.end(),less))
-      std::sort(ordered_edges.begin(),ordered_edges.end(),less);
+    if(!std::is_sorted(ordered_edges.begin(),ordered_edges.end(),lessSourceEdge))
+      std::sort(ordered_edges.begin(),ordered_edges.end(),lessSourceEdge);
     for(const auto& edge:ordered_edges)lower_source_edge(edge);
   }
 

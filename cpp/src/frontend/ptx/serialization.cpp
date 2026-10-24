@@ -439,8 +439,7 @@ class Serializer {
       if(const auto* constant=dynamic_cast<const v::ConstantOp*>(&selector_node.operation());
           constant && !selector.conversion() && selector.indices().empty() && !selector.threadSelector()) {
         const auto thread=std::stoull(constant->literal());
-        auto member=producer.instanceThreads().indexOf(thread);
-        if(producer.instanceThreads().empty() && producer.origin().thread==thread)member=0;
+        const auto member=producer.memberIndex(thread);
         Require(member.has_value(),"missing_value_member_mapping","Selected value thread is absent");
         edge({source+*member,0,count},{target,1,count});return;
       }

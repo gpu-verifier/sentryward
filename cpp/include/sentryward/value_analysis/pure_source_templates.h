@@ -114,8 +114,8 @@ class PureSourceTemplates final {
   std::unordered_map<V,Record,ValueHash> records;
   std::deque<Summary> summary_pool; // stable references while exact() appends
   // A template key is a path tag (0 leaf, 1 literal, 2 operands), the interned
-  // plan signature and fixed-position integer fields. Equal keys are exactly
-  // the former equal length-prefixed signature strings.
+  // plan signature and fixed-position integer fields. Two keys are equal
+  // exactly when their tags, signatures and fields are.
   struct TemplateKey {std::size_t hash;std::vector<std::uint64_t> words;};
   struct TemplateProbe {std::size_t hash;std::span<const std::uint64_t> words;};
   struct TemplateHash {
@@ -185,7 +185,7 @@ class PureSourceTemplates final {
     if(!r.summary[policy])throw std::out_of_range("pure source summary is absent");
     return summary_pool[r.summary[policy]-1];
   }
-  // The first summary stays, as with the former map emplace.
+  // The first stored summary of a policy stays; a later store returns it.
   const Summary& store(Record& r,unsigned policy,const Summary& s) {
     if(!r.summary[policy]){summary_pool.push_back(s);r.summary[policy]=summary_pool.size();}
     return summary_pool[r.summary[policy]-1];
@@ -252,8 +252,8 @@ class PureSourceTemplates final {
       value=specialization.selected(g.canonicalInterpretation(value));
       const auto& type=g.type(value);
       if(value.pointer() || value.threadSelector() || !type.hasStaticShape())return {};
-      // One out-of-line size per step; type is immutable and the first call
-      // throws for a parameterized element exactly as before.
+      // One out-of-line size per step (type is immutable); it throws for a
+      // parameterized element.
       const auto bits=type.bitSize();
       if(bits%8 || offset>bits/8 || width>bits/8-offset)return {};
       if(!value.indices().empty()) {
@@ -384,7 +384,7 @@ class PureSourceTemplates final {
       signature_text="selected:";appendField(signature_text,type.toString());return p;
     }
     if(value.threadSelector())return p;
-    // One lookup, made where the first former call was; the graph is immutable.
+    // At most one definingNode lookup, made on first use; the graph is immutable.
     const v::Node* defining=nullptr;
     const auto node=[&]()->const v::Node& {if(!defining)defining=&g.definingNode(value);return *defining;};
     if(!value.conversion() && value.indices().empty())

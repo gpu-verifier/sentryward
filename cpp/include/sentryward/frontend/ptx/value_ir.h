@@ -55,15 +55,11 @@ struct ValueIrDiagnostic {
   value_ir::SourceOrigin origin;
 };
 
-struct ValueLoweringStatistics {
-  std::uint64_t template_steps=0, splits=0, final_templates=0;
-};
-
-// One function's Partition rules, shared by every
-// CTA and built on first use. Sparse: an entry only for an instruction that
-// reached Partition and whose opcode a rule can whitelist (cp, ld, mma,
-// ldmatrix, stmatrix, shfl, elect, tcgen05); null where Partition returns at
-// its whitelist or constant-copy exit. Static; never consumer state.
+// One function's Partition rules, shared by every CTA and built on first use.
+// Sparse: an entry only for an instruction that reached Partition and whose
+// opcode a rule can whitelist (cp, ld, mma, ldmatrix, stmatrix, shfl, elect,
+// tcgen05, vote); null where Partition returns at its whitelist or
+// constant-copy exit. Static; never consumer state.
 struct PartitionSpecCache {
   const Function *function = nullptr;
   std::unordered_map<std::uint32_t, std::unique_ptr<const PartitionSpec>> rules;
@@ -80,7 +76,6 @@ public:
         branch_capture_(branch_capture) {}
   void AddCta(const CtaFacts &facts);
   [[nodiscard]] bool complete() const { return diagnostics_.empty(); }
-  [[nodiscard]] const ValueLoweringStatistics& statistics() const { return statistics_; }
   [[nodiscard]] const std::vector<ValueIrDiagnostic> &diagnostics() const {
     return diagnostics_;
   }
@@ -91,7 +86,6 @@ private:
   bool stop_on_unsupported_ = false;
   bool prune_unused_compute_ = false;
   BranchScopeCapture* branch_capture_ = nullptr;
-  ValueLoweringStatistics statistics_;
   PartitionSpecCache partition_specs_;
 };
 } // namespace sentryward::frontend::ptx

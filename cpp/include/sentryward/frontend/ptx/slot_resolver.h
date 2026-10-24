@@ -1,16 +1,16 @@
 #pragma once
-// Pure slot resolution. Memory and Tma
-// run today's bodies, but append each table write as an intern step instead of
-// applying it, and catch any exception at their entry. The outcome -- the steps
-// in today's order and the terminal footprint or the original exception -- is
-// committed by UnitInterner::Commit at the Resources::Memory/Tma call site, so
-// the tables, results and exceptions are those of the immediate writes.
+// Pure slot resolution. Memory and Tma resolve one access but append each
+// table write as an intern step instead of applying it, and catch any
+// exception at their entry. The outcome -- the steps in write order and the
+// terminal footprint or the original exception -- is committed by
+// UnitInterner::Commit at the Resources::Memory/Tma call site, so the tables,
+// results and exceptions are those of applying each write immediately.
 //
 // Exactness: E1 the bodies read back only bindings of their own
 // steps, and read them from the step (E2: a stored binding equals its step);
 // E3 every bridge or extractor call precedes every step, so deferring the
 // writes only lets pure memo work run past a would-be alias_scope_conflict.
-// The memos (memory resources, the extractor) are today's, per instance.
+// The memos (memory resources, the extractor) are per instance.
 #include "sentryward/frontend/ptx/resources.h"
 
 #include <cstdint>
@@ -46,8 +46,14 @@ private:
                                              FallbackUse &fallback);
   ResolvedTma TmaBody(const RecordView &, const TmaRequest &, std::vector<SlotStep> &steps,
                       FallbackUse &fallback);
-  // The resource's binding step (formerly Resources::MemoryResource).
+  // The binding step of `bytes` at `offset` in `resource` (or in the pointer
+  // resource whose concrete allocation it names): checks captured extents and
+  // adds the concrete allocation's base; memoized per resource.
   ConstantStep MemoryResource(std::string resource, std::uint64_t offset, std::uint64_t bytes);
+  // The address-value extractor's expression for `operand` on the active lane
+  // (the extractor is created on first use). Each Definition it requests is
+  // read with the requested lane active; the active lane is then restored.
+  std::optional<nlohmann::json> ExtractAddress(const RecordView &, std::string_view operand);
   // The tensor map of `operand`; `descriptor` receives its key (or
   // "explicit:" + the contract's descriptor).
   const nlohmann::json &TensorMap(const RecordView &, std::string_view, const nlohmann::json &contract,

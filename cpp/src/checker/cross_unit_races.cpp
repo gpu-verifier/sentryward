@@ -7,7 +7,7 @@
 #include <optional>
 #include <set>
 #include <tuple>
-#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -66,7 +66,7 @@ struct PartIndex {
   template <class Visit> bool Query(I lo, I hi, Visit &&visit) const {
     const auto walk = [&](auto &&self, std::size_t node, std::size_t begin, std::size_t end) -> bool {
       if (begin >= spans.size() || spans[begin].lo >= hi || maximum[node] <= lo) return true;
-      if (end - begin == 1) return spans[begin].hi > lo ? visit(begin) : true;
+      if (end - begin == 1) return visit(begin); // maximum[node] == spans[begin].hi > lo
       const auto middle = begin + (end - begin) / 2;
       return self(self, 2 * node, begin, middle) && self(self, 2 * node + 1, middle, end);
     };
@@ -74,30 +74,29 @@ struct PartIndex {
   }
 };
 Interval Span(const CrossUnitPart &part) {
-  const auto &f = part.family;
-  const auto &p = part.footprint;
-  const I a = p.offset + p.step * I(f.first_member), b = p.offset + p.step * I(f.first_member + f.count - 1);
-  return {std::min(a, b), std::max(a, b) + I(p.bytes)};
+  const auto [lo, hi] = FootprintSpan(part.family, part.footprint);
+  return {lo, hi};
 }
-} // namespace
-
+// Unit-private spaces (owner-qualified or per thread): never shared across units.
 bool UnitPrivateSpace(std::string_view space) noexcept {
   return space == "shared" || space == "local" || space == "tensor" || space == "register" || space == "param" ||
          space == "const" || space.starts_with("shared::");
 }
+} // namespace
 
 CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const UnitQuotient &quotient,
-                                MemoryModel *model, const CrossUnitLimits &limits) {
+                                MemoryModel &model, const CrossUnitLimits &limits) {
   std::uint64_t unit_pairs = 0, refinements = 0, decisions = 0; // the work counted against `limits`
-  CrossUnitOutcome outcome;
-  const auto unknown = [](std::string reason) {
+  const auto outcome = [](Status status, std::string reason) {
     CrossUnitOutcome result;
-    result.status = Status::kUnknown;
+    result.status = status;
     result.reason = std::move(reason);
     return result;
   };
+  const auto unknown = [&](std::string reason) { return outcome(Status::kUnknown, std::move(reason)); };
+  const auto cap = [&](std::string reason) { return outcome(Status::kCap, std::move(reason)); };
   // No member unit: every unit pair is a representative pair (the normal checker's).
-  if (!quotient.Shared()) return outcome;
+  if (!quotient.Shared()) return {};
   const auto shared_class = [&](std::uint32_t klass) { return quotient.classes.at(klass).units.size() > 1; };
 
   // Global parts, by allocation; per alias the allocations that use it.
@@ -120,7 +119,7 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
     if (UnitPrivateSpace(fp.space)) continue;
     const auto klass = quotient.units.at(quotient.UnitOf(part.cta)).klass;
     const bool shared = shared_class(klass);
-    const bool lookup = model && !fp.symbolic.empty() && !fp.gathers.empty();
+    const bool lookup = !fp.symbolic.empty() && !fp.gathers.empty();
     if (fp.space != "global" || fp.allocation.empty() || (!fp.symbolic.empty() && !lookup) || !fp.affine) {
       // Not placeable against a translated copy: it may meet any other unit's global access.
       unplaced = true;
@@ -185,21 +184,16 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
         const I low = A.write_hull.front().lo - B.all_hull.back().hi;
         const I high = A.write_hull.back().hi - B.all_hull.front().lo;
         const auto &du = deltas.at(a), &dv = deltas.at(b);
-        std::unordered_map<std::int64_t, bool> memo; // d -> hulls or families meet (never true: we stop)
+        std::unordered_set<std::int64_t> memo; // d already decided disjoint (a meeting d returns)
         for (const auto &[delta_u, i] : du) {
           const I lo = I(delta_u) + low, hi = I(delta_u) + high;
           auto first = std::upper_bound(dv.begin(), dv.end(), lo, [](I x, const auto &e) { return x < I(e.first); });
           for (auto it = first; it != dv.end() && I(it->first) < hi; ++it) {
             const auto [delta_v, j] = *it;
             if ((a == b && i == j) || (i == 0 && j == 0)) continue; // same unit; representative pair
-            if (++unit_pairs > limits.unit_pairs) {
-              CrossUnitOutcome cap;
-              cap.status = Status::kCap;
-              cap.reason = "unit_pairs";
-              return cap;
-            }
+            if (++unit_pairs > limits.unit_pairs) return cap("unit_pairs");
             const std::int64_t d = delta_v - delta_u;
-            if (!memo.try_emplace(d, false).second) continue;
+            if (!memo.insert(d).second) continue;
             if (!Meet(A.write_hull, B.all_hull, I(d))) continue;
             // Exact: every write part of A against the parts of B whose translated span meets it.
             for (const auto k : A.writes) {
@@ -209,20 +203,14 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
               B.all.Query(span.lo - I(d), span.hi - I(d), [&](std::size_t index) {
                 const auto &q = parts[B.all.parts[index]];
                 if (++refinements > limits.refinements) {
-                  CrossUnitOutcome cap;
-                  cap.status = Status::kCap;
-                  cap.reason = "refinements";
-                  found = cap;
+                  found = cap("refinements");
                   return false;
                 }
                 auto shifted = q.footprint;
                 shifted.offset += I(d);
                 auto relation = ClassifyFamilyOverlap(p.family, p.footprint, q.family, shifted);
                 if (!relation.unknown.empty()) {
-                  CrossUnitOutcome u;
-                  u.status = Status::kUnknown;
-                  u.reason = "family_overlap_unknown:" + allocation;
-                  found = u;
+                  found = unknown("family_overlap_unknown:" + allocation);
                   return false;
                 }
                 for (const auto &r : relation.overlap)
@@ -413,12 +401,7 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
             const bool zero = G.units.front() == 0 && H.units.front() == 0;
             const std::uint64_t excluded = a == b ? (g == h ? G.units.size() : 0) : (zero ? 1 : 0);
             if (pairs == excluded) continue;
-            if (++unit_pairs > limits.unit_pairs) {
-              CrossUnitOutcome cap;
-              cap.status = Status::kCap;
-              cap.reason = "unit_pairs";
-              return cap;
-            }
+            if (++unit_pairs > limits.unit_pairs) return cap("unit_pairs");
             std::int64_t d;
             if (__builtin_sub_overflow(H.delta.front(), G.delta.front(), &d)) return unknown("delta_overflow:" + allocation);
             std::vector<std::int64_t> key;
@@ -446,19 +429,17 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
                   for (const auto k : P.writes) {
                     const auto &p = parts[k];
                     const auto span = Span(p);
+                    auto x = p.footprint;
+                    x.symbolic.clear();
+                    x.gathers.clear();
                     std::optional<CrossUnitOutcome> found;
                     Q.all.Query(span.lo - I(d), span.hi - I(d), [&](std::size_t index) {
                       const auto &q = parts[Q.all.parts[index]];
                       if (++refinements > limits.refinements) {
-                        CrossUnitOutcome cap;
-                        cap.status = Status::kCap;
-                        cap.reason = "refinements";
-                        found = cap;
+                        found = cap("refinements");
                         return false;
                       }
-                      auto x = p.footprint, y = q.footprint;
-                      x.symbolic.clear();
-                      x.gathers.clear();
+                      auto y = q.footprint;
                       y.symbolic.clear();
                       y.gathers.clear();
                       y.offset += I(d);
@@ -474,7 +455,7 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
                   continue;
                 }
                 const auto x = region(A, P, G, P.write_hull), y = region(B, Q, H, Q.all_hull);
-                if (x && y && model->translatedFamilyOverlap(single, *x, single, *y).status == OverlapStatus::kDisjoint)
+                if (x && y && model.translatedFamilyOverlap(single, *x, single, *y).status == OverlapStatus::kDisjoint)
                   continue;
                 // The hulls may meet: part by part.
                 for (const auto k : P.writes) {
@@ -482,13 +463,8 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
                   const auto px = placed(p, A, G);
                   for (const auto l : Q.all.parts) {
                     const auto &q = parts[l];
-                    if (++decisions > limits.symbolic_decisions) {
-                      CrossUnitOutcome cap;
-                      cap.status = Status::kCap;
-                      cap.reason = "symbolic_decisions";
-                      return cap;
-                    }
-                    if (model->translatedFamilyOverlap(p.family, px, q.family, placed(q, B, H)).status !=
+                    if (++decisions > limits.symbolic_decisions) return cap("symbolic_decisions");
+                    if (model.translatedFamilyOverlap(p.family, px, q.family, placed(q, B, H)).status !=
                         OverlapStatus::kDisjoint)
                       return unknown("symbolic_overlap:" + allocation);
                   }
@@ -499,6 +475,6 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
       }
     }
   }
-  return outcome;
+  return {};
 }
 } // namespace sentryward::algorithm

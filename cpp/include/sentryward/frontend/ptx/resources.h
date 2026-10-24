@@ -29,7 +29,6 @@ using SharedAddress = std::pair<CtaRank, std::uint64_t>;
 std::string CoordinateText(Coordinates);
 std::string Opcode(const Instruction &);
 std::vector<std::string> OperandTexts(const Module &, const Instruction &);
-// Trim and Has: unit_facts.h.
 std::string CanonicalSpace(std::string);
 std::uint64_t Unsigned(const Integer &, std::string_view,
                        std::uint64_t maximum = UINT64_MAX);
@@ -90,6 +89,13 @@ struct ExpressionStep {
   StoredAllocation allocation;
   std::optional<std::string> expression;
 };
+// The ExpressionStep whose .expression is its `serialized` text.
+inline ExpressionStep SerializedExpressionStep(std::string space, std::string serialized, std::string alias,
+                                               StoredAllocation allocation) {
+  // Braced: the name copy is taken before the expression is moved.
+  return ExpressionStep{std::move(space), serialized, std::move(alias), std::move(allocation),
+                        std::move(serialized)};
+}
 // The TMA region patch (resources.cpp Tma): .allocation/.offset if present,
 // then .expression. In a slot outcome `target` is the patched ExpressionStep's
 // index in the same ordered step list; UnitInterner::Apply(PatchStep, id)
@@ -106,7 +112,7 @@ struct BarrierStep {
 };
 using InternStep = std::variant<ConstantStep, ExpressionStep, PatchStep, BarrierStep>;
 // A constant key formatted once, for a run of ConstantSteps {key, offset}
-// that share it (matrix fragments): today's code formats that name once.
+// that share it (matrix fragments).
 struct PreparedKey {
   AllocationKey key;
   FormattedAllocation formatted;
@@ -131,7 +137,7 @@ struct SlotConfig {
   AddressBridge bridge;
 };
 // Resources::Memory's arguments. `operand` and `contract` are the caller's and
-// must outlive the call; `memo` is filled only while recording (class mode).
+// must outlive the call.
 struct MemoryRequest {
   MemoryRequest(std::string_view operand, const nlohmann::json &contract, std::uint64_t bytes,
                 std::string space) noexcept
@@ -140,7 +146,6 @@ struct MemoryRequest {
   const nlohmann::json &contract;
   std::uint64_t bytes;
   std::string space;
-  std::optional<MemoRef> memo;
 };
 // Resources::Tma's arguments. The executor's runtime tensor maps are searched
 // after the program's own (null: none).
@@ -167,7 +172,7 @@ struct SlotStep {
 // (std::in_place_index<0>), so the outcome holds it without a move.
 template <class T> using SlotTerminal = std::variant<T, SlotError>;
 template <class T> struct SlotOutcome {
-  std::vector<SlotStep> prefix;  // steps today's code applied before the terminal point; empty on the hot path
+  std::vector<SlotStep> prefix;  // steps applied before the terminal point; empty on the hot path
   SlotTerminal<T> terminal;
   FallbackUse fallback = FallbackUse::None;  // the bridge or extractor was consulted, whatever it returned
 };
@@ -210,18 +215,17 @@ struct ResolvedTma {
   // first byte in its global allocation, base + sum of coordinate x stride (bytes).
   std::optional<AbstractAffine> region_affine = std::nullopt;
 };
-// The recorder's query of one slot (event H5); built only while recording.
+// The recorder's query of one slot (a SlotMemory or SlotTma event); built only while recording.
 // `active_lane`: the Resources' lane at the call (Definition and local owners read it).
 struct SlotQuery {
   ConsumerTag consumer;
   RecordView site;
   const MemoryRequest *memory;
   const TmaRequest *tma;
-  bool bridge_configured;
   std::optional<LaneRef> active_lane;
 };
 // The only writer of AddressTable and BarrierTable. It
-// owns no state: each Apply performs today's table write at today's program
+// owns no state: each Apply performs its table write at the caller's program
 // point, immediately, and names owners through the frame (table keys stay
 // absolute).
 class UnitInterner {
@@ -237,14 +241,14 @@ public:
   void Apply(PatchStep &&step, AddressId target);
   BarrierLifetimeId Apply(BarrierStep &&step);
   [[nodiscard]] PreparedKey Prepare(AllocationKey key) const;
-  // A consumer read of a binding: .at() semantics; event H7.
+  // A consumer read of a binding: .at() semantics; a BindingRead event.
   const ConstantAddressBinding &Binding(AddressId id) const {
     if (facts_.recording()) [[unlikely]]
       facts_.Note(query::BindingRead{id});
     return addresses_.bindings.at(id.value());
   }
-  // bulk_reduce's base alignment (its only caller): event H8, then today's
-  // bulk_reduction_alignment throw when binding.offset % modulus != 0.
+  // bulk_reduce's base alignment (its only caller): an AbsoluteCheck event, then
+  // the bulk_reduction_alignment throw when binding.offset % modulus != 0.
   void RequireAligned(const ConstantAddressBinding &binding, std::uint64_t modulus, AddressId id) const;
   // BarrierTable::Location (executor only).
   std::tuple<std::string, Coordinates, std::string> Location(BarrierLifetimeId id) const {
@@ -261,9 +265,9 @@ public:
 
 private:
   friend class Resources;
-  // The resolver's read-back of a binding it interned earlier in the same call
-  // (E1, slot_resolver.h): not a consumer read, so no event. The slot resolver
-  // derives these from the steps (E2).
+  // The read-back of a binding interned earlier in the same call (Abstract's
+  // base): not a consumer read, so no event. The slot resolver reads such a
+  // binding from its step instead (a stored binding equals its step).
   const ConstantAddressBinding &Stored(AddressId id) const { return addresses_.bindings.at(id.value()); }
   AddressId Constant(FormattedAllocation &&formatted, std::uint64_t offset);
   // Applies `steps` in order; the result holds each step's AddressId or
@@ -294,7 +298,7 @@ public:
   const FactSource &facts;
   const UnitFrame &frame;
   UnitInterner &interner() noexcept { return interner_; }
-  // A consumer read of a binding (event H7).
+  // A consumer read of a binding (a BindingRead event).
   const ConstantAddressBinding &Binding(AddressId id) const { return interner_.Binding(id); }
   void SetLane(LaneRef);
   std::optional<std::uint32_t> SharedOwner(const RecordView &e, std::string_view token) {
@@ -314,10 +318,11 @@ public:
                     const nlohmann::json &offset, std::optional<std::uint64_t> bytes,
                     std::optional<CtaRank> owner = {});
   // The slots: SlotResolver resolves without writing either
-  // table; the interner then commits the outcome here, at today's call site.
+  // table; the interner then commits the outcome here, at the call site.
   Fragment Memory(const RecordView &, const MemoryRequest &);
   TmaAccesses Tma(const RecordView &, const TmaRequest &);
-  // C3 replay only (query_log.cpp): the slot outcome without its commit, on a
+  // Class-mode slot replay only (query_log.cpp, which compares a member's slot
+  // outcomes with the logged ones): the slot outcome without its commit, on a
   // Resources over a member's facts and scratch tables. Nothing is interned.
   [[nodiscard]] SlotOutcome<ResolvedFootprint> ReplayMemory(const RecordView &, const MemoryRequest &);
   [[nodiscard]] SlotOutcome<ResolvedTma> ReplayTma(const RecordView &, const TmaRequest &);
@@ -350,9 +355,9 @@ private:
         executions;
   };
   mutable std::unordered_map<PathKey,OccurrenceIndex,PathKeyHash> occurrence_indices_;
-  // The cached copies keep today's entry size (RecordCopy): an entry's key
-  // fixes the lane, position, kind and slice of its read, and Definition views
-  // the copy with them.
+  // The cached copies have an ExecutedInstruction's size (RecordCopy): an
+  // entry's key fixes the lane, position, kind and slice of its read, and
+  // Definition views the copy with them.
   struct LaneIndex {
     std::map<DynamicKey, RecordCopy> requested;         // ReadFull
     std::map<DynamicKey, RecordCopy> address_requested; // ReadSlice over address_instruction_registers_

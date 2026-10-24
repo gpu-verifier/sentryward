@@ -320,19 +320,12 @@ private:
     });
     return result;
   }
-  auto data() const { return records().data(); }
   // A pure evaluator identity of the template binding of `reg` at `index`,
   // valid only within this template path; regardless of expansion.
   std::optional<std::size_t> pathEvaluationIdentity(std::size_t index,std::uint32_t reg) const {
     if(index>=size())throw std::out_of_range("instruction index");
     return register_identity_?register_identity_(index,reg):std::nullopt;
   }
-  auto begin() const { return records().begin(); }
-  auto end() const { return records().end(); }
-  const auto &operator[](std::size_t i) const { return records()[i]; }
-  const auto &at(std::size_t i) const { return records().at(i); }
-  const auto &back() const { return records().back(); }
-  const auto &front() const { return records().front(); }
   void materialize() { (void)records(); }
   std::size_t size_{};
   mutable Storage records_;
@@ -400,7 +393,7 @@ struct ExecutionStorage {
   static const InstructionSequence::Storage &Records(const InstructionSequence &sequence) { return sequence.records(); }
   static const ExecutedInstruction &Metadata(const InstructionSequence &sequence, std::size_t i) { return sequence.metadata(i); }
   static ExecutedInstruction Read(const InstructionSequence &sequence, std::size_t i) { return sequence.read(i); }
-  // The former ExecutionProgram::KnownRegister: the first binding named `name`.
+  // The first binding named `name`.
   static const Scalar *Value(const ExecutionProgram &program, const ExecutedInstruction &record,
                              std::string_view name) {
     for (const auto &[id, value] : record.known_registers())

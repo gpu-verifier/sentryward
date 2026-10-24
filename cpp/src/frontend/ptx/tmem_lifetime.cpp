@@ -16,11 +16,11 @@ using PointerMap = std::unordered_map<std::string_view, TmemPointer>;
 struct Atom {
   TmemAtomSite site;
   TmemLaneExecutions lanes;
-  std::deque<RecordHolder> held; // the Full reads `lanes` views (T3); stable addresses
+  std::deque<RecordHolder> held; // the Full reads `lanes` views (ExpansionSite::Tmem); stable addresses
 };
 using Atoms = std::map<TmemAllocationId, Atom>;
-// One lane's records for the analysis passes. T1 expands the lane, as before;
-// T3 never does: every pass walks metadata, and a step that reads values gets
+// One lane's records for the analysis passes. BlockScaleTmem expands the lane;
+// Tmem never does: every pass walks metadata, and a step that reads values gets
 // the record read at that position (Full, or a Slice of the registers it
 // names). On an expanded lane, whichever site expanded it, the Expanded
 // element serves both, as lowering's own reads do.
@@ -173,17 +173,19 @@ ResolvedTmemOperand ResolveExpression(const FactSource &facts,
   }
   return {};
 }
+std::optional<TmemPointer> FindPointer(const PointerMap &pointers,
+                                       std::string_view name) {
+  auto found = pointers.find(name);
+  return found == pointers.end() ? std::nullopt
+                                 : std::optional(found->second);
+}
 ResolvedTmemOperand ResolveExpression(const FactSource &facts,
                                       const RecordView &execution,
                                       std::string_view token,
                                       const PointerMap &pointers) {
   return ResolveExpression(
       facts, execution, token,
-      [&](std::string_view name) -> std::optional<TmemPointer> {
-        auto found = pointers.find(name);
-        return found == pointers.end() ? std::nullopt
-                                       : std::optional(found->second);
-      });
+      [&](std::string_view name) { return FindPointer(pointers, name); });
 }
 // The TmemPointer alternative of ResolveExpression(token, pointers), found in
 // the same order without reading a value. The one exception: a pointer split
@@ -196,20 +198,14 @@ std::optional<TmemPointer> ResolvePointer(const FactSource &facts,
   token = Trim(token);
   if (ParseInteger(token))
     return {};
-  const auto pointer =
-      [&](std::string_view name) -> std::optional<TmemPointer> {
-    auto found = pointers.find(name);
-    return found == pointers.end() ? std::nullopt
-                                   : std::optional(found->second);
-  };
-  if (auto found = pointer(token))
+  if (auto found = FindPointer(pointers, token))
     return found;
   // Without a '+' or '-' after its first character, the token splits to
-  // itself or not at all, and pointer(token) has just failed.
+  // itself or not at all, and FindPointer(token) has just failed.
   if (token.find_first_of("+-", 1) == std::string_view::npos)
     return {};
   if (auto split = SplitAddress(token)) {
-    if (auto found = pointer(split->first)) {
+    if (auto found = FindPointer(pointers, split->first)) {
       if (Known(facts, execution, token)) {
         return {};
       }
@@ -301,10 +297,10 @@ void AllocationRecords(const FactSource &facts, const Atoms &atoms,
   }
 }
 // Operands are classified by ResolvePointer; the integer partner of a pointer
-// (the Integer alternative of the unchanged ResolveExpression) is read only
-// where the result uses it. This returns what resolving both operands eagerly
-// returned: every skipped lookup is a pure const read whose result cannot
-// change the return value. An operand classified as a pointer is exactly one
+// (the Integer alternative of ResolveExpression) is read only where the result
+// uses it. This returns what resolving both operands eagerly would return:
+// every skipped lookup is a pure const read whose result cannot change the
+// return value. An operand classified as a pointer is exactly one
 // whose ResolveExpression is a TmemPointer, so it has no Integer alternative
 // and is never read as a partner.
 std::optional<TmemPointer> CopyPointer(const FactSource &facts,
@@ -347,28 +343,19 @@ std::optional<TmemPointer> CopyPointer(const FactSource &facts,
   const auto left = classify(1), right = classify(2);
   const auto *lp = left ? &*left : nullptr;
   const auto *rp = right ? &*right : nullptr;
-  if (instruction.opcode == "xor" && modifiers[0] == "b32") {
+  if ((instruction.opcode == "xor" || instruction.opcode == "and") && modifiers[0] == "b32") {
+    const bool exclusive = instruction.opcode == "xor";
     for (const auto &[pointer, other] :
          {std::pair{lp, std::size_t{2}}, std::pair{rp, std::size_t{1}}}) {
       if (!pointer || (other == 2 ? rp : lp))
         continue;
       if (const auto integer = partner(other)) {
         const auto mask = (*integer & Integer(0xffffffffU)).convert_to<std::uint32_t>();
-        // Preserve the allocation when only subword-selector bits change.
-        if ((mask & 0x3fffffffU) == 0)
-          return TmemPointer{pointer->allocation, pointer->encoded_offset ^ mask};
-      }
-    }
-  }
-  if (instruction.opcode == "and" && modifiers[0] == "b32") {
-    for (const auto &[pointer, other] :
-         {std::pair{lp, std::size_t{2}}, std::pair{rp, std::size_t{1}}}) {
-      if (!pointer || (other == 2 ? rp : lp))
-        continue;
-      if (const auto integer = partner(other)) {
-        const auto mask = (*integer & Integer(0xffffffffU)).convert_to<std::uint32_t>();
-        if ((mask & 0xffffffe0U) == 0xffffffe0U)
-          return TmemPointer{pointer->allocation, pointer->encoded_offset & mask};
+        // Preserve the allocation when xor changes only subword-selector bits,
+        // or and clears only bits among the low five.
+        if (exclusive ? (mask & 0x3fffffffU) == 0 : (mask & 0xffffffe0U) == 0xffffffe0U)
+          return TmemPointer{pointer->allocation,
+                             exclusive ? pointer->encoded_offset ^ mask : pointer->encoded_offset & mask};
       }
     }
   }
@@ -550,7 +537,6 @@ TmemProvenanceIndex BuildProvenance(const CtaFacts &facts, ExpansionSite site,
     }
   }
   std::set<TmemPublicationRead> reads;
-  std::map<TmemAllocationId, TmemPublicationCandidates> candidates;
   std::set<TmemLifetimeIssue> issues(result.issues.begin(),
                                      result.issues.end());
   std::size_t count = 0;
@@ -608,13 +594,6 @@ TmemProvenanceIndex BuildProvenance(const CtaFacts &facts, ExpansionSite site,
         if (!selected && choices.size() == 1)
           selected = choices.front();
         if (!selected && choices.size() > 1) {
-          std::vector<TmemAllocationId> ids;
-          for (const auto *choice : choices)
-            ids.push_back(choice->identifier);
-          candidates.try_emplace(
-              key,
-              TmemPublicationCandidates{Site(facts, warp, execution),
-                                        *loaded_slot, ids});
           if (auto resolved = options.publication_resolution.find(key);
               resolved != options.publication_resolution.end()) {
             for (const auto *choice : choices)
@@ -650,8 +629,6 @@ TmemProvenanceIndex BuildProvenance(const CtaFacts &facts, ExpansionSite site,
     }
   }
   result.publication_reads.assign(reads.begin(), reads.end());
-  for (auto &[_, candidate] : candidates)
-    result.publication_candidates.push_back(std::move(candidate));
   result.issues.assign(issues.begin(), issues.end());
   return result;
 }

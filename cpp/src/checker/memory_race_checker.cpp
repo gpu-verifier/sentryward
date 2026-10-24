@@ -309,8 +309,8 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunQuotientMemoryCheck(
 
 // Cross-CTA class mode: after the quotient search ended without a race, every global pair with an
 // access in a member unit (cross_unit_races.h). A race found there is reported as the first race; an
-// Unknown, a work cap, or a race behind an unresolved quotient search (whose first finding today
-// could be either) restarts the launch per unit.
+// Unknown, a work cap, or a race behind an unresolved quotient search (whose first finding on the
+// per-unit path could be either) restarts the launch per unit.
 static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
     const SourceProgram& source, const PassCertificate& certificate,
     MemoryModel& memory, const MemoryRaceOptions& options, StaticHbQueries* shared_hb,
@@ -331,9 +331,9 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
   // Representative family parts, split at CTA boundaries (actors of one CTA are contiguous and a
   // family's actor is affine in its member, so each CTA holds one member range).
   std::vector<CrossUnitPart> parts;
-  bool unplaceable = false;
   for (const auto& family : families) {
     if (!family.count) continue;
+    const bool write = family.first.mode == AccessMode::kWrite;
     const auto cta_of = [&](std::size_t member) { return actors.Cta(family.at(member).actor); };
     std::vector<std::pair<std::size_t, std::size_t>> ranges; // [begin, end) member ranges, one CTA each
     std::size_t begin = family.first_member;
@@ -355,13 +355,12 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
       part.first = family.at(first);
       part.first_member = first;
       part.count = stop - first;
-      const bool write = family.first.mode == AccessMode::kWrite;
       const auto cta = cta_of(first);
       if (auto footprint = memory.crossUnitFootprint(part)) {
         parts.push_back({std::move(part), std::move(*footprint), write, cta});
         continue;
       }
-      // As the family checker: one footprint per member, merged into exact progressions.
+      // One footprint per member (step 0), unmerged.
       for (std::size_t member = first; member < stop; ++member) {
         auto single = family;
         single.first = family.at(member);
@@ -371,7 +370,6 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
         if (!footprint) {
           FamilyFootprint none; // not placeable
           parts.push_back({std::move(single), std::move(none), write, cta});
-          unplaceable = true;
           continue;
         }
         footprint->offset += footprint->step * address_solver::Int(member);
@@ -380,8 +378,7 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
       }
     }
   }
-  (void)unplaceable;
-  const auto outcome = CheckCrossUnit(parts, *options.units, &memory);
+  const auto outcome = CheckCrossUnit(parts, *options.units, memory);
   using Status = CrossUnitOutcome::Status;
   if (outcome.status == Status::kNone) return output;
   if (outcome.status == Status::kUnknown) throw UnitClassRestart{"cross_unit_unknown:" + outcome.reason};

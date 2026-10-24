@@ -1077,7 +1077,7 @@ struct Checker {
         }
         else {
           if(auto hit=a.find_node(n.op,xs,n.data,n.tag))out=*hit;
-          if(out==invalid)++a.stats["ep_body_missing_opaque_"+n.op];
+          else ++a.stats["ep_body_missing_opaque_"+n.op];
         }
       }
       memo.emplace(id,out);return out;

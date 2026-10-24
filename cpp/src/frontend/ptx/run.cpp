@@ -96,9 +96,6 @@ struct Options {
   std::uint64_t max_steps_per_thread = 100000;
   alg::PtxAssumptions assumptions;
   // Cross-CTA class mode and value lifting are decided automatically (PlanUnits).
-  // Off analyzes every unit; only the developer setting SENTRYWARD_UNIT_CLASSES=off
-  // (on-vs-off comparisons, not a public option) selects it.
-  ptx::UnitClassMode unit_classes = ptx::UnitClassMode::On;
 };
 std::uint64_t Count(const std::string &text) {
   std::uint64_t n{};
@@ -272,15 +269,6 @@ Options Arguments(int argc, char **argv) {
   if (o.timeout < 0 || o.sync_timeout <= 0 || (o.rss_mib && (*o.rss_mib == 0 || *o.rss_mib > UINT64_MAX / (1024 * 1024))) || o.threads < 1 ||
       o.threads > 64 || o.max_steps_per_thread == 0 || (o.extract && o.semantic))
     throw std::invalid_argument("invalid timeout/RSS/thread option");
-  // Developer on-vs-off comparisons only: SENTRYWARD_UNIT_CLASSES=off analyzes
-  // every unit; on is the default. The results are the same either way; the
-  // analysis statistics differ (program counts such as threads, and
-  // dependency-compression statistics, count only the units analysed).
-  if (const char *text = std::getenv("SENTRYWARD_UNIT_CLASSES")) {
-    const auto mode = ptx::ParseUnitClassMode(text);
-    if (!mode) throw std::invalid_argument(std::string("unknown SENTRYWARD_UNIT_CLASSES value ") + text);
-    o.unit_classes = *mode;
-  }
   return o;
 }
 struct FileError : std::runtime_error {
@@ -452,8 +440,7 @@ struct Monitor {
         else result["equivalence"]={{"status","blocked"},{"reason","verification_prerequisite_not_satisfied"},
           {"prerequisite_status",result.value("status","timeout")},{"stage",stage}};
       }
-      sentryward::results::Normalize(result, "kernel_verification");
-      sentryward::results::Publish(result);
+      result = sentryward::results::PublicReport(std::move(result), "kernel_verification");
       try {
         Write(options.report, result);
       } catch (...) {
@@ -477,7 +464,6 @@ struct Monitor {
 sentryward::value_analysis::UnitLifting ClassLifting(const alg::UnitQuotient &q) {
   namespace va = sentryward::value_analysis;
   va::UnitLifting lifting;
-  lifting.classes = true;
   for (int axis = 0; axis < 3; ++axis) {
     lifting.grid[axis] = q.grid[axis];
     lifting.unit_shape[axis] = q.unit_shape[axis];
@@ -584,10 +570,10 @@ bool FirstFailureMatchesPerUnit(const sentryward::value_ir::Graph &values,
 }
 // Class-mode binding diagnostics: every per-occurrence entry of the
 // quotient's list stands for each CTA of its class at the same rank. The list
-// is expanded in launch order, which is today's order when the entries were
+// is expanded in launch order, which is the per-unit run's order when the entries were
 // produced CTA by CTA (the linker visits occurrences in (cta, ...) order) or
 // are all equal (code and message carry no CTA). incomplete_value_semantics
-// summarizes the launch's first value diagnostic once, today too: not
+// summarizes the launch's first value diagnostic once, in the per-unit run too: not
 // weighted. An entry without a CTA, or an order that cannot be expanded, is
 // not expandable (per-unit run). O(entries + CTAs).
 struct BindingExpansion {
@@ -662,12 +648,11 @@ Json AnalyzeScalarFold(const sentryward::value_ir::Graph& values,
         // The first-item rule: a class-mode fold failure that is provably the per-unit
         // run's first failure is reported as computed; any other refusal restarts.
         bool matches = false;
-        if (lifting->classes && folded.diagnostic)
-          matches = FirstFailureMatchesPerUnit(values, eliminated, folded, *lifting);
+        if (folded.diagnostic) matches = FirstFailureMatchesPerUnit(values, eliminated, folded, *lifting);
         if (!matches) throw alg::UnitClassRestart{"value_lifting"};
       }
       // The fold's own row maps (audited row widths) after the value passes' ones.
-      if (lifting->classes && RowModulusViolation(*lifting)) throw alg::UnitClassRestart{"value_lifting"};
+      if (RowModulusViolation(*lifting)) throw alg::UnitClassRestart{"value_lifting"};
     }
     report = {{"status", folded.complete ? "ready" : "unsupported"},
               {"source_outputs", folded.source_outputs},
@@ -760,12 +745,10 @@ Json AnalyzeScalarFold(const sentryward::value_ir::Graph& values,
 // Per-unit restart: a class-mode run that cannot finish exactly (unit
 // closure, (I.5), a cross-unit Unknown or work cap) re-executes this binary
 // (same pid, same arguments) with class mode off, so the per-unit run is
-// exactly today's, process-global ids included. The environment variable
-// SENTRYWARD_UNIT_RESTART alone selects the per-unit run (TakeUnitRestart; no
-// option): it carries why and the time already spent (the watchdog keeps
-// counting).
+// exactly a fresh run without classes, process-global ids included. The environment
+// variable SENTRYWARD_UNIT_RESTART alone selects the per-unit run (TakeUnitRestart;
+// no option): it carries the time already spent (the watchdog keeps counting).
 struct UnitRestartState {
-  std::string reason;
   double elapsed_s = 0;
 };
 std::optional<UnitRestartState> TakeUnitRestart() {
@@ -773,7 +756,7 @@ std::optional<UnitRestartState> TakeUnitRestart() {
   if (!text) return std::nullopt;
   const auto state = Json::parse(text);
   unsetenv("SENTRYWARD_UNIT_RESTART");
-  return UnitRestartState{state.at("reason").get<std::string>(), state.at("elapsed_s").get<double>()};
+  return UnitRestartState{state.at("elapsed_s").get<double>()};
 }
 // A --reference-stdin reference is read once, before execution; a class-mode
 // run keeps its bytes in an anonymous file (a memfd on Linux) so that the
@@ -816,8 +799,8 @@ std::optional<std::uint64_t> AllocatedBytes() {
 #endif
 }
 [[noreturn]] void RestartPerUnit(char **argv, const UnitRestartState &state, int stdin_spool) {
-  const Json carried{{"reason", state.reason}, {"elapsed_s", state.elapsed_s}};
-  if (setenv("SENTRYWARD_UNIT_RESTART", carried.dump(-1, ' ', false, Json::error_handler_t::replace).c_str(), 1))
+  const Json carried{{"elapsed_s", state.elapsed_s}};
+  if (setenv("SENTRYWARD_UNIT_RESTART", carried.dump().c_str(), 1))
     throw std::runtime_error("unit-class restart: environment");
   // The spooled reference becomes the re-run's stdin (dup2 clears close-on-exec).
   if (stdin_spool >= 0 && (lseek(stdin_spool, 0, SEEK_SET) != 0 || dup2(stdin_spool, STDIN_FILENO) < 0))
@@ -859,7 +842,7 @@ int main(int argc, char **argv) {
       try {
         if (!std::isfinite(options.equivalence_timeout) || options.equivalence_timeout <= 0)
           throw std::invalid_argument("invalid equivalence timeout");
-        if (options.unit_classes != ptx::UnitClassMode::Off && !unit_restart) {
+        if (!unit_restart) {
           // A class-mode run may restart per unit; keep the bytes for it.
           std::string bytes{std::istreambuf_iterator<char>(std::cin), {}};
           reference_spool = SpoolReference(bytes);
@@ -901,9 +884,9 @@ int main(int argc, char **argv) {
     // threads, dependency-compression statistics) count only the units analysed.
     std::unique_ptr<alg::UnitQuotient> quotient;
     std::optional<sentryward::value_analysis::UnitLifting> unit_lifting;
-    const auto restart_per_unit = [&](const std::string &reason) {
+    const auto restart_per_unit = [&] {
       if (unit_restart) throw std::logic_error("unit-class restart during the per-unit re-run");
-      RestartPerUnit(argv, UnitRestartState{reason, monitor.Elapsed()}, reference_spool);
+      RestartPerUnit(argv, UnitRestartState{monitor.Elapsed()}, reference_spool);
     };
 #ifdef SENTRYWARD_DEVELOPMENT_EXPORTS
 #include "sentryward/development/runner/dot_options.inc"
@@ -919,7 +902,7 @@ int main(int argc, char **argv) {
     // whose result cannot stand for the members refuses lifting; the launch
     // re-runs per unit before the later (more expensive) stages.
     const auto refuse_lifting = [] { throw alg::UnitClassRestart{"value_lifting"}; };
-    const auto class_lifting = [&] { return unit_lifting && unit_lifting->classes; };
+    const auto class_lifting = [&] { return unit_lifting.has_value(); };
     run_values = [&](ptx::CheckedMemoryActions actions) {
       monitor.Stage("value_analysis.prepare");
       if (!semantic_program->valuesComplete()) {
@@ -931,7 +914,7 @@ int main(int argc, char **argv) {
       }
       if (!actions.complete()) {
         const auto& diagnostic = actions.diagnostics.front();
-        // Its first diagnostic is the quotient's, not necessarily today's.
+        // Its first diagnostic is the quotient's, not necessarily the per-unit run's.
         if (class_lifting()) refuse_lifting();
         value_analysis = {{"status", "unsupported"}, {"reason", diagnostic.code},
             {"message", diagnostic.message}, {"stage", "memory_effect_binding"}};
@@ -1173,36 +1156,33 @@ int main(int argc, char **argv) {
       unit_gates.scalar_fold_dump = !options.dump_scalar_fold.empty();
       unit_gates.exhaustive_search = options.exhaustive_memory_search;
       unit_gates.continue_search = options.continue_memory_search;
-      // The per-unit re-run (class mode off anyway) reads the spooled copy as its stdin.
-      unit_gates.reference_stdin = options.reference_stdin && reference_spool < 0 && !unit_restart;
+      // A stdin reference that could not be spooled keeps class mode off (in the
+      // per-unit re-run, class mode is off anyway).
+      unit_gates.reference_stdin = options.reference_stdin && reference_spool < 0;
 #ifdef SENTRYWARD_DEVELOPMENT_EXPORTS
       unit_gates.development_exports = true;
 #endif
-      auto unit_plan = ptx::PlanUnits(options.unit_classes, config, module, *function, unit_gates);
+      auto unit_plan = ptx::PlanUnits(config, *function, unit_gates);
       if (unit_restart) unit_plan.class_mode = false; // the per-unit re-run
-      // The classes of this launch (class mode only).
-      std::unique_ptr<ptx::UnitClasses> classes;
-      if (unit_plan.active && unit_plan.class_mode) {
-        // The logs' budget: min(2 GiB, 10% of --rss-limit-mib).
-        std::uint64_t budget = std::uint64_t(2) << 30;
-        if (options.rss_mib) budget = std::min(budget, *options.rss_mib * 1048576 / 10);
-        classes = std::make_unique<ptx::UnitClasses>(unit_plan, budget);
-      }
-      const auto make_builder = [&] {
-        return std::make_unique<ptx::SemanticProgramBuilder>(module, *function, poll,
+      // Class mode's memory budget, min(2 GiB, 10% of --rss-limit-mib): the class logs'
+      // and the look-ahead's executed units in flight.
+      const std::uint64_t class_budget = std::min<std::uint64_t>(
+          std::uint64_t(2) << 30, options.rss_mib ? *options.rss_mib * 1048576 / 10 : UINT64_MAX);
+      if (options.analyze_values || (!options.extract && !options.semantic && !values)) {
+        semantic_builder = std::make_unique<ptx::SemanticProgramBuilder>(module, *function, poll,
             ptx::SemanticProgramOptions{options.analyze_values && !options.trusted_reference,
                                        true, options.analyze_values, !options.trusted_reference,
                                        !options.dump_branch_scope.empty(),
                                        effective_assumptions.at("order_independent_atomics")});
-      };
-      if (options.analyze_values || (!options.extract && !options.semantic && !values)) {
-        semantic_builder = make_builder();
       } else if (!options.semantic && !values)
         lowerer = alg::ProfileCall("frontend.static_lowering_prepare", [&] {
           return std::make_unique<ptx::ModelLowerer>(module, *function, poll, false,
               effective_assumptions.at("order_independent_atomics"));
         });
+      // The classes of this launch (class mode only).
+      std::unique_ptr<ptx::UnitClasses> classes;
       if (unit_plan.class_mode) {
+        classes = std::make_unique<ptx::UnitClasses>(unit_plan, class_budget);
         // Lowering weights by the class tables, complete before its Finish.
         quotient = std::make_unique<alg::UnitQuotient>();
         if (semantic_builder) semantic_builder->TrackUnits(quotient.get());
@@ -1291,7 +1271,7 @@ int main(int argc, char **argv) {
           // (pure functions of each CTA's own execution). Facts point into the
           // programs, so they are destroyed first.
           struct ExecutedUnit {
-            std::vector<std::pair<ptx::Coordinates,ptx::ExecutionProgram>> programs;
+            std::vector<ptx::ExecutionProgram> programs;
             std::vector<std::unique_ptr<ptx::UnitFrame>> frames;
             std::vector<std::unique_ptr<ptx::CtaFacts>> facts;
             std::vector<ptx::StructureKey> keys;
@@ -1304,16 +1284,13 @@ int main(int argc, char **argv) {
             auto result = std::make_unique<ExecutedUnit>();
             auto &programs = result->programs;
             programs.resize(size);
-            std::vector<bool> executed(size, false);
             for (std::size_t rank = 0; rank < size; ++rank) {
-              if (executed[rank]) continue;
               const auto &coordinates = unit.ctas[rank];
               try {
-                programs[rank] = {coordinates, alg::ProfileCall("ptx_execution", [&] {
+                programs[rank] = alg::ProfileCall("ptx_execution", [&] {
                   return ptx::SpecializeFunction(module, *function, ptx::ConfigForCta(config, coordinates), unit_poll,
                                                  purpose);
-                })};
-                executed[rank] = true;
+                });
               } catch (const ptx::ExecutionError &error) {
                 if (!error.shared_control) throw;
                 // Shared control (as without classes, but per unit): run the whole
@@ -1321,14 +1298,12 @@ int main(int argc, char **argv) {
                 std::vector<ptx::FrontendConfig> configs;
                 for (const auto &member : unit.ctas) configs.push_back(ptx::ConfigForCta(config, member));
                 auto cluster = ptx::SpecializeCluster(module, *function, configs, unit_poll, purpose);
-                for (std::size_t r = rank; r < size; ++r) {
-                  programs[r] = {unit.ctas[r], std::move(cluster[r])};
-                  executed[r] = true;
-                }
+                for (std::size_t r = rank; r < size; ++r) programs[r] = std::move(cluster[r]);
+                break;
               }
             }
             for (std::size_t rank = 0; rank < size; ++rank) {
-              auto &program = programs[rank].second;
+              auto &program = programs[rank];
               result->frames.push_back(std::make_unique<ptx::UnitFrame>(unit.ctas[rank], program.config.cluster_dim));
               result->facts.push_back(
                   std::make_unique<ptx::CtaFacts>(program, *result->frames.back(), linear_id(unit.ctas[rank])));
@@ -1343,7 +1318,7 @@ int main(int argc, char **argv) {
             for (const auto &facts : result->facts) facts->ReleaseValues();
             return result;
           };
-          // Look-ahead (F2a): up to --sync-threads workers execute the next units while
+          // Look-ahead: up to --sync-threads workers execute the next units while
           // this loop consumes in unit order; a unit's execution error is rethrown here,
           // at that unit, and leaving the loop (a restart included) joins the workers.
           // The first unit runs inline: the bytes it allocates bound the workers (each
@@ -1357,11 +1332,9 @@ int main(int argc, char **argv) {
             const auto before = AllocatedBytes();
             first = execute(0, poll);
             const auto after = AllocatedBytes();
-            std::uint64_t budget = std::uint64_t(2) << 30;
-            if (options.rss_mib) budget = std::min(budget, *options.rss_mib * 1048576 / 10);
             if (before && after && *after > *before)
               window = static_cast<std::size_t>(
-                  std::clamp<std::uint64_t>(budget / (*after - *before), 1, workers));
+                  std::clamp<std::uint64_t>(class_budget / (*after - *before), 1, workers));
           }
           const std::size_t skip = first ? 1 : 0;
           [[maybe_unused]] std::size_t released_units = 0;
@@ -1383,14 +1356,13 @@ int main(int argc, char **argv) {
             }
             const auto release = [&](std::size_t rank) {
               unit_facts[rank].reset();
-              auto &program = programs[rank].second;
+              auto &program = programs[rank];
               alg::ProfileCall("frontend.release_execution",
                                [&] { program = ptx::ExecutionProgram{}; });
-              emitted.insert(unit.ctas[rank]);
 #if defined(__GLIBC__)
               // The executions were allocated in the workers' arenas, which keep the
               // freed pages: return them every 8 released units.
-              if (window && rank + 1 == size && ++released_units % 8 == 0) malloc_trim(0);
+              if (workers && rank + 1 == size && ++released_units % 8 == 0) malloc_trim(0);
 #endif
             };
             if (classes->Admit(unit.index, view, std::move(executed_unit->keys), std::move(executed_unit->pre))) {
@@ -1400,24 +1372,23 @@ int main(int argc, char **argv) {
             for (std::size_t rank = 0; rank < size; ++rank) {
               auto &cta_facts = *unit_facts[rank];
               ptx::QuerySink *const sink = classes->Record(unit.index, static_cast<std::uint32_t>(rank), cta_facts);
-              struct Detach {
-                ptx::CtaFacts &facts;
-                bool attached;
-                ~Detach() { if (attached) facts.Attach(nullptr, {}); }
-              } detach{cta_facts, sink != nullptr};
-              if (sink) cta_facts.Attach(sink, cta_facts.frame().self());
-              if (lowerer) {
-                monitor.Stage("source_ir.cta" + std::to_string(consumed));
-                lowerer->AddCta(cta_facts);
-              }
-              if (semantic_builder) {
-                monitor.Stage("semantic_ir.cta" + std::to_string(consumed));
-                semantic_builder->AddCta(cta_facts);
-              }
-              ++consumed;
-              if (sink) {
-                cta_facts.Attach(nullptr, {});
-                detach.attached = false;
+              {
+                // The recorder is attached while the consumers read this CTA.
+                struct Detach {
+                  ptx::CtaFacts &facts;
+                  bool attached;
+                  ~Detach() { if (attached) facts.Attach(nullptr); }
+                } detach{cta_facts, sink != nullptr};
+                if (sink) cta_facts.Attach(sink);
+                if (lowerer) {
+                  monitor.Stage("source_ir.cta" + std::to_string(consumed));
+                  lowerer->AddCta(cta_facts);
+                }
+                if (semantic_builder) {
+                  monitor.Stage("semantic_ir.cta" + std::to_string(consumed));
+                  semantic_builder->AddCta(cta_facts);
+                }
+                ++consumed;
               }
               classes->Recorded(unit.index, static_cast<std::uint32_t>(rank));
               release(rank);
@@ -1426,8 +1397,7 @@ int main(int argc, char **argv) {
           executions.reset();
 #if defined(__GLIBC__)
           // The workers' arenas keep the pages of the programs the loop freed;
-          // return them before the analysis stages (about 2.5 GiB on
-          // flash_kda_training's 148 CTAs).
+          // return them before the analysis stages (gigabytes on large launches).
           if (workers) malloc_trim(0);
 #endif
         } else
@@ -1473,8 +1443,7 @@ int main(int argc, char **argv) {
               {
               // The only consumer view of this program; destroyed before the program is released.
               const ptx::UnitFrame frame(member, program.config.cluster_dim);
-              ptx::CtaFacts cta_facts(program, frame,
-                  static_cast<std::uint32_t>((std::uint64_t(member[2]) * grid[1] + member[1]) * grid[0] + member[0]));
+              ptx::CtaFacts cta_facts(program, frame, linear_id(member));
               account(cta_facts);
               if (lowerer) {
                 monitor.Stage("source_ir.cta" + std::to_string(ctas));
@@ -1499,7 +1468,7 @@ int main(int argc, char **argv) {
           input_metadata["frontend_assumptions"]["opaque_compute_regions"].push_back({{"line", line}, {"lanes", count}});
         for (const auto &[object, lines] : property_lines)
           input_metadata["frontend_assumptions"]["tensor_property_decisions"].push_back(
-              {{"object", object}, {"lines", Json(std::vector<std::uint64_t>(lines.begin(), lines.end()))}});
+              {{"object", object}, {"lines", lines}});
         auto &decisions = input_metadata["frontend_assumptions"]["data_branch_decisions"];
         for (const auto &[line, decision] : data_branch_decisions)
           decisions.push_back({{"line", line}, {"assumption", decision.assumption}, {"rule", decision.rule},
@@ -1509,9 +1478,9 @@ int main(int argc, char **argv) {
           // needs every unit's slots, so it is decided only now. An input map
           // overwrite (I.5c) is found again by the per-unit run.
           *quotient = classes->Quotient();
-          if (!classes->TensormapLocality().holds) throw alg::UnitClassRestart{"tensormap_locality"};
+          if (!classes->TensormapLocality()) throw alg::UnitClassRestart{"tensormap_locality"};
           // Values are lifted only when some class has members (fewer
-          // classes than units); otherwise every unit was analysed (today's fold).
+          // classes than units); otherwise every unit was analysed (the per-unit run's fold).
           if (unit_plan.lift_values && quotient->Shared())
             unit_lifting = ClassLifting(*quotient);
         }
@@ -1681,8 +1650,8 @@ int main(int argc, char **argv) {
         }
         result["frontend"] = std::move(metadata);
       }
-      } catch (const alg::UnitClassRestart &restart) {
-        restart_per_unit(restart.reason);
+      } catch (const alg::UnitClassRestart &) {
+        restart_per_unit();
       }
       } // fresh PTX path; checkpoint replay already supplied the checked value inputs
     } catch (const FileError &error) {
@@ -1740,9 +1709,9 @@ int main(int argc, char **argv) {
           try {
             result["value_analysis"]["scalar_fold"] = AnalyzeScalarFold(*graph, *eliminated, options, monitor, expression,
                 unit_lifting ? &*unit_lifting : nullptr);
-          } catch (const alg::UnitClassRestart &restart) {
+          } catch (const alg::UnitClassRestart &) {
             // A lifting refusal re-runs per unit from execution.
-            restart_per_unit(restart.reason);
+            restart_per_unit();
           }
         }
         std::size_t instances = 0;
@@ -1979,8 +1948,8 @@ int main(int argc, char **argv) {
     result["wellsync_timeout_seconds"] = options.sync_timeout;
     result["whole_pipeline_timeout_seconds"] = options.timeout;
     const auto exit_status = result.value("status", "");
-    sentryward::results::Normalize(result, options.extract ? "extraction" : options.semantic ? "semantic_analysis" : "kernel_verification");
-    sentryward::results::Publish(result);
+    result = sentryward::results::PublicReport(
+        std::move(result), options.extract ? "extraction" : options.semantic ? "semantic_analysis" : "kernel_verification");
     Write(options.report, result);
 
 #ifdef SENTRYWARD_DEVELOPMENT_EXPORTS

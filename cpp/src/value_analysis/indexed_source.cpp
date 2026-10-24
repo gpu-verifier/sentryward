@@ -851,8 +851,7 @@ class Matcher {
   using SliceKey=std::tuple<std::size_t,std::size_t,std::uint64_t,std::uint64_t>;
   std::unordered_map<SliceKey,std::optional<Slice>,TupleHash> slices;
   std::set<SliceKey> active_slices;
-  // The pass's shared extents when its owner lends them; otherwise our own.
-  std::unique_ptr<AssembledPieceEnds> own_piece_ends;
+  // The pass's shared extents; their owner outlives this matcher.
   AssembledPieceEnds& piece_ends;
   // Assemblies whose unrepresentable extent this matcher already reported.
   std::set<const AssembledRead*> reported_extents;
@@ -1947,11 +1946,10 @@ class Matcher {
         index_stride?index_stride:1,thread_invariant};
   }
  public:
-  Matcher(const v::Graph& graph,const MemoryEliminationResult& r,AssembledPieceEnds* shared_piece_ends):g(graph),memory(r),specialization(graph),
+  Matcher(const v::Graph& graph,const MemoryEliminationResult& r,AssembledPieceEnds& shared_piece_ends):g(graph),memory(r),specialization(graph),
       packed(graph,[this](auto value)->std::optional<std::int64_t> {
         auto known=specialization.known(value);return known?literal(known->literal):std::nullopt;
-      }),own_piece_ends(shared_piece_ends?nullptr:std::make_unique<AssembledPieceEnds>()),
-      piece_ends(shared_piece_ends?*shared_piece_ends:*own_piece_ends){indexInitialRanges();}
+      }),piece_ends(shared_piece_ends){indexInitialRanges();}
   ~Matcher() {
     sentryward::algorithm::ProfileScope facts("value_analysis.indexed_source.immutable_facts");
     facts.nodes=interpretation_hits;facts.edges=interpretation_misses;
@@ -2458,10 +2456,8 @@ std::vector<IndexedValueBinding> indexedSourceBindings(const IndexedSource& sour
   }
   return result;
 }
-IndexedSourceMatcher::IndexedSourceMatcher(const v::Graph& graph,const MemoryEliminationResult& memory)
-    :impl_(std::make_unique<Impl>(graph,memory,nullptr)) {}
 IndexedSourceMatcher::IndexedSourceMatcher(const v::Graph& graph,const MemoryEliminationResult& memory,
-    AssembledPieceEnds& piece_ends):impl_(std::make_unique<Impl>(graph,memory,&piece_ends)) {}
+    AssembledPieceEnds& piece_ends):impl_(std::make_unique<Impl>(graph,memory,piece_ends)) {}
 IndexedSourceMatcher::~IndexedSourceMatcher()=default;
 std::optional<IndexedSource> IndexedSourceMatcher::match(std::span<const v::Value> values) {
   return impl_->run(values);
@@ -2492,10 +2488,6 @@ std::vector<IndexedSourceDomain> IndexedSourceMatcher::partition(std::span<const
     SENTRYWARD_AUDIT(audit->add(AuditCounter::source_domains_planned));
   }
   return domains;
-}
-std::optional<IndexedSource> matchIndexedSource(const v::Graph& graph,
-    const MemoryEliminationResult& memory,std::span<const v::Value> values) {
-  return Matcher(graph,memory,nullptr).run(values);
 }
 std::vector<IndexedSourceDomain> mapSourceTemplates(const v::Graph& graph,
     std::span<const v::Value> values,bool interleaved,

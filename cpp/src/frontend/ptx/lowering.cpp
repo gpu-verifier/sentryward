@@ -170,11 +170,12 @@ struct TmemAddress {
   std::string resource;
   std::optional<std::uint32_t> columns;
 };
-// Event H6 for the evaluated-address memo, out of line and cold so that the hot
-// generated-memory loop keeps only the recording() branch (O(1) per hit/fill).
+// The MemoHit/MemoFill event of the evaluated-address memo, out of line and cold so
+// that the hot generated-memory loop keeps only the recording() branch (O(1) per
+// hit/fill).
 [[gnu::noinline, gnu::cold]] void NoteEvaluatedMemo(const CtaFacts &facts, bool hit, RecordRef at,
                                                     std::uint64_t key, RegId reg) {
-  const MemoRef memo{MemoKind::EvaluatedAddress, at, decltype(MemoRef::key)(std::in_place_index<0>, key)};
+  const MemoRef memo{at, key};
   if (hit) facts.Note(query::MemoHit{memo, reg});
   else facts.Note(query::MemoFill{memo, reg});
 }
@@ -198,8 +199,8 @@ struct ModelLowerer::Impl {
   std::vector<bool> shared_value_instructions;
   Coordinates current_coordinates{};
   std::map<std::string, std::string> limitations;
-  // Every consumed CTA's tensormap.cp_fenceproxy destinations (object, region base): (I.5c) on the
-  // per-unit path (run.cpp).
+  // Every consumed CTA's tensormap.cp_fenceproxy destinations (object, region base), checked
+  // against input tensor maps in run.cpp on the per-unit path.
   std::set<std::pair<std::string, std::uint64_t>> tensormap_destinations;
   std::set<std::pair<std::string, std::string>> violations;
   std::map<std::uint32_t, MmaPlan> plans;
@@ -299,7 +300,8 @@ struct ModelLowerer::Impl {
                   const RecordView *e = nullptr, Json details = Json::object(), std::uint64_t weight = 1) {
     errors[code] += weight;
     if (units && facts) diagnostic_ctas.insert(facts->Linear());
-    // Event H10: per-CTA report evidence (closes the recording class); never after Add (facts is null).
+    // A ReportBearing event: per-CTA report evidence (closes the recording class); never after Add
+    // (facts is null).
     if (facts && facts->recording()) [[unlikely]]
       facts->Note(query::ReportBearing{query::ReportKind::LoweringDiagnostic, code});
     Json d{{"code",code},{"message",message},{"stage","event_view_construction"},{"details",std::move(details)}};
@@ -421,7 +423,7 @@ struct ModelLowerer::Impl {
               std::vector<Fragment>,
               std::optional<CompletionAction> completion = {});
   void Instruction(Thread &, const RecordView &);
-  void Add(const CtaFacts &, const ValueAddresses&);
+  void Add(const CtaFacts &, ValueAddresses);
   LoweringResult Finish();
 };
 // Lift only a memory instruction that intersects pending register accesses.
@@ -988,8 +990,8 @@ void ModelLowerer::Impl::Mma(Thread &t, const RecordView &e,
   // Operand reads before a D fragment's watermark already precede it: they precede
   // the previous MMA's write of the same fragment on this pipeline (directly, or
   // by induction along the chain), and the pipeline link below orders that write
-  // before this one. Only the reads added since are linked. HB is unchanged; the
-  // per-fragment cost drops from all earlier reads to the new ones.
+  // before this one. Only the reads added since are linked: HB is that of linking
+  // every earlier read, at a per-fragment cost of the new reads only.
   for (auto target : plan.writes) {
     const auto &write=plan.effects[target].accesses.back();
     if (!write.bytes || !*write.bytes) continue;
@@ -1006,7 +1008,7 @@ void ModelLowerer::Impl::Mma(Thread &t, const RecordView &e,
     if (previous==t.mma_operand_reads.end()) continue;
     for (const auto index : previous->second.Candidates(binding.allocation,binding.offset,*write.bytes,true,from)) {
       const auto &[ref,old,size]=previous->second.all[index];
-      if (size && *size &&
+      if (*size &&
           (old.allocation!=binding.allocation ||
            std::max(old.offset,binding.offset)<std::min(old.offset+*size,binding.offset+*write.bytes))) {
         UniquePush(plan.effects[target].predecessors,ref); plan.operand_links.emplace_back(target,ref);
@@ -1105,15 +1107,13 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const RecordView &e,
     queue.Acknowledge();
     aligned[key].calls[t.actor.lane] = {id, id};
     aligned[key].merged_arm |= t.merged_arm.has_value();
-    if (operation == "wait_load")
+    if (operation == "wait_load") {
       t.tmem_loads_since_store.clear();
-    else
-      t.tmem_last_store.reset();
-    if (operation == "wait_load")
       std::erase_if(t.writes, [&](const auto &item) {
         return completed.contains(item.second.instruction);
       });
-    else {
+    } else {
+      t.tmem_last_store.reset();
       for (auto &[r, values] : t.reads) {
         (void)r;
         std::erase_if(values, [&](const auto &ref) {
@@ -1335,7 +1335,7 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const RecordView &e,
           previous != t.mma_operand_reads.end() && write.bytes && binding.expression.empty())
         for (const auto candidate : previous->second.Candidates(binding.allocation, binding.offset, *write.bytes, false)) {
           const auto &[ref, old, size] = previous->second.all[candidate];
-          if (size && old.expression.empty() && old.allocation == binding.allocation &&
+          if (old.expression.empty() &&
               old.offset < binding.offset + *write.bytes && binding.offset < old.offset + *size) {
             UniquePush(effects[index].predecessors, ref);
             plan.operand_links.emplace_back(index, ref);
@@ -1526,7 +1526,7 @@ InstId ModelLowerer::Impl::Copy(Thread &t, const RecordView &e,
       for (auto [begin, stop, index] : ranges)
         if (begin <= *it && *it < stop)
           refs.push_back(Ref(id, Milestone::kEffect, index));
-      // Interned even for an expression binding, as before.
+      // Interned even for an expression binding.
       auto shifted = resources->interner().Apply(
           ConstantStep{AllocationKey::Opaque(binding.address_space, binding.allocation, binding.alias_scope),
                        binding.offset + *it - cursor});
@@ -1535,10 +1535,8 @@ InstId ModelLowerer::Impl::Copy(Thread &t, const RecordView &e,
         expression["address"]["offset"] = {{"operator", "add"},
             {"operands", Json::array({expression["address"]["offset"], *it - cursor})}};
         expression["byte_count"] = *next - *it;
-        auto encoded = expression.dump();
-        // Braced: the name copy is taken before the expression is moved.
-        shifted = resources->interner().Apply(ExpressionStep{binding.address_space, encoded, binding.alias_scope,
-                                                             binding.allocation, std::move(encoded)});
+        shifted = resources->interner().Apply(SerializedExpressionStep(binding.address_space, expression.dump(),
+                                                                       binding.alias_scope, binding.allocation));
       }
       effects.push_back(
           {{MemoryEffect{AccessMode::kWrite, shifted, *next - *it}},
@@ -1564,21 +1562,22 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
       i.line, i.id, t.actor.warp.value(), e.occurrence());
   if (t.merged_arm && (e.instruction_id() <= t.merged_arm->first || e.instruction_id() >= t.merged_arm->second))
     t.merged_arm.reset();
-  // Merged one-armed diamond (execution.cpp; design P1'): no earlier operation may reach
-  // the arm through a tcgen05 pipeline, a wait in the arm or a pending register write.
+  // Merged one-armed diamond (execution.cpp): no tcgen05 ordering may be pending at the
+  // branch, so no earlier operation may reach the arm through a tcgen05 pipeline, a wait in
+  // the arm or a pending register write.
   if (const auto join = e.merged_arm_join()) {
-    auto [facts, added] = merged_arm_facts.try_emplace(e.instruction_id());
+    auto [entry, added] = merged_arm_facts.try_emplace(e.instruction_id());
     if (added) {
       std::set<std::string> written;
       for (auto index = e.instruction_id() + 1; index < *join && index < function.instructions.size(); ++index) {
         const auto &arm = function.instructions[index];
-        facts->second.wait_load |= arm.opcode == "tcgen05" && arm.semantics.operation == "wait_load";
+        entry->second.wait_load |= arm.opcode == "tcgen05" && arm.semantics.operation == "wait_load";
         for (const auto &r : Sources(arm))
-          if (!written.contains(r)) UniquePush(facts->second.exposed, r);
+          if (!written.contains(r)) UniquePush(entry->second.exposed, r);
         for (const auto &r : Destinations(arm)) written.insert(r);
       }
     }
-    const auto &arm = facts->second;
+    const auto &arm = entry->second;
     if (t.tmem_last_store || !t.tmem_loads_since_store.empty() ||
         (arm.wait_load && !t.loads.Pending().empty()) ||
         std::any_of(arm.exposed.begin(), arm.exposed.end(), [&](const auto &r) { return t.writes.contains(r); }))
@@ -1913,10 +1912,8 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
       auto old=expression["address"]["offset"];
       if (offset) expression["address"]["offset"]={{"operator","add"},{"operands",Json::array({old,offset})}};
       expression["byte_count"]=element;
-      auto encoded=expression.dump();
-      // Braced: the name copy is taken before the expression is moved.
       return resources->interner().Apply(
-          ExpressionStep{base.address_space,encoded,base.alias_scope,base.allocation,std::move(encoded)});
+          SerializedExpressionStep(base.address_space,expression.dump(),base.alias_scope,base.allocation));
     };
     auto id=Next(); std::vector<AsyncEffect> effects;
     for (std::uint64_t offset=0;offset<bytes;offset+=element) {
@@ -2282,7 +2279,7 @@ void ModelLowerer::Impl::Matrix(Thread &t, const RecordView &e,
   auto tail = Emit(t, e, Await{{Ref(id)}});
   aligned[Key(t.actor.warp.value(), e)].calls[t.actor.lane] = {id, tail};
 }
-void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, const ValueAddresses& value_addresses) {
+void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_addresses) {
   ProfileScope profile("frontend.model.cta");
   const FactSource::ConsumerScope consumer(cta_facts, {Consumer::Lowering, 0});
   const auto cta = cta_facts.Linear();
@@ -2298,7 +2295,7 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, const ValueAddresses& va
   for(const auto &site:shared_value_sites)shared_value_instructions.at(site.instruction.instruction)=true;
   shared_value_dependencies.insert(shared_value_dependencies.end(),shared_dependencies.begin(),shared_dependencies.end());
   Resources r(cta_facts, cta_facts.frame(), addresses, barriers,
-              SlotConfig{Consumer::Lowering, value_addresses});
+              SlotConfig{Consumer::Lowering, std::move(value_addresses)});
   resources = &r;
   MatrixResolver matrix_resolver(cta_facts);
   matrix = &matrix_resolver;
@@ -2486,7 +2483,7 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, const ValueAddresses& va
         const auto evaluation_key=evaluation && *evaluation<=UINT32_MAX?
             std::optional<std::uint64_t>((std::uint64_t(*evaluation)<<32)|instruction):std::nullopt;
         if(evaluation_key)if(const auto cached=evaluated_addresses.find(*evaluation_key);cached!=evaluated_addresses.end()) {
-          // Event H6: the hit reuses the fill's resolution (one branch; inert unless recording).
+          // A MemoHit event: the hit reuses the fill's resolution (one branch; inert unless recording).
           if(cta_facts.recording()) [[unlikely]] NoteEvaluatedMemo(cta_facts,true,{lane_ref,index},*evaluation_key,*reg);
           resolved.push_back(cached->second);continue;
         }
@@ -2506,22 +2503,13 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, const ValueAddresses& va
           }
           MemoryRequest request(memory_tokens[i.id],contract,*i.memory_width,
               i.semantics.memory_space.value_or("generic"));
-          // The memo this resolution may fill (only while recording).
-          if(cta_facts.recording()) [[unlikely]] {
-            if(evaluation_key)
-              request.memo=MemoRef{MemoKind::EvaluatedAddress,{lane_ref,index},
-                                   decltype(MemoRef::key)(std::in_place_index<0>,*evaluation_key)};
-            else if(uniform_global)
-              request.memo=MemoRef{MemoKind::UniformGlobal,{lane_ref,index},
-                                   decltype(MemoRef::key)(std::in_place_index<2>,index)};
-          }
           const auto [address,bytes]=r.Memory(e,request);
           if(bytes!=i.memory_width){supported=false;break;}
           resolved.push_back(address);
           if(evaluation_key && evaluated_addresses.size()<100000 &&
               r.Binding(address).expression.empty()) {
             evaluated_addresses.emplace(*evaluation_key,address);
-            // Event H6 (one branch; inert unless recording).
+            // A MemoFill event (one branch; inert unless recording).
             if(cta_facts.recording()) [[unlikely]] NoteEvaluatedMemo(cta_facts,false,{lane_ref,index},*evaluation_key,*reg);
           }
           if(uniform_global && r.Binding(address).expression.empty())
@@ -2752,10 +2740,11 @@ LoweringResult ModelLowerer::Impl::Finish() {
     return units->Weight(source.program.actors.at(actor.value()).cta.value());
   };
   const auto instruction_weight = [&](InstId id) -> std::uint64_t {
-    return units ? actor_weight(source.instruction(id).actor) : 1;
+    return actor_weight(source.instruction(id).actor);
   };
   if (units) {
-    // A CTA whose lowering emitted a diagnostic closed its class (H10), so it stands for itself.
+    // A CTA whose lowering emitted a diagnostic closed its class (a ReportBearing event), so it
+    // stands for itself.
     for (const auto cta : diagnostic_ctas)
       if (units->Weight(cta) != 1) throw std::logic_error("lowering diagnostic in a representative with members");
     // Unit closure: every barrier owner and every cluster collective (keyed by its cluster
@@ -2889,7 +2878,7 @@ LoweringResult ModelLowerer::Impl::Finish() {
     thread_count = 0;
     for (const auto &actor : source.program.actors) thread_count += units->Weight(actor.cta.value());
     // Members' per-CTA violation texts: the representative's CTA-free part, rendered with the
-    // member's same-rank coordinates (the set is today's).
+    // member's same-rank coordinates, into the same `violations` set.
     for (const auto &[cta, code, suffix] : cta_violations) {
       const auto &klass = units->ClassOf(cta);
       const auto rank = units->RankOf(cta);
@@ -2993,7 +2982,7 @@ ModelLowerer::ModelLowerer(const Module &m, const Function &f,
 }
 ModelLowerer::~ModelLowerer() = default;
 void ModelLowerer::AddCta(const CtaFacts &facts, ValueAddresses value_addresses) {
-  impl_->Add(facts, value_addresses);
+  impl_->Add(facts, std::move(value_addresses));
 }
 const algorithm::SourceProgram &ModelLowerer::currentProgram() const noexcept {
   return impl_->source.program;

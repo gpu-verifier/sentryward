@@ -81,10 +81,13 @@ inline constexpr const char* kSections[]={"equivalence","value_analysis","scalar
 // are not traversed or copied; work is linear in report/diagnostic metadata.
 inline void Normalize(Json& out,const std::string& operation="") {
  if(!out.is_object()){out=Failure("tool_failure","invalid_result_object","Expected a JSON object");return;}
- if(out.contains("result") && IsResult(out.value("result","")) && !out.contains("status") && out.contains("diagnostics") && out.contains("checks") && out.contains("scope") && !out.contains("reason") && !out.contains("message")) {
-   if(!out["diagnostics"].is_array())out=Failure("tool_failure","invalid_result_contract","Unknown result or missing diagnostics");
+ const auto normalize_sections=[&] {
    for(auto key:kSections)
      if(out.contains(key) && out[key].is_object() && (out[key].contains("status") || out[key].contains("result")))Normalize(out[key],key);
+ };
+ if(out.contains("result") && IsResult(out.value("result","")) && !out.contains("status") && out.contains("diagnostics") && out.contains("checks") && out.contains("scope") && !out.contains("reason") && !out.contains("message")) {
+   if(!out["diagnostics"].is_array())out=Failure("tool_failure","invalid_result_contract","Unknown result or missing diagnostics");
+   normalize_sections();
    Diagnostics(out);
    return;
  }
@@ -114,9 +117,7 @@ inline void Normalize(Json& out,const std::string& operation="") {
  } else if(status=="not_wellsynced") {checks["synchronization"]="failed";checks["memory"]="not_run";checks["equivalence"]="not_run";}
  else if(out.value("mode","")=="verify" || out.contains("verification_performed")){checks["synchronization"]="incomplete";checks["memory"]="not_run";}
  if(!verified.empty())out["verification_result"]=Category(verified);
- for(auto key:kSections)
-   if(out.contains(key) && out[key].is_object() && (out[key].contains("status") || out[key].contains("result")))
-     Normalize(out[key],std::string(key)=="equivalence"?"equivalence":key);
+ normalize_sections();
  if(operation=="equivalence" || status=="equivalent" || status=="not_proven" || status=="partial_scope_equivalent" || status=="translation_or_supported_fragment_blocked") {
    checks["equivalence"]=result=="verified"?"passed":status=="blocked" || status=="missing_reference" || reason=="verification_prerequisite_not_satisfied"?"not_run":"incomplete";
    // Equal domains and equal values suffice; total definedness is separate.

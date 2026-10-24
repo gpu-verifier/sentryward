@@ -4,7 +4,6 @@
 #include <bit>
 #include <cstdint>
 #include <functional>
-#include <iterator>
 #include <limits>
 #include <map>
 #include <numeric>
@@ -210,7 +209,7 @@ std::vector<Diagnostic> SourceValidator::Validate(
     }
     std::vector<bool> duplicate;  // per record; strictly ascending IDs have none
     if (!ascending) {
-      // Sorting by (ID, record) puts the record std::map::emplace kept first.
+      // Sorting by (ID, record) keeps each ID's first record as its owner.
       std::vector<std::pair<InstId,std::size_t>> order(n);
       for(std::size_t i=0;i<n;++i)order[i]={record_ids[i],i};
       std::sort(order.begin(),order.end());
@@ -249,7 +248,7 @@ std::vector<Diagnostic> SourceValidator::Validate(
     ranks.dense=ranks.ids.empty() || std::size_t(ranks.ids.back().value())+1==ranks.ids.size();
   }
   const auto handle=[&](std::size_t rank){return program.instructions.ref(ranks.record(rank));};
-  // Every caller's ID is a declared one, as the former ID-keyed map's at() required.
+  // Every caller passes a declared ID.
   const auto handleOf=[&](InstId id) {
     const auto rank=ranks.find(id);
     if(!rank)throw std::out_of_range("instruction ID without a rank");

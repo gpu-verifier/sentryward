@@ -98,23 +98,16 @@ CtaRank UnitFrame::Rank(std::uint32_t rank) const {
   return {rank};
 }
 CtaRank UnitFrame::RankOf(Coordinates c) const {
-  const auto d = cluster_dim();
-  Coordinates local;
-  for (int i = 0; i < 3; ++i) {
-    auto origin = self_[i] - self_[i] % d[i];
-    if (c[i] < origin || c[i] >= origin + d[i])
-      throw SemanticError("cluster_owner", "owner outside cluster");
-    local[i] = c[i] - origin;
-  }
-  return {local[0] + d[0] * (local[1] + d[1] * local[2])};
+  if (const auto rank = TryRankOf(c)) return *rank;
+  throw SemanticError("cluster_owner", "owner outside cluster");
 }
 std::optional<CtaRank> UnitFrame::TryRankOf(Coordinates c) const noexcept {
   const auto d = cluster_dim();
+  const auto origin = ClusterOrigin();
   Coordinates local;
   for (int i = 0; i < 3; ++i) {
-    auto origin = self_[i] - self_[i] % d[i];
-    if (c[i] < origin || c[i] >= origin + d[i]) return std::nullopt;
-    local[i] = c[i] - origin;
+    if (c[i] < origin[i] || c[i] >= origin[i] + d[i]) return std::nullopt;
+    local[i] = c[i] - origin[i];
   }
   return CtaRank{local[0] + d[0] * (local[1] + d[1] * local[2])};
 }

@@ -24,7 +24,6 @@ enum class FoldFailureKind : std::uint8_t {
   Internal,    // an internal invariant
   Lifting,     // the lifting's own failure
   Dynamic,     // dynamic what() (LayoutError)
-  Memoized,    // reused across items
 };
 struct FoldFailureCode {
   std::string_view code;
@@ -72,8 +71,7 @@ inline constexpr std::array kFoldFailureCodes{
     FoldFailureCode{"scalar_fold_internal_binding", FoldFailureKind::Internal},
     FoldFailureCode{"source_dependency_cycle", FoldFailureKind::Internal}, // IndexedSourceLimit
     FoldFailureCode{"scalar_fold_unit_parameter_unsupported", FoldFailureKind::Lifting},
-    FoldFailureCode{"scalar_fold_mma_descriptor", FoldFailureKind::Dynamic}, // LayoutError
-    FoldFailureCode{"scalar_fold_non_affine_projection", FoldFailureKind::Memoized},
+    FoldFailureCode{"scalar_fold_mma_descriptor", FoldFailureKind::Dynamic}, // LayoutError and two literal fail() sites
 };
 inline bool FoldFailureContextFree(std::string_view code) noexcept {
   for (const auto &entry : kFoldFailureCodes)

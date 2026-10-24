@@ -2,9 +2,9 @@
 // Naming frame of one consumed or executing CTA.
 // Every address-table allocation name, alias, barrier-table owner, coordinate
 // JSON and owner decision goes through it. Owners are CtaRanks in code; table
-// keys stay today's absolute coordinates (Cta(rank)), so names and ids do not
-// change. The value-IR `cta` argument is not frame naming: the value view
-// passes CtaFacts::Linear() and the address-value extractor keeps 0.
+// keys and names use the owner's absolute coordinates (Cta(rank)). The value-IR
+// `cta` argument is not frame naming: the value view passes CtaFacts::Linear()
+// and the address-value extractor keeps 0.
 #include "sentryward/frontend/ptx/config.h"
 
 #include <compare>
@@ -14,7 +14,8 @@
 #include <string_view>
 
 namespace sentryward::frontend::ptx {
-// A CTA's rank inside its cluster (Resources::Rank's l0 + d0*(l1 + d1*l2)).
+// A CTA's rank inside its cluster: l0 + d0*(l1 + d1*l2) for its coordinates l
+// relative to the cluster origin and the cluster dimensions d.
 // Obtained only from UnitFrame::self/Rank/RankOf/TryRankOf, so always valid.
 struct CtaRank {
   std::uint32_t value = 0;
@@ -45,8 +46,6 @@ AllocationKey BindKey(std::string space, std::string resource, CtaRank owner,
                       std::optional<std::uint32_t> active_thread);
 // Bind's range check: invalid_memory_range.
 void CheckRange(std::uint64_t offset, std::uint64_t bytes);
-// The formatted (interned) address space of a key.
-[[nodiscard]] inline std::string_view SpaceOf(const AllocationKey &key) noexcept { return key.space; }
 
 // A barrier-table key; the table stores Cta(owner).
 struct BarrierKey {
@@ -61,34 +60,37 @@ class UnitFrame {
 public:
   UnitFrame(Coordinates self, std::optional<Coordinates> cluster_dim) noexcept
       : self_(self), cluster_dim_(cluster_dim) {}
-  // Today's `coordinates` argument, verbatim.
+  // The CTA's own coordinates, as constructed.
   [[nodiscard]] Coordinates SelfCoordinates() const noexcept { return self_; }
-  // cluster_dim.value_or({1,1,1}), as Resources::Target/Rank read it.
+  // cluster_dim.value_or({1,1,1}).
   [[nodiscard]] Coordinates cluster_dim() const noexcept {
     return cluster_dim_.value_or(Coordinates{1, 1, 1});
   }
-  // == Resources::Rank(coordinates), computed at each call. The own CTA is
+  // == RankOf(SelfCoordinates()), computed at each call. The own CTA is
   // always inside its cluster, so this cannot throw.
   [[nodiscard]] CtaRank self() const noexcept {
     const auto d = cluster_dim();
     Coordinates local;
     for (int i = 0; i < 3; ++i)
-      local[i] = self_[i] - (self_[i] - self_[i] % d[i]);
+      local[i] = self_[i] % d[i];
     return {local[0] + d[0] * (local[1] + d[1] * local[2])};
   }
-  // The validation half of Resources::Target: invalid_cluster_rank.
+  // `rank` itself; invalid_cluster_rank unless it is below the cluster size.
   [[nodiscard]] CtaRank Rank(std::uint32_t rank) const;
-  // == Resources::Rank(c), including cluster_owner. Executor only.
+  // The rank of CTA `c` in this CTA's cluster; cluster_owner when `c` is
+  // outside the cluster. Executor only.
   [[nodiscard]] CtaRank RankOf(Coordinates c) const;
   // RankOf without the throw; the facade's relative shared-site view only.
   [[nodiscard]] std::optional<CtaRank> TryRankOf(Coordinates c) const noexcept;
-  // The arithmetic half of Resources::Target.
+  // The coordinates of the CTA at `rank` in this CTA's cluster:
+  // ClusterOrigin() plus the rank's coordinates inside the cluster.
   [[nodiscard]] Coordinates Cta(CtaRank rank) const noexcept {
     const auto d = cluster_dim();
     const auto r = rank.value;
+    const auto origin = ClusterOrigin();
     Coordinates local{r % d[0], (r / d[0]) % d[1], r / (d[0] * d[1])}, result;
     for (int i = 0; i < 3; ++i)
-      result[i] = self_[i] - self_[i] % d[i] + local[i];
+      result[i] = origin[i] + local[i];
     return result;
   }
   // c - c % d: the cluster's origin CTA.
@@ -104,8 +106,8 @@ public:
   // nlohmann::json(Cta(rank)) == [x, y, z].
   [[nodiscard]] nlohmann::json Json(CtaRank rank) const;
   // The only place the allocation grammar (cta:<owner>:...) is written. The
-  // rvalue form moves the key's strings through, as Resources::Bind once did,
-  // without a by-value parameter's extra move; the lvalue form formats a copy.
+  // rvalue form moves the key's strings into the result, without a by-value
+  // parameter's extra move; the lvalue form formats a copy.
   [[nodiscard]] FormattedAllocation Format(AllocationKey &&key) const;
   [[nodiscard]] FormattedAllocation Format(const AllocationKey &key) const { return Format(AllocationKey(key)); }
 

@@ -71,8 +71,7 @@ class ScalarSpecialization final {
           value=result;continue;
         }
         const auto& node=g_.definingNode(value);
-        auto at=node.instanceThreads().indexOf(member);
-        if(node.instanceThreads().empty() && node.origin().thread==member)at=0;
+        const auto at=node.memberIndex(member);
         if(!at)break;
         auto result=node.result(value.resultIndex(),*at);
         // A ThreadForward instance is that source thread's own value.

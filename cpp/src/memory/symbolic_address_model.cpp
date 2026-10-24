@@ -787,8 +787,9 @@ struct SymbolicAddressModel::Impl {
   }
 
   // A family's footprint: one allocation, equal symbolic suffix, offsets in progression.
-  // `regions`: also strided regions (TMA boxes) whose suffix is tensor-property lookups.
-  std::optional<FamilyFootprint> Footprint(const MemoryAccessFamily& family, bool regions) {
+  // `cross_unit`: also the suffix's tensor-property lookups (FamilyFootprint::gathers) and strided
+  // regions (TMA boxes) whose suffix is such lookups.
+  std::optional<FamilyFootprint> Footprint(const MemoryAccessFamily& family, bool cross_unit) {
     if(!family.first.bytes || !std::holds_alternative<AddressId>(family.first.address))return {};
     const auto shape=[&](const MemoryAccess& access)->const Shape* {
       const auto id=std::get<AddressId>(access.address).value();
@@ -796,7 +797,7 @@ struct SymbolicAddressModel::Impl {
       return it==binding_shapes.end()?nullptr:&shapes[it->second];
     };
     const auto* first=shape(family.first);
-    if(!first || (first->region_bytes && !regions) || !first->offset || !KnownSpace(names[first->space]) ||
+    if(!first || (first->region_bytes && !cross_unit) || !first->offset || !KnownSpace(names[first->space]) ||
         first->base!=Base::kAllocation)return {};
     auto suffix=*first->offset;suffix.constant=0;
     FamilyFootprint result{names[first->space],
@@ -821,15 +822,15 @@ struct SymbolicAddressModel::Impl {
     Int offset;
     if(__builtin_sub_overflow(result.offset,*bias,&offset))return {};
     result.offset=offset;
-    for(const auto& [atom,coefficient]:suffix.terms) {
+    if(cross_unit)for(const auto& [atom,coefficient]:suffix.terms) {
       const auto& lookup=atoms[atom];
       const auto object=gather_objects.find(lookup.gather);
       if(object==gather_objects.end() || lookup.args.size()!=1) { result.gathers.clear(); break; }
       result.gathers.push_back({lookup.gather,object->second,lookup.args.front(),coefficient,
                                 !pinned_gathers.contains(lookup.gather)});
     }
-    // A region is a cross-unit footprint only as a lookup part (the S-pass decides it).
-    if(first->region_bytes && (result.gathers.empty() || result.gathers.size()!=suffix.terms.size()))return {};
+    // A region is a cross-unit footprint only as a lookup part (CheckCrossUnit's lookup pass decides it).
+    if(first->region_bytes && result.gathers.empty())return {};
     return result;
   }
 

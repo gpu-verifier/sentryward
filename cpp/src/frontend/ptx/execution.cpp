@@ -109,6 +109,12 @@ bool Floating(const Instruction &i) {
       return true;
   return false;
 }
+// Whether some modifier is a signed type: 's' followed by a digit.
+bool SignedModifier(const Instruction &i) {
+  return std::any_of(i.modifiers.begin(), i.modifiers.end(), [](const auto &modifier) {
+    return modifier.size() > 1 && modifier[0] == 's' && std::isdigit(modifier[1]);
+  });
+}
 std::int64_t Int64(const Integer &n, std::string_view what) {
   if (n < std::numeric_limits<std::int64_t>::min() ||
       n > std::numeric_limits<std::int64_t>::max())
@@ -125,7 +131,6 @@ Integer Reduce(const Integer &n, unsigned width, bool sign) {
   return r;
 }
 // Interval arithmetic on BoundedInteger operands (tensor_properties); exact like Integer.
-// std::nullopt when neither operand is bounded; unknown when the result has no bound here.
 bool FitsType(const BoundedInteger &v, unsigned width, bool sign) {
   const Integer low = sign ? -(Integer(1) << (width - 1)) : Integer(0);
   const Integer high = (Integer(1) << (width - unsigned(sign))) - 1;
@@ -149,6 +154,13 @@ Scalar MakeBounded(Integer lower, Integer upper, std::string identity, std::vect
   return BoundedInteger{std::make_shared<const BoundedValue>(BoundedValue{std::move(lower), std::move(upper),
       std::move(identity), std::move(sources), std::move(affine), std::move(table)})};
 }
+Scalar MakeBoundedPointer(std::string resource, std::optional<std::uint64_t> extent, AffineForm offset, Integer lower,
+                          Integer upper, std::vector<std::string> sources, std::string offset_identity = {},
+                          std::optional<BoundedTable> table = std::nullopt) {
+  return BoundedAllocationPointer{std::make_shared<const BoundedPointerValue>(BoundedPointerValue{
+      std::move(resource), extent, std::move(offset), std::move(lower), std::move(upper), std::move(sources),
+      std::move(offset_identity), std::move(table)})};
+}
 // Tables cover keys with at most this many values (O(entries) per tabulated operation).
 constexpr std::uint64_t kBoundedTableLimit = 256;
 // The exact values of a bounded value over a small-domain key: its own table, or, for a
@@ -160,6 +172,10 @@ std::optional<BoundedTable> TableOf(const BoundedInteger &v) {
   BoundedTable table{v->identity, v->lower, {}};
   for (Integer k = v->lower; k <= v->upper; ++k) table.values.push_back(k);
   return table;
+}
+// Whether two tables cover the same key: its name, first value and length.
+bool SameKey(const BoundedTable &a, const BoundedTable &b) {
+  return a.key == b.key && a.key_lower == b.key_lower && a.values.size() == b.values.size();
 }
 Scalar TableValue(BoundedTable table, std::string identity, std::vector<std::string> sources) {
   const auto [low, high] = std::minmax_element(table.values.begin(), table.values.end());
@@ -189,6 +205,7 @@ AffineForm AffineScale(const AffineForm &a, const Integer &scale) {
   return result;
 }
 Scalar IntegerBinary(std::string_view op, const Scalar &a, const Scalar &b, const Instruction *i);
+// std::nullopt when neither operand is bounded; unknown when the result has no bound here.
 std::optional<Scalar> BoundedBinary(std::string_view op, const Scalar &a, const Scalar &b,
                                     const Instruction *i) {
   const auto *p = std::get_if<BoundedInteger>(&a), *q = std::get_if<BoundedInteger>(&b);
@@ -203,8 +220,7 @@ std::optional<Scalar> BoundedBinary(std::string_view op, const Scalar &a, const 
   // (or two keys) falls back to the interval rules below.
   {
     const auto ta = p ? TableOf(*p) : std::nullopt, tb = q ? TableOf(*q) : std::nullopt;
-    if ((!p || ta) && (!q || tb) && (ta || tb) &&
-        (!ta || !tb || (ta->key == tb->key && ta->key_lower == tb->key_lower && ta->values.size() == tb->values.size()))) {
+    if ((!p || ta) && (!q || tb) && (ta || tb) && (!ta || !tb || SameKey(*ta, *tb))) {
       const auto &key = ta ? *ta : *tb;
       BoundedTable table{key.key, key.key_lower, {}};
       table.values.reserve(key.values.size());
@@ -367,10 +383,10 @@ std::optional<Scalar> BoundedPointerArithmetic(std::string_view op, const Scalar
     if (!(*q)->offset_identity.empty()) tabled = q->value.get();
   } else return Scalar{};
   const auto form = AffineOf(offset);
+  const Integer sign = op == "sub" ? -1 : 1;
   if (!form || tabled) {
     // A non-affine offset: its exact byte offsets over one small-domain key (a table
     // base plus a constant or a same-key table; a concrete base plus a table).
-    const Integer sign = op == "sub" ? -1 : 1;
     const auto *bounded = std::get_if<BoundedInteger>(&offset);
     const auto constant = ScalarInteger(offset);
     const auto offsets_of = bounded ? TableOf(*bounded) : std::nullopt;
@@ -381,8 +397,7 @@ std::optional<Scalar> BoundedPointerArithmetic(std::string_view op, const Scalar
       if (constant) {
         for (auto &value : offsets.values) value += sign * *constant;
       } else {
-        if (!offsets_of || offsets_of->key != offsets.key || offsets_of->key_lower != offsets.key_lower ||
-            offsets_of->values.size() != offsets.values.size()) return Scalar{};
+        if (!offsets_of || !SameKey(*offsets_of, offsets)) return Scalar{};
         for (std::size_t k = 0; k < offsets.values.size(); ++k) offsets.values[k] += sign * offsets_of->values[k];
       }
     } else {
@@ -395,20 +410,17 @@ std::optional<Scalar> BoundedPointerArithmetic(std::string_view op, const Scalar
     const auto identity = (tabled ? tabled->offset_identity : base.constant.convert_to<std::string>()) +
         (op == "sub" ? "-" : "+") + BoundedName(offset);
     const Integer lo = *low, hi = *high;
-    return BoundedAllocationPointer{std::make_shared<const BoundedPointerValue>(BoundedPointerValue{
-        std::move(resource), extent, AffineForm{0, {}}, lo, hi, BoundedSources({&a, &b}), identity,
-        std::move(offsets)})};
+    return MakeBoundedPointer(std::move(resource), extent, AffineForm{0, {}}, lo, hi, BoundedSources({&a, &b}),
+                              identity, std::move(offsets));
   }
   Integer low, high;
   if (const auto *bounded = std::get_if<BoundedInteger>(&offset)) { low = (*bounded)->lower; high = (*bounded)->upper; }
   else low = high = *ScalarInteger(offset);
-  const Integer sign = op == "sub" ? -1 : 1;
   if (sign < 0) { std::swap(low, high); low = -low; high = -high; }
   lower += low; upper += high;
   if (lower < 0 || upper >= (Integer(1) << 63)) return Scalar{};
-  return BoundedAllocationPointer{std::make_shared<const BoundedPointerValue>(BoundedPointerValue{
-      std::move(resource), extent, AffineSum(base, *form, sign), std::move(lower), std::move(upper),
-      BoundedSources({&a, &b}), {}, std::nullopt})};
+  return MakeBoundedPointer(std::move(resource), extent, AffineSum(base, *form, sign), std::move(lower),
+                            std::move(upper), BoundedSources({&a, &b}));
 }
 std::optional<Scalar> PointerArithmetic(std::string_view op, const Scalar &a,
                                         const Scalar &b, const FrontendConfig &c) {
@@ -550,6 +562,24 @@ Scalar ExactIntegerToFloat(const Scalar &value, const Instruction &instruction) 
   return Integer((Integer(negative)<<(fraction+exponent_bits)) |
       (Integer(high+bias)<<fraction) | (significand&((Integer(1)<<fraction)-1)));
 }
+// Whether one of the six integer relations holds between a value and itself.
+bool ReflexiveRelation(std::string_view relation) {
+  return relation == "eq" || relation == "le" || relation == "ge";
+}
+// The integer relation between values in [al, ah] and [bl, bh], where the ranges
+// decide it: eq and ne for disjoint ranges, and the four order relations.
+std::optional<bool> IntervalOrder(std::string_view relation, const Integer &al, const Integer &ah,
+                                  const Integer &bl, const Integer &bh) {
+  if (relation == "eq" || relation == "ne") {
+    if (ah < bl || bh < al) return relation == "ne";
+    return std::nullopt;
+  }
+  if (relation == "lt") { if (ah < bl) return true; if (al >= bh) return false; }
+  if (relation == "le") { if (ah <= bl) return true; if (al > bh) return false; }
+  if (relation == "gt") { if (al > bh) return true; if (ah <= bl) return false; }
+  if (relation == "ge") { if (al >= bh) return true; if (ah < bl) return false; }
+  return std::nullopt;
+}
 // An integer comparison decided by the operands' bounds; values that may wrap at
 // the comparison width stay unknown.
 Scalar BoundedCompare(const Instruction &i, std::string_view relation, const Scalar &a, const Scalar &b) {
@@ -562,13 +592,12 @@ Scalar BoundedCompare(const Instruction &i, std::string_view relation, const Sca
   const Integer al = p ? (*p)->lower : Reduce(*x, *width, sign), ah = p ? (*p)->upper : al;
   const Integer bl = q ? (*q)->lower : Reduce(*y, *width, sign), bh = q ? (*q)->upper : bl;
   if (p && q && *p == *q && In(relation, {"eq", "ne", "le", "ge", "lt", "gt"}))
-    return relation == "eq" || relation == "le" || relation == "ge";
+    return ReflexiveRelation(relation);
   // Tables over one key (or a table and a constant): the relation per entry, decided
   // when every entry agrees.
   if (In(relation, {"eq", "ne", "le", "ge", "lt", "gt"})) {
     const auto ta = p ? TableOf(*p) : std::nullopt, tb = q ? TableOf(*q) : std::nullopt;
-    if ((!p || ta) && (!q || tb) && (ta || tb) &&
-        (!ta || !tb || (ta->key == tb->key && ta->key_lower == tb->key_lower && ta->values.size() == tb->values.size()))) {
+    if ((!p || ta) && (!q || tb) && (ta || tb) && (!ta || !tb || SameKey(*ta, *tb))) {
       const auto size = (ta ? *ta : *tb).values.size();
       std::optional<bool> decided;
       bool agree = true;
@@ -582,16 +611,9 @@ Scalar BoundedCompare(const Instruction &i, std::string_view relation, const Sca
       if (agree && decided) return *decided;
     }
   }
-  if (relation == "eq" || relation == "ne") {
-    if (ah < bl || bh < al) return relation == "ne";
-    // Both exact (one value each): concrete equality.
-    if (al == ah && bl == bh) return (al == bl) == (relation == "eq");
-    return {};
-  }
-  if (relation == "lt") { if (ah < bl) return true; if (al >= bh) return false; }
-  if (relation == "le") { if (ah <= bl) return true; if (al > bh) return false; }
-  if (relation == "gt") { if (al > bh) return true; if (ah <= bl) return false; }
-  if (relation == "ge") { if (al >= bh) return true; if (ah < bl) return false; }
+  if (const auto order = IntervalOrder(relation, al, ah, bl, bh)) return *order;
+  // Both exact (one value each) and not disjoint: the same value.
+  if ((relation == "eq" || relation == "ne") && al == ah && bl == bh) return relation == "eq";
   return {};
 }
 Scalar Compare(const Instruction &i, std::string relation, const Scalar &a,
@@ -621,12 +643,8 @@ Scalar Compare(const Instruction &i, std::string relation, const Scalar &a,
       return {};
     }
     if (a == b && In(relation, {"eq", "ne", "le", "ge", "lt", "gt"}))
-      return relation == "eq" || relation == "le" || relation == "ge";
-    if (relation == "eq" || relation == "ne") { if (ah < bl || bh < al) return relation == "ne"; return {}; }
-    if (relation == "lt") { if (ah < bl) return true; if (al >= bh) return false; }
-    if (relation == "le") { if (ah <= bl) return true; if (al > bh) return false; }
-    if (relation == "gt") { if (al > bh) return true; if (ah <= bl) return false; }
-    if (relation == "ge") { if (al >= bh) return true; if (ah < bl) return false; }
+      return ReflexiveRelation(relation);
+    if (const auto order = IntervalOrder(relation, al, ah, bl, bh)) return *order;
     return {};
   }
   if (Has(i, "f32")) {
@@ -792,8 +810,8 @@ struct WarpContext {
 };
 // A producer Resources with the ExecutorFacts and UnitFrame it reads and names
 // through, in one allocation (facts and frame first: they outlive the
-// Resources). Its holders keep one pointer as before, and the template
-// task's coroutine frame does not grow.
+// Resources). Its holders keep one pointer, and the template task's
+// coroutine frame does not grow.
 struct ExecutorResources {
   ExecutorFacts facts;
   UnitFrame frame;
@@ -838,6 +856,11 @@ struct WaitProbe {
   std::size_t trace_index;
   WaitIdentity identity;
 };
+// Whether a vote.sync mask is an integer naming every lane of the warp.
+bool FullWarpMask(const Scalar &value) {
+  const auto *mask = std::get_if<Integer>(&value);
+  return mask && (*mask & Integer(0xffffffffu)) == Integer(0xffffffffu);
+}
 class Executor : public std::enable_shared_from_this<Executor> {
 public:
   Executor(const Module &m, const Function &f, const FrontendConfig &c,
@@ -881,14 +904,14 @@ private:
     return BranchScopeDecision{taken, visit, found->second.first};
   }
   std::set<std::uint32_t> label_entries_;
-  // Two-arm merge (build/docs/two-arm-merge-design-20261021.md), shared by the template and
-  // per-lane executors: a forward one-armed diamond whose straight-line fall-through arm holds
-  // only listed compute opcodes, private reads and tcgen05 ld/st/wait (no synchronization) and
-  // whose written registers are referenced nowhere outside the arm (P3: consumers of the lane
-  // traces never see an arm value after the join). `uniform` is the static P2: the predicate is
-  // computed in the branch's basic block from a full-warp vote.sync and constants only, so every
-  // lane of the warp reaches the branch with the same value. Lowering checks the tcgen05 state
-  // at the branch (P1').
+  // Two-arm merge, shared by the template and per-lane executors: a forward one-armed diamond
+  // whose straight-line fall-through arm holds only listed compute opcodes, private reads and
+  // tcgen05 ld/st/wait (no synchronization) and whose written registers are referenced nowhere
+  // outside the arm, so the arm's registers are dead after the join (consumers of the lane
+  // traces never see an arm value after the join). `uniform` is the static proof of a
+  // warp-uniform predicate: it is computed in the branch's basic block from a full-warp
+  // vote.sync and constants only, so every lane of the warp reaches the branch with the same
+  // value. Lowering checks that no tcgen05 ordering is pending at the branch.
   struct MergedArm {
     std::vector<std::uint32_t> writes;
     bool aligned = false, uniform = false;
@@ -911,12 +934,23 @@ private:
   std::map<std::string, std::map<std::uint64_t, Scalar>> pointer_tables_;
   // tensor_properties: object resource -> element bound; loads of whole elements are
   // BoundedInteger. property_sites_ records the instructions those bounds decided.
-  struct TensorProperty { std::string object; unsigned bits; bool sign; Integer lower, upper; };
+  struct TensorProperty {
+    std::string object; unsigned bits; bool sign; Integer lower, upper;
+    // The element type: s or u, then the width in bits.
+    std::string Type() const { return std::string(sign ? "s" : "u") + std::to_string(bits); }
+  };
   std::map<std::string, TensorProperty> tensor_properties_;
   mutable std::map<std::string, std::set<std::uint32_t>> property_sites_;
+  // An element whose bounds coincide is that value: appends it to `values` and records
+  // `instruction` as decided by the bound.
+  bool ExactElement(const TensorProperty &property, std::uint32_t instruction, std::vector<Scalar> &values) const {
+    if (property.lower != property.upper) return false;
+    values.push_back(property.lower);
+    property_sites_[property.object].insert(instruction);
+    return true;
+  }
   void NoteBoundedDecision(std::uint32_t instruction, std::initializer_list<const Scalar *> operands) const {
-    for (const auto *operand : operands)
-      for (const auto &object : BoundedSources({operand})) property_sites_[object].insert(instruction);
+    for (const auto &object : BoundedSources(operands)) property_sites_[object].insert(instruction);
   }
   std::uint32_t Intern(std::string name) {
     auto [it, inserted] = ids_.emplace(name, names_.size());
@@ -1868,11 +1902,7 @@ void Executor::Data(const Decoded &d, State &s, std::uint32_t warp,
       name = p->region;
       offset += p->offset;
     }
-    bool sign = false;
-    for (const auto &modifier : i.modifiers)
-      if (modifier.size() > 1 && modifier[0] == 's' &&
-          std::isdigit(modifier[1]))
-        sign = true;
+    const bool sign = SignedModifier(i);
     std::vector<Scalar> values;
     for (std::size_t index = 0; index < d.destinations.size(); ++index) {
       auto field = Int64(offset + index * width, "parameter offset");
@@ -1960,9 +1990,7 @@ void Executor::Data(const Decoded &d, State &s, std::uint32_t warp,
       if (const auto region = constant_inputs_.find(pointer.resource); region != constant_inputs_.end()) {
         if (*i.memory_width % count != 0) { Invalidate(d, s); return; }
         const auto width = *i.memory_width / count;
-        bool sign = false;
-        for (const auto &modifier : i.modifiers)
-          if (modifier.size() > 1 && modifier[0] == 's' && std::isdigit(modifier[1])) sign = true;
+        const bool sign = SignedModifier(i);
         for (std::size_t index = 0; index < count; ++index) {
           BoundedTable table{offsets.key, offsets.key_lower, {}};
           for (const auto &candidate : offsets.values) {
@@ -1988,12 +2016,8 @@ void Executor::Data(const Decoded &d, State &s, std::uint32_t warp,
             return v + shift >= 0 && (v + shift) % bytes == 0;
           });
           if (!aligned) { values.push_back(Scalar{}); continue; }
-          if (property.lower == property.upper) {
-            values.push_back(property.lower);
-            property_sites_[property.object].insert(i.id);
-            continue;
-          }
-          const auto type = std::string(property.sign ? "s" : "u") + std::to_string(property.bits);
+          if (ExactElement(property, i.id, values)) continue;
+          const auto type = property.Type();
           auto sources = pointer.sources;
           if (std::find(sources.begin(), sources.end(), property.object) == sources.end()) sources.push_back(property.object);
           values.push_back(MakeBounded(property.lower, property.upper,
@@ -2010,9 +2034,7 @@ void Executor::Data(const Decoded &d, State &s, std::uint32_t warp,
       if (*i.memory_width % count != 0) { Invalidate(d, s); return; }
       const auto width = *i.memory_width / count;
       const auto &region = constant_inputs_.at(pointer->resource);
-      bool sign = false;
-      for (const auto &modifier : i.modifiers)
-        if (modifier.size() > 1 && modifier[0] == 's' && std::isdigit(modifier[1])) sign = true;
+      const bool sign = SignedModifier(i);
       std::vector<Scalar> values;
       for (std::size_t index = 0; index < count; ++index) {
         const auto offset = Int64(pointer->offset + displacement + index * width, "constant input offset");
@@ -2029,19 +2051,15 @@ void Executor::Data(const Decoded &d, State &s, std::uint32_t warp,
     if (auto pointer = std::get_if<AllocationPointer>(&pointer_value);
         pointer && tensor_properties_.contains(pointer->resource)) {
       const auto &property = tensor_properties_.at(pointer->resource);
+      const auto bytes = property.bits / 8;
       const auto count = d.destination_slots.size();
-      if (*i.memory_width != count * property.bits / 8) { Invalidate(d, s); return; }
+      if (*i.memory_width != count * bytes) { Invalidate(d, s); return; }
       std::vector<Scalar> values;
       for (std::size_t index = 0; index < count; ++index) {
-        const Integer offset = pointer->offset + displacement + Integer(index * property.bits / 8);
-        if (offset < 0 || offset % (property.bits / 8) != 0) { values.push_back(Scalar{}); continue; }
-        if (property.lower == property.upper) {
-          // The bounds determine the element exactly.
-          values.push_back(property.lower);
-          property_sites_[property.object].insert(i.id);
-          continue;
-        }
-        const auto type = std::string(property.sign ? "s" : "u") + std::to_string(property.bits);
+        const Integer offset = pointer->offset + displacement + Integer(index * bytes);
+        if (offset < 0 || offset % bytes != 0) { values.push_back(Scalar{}); continue; }
+        if (ExactElement(property, i.id, values)) continue;
+        const auto type = property.Type();
         values.push_back(MakeBounded(property.lower, property.upper,
             "element:" + property.object + "+" + offset.convert_to<std::string>() + ":" + type,
             {property.object}, AffineForm{0, {{ElementAtom{property.object, type, offset}, Integer(1)}}}));
@@ -2507,24 +2525,19 @@ bool Executor::SharedData(const Decoded &d, State &state, std::uint32_t warp,
     if (text.starts_with('[') && text.ends_with(']')) text=TrimView(text.substr(1,text.size()-2));
     auto split=SplitAddress(text); if (!split) return {};
     auto v=value(split->first); auto owner=rank; std::optional<Integer> offset;
-    // The record as the producer Resources read it: detached, on this trace's
-    // lane, registered once where the lane is set (the scalar path, the only
-    // one that reaches either read).
-    LaneRef record_lane{};
-    if (auto p=std::get_if<ClusterSharedPointer>(&v)) { owner=p->target_rank; offset=p->local_address; }
+    if (auto p=std::get_if<ClusterSharedPointer>(&v)) { owner=p->target_rank; offset=Integer(p->local_address+split->second); }
     else if ((offset=ScalarInteger(v))) {
+      // The record as the producer Resources read it: detached, on this trace's
+      // lane, registered once where the lane is set.
       auto &executor=*context.resources;
-      record_lane=executor.facts.Register(trace);
+      const auto record_lane=executor.facts.Register(trace);
       executor.resources.SetLane(record_lane);
-      if (auto inferred=executor.resources.SharedOwner(executor.facts.Detached(record,record_lane),split->first))
+      const auto detached=executor.facts.Detached(record,record_lane);
+      if (auto inferred=executor.resources.SharedOwner(detached,split->first))
         owner=*inferred;
+      *offset=executor.resources.AddressRegisterBits(detached,split->first,Integer(*offset+split->second));
     }
     if (!offset) return {};
-    *offset+=split->second;
-    if (!std::holds_alternative<ClusterSharedPointer>(v)) {
-      *offset = context.resources->resources.AddressRegisterBits(
-          context.resources->facts.Detached(record,record_lane), split->first, *offset);
-    }
     if (*offset<0 || *offset>UINT32_MAX)
       throw ExecutionError("shared_control_operand",i.line,"shared address outside u32");
     return (std::uint64_t(owner)<<32) | offset->convert_to<std::uint32_t>();
@@ -3041,8 +3054,8 @@ LaneTask Executor::Lane(const WarpContract &warp, std::uint32_t lane,
       auto taken = supplied ? supplied : predicate;
       if (!taken && d.predicate != kMissing && target > pc + 1)
         if (const auto *arm = MergedArmAt(pc); arm && (!arm->aligned || arm->uniform)) {
-          // Two-arm merge: this lane runs the fall-through arm (the superset arm); by P3
-          // nothing after the join reads a register the arm writes.
+          // Two-arm merge: this lane runs the fall-through arm (the superset arm); the arm's
+          // registers are dead after the join: nothing after it reads a register the arm writes.
           auto record = Record(d, state, state.occurrences[pc]++, {});
           record.mutableMetadata().merged_arm_join = target;
           append(std::move(record));
@@ -3300,15 +3313,12 @@ const Executor::MergedArm *Executor::MergedArmAt(std::uint32_t pc) const {
   entry->second = std::move(arm);
   return &*entry->second;
 }
-// Static P2: reg's reaching definition at `use` lies in use's basic block (no label entry in
-// between) and is an unpredicated setp/selp/not/and/or/xor/mov/cvt of constants and such
-// registers, or a vote.sync (any/all/uni/ballot) whose mask is the full warp.
+// The static proof that `reg` is warp-uniform at `use`: its reaching definition lies in use's
+// basic block (no label entry in between) and is an unpredicated setp/selp/not/and/or/xor/mov/cvt
+// of constants and such registers, or a vote.sync (any/all/uni/ballot) whose mask is the full
+// warp.
 bool Executor::StaticWarpUniform(std::uint32_t use, std::uint32_t reg, unsigned depth) const {
   if (depth > 16) return false;
-  const auto full = [](const Scalar &value) {
-    const auto *mask = std::get_if<Integer>(&value);
-    return mask && (*mask & Integer(0xffffffffu)) == Integer(0xffffffffu);
-  };
   for (auto index = use; index-- > 0;) {
     if (label_entries_.contains(index + 1)) return false;
     const auto &d = decoded_[index];
@@ -3320,7 +3330,7 @@ bool Executor::StaticWarpUniform(std::uint32_t use, std::uint32_t reg, unsigned 
           d.operands.size() != 3)
         return false;
       const auto &mask = d.operands[2];
-      if (mask.reg == kMissing && mask.registers.empty()) return full(mask.constant);
+      if (mask.reg == kMissing && mask.registers.empty()) return FullWarpMask(mask.constant);
       if (mask.reg == kMissing) return false;
       // A register mask: its reaching definition is a mov of a full constant.
       for (auto at = index; at-- > 0;) {
@@ -3328,7 +3338,7 @@ bool Executor::StaticWarpUniform(std::uint32_t use, std::uint32_t reg, unsigned 
         const auto &m = decoded_[at];
         if (std::find(m.destinations.begin(), m.destinations.end(), mask.reg) == m.destinations.end()) continue;
         return m.predicate == kMissing && m.instruction->opcode == "mov" && m.operands.size() == 2 &&
-               m.operands[1].reg == kMissing && m.operands[1].registers.empty() && full(m.operands[1].constant);
+               m.operands[1].reg == kMissing && m.operands[1].registers.empty() && FullWarpMask(m.operands[1].constant);
       }
       return false;
     }
@@ -3470,13 +3480,14 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
   ExecutionProgram result; result.module=&m_; result.function=&f_; result.config=c_;
   result.register_names=names_; result.static_execution_counts.resize(decoded_.size());
   result.lane_traces.resize(members.size()); result.template_execution.used=true;
-  // One split-tree node per path object, in creation order. A copy of
-  // `parent`'s path gets the next PathId; the parent keeps its own.
+  // One split-tree node per path object, in creation order. `child` gets a copy
+  // of `parent`'s path with the next PathId; the parent keeps its own.
   result.template_paths.emplace_back();
-  const auto fork_path=[&result](const Group& parent,SplitReason reason) {
+  const auto fork_path=[&result](Group& child,const Group& parent,SplitReason reason) {
+    child.path=std::make_shared<std::vector<std::size_t>>(*parent.path);
     const PathId id{static_cast<std::uint32_t>(result.template_paths.size())};
     result.template_paths.push_back({parent.path_id,static_cast<std::uint32_t>(parent.path->size()),parent.pc,reason,{}});
-    return id;
+    child.path_id=id;
   };
   AddressTable shared_addresses;BarrierTable shared_barriers;
   std::unique_ptr<ExecutorResources> shared_resources; // facts over the in-progress result
@@ -3543,14 +3554,6 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
     diamond.write_names.assign(write_names.begin(),write_names.end());
     entry->second=std::move(diamond);return &*entry->second;
   };
-  // P2 for the template executor when the static proof (MergedArm::uniform) fails: a provably
-  // warp-uniform template value (bounded walk of its value DAG): a known uniform value, a
-  // full-warp vote.sync result, or a computation of such values. A vote's mask node also reads
-  // the voted predicate, so an unfolded mask is evaluated per member.
-  const auto full_mask=[](const Scalar& value) {
-    const auto* mask=std::get_if<Integer>(&value);
-    return mask && (*mask&Integer(0xffffffffu))==Integer(0xffffffffu);
-  };
   // Every warp with a member in the domain has all its CTA members in it: a warp split
   // across template groups could disagree on the predicate (aligned arms would be UB).
   std::map<std::uint32_t,std::size_t> warp_members;
@@ -3560,6 +3563,11 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
     for(auto member:domain)++present[members[member].warp];
     return std::all_of(present.begin(),present.end(),[&](const auto& item){return item.second==warp_members.at(item.first);});
   };
+  // The warp-uniform predicate for the template executor when the static proof
+  // (MergedArm::uniform) fails: a provably warp-uniform template value (bounded walk of its
+  // value DAG): a known uniform value, a full-warp vote.sync result, or a computation of such
+  // values. A vote's mask node also reads the voted predicate, so an unfolded mask is
+  // evaluated per member.
   const auto warp_uniform=[&](std::size_t root,const std::vector<std::size_t>& domain) {
     std::vector<std::size_t> stack{root};std::set<std::size_t> seen;
     while(!stack.empty()) {
@@ -3571,8 +3579,8 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
       if(node.vote) {
         if(node.operands.size()<2)return false;
         const auto mask=node.operands[1];
-        if(const auto& uniform=arena->values[mask].uniform){if(!full_mask(*uniform))return false;}
-        else for(auto member:domain)if(!full_mask(arena->Value(mask,member)))return false;
+        if(const auto& uniform=arena->values[mask].uniform){if(!FullWarpMask(*uniform))return false;}
+        else for(auto member:domain)if(!FullWarpMask(arena->Value(mask,member)))return false;
         continue;
       }
       if(!node.evaluate || node.exchange || node.member_value || !node.coordinates.empty())return false;
@@ -3629,8 +3637,7 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
           if(!blocked.empty()) {
             if(!ready.empty()) {
               auto child=group;child.members=std::move(ready);child.collective_results.clear();
-              child.path=std::make_shared<std::vector<std::size_t>>(*group.path);
-              child.path_id=fork_path(group,SplitReason::CollectiveWait);
+              fork_path(child,group,SplitReason::CollectiveWait);
               pending.push_back(std::move(child));++result.template_execution.splits;
               group.members=std::move(blocked);
             }
@@ -3735,15 +3742,13 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
               throw TemplateFallback{};
             for(auto* domain:{&yes,&no})if(!domain->empty()) {
               auto child=group;child.members=std::move(*domain);
-              child.path=std::make_shared<std::vector<std::size_t>>(*group.path);
-              child.path_id=fork_path(group,SplitReason::OpaqueDomain);
+              fork_path(child,group,SplitReason::OpaqueDomain);
               pending.push_back(std::move(child));++result.template_execution.splits;
             }
             group.members=std::move(unknown);
           } else if (!yes.empty() && !no.empty()) {
             auto child=group; child.members=std::move(no); group.members=std::move(yes);
-            child.path=std::make_shared<std::vector<std::size_t>>(*group.path);
-            child.path_id=fork_path(group,SplitReason::Predicate);
+            fork_path(child,group,SplitReason::Predicate);
             pending.push_back(std::move(child)); ++result.template_execution.splits;
           } else active=!yes.empty();
         }
@@ -3955,8 +3960,7 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
           }
           for(auto target=std::next(targets.begin());target!=targets.end();++target) {
             auto child=group;child.pc=target->first;child.members=std::move(target->second);
-            child.path=std::make_shared<std::vector<std::size_t>>(*group.path);
-            child.path_id=fork_path(group,SplitReason::IndirectBranch);
+            fork_path(child,group,SplitReason::IndirectBranch);
             pending.push_back(std::move(child));++result.template_execution.splits;
           }
           group.pc=targets.begin()->first;group.members=std::move(targets.begin()->second);
@@ -4124,13 +4128,13 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
     result.template_execution.coordinate_bindings+=value.coordinates.size();
   for(const auto& record:arena->records)
     result.template_execution.record_bindings+=record.bindings.size()+detail::ExecutionStorage::Bindings(record.record).size();
-  for(auto& cache:arena->caches)std::unordered_map<std::size_t,Scalar>{}.swap(cache);
   result.release_value_caches=[weak=std::weak_ptr<TemplateArena>(arena)](std::optional<std::size_t> member) {
     const auto held=weak.lock();
     if(!held)return;
     if(!member)for(auto& cache:held->caches)std::unordered_map<std::size_t,Scalar>{}.swap(cache);
     else if(*member<held->caches.size())std::unordered_map<std::size_t,Scalar>{}.swap(held->caches[*member]);
   };
+  result.release_value_caches(std::nullopt);
   if(runtime)for(auto it=runtime->tensor_maps.begin();it!=runtime->tensor_maps.end();++it)
     result.config.tma_descriptors["executed."+it.key()]=it.value();
   result.tensor_property_sites=property_sites_;

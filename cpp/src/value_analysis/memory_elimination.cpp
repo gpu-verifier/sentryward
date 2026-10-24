@@ -286,8 +286,7 @@ class DependencyMarks final {
   std::vector<std::size_t> shared_;
 };
 
-// The text reported for an unread Load. It is a pure function of the const
-// graph, so formatting it only when the walk fails gives the same message.
+// The text reported for an unread Load, a pure function of the const graph.
 std::string missingRead(const v::Graph& graph,const v::Value& value,const Slice& required) {
   const auto origin=graph.instanceOrigin(value);
   auto missing=" Missing read at PTX line " + std::to_string(origin.source_line.value_or(0)) +
@@ -322,8 +321,8 @@ class DependencyWalk final {
 
 bool DependencyWalk::ready(std::span<const v::Value> roots,Slice slice,std::string* missing) {
   for (const auto& root : roots) pending_.emplace_back(root,slice);
-  // The last fragment-covered unread Load of this call: the message that an
-  // eager write would have left when the walk fails at a later contains test.
+  // The last fragment-covered unread Load of this call; it is reported when
+  // the walk later fails on an invalid handle.
   std::optional<std::pair<v::Value,Slice>> covered;
   const auto reject=[&](const v::Value* unread,const Slice& required) {
     pending_.clear();marks_.rollback();

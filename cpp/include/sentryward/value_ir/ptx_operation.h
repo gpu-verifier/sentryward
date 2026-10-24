@@ -25,7 +25,6 @@ public:
   std::string_view name() const noexcept override { return "OpaqueValue"; }
   void validateOperands(std::span<const ValueType>) const override;
   void printAttributes(std::ostream&) const override;
-  [[nodiscard]] const std::string& provenance() const noexcept { return provenance_; }
 private:
   std::string provenance_;
 };

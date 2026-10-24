@@ -90,7 +90,8 @@ MatrixResolver::Resolve(LaneRef current,
       if (!occurrence.lanes[lane])
         Participation("aligned matrix memory requires the same occurrence in "
                       "all 32 lanes");
-      // T2 expanded every lane in the constructor: the recorded element.
+      // The constructor expands every lane (ExpansionSite::Matrix): the
+      // recorded element.
       const auto peer = facts_.Meta({*occurrence.lanes[lane], occurrence.positions[lane]});
       if (peer.instruction_id() != execution.instruction_id() ||
           peer.predicate_value() != true)
@@ -127,8 +128,8 @@ MatrixResolver::Resolve(LaneRef current,
                                              current_lane_id, occurrence.rows);
   std::vector<Fragment> result;
   result.reserve(intervals.size());
-  // ConstantSteps {Shared(self), offset} with the name formatted once, as
-  // before (no range check).
+  // ConstantSteps {Shared(self), offset} with the name formatted once (no
+  // range check).
   const auto shared = resources.interner().Prepare(AllocationKey::Shared(resources.frame.self()));
   for (const auto &interval : intervals)
     result.emplace_back(resources.interner().Apply(shared, interval.offset),

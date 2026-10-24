@@ -6,6 +6,7 @@
 #include <limits>
 #include <ostream>
 #include <stdexcept>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
@@ -170,7 +171,7 @@ std::size_t Graph::collect(std::span<Ref> roots,std::span<std::optional<Id>> wea
     return 0;
   }
   // Allocate first and move nodes only after the observer: any throw still
-  // leaves this graph intact, as copying did. Retained IDs keep live order.
+  // leaves this graph intact. Retained IDs keep live order.
   retained.nodes_.reserve(live_count);
   retained.reserveIndex(live_count);
   std::vector<Id> map(nodes_.size(),kNoNode);

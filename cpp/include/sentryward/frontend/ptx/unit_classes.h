@@ -3,8 +3,8 @@
 // (no access of one unit can be ordered with another unit's: no global atomic,
 // reduction or multimem, and no strong access or memory fence wider than the
 // unit) with the (I.3') rule admitting wider proxy fences, the class-mode
-// switch and its gates, and the C1 structure key. Class mode runs where the
-// plan allows it (query_log.h, run.cpp); with mode off every unit is analysed.
+// gates, and the C1 structure key. Class mode runs where the plan allows it
+// (query_log.h, run.cpp); otherwise every unit is analysed.
 #include "sentryward/frontend/ptx/config.h"
 #include "sentryward/frontend/ptx/module.h"
 
@@ -17,19 +17,11 @@
 namespace sentryward::frontend::ptx {
 class CtaFacts;
 
-// No public option. On (the default): class mode where the plan allows it;
-// members are not consumed. Off: the per-unit loop, every unit
-// consumed; selected only by the developer setting SENTRYWARD_UNIT_CLASSES=off
-// (run.cpp). (The development-only modes census, verify-members and singleton
-// were removed.)
-enum class UnitClassMode : std::uint8_t { Off, On };
-[[nodiscard]] std::optional<UnitClassMode> ParseUnitClassMode(std::string_view text) noexcept;
-
 // A cluster, or a CTA when the launch has no clusters.
 struct LaunchUnit {
   std::uint32_t index = 0;       // unit order: z, y, x over the cluster grid (x fastest)
   Coordinates kappa{};           // the cluster id (ctaid / cluster_dim), or the ctaid
-  std::vector<Coordinates> ctas; // rank order: rank = x + cx*(y + cy*z) (config.cpp:910-913)
+  std::vector<Coordinates> ctas; // rank order: rank = x + cx*(y + cy*z) (as ConfigForCta's %cluster_ctarank)
 };
 
 // The static part of precondition (I) over the launched entry's instructions,
@@ -46,7 +38,7 @@ struct PreconditionReport {
   // every executed CTA's counts (run.cpp) and restarts per unit.
   std::vector<std::uint32_t> atomic_sites;
 };
-[[nodiscard]] PreconditionReport PreconditionScan(const Module &module, const Function &function);
+[[nodiscard]] PreconditionReport PreconditionScan(const Function &function);
 
 // The run options that keep class mode off.
 struct UnitGates {
@@ -72,7 +64,7 @@ struct UnitPlan {
   // member's δ is checked against the audited row widths after value
   // analysis (run.cpp).
   bool lift_values = false;
-  Coordinates grid{}, unit_shape{1, 1, 1}, unit_grid{1, 1, 1};
+  Coordinates grid{}, unit_shape{1, 1, 1};
   std::vector<LaunchUnit> units; // filled when active
   PreconditionReport precondition;
   // Input tensor maps with a global location (allocation_location or address):
@@ -85,8 +77,6 @@ struct UnitPlan {
     std::uint64_t offset = 0;
   };
   std::vector<InputMap> input_maps;
-  [[nodiscard]] std::uint32_t UnitOf(Coordinates cta) const noexcept;
-  [[nodiscard]] std::uint32_t RankOf(Coordinates cta) const noexcept;
   [[nodiscard]] std::uint32_t UnitSize() const noexcept { return unit_shape[0] * unit_shape[1] * unit_shape[2]; }
 };
 // A tensormap.cp_fenceproxy destination: 128 bytes at `begin` of a global allocation object.
@@ -102,8 +92,8 @@ struct TensormapRegion {
                                          const std::vector<UnitPlan::InputMap> &maps) noexcept;
 
 // `config`: the launch configuration (before ConfigForCta).
-[[nodiscard]] UnitPlan PlanUnits(UnitClassMode mode, const FrontendConfig &config, const Module &module,
-                                 const Function &function, const UnitGates &gates);
+[[nodiscard]] UnitPlan PlanUnits(const FrontendConfig &config, const Function &function,
+                                 const UnitGates &gates);
 
 // C1, the structure key: the canonical bytes of one CTA's structure,
 // computed by the driver before any consumer reads the facts. Lanes (warp,

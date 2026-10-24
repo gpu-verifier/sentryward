@@ -27,12 +27,10 @@ inline bool limb(const Z &z, Limb &m, bool &neg) noexcept {
   neg = b.sign();
   return true;
 }
-// A positive Z (a denominator).
+// The magnitude only; the sign is ignored.
 inline bool limb(const Z &z, Limb &m) noexcept {
-  const auto &b = z.backend();
-  if (b.size() != 1) return false;
-  m = b.limbs()[0];
-  return true;
+  bool neg;
+  return limb(z, m, neg);
 }
 // The canonical value: a destination that already has one limb takes the limb
 // and sign directly (sign() keeps zero unsigned); otherwise Boost's own limb or
@@ -128,24 +126,27 @@ template <class T> bool limb_of(const T &i, Limb &m, bool &neg) noexcept {
 }
 } // namespace rational_detail
 // Exactly the integer arguments boost::rational<Z> accepts (builtin integers,
-// bool, Z and Z expressions), so every overload set stays as it was.
+// bool, Z and Z expressions), so every overload set matches boost::rational<Z>.
 template <class T> concept RationalInteger = boost::rational_detail::is_compatible_integer<T, Z>::value;
 class Rational;
 template <class T> concept RationalOperand = RationalInteger<T> || std::same_as<T, Rational>;
-// boost::rational<Z> (Boost 1.90, BOOST_VERSION 109000): the same members, the
-// same invariant (den > 0, gcd(|num|, den) = 1, zero = 0/1), Boost's public
-// operator set with Boost's argument constraint, and Boost's exceptions in
-// Boost's order. Only how a result is computed differs. When every part of the
-// operands has one limb, Boost's own formulas run on limbs and double limbs;
-// otherwise they run verbatim on Z. A reduced pair with a positive denominator
-// is unique and cpp_int is canonical, so every result stores the same Z pair.
+// boost::rational<Z> (Boost 1.90, BOOST_VERSION 109000): the same data members,
+// the same invariant (den > 0, gcd(|num|, den) = 1, zero = 0/1), the subset of
+// Boost's public interface that rg uses with Boost's argument constraint, and
+// Boost's exceptions in Boost's order. Only how a result is computed differs.
+// When every part of the operands has one limb, Boost's own formulas run on
+// limbs and double limbs; otherwise they run verbatim on Z. Order comparisons
+// instead cross-multiply, on double limbs or on Z. A reduced pair with a
+// positive denominator is unique and cpp_int is canonical, so every result
+// stores the same Z pair.
 // The non-member operators are hidden friends: like Boost's namespace-boost
 // templates seen from rg, they are found only by ADL on a Rational operand.
 class Rational {
   using Limb = rational_detail::Limb;
   using Wide = rational_detail::Wide;
   Z num_ = 0, den_ = 1;
-  // Boost's safe-bool conversion, so every implicit conversion stays as it was.
+  // Boost's safe-bool conversion, so every implicit conversion matches
+  // boost::rational<Z>.
   struct helper {
     Z parts[2];
   };
@@ -158,7 +159,10 @@ class Rational {
     return rational_detail::limb(num_, a, na) && rational_detail::limb(den_, b) &&
            rational_detail::limb(r.num_, c, nc) && rational_detail::limb(r.den_, d);
   }
-  void normalize() { // rational.hpp:886-916
+  template <class T> bool limbs(const T &i, Limb &a, bool &na, Limb &b, Limb &m, bool &n) const noexcept {
+    return rational_detail::limb(num_, a, na) && rational_detail::limb(den_, b) && rational_detail::limb_of(i, m, n);
+  }
+  void normalize() { // boost/rational.hpp:886-916
     if (den_.is_zero()) BOOST_THROW_EXCEPTION(boost::bad_rational());
     if (num_.is_zero()) {
       den_ = 1;
@@ -183,7 +187,7 @@ class Rational {
       den_ = -den_;
     }
   }
-  Rational &plus(const Rational &r, bool minus) { // rational.hpp:516-568
+  Rational &plus(const Rational &r, bool minus) { // boost/rational.hpp:516-568
     Limb a, b, c, d;
     bool na, nc;
     if (limbs(r, a, na, b, c, nc, d)) {
@@ -236,18 +240,15 @@ class Rational {
   template <class T> int order(const T &i) const {
     Limb a, b, m;
     bool na, n;
-    if (rational_detail::limb(num_, a, na) && rational_detail::limb(den_, b) && rational_detail::limb_of(i, m, n))
-      return rational_detail::order(a, na, Wide(m) * b, n);
-    if constexpr (std::is_same_v<T, Z>) return integer() ? num_.compare(i) : num_.compare(Z(i * den_));
-    else {
-      const Z z(i);
-      return integer() ? num_.compare(z) : num_.compare(Z(z * den_));
-    }
+    if (limbs(i, a, na, b, m, n)) return rational_detail::order(a, na, Wide(m) * b, n);
+    const auto cmp = [this](const Z &z) { return integer() ? num_.compare(z) : num_.compare(Z(z * den_)); };
+    if constexpr (std::is_same_v<T, Z>) return cmp(i);
+    else return cmp(Z(i));
   }
-  template <class T> Rational &plus_integer(const T &i, bool minus) { // rational.hpp:292-303
+  template <class T> Rational &plus_integer(const T &i, bool minus) { // boost/rational.hpp:292-303
     Limb a, b, m;
     bool na, n;
-    if (rational_detail::limb(num_, a, na) && rational_detail::limb(den_, b) && rational_detail::limb_of(i, m, n)) {
+    if (limbs(i, a, na, b, m, n)) {
       Wide s;
       bool neg;
       rational_detail::add(a, na, Wide(m) * b, minus ? m != 0 && !n : n, s, neg);
@@ -260,7 +261,6 @@ class Rational {
   }
 
 public:
-  using int_type = Z;
   Rational() = default;
   template <RationalInteger T> Rational(const T &n) : num_(n) {}
   Rational(const Z &n) : num_(rational_detail::copied(n)) {}
@@ -280,20 +280,17 @@ public:
     rational_detail::move(den_, o.den_);
     return *this;
   }
-  template <RationalInteger T> Rational &operator=(const T &n) { // assign(n, 1): n/1 is reduced
+  template <RationalInteger T> Rational &operator=(const T &n) { // Boost's assign(n, 1): n/1 is reduced
     if constexpr (std::is_same_v<T, Z>) rational_detail::copy(num_, n);
     else num_ = n;
     den_ = 1;
     return *this;
   }
-  template <RationalInteger T, RationalInteger U> Rational &assign(const T &n, const U &d) {
-    return *this = Rational(static_cast<Z>(n), static_cast<Z>(d));
-  }
   const Z &numerator() const noexcept { return num_; }
   const Z &denominator() const noexcept { return den_; }
   Rational &operator+=(const Rational &r) { return plus(r, false); }
   Rational &operator-=(const Rational &r) { return plus(r, true); }
-  Rational &operator*=(const Rational &r) { // rational.hpp:570-583
+  Rational &operator*=(const Rational &r) { // boost/rational.hpp:570-583
     Limb a, b, c, d;
     bool na, nc;
     if (limbs(r, a, na, b, c, nc, d)) {
@@ -315,7 +312,7 @@ public:
     den_ = (den_ / gcd2) * (r_den / gcd1);
     return *this;
   }
-  Rational &operator/=(const Rational &r) { // rational.hpp:585-612
+  Rational &operator/=(const Rational &r) { // boost/rational.hpp:585-612
     if (r.num_.is_zero()) BOOST_THROW_EXCEPTION(boost::bad_rational()); // the divisor first: 0/0 throws
     if (num_.is_zero()) return *this;
     Limb a, b, c, d;
@@ -341,10 +338,10 @@ public:
   }
   template <RationalInteger T> Rational &operator+=(const T &i) { return plus_integer(i, false); }
   template <RationalInteger T> Rational &operator-=(const T &i) { return plus_integer(i, true); }
-  template <RationalInteger T> Rational &operator*=(const T &i) { // rational.hpp:304-312
+  template <RationalInteger T> Rational &operator*=(const T &i) { // boost/rational.hpp:304-312
     Limb a, b, m;
     bool na, n;
-    if (rational_detail::limb(num_, a, na) && rational_detail::limb(den_, b) && rational_detail::limb_of(i, m, n)) {
+    if (limbs(i, a, na, b, m, n)) {
       const Limb g = b == 1 ? 1 : std::gcd(m, b);
       rational_detail::store(num_, Wide(a) * rational_detail::quotient(m, g), na != n);
       rational_detail::store(den_, rational_detail::quotient(b, g), false);
@@ -355,12 +352,11 @@ public:
     den_ /= gcd;
     return *this;
   }
-  template <RationalInteger T> Rational &operator/=(const T &i) { // rational.hpp:313-333
+  template <RationalInteger T> Rational &operator/=(const T &i) { // boost/rational.hpp:313-333
     Limb a, b, m;
     bool na, n;
     // Boost re-reads i after dividing num, so q /= q.numerator() keeps Boost's own path.
-    if (rational_detail::limb(num_, a, na) && rational_detail::limb(den_, b) && rational_detail::limb_of(i, m, n) &&
-        static_cast<const void *>(&i) != static_cast<const void *>(&num_)) {
+    if (limbs(i, a, na, b, m, n) && static_cast<const void *>(&i) != static_cast<const void *>(&num_)) {
       if (m == 0) BOOST_THROW_EXCEPTION(boost::bad_rational());
       if (a == 0) return *this;
       const Limb g = std::gcd(a, m);
@@ -379,24 +375,6 @@ public:
       den_ = -den_;
     }
     return *this;
-  }
-  const Rational &operator++() {
-    num_ += den_;
-    return *this;
-  }
-  const Rational &operator--() {
-    num_ -= den_;
-    return *this;
-  }
-  Rational operator++(int) {
-    Rational t(*this);
-    ++(*this);
-    return t;
-  }
-  Rational operator--(int) {
-    Rational t(*this);
-    --(*this);
-    return t;
   }
   bool operator!() const { return !num_; }
   operator bool_type() const { return operator!() ? nullptr : &helper::parts; }
@@ -417,7 +395,6 @@ public:
     } else if constexpr (std::is_same_v<T, Z>) return rational_detail::same(num_, i);
     else return num_ == i;
   }
-  friend Rational operator+(const Rational &r) { return r; }
   friend Rational operator-(const Rational &r) {
     Rational t(r);
     t.num_.backend().negate(); // the negation of a reduced pair is reduced

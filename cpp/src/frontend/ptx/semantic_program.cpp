@@ -588,7 +588,7 @@ void LinkMemory(SemanticProgram& result, bool compact,
     for (std::size_t instance = 0; instance < node.instanceCount(); ++instance) {
       const auto access = Access(result.values, node, instance);
       if (!access) continue;
-      const auto occurrence = Occurrence(node.instances()[instance].origin);
+      const auto occurrence = Occurrence(node.instanceOrigin(instance));
       if (!occurrence) {
         Diagnostic(result, "missing_value_occurrence", "Memory expression has no complete thread/PTX occurrence identity", {}, {}, access->reference);
         continue;
@@ -607,8 +607,8 @@ void LinkMemory(SemanticProgram& result, bool compact,
     const auto& source = source_accesses[occurrence];
     auto& values = value_accesses[occurrence];
     std::stable_sort(values.begin(), values.end(), [&](const auto& left, const auto& right) {
-      return result.values.node(left.reference.node).instances()[left.reference.instance].origin.lowering_index <
-          result.values.node(right.reference.node).instances()[right.reference.instance].origin.lowering_index;
+      return result.values.node(left.reference.node).instanceOrigin(left.reference.instance).lowering_index <
+          result.values.node(right.reference.node).instanceOrigin(right.reference.instance).lowering_index;
     });
     if (source.empty() && values.empty()) continue;
     if(values.size()==1 && values.front().ordered_payload) {
@@ -773,7 +773,6 @@ SemanticProgram SemanticProgramBuilder::Finish(std::function<void(std::string_vi
   if (impl_->finished) throw std::logic_error("SemanticProgramBuilder is finished");
   impl_->finished = true;
   if (stage) stage("frontend.model.finalize");
-  const auto value_nodes = impl_->graph.size();
   SemanticProgram result{impl_->model.Finish(), std::move(impl_->graph), impl_->values.diagnostics(), {}, {}, {}, {}, std::move(impl_->cohorts)};
   result.source_complete = result.lowering.diagnostics.empty();
   result.lowering.metadata["address_value_bridge"] = {
@@ -781,11 +780,6 @@ SemanticProgram SemanticProgramBuilder::Finish(std::function<void(std::string_vi
       {"queries", impl_->address_queries}, {"resolved", impl_->address_resolved},
       {"unavailable", impl_->address_queries - impl_->address_resolved},
       {"first_unavailable_reason", impl_->address_unavailable}};
-  // Value-IR template fragmentation: cohort splits and the cohorts that finished.
-  const auto& lowering_statistics = impl_->values.statistics();
-  result.lowering.metadata["address_value_bridge"]["value_lowering"] = {
-      {"template_steps", lowering_statistics.template_steps}, {"splits", lowering_statistics.splits},
-      {"final_templates", lowering_statistics.final_templates}, {"graph_nodes", value_nodes}};
   // Preserve value-lowering causes even if memory checking blocks correctness.
   auto& causes = result.lowering.metadata["address_value_bridge"]["diagnostics"];
   causes = nlohmann::json::array();

@@ -57,11 +57,6 @@ struct TmemPublicationRead {
   TmemAllocationId allocation;
   auto operator<=>(const TmemPublicationRead &) const = default;
 };
-struct TmemPublicationCandidates {
-  TmemAtomSite site;
-  Integer shared_slot;
-  std::vector<TmemAllocationId> allocations;
-};
 struct TmemLifetimeIssue {
   std::string code, message;
   TmemAtomSite site;
@@ -76,7 +71,7 @@ struct TmemOrderObligation {
 };
 using ResolvedTmemOperand = std::variant<std::monostate, Integer, TmemPointer>;
 // (lane id, record with its values) per lane of one atom: the Expanded element,
-// or (T3) a Full read the analysis holds.
+// or (ExpansionSite::Tmem) a Full read the analysis holds.
 using TmemLaneExecutions = std::vector<std::pair<std::uint32_t, RecordView>>;
 struct TmemAnalysisOptions {
   std::map<TmemAllocationId, TmemAllocationId> publication_resolution;
@@ -88,9 +83,10 @@ struct TmemAnalysisOptions {
 // referenced by each static tcgen instruction, instead of copying a whole
 // register map per event. They are keyed by the position of the record they
 // precede. Resolve looks one up for an Expanded view and, when `positioned`
-// (T3, which reads lanes without expanding them), for a Full or Slice read of
-// that position: the views lowering holds where an expanded lane gave it the
-// Expanded element. Other kinds (a prototype, a copy) get none.
+// (ExpansionSite::Tmem, which reads lanes without expanding them), for a Full
+// or Slice read of that position: the views lowering holds where an expanded
+// lane gave it the Expanded element. Other kinds (a prototype, a copy) get
+// none.
 struct TmemProvenanceIndex {
   const FactSource *facts = nullptr;
   bool positioned = false;
@@ -99,7 +95,6 @@ struct TmemProvenanceIndex {
   using Snapshot = std::vector<std::pair<std::string_view, TmemPointer>>;
   std::unordered_map<RecordRef, Snapshot> register_state_before;
   std::vector<TmemPublicationRead> publication_reads;
-  std::vector<TmemPublicationCandidates> publication_candidates;
   std::vector<TmemLifetimeIssue> issues;
   [[nodiscard]] ResolvedTmemOperand Resolve(std::uint32_t warp,
                                             const RecordView &,
@@ -120,15 +115,10 @@ struct TmemLifetimeAnalysis {
   std::vector<TmemLifetimeIssue> issues;
   std::vector<TmemOrderObligation> ordering_obligations;
   bool cluster_pairing_required = false;
-  [[nodiscard]] bool IdentityProven() const { return issues.empty(); }
-  [[nodiscard]] bool Proven() const {
-    return IdentityProven() && ordering_obligations.empty() &&
-           !cluster_pairing_required;
-  }
 };
-// T1 expands every lane of `facts`, at the same points as the per-lane loops
-// did before the expansion was made explicit. T3 expands none: its passes walk
-// metadata and read a record's values only where a step uses them.
+// ExpansionSite::BlockScaleTmem expands every lane of `facts`.
+// ExpansionSite::Tmem expands none: its passes walk metadata and read a
+// record's values only where a step uses them.
 [[nodiscard]] TmemLifetimeAnalysis
 AnalyzeTmemLifetimes(const CtaFacts &, ExpansionSite,
                      const TmemAnalysisOptions & = {});

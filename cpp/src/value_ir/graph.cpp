@@ -483,6 +483,20 @@ NodeUse Graph::addInstance(std::unique_ptr<const Operation> operation,
   storage_->shared.emplace(group_id, node.id());
   return {node, 0};
 }
+namespace {
+// `base` moved to `thread` of its CTA: that thread's binding supplies the
+// thread, warp, lane and thread coordinates.
+SourceOrigin boundOrigin(const std::map<std::pair<std::uint64_t,std::uint64_t>,SourceOrigin>& bindings,
+                         const SourceOrigin& base, std::uint64_t thread) {
+  const auto& binding = bindings.at({*base.cta,thread});
+  auto origin = base;
+  origin.thread = binding.thread;
+  origin.warp = binding.warp;
+  origin.lane = binding.lane;
+  origin.thread_coordinates = binding.thread_coordinates;
+  return origin;
+}
+}
 void Graph::setInstanceTemplate(const Node& node,ThreadGroupId group_id,ThreadMembers members) {
   auto& target=*storage_->nodes.at(node.id());
   target.rebind_operands_=true;
@@ -494,13 +508,7 @@ void Graph::setInstanceTemplate(const Node& node,ThreadGroupId group_id,ThreadMe
   target.instance_count_=target.instance_threads_.size();
   // Capture the stable storage, not the movable Graph facade.
   target.origin_template_ = [storage,base,node_ptr](std::size_t index) {
-    const auto thread = node_ptr->instance_threads_.at(index);
-    const auto& binding = storage->thread_bindings.at({*base->origin.cta,thread});
-    auto origin = base->origin;
-    origin.thread = binding.thread;
-    origin.warp = binding.warp;
-    origin.lane = binding.lane;
-    origin.thread_coordinates = binding.thread_coordinates;
+    auto origin = boundOrigin(storage->thread_bindings,base->origin,node_ptr->instance_threads_.at(index));
     if (const auto* coordinate = dynamic_cast<const CoordinateOp*>(&node_ptr->operation());
         coordinate && coordinate->kind()==CoordinateKind::ThreadIndex && origin.thread_coordinates)
       origin.coordinate_value = origin.thread_coordinates->at(static_cast<unsigned>(coordinate->axis()));
@@ -671,10 +679,8 @@ Value Graph::addThreadUnion(const SourceOrigin& base, const std::vector<std::uin
   if (std::adjacent_find(sorted.begin(), sorted.end()) != sorted.end())
     throw std::invalid_argument("thread union repeats a thread");
   const auto origin = [&](std::uint64_t thread) {
-    const auto& binding = storage_->thread_bindings.at({*base.cta, thread});
-    auto result = base;
-    result.thread = binding.thread; result.warp = binding.warp; result.lane = binding.lane;
-    result.thread_coordinates = binding.thread_coordinates; result.coordinate_value.reset();
+    auto result = boundOrigin(storage_->thread_bindings, base, thread);
+    result.coordinate_value.reset();
     return result;
   };
   const auto& node = add(std::make_unique<ThreadForwardOp>(value_type), {values.front()}, origin(threads.front()));
@@ -819,11 +825,17 @@ Value Graph::rebindThread(Storage& storage, Value value, std::uint64_t cta,
   }
   return value;
 }
+namespace {
+// The handle check of the accessors below.
+void requireContained(const Graph& graph, const Value& value) {
+  if (!graph.contains(value)) throw std::invalid_argument("Value is invalid, stale, or belongs to another graph");
+}
+}
 // resolveStorage returns a handle with a live slot unchanged, so these
 // accessors use such a handle in place. Only an alias of a lowered conversion
-// is resolved, and it then takes the former resolve/definingNode path.
+// is resolved, and definingNode then finds the node of its resolved handle.
 std::pair<const Node*,std::size_t> Graph::locate(const Value& value) const {
-  if (!contains(value)) throw std::invalid_argument("Value is invalid, stale, or belongs to another graph");
+  requireContained(*this, value);
   if (const auto& slot = storage_->nodes[value.node_id_]) return {slot.get(),value.instance_index_};
   const auto resolved = resolveStorage(*storage_, value);
   return {&definingNode(resolved),resolved.instance_index_};
@@ -849,7 +861,7 @@ bool Graph::contains(const Value& value) const noexcept {
       value.instance_index_ < alias->second.count;
 }
 const ValueType& Graph::type(const Value& value) const {
-  if (!contains(value)) throw std::invalid_argument("Value is invalid, stale, or belongs to another graph");
+  requireContained(*this, value);
   if (const auto& slot = storage_->nodes[value.node_id_]) return resolvedType(value, slot.get());
   // The returned type lives in its node or conversion spec, not in this handle.
   const auto resolved = resolveStorage(*storage_, value);
@@ -869,7 +881,7 @@ const ValueType& Graph::resolvedType(const Value& value, const Node* producer) c
                                : instance.element_types[value.result_index_];
 }
 const Node& Graph::definingNode(const Value& value) const {
-  if (!contains(value)) throw std::invalid_argument("Value is invalid, stale, or belongs to another graph");
+  requireContained(*this, value);
   if (const auto& slot = storage_->nodes[value.node_id_]) return *slot;
   return *storage_->nodes[resolveStorage(*storage_, value).node_id_];
 }
@@ -911,7 +923,7 @@ Value Graph::convert(Value source, ValueType target, ConversionAttributes attrib
   return result;
 }
 Value Graph::resolve(Value value) const {
-  if (!contains(value)) throw std::invalid_argument("Value is invalid, stale, or belongs to another graph");
+  requireContained(*this, value);
   return resolveStorage(*storage_, std::move(value));
 }
 Value Graph::canonicalInterpretation(Value value) const {
