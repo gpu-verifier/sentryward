@@ -392,6 +392,15 @@ def json_pointer(document, pointer):
     return value
 
 
+def saved_result(result):
+    """A two-stage verifier output keeps checker details under `internal` and
+    `evidence`; read them where the report expects them. Root fields win."""
+    if not isinstance(result, dict) or not isinstance(result.get('internal'), dict):
+        return result
+    evidence = result.get('evidence')
+    return {**result['internal'], **(evidence if isinstance(evidence, dict) else {}), **result}
+
+
 def validate_inputs(run_input, result, ptx):
     if not isinstance(run_input, dict) or not isinstance(result, dict):
         raise ValueError('Input and result must be JSON objects.')

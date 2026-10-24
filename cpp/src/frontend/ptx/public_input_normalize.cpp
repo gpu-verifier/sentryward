@@ -220,6 +220,20 @@ FrontendConfig NormalizeKernelInput(const KernelInput &supplied, const Module &m
     for (const auto &shape : s["shapes"]) for (const auto &v : shape) values.push_back(v);
     shape_inputs.push_back({{"resource", Resource(key)}, {"element_bits", Width(s["element_type"]) * 8}, {"values", values}});
   }
+  std::vector<std::pair<Key, Json>> pointer_arrays;
+  for (std::size_t n = 0; n < input["pointer_arrays"].size(); ++n) {
+    const auto &p = input["pointer_arrays"][n];
+    const auto path = "$.pointer_arrays[" + std::to_string(n) + "]";
+    const auto offset = p["offset"].get<std::uint64_t>();
+    const auto i = field(p["parameter"], offset, 8, "pointer", path, true);
+    const Key key{i, offset};
+    if (nulls.contains(key) || shape_keys.contains(key))
+      Fail("inconsistent_pointer_array", path, "a pointer table cannot be null or a shape array");
+    if (std::any_of(pointer_arrays.begin(), pointer_arrays.end(), [&](const auto &prior) { return prior.first == key; }))
+      Fail("duplicate_pointer_array", path, "pointer already has a pointer table");
+    pointers.try_emplace(key, Pointer{8, "", "pointer_array"});
+    pointer_arrays.emplace_back(key, p["entries"]);
+  }
   for (std::size_t i = 0; i < function.parameters.size(); ++i) {
     const auto &p = function.parameters[i];
     if (!Has(p, ".ptr")) continue;
@@ -316,6 +330,59 @@ FrontendConfig NormalizeKernelInput(const KernelInput &supplied, const Module &m
   }
   for (auto [i,offset] : nulls) null_fields.push_back({{"parameter", *function.parameters[i].name}, {"offset", offset}});
   for (auto [i,offset] : shape_keys) shape_fields.push_back({{"parameter", *function.parameters[i].name}, {"offset", offset}});
+  // Each table is read-only input memory like a shape array; its entries name object
+  // resources (declared objects keep their resource, others get one).
+  Json pointer_array_inputs = Json::array(), pointer_array_regions = Json::array();
+  for (const auto &[key, entries] : pointer_arrays) {
+    Json slots = Json::array();
+    for (std::size_t k = 0; k < entries.size(); ++k) {
+      if (entries[k].is_null()) { slots.push_back({{"slot_offset", 8 * k}, {"null", true}}); continue; }
+      const auto object = entries[k]["object"].get<std::string>();
+      if (!object_resources.contains(object)) memory("ptrarray." + object, object);
+      const auto offset = entries[k]["byte_offset"].get<std::uint64_t>();
+      Json slot{{"slot_offset", 8 * k}, {"resource", object_resources.at(object)}, {"offset", offset}};
+      if (entries[k].contains("extent_bytes")) slot["extent_bytes"] = offset + entries[k]["extent_bytes"].get<std::uint64_t>();
+      slots.push_back(std::move(slot));
+    }
+    const auto id = Resource(key);
+    const auto &resource = *std::find_if(resources.begin(), resources.end(), [&](const auto &r) { return r["id"] == id; });
+    pointer_array_regions.push_back({{"resource", id}, {"allocation", resource["allocation"]["object"]},
+        {"byte_offset", resource["allocation"]["base_byte_offset"]}, {"bytes", 8 * entries.size()}});
+    pointer_array_inputs.push_back({{"resource", id}, {"entries", slots}});
+  }
+  // Trusted element properties, combined per object (bounds tighten); the object is
+  // read-only input memory like a shape array.
+  std::map<std::string, Json> tensor_properties;
+  const auto json_integer = [](const Integer &n) {
+    return n < 0 ? Json(n.convert_to<std::int64_t>()) : Json(n.convert_to<std::uint64_t>());
+  };
+  for (std::size_t n = 0; n < input["tensor_properties"].size(); ++n) {
+    const auto &t = input["tensor_properties"][n];
+    const auto path = "$.tensor_properties[" + std::to_string(n) + "]";
+    const auto object = t["object"].get<std::string>();
+    if (!object_resources.contains(object))
+      Fail("unknown_tensor_property_object", path + ".object", "no declared input object has this name");
+    const auto type = t["element_type"].get<std::string>();
+    const unsigned bits = type.ends_with("64") ? 64 : 32;
+    const bool sign = type.starts_with('s');
+    auto [entry, inserted] = tensor_properties.try_emplace(object, Json{{"resource", object_resources.at(object)},
+        {"object", object}, {"element_type", type}, {"element_bits", bits}, {"signed", sign}, {"injective", false},
+        {"lower_bound", json_integer(sign ? Integer(-(Integer(1) << (bits - 1))) : Integer(0))},
+        {"upper_bound", json_integer((Integer(1) << (bits - unsigned(sign))) - 1)}});
+    auto &record = entry->second;
+    if (!inserted && record["element_type"] != type)
+      Fail("inconsistent_tensor_property", path + ".element_type", "an object's properties must use one element type");
+    const auto property = t["property"].get<std::string>();
+    if (property == "injective") record["injective"] = true;
+    else {
+      const Integer value = JsonInteger(t["value"]), lower = JsonInteger(record["lower_bound"]),
+          upper = JsonInteger(record["upper_bound"]);
+      if (property == "lower_bound" && value > lower) record["lower_bound"] = json_integer(value);
+      if (property == "upper_bound" && value < upper) record["upper_bound"] = json_integer(value);
+    }
+    if (JsonInteger(record["lower_bound"]) > JsonInteger(record["upper_bound"]))
+      Fail("inconsistent_tensor_property", path, "the object's bounds are contradictory");
+  }
   Json raw{{"schema", "spverify.ptx-front-end-config/v1"}, {"entry", function.name},
       {"cta", {{"block_dim", block}, {"cluster_dim", cluster}}}, {"parameter_regions", regions},
       {"pointer_parameters", pointer_inputs}, {"resources", resources},
@@ -348,6 +415,26 @@ FrontendConfig NormalizeKernelInput(const KernelInput &supplied, const Module &m
         {"kind", "fixed_read_only"}, {"origin", "shape_arrays"},
         {"text", "Configured shape bytes retain their supplied values and are not written during the analyzed execution."},
         {"regions", protected_regions}};
+  }
+  if (!pointer_array_inputs.empty()) {
+    raw["fixed_input"]["pointer_array_inputs"] = pointer_array_inputs;
+    raw["fixed_input"]["pointer_array_contract"] = {
+        {"kind", "fixed_read_only"}, {"origin", "pointer_arrays"},
+        {"text", "Configured pointer-table entries retain their supplied objects and are not written during the analyzed execution."},
+        {"regions", pointer_array_regions}};
+  }
+  if (!tensor_properties.empty()) {
+    Json inputs = Json::array(), regions_out = Json::array();
+    for (const auto &[object, record] : tensor_properties) {
+      inputs.push_back(record);
+      regions_out.push_back({{"resource", record["resource"]}, {"allocation", object}, {"byte_offset", 0},
+          {"bytes", "whole_object"}});
+    }
+    raw["fixed_input"]["tensor_property_inputs"] = inputs;
+    raw["fixed_input"]["tensor_property_contract"] = {
+        {"kind", "fixed_read_only"}, {"origin", "tensor_properties"},
+        {"text", "Objects with tensor properties keep their elements within the stated properties and are not written during the analyzed execution."},
+        {"properties", input["tensor_properties"]}, {"regions", regions_out}};
   }
   auto result = ParseConfig(raw);
   result.tma_descriptors = descriptors; result.raw["tma_descriptors"] = descriptors;

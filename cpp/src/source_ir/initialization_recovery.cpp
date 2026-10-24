@@ -71,7 +71,7 @@ InitializationRecovery RecoverDuplicateInitializers(SourceProgram& program) {
   std::erase_if(initializers,
                 [](const auto& entry) { return entry.second.size() < 2; });
 
-  std::map<BarrierLifetimeId, std::string> reasons;
+  std::map<BarrierLifetimeId, DiagnosticMessage> reasons;
   for (const auto& instruction : program.instructions) {
     const MBarrierCompletion* completion = nullptr;
     if (const auto* load = std::get_if<AsyncLoad>(&instruction.op);
@@ -102,10 +102,14 @@ InitializationRecovery RecoverDuplicateInitializers(SourceProgram& program) {
       if (diagnostic.instruction) {
         const auto barrier = initialized_barrier.at(diagnostic.instruction->value());
         const auto reason = reasons.find(barrier);
-        diagnostic.message += "; initialization recovery refused: ";
-        diagnostic.message += reason != reasons.end()
-                                  ? reason->second
-                                  : "another duplicate barrier is unsafe (all-or-nothing recovery)";
+        DiagnosticMessage message(std::move(diagnostic.message));
+        message.ids = std::move(diagnostic.message_ids);
+        message = std::move(message) + "; initialization recovery refused: " +
+                  (reason != reasons.end()
+                       ? reason->second
+                       : "another duplicate barrier is unsafe (all-or-nothing recovery)");
+        diagnostic.message = std::move(message.text);
+        diagnostic.message_ids = std::move(message.ids);
       }
     }
     return result;
@@ -161,7 +165,7 @@ InitializationRecovery RecoverDuplicateInitializers(SourceProgram& program) {
           instruction.actor == program.instructions[last->second].actor &&
           position(node.source_index) < position(last->second)) {
         reasons.try_emplace(barrier, "non-initialization use at instruction " +
-                                        std::to_string(instruction.id.value()) +
+                                        MessageIdText(instruction.id) +
                                         " precedes the retained initializer on its actor");
       }
     });

@@ -34,11 +34,17 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "not_run",
-    "memory": "not_run",
     "synchronization": "incomplete"
   },
   "diagnostics": [
@@ -55,13 +61,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r193",
         "operand_role": "source size/ignore source",
         "ptx_line": 477
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -76,13 +83,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r193",
         "operand_role": "source size/ignore source",
         "ptx_line": 478
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -97,13 +105,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r193",
         "operand_role": "source size/ignore source",
         "ptx_line": 479
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -118,13 +127,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r193",
         "operand_role": "source size/ignore source",
         "ptx_line": 480
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -139,13 +149,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r197",
         "operand_role": "source size/ignore source",
         "ptx_line": 488
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -160,13 +171,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r197",
         "operand_role": "source size/ignore source",
         "ptx_line": 489
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -181,13 +193,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r197",
         "operand_role": "source size/ignore source",
         "ptx_line": 490
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -202,13 +215,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r197",
         "operand_role": "source size/ignore source",
         "ptx_line": 491
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -223,13 +237,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r201",
         "operand_role": "source size/ignore source",
         "ptx_line": 499
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -244,13 +259,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r201",
         "operand_role": "source size/ignore source",
         "ptx_line": 500
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -265,13 +281,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r201",
         "operand_role": "source size/ignore source",
         "ptx_line": 501
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -286,13 +303,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r201",
         "operand_role": "source size/ignore source",
         "ptx_line": 502
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -307,13 +325,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r205",
         "operand_role": "source size/ignore source",
         "ptx_line": 510
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -328,13 +347,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r205",
         "operand_role": "source size/ignore source",
         "ptx_line": 511
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -349,13 +369,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r205",
         "operand_role": "source size/ignore source",
         "ptx_line": 512
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -370,13 +391,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r205",
         "operand_role": "source size/ignore source",
         "ptx_line": 513
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -391,13 +413,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r209",
         "operand_role": "source size/ignore source",
         "ptx_line": 521
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -412,13 +435,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r209",
         "operand_role": "source size/ignore source",
         "ptx_line": 522
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -433,13 +457,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r209",
         "operand_role": "source size/ignore source",
         "ptx_line": 523
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -454,13 +479,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r209",
         "operand_role": "source size/ignore source",
         "ptx_line": 524
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -475,13 +501,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r213",
         "operand_role": "source size/ignore source",
         "ptx_line": 532
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -496,13 +523,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r213",
         "operand_role": "source size/ignore source",
         "ptx_line": 533
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -517,13 +545,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r213",
         "operand_role": "source size/ignore source",
         "ptx_line": 534
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -538,13 +567,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r213",
         "operand_role": "source size/ignore source",
         "ptx_line": 535
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -559,13 +589,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r217",
         "operand_role": "source size/ignore source",
         "ptx_line": 543
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -580,13 +611,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r217",
         "operand_role": "source size/ignore source",
         "ptx_line": 544
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -601,13 +633,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r217",
         "operand_role": "source size/ignore source",
         "ptx_line": 545
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -622,13 +655,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r217",
         "operand_role": "source size/ignore source",
         "ptx_line": 546
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -643,13 +677,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r221",
         "operand_role": "source size/ignore source",
         "ptx_line": 554
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -664,13 +699,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r221",
         "operand_role": "source size/ignore source",
         "ptx_line": 555
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -685,13 +721,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r221",
         "operand_role": "source size/ignore source",
         "ptx_line": 556
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -706,13 +743,14 @@
             607
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 256,
         "operand": "%r221",
         "operand_role": "source size/ignore source",
         "ptx_line": 557
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -723,13 +761,14 @@
             255
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 128,
         "operand": "%r232",
         "operand_role": "source size/ignore source",
         "ptx_line": 579
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -740,13 +779,14 @@
             255
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 128,
         "operand": "%r236",
         "operand_role": "source size/ignore source",
         "ptx_line": 587
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -757,13 +797,14 @@
             255
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 128,
         "operand": "%r240",
         "operand_role": "source size/ignore source",
         "ptx_line": 595
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -774,13 +815,14 @@
             255
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 128,
         "operand": "%r244",
         "operand_role": "source size/ignore source",
         "ptx_line": 603
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -791,13 +833,14 @@
             255
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 128,
         "operand": "%r248",
         "operand_role": "source size/ignore source",
         "ptx_line": 611
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -808,13 +851,14 @@
             255
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 128,
         "operand": "%r252",
         "operand_role": "source size/ignore source",
         "ptx_line": 619
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -825,13 +869,14 @@
             255
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 128,
         "operand": "%r256",
         "operand_role": "source size/ignore source",
         "ptx_line": 627
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "async_copy_source_control_not_static",
@@ -842,2016 +887,1994 @@
             255
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 128,
         "operand": "%r260",
         "operand_role": "source size/ignore source",
         "ptx_line": 635
       },
       "message": "Operand must have a statically determined integer value",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "incomplete"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r193",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 477
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r193",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 478
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r193",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 479
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r193",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 480
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r197",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 488
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r197",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 489
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r197",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 490
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r197",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 491
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r201",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 499
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r201",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 500
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r201",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 501
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r201",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 502
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r205",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 510
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r205",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 511
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r205",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 512
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r205",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 513
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r209",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 521
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r209",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 522
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r209",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 523
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r209",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 524
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r213",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 532
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r213",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 533
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r213",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 534
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r213",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 535
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r217",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 543
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r217",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 544
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r217",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 545
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r217",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 546
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r221",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 554
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r221",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 555
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r221",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 556
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r221",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 557
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r232",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 579
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r236",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 587
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r240",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 595
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r244",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 603
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r248",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 611
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r252",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 619
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r256",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 627
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r260",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 635
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            }
-          ],
-          "prerequisite_result": "unsupported"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
-  },
-  "frontend": {
-    "address_value_bridge": {
+  "internal": {
+    "equivalence": {
       "diagnostics": [
         {
-          "code": "unsupported_async_copy",
+          "code": "prerequisite_check_not_passed",
           "details": {
-            "cta": 0,
-            "instruction": "cp.async.cg.shared.global [%r192], [%rd59], 16, %r193;",
-            "instruction_index": 349,
-            "location": {
-              "file": "corpus/flash_attention__bwd_mla_sparse_bf16__dq_dqv__sm_100a.ptx",
-              "line": 477
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "incomplete"
             },
-            "occurrence": 0,
-            "thread": 160
+            "prerequisite_diagnostics": [
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r193",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 477
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r193",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 478
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r193",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 479
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r193",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 480
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r197",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 488
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r197",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 489
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r197",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 490
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r197",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 491
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r201",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 499
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r201",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 500
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r201",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 501
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r201",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 502
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r205",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 510
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r205",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 511
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r205",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 512
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r205",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 513
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r209",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 521
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r209",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 522
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r209",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 523
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r209",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 524
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r213",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 532
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r213",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 533
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r213",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 534
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r213",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 535
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r217",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 543
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r217",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 544
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r217",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 545
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r217",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 546
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r221",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 554
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r221",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 555
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r221",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 556
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r221",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 557
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r232",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 579
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r236",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 587
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r240",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 595
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r244",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 603
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r248",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 611
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r252",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 619
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r256",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 627
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r260",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 635
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              }
+            ],
+            "prerequisite_result": "unsupported"
           },
-          "message": "cp.async size/source-size must be statically determined legal byte counts",
-          "stage": "value_lowering"
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [
+          {
+            "code": "unsupported_async_copy",
+            "details": {
+              "cta": 0,
+              "instruction": "cp.async.cg.shared.global [%r192], [%rd59], 16, %r193;",
+              "instruction_index": 349,
+              "location": {
+                "file": "corpus/flash_attention__bwd_mla_sparse_bf16__dq_dqv__sm_100a.ptx",
+                "line": 477
+              },
+              "occurrence": 0,
+              "thread": 161
+            },
+            "message": "cp.async size/source-size must be statically determined legal byte counts",
+            "stage": "value_lowering"
+          }
+        ],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": false
+      },
+      "cluster_completion_joins": 1,
+      "cta_count": 2,
+      "dependency_compression": {
+        "bulk_read_wait": {
+          "consumers": 768,
+          "emitted_references": 576,
+          "original_references": 3360,
+          "prefix_effects": 0
+        },
+        "cp_async_wait": {
+          "consumers": 256,
+          "emitted_references": 0,
+          "original_references": 0,
+          "prefix_effects": 0
+        },
+        "tcgen_commit": {
+          "consumers": 6,
+          "emitted_references": 36,
+          "original_references": 96,
+          "prefix_effects": 6
+        },
+        "tcgen_load_wait": {
+          "consumers": 1792,
+          "emitted_references": 2304,
+          "original_references": 10368,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 40,
+      "discharged_codes": [
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 312299,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 1345,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 2656,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "K",
+          "offset": 0,
+          "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_mla_dq_dqv_sm100dQdQvGemmKernel_object_at__Tiled_MMA_Thr_Layout_VMNK_11110000_Permutation_MNK_____MMA_Atom_ThrID_10_Shape_MNK_1286416_TV_Layo_0_param_4",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "V",
+          "offset": 0,
+          "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_mla_dq_dqv_sm100dQdQvGemmKernel_object_at__Tiled_MMA_Thr_Layout_VMNK_11110000_Permutation_MNK_____MMA_Atom_ThrID_10_Shape_MNK_1286416_TV_Layo_0_param_5",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "I",
+          "offset": 0,
+          "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_mla_dq_dqv_sm100dQdQvGemmKernel_object_at__Tiled_MMA_Thr_Layout_VMNK_11110000_Permutation_MNK_____MMA_Atom_ThrID_10_Shape_MNK_1286416_TV_Layo_0_param_10",
+          "source": "declaration"
         }
       ],
-      "first_unavailable_reason": "",
-      "queries": 0,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": false
-    },
-    "cluster_completion_joins": 1,
-    "cta_count": 2,
-    "dependency_compression": {
-      "bulk_read_wait": {
-        "consumers": 768,
-        "emitted_references": 576,
-        "original_references": 3360,
-        "prefix_effects": 0
+      "lowered_instruction_count": 174888,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 24
       },
-      "cp_async_wait": {
-        "consumers": 256,
-        "emitted_references": 0,
-        "original_references": 0,
-        "prefix_effects": 0
+      "reached_opcodes": {
+        "add.s32": 18771,
+        "add.s64": 4096,
+        "and.b16": 2816,
+        "and.b32": 6784,
+        "and.pred": 256,
+        "bar.sync": 4928,
+        "barrier.cluster.arrive.relaxed": 704,
+        "barrier.cluster.wait": 704,
+        "bra": 14187,
+        "bra.uni": 256,
+        "clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128": 672,
+        "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128": 672,
+        "clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128": 1,
+        "cp.async.bulk.commit_group": 512,
+        "cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.L2::cache_hint": 576,
+        "cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 4,
+        "cp.async.bulk.wait_group.read": 768,
+        "cp.async.cg.shared.global": 9216,
+        "cp.async.commit_group": 256,
+        "cp.async.wait_group": 256,
+        "cvt.rn.bf16x2.f32": 36864,
+        "cvt.s64.s32": 1792,
+        "cvt.u16.u32": 64,
+        "cvt.u32.u16": 512,
+        "cvt.u32.u64": 64,
+        "cvt.u64.u32": 1088,
+        "cvta.param.u64": 772,
+        "cvta.shared.u64": 64,
+        "cvta.to.shared::cluster.u64": 64,
+        "div.s32": 1216,
+        "elect.sync": 2656,
+        "fence.mbarrier_init.release.cluster": 704,
+        "fence.proxy.async.shared::cta": 2976,
+        "ld.global.b32": 256,
+        "ld.param.b32": 3520,
+        "ld.param.b64": 6336,
+        "ld.param.b8": 1408,
+        "ld.param.v2.b32": 2112,
+        "ld.param.v2.b8": 2112,
+        "ld.shared.b32": 320,
+        "ld.shared.v2.b64": 672,
+        "mad.lo.s32": 1408,
+        "mad.lo.s64": 1152,
+        "mapa.shared::cluster.u32": 704,
+        "mbarrier.arrive.expect_tx.shared.b64": 2,
+        "mbarrier.arrive.expect_tx.shared::cluster.b64": 2,
+        "mbarrier.arrive.shared.b64": 26,
+        "mbarrier.arrive.shared::cluster.b64": 672,
+        "mbarrier.init.shared.b64": 28,
+        "mbarrier.try_wait.parity.shared.b64": 2688,
+        "mov.b128": 1344,
+        "mov.b16": 4,
+        "mov.b32": 5238,
+        "mov.b64": 80556,
+        "mov.pred": 657,
+        "mov.u32": 4928,
+        "mul.hi.u32": 256,
+        "mul.lo.s32": 1216,
+        "mul.lo.s64": 128,
+        "mul.wide.u32": 256,
+        "not.pred": 3232,
+        "or.b16": 64,
+        "or.b32": 2407,
+        "or.b64": 128,
+        "or.pred": 704,
+        "prefetch.tensormap": 192,
+        "ret": 704,
+        "selp.b32": 5070,
+        "setmaxnreg.dec.sync.aligned.u32": 160,
+        "setmaxnreg.inc.sync.aligned.u32": 512,
+        "setp.eq.b32": 4352,
+        "setp.gt.s32": 256,
+        "setp.gt.u32": 736,
+        "setp.lt.s32": 256,
+        "setp.ne.b16": 2816,
+        "setp.ne.b32": 13760,
+        "shfl.sync.idx.b32": 12032,
+        "shl.b32": 4608,
+        "shl.b64": 640,
+        "shr.u32": 5824,
+        "st.shared.v4.b32": 9216,
+        "sub.s32": 2176,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 64,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 4,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 2,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 64,
+        "tcgen05.ld.sync.aligned.32x32b.x32.b32": 2304,
+        "tcgen05.mma.cta_group::1.kind::f16": 24,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 64,
+        "tcgen05.wait::ld.sync.aligned": 1792,
+        "xor.b32": 4864
       },
-      "tcgen_commit": {
-        "consumers": 6,
-        "emitted_references": 36,
-        "original_references": 96,
-        "prefix_effects": 6
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
       },
-      "tcgen_load_wait": {
-        "consumers": 1792,
-        "emitted_references": 2304,
-        "original_references": 10368,
-        "prefix_effects": 0
-      }
-    },
-    "diagnostic_sample_count": 40,
-    "discharged_codes": [
-      "mma_memory_effect_refinement",
-      "tcgen_pipeline_effect_refinement",
-      "tcgen_commit_notification_order_refinement"
-    ],
-    "executed_records": 312299,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 1345,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
+      "source_binding_storage": {
+        "binding_templates": 30,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 174888,
+        "stored_bindings": 13999
       },
-      "election_uses": 2656,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
+      "source_edge_storage": {
+        "binding_templates": 853,
+        "logical_edges": 174184,
+        "stored_bindings": 854
       },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 6,
+        "operations": 24
+      },
+      "thread_count": 704,
+      "unsupported_occurrence_counts": {
+        "async_copy_source_control_not_static": 9216
+      },
+      "user_branch_decisions": []
     },
     "implementation": "cpp",
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "K",
-        "offset": 0,
-        "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_mla_dq_dqv_sm100dQdQvGemmKernel_object_at__Tiled_MMA_Thr_Layout_VMNK_11110000_Permutation_MNK_____MMA_Atom_ThrID_10_Shape_MNK_1286416_TV_Layo_0_param_4",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "V",
-        "offset": 0,
-        "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_mla_dq_dqv_sm100dQdQvGemmKernel_object_at__Tiled_MMA_Thr_Layout_VMNK_11110000_Permutation_MNK_____MMA_Atom_ThrID_10_Shape_MNK_1286416_TV_Layo_0_param_5",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "I",
-        "offset": 0,
-        "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_mla_dq_dqv_sm100dQdQvGemmKernel_object_at__Tiled_MMA_Thr_Layout_VMNK_11110000_Permutation_MNK_____MMA_Atom_ThrID_10_Shape_MNK_1286416_TV_Layo_0_param_10",
-        "source": "declaration"
+    "memory_analysis_complete": false,
+    "peak_footprint_mib": 123.37890625,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 1,
+      "binding_diagnostics": [
+        {
+          "code": "incomplete_value_semantics",
+          "message": "unsupported_async_copy: cp.async size/source-size must be statically determined legal byte counts"
+        }
+      ],
+      "execution_cohorts": 54,
+      "mapping_complete": false,
+      "memory_binding_stored_rows": 0,
+      "memory_binding_templates": 0,
+      "memory_bindings": 0,
+      "memory_linking_templates_used": false,
+      "synchronization_groups": 3466,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 75,
+      "thread_prefix_groups": 14333,
+      "value_diagnostic_count": 1,
+      "value_diagnostics": [
+        {
+          "code": "unsupported_async_copy",
+          "line": 477,
+          "message": "cp.async size/source-size must be statically determined legal byte counts"
+        }
+      ]
+    },
+    "stage": "event_view_construction",
+    "template_execution": {
+      "completed_ctas": 2,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 316320,
+      "path_entries": 11159,
+      "record_bindings": 3486,
+      "record_nodes": 6323,
+      "splits": 26,
+      "template_steps": 6548,
+      "thread_memberships": 704,
+      "value_nodes": 1681
+    },
+    "thread_record_compression": {
+      "completed_ctas": 2,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 312299,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "incomplete"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r193",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 477
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r193",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 478
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r193",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 479
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r193",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 480
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r197",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 488
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r197",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 489
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r197",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 490
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r197",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 491
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r201",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 499
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r201",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 500
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r201",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 501
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r201",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 502
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r205",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 510
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r205",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 511
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r205",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 512
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r205",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 513
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r209",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 521
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r209",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 522
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r209",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 523
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r209",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 524
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r213",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 532
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r213",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 533
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r213",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 534
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r213",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 535
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r217",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 543
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r217",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 544
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r217",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 545
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r217",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 546
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r221",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 554
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r221",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 555
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r221",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 556
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ],
+                    [
+                      480,
+                      607
+                    ]
+                  ],
+                  "occurrence_count": 256,
+                  "operand": "%r221",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 557
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r232",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 579
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r236",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 587
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r240",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 595
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r244",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 603
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r248",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 611
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r252",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 619
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r256",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 627
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "async_copy_source_control_not_static",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      128,
+                      255
+                    ]
+                  ],
+                  "occurrence_count": 128,
+                  "operand": "%r260",
+                  "operand_role": "source size/ignore source",
+                  "ptx_line": 635
+                },
+                "message": "Operand must have a statically determined integer value",
+                "stage": "event_view_construction"
+              }
+            ],
+            "prerequisite_result": "unsupported",
+            "prerequisite_status": "event_view_incomplete"
+          },
+          "stage": "pipeline"
+        }
+      ],
+      "equivalence_check": "blocked",
+      "prerequisite_status": "event_view_incomplete",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
       }
-    ],
-    "lowered_instruction_count": 174888,
-    "mma_refinement": {
-      "blocked": [],
-      "discharged": 24
     },
-    "reached_opcodes": {
-      "add.s32": 18771,
-      "add.s64": 4096,
-      "and.b16": 2816,
-      "and.b32": 6784,
-      "and.pred": 256,
-      "bar.sync": 4928,
-      "barrier.cluster.arrive.relaxed": 704,
-      "barrier.cluster.wait": 704,
-      "bra": 14187,
-      "bra.uni": 256,
-      "clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128": 672,
-      "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128": 672,
-      "clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128": 1,
-      "cp.async.bulk.commit_group": 512,
-      "cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.L2::cache_hint": 576,
-      "cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 4,
-      "cp.async.bulk.wait_group.read": 768,
-      "cp.async.cg.shared.global": 9216,
-      "cp.async.commit_group": 256,
-      "cp.async.wait_group": 256,
-      "cvt.rn.bf16x2.f32": 36864,
-      "cvt.s64.s32": 1792,
-      "cvt.u16.u32": 64,
-      "cvt.u32.u16": 512,
-      "cvt.u32.u64": 64,
-      "cvt.u64.u32": 1088,
-      "cvta.param.u64": 772,
-      "cvta.shared.u64": 64,
-      "cvta.to.shared::cluster.u64": 64,
-      "div.s32": 1216,
-      "elect.sync": 2656,
-      "fence.mbarrier_init.release.cluster": 704,
-      "fence.proxy.async.shared::cta": 2976,
-      "ld.global.b32": 256,
-      "ld.param.b32": 3520,
-      "ld.param.b64": 6336,
-      "ld.param.b8": 1408,
-      "ld.param.v2.b32": 2112,
-      "ld.param.v2.b8": 2112,
-      "ld.shared.b32": 320,
-      "ld.shared.v2.b64": 672,
-      "mad.lo.s32": 1408,
-      "mad.lo.s64": 1152,
-      "mapa.shared::cluster.u32": 704,
-      "mbarrier.arrive.expect_tx.shared.b64": 2,
-      "mbarrier.arrive.expect_tx.shared::cluster.b64": 2,
-      "mbarrier.arrive.shared.b64": 26,
-      "mbarrier.arrive.shared::cluster.b64": 672,
-      "mbarrier.init.shared.b64": 28,
-      "mbarrier.try_wait.parity.shared.b64": 2688,
-      "mov.b128": 1344,
-      "mov.b16": 4,
-      "mov.b32": 5238,
-      "mov.b64": 80556,
-      "mov.pred": 657,
-      "mov.u32": 4928,
-      "mul.hi.u32": 256,
-      "mul.lo.s32": 1216,
-      "mul.lo.s64": 128,
-      "mul.wide.u32": 256,
-      "not.pred": 3232,
-      "or.b16": 64,
-      "or.b32": 2407,
-      "or.b64": 128,
-      "or.pred": 704,
-      "prefetch.tensormap": 192,
-      "ret": 704,
-      "selp.b32": 5070,
-      "setmaxnreg.dec.sync.aligned.u32": 160,
-      "setmaxnreg.inc.sync.aligned.u32": 512,
-      "setp.eq.b32": 4352,
-      "setp.gt.s32": 256,
-      "setp.gt.u32": 736,
-      "setp.lt.s32": 256,
-      "setp.ne.b16": 2816,
-      "setp.ne.b32": 13760,
-      "shfl.sync.idx.b32": 12032,
-      "shl.b32": 4608,
-      "shl.b64": 640,
-      "shr.u32": 5824,
-      "st.shared.v4.b32": 9216,
-      "sub.s32": 2176,
-      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 64,
-      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 4,
-      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 2,
-      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 64,
-      "tcgen05.ld.sync.aligned.32x32b.x32.b32": 2304,
-      "tcgen05.mma.cta_group::1.kind::f16": 24,
-      "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 64,
-      "tcgen05.wait::ld.sync.aligned": 1792,
-      "xor.b32": 4864
-    },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 0,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 46,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 174888,
-      "stored_bindings": 16435
-    },
-    "source_edge_storage": {
-      "binding_templates": 853,
-      "logical_edges": 174184,
-      "stored_bindings": 854
-    },
-    "tcgen_history_refinement": {
-      "blocked": [],
-      "notifications": 6,
-      "operations": 24
-    },
-    "thread_count": 704,
-    "unsupported_occurrence_counts": {
-      "async_copy_source_control_not_static": 9216
-    },
-    "user_branch_decisions": []
+    "value_ir_instance_count": 98561,
+    "value_ir_node_count": 11859,
+    "value_view_complete": false,
+    "verification_performed": false
   },
-  "implementation": "cpp",
-  "memory_analysis_complete": false,
-  "peak_footprint_mib": 140.9609375,
-  "peak_rss_mib": 465.92578125,
-  "pipeline_elapsed_seconds": 1.249013463,
+  "peak_rss_mib": 123.37890625,
+  "pipeline_elapsed_seconds": 1.154258141,
   "result": "unsupported",
   "rss_limit_mib": null,
   "scope": {
     "operation": "kernel_verification"
   },
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 1,
-    "binding_diagnostics": [
-      {
-        "code": "incomplete_value_semantics",
-        "message": "unsupported_async_copy: cp.async size/source-size must be statically determined legal byte counts"
-      }
-    ],
-    "execution_cohorts": 54,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 3466,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 75,
-    "thread_prefix_groups": 14408,
-    "value_diagnostic_count": 1,
-    "value_diagnostics": [
-      {
-        "code": "unsupported_async_copy",
-        "line": 477,
-        "message": "cp.async size/source-size must be statically determined legal byte counts"
-      }
-    ]
-  },
-  "stage": "event_view_construction",
-  "template_execution": {
-    "completed_ctas": 2,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 316320,
-    "path_entries": 11159,
-    "record_bindings": 3486,
-    "record_nodes": 6323,
-    "splits": 26,
-    "template_steps": 6548,
-    "thread_memberships": 704,
-    "value_nodes": 1681
-  },
-  "thread_record_compression": {
-    "completed_ctas": 2,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 312299,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "incomplete"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r193",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 477
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r193",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 478
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r193",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 479
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r193",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 480
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r197",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 488
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r197",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 489
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r197",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 490
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r197",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 491
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r201",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 499
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r201",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 500
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r201",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 501
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r201",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 502
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r205",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 510
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r205",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 511
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r205",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 512
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r205",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 513
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r209",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 521
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r209",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 522
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r209",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 523
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r209",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 524
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r213",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 532
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r213",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 533
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r213",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 534
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r213",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 535
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r217",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 543
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r217",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 544
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r217",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 545
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r217",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 546
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r221",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 554
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r221",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 555
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r221",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 556
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ],
-                  [
-                    480,
-                    607
-                  ]
-                ],
-                "occurrence_count": 256,
-                "operand": "%r221",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 557
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r232",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 579
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r236",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 587
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r240",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 595
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r244",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 603
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r248",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 611
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r252",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 619
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r256",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 627
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "async_copy_source_control_not_static",
-              "details": {
-                "actor_ranges": [
-                  [
-                    128,
-                    255
-                  ]
-                ],
-                "occurrence_count": 128,
-                "operand": "%r260",
-                "operand_role": "source size/ignore source",
-                "ptx_line": 635
-              },
-              "message": "Operand must have a statically determined integer value",
-              "stage": "event_view_construction"
-            }
-          ],
-          "prerequisite_result": "unsupported",
-          "prerequisite_status": "event_view_incomplete"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "event_view_incomplete",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    }
-  },
-  "value_ir_instance_count": 96808,
-  "value_ir_node_count": 11886,
-  "value_view_complete": false,
-  "verification_performed": false,
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.488
 }

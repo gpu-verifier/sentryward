@@ -1,20 +1,9 @@
 {
-  "assumption_hints": [
-    {
-      "key": "representative_branches",
-      "label": "Representative branches",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    },
-    {
-      "key": "bounded_computation_loops",
-      "label": "Bounded computation loops",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    }
-  ],
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "duplicate_tma_store_benign",
       "label": "Duplicate TMA stores",
@@ -22,20 +11,23 @@
       "triggered": null
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "representative_election",
       "label": "Representative election",
       "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
-      "triggered": null
+      "triggered": true
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "clc_always_fails",
       "label": "Failed launch cancellation",
       "text": "Every cluster launch cancellation request fails.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "representative_branches",
       "label": "Representative branches",
@@ -43,251 +35,864 @@
       "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "bounded_computation_loops",
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "not_run",
-    "memory": "not_run",
-    "synchronization": "not_run"
-  },
-  "details": {
-    "required_parameters": []
+    "synchronization": "failed"
   },
   "diagnostics": [
     {
-      "code": "control_predicate_not_static",
+      "code": "previous_phase_not_ordered_before_issue",
       "details": {
-        "location": {
-          "column": 0,
-          "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
-          "line": 2217
+        "internal_stage": "synchronization_check",
+        "issue": 150325,
+        "phase": {
+          "barrier": 3,
+          "generation": 0
         },
-        "required_parameters": []
+        "required_events": {
+          "events": [
+            308701
+          ],
+          "total": 1,
+          "truncated": false
+        }
       },
-      "message": "control predicate is not statically determined",
-      "stage": "ptx_execution"
+      "message": "Wait check failed: previous_phase_not_ordered_before_issue.",
+      "stage": "synchronization"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
+  "evidence": {
+    "counterexample": {
+      "candidate_order": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          1170,
+          1173,
+          1171,
+          1172,
+          1174,
+          1175,
+          1176,
+          2340,
+          2343,
+          2341,
+          2342,
+          2344,
+          2345,
+          2346,
+          3510,
+          3513,
+          3511,
+          3512,
+          3514,
+          3515,
+          3516,
+          4680,
+          4683,
+          4681,
+          4682
+        ],
+        "total": 325297,
+        "truncated": true
+      },
+      "candidate_order_preserved": true,
+      "executed_prefix": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          1170,
+          1173,
+          1171,
+          1172,
+          1174,
+          1175,
+          1176,
+          2340,
+          2343,
+          2341,
+          2342,
+          2344,
+          2345,
+          2346,
+          3510,
+          3513,
+          3511,
+          3512,
+          3514,
+          3515,
+          3516,
+          4680,
+          4683,
+          4681,
+          4682
+        ],
+        "total": 325279,
+        "truncated": true
+      },
+      "replayed_candidate_order": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          1170,
+          1173,
+          1171,
+          1172,
+          1174,
+          1175,
+          1176,
+          2340,
+          2343,
+          2341,
+          2342,
+          2344,
+          2345,
+          2346,
+          3510,
+          3513,
+          3511,
+          3512,
+          3514,
+          3515,
+          3516,
+          4680,
+          4683,
+          4681,
+          4682
+        ],
+        "total": 325217,
+        "truncated": true
+      },
+      "unexecuted_candidate": {
+        "events": [],
+        "total": 0,
+        "truncated": false
+      }
     },
-    "diagnostics": [
+    "provenance_events_total": 325297,
+    "rejection": {
+      "code": "previous_phase_not_ordered_before_issue",
+      "issue": 150325,
+      "message": "Wait check failed: previous_phase_not_ordered_before_issue.",
+      "phase": {
+        "barrier": 3,
+        "generation": 0
+      },
+      "required_events": {
+        "events": [
+          308701
+        ],
+        "total": 1,
+        "truncated": false
+      }
+    },
+    "rejection_kind": "wait_condition",
+    "source_event_scope": "reported_witness_events",
+    "source_events": [
       {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
-                  "line": 2217
-                },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported"
-        },
-        "stage": "pipeline"
+        "column": 2,
+        "event": 0,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 0,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 1,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 0,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 2,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 0,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 3,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 0,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 4,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 1,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 5,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 1,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 6,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 2,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 1170,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 313,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 1171,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 313,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 1172,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 313,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 1173,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 313,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 1174,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 314,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 1175,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 314,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 1176,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 315,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 2340,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 626,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 2341,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 626,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 2342,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 626,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 2343,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 626,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 2344,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 627,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 2345,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 627,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 2346,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 628,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 3510,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 939,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 3511,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 939,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 3512,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 939,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 3513,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 939,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 3514,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 940,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 3515,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 940,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 3516,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 941,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 4680,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 1252,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 4681,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 1252,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 4682,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 1252,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 4683,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 1252,
+        "line": 64
+      },
+      {
+        "column": 2,
+        "event": 150325,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 40209,
+        "line": 2349
+      },
+      {
+        "column": 2,
+        "event": 308701,
+        "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
+        "instruction": 82200,
+        "line": 960
       }
     ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
+    "synthetic_events": [],
+    "unmapped_witness_events": [],
+    "witness_event_list_limit": 32,
+    "witness_event_lists_truncated": true
   },
-  "frontend": {
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 4736,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 10496,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "shape_input_contract": {
+      "kind": "fixed_read_only",
+      "origin": "shape_arrays",
+      "regions": [
+        {
+          "allocation": "cu_seq_len_k_start",
+          "byte_offset": 0,
+          "bytes": 512,
+          "resource": "input.arg3.0"
+        },
+        {
+          "allocation": "cu_seq_len_k_end",
+          "byte_offset": 0,
+          "bytes": 512,
+          "resource": "input.arg4.0"
+        }
       ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 0,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
+      "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
     },
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "input.arg3.0",
-        "offset": 0,
-        "parameter": "_ZN9deep_gemm16sm100_mqa_logitsILj8ELj64ELb0ELb0ELj16ELj256ELj3ELj5ELj148ELj128ELj256EN7cutlass12float_e4m3_tENS1_10bfloat16_tEfLj2EEEvjjjPKjS5_PT11_14CUtensorMap_stS8_S8_S8_S8__param_3",
-        "source": "ptx_ptr"
-      },
-      {
-        "bytes": 8,
-        "object": "input.arg4.0",
-        "offset": 0,
-        "parameter": "_ZN9deep_gemm16sm100_mqa_logitsILj8ELj64ELb0ELb0ELj16ELj256ELj3ELj5ELj148ELj128ELj256EN7cutlass12float_e4m3_tENS1_10bfloat16_tEfLj2EEEvjjjPKjS5_PT11_14CUtensorMap_stS8_S8_S8_S8__param_4",
-        "source": "ptx_ptr"
-      },
-      {
-        "bytes": 8,
-        "object": "input.arg5.0",
-        "offset": 0,
-        "parameter": "_ZN9deep_gemm16sm100_mqa_logitsILj8ELj64ELb0ELb0ELj16ELj256ELj3ELj5ELj148ELj128ELj256EN7cutlass12float_e4m3_tENS1_10bfloat16_tEfLj2EEEvjjjPKjS5_PT11_14CUtensorMap_stS8_S8_S8_S8__param_5",
-        "source": "ptx_ptr"
-      }
-    ],
-    "required_parameters": [],
-    "user_branch_decisions": []
+    "trap_only_equality_assertions_hold": true
   },
-  "implementation": "cpp",
-  "location": {
-    "column": 0,
-    "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
-    "line": 2217
-  },
-  "memory_analysis_complete": false,
-  "peak_footprint_mib": 17.76171875,
-  "peak_rss_mib": 466.45703125,
-  "pipeline_elapsed_seconds": 0.034362305,
-  "result": "unsupported",
-  "rss_limit_mib": null,
-  "scope": {
-    "operation": "kernel_verification"
-  },
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "execution_cohorts": 0,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 0,
-    "synchronization_groups_materialized": false,
-    "synthetic_synchronization_nodes": 0,
-    "thread_prefix_groups": 0
-  },
-  "stage": "ptx_execution",
-  "template_execution": {
-    "completed_ctas": 0,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 0,
-    "path_entries": 0,
-    "record_bindings": 0,
-    "record_nodes": 0,
-    "splits": 0,
-    "template_steps": 0,
-    "thread_memberships": 0,
-    "value_nodes": 0
-  },
-  "thread_record_compression": {
-    "completed_ctas": 0,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 0,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
     },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/deepgemm__deepgemm_sm100_mqa_logits_m128_n512_h8_d64__sm_100f.ptx",
-                  "line": 2217
-                },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported",
-          "prerequisite_status": "ptx_execution_unsupported"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "ptx_execution_unsupported",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
+    "counts": {
+      "edges": 966449,
+      "events": 325279,
+      "instructions": 87952,
+      "threads": 768
+    },
+    "equivalence": {
       "diagnostics": [
         {
-          "code": "memory_elimination_not_completed",
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "failed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "previous_phase_not_ordered_before_issue",
+                "details": {
+                  "issue": 150325,
+                  "phase": {
+                    "barrier": 3,
+                    "generation": 0
+                  },
+                  "required_events": {
+                    "events": [
+                      308701
+                    ],
+                    "total": 1,
+                    "truncated": false
+                  }
+                },
+                "message": "Wait check failed: previous_phase_not_ordered_before_issue.",
+                "stage": "synchronization_check"
+              }
+            ],
+            "prerequisite_result": "not_wellsynced"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 148,
+      "dependency_compression": {
+        "tcgen_commit": {
+          "consumers": 4,
+          "emitted_references": 15,
+          "original_references": 20,
+          "prefix_effects": 4
+        },
+        "tcgen_load_wait": {
+          "consumers": 8192,
+          "emitted_references": 8192,
+          "original_references": 135168,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 6489472,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 4736,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 10496,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "shape_input_contract": {
+          "kind": "fixed_read_only",
+          "origin": "shape_arrays",
+          "regions": [
+            {
+              "allocation": "cu_seq_len_k_start",
+              "byte_offset": 0,
+              "bytes": 512,
+              "resource": "input.arg3.0"
+            },
+            {
+              "allocation": "cu_seq_len_k_end",
+              "byte_offset": 0,
+              "bytes": 512,
+              "resource": "input.arg4.0"
+            }
+          ],
+          "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+        },
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "cu_seq_len_k_start",
+          "offset": 0,
+          "parameter": "_ZN9deep_gemm16sm100_mqa_logitsILj8ELj64ELb0ELb0ELj16ELj256ELj3ELj5ELj148ELj128ELj256EN7cutlass12float_e4m3_tENS1_10bfloat16_tEfLj2EEEvjjjPKjS5_PT11_14CUtensorMap_stS8_S8_S8_S8__param_3",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "cu_seq_len_k_end",
+          "offset": 0,
+          "parameter": "_ZN9deep_gemm16sm100_mqa_logitsILj8ELj64ELb0ELb0ELj16ELj256ELj3ELj5ELj148ELj128ELj256EN7cutlass12float_e4m3_tENS1_10bfloat16_tEfLj2EEEvjjjPKjS5_PT11_14CUtensorMap_stS8_S8_S8_S8__param_4",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "logits",
+          "offset": 0,
+          "parameter": "_ZN9deep_gemm16sm100_mqa_logitsILj8ELj64ELb0ELb0ELj16ELj256ELj3ELj5ELj148ELj128ELj256EN7cutlass12float_e4m3_tENS1_10bfloat16_tEfLj2EEEvjjjPKjS5_PT11_14CUtensorMap_stS8_S8_S8_S8__param_5",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 87952,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 8
+      },
+      "reached_opcodes": {
+        "abs.f32": 524288,
+        "add.f32": 65536,
+        "add.rn.f32x2": 327680,
+        "add.s32": 448484,
+        "add.s64": 151552,
+        "and.b32": 5696,
+        "bar.sync": 94720,
+        "bar.warp.sync": 62592,
+        "bra": 228420,
+        "bra.uni": 52864,
+        "cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 48,
+        "cvt.rn.bf16.f32": 65536,
+        "cvt.u64.u32": 275648,
+        "cvta.param.u64": 24208,
+        "cvta.to.global.u64": 115712,
+        "elect.sync": 10496,
+        "fence.mbarrier_init.release.cluster": 148,
+        "fma.rn.f32x2": 262144,
+        "griddepcontrol.wait": 56832,
+        "ld.global.b32": 81920,
+        "ld.param.b32": 170496,
+        "ld.param.b64": 170496,
+        "ld.shared.f32": 266240,
+        "ld.shared.u32": 4736,
+        "mad.lo.s32": 2368,
+        "max.u32": 38400,
+        "mbarrier.arrive.expect_tx.shared::cta.b64": 24,
+        "mbarrier.arrive.shared::cta.b64": 10496,
+        "mbarrier.init.shared::cta.b64": 3256,
+        "mbarrier.try_wait.parity.shared::cta.b64": 11064,
+        "min.u32": 173056,
+        "mov.b32": 185692,
+        "mov.b64": 1009176,
+        "mov.s32": 10824,
+        "mov.u32": 170496,
+        "mul.f32": 131072,
+        "mul.wide.u32": 47104,
+        "neg.s32": 2048,
+        "not.pred": 256,
+        "or.b32": 99840,
+        "or.b64": 576,
+        "prefetch.tensormap": 23680,
+        "ret": 56832,
+        "selp.b32": 29296,
+        "setmaxnreg.dec.sync.aligned.u32": 18944,
+        "setmaxnreg.inc.sync.aligned.u32": 37888,
+        "setp.eq.b32": 176768,
+        "setp.ge.u32": 47764,
+        "setp.gt.s32": 56832,
+        "setp.gt.u32": 51000,
+        "setp.lt.u32": 10248,
+        "setp.ne.b32": 151488,
+        "shfl.sync.idx.b32": 56832,
+        "shl.b32": 61816,
+        "shl.b64": 4096,
+        "shr.s32": 4096,
+        "shr.u32": 109524,
+        "st.global.b16": 65536,
+        "sub.s32": 4608,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 4736,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 32,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 4736,
+        "tcgen05.fence::after_thread_sync": 4128,
+        "tcgen05.fence::before_thread_sync": 4096,
+        "tcgen05.ld.sync.aligned.32x32b.x8.b32": 65536,
+        "tcgen05.mma.cta_group::1.kind::f8f6f4": 64,
+        "tcgen05.wait::ld.sync.aligned": 65536,
+        "xor.b32": 11120
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 19,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 87952,
+        "stored_bindings": 1975
+      },
+      "source_edge_storage": {
+        "binding_templates": 1284,
+        "logical_edges": 87184,
+        "stored_bindings": 1284
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 4,
+        "operations": 8
+      },
+      "thread_count": 56832,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "implementation": "cpp",
+    "memory_analysis_complete": false,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 275.64453125,
+    "required_order_domains": 7434,
+    "required_orders": 237888,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 32,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 75214,
+      "memory_binding_templates": 1720,
+      "memory_bindings": 125288,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 589,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 258,
+      "thread_prefix_groups": 22093,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "stage": "synchronization_check",
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 148,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 6747024,
+      "path_entries": 100012,
+      "record_bindings": 61188,
+      "record_nodes": 53328,
+      "splits": 1044,
+      "template_steps": 56208,
+      "thread_memberships": 56832,
+      "value_nodes": 29300
+    },
+    "thread_record_compression": {
+      "completed_ctas": 148,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 6489472,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "failed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "previous_phase_not_ordered_before_issue",
+                "details": {
+                  "issue": 150325,
+                  "phase": {
+                    "barrier": 3,
+                    "generation": 0
+                  },
+                  "required_events": {
+                    "events": [
+                      308701
+                    ],
+                    "total": 1,
+                    "truncated": false
+                  }
+                },
+                "message": "Wait check failed: previous_phase_not_ordered_before_issue.",
+                "stage": "synchronization_check"
+              }
+            ],
+            "prerequisite_result": "not_wellsynced",
+            "prerequisite_status": "not_wellsynced"
+          },
           "stage": "pipeline"
         }
       ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
+      "equivalence_check": "blocked",
+      "prerequisite_status": "not_wellsynced",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
       }
     },
-    "scope": {
-      "operation": "value_analysis"
-    }
+    "value_ir_instance_count": 1014736,
+    "value_ir_node_count": 16269,
+    "value_view_complete": true
   },
-  "value_ir_instance_count": 0,
-  "value_ir_node_count": 0,
-  "value_view_complete": false,
+  "peak_rss_mib": 275.64453125,
+  "pipeline_elapsed_seconds": 2.40098772,
+  "result": "not_wellsynced",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "verification_limitations": [],
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.529
 }

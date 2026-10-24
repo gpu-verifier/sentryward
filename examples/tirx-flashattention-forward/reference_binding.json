@@ -1,0 +1,231 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          32,
+          1024,
+          128
+        ],
+        "source_strides_bytes": [
+          8388608,
+          262144,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          8388608,
+          262144,
+          256,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          4,
+          1024,
+          128
+        ],
+        "source_strides_bytes": [
+          1048576,
+          262144,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          1048576,
+          262144,
+          256,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          4,
+          1024,
+          128
+        ],
+        "source_strides_bytes": [
+          1048576,
+          262144,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          1048576,
+          262144,
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          32,
+          1024,
+          128
+        ],
+        "source_strides_bytes": [
+          8388608,
+          256,
+          8192,
+          2
+        ],
+        "target_strides_bytes": [
+          8388608,
+          262144,
+          256,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          4,
+          1024,
+          128
+        ],
+        "source_strides_bytes": [
+          1048576,
+          256,
+          1024,
+          2
+        ],
+        "target_strides_bytes": [
+          1048576,
+          262144,
+          256,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          4,
+          1024,
+          128
+        ],
+        "source_strides_bytes": [
+          1048576,
+          256,
+          1024,
+          2
+        ],
+        "target_strides_bytes": [
+          1048576,
+          262144,
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:O",
+    "right_allocation": "6:global1:O",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      1,
+      32,
+      1024,
+      128
+    ],
+    "left_strides_bytes": [
+      8388608,
+      262144,
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      8388608,
+      256,
+      8192,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "Q",
+        "dtype": "float16",
+        "allocation": "6:global1:Q"
+      },
+      {
+        "name": "K",
+        "dtype": "float16",
+        "allocation": "6:global1:K"
+      },
+      {
+        "name": "V",
+        "dtype": "float16",
+        "allocation": "6:global1:V"
+      },
+      {
+        "name": "scale_log2",
+        "value": 0.127517431974411
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tirx-flashattention-forward.ptx",
+    "optimized_input": "examples/tirx-flashattention-forward/input.json",
+    "upstream": [
+      "https://github.com/mlc-ai/TIRx-kernels/blob/ff128be7470d674a94169e12c1556590e4046cba/tirx_kernels/ported/flashattention/flash_attention4.py#L98-L1372",
+      "https://github.com/mlc-ai/TIRx-kernels/blob/ff128be7470d674a94169e12c1556590e4046cba/tirx_kernels/ported/flashattention/flash_attention4.py#L1405-L1475",
+      "https://github.com/mlc-ai/TIRx-kernels/blob/ff128be7470d674a94169e12c1556590e4046cba/tirx_kernels/ported/flashattention/flash_attention4.py#L1538-L1549",
+      "https://github.com/mlc-ai/TIRx-kernels/blob/ff128be7470d674a94169e12c1556590e4046cba/tirx_kernels/ported/flashattention/flash_attention4.py#L1607-L1648",
+      "https://github.com/mlc-ai/TIRx-kernels/blob/ff128be7470d674a94169e12c1556590e4046cba/tirx_kernels/tirx_lite/scheduler.py#L154-L201"
+    ],
+    "scope": "CONFIGS s1024_h32kv4: B=1, S_q=S_kv=1024, H_q=32, H_kv=4, D=128, GQA=8, fp16. Full launch of cta_count=128 CTAs (linear scheduler, one task per CTA) covering all 4 kv heads x 32 m-blocks, i.e. the whole O.",
+    "evidence": "PTX TMA issue order p3, p0, p4, p5, loop {p1, p6} = source order Q, K, Q_1, V, loop {K_1, V_1}; p2 = O store. Softmax exp2((s-m)*c), c = f32 0x3E0293EE = log2(e)/sqrt(128). Dynamic shared pool ends at 231704 (last mbarrier at 231696).",
+    "coverage": "All of O [1, 1024, 32, 128].",
+    "semantics": "ideal_real",
+    "ptx_sha256": "3242e50cc49cdb99677fc5c1b84cd7da28ddd5fdccb270d34332598b9dd16855",
+    "optimized_input_sha256": "71fa3d2aad2ee22304b7a30ee95e22b742363c01960ec1e88b2b080bc307b17f",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [],
+    "historical_source_status": "Recorded revision 532949266f42ee23211e2dbd6d26dbe9c7a6ca3f is not public (GitHub 422); earliest public commit ff128be7 used (flash_attention4.py blob b93e8e44, unchanged in v0.1.0). PTX ABI is authoritative."
+  }
+}

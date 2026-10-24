@@ -1,14 +1,4 @@
 {
-  "address_model": {
-    "address_invariants": [],
-    "kind": "symbolic",
-    "layers": [
-      0,
-      2
-    ],
-    "solver": "z3",
-    "solver_timeout_ms": 100
-  },
   "assumption_dependent": true,
   "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
@@ -51,326 +41,34 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "incomplete",
-    "memory": "passed",
     "synchronization": "passed"
-  },
-  "counts": {
-    "edges": 544630,
-    "events": 389665,
-    "instructions": 146079,
-    "memory_accesses": 103698,
-    "threads": 288
   },
   "diagnostics": [
     {
       "code": "opaque_compute_diamond",
-      "stage": "value_lowering"
+      "details": {
+        "internal_stage": "value_lowering"
+      },
+      "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
+      "stage": "equivalence"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "incomplete",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "opaque_compute_diamond",
-        "stage": "value_lowering"
-      }
-    ],
-    "expression_diagnostic": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "opaque_compute_diamond",
-          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
-          "stage": "value_lowering"
-        }
-      ],
-      "line": 204,
-      "result": "unsupported",
-      "scope": {
-        "operation": "expression_diagnostic"
-      },
-      "serialization": {
-        "action_patterns": 0,
-        "binding_patterns": 0,
-        "domain_refinements": 0,
-        "elapsed_seconds": 3.669e-05,
-        "event_families": 0,
-        "expanded_event_records": 0,
-        "largest_batch_members": 0,
-        "logical_actions": 0,
-        "logical_events": 0,
-        "peak_rss_mib_at_completion": 463.61328125,
-        "reachability_queries": 0,
-        "relations": 0,
-        "rss_mib_at_completion": 396.90234375,
-        "scheduled_batches": 0,
-        "singleton_batches": 0,
-        "value_families": 0
-      },
-      "stage": "value_lowering"
-    },
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    },
-    "stage": "value_lowering"
-  },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [
-        {
-          "code": "opaque_compute_diamond",
-          "details": {
-            "cta": 0,
-            "instruction": "@%p15 bra \t$L__BB0_13;",
-            "instruction_index": 110,
-            "location": {
-              "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
-              "line": 204
-            },
-            "occurrence": 0,
-            "thread": 128
-          },
-          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
-          "stage": "value_lowering"
-        }
-      ],
-      "first_unavailable_reason": "",
-      "queries": 0,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": false
-    },
-    "cluster_completion_joins": 0,
-    "cta_count": 1,
-    "dependency_compression": {},
-    "diagnostic_sample_count": 0,
-    "executed_records": 908117,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 896,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [
-        {
-          "lanes": 12,
-          "line": 204
-        }
-      ],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
-    },
-    "implementation": "cpp",
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "state_tma",
-        "offset": 0,
-        "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_0",
-        "source": "tensor_map"
-      },
-      {
-        "bytes": 8,
-        "object": "x_tma",
-        "offset": 0,
-        "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_1",
-        "source": "tensor_map"
-      },
-      {
-        "bytes": 8,
-        "object": "b_tma",
-        "offset": 0,
-        "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_2",
-        "source": "tensor_map"
-      },
-      {
-        "bytes": 8,
-        "object": "c_tma",
-        "offset": 0,
-        "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_3",
-        "source": "tensor_map"
-      },
-      {
-        "bytes": 8,
-        "object": "dt",
-        "offset": 0,
-        "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_4",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "A",
-        "offset": 0,
-        "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_5",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "D",
-        "offset": 0,
-        "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_6",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "dt_bias",
-        "offset": 0,
-        "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_7",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "output",
-        "offset": 0,
-        "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_8",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "state_batch_indices",
-        "offset": 0,
-        "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_9",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "intermediate_state",
-        "offset": 0,
-        "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_10",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "intermediate_state_indices",
-        "offset": 0,
-        "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_11",
-        "source": "declaration"
-      }
-    ],
-    "lowered_instruction_count": 146079,
-    "reached_opcodes": {
-      "add.rn.f32": 24984,
-      "add.s32": 70000,
-      "add.s64": 934,
-      "and.b32": 110080,
-      "and.pred": 768,
-      "bar.sync": 576,
-      "bar.warp.sync": 64,
-      "bra": 21039,
-      "bra.uni": 268,
-      "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes": 10,
-      "cvt.f32.bf16": 6144,
-      "cvt.rn.bf16.f32": 384,
-      "cvt.sat.f32.f32": 12,
-      "cvt.u64.u32": 1024,
-      "cvta.to.global.u64": 933,
-      "div.s32": 261,
-      "elect.sync": 896,
-      "ex2.approx.ftz.f32": 12,
-      "fence.mbarrier_init.release.cluster": 1,
-      "fence.proxy.async.shared::cta": 512,
-      "fence.proxy.tensormap::generic.acquire.sys": 4,
-      "fma.rm.f32": 12,
-      "fma.rn.f32": 36,
-      "fma.rn.ftz.f32x2": 98304,
-      "ld.global.nc.b32": 294,
-      "ld.global.nc.b64": 256,
-      "ld.param.b32": 795,
-      "ld.param.b64": 941,
-      "ld.shared.b16": 6144,
-      "ld.shared.b32": 12288,
-      "ld.shared.v4.b32": 26624,
-      "mad.lo.s32": 5414,
-      "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64": 4,
-      "mbarrier.arrive.release.cta.shared::cta.b64": 26,
-      "mbarrier.init.shared::cta.b64": 14,
-      "mbarrier.try_wait.parity.acquire.cta.shared::cta.b64": 774,
-      "min.s32": 257,
-      "mov.b32": 9031,
-      "mov.b64": 229376,
-      "mov.pred": 3840,
-      "mov.s32": 28,
-      "mov.u32": 2114,
-      "mul.lo.s32": 1538,
-      "mul.rn.f32": 408,
-      "mul.rn.ftz.f32x2": 98304,
-      "mul.wide.s32": 922,
-      "neg.f32": 12,
-      "not.pred": 512,
-      "or.b32": 3328,
-      "or.pred": 12,
-      "ret": 288,
-      "selp.b32": 258,
-      "setp.eq.b32": 7565,
-      "setp.ge.s32": 257,
-      "setp.gt.s32": 288,
-      "setp.gt.s64": 256,
-      "setp.gt.u32": 600,
-      "setp.gtu.f32": 12,
-      "setp.lt.s32": 513,
-      "setp.ne.b32": 7520,
-      "shfl.sync.down.b32": 18432,
-      "shfl.sync.idx.b32": 288,
-      "shl.b32": 126271,
-      "shr.s32": 769,
-      "shr.u32": 2081,
-      "st.global.b16": 384,
-      "st.shared.b32": 24,
-      "sub.s32": 1794,
-      "xor.b32": 3
-    },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 0,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 1,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 146079,
-      "stored_bindings": 146079
-    },
-    "source_edge_storage": {
-      "binding_templates": 288,
-      "logical_edges": 145791,
-      "stored_bindings": 288
-    },
-    "thread_count": 288,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": []
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -378,6 +76,7 @@
       "__assertfail"
     ],
     "assertion_uses": 0,
+    "atomic_uses": 0,
     "bounded_loop_uses": 0,
     "clc_failure": true,
     "clc_uses": 0,
@@ -404,193 +103,479 @@
     "representative_branch_uses": 0,
     "trap_only_equality_assertions_hold": true
   },
-  "hb_queries": {
-    "memory": {
-      "algorithm": "batched-bitset",
-      "batches": 39,
-      "cache_hits": 0,
-      "dfs_queries": 0,
-      "edge_visits": 3691926,
-      "filtered_queries": 0,
-      "queries": 469248,
-      "shared_peak_index_bytes": 49160192
-    }
-  },
-  "implementation": "cpp",
-  "memory_analysis": {
-    "address_candidates": 469248,
+  "internal": {
     "address_model": {
-      "cache_hits": 0,
-      "ground_disjoint": 0,
-      "ground_overlap": 0,
-      "layer0_disjoint": 0,
-      "refined_pairs": 0,
-      "solver_queries": 0,
-      "solver_sat": 0,
-      "solver_unknown": 0,
-      "solver_unsat": 0
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
     },
-    "candidate_generation_fallback": false,
-    "exhaustive": false,
-    "hb_algorithm": "batched-bitset",
-    "hb_batches": 39,
-    "hb_cache_hits": 0,
-    "hb_dfs_queries": 0,
-    "hb_edge_visits": 3691926,
-    "hb_filtered_queries": 0,
-    "hb_peak_index_bytes": 49160192,
-    "hb_queries": 469248,
-    "hb_query_seconds": 0.08028958400000001,
-    "overlap_queries": 0,
-    "strategy": "conflict-first",
-    "unordered_candidates_examined": 0
+    "counts": {
+      "edges": 544630,
+      "events": 389665,
+      "instructions": 146079,
+      "memory_accesses": 103698,
+      "threads": 288
+    },
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "opaque_compute_diamond",
+          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
+          "stage": "value_lowering"
+        }
+      ],
+      "expression_diagnostic": {
+        "diagnostics": [
+          {
+            "code": "opaque_compute_diamond",
+            "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
+            "stage": "value_lowering"
+          }
+        ],
+        "line": 204,
+        "serialization": {
+          "action_patterns": 0,
+          "binding_patterns": 0,
+          "domain_refinements": 0,
+          "elapsed_seconds": 3.108e-05,
+          "event_families": 0,
+          "expanded_event_records": 0,
+          "largest_batch_members": 0,
+          "logical_actions": 0,
+          "logical_events": 0,
+          "peak_rss_mib_at_completion": 454.5,
+          "reachability_queries": 0,
+          "relations": 0,
+          "rss_mib_at_completion": 368.62890625,
+          "scheduled_batches": 0,
+          "singleton_batches": 0,
+          "value_families": 0
+        },
+        "stage": "value_lowering"
+      },
+      "stage": "value_lowering"
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [
+          {
+            "code": "opaque_compute_diamond",
+            "details": {
+              "cta": 0,
+              "instruction": "@%p15 bra \t$L__BB0_13;",
+              "instruction_index": 110,
+              "location": {
+                "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+                "line": 204
+              },
+              "occurrence": 0,
+              "thread": 128
+            },
+            "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
+            "stage": "value_lowering"
+          }
+        ],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": false
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 1,
+      "dependency_compression": {},
+      "diagnostic_sample_count": 0,
+      "executed_records": 908117,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 896,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [
+          {
+            "lanes": 12,
+            "line": 204
+          }
+        ],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "state_tma",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_0",
+          "source": "tensor_map"
+        },
+        {
+          "bytes": 8,
+          "object": "x_tma",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_1",
+          "source": "tensor_map"
+        },
+        {
+          "bytes": 8,
+          "object": "b_tma",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_2",
+          "source": "tensor_map"
+        },
+        {
+          "bytes": 8,
+          "object": "c_tma",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_3",
+          "source": "tensor_map"
+        },
+        {
+          "bytes": 8,
+          "object": "dt",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_4",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "A",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_5",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "D",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_6",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "dt_bias",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_7",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "output",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_8",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "state_batch_indices",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_9",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "intermediate_state",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_10",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "intermediate_state_indices",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_11",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 146079,
+      "reached_opcodes": {
+        "add.rn.f32": 24984,
+        "add.s32": 70000,
+        "add.s64": 934,
+        "and.b32": 110080,
+        "and.pred": 768,
+        "bar.sync": 576,
+        "bar.warp.sync": 64,
+        "bra": 21039,
+        "bra.uni": 268,
+        "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes": 10,
+        "cvt.f32.bf16": 6144,
+        "cvt.rn.bf16.f32": 384,
+        "cvt.sat.f32.f32": 12,
+        "cvt.u64.u32": 1024,
+        "cvta.to.global.u64": 933,
+        "div.s32": 261,
+        "elect.sync": 896,
+        "ex2.approx.ftz.f32": 12,
+        "fence.mbarrier_init.release.cluster": 1,
+        "fence.proxy.async.shared::cta": 512,
+        "fence.proxy.tensormap::generic.acquire.sys": 4,
+        "fma.rm.f32": 12,
+        "fma.rn.f32": 36,
+        "fma.rn.ftz.f32x2": 98304,
+        "ld.global.nc.b32": 294,
+        "ld.global.nc.b64": 256,
+        "ld.param.b32": 795,
+        "ld.param.b64": 941,
+        "ld.shared.b16": 6144,
+        "ld.shared.b32": 12288,
+        "ld.shared.v4.b32": 26624,
+        "mad.lo.s32": 5414,
+        "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64": 4,
+        "mbarrier.arrive.release.cta.shared::cta.b64": 26,
+        "mbarrier.init.shared::cta.b64": 14,
+        "mbarrier.try_wait.parity.acquire.cta.shared::cta.b64": 774,
+        "min.s32": 257,
+        "mov.b32": 9031,
+        "mov.b64": 229376,
+        "mov.pred": 3840,
+        "mov.s32": 28,
+        "mov.u32": 2114,
+        "mul.lo.s32": 1538,
+        "mul.rn.f32": 408,
+        "mul.rn.ftz.f32x2": 98304,
+        "mul.wide.s32": 922,
+        "neg.f32": 12,
+        "not.pred": 512,
+        "or.b32": 3328,
+        "or.pred": 12,
+        "ret": 288,
+        "selp.b32": 258,
+        "setp.eq.b32": 7565,
+        "setp.ge.s32": 257,
+        "setp.gt.s32": 288,
+        "setp.gt.s64": 256,
+        "setp.gt.u32": 600,
+        "setp.gtu.f32": 12,
+        "setp.lt.s32": 513,
+        "setp.ne.b32": 7520,
+        "shfl.sync.down.b32": 18432,
+        "shfl.sync.idx.b32": 288,
+        "shl.b32": 126271,
+        "shr.s32": 769,
+        "shr.u32": 2081,
+        "st.global.b16": 384,
+        "st.shared.b32": 24,
+        "sub.s32": 1794,
+        "xor.b32": 3
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 1,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 146079,
+        "stored_bindings": 146079
+      },
+      "source_edge_storage": {
+        "binding_templates": 288,
+        "logical_edges": 145791,
+        "stored_bindings": 288
+      },
+      "thread_count": 288,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "batched-bitset",
+        "batches": 39,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 3691926,
+        "filtered_queries": 0,
+        "queries": 469248,
+        "shared_peak_index_bytes": 49160192
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 469248,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "hb_algorithm": "batched-bitset",
+      "hb_batches": 39,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 3691926,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 49160192,
+      "hb_queries": 469248,
+      "hb_query_seconds": 0.08417331600000001,
+      "overlap_queries": 0,
+      "strategy": "conflict-first",
+      "unordered_candidates_examined": 0
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 446.84375,
+    "required_order_domains": 0,
+    "required_orders": 0,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 1,
+      "binding_diagnostics": [
+        {
+          "code": "incomplete_value_semantics",
+          "message": "opaque_compute_diamond: Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
+        }
+      ],
+      "execution_cohorts": 27,
+      "mapping_complete": false,
+      "memory_binding_stored_rows": 0,
+      "memory_binding_templates": 0,
+      "memory_bindings": 0,
+      "memory_linking_templates_used": false,
+      "synchronization_groups": 6288,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 0,
+      "thread_prefix_groups": 32897,
+      "value_diagnostic_count": 1,
+      "value_diagnostics": [
+        {
+          "code": "opaque_compute_diamond",
+          "line": 204,
+          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
+        }
+      ]
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 0,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 0,
+      "path_entries": 0,
+      "record_bindings": 0,
+      "record_nodes": 0,
+      "splits": 0,
+      "template_steps": 0,
+      "thread_memberships": 0,
+      "value_nodes": 0
+    },
+    "thread_record_compression": {
+      "completed_ctas": 1,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 38764976,
+      "intern_calls": 908117,
+      "logical_records": 908117,
+      "record_handle_bytes": 32,
+      "templates": 38945,
+      "unique_bindings": 37580
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "opaque_compute_diamond",
+          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
+          "stage": "value_lowering"
+        }
+      ],
+      "equivalence_check": "unsupported",
+      "line": 204,
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      },
+      "serialization": {
+        "action_patterns": 0,
+        "binding_patterns": 0,
+        "domain_refinements": 0,
+        "elapsed_seconds": 3.108e-05,
+        "event_families": 0,
+        "expanded_event_records": 0,
+        "largest_batch_members": 0,
+        "logical_actions": 0,
+        "logical_events": 0,
+        "peak_rss_mib_at_completion": 454.5,
+        "reachability_queries": 0,
+        "relations": 0,
+        "rss_mib_at_completion": 368.62890625,
+        "scheduled_batches": 0,
+        "singleton_batches": 0,
+        "value_families": 0
+      },
+      "stage": "value_lowering"
+    },
+    "value_ir_instance_count": 16214,
+    "value_ir_node_count": 16214,
+    "value_view_complete": false,
+    "verification_elapsed_seconds": 3.479402514,
+    "verification_result": "race_free"
   },
-  "memory_analysis_complete": true,
-  "mma_operand_ordering": {},
-  "mode": "verify",
-  "peak_footprint_mib": 432.2265625,
-  "peak_rss_mib": 463.61328125,
-  "pipeline_elapsed_seconds": 4.244945745,
-  "race_count": 0,
-  "race_samples_truncated": false,
-  "races": [],
-  "required_order_domains": 0,
-  "required_orders": 0,
+  "peak_rss_mib": 454.5,
+  "pipeline_elapsed_seconds": 3.527567317,
   "result": "unsupported",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "search_complete": true,
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 1,
-    "binding_diagnostics": [
-      {
-        "code": "incomplete_value_semantics",
-        "message": "opaque_compute_diamond: Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
-      }
-    ],
-    "execution_cohorts": 27,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 6288,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 0,
-    "thread_prefix_groups": 32609,
-    "value_diagnostic_count": 1,
-    "value_diagnostics": [
-      {
-        "code": "opaque_compute_diamond",
-        "line": 204,
-        "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
-      }
-    ]
-  },
-  "source_violations": [],
-  "synchronization_input": {
-    "compute_access_binding": "after_happens_before",
-    "kind": "ordering_endpoints",
-    "memory_address_payloads": false
-  },
-  "template_execution": {
-    "completed_ctas": 0,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 0,
-    "path_entries": 0,
-    "record_bindings": 0,
-    "record_nodes": 0,
-    "splits": 0,
-    "template_steps": 0,
-    "thread_memberships": 0,
-    "value_nodes": 0
-  },
-  "thread_record_compression": {
-    "completed_ctas": 1,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 38141856,
-    "intern_calls": 908117,
-    "logical_records": 908117,
-    "record_handle_bytes": 32,
-    "templates": 38945,
-    "unique_bindings": 37580
-  },
-  "unresolved_count": 0,
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "opaque_compute_diamond",
-        "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
-        "stage": "value_lowering"
-      }
-    ],
-    "equivalence_check": "unsupported",
-    "line": 204,
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    },
-    "serialization": {
-      "action_patterns": 0,
-      "binding_patterns": 0,
-      "domain_refinements": 0,
-      "elapsed_seconds": 3.669e-05,
-      "event_families": 0,
-      "expanded_event_records": 0,
-      "largest_batch_members": 0,
-      "logical_actions": 0,
-      "logical_events": 0,
-      "peak_rss_mib_at_completion": 463.61328125,
-      "reachability_queries": 0,
-      "relations": 0,
-      "rss_mib_at_completion": 396.90234375,
-      "scheduled_batches": 0,
-      "singleton_batches": 0,
-      "value_families": 0
-    },
-    "stage": "value_lowering"
-  },
-  "value_ir_instance_count": 15926,
-  "value_ir_node_count": 15926,
-  "value_view_complete": false,
-  "verification_elapsed_seconds": 4.195138072,
   "verification_limitations": [],
-  "verification_result": "race_free",
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.317
+  "whole_pipeline_timeout_seconds": 498.292
 }

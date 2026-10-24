@@ -95,6 +95,26 @@
     {
       "field": "div.13.shift2",
       "value": 3
+    },
+    {
+      "field": "shape.3.0",
+      "value": 256
+    },
+    {
+      "field": "shape.3.1",
+      "value": 128
+    },
+    {
+      "field": "shape.3.2",
+      "value": 8
+    },
+    {
+      "field": "stride.3.0",
+      "value": 1024
+    },
+    {
+      "field": "stride.3.2",
+      "value": 128
     }
   ],
   "declarations": [
@@ -241,11 +261,164 @@
       "offset": 0,
       "type": "pointer",
       "object": "cu_seqlens_k"
+    },
+    {
+      "name": "shape.3.0",
+      "parameter": 3,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.3.1",
+      "parameter": 3,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.3.2",
+      "parameter": 3,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "stride.3.0",
+      "parameter": 3,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "stride.3.2",
+      "parameter": 3,
+      "offset": 32,
+      "type": "s64"
     }
   ],
   "assumptions": {
     "duplicate_tma_store_benign": true,
     "representative_election": true,
     "clc_always_fails": true
-  }
+  },
+  "shape_arrays": [
+    {
+      "parameter": 4,
+      "offset": 0,
+      "element_type": "s32",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          128
+        ],
+        [
+          256
+        ]
+      ]
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "element_type": "s32",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          160
+        ],
+        [
+          320
+        ]
+      ]
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 6,
+      "offset": 0,
+      "object": "Q",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256,
+        8
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256
+      ],
+      "box_shape": [
+        64,
+        128,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 7,
+      "offset": 0,
+      "object": "K",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        320,
+        8
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256
+      ],
+      "box_shape": [
+        64,
+        128,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 8,
+      "offset": 0,
+      "object": "V",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        320,
+        8
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256
+      ],
+      "box_shape": [
+        64,
+        128,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ]
 }

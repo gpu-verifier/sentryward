@@ -1,0 +1,163 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global5:input": "input"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8,
+          64
+        ],
+        "source_strides_bytes": [
+          256,
+          4
+        ],
+        "target_strides_bytes": [
+          256,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global5:input": "input"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8,
+          64
+        ],
+        "source_strides_bytes": [
+          256,
+          4
+        ],
+        "target_strides_bytes": [
+          256,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "left_allocation": "6:global6:output",
+        "right_allocation": "6:global6:output",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8,
+          2
+        ],
+        "left_strides_bytes": [
+          8,
+          4
+        ],
+        "right_strides_bytes": [
+          8,
+          4
+        ]
+      },
+      {
+        "left_allocation": "6:global7:indices",
+        "right_allocation": "6:global7:indices",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8,
+          2
+        ],
+        "left_strides_bytes": [
+          8,
+          4
+        ],
+        "right_strides_bytes": [
+          8,
+          4
+        ]
+      },
+      {
+        "left_allocation": "6:global11:source_rows",
+        "right_allocation": "6:global11:source_rows",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8,
+          2
+        ],
+        "left_strides_bytes": [
+          8,
+          4
+        ],
+        "right_strides_bytes": [
+          8,
+          4
+        ]
+      }
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "input",
+        "dtype": "float32",
+        "allocation": "6:global5:input"
+      },
+      {
+        "name": "num_rows",
+        "parameter": 3
+      },
+      {
+        "name": "k",
+        "parameter": 6
+      },
+      {
+        "name": "start_expert",
+        "parameter": 7
+      },
+      {
+        "name": "end_expert",
+        "parameter": 8
+      },
+      {
+        "name": "renormalize",
+        "parameter": 9
+      },
+      {
+        "name": "routed_scaling_factor",
+        "parameter": 11
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/vllm__moe_topk_softmax__sm_100a.ptx",
+    "optimized_input": "examples/vllm__moe_topk_softmax__sm_100a/input.json",
+    "optimized_input_sha256": "b109e6c8a52f00d16aba3b5594d41d9a2f9bf51b6bc4ca83bcb17e6a14b6706b",
+    "ptx_sha256": "3c552cf0c157cbdf00c04883dcfe636a843245d508b6c8110580b4a0e91789bf",
+    "evidence": "topkGating<4, 64, 4, 16, 32, int, float, SCORING_SOFTMAX>(input p0, finished p1 = null, output p2, num_rows p3 = 8, indices p4, source_rows p5, k p6 = 2, start_expert p7 = 0, end_expert p8 = 64, renormalize p9 = 1, bias p10 = null, routed_scaling_factor p11 = 1.0, is_padding p12 = null); grid (1,1,1), block (32,4): 2 rows per warp, 8 rows per CTA.",
+    "semantics": "Softmax, top-k selection with lowest-index tie breaking, renormalized and scaled weights, expert indices and source rows, in ideal real arithmetic; all three written outputs.",
+    "upstream": [
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/moe/topk_softmax_kernels.cu"
+    ],
+    "scope": "Corpus input as given (no supplemented input): 8 rows x 64 experts, k = 2, single node (start 0, end 64), no bias, no padding.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

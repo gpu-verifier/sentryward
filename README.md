@@ -136,15 +136,17 @@ without a subcommand.
 The CLI prints a JSON result to stdout, and `verify` returns the same structure
 as a dictionary:
 
-- `result` is the overall verdict. `race_free` means the synchronization and
-  memory checks passed and no reference was given; `verified` means equivalence
-  to the reference was proved as well. Other values name a finding, such as
+- `result` is the overall verdict. `race_free` means the synchronization check
+  passed and no reference was given; `verified` means equivalence to the
+  reference was proved as well. Other values name a finding, such as
   `potential_race`, or the reason the analysis stopped, such as `unsupported`
   or `timeout`.
-- `checks` gives the status of each check: synchronization, memory and
-  equivalence.
-- `diagnostics` and `warnings` hold the details, including witnesses.
-- `equivalence` holds the complete equivalence result.
+- `checks` gives the status of the two checks: `synchronization`
+  (synchronization, memory races and resource lifecycles) and `equivalence`.
+- `diagnostics` and `warnings` hold the details; `evidence` holds race and
+  synchronization witnesses.
+- `internal` holds analysis details such as equivalence receipts; it is not a
+  stable interface.
 
 CLI exit code 0 can also accompany findings or inconclusive checks; inspect
 `result` and `checks` instead of using the exit code as a correctness verdict.

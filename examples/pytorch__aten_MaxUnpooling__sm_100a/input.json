@@ -112,5 +112,24 @@
       "taken": true,
       "note": "CUDA_KERNEL_ASSERT(maxind >= 0 && maxind < outputImageSize) holds: the loaded max-pool index is in range, so the __assertfail path is not executed. User-authorized scenario; the index values themselves remain symbolic."
     }
+  ],
+  "tensor_properties": [
+    {
+      "object": "indices",
+      "element_type": "s64",
+      "property": "lower_bound",
+      "value": 0
+    },
+    {
+      "object": "indices",
+      "element_type": "s64",
+      "property": "upper_bound",
+      "value": 63
+    },
+    {
+      "object": "indices",
+      "element_type": "s64",
+      "property": "injective"
+    }
   ]
 }

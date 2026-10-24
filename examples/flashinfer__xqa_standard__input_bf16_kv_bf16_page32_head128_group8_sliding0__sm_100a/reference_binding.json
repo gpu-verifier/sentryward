@@ -1,0 +1,368 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:q": "q",
+      "6:global10:kCacheVLLM": "kCacheVLLM",
+      "6:global10:vCacheVLLM": "vCacheVLLM",
+      "6:global15:kvCachePageList": "kvCachePageList",
+      "6:global14:attentionSinks": "attentionSinks",
+      "6:global10:seqLenList": "seqLenList"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          1,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global10:kCacheVLLM": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          32,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          8192,
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          8192,
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global10:vCacheVLLM": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          32,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          8192,
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          8192,
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global15:kvCachePageList": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1
+        ],
+        "source_strides_bytes": [
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          4,
+          4
+        ]
+      },
+      "6:global14:attentionSinks": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          8
+        ],
+        "source_strides_bytes": [
+          32,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4
+        ]
+      },
+      "6:global10:seqLenList": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1
+        ],
+        "source_strides_bytes": [
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          4,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:q": "q",
+      "6:global10:kCacheVLLM": "kCacheVLLM",
+      "6:global10:vCacheVLLM": "vCacheVLLM",
+      "6:global15:kvCachePageList": "kvCachePageList",
+      "6:global14:attentionSinks": "attentionSinks",
+      "6:global10:seqLenList": "seqLenList"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          1,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global10:kCacheVLLM": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          32,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          8192,
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          8192,
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global10:vCacheVLLM": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          32,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          8192,
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          8192,
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global15:kvCachePageList": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1
+        ],
+        "source_strides_bytes": [
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          4,
+          4
+        ]
+      },
+      "6:global14:attentionSinks": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          8
+        ],
+        "source_strides_bytes": [
+          32,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4
+        ]
+      },
+      "6:global10:seqLenList": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1
+        ],
+        "source_strides_bytes": [
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          4,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global6:output",
+    "right_allocation": "6:global6:output",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      1,
+      1,
+      8,
+      128
+    ],
+    "left_strides_bytes": [
+      2048,
+      2048,
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      2048,
+      2048,
+      256,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "q",
+        "allocation": "6:global1:q",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "k_cache",
+        "allocation": "6:global10:kCacheVLLM",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "v_cache",
+        "allocation": "6:global10:vCacheVLLM",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "page_list",
+        "allocation": "6:global15:kvCachePageList",
+        "dtype": "int32"
+      },
+      {
+        "name": "q_scale",
+        "parameter": 1
+      },
+      {
+        "name": "attention_sinks",
+        "allocation": "6:global14:attentionSinks",
+        "dtype": "float32"
+      },
+      {
+        "name": "seq_len",
+        "value": {
+          "input": "/shape_arrays/0/shapes/0/0"
+        }
+      },
+      {
+        "name": "seqLenList",
+        "allocation": "6:global10:seqLenList",
+        "dtype": "int32"
+      }
+    ]
+  },
+  "provenance": {
+    "source": "flashinfer XQA kernel_mha (csrc/xqa/mha.cu) at commit b250399302acb2c4925b03416188c6678b762fbd",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/xqa/mha.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/xqa/mhaUtils.cuh",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/xqa/mha.h",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/xqa/defines.h",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/jit/xqa.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/xqa.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/attention/test_xqa.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/xqa/xqa_wrapper.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/decode.py"
+    ],
+    "scope": "One launch: grid (1,1,1) = (nbSubSeqPerSeq=1, nbKHeads=1, batch=1), block (128,1,2); BEAM_WIDTH=1, HEAD_ELEMS=128, HEAD_GRP_SIZE=8, TOKENS_PER_PAGE=32, CACHE_ELEM_ENUM=0, SLIDING_WINDOW=0, INPUT_FP16=0, LOW_PREC_OUTPUT=0; seqLen=32 from shape_arrays; maxNbPagesPerSeq=1; single-block mode (gridDim.x==1), so semaphores/scratch are untouched; qScalePtr and kvScalePtr null (flashinfer API float default), qScale=1.0 and kvCacheScale=1.0 from parameters; attentionSinks non-null and read; KV pool of 1 page (test_xqa.py total_num_pages = nb_pages_per_seq * batch_size); kvCachePageList in [0, 0] by tensor_properties (test construction, not host-validated).",
+    "optimized_input_sha256": "944f4d4b2b6fc53c81dad22d102b489d925d3bd84816e5299824c007896bb21f",
+    "scope_shape_arrays": [
+      {
+        "parameter": 6,
+        "offset": 24,
+        "element_type": "u32",
+        "shapes": [
+          [
+            32
+          ]
+        ]
+      }
+    ]
+  }
+}

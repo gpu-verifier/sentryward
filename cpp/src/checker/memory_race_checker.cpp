@@ -7,8 +7,12 @@
 #include <unordered_map>
 #include <numeric>
 #include <map>
+#include <optional>
+#include <span>
+#include <vector>
 
 #include "sentryward/algorithm/analysis/unordered_access_pairs.h"
+#include "sentryward/algorithm/checker/cross_unit_races.h"
 #include "sentryward/algorithm/checker/duplicate_tma_stores.h"
 #include "sentryward/algorithm/checker/family_memory_checker.h"
 #include "sentryward/algorithm/diagnostics/performance_profile.h"
@@ -33,7 +37,7 @@ bool validResult(const OverlapResult& result) {
 
 }  // namespace
 
-static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
+static Result<MemoryRaceResult, MemoryAnalysisError> RunQuotientMemoryCheck(
     const SourceProgram& source, const PassCertificate& certificate,
     MemoryModel& memory, const MemoryRaceOptions& options, StaticHbQueries* shared_hb,
     const MemoryAccessRecords* supplied_accesses = nullptr,
@@ -81,6 +85,10 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
   if (options.continue_after_race && has_atomics)
     return Output::Failure({"continued conflict-order search does not support atomic exemptions", {}, {}});
   const DuplicateTmaStores duplicate_stores(source);
+  // Class mode: a duplicate pair lies in one CTA (its site key holds the CTA) and stands for that
+  // pair in every unit of the CTA's class.
+  std::optional<ActorWeights> weights;
+  if (options.units) weights.emplace(*options.units, source.actors);
   std::unordered_map<std::uint32_t, CtaId> actor_ctas;
   for (const auto& actor : source.actors) actor_ctas.emplace(actor.id.value(), actor.cta);
   MemoryRaceResult result;
@@ -133,7 +141,9 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
               break;
           }
           if (options.warn_duplicate_tma_stores && duplicate_stores.contains(first, second)) {
-            ++result.warning_count;
+            const std::size_t weight = weights ? (*weights)(first.actor) : 1;
+            if (weight > SIZE_MAX - result.warning_count) throw std::overflow_error("warning count overflow");
+            result.warning_count += weight;
             if (options.collect_duplicate_write_groups) {
               const auto x=first.id.value(),y=second.id.value();
               duplicate_members[x]=duplicate_members[y]=true;
@@ -295,6 +305,108 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
                   : result.unresolved_count != 0 ? MemoryRaceStatus::kUnresolved
                                                  : MemoryRaceStatus::kRaceFree;
   return Output::Success(std::move(result));
+}
+
+// Cross-CTA class mode: after the quotient search ended without a race, every global pair with an
+// access in a member unit (cross_unit_races.h). A race found there is reported as the first race; an
+// Unknown, a work cap, or a race behind an unresolved quotient search (whose first finding on the
+// per-unit path could be either) restarts the launch per unit.
+static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
+    const SourceProgram& source, const PassCertificate& certificate,
+    MemoryModel& memory, const MemoryRaceOptions& options, StaticHbQueries* shared_hb,
+    const MemoryAccessRecords* supplied_accesses = nullptr,
+    std::optional<std::span<const MemoryAccessFamily>> supplied_families = std::nullopt) {
+  auto output = RunQuotientMemoryCheck(source, certificate, memory, options, shared_hb, supplied_accesses,
+                                       supplied_families);
+  if (!options.units || !output || output.value().status == MemoryRaceStatus::kRaceFound) return output;
+  ProfileScope profile("memory.cross_unit");
+  std::vector<MemoryAccessFamily> extracted;
+  if (!supplied_families) {
+    auto families = ExtractMemoryAccessFamilies(certificate.happensBeforeGraph, source);
+    if (!families) return Result<MemoryRaceResult, MemoryAnalysisError>::Failure(std::move(families).error());
+    extracted = std::move(families).value();
+  }
+  const auto families = supplied_families.value_or(std::span<const MemoryAccessFamily>(extracted));
+  const ActorWeights actors(*options.units, source.actors);
+  // Representative family parts, split at CTA boundaries (actors of one CTA are contiguous and a
+  // family's actor is affine in its member, so each CTA holds one member range).
+  std::vector<CrossUnitPart> parts;
+  for (const auto& family : families) {
+    if (!family.count) continue;
+    const bool write = family.first.mode == AccessMode::kWrite;
+    const auto cta_of = [&](std::size_t member) { return actors.Cta(family.at(member).actor); };
+    std::vector<std::pair<std::size_t, std::size_t>> ranges; // [begin, end) member ranges, one CTA each
+    std::size_t begin = family.first_member;
+    const std::size_t end = family.first_member + family.count;
+    while (begin < end) {
+      const auto cta = cta_of(begin);
+      std::size_t lo = begin, hi = end; // the last member of `cta` is in [lo, hi)
+      if (cta_of(end - 1) != cta)
+        while (hi - lo > 1) {
+          const auto middle = lo + (hi - lo) / 2;
+          (cta_of(middle) == cta ? lo : hi) = middle;
+        }
+      else lo = end - 1;
+      ranges.emplace_back(begin, lo + 1);
+      begin = lo + 1;
+    }
+    for (const auto& [first, stop] : ranges) {
+      auto part = family;
+      part.first = family.at(first);
+      part.first_member = first;
+      part.count = stop - first;
+      const auto cta = cta_of(first);
+      if (auto footprint = memory.crossUnitFootprint(part)) {
+        parts.push_back({std::move(part), std::move(*footprint), write, cta});
+        continue;
+      }
+      // One footprint per member (step 0), unmerged.
+      for (std::size_t member = first; member < stop; ++member) {
+        auto single = family;
+        single.first = family.at(member);
+        single.first_member = member;
+        single.count = 1;
+        auto footprint = memory.crossUnitFootprint(single);
+        if (!footprint) {
+          FamilyFootprint none; // not placeable
+          parts.push_back({std::move(single), std::move(none), write, cta});
+          continue;
+        }
+        footprint->offset += footprint->step * address_solver::Int(member);
+        footprint->step = 0;
+        parts.push_back({std::move(single), std::move(*footprint), write, cta});
+      }
+    }
+  }
+  const auto outcome = CheckCrossUnit(parts, *options.units, memory);
+  using Status = CrossUnitOutcome::Status;
+  if (outcome.status == Status::kNone) return output;
+  if (outcome.status == Status::kUnknown) throw UnitClassRestart{"cross_unit_unknown:" + outcome.reason};
+  if (outcome.status == Status::kCap) throw UnitClassRestart{"cross_unit_cap:" + outcome.reason};
+  auto& result = output.value();
+  if (result.status == MemoryRaceStatus::kUnresolved) throw UnitClassRestart{"cross_unit_tie_break"};
+  const auto& a = parts.at(outcome.first_part);
+  const auto& b = parts.at(outcome.second_part);
+  const auto& q = *options.units;
+  OverlapEvidence evidence;
+  evidence.description = "cross-unit global overlap (units " + std::to_string(outcome.first_unit) + " and " +
+                         std::to_string(outcome.second_unit) + ")";
+  evidence.constant_region = ByteOverlap{"global", outcome.allocation, outcome.region_offset, outcome.region_bytes};
+  const auto rank_a = q.RankOf(a.cta), rank_b = q.RankOf(b.cta);
+  result.cross_unit_race = CrossUnitEvidence{q.units.at(outcome.first_unit).kappa,
+                                          q.CtaCoordinates(q.units.at(outcome.first_unit).ctas.at(rank_a)),
+                                          q.units.at(outcome.second_unit).kappa,
+                                          q.CtaCoordinates(q.units.at(outcome.second_unit).ctas.at(rank_b)),
+                                          outcome.allocation, outcome.first_delta, outcome.second_delta};
+  RaceFinding race{a.family.at(outcome.first_member), b.family.at(outcome.second_member), std::move(evidence)};
+  result.status = MemoryRaceStatus::kRaceFound;
+  result.race_count = 1;
+  result.races.assign(1, race);
+  // As the per-unit search, which stops at its first race (class mode never
+  // runs an exhaustive or continued search).
+  result.search_complete = false;
+  if (options.on_race) options.on_race(result.races.front());
+  return output;
 }
 
 Result<MemoryRaceResult, MemoryAnalysisError> MemoryRaceChecker::Run(

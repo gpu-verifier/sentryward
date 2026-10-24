@@ -1,0 +1,644 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V",
+      "6:global2:dO": "dO",
+      "6:global3:LSE": "LSE",
+      "6:global5:dPsum": "dPsum",
+      "6:global7:dQaccum": "dQaccum",
+      "6:global12:cu_seqlens_q": "cu_seqlens_q",
+      "6:global12:cu_seqlens_k": "cu_seqlens_k",
+      "6:global22:scheduler_cu_seqlens_k": "scheduler_cu_seqlens_k"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          256,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          320,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          320,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global2:dO": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          256,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global3:LSE": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8,
+          512
+        ],
+        "source_strides_bytes": [
+          2048,
+          4
+        ],
+        "target_strides_bytes": [
+          2048,
+          4
+        ]
+      },
+      "6:global5:dPsum": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8,
+          512
+        ],
+        "source_strides_bytes": [
+          2048,
+          4
+        ],
+        "target_strides_bytes": [
+          2048,
+          4
+        ]
+      },
+      "6:global7:dQaccum": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8,
+          4,
+          2,
+          8,
+          2,
+          2,
+          64,
+          4
+        ],
+        "source_strides_bytes": [
+          262144,
+          65536,
+          32768,
+          4096,
+          2048,
+          1024,
+          16,
+          4
+        ],
+        "target_strides_bytes": [
+          262144,
+          65536,
+          32768,
+          4096,
+          2048,
+          1024,
+          16,
+          4
+        ]
+      },
+      "6:global12:cu_seqlens_q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          3
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global12:cu_seqlens_k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          3
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global22:scheduler_cu_seqlens_k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          3
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V",
+      "6:global2:dO": "dO",
+      "6:global3:LSE": "LSE",
+      "6:global5:dPsum": "dPsum",
+      "6:global7:dQaccum": "dQaccum",
+      "6:global12:cu_seqlens_q": "cu_seqlens_q",
+      "6:global12:cu_seqlens_k": "cu_seqlens_k",
+      "6:global22:scheduler_cu_seqlens_k": "scheduler_cu_seqlens_k"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          256,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          320,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          320,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global2:dO": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          256,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global3:LSE": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8,
+          512
+        ],
+        "source_strides_bytes": [
+          2048,
+          4
+        ],
+        "target_strides_bytes": [
+          2048,
+          4
+        ]
+      },
+      "6:global5:dPsum": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8,
+          512
+        ],
+        "source_strides_bytes": [
+          2048,
+          4
+        ],
+        "target_strides_bytes": [
+          2048,
+          4
+        ]
+      },
+      "6:global7:dQaccum": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8,
+          4,
+          2,
+          8,
+          2,
+          2,
+          64,
+          4
+        ],
+        "source_strides_bytes": [
+          262144,
+          65536,
+          32768,
+          4096,
+          2048,
+          1024,
+          16,
+          4
+        ],
+        "target_strides_bytes": [
+          262144,
+          65536,
+          32768,
+          4096,
+          2048,
+          1024,
+          16,
+          4
+        ]
+      },
+      "6:global12:cu_seqlens_q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          3
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global12:cu_seqlens_k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          3
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global22:scheduler_cu_seqlens_k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          3
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global7:dQaccum",
+        "right_allocation": "6:global7:dQaccum",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8,
+          4,
+          2,
+          8,
+          2,
+          2,
+          64,
+          4
+        ],
+        "left_strides_bytes": [
+          262144,
+          65536,
+          32768,
+          4096,
+          2048,
+          1024,
+          16,
+          4
+        ],
+        "right_strides_bytes": [
+          262144,
+          65536,
+          32768,
+          4096,
+          2048,
+          1024,
+          16,
+          4
+        ]
+      },
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global2:dK",
+        "right_allocation": "6:global2:dK",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          320,
+          8,
+          128
+        ],
+        "left_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global2:dV",
+        "right_allocation": "6:global2:dV",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          320,
+          8,
+          128
+        ],
+        "left_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      }
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "Q",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:Q"
+      },
+      {
+        "name": "K",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:K"
+      },
+      {
+        "name": "V",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:V"
+      },
+      {
+        "name": "dO",
+        "dtype": "bfloat16",
+        "allocation": "6:global2:dO"
+      },
+      {
+        "name": "LSE",
+        "dtype": "float32",
+        "allocation": "6:global3:LSE"
+      },
+      {
+        "name": "dPsum",
+        "dtype": "float32",
+        "allocation": "6:global5:dPsum"
+      },
+      {
+        "name": "dQaccum",
+        "dtype": "float32",
+        "allocation": "6:global7:dQaccum"
+      },
+      {
+        "name": "cu_seqlens_q",
+        "dtype": "int32",
+        "allocation": "6:global12:cu_seqlens_q"
+      },
+      {
+        "name": "cu_seqlens_k",
+        "dtype": "int32",
+        "allocation": "6:global12:cu_seqlens_k"
+      },
+      {
+        "name": "scheduler_cu_seqlens_k",
+        "dtype": "int32",
+        "allocation": "6:global22:scheduler_cu_seqlens_k"
+      },
+      {
+        "name": "softmax_scale",
+        "value": {
+          "input": "/arguments/7/value"
+        }
+      },
+      {
+        "name": "scale_log2",
+        "value": {
+          "input": "/arguments/8/value"
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "upstream": [
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_bwd_sm100.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/interface.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/tile_scheduler.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/seqlen_info.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/mask.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_bwd_postprocess.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/copy_utils.py",
+      "https://github.com/NVIDIA/cutlass/blob/v4.6.2/include/cute/atom/mma_traits_sm100_frag.hpp"
+    ],
+    "ptx": "corpus/flash_attention__bwd_varlen_bf16_h128__sm_100a.ptx",
+    "optimized_input": "examples/flash_attention__bwd_varlen_bf16_h128__sm_100a/input.json",
+    "optimized_input_sha256": "d3dc1e3a3ad33538c70c0a51aa731572d39640eba732757997162a835ae97486",
+    "ptx_sha256": "34b1db0adf3f1d8594eb96937b01272433599b547584366def870e3e42055505",
+    "semantics": "ideal_real; fixed saved configuration (packed varlen, batch 2, cu_seqlens_q [0,128,256], cu_seqlens_k [0,160,320], h=hkv=8, d=128, bf16, non-causal, 2-CTA, non-deterministic); all written outputs: dQaccum (RMW fp32, padding rows unchanged), dK, dV (bf16 overwrite, all 320 keys).",
+    "evidence": "flash_bwd_sm100.py: P=exp2(S*scale_log2-LSE[padded row]) on same-sequence pairs; dS=P*(dO V^T-dPsum); P,dS rounded to bf16; dQ=dS K unscaled bulk-reduce-added into dQaccum at padded_offset_q tiles (2-CTA layout, dQ_reduce_ncol 8); MHA varlen => use_tma_store False => epilogue_dKV stores dV=P^T dO and dK=softmax_scale*dS^T Q (bf16). cu_seqlens drive all masks/rows.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [
+      {
+        "parameter": 14,
+        "offset": 0,
+        "element_type": "s32",
+        "shapes": [
+          [
+            0
+          ],
+          [
+            128
+          ],
+          [
+            256
+          ]
+        ]
+      },
+      {
+        "parameter": 15,
+        "offset": 0,
+        "element_type": "s32",
+        "shapes": [
+          [
+            0
+          ],
+          [
+            160
+          ],
+          [
+            320
+          ]
+        ]
+      },
+      {
+        "parameter": 34,
+        "offset": 0,
+        "element_type": "s32",
+        "shapes": [
+          [
+            0
+          ],
+          [
+            160
+          ],
+          [
+            320
+          ]
+        ]
+      }
+    ]
+  }
+}

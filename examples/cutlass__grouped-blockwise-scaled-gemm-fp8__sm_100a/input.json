@@ -111,6 +111,78 @@
     {
       "field": "scheduler.cluster.k",
       "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 1152,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 1156,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 1280,
+      "type": "f32",
+      "value": 0.0
+    },
+    {
+      "parameter": 0,
+      "offset": 1288,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 1296,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 1304,
+      "type": "s64",
+      "value": 0
+    },
+    {
+      "parameter": 0,
+      "offset": 1320,
+      "type": "f32",
+      "value": 1.0
+    },
+    {
+      "parameter": 0,
+      "offset": 1328,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 1336,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 1344,
+      "type": "s64",
+      "value": 0
+    },
+    {
+      "parameter": 0,
+      "offset": 2128,
+      "type": "u64",
+      "value": 1
+    },
+    {
+      "parameter": 0,
+      "offset": 2204,
+      "type": "s32",
+      "value": 148
     }
   ],
   "declarations": [
@@ -251,6 +323,102 @@
       "parameter": 0,
       "offset": 2196,
       "type": "s32"
+    },
+    {
+      "parameter": 0,
+      "offset": 1184,
+      "type": "pointer",
+      "object": "mainloop.tensormaps"
+    },
+    {
+      "parameter": 0,
+      "offset": 1192,
+      "type": "pointer",
+      "object": "mainloop.ptr_A.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1200,
+      "type": "pointer",
+      "object": "mainloop.dA.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1208,
+      "type": "pointer",
+      "object": "mainloop.ptr_B.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1216,
+      "type": "pointer",
+      "object": "mainloop.dB.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1224,
+      "type": "pointer",
+      "object": "mainloop.ptr_SFA.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1232,
+      "type": "pointer",
+      "object": "mainloop.layout_SFA.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1240,
+      "type": "pointer",
+      "object": "mainloop.ptr_SFB.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1248,
+      "type": "pointer",
+      "object": "mainloop.layout_SFB.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1920,
+      "type": "pointer",
+      "object": "epilogue.tensormaps"
+    },
+    {
+      "parameter": 0,
+      "offset": 1928,
+      "type": "pointer",
+      "object": "epilogue.ptr_C.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1936,
+      "type": "pointer",
+      "object": "epilogue.dC.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1944,
+      "type": "pointer",
+      "object": "epilogue.ptr_D.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 1952,
+      "type": "pointer",
+      "object": "epilogue.dD.array"
+    },
+    {
+      "parameter": 0,
+      "offset": 16,
+      "type": "pointer",
+      "object": "problem_shape.problem_shapes"
+    },
+    {
+      "parameter": 0,
+      "offset": 2160,
+      "type": "pointer",
+      "object": "scheduler.problem_shapes"
     }
   ],
   "shape_arrays": [
@@ -307,11 +475,407 @@
           128
         ]
       ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1232,
+      "element_type": "s32",
+      "shapes": [
+        [
+          2,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          4,
+          1,
+          1,
+          4,
+          4
+        ],
+        [
+          2,
+          2,
+          1,
+          2,
+          4
+        ],
+        [
+          4,
+          1,
+          1,
+          4,
+          4
+        ]
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1248,
+      "element_type": "s32",
+      "shapes": [
+        [
+          4,
+          1,
+          1,
+          4,
+          4
+        ],
+        [
+          4,
+          1,
+          1,
+          4,
+          4
+        ],
+        [
+          8,
+          2,
+          1,
+          8,
+          16
+        ],
+        [
+          8,
+          1,
+          1,
+          8,
+          8
+        ]
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1200,
+      "element_type": "s64",
+      "shapes": [
+        [
+          128
+        ],
+        [
+          256
+        ],
+        [
+          128
+        ],
+        [
+          256
+        ]
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1216,
+      "element_type": "s64",
+      "shapes": [
+        [
+          128
+        ],
+        [
+          128
+        ],
+        [
+          256
+        ],
+        [
+          128
+        ]
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1936,
+      "element_type": "s64",
+      "shapes": [
+        [
+          128
+        ],
+        [
+          256
+        ],
+        [
+          128
+        ],
+        [
+          256
+        ]
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1952,
+      "element_type": "s64",
+      "shapes": [
+        [
+          128
+        ],
+        [
+          256
+        ],
+        [
+          128
+        ],
+        [
+          256
+        ]
+      ]
     }
   ],
   "assumptions": {
     "duplicate_tma_store_benign": true,
     "representative_election": true,
     "clc_always_fails": true
-  }
+  },
+  "pointer_arrays": [
+    {
+      "parameter": 0,
+      "offset": 1192,
+      "entries": [
+        {
+          "object": "mainloop.ptr_A.g0"
+        },
+        {
+          "object": "mainloop.ptr_A.g1"
+        },
+        {
+          "object": "mainloop.ptr_A.g2"
+        },
+        {
+          "object": "mainloop.ptr_A.g3"
+        }
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1208,
+      "entries": [
+        {
+          "object": "mainloop.ptr_B.g0"
+        },
+        {
+          "object": "mainloop.ptr_B.g1"
+        },
+        {
+          "object": "mainloop.ptr_B.g2"
+        },
+        {
+          "object": "mainloop.ptr_B.g3"
+        }
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1224,
+      "entries": [
+        {
+          "object": "mainloop.ptr_SFA.g0"
+        },
+        {
+          "object": "mainloop.ptr_SFA.g1"
+        },
+        {
+          "object": "mainloop.ptr_SFA.g2"
+        },
+        {
+          "object": "mainloop.ptr_SFA.g3"
+        }
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1240,
+      "entries": [
+        {
+          "object": "mainloop.ptr_SFB.g0"
+        },
+        {
+          "object": "mainloop.ptr_SFB.g1"
+        },
+        {
+          "object": "mainloop.ptr_SFB.g2"
+        },
+        {
+          "object": "mainloop.ptr_SFB.g3"
+        }
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1928,
+      "entries": [
+        {
+          "object": "epilogue.ptr_C.g0"
+        },
+        {
+          "object": "epilogue.ptr_C.g1"
+        },
+        {
+          "object": "epilogue.ptr_C.g2"
+        },
+        {
+          "object": "epilogue.ptr_C.g3"
+        }
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1944,
+      "entries": [
+        {
+          "object": "epilogue.ptr_D.g0"
+        },
+        {
+          "object": "epilogue.ptr_D.g1"
+        },
+        {
+          "object": "epilogue.ptr_D.g2"
+        },
+        {
+          "object": "epilogue.ptr_D.g3"
+        }
+      ]
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "offset": 128,
+      "element_type": "e4m3",
+      "global_shape": [
+        1,
+        1
+      ],
+      "box_shape": [
+        64,
+        128
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "64B",
+      "interleave": "none",
+      "oob_fill": "zero",
+      "global_strides_bytes": [
+        0
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 384,
+      "element_type": "e4m3",
+      "global_shape": [
+        1,
+        1
+      ],
+      "box_shape": [
+        128,
+        32
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero",
+      "global_strides_bytes": [
+        0
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 640,
+      "element_type": "e4m3",
+      "global_shape": [
+        1,
+        1
+      ],
+      "box_shape": [
+        64,
+        128
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "64B",
+      "interleave": "none",
+      "oob_fill": "zero",
+      "global_strides_bytes": [
+        0
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 896,
+      "element_type": "e4m3",
+      "global_shape": [
+        1,
+        1
+      ],
+      "box_shape": [
+        128,
+        32
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero",
+      "global_strides_bytes": [
+        0
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1408,
+      "element_type": "f16",
+      "global_shape": [
+        64,
+        32
+      ],
+      "box_shape": [
+        64,
+        32
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero",
+      "global_strides_bytes": [
+        0
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1664,
+      "element_type": "f16",
+      "global_shape": [
+        64,
+        32
+      ],
+      "box_shape": [
+        64,
+        32
+      ],
+      "element_strides": [
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero",
+      "global_strides_bytes": [
+        0
+      ]
+    }
+  ]
 }

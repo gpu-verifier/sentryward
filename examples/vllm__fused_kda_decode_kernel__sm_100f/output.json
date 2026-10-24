@@ -1,14 +1,4 @@
 {
-  "address_model": {
-    "address_invariants": [],
-    "kind": "symbolic",
-    "layers": [
-      0,
-      2
-    ],
-    "solver": "z3",
-    "solver_timeout_ms": 100
-  },
   "assumption_dependent": true,
   "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
@@ -51,346 +41,82 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "not_run",
-    "memory": "incomplete",
-    "synchronization": "passed"
-  },
-  "counts": {
-    "edges": 13490712,
-    "events": 8955180,
-    "instructions": 3052236,
-    "memory_accesses": 1968588,
-    "threads": 3072
-  },
-  "details": {
-    "witness_path": "unsupported_memory_pair"
+    "synchronization": "failed"
   },
   "diagnostics": [
     {
-      "code": "dynamic_address_overlap_unresolved",
+      "code": "conflicting_accesses_unordered",
       "details": {
-        "witness_path": "unsupported_memory_pair"
+        "count": 1,
+        "internal_stage": "memory_check",
+        "witnesses_path": "races"
       },
-      "message": "symbolic offsets in global allocation cs_q may overlap under the address invariants; candidate valuation {opaque:[\"canonical_value_dag\",1,1,64]=0, opaque:[\"canonical_value_dag\",1,1,204]=0}",
-      "stage": "memory_check"
+      "message": "Conflicting accesses have no proven required ordering",
+      "stage": "synchronization"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
+  "evidence": {
+    "race_count": 1,
+    "race_samples_truncated": false,
+    "races": [
       {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "incomplete",
-            "synchronization": "passed"
+        "first": {
+          "access_index": 0,
+          "actor": 0,
+          "bytes": 4,
+          "effect_index": 0,
+          "endpoint": {
+            "address": 61,
+            "kind": "memory"
           },
-          "prerequisite_diagnostics": [
-            {
-              "code": "dynamic_address_overlap_unresolved",
-              "details": {
-                "witness_path": "unsupported_memory_pair"
-              },
-              "message": "symbolic offsets in global allocation cs_q may overlap under the address invariants; candidate valuation {opaque:[\"canonical_value_dag\",1,1,64]=0, opaque:[\"canonical_value_dag\",1,1,204]=0}",
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "unsupported"
+          "event": 474,
+          "instruction": 172,
+          "location": {
+            "column": 2,
+            "file": "corpus/vllm__fused_kda_decode_kernel__sm_100f.ptx",
+            "line": 1572
+          },
+          "mode": "write"
         },
-        "stage": "pipeline"
+        "overlap": "constant byte ranges intersect",
+        "region": {
+          "address_space": "shared",
+          "allocation": "cta:(0, 0, 0):shared:physical.shared.cta.0",
+          "bytes": 4,
+          "offset": 35332
+        },
+        "second": {
+          "access_index": 0,
+          "actor": 1,
+          "bytes": 4,
+          "effect_index": 0,
+          "endpoint": {
+            "address": 61,
+            "kind": "memory"
+          },
+          "event": 3569,
+          "instruction": 1243,
+          "location": {
+            "column": 2,
+            "file": "corpus/vllm__fused_kda_decode_kernel__sm_100f.ptx",
+            "line": 1546
+          },
+          "mode": "read"
+        }
       }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
-  },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [],
-      "first_unavailable_reason": "",
-      "queries": 125952,
-      "resolved": 125952,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": true
-    },
-    "cluster_completion_joins": 0,
-    "cta_count": 12,
-    "dependency_compression": {
-      "cp_async_wait": {
-        "consumers": 12288,
-        "emitted_references": 49152,
-        "original_references": 122880,
-        "prefix_effects": 0
-      }
-    },
-    "diagnostic_sample_count": 0,
-    "executed_records": 3421632,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 0,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
-    },
-    "implementation": "cpp",
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "x_q",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "x_k",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_1",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "x_v",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_2",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "w_q",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_3",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "w_k",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_4",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "w_v",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_5",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "bias_q",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_6",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "bias_k",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_7",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "bias_v",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_8",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "cs_q",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_9",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "cs_k",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_10",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "cs_v",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_11",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "a_log",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_12",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "g",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_13",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "dt_bias",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_14",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "beta",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_15",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "onorm_g",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_16",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "onorm_weight",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_17",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "state_indices",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_18",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "state",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_20",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "out",
-        "offset": 0,
-        "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_21",
-        "source": "declaration"
-      }
-    ],
-    "lowered_instruction_count": 3052236,
-    "reached_opcodes": {
-      "add.ftz.f32": 549516,
-      "add.s32": 228864,
-      "add.s64": 121404,
-      "and.b32": 30720,
-      "and.b64": 3072,
-      "bar.sync": 21504,
-      "bar.warp.sync": 12288,
-      "bra": 82572,
-      "cp.async.cg.shared.global": 49152,
-      "cp.async.commit_group": 12288,
-      "cp.async.wait_all": 3072,
-      "cp.async.wait_group": 9216,
-      "cvt.f32.bf16": 21516,
-      "cvt.rn.bf16.f32": 1536,
-      "cvt.s64.s32": 3072,
-      "cvt.u32.u64": 1536,
-      "cvt.u64.u32": 3084,
-      "cvta.to.global.u64": 36924,
-      "div.approx.ftz.f32": 1536,
-      "ex2.approx.ftz.f32": 9276,
-      "fma.rn.ftz.f32": 509952,
-      "griddepcontrol.launch_dependents": 3072,
-      "griddepcontrol.wait": 3072,
-      "ld.global.b16": 13824,
-      "ld.global.nc.b16": 7692,
-      "ld.global.nc.b32": 29232,
-      "ld.param.b32": 9216,
-      "ld.param.b64": 79872,
-      "ld.shared.b32": 73968,
-      "ld.shared.v4.b32": 58368,
-      "mad.lo.s32": 3072,
-      "mad.lo.s64": 3084,
-      "mov.b32": 139392,
-      "mov.u32": 9216,
-      "mul.ftz.f32": 374844,
-      "mul.lo.s32": 1536,
-      "mul.lo.s64": 6144,
-      "mul.wide.u32": 36912,
-      "rcp.approx.ftz.f32": 7692,
-      "ret": 3072,
-      "rsqrt.approx.ftz.f32": 4608,
-      "setp.eq.b64": 7680,
-      "setp.gt.u32": 22272,
-      "setp.lt.u32": 49152,
-      "setp.ne.b32": 33024,
-      "shfl.sync.bfly.b32": 535680,
-      "shfl.sync.idx.b32": 1536,
-      "shl.b32": 38400,
-      "shl.b64": 19980,
-      "shr.u32": 3072,
-      "st.global.b16": 15360,
-      "st.global.v4.b32": 49152,
-      "st.shared.b32": 11040,
-      "sub.ftz.f32": 49152,
-      "sub.s64": 6144
-    },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 0,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 3072,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 3052236,
-      "stored_bindings": 3052236
-    },
-    "source_edge_storage": {
-      "binding_templates": 3072,
-      "logical_edges": 3049164,
-      "stored_bindings": 3072
-    },
-    "thread_count": 3072,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": []
+    ]
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -398,6 +124,7 @@
       "__assertfail"
     ],
     "assertion_uses": 0,
+    "atomic_uses": 0,
     "bounded_loop_uses": 0,
     "clc_failure": true,
     "clc_uses": 0,
@@ -417,301 +144,556 @@
       "extent_bytes": "unbounded"
     },
     "representative_branch_uses": 0,
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "s32",
+          "object": "state_indices",
+          "property": "lower_bound",
+          "value": 0
+        },
+        {
+          "element_type": "s32",
+          "object": "state_indices",
+          "property": "upper_bound",
+          "value": 2
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "state_indices",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg18.0"
+        }
+      ],
+      "text": "Objects with tensor properties keep their elements within the stated properties and are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [],
     "trap_only_equality_assertions_hold": true
   },
-  "hb_queries": {
-    "memory": {
-      "algorithm": "not-built",
-      "batches": 0,
-      "cache_hits": 0,
-      "dfs_queries": 0,
-      "edge_visits": 0,
-      "filtered_queries": 0,
-      "queries": 0,
-      "shared_peak_index_bytes": 0
-    }
-  },
-  "implementation": "cpp",
-  "memory_analysis": {
-    "address_candidates": 1558790,
+  "internal": {
     "address_model": {
-      "cache_hits": 0,
-      "ground_disjoint": 0,
-      "ground_overlap": 0,
-      "layer0_disjoint": 0,
-      "refined_pairs": 1,
-      "solver_queries": 1,
-      "solver_sat": 1,
-      "solver_unknown": 0,
-      "solver_unsat": 0
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
     },
-    "candidate_generation_fallback": false,
-    "exhaustive": false,
-    "family_analysis": {
-      "access_families": 1968588,
-      "affine_member_rows": 0,
-      "candidate_relations": 1558790,
-      "hb_frontier_pieces": 2103,
-      "hb_member_enumerations": 0,
-      "logical_accesses": 1968588
+    "counts": {
+      "edges": 1124226,
+      "events": 746265,
+      "instructions": 254353,
+      "memory_accesses": 164049,
+      "threads": 256
     },
-    "hb_algorithm": "member-relations",
-    "hb_batches": 2,
-    "hb_cache_hits": 0,
-    "hb_dfs_queries": 0,
-    "hb_edge_visits": 679750,
-    "hb_filtered_queries": 0,
-    "hb_peak_index_bytes": 0,
-    "hb_queries": 1558790,
-    "hb_query_seconds": 0.318504619,
-    "overlap_queries": 1,
-    "strategy": "conflict-family",
-    "unordered_candidates_examined": 1
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "failed",
+              "synchronization": "passed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "conflicting_accesses_unordered",
+                "details": {
+                  "count": 1,
+                  "witnesses_path": "races"
+                },
+                "message": "Conflicting accesses have no proven required ordering",
+                "stage": "memory_check"
+              }
+            ],
+            "prerequisite_result": "potential_race"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 12,
+      "dependency_compression": {
+        "cp_async_wait": {
+          "consumers": 1024,
+          "emitted_references": 4096,
+          "original_references": 10240,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "executed_records": 3421632,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 0,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "s32",
+              "object": "state_indices",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s32",
+              "object": "state_indices",
+              "property": "upper_bound",
+              "value": 2
+            }
+          ],
+          "regions": [
+            {
+              "allocation": "state_indices",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg18.0"
+            }
+          ],
+          "text": "Objects with tensor properties keep their elements within the stated properties and are not written during the analyzed execution."
+        },
+        "tensor_property_decisions": [],
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "x_q",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "x_k",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_1",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "x_v",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_2",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "w_q",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_3",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "w_k",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_4",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "w_v",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_5",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "bias_q",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_6",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "bias_k",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_7",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "bias_v",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_8",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "cs_q",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_9",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "cs_k",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_10",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "cs_v",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_11",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "a_log",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_12",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "g",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_13",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "dt_bias",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_14",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "beta",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_15",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "onorm_g",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_16",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "onorm_weight",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_17",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "state_indices",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_18",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "state",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_20",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "out",
+          "offset": 0,
+          "parameter": "_ZN59_GLOBAL__N__48d8bcc3_26_fused_kda_decode_kernel_cu_652fd05d35kda_decode_fusion_many_heads_kernelILb1ELb1ELi12ELi12ELb1ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb1ELb1ELb1ELb1ELi3ELi1EEEvPK13__nv_bfloat16S3_S3_PKfS5_S5_S5_S5_S5_PS1_S6_S6_S5_S3_S5_S3_S3_S5_PKiS8_PfS6_iiifffNS_16KdaDecodeStridesE_param_21",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 254353,
+      "reached_opcodes": {
+        "add.ftz.f32": 549516,
+        "add.s32": 228864,
+        "add.s64": 121404,
+        "and.b32": 30720,
+        "and.b64": 3072,
+        "bar.sync": 21504,
+        "bar.warp.sync": 12288,
+        "bra": 82572,
+        "cp.async.cg.shared.global": 49152,
+        "cp.async.commit_group": 12288,
+        "cp.async.wait_all": 3072,
+        "cp.async.wait_group": 9216,
+        "cvt.f32.bf16": 21516,
+        "cvt.rn.bf16.f32": 1536,
+        "cvt.s64.s32": 3072,
+        "cvt.u32.u64": 1536,
+        "cvt.u64.u32": 3084,
+        "cvta.to.global.u64": 36924,
+        "div.approx.ftz.f32": 1536,
+        "ex2.approx.ftz.f32": 9276,
+        "fma.rn.ftz.f32": 509952,
+        "griddepcontrol.launch_dependents": 3072,
+        "griddepcontrol.wait": 3072,
+        "ld.global.b16": 13824,
+        "ld.global.nc.b16": 7692,
+        "ld.global.nc.b32": 29232,
+        "ld.param.b32": 9216,
+        "ld.param.b64": 79872,
+        "ld.shared.b32": 73968,
+        "ld.shared.v4.b32": 58368,
+        "mad.lo.s32": 3072,
+        "mad.lo.s64": 3084,
+        "mov.b32": 139392,
+        "mov.u32": 9216,
+        "mul.ftz.f32": 374844,
+        "mul.lo.s32": 1536,
+        "mul.lo.s64": 6144,
+        "mul.wide.u32": 36912,
+        "rcp.approx.ftz.f32": 7692,
+        "ret": 3072,
+        "rsqrt.approx.ftz.f32": 4608,
+        "setp.eq.b64": 7680,
+        "setp.gt.u32": 22272,
+        "setp.lt.u32": 49152,
+        "setp.ne.b32": 33024,
+        "shfl.sync.bfly.b32": 535680,
+        "shfl.sync.idx.b32": 1536,
+        "shl.b32": 38400,
+        "shl.b64": 19980,
+        "shr.u32": 3072,
+        "st.global.b16": 15360,
+        "st.global.v4.b32": 49152,
+        "st.shared.b32": 11040,
+        "sub.ftz.f32": 49152,
+        "sub.s64": 6144
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 8,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 254353,
+        "stored_bindings": 17747
+      },
+      "source_edge_storage": {
+        "binding_templates": 256,
+        "logical_edges": 254097,
+        "stored_bindings": 256
+      },
+      "thread_count": 3072,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 1483,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 12554,
+        "affine_member_rows": 0,
+        "candidate_relations": 228,
+        "hb_frontier_pieces": 44,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 164049
+      },
+      "first_race_seconds": 0.061215063,
+      "hb_algorithm": "member-relations",
+      "hb_batches": 3,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 42262,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 1483,
+      "hb_query_seconds": 0.014107722,
+      "overlap_queries": 1,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 1
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 805.0,
+    "required_order_domains": 0,
+    "required_orders": 0,
+    "search_complete": false,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 15,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 35866,
+      "memory_binding_templates": 4400,
+      "memory_bindings": 56625,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 6976,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 0,
+      "thread_prefix_groups": 34639,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "stage": "memory_check",
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 12,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 3451188,
+      "path_entries": 113784,
+      "record_bindings": 133812,
+      "record_nodes": 81708,
+      "splits": 84,
+      "template_steps": 82764,
+      "thread_memberships": 3072,
+      "value_nodes": 102047
+    },
+    "thread_record_compression": {
+      "completed_ctas": 12,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 3421632,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "failed",
+              "synchronization": "passed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "conflicting_accesses_unordered",
+                "details": {
+                  "count": 1,
+                  "witnesses_path": "races"
+                },
+                "message": "Conflicting accesses have no proven required ordering",
+                "stage": "memory_check"
+              }
+            ],
+            "prerequisite_result": "potential_race",
+            "prerequisite_status": "potential_race"
+          },
+          "stage": "pipeline"
+        }
+      ],
+      "equivalence_check": "blocked",
+      "prerequisite_status": "potential_race",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      }
+    },
+    "value_ir_instance_count": 792808,
+    "value_ir_node_count": 25684,
+    "value_view_complete": true
   },
-  "memory_analysis_complete": false,
-  "mma_operand_ordering": {},
-  "mode": "verify",
-  "peak_footprint_mib": 16342.6875,
-  "peak_rss_mib": 16342.6875,
-  "pipeline_elapsed_seconds": 108.894441489,
-  "race_count": 0,
-  "race_samples_truncated": false,
-  "races": [],
-  "required_order_domains": 0,
-  "required_orders": 0,
-  "result": "unsupported",
+  "peak_rss_mib": 805.0,
+  "pipeline_elapsed_seconds": 3.212481306,
+  "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "search_complete": false,
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 0,
-    "binding_diagnostics": [],
-    "execution_cohorts": 180,
-    "mapping_complete": true,
-    "memory_binding_stored_rows": 679500,
-    "memory_binding_templates": 1,
-    "memory_bindings": 679500,
-    "memory_linking_templates_used": true,
-    "synchronization_groups": 83712,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 0,
-    "thread_prefix_groups": 4514556,
-    "value_diagnostic_count": 0,
-    "value_diagnostics": []
-  },
-  "source_violations": [],
-  "stage": "memory_check",
-  "synchronization_input": {
-    "compute_access_binding": "after_happens_before",
-    "kind": "ordering_endpoints",
-    "memory_address_payloads": false
-  },
-  "template_execution": {
-    "completed_ctas": 12,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 3451188,
-    "path_entries": 785124,
-    "record_bindings": 524328,
-    "record_nodes": 462792,
-    "splits": 636,
-    "template_steps": 466452,
-    "thread_memberships": 3072,
-    "value_nodes": 488399
-  },
-  "thread_record_compression": {
-    "completed_ctas": 12,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 3421632,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "unresolved_count": 1,
-  "unsupported_memory_pair": {
-    "first": {
-      "access_index": 0,
-      "actor": 0,
-      "bytes": 2,
-      "effect_index": 0,
-      "endpoint": {
-        "address": 14,
-        "address_space": "global",
-        "allocation": "cs_q",
-        "expression": {
-          "address": {
-            "base": {
-              "identity": "cs_q",
-              "space": "global"
-            },
-            "offset": {
-              "operator": "opaque",
-              "provenance": [
-                "canonical_value_dag",
-                1,
-                1,
-                64
-              ]
-            },
-            "view": null
-          },
-          "byte_count": 2,
-          "value_dag_reference": {
-            "address": {
-              "base": {
-                "identity": "cs_q",
-                "space": "global"
-              },
-              "offset": {
-                "instance": 0,
-                "memory_node": 14219,
-                "operator": "value_dag_ref"
-              },
-              "view": null
-            },
-            "byte_count": 2
-          }
-        },
-        "kind": "memory"
-      },
-      "event": 78,
-      "instruction": 30,
-      "location": {
-        "column": 2,
-        "file": "corpus/vllm__fused_kda_decode_kernel__sm_100f.ptx",
-        "line": 1344
-      },
-      "mode": "write"
-    },
-    "reason": "symbolic offsets in global allocation cs_q may overlap under the address invariants; candidate valuation {opaque:[\"canonical_value_dag\",1,1,64]=0, opaque:[\"canonical_value_dag\",1,1,204]=0}",
-    "second": {
-      "access_index": 0,
-      "actor": 1,
-      "bytes": 2,
-      "effect_index": 0,
-      "endpoint": {
-        "address": 134,
-        "address_space": "global",
-        "allocation": "cs_q",
-        "expression": {
-          "address": {
-            "base": {
-              "identity": "cs_q",
-              "space": "global"
-            },
-            "offset": {
-              "operator": "opaque",
-              "provenance": [
-                "canonical_value_dag",
-                1,
-                1,
-                204
-              ]
-            },
-            "view": null
-          },
-          "byte_count": 2,
-          "value_dag_reference": {
-            "address": {
-              "base": {
-                "identity": "cs_q",
-                "space": "global"
-              },
-              "offset": {
-                "instance": 0,
-                "memory_node": 14217,
-                "operator": "value_dag_ref"
-              },
-              "view": null
-            },
-            "byte_count": 2
-          }
-        },
-        "kind": "memory"
-      },
-      "event": 3305,
-      "instruction": 1142,
-      "location": {
-        "column": 2,
-        "file": "corpus/vllm__fused_kda_decode_kernel__sm_100f.ptx",
-        "line": 1277
-      },
-      "mode": "read"
-    }
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "incomplete",
-            "synchronization": "passed"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "dynamic_address_overlap_unresolved",
-              "details": {
-                "witness_path": "unsupported_memory_pair"
-              },
-              "message": "symbolic offsets in global allocation cs_q may overlap under the address invariants; candidate valuation {opaque:[\"canonical_value_dag\",1,1,64]=0, opaque:[\"canonical_value_dag\",1,1,204]=0}",
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "unsupported",
-          "prerequisite_status": "memory_analysis_inconclusive"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "memory_analysis_inconclusive",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    }
-  },
-  "value_ir_instance_count": 9038988,
-  "value_ir_node_count": 3300960,
-  "value_view_complete": true,
   "verification_limitations": [],
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.316
 }

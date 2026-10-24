@@ -1,0 +1,307 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:q": "q",
+      "6:global1:k": "k",
+      "6:global1:v": "v",
+      "6:global11:q2k_indices": "q2k_indices",
+      "6:global7:q2k_num": "q2k_num"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          64,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global1:k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2048,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global1:v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2048,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global11:q2k_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1,
+          32
+        ],
+        "source_strides_bytes": [
+          128,
+          128,
+          4
+        ],
+        "target_strides_bytes": [
+          128,
+          128,
+          4
+        ]
+      },
+      "6:global7:q2k_num": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1
+        ],
+        "source_strides_bytes": [
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          4,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:q": "q",
+      "6:global1:k": "k",
+      "6:global1:v": "v",
+      "6:global11:q2k_indices": "q2k_indices",
+      "6:global7:q2k_num": "q2k_num"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          64,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global1:k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2048,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global1:v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2048,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global11:q2k_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1,
+          32
+        ],
+        "source_strides_bytes": [
+          128,
+          128,
+          4
+        ],
+        "target_strides_bytes": [
+          128,
+          128,
+          4
+        ]
+      },
+      "6:global7:q2k_num": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1
+        ],
+        "source_strides_bytes": [
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          4,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global3:out",
+    "right_allocation": "6:global3:out",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      1,
+      64,
+      1,
+      128
+    ],
+    "left_strides_bytes": [
+      16384,
+      256,
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      16384,
+      256,
+      256,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "q",
+        "allocation": "6:global1:q",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "k",
+        "allocation": "6:global1:k",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "v",
+        "allocation": "6:global1:v",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "q2k_indices",
+        "allocation": "6:global11:q2k_indices",
+        "dtype": "int32"
+      },
+      {
+        "name": "q2k_num",
+        "allocation": "6:global7:q2k_num",
+        "dtype": "int32"
+      },
+      {
+        "name": "scale_log2",
+        "parameter": 14
+      }
+    ]
+  },
+  "provenance": {
+    "source": "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_vsa/cake_vsa_blk64_persistent_ws_m64n256_sm_100a.cu",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_vsa/cake_vsa_blk64_persistent_ws_m64n256_sm_100a.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_vsa/cake_vsa_blk64_persistent_ws_m64n256_host.cpp",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/cake_vsa.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/attention/test_cake_vsa.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/attention/test_cake_vsa_planning.py"
+    ],
+    "scope": "M=sequence_q=64, H=1, MB=1, total_tiles=tiles_per_cta=1, grid 1 (kept); topk=max_kv_blocks=32 and N=2048 (NB=32) from the upstream ws-profile tests; q2k_num=[28] as an M1 shape array (routes to this kernel: count%4==0, 28 > 24); q2k_indices bounds [0,31]; return_lse=0 (lse not written); kv_block_lens never loaded.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [
+      {
+        "parameter": 6,
+        "offset": 0,
+        "element_type": "s32",
+        "shapes": [
+          [
+            28
+          ]
+        ]
+      }
+    ],
+    "optimized_input_sha256": "6dff21fffb270aee4d9a45056d58edf113870f501872abf83f8a0e30c623ae15",
+    "ptx_sha256": "aa68959bef2ef69d669d823b97ddb358afdb46191e3fc433f78052774c5438d2"
+  }
+}

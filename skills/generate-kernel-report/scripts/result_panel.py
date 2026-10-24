@@ -31,10 +31,12 @@ def render(document):
         names = ('Synchronization', 'Memory', 'Equivalence')
         values = {'passed': 'Passed', 'failed': 'Failed', 'not_run': 'Not run', 'not_requested': 'Not requested', 'incomplete': 'Incomplete'}
         for name, value in zip(names, match.groups()):
+            if value is None:
+                continue
             raw = value[len('<code>'):-len('</code>')]
             outcomes.append('**' + name + ':** ' + values.get(raw, value))
         return ' · '.join(outcomes) + '\n\n'
-    finding = re.sub(r'\*\*Checks:\*\* Synchronization (<code>[^<]+</code>) · Memory (<code>[^<]+</code>) · Equivalence (<code>[^<]+</code>)\.\n\n', checks, finding)
+    finding = re.sub(r'\*\*Checks:\*\* Synchronization (<code>[^<]+</code>)(?: · Memory (<code>[^<]+</code>))? · Equivalence (<code>[^<]+</code>)\.\n\n', checks, finding)
 
     # Plots show operation families and physical locations. Full opcode
     # suffixes remain in the source excerpts and original records.

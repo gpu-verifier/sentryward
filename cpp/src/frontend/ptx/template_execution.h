@@ -250,8 +250,14 @@ struct TemplateArena {
       std::optional<std::span<const std::uint32_t>> registers = {}) {
     if (poll) poll();
     // Recomputable concrete values are bounded independently of trace length.
+    // Eviction keeps the 4096 newest non-reused values plus the reused ones
+    // (at most 4096), so it can leave up to 8192 entries; it runs only above
+    // 8192 + 2048, so at least 2048 insertions separate two scans (amortized
+    // O(1) per insertion instead of a full scan on every Read once a cache
+    // holds its reused values). The cache is a memo of pure values, so
+    // the policy changes no result.
     auto& cache=caches.at(thread);
-    if (cache.size() > 8192) {
+    if (cache.size() > 8192 + 2048) {
       std::vector<std::size_t> ids;
       ids.reserve(cache.size());
       for(const auto& [id,value]:cache) { (void)value; if(!reused_values.contains(id))ids.push_back(id); }
@@ -279,8 +285,9 @@ struct TemplateArena {
     }
     return record;
   }
+  // `path_id`: the executor's PathId of `path`, the sequence's path identity.
   InstructionSequence Expand(std::shared_ptr<TemplateArena> owner,
-      std::shared_ptr<const std::vector<std::size_t>> path,std::size_t thread) {
+      std::shared_ptr<const std::vector<std::size_t>> path,std::size_t thread,PathId path_id) {
     return InstructionSequence(path->size(),[owner,path,thread] {
       InstructionSequence::Storage result; result.reserve(path->size());
       for (auto id:*path) {
@@ -302,7 +309,7 @@ struct TemplateArena {
       return owner->records.at(path->at(index)).record;
     }, [owner,path,thread](std::size_t index) {
       return owner->Read(path->at(index), thread);
-    }, path.get(), [owner,path,thread](std::size_t index,std::span<const std::uint32_t> registers) {
+    }, path_id, [owner,path,thread](std::size_t index,std::span<const std::uint32_t> registers) {
       return owner->Read(path->at(index),thread,registers);
     }, [owner,path](std::size_t index,std::uint32_t reg)->std::optional<std::size_t> {
       for(const auto& [candidate,id]:owner->records.at(path->at(index)).bindings)

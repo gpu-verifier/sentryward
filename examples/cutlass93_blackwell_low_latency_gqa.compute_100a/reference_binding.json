@@ -1,0 +1,245 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:q": "q",
+      "6:global1:k": "k",
+      "6:global1:v": "v",
+      "6:global7:seq_len": "seq_len"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          64,
+          64
+        ],
+        "source_strides_bytes": [
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          128,
+          2
+        ]
+      },
+      "6:global1:k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2048,
+          8,
+          64
+        ],
+        "source_strides_bytes": [
+          1024,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          128,
+          2
+        ]
+      },
+      "6:global1:v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2048,
+          8,
+          64
+        ],
+        "source_strides_bytes": [
+          1024,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          128,
+          2
+        ]
+      },
+      "6:global7:seq_len": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:q": "q",
+      "6:global1:k": "k",
+      "6:global1:v": "v",
+      "6:global7:seq_len": "seq_len"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          64,
+          64
+        ],
+        "source_strides_bytes": [
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          128,
+          2
+        ]
+      },
+      "6:global1:k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2048,
+          8,
+          64
+        ],
+        "source_strides_bytes": [
+          1024,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          128,
+          2
+        ]
+      },
+      "6:global1:v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2048,
+          8,
+          64
+        ],
+        "source_strides_bytes": [
+          1024,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          128,
+          2
+        ]
+      },
+      "6:global7:seq_len": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:o",
+    "right_allocation": "6:global1:o",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      64,
+      64
+    ],
+    "left_strides_bytes": [
+      128,
+      2
+    ],
+    "right_strides_bytes": [
+      128,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "q",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:q"
+      },
+      {
+        "name": "k",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:k"
+      },
+      {
+        "name": "v",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:v"
+      },
+      {
+        "name": "seq_len",
+        "dtype": "int32",
+        "allocation": "6:global7:seq_len"
+      },
+      {
+        "name": "scale_log2",
+        "parameter": 11
+      },
+      {
+        "name": "sliding_window_size",
+        "parameter": 12
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/cutlass93_blackwell_low_latency_gqa.compute_100a.ptx",
+    "optimized_input": "examples/cutlass93_blackwell_low_latency_gqa.compute_100a/input.json",
+    "optimized_input_sha256": "40387b8daf36dd2a7a97475493e0a9970d2ed195b16412fd72f30025f94aed09",
+    "ptx_sha256": "40a32daceaa09007802fd31e813f8a6d126d5cd864c474b61ff38a4651713a6d",
+    "upstream": [
+      "https://github.com/NVIDIA/cutlass/blob/e64a9136dd929639e5f7c969fe5af3bf7415cd4f/examples/93_blackwell_low_latency_gqa/tgv_gqa.cuh",
+      "https://github.com/NVIDIA/cutlass/blob/e64a9136dd929639e5f7c969fe5af3bf7415cd4f/examples/93_blackwell_low_latency_gqa/tgv_gqa.cu"
+    ],
+    "semantics": "ideal_real; fixed saved configuration; reference written from the pinned upstream source (see NOTES.md); all semantic output tensors",
+    "scope": "kvH=8 qHLocal=8 qL=1 kvL=2048 dH=64 BS=1, seq_lens[0]=2048 (shape_arrays), sliding window 0, no sinks",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [
+      {
+        "parameter": 5,
+        "offset": 8,
+        "element_type": "s32",
+        "shapes": [
+          [
+            2048
+          ]
+        ]
+      }
+    ]
+  }
+}

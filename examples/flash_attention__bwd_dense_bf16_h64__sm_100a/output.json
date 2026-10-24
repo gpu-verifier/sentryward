@@ -1,14 +1,4 @@
 {
-  "address_model": {
-    "address_invariants": [],
-    "kind": "symbolic",
-    "layers": [
-      0,
-      2
-    ],
-    "solver": "z3",
-    "solver_timeout_ms": 100
-  },
   "assumption_dependent": true,
   "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
@@ -51,321 +41,34 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "incomplete",
-    "memory": "passed",
     "synchronization": "passed"
-  },
-  "counts": {
-    "edges": 5116122,
-    "events": 1886780,
-    "instructions": 373996,
-    "memory_accesses": 1248130,
-    "threads": 1024
   },
   "diagnostics": [
     {
       "code": "atomic_add_value_semantics_unsupported",
-      "stage": "value_lowering"
+      "details": {
+        "internal_stage": "value_lowering"
+      },
+      "message": "Atomic add numerical semantics are unsupported",
+      "stage": "equivalence"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "incomplete",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "atomic_add_value_semantics_unsupported",
-        "stage": "value_lowering"
-      }
-    ],
-    "expression_diagnostic": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "atomic_add_value_semantics_unsupported",
-          "message": "Atomic add numerical semantics are unsupported",
-          "stage": "value_lowering"
-        }
-      ],
-      "line": 2842,
-      "result": "unsupported",
-      "scope": {
-        "operation": "expression_diagnostic"
-      },
-      "serialization": {
-        "action_patterns": 0,
-        "binding_patterns": 0,
-        "domain_refinements": 0,
-        "elapsed_seconds": 4.828e-05,
-        "event_families": 0,
-        "expanded_event_records": 0,
-        "largest_batch_members": 0,
-        "logical_actions": 0,
-        "logical_events": 0,
-        "peak_rss_mib_at_completion": 1104.06640625,
-        "reachability_queries": 0,
-        "relations": 0,
-        "rss_mib_at_completion": 996.3359375,
-        "scheduled_batches": 0,
-        "singleton_batches": 0,
-        "value_families": 0
-      },
-      "stage": "value_lowering"
-    },
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    },
-    "stage": "value_lowering"
-  },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [
-        {
-          "code": "atomic_add_value_semantics_unsupported",
-          "details": {
-            "cta": 0,
-            "instruction": "cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f32 [%rd480], [%r1343], %r1344;",
-            "instruction_index": 2200,
-            "location": {
-              "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
-              "line": 2842
-            },
-            "occurrence": 0,
-            "thread": 0
-          },
-          "message": "Atomic add numerical semantics are unsupported",
-          "stage": "value_lowering"
-        }
-      ],
-      "first_unavailable_reason": "",
-      "queries": 0,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": false
-    },
-    "cluster_completion_joins": 0,
-    "cta_count": 2,
-    "dependency_compression": {
-      "bulk_read_wait": {
-        "consumers": 576,
-        "emitted_references": 8,
-        "original_references": 28,
-        "prefix_effects": 0
-      },
-      "tcgen_commit": {
-        "consumers": 30,
-        "emitted_references": 186,
-        "original_references": 1160,
-        "prefix_effects": 30
-      },
-      "tcgen_load_wait": {
-        "consumers": 4608,
-        "emitted_references": 6144,
-        "original_references": 26624,
-        "prefix_effects": 0
-      },
-      "tcgen_store_wait": {
-        "consumers": 2048,
-        "emitted_references": 4096,
-        "original_references": 10240,
-        "prefix_effects": 0
-      }
-    },
-    "diagnostic_sample_count": 0,
-    "discharged_codes": [
-      "mma_memory_effect_refinement",
-      "tcgen_pipeline_effect_refinement",
-      "tcgen_commit_notification_order_refinement"
-    ],
-    "executed_records": 1034464,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 8704,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
-    },
-    "implementation": "cpp",
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "LSE",
-        "offset": 0,
-        "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_sm100FlashAttentionBackwardSm100_object_at__tensor0000o11101213_None_tensor0000o11101213_None_tensor0000o11101213_tensorptrf32gmemalign16o1i6_0_param_3",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "dPsum",
-        "offset": 0,
-        "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_sm100FlashAttentionBackwardSm100_object_at__tensor0000o11101213_None_tensor0000o11101213_None_tensor0000o11101213_tensorptrf32gmemalign16o1i6_0_param_4",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "dV",
-        "offset": 0,
-        "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_sm100FlashAttentionBackwardSm100_object_at__tensor0000o11101213_None_tensor0000o11101213_None_tensor0000o11101213_tensorptrf32gmemalign16o1i6_0_param_6",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "dK",
-        "offset": 0,
-        "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_sm100FlashAttentionBackwardSm100_object_at__tensor0000o11101213_None_tensor0000o11101213_None_tensor0000o11101213_tensorptrf32gmemalign16o1i6_0_param_7",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "dQaccum",
-        "offset": 0,
-        "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_sm100FlashAttentionBackwardSm100_object_at__tensor0000o11101213_None_tensor0000o11101213_None_tensor0000o11101213_tensorptrf32gmemalign16o1i6_0_param_8",
-        "source": "declaration"
-      }
-    ],
-    "lowered_instruction_count": 373996,
-    "mma_refinement": {
-      "blocked": [],
-      "discharged": 128
-    },
-    "reached_opcodes": {
-      "add.s32": 61156,
-      "add.s64": 1540,
-      "add.u32": 3328,
-      "and.b32": 29312,
-      "and.pred": 896,
-      "bar.arrive": 1024,
-      "bar.sync": 16512,
-      "bar.warp.sync": 1536,
-      "bra": 32896,
-      "bra.uni": 64,
-      "cp.async.bulk.commit_group": 256,
-      "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes": 8,
-      "cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.L2::cache_hint": 256,
-      "cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.L2::cache_hint": 12,
-      "cp.async.bulk.wait_group.read": 576,
-      "cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f32": 8,
-      "cvt.rn.bf16x2.f32": 81920,
-      "cvt.u64.u32": 704,
-      "cvta.param.u64": 280,
-      "elect.sync": 8704,
-      "ex2.approx.ftz.f32": 65536,
-      "fence.mbarrier_init.release.cluster": 6144,
-      "fence.proxy.async.shared::cta": 5120,
-      "fma.rn.f32x2": 32768,
-      "ld.param.b32": 3072,
-      "ld.param.b64": 9216,
-      "ld.shared.b32": 64,
-      "ld.shared.v2.b64": 16384,
-      "ld.shared.v4.b32": 16384,
-      "mad.lo.s32": 2048,
-      "mad.lo.s64": 384,
-      "mapa.shared::cluster.u32": 70,
-      "mbarrier.arrive.expect_tx.shared.b64": 16,
-      "mbarrier.arrive.shared.b64": 176,
-      "mbarrier.init.shared.b64": 48,
-      "mbarrier.try_wait.parity.shared.b64": 8448,
-      "min.s32": 512,
-      "mov.b16": 8,
-      "mov.b32": 12064,
-      "mov.b64": 275984,
-      "mov.pred": 32,
-      "mov.u32": 11268,
-      "mul.lo.s64": 384,
-      "mul.rn.f32x2": 40960,
-      "mul.wide.s32": 512,
-      "neg.f32": 65536,
-      "neg.s32": 896,
-      "not.pred": 8192,
-      "or.b32": 9024,
-      "or.b64": 64,
-      "prefetch.tensormap": 12,
-      "ret": 1024,
-      "selp.b32": 3328,
-      "selp.b64": 32768,
-      "setmaxnreg.dec.sync.aligned.u32": 256,
-      "setmaxnreg.inc.sync.aligned.u32": 768,
-      "setp.eq.b32": 2240,
-      "setp.gt.s32": 896,
-      "setp.gt.u32": 2048,
-      "setp.lt.s32": 1920,
-      "setp.ne.b32": 27840,
-      "shfl.sync.idx.b32": 4352,
-      "shl.b32": 10760,
-      "shl.b64": 640,
-      "shr.s32": 2048,
-      "shr.u32": 20096,
-      "st.shared.v4.b32": 20480,
-      "sub.rn.f32x2": 32768,
-      "sub.s32": 3328,
-      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 64,
-      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 30,
-      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 64,
-      "tcgen05.ld.sync.aligned.32x32b.x32.b32": 6144,
-      "tcgen05.mma.cta_group::1.kind::f16": 128,
-      "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 64,
-      "tcgen05.st.sync.aligned.32x32b.x16.b32": 4096,
-      "tcgen05.wait::ld.sync.aligned": 4608,
-      "tcgen05.wait::st.sync.aligned": 2048,
-      "xor.b32": 17344
-    },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 0,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 62,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 373996,
-      "stored_bindings": 32638
-    },
-    "source_edge_storage": {
-      "binding_templates": 1668,
-      "logical_edges": 372972,
-      "stored_bindings": 1668
-    },
-    "tcgen_history_refinement": {
-      "blocked": [],
-      "notifications": 30,
-      "operations": 128
-    },
-    "thread_count": 1024,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": []
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -373,6 +76,7 @@
       "__assertfail"
     ],
     "assertion_uses": 0,
+    "atomic_uses": 0,
     "bounded_loop_uses": 0,
     "clc_failure": true,
     "clc_uses": 0,
@@ -394,204 +98,485 @@
     "representative_branch_uses": 0,
     "trap_only_equality_assertions_hold": true
   },
-  "hb_queries": {
-    "memory": {
-      "algorithm": "event-family-relations",
-      "batches": 123,
-      "cache_hits": 1,
-      "dfs_queries": 0,
-      "edge_visits": 403610916,
-      "filtered_queries": 1730912,
-      "queries": 8023458,
-      "shared_peak_index_bytes": 16777216
-    },
-    "required_orders": {
-      "algorithm": "member-relations",
-      "batches": 13,
-      "edge_visits": 6020785,
-      "member_enumerations": 0,
-      "request_construction": {
-        "concrete_pair_materializations": 0,
-        "endpoint_reads": 35264,
-        "family_requests": 2176,
-        "logical_orders": 342016,
-        "owner_bindings": 21376,
-        "stored_orders": 10688
-      }
-    }
-  },
-  "implementation": "cpp",
-  "memory_analysis": {
-    "address_candidates": 8023458,
+  "internal": {
     "address_model": {
-      "cache_hits": 0,
-      "ground_disjoint": 0,
-      "ground_overlap": 0,
-      "layer0_disjoint": 0,
-      "refined_pairs": 0,
-      "solver_queries": 0,
-      "solver_sat": 0,
-      "solver_unknown": 0,
-      "solver_unsat": 0
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
     },
-    "candidate_generation_fallback": false,
-    "exhaustive": false,
-    "hb_algorithm": "event-family-relations",
-    "hb_batches": 123,
-    "hb_cache_hits": 1,
-    "hb_dfs_queries": 0,
-    "hb_edge_visits": 403610916,
-    "hb_filtered_queries": 1730912,
-    "hb_peak_index_bytes": 16777216,
-    "hb_queries": 8023458,
-    "hb_query_seconds": 56.22078727099999,
-    "overlap_queries": 1413120,
-    "strategy": "conflict-first",
-    "unordered_candidates_examined": 1413120
+    "counts": {
+      "edges": 4927706,
+      "events": 1886780,
+      "instructions": 373996,
+      "memory_accesses": 1248130,
+      "threads": 1024
+    },
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "atomic_add_value_semantics_unsupported",
+          "message": "Atomic add numerical semantics are unsupported",
+          "stage": "value_lowering"
+        }
+      ],
+      "expression_diagnostic": {
+        "diagnostics": [
+          {
+            "code": "atomic_add_value_semantics_unsupported",
+            "message": "Atomic add numerical semantics are unsupported",
+            "stage": "value_lowering"
+          }
+        ],
+        "line": 2842,
+        "serialization": {
+          "action_patterns": 0,
+          "binding_patterns": 0,
+          "domain_refinements": 0,
+          "elapsed_seconds": 5.248e-05,
+          "event_families": 0,
+          "expanded_event_records": 0,
+          "largest_batch_members": 0,
+          "logical_actions": 0,
+          "logical_events": 0,
+          "peak_rss_mib_at_completion": 1037.88671875,
+          "reachability_queries": 0,
+          "relations": 0,
+          "rss_mib_at_completion": 905.890625,
+          "scheduled_batches": 0,
+          "singleton_batches": 0,
+          "value_families": 0
+        },
+        "stage": "value_lowering"
+      },
+      "stage": "value_lowering"
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [
+          {
+            "code": "atomic_add_value_semantics_unsupported",
+            "details": {
+              "cta": 0,
+              "instruction": "cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f32 [%rd480], [%r1343], %r1344;",
+              "instruction_index": 2200,
+              "location": {
+                "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
+                "line": 2842
+              },
+              "occurrence": 0,
+              "thread": 0
+            },
+            "message": "Atomic add numerical semantics are unsupported",
+            "stage": "value_lowering"
+          }
+        ],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": false
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 2,
+      "dependency_compression": {
+        "bulk_read_wait": {
+          "consumers": 576,
+          "emitted_references": 8,
+          "original_references": 28,
+          "prefix_effects": 0
+        },
+        "tcgen_commit": {
+          "consumers": 30,
+          "emitted_references": 186,
+          "original_references": 1160,
+          "prefix_effects": 30
+        },
+        "tcgen_load_wait": {
+          "consumers": 4608,
+          "emitted_references": 6144,
+          "original_references": 26624,
+          "prefix_effects": 0
+        },
+        "tcgen_store_wait": {
+          "consumers": 2048,
+          "emitted_references": 4096,
+          "original_references": 10240,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 1034464,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 8704,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "LSE",
+          "offset": 0,
+          "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_sm100FlashAttentionBackwardSm100_object_at__tensor0000o11101213_None_tensor0000o11101213_None_tensor0000o11101213_tensorptrf32gmemalign16o1i6_0_param_3",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "dPsum",
+          "offset": 0,
+          "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_sm100FlashAttentionBackwardSm100_object_at__tensor0000o11101213_None_tensor0000o11101213_None_tensor0000o11101213_tensorptrf32gmemalign16o1i6_0_param_4",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "dV",
+          "offset": 0,
+          "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_sm100FlashAttentionBackwardSm100_object_at__tensor0000o11101213_None_tensor0000o11101213_None_tensor0000o11101213_tensorptrf32gmemalign16o1i6_0_param_6",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "dK",
+          "offset": 0,
+          "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_sm100FlashAttentionBackwardSm100_object_at__tensor0000o11101213_None_tensor0000o11101213_None_tensor0000o11101213_tensorptrf32gmemalign16o1i6_0_param_7",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "dQaccum",
+          "offset": 0,
+          "parameter": "kernel_cutlass_kernel_flash_attncuteflash_bwd_sm100FlashAttentionBackwardSm100_object_at__tensor0000o11101213_None_tensor0000o11101213_None_tensor0000o11101213_tensorptrf32gmemalign16o1i6_0_param_8",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 373996,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 128
+      },
+      "reached_opcodes": {
+        "add.s32": 61156,
+        "add.s64": 1540,
+        "add.u32": 3328,
+        "and.b32": 29312,
+        "and.pred": 896,
+        "bar.arrive": 1024,
+        "bar.sync": 16512,
+        "bar.warp.sync": 1536,
+        "bra": 32896,
+        "bra.uni": 64,
+        "cp.async.bulk.commit_group": 256,
+        "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes": 8,
+        "cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.L2::cache_hint": 256,
+        "cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.L2::cache_hint": 12,
+        "cp.async.bulk.wait_group.read": 576,
+        "cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f32": 8,
+        "cvt.rn.bf16x2.f32": 81920,
+        "cvt.u64.u32": 704,
+        "cvta.param.u64": 280,
+        "elect.sync": 8704,
+        "ex2.approx.ftz.f32": 65536,
+        "fence.mbarrier_init.release.cluster": 6144,
+        "fence.proxy.async.shared::cta": 5120,
+        "fma.rn.f32x2": 32768,
+        "ld.param.b32": 3072,
+        "ld.param.b64": 9216,
+        "ld.shared.b32": 64,
+        "ld.shared.v2.b64": 16384,
+        "ld.shared.v4.b32": 16384,
+        "mad.lo.s32": 2048,
+        "mad.lo.s64": 384,
+        "mapa.shared::cluster.u32": 70,
+        "mbarrier.arrive.expect_tx.shared.b64": 16,
+        "mbarrier.arrive.shared.b64": 176,
+        "mbarrier.init.shared.b64": 48,
+        "mbarrier.try_wait.parity.shared.b64": 8448,
+        "min.s32": 512,
+        "mov.b16": 8,
+        "mov.b32": 12064,
+        "mov.b64": 275984,
+        "mov.pred": 32,
+        "mov.u32": 11268,
+        "mul.lo.s64": 384,
+        "mul.rn.f32x2": 40960,
+        "mul.wide.s32": 512,
+        "neg.f32": 65536,
+        "neg.s32": 896,
+        "not.pred": 8192,
+        "or.b32": 9024,
+        "or.b64": 64,
+        "prefetch.tensormap": 12,
+        "ret": 1024,
+        "selp.b32": 3328,
+        "selp.b64": 32768,
+        "setmaxnreg.dec.sync.aligned.u32": 256,
+        "setmaxnreg.inc.sync.aligned.u32": 768,
+        "setp.eq.b32": 2240,
+        "setp.gt.s32": 896,
+        "setp.gt.u32": 2048,
+        "setp.lt.s32": 1920,
+        "setp.ne.b32": 27840,
+        "shfl.sync.idx.b32": 4352,
+        "shl.b32": 10760,
+        "shl.b64": 640,
+        "shr.s32": 2048,
+        "shr.u32": 20096,
+        "st.shared.v4.b32": 20480,
+        "sub.rn.f32x2": 32768,
+        "sub.s32": 3328,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 64,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 30,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 64,
+        "tcgen05.ld.sync.aligned.32x32b.x32.b32": 6144,
+        "tcgen05.mma.cta_group::1.kind::f16": 128,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 64,
+        "tcgen05.st.sync.aligned.32x32b.x16.b32": 4096,
+        "tcgen05.wait::ld.sync.aligned": 4608,
+        "tcgen05.wait::st.sync.aligned": 2048,
+        "xor.b32": 17344
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 30,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 373996,
+        "stored_bindings": 25810
+      },
+      "source_edge_storage": {
+        "binding_templates": 1668,
+        "logical_edges": 372972,
+        "stored_bindings": 1668
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 30,
+        "operations": 128
+      },
+      "thread_count": 1024,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "event-family-relations",
+        "batches": 123,
+        "cache_hits": 1,
+        "dfs_queries": 0,
+        "edge_visits": 403242609,
+        "filtered_queries": 1825280,
+        "queries": 8023458,
+        "shared_peak_index_bytes": 16777216
+      },
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 9,
+        "edge_visits": 5908613,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 35264,
+          "family_requests": 1784,
+          "logical_orders": 342016,
+          "owner_bindings": 21376,
+          "stored_orders": 10688
+        }
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 8023458,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "hb_algorithm": "event-family-relations",
+      "hb_batches": 123,
+      "hb_cache_hits": 1,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 403242609,
+      "hb_filtered_queries": 1825280,
+      "hb_peak_index_bytes": 16777216,
+      "hb_queries": 8023458,
+      "hb_query_seconds": 71.914532538,
+      "overlap_queries": 1413120,
+      "strategy": "conflict-first",
+      "unordered_candidates_examined": 1413120
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 1028.7578125,
+    "required_order_domains": 10688,
+    "required_orders": 342016,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 1,
+      "binding_diagnostics": [
+        {
+          "code": "incomplete_value_semantics",
+          "message": "atomic_add_value_semantics_unsupported: Atomic add numerical semantics are unsupported"
+        }
+      ],
+      "execution_cohorts": 54,
+      "mapping_complete": false,
+      "memory_binding_stored_rows": 0,
+      "memory_binding_templates": 0,
+      "memory_bindings": 0,
+      "memory_linking_templates_used": false,
+      "synchronization_groups": 5426,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 322,
+      "thread_prefix_groups": 26760,
+      "value_diagnostic_count": 1,
+      "value_diagnostics": [
+        {
+          "code": "atomic_add_value_semantics_unsupported",
+          "line": 2842,
+          "message": "Atomic add numerical semantics are unsupported"
+        }
+      ]
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 2,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 1043136,
+      "path_entries": 20934,
+      "record_bindings": 19770,
+      "record_nodes": 11884,
+      "splits": 26,
+      "template_steps": 12310,
+      "thread_memberships": 1024,
+      "value_nodes": 11152
+    },
+    "thread_record_compression": {
+      "completed_ctas": 2,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 1034464,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "atomic_add_value_semantics_unsupported",
+          "message": "Atomic add numerical semantics are unsupported",
+          "stage": "value_lowering"
+        }
+      ],
+      "equivalence_check": "unsupported",
+      "line": 2842,
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      },
+      "serialization": {
+        "action_patterns": 0,
+        "binding_patterns": 0,
+        "domain_refinements": 0,
+        "elapsed_seconds": 5.248e-05,
+        "event_families": 0,
+        "expanded_event_records": 0,
+        "largest_batch_members": 0,
+        "logical_actions": 0,
+        "logical_events": 0,
+        "peak_rss_mib_at_completion": 1037.88671875,
+        "reachability_queries": 0,
+        "relations": 0,
+        "rss_mib_at_completion": 905.890625,
+        "scheduled_batches": 0,
+        "singleton_batches": 0,
+        "value_families": 0
+      },
+      "stage": "value_lowering"
+    },
+    "value_ir_instance_count": 337130,
+    "value_ir_node_count": 23254,
+    "value_view_complete": false,
+    "verification_elapsed_seconds": 84.235408265,
+    "verification_result": "race_free"
   },
-  "memory_analysis_complete": true,
-  "mma_operand_ordering": {},
-  "mode": "verify",
-  "peak_footprint_mib": 1104.46484375,
-  "peak_rss_mib": 1104.46484375,
-  "pipeline_elapsed_seconds": 71.680643552,
-  "race_count": 0,
-  "race_samples_truncated": false,
-  "races": [],
-  "required_order_domains": 10688,
-  "required_orders": 342016,
+  "peak_rss_mib": 1037.88671875,
+  "pipeline_elapsed_seconds": 84.445033207,
   "result": "unsupported",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "search_complete": true,
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 1,
-    "binding_diagnostics": [
-      {
-        "code": "incomplete_value_semantics",
-        "message": "atomic_add_value_semantics_unsupported: Atomic add numerical semantics are unsupported"
-      }
-    ],
-    "execution_cohorts": 54,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 5426,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 322,
-    "thread_prefix_groups": 26696,
-    "value_diagnostic_count": 1,
-    "value_diagnostics": [
-      {
-        "code": "atomic_add_value_semantics_unsupported",
-        "line": 2842,
-        "message": "Atomic add numerical semantics are unsupported"
-      }
-    ]
-  },
-  "source_violations": [],
-  "synchronization_input": {
-    "compute_access_binding": "after_happens_before",
-    "kind": "ordering_endpoints",
-    "memory_address_payloads": false
-  },
-  "template_execution": {
-    "completed_ctas": 2,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 1043136,
-    "path_entries": 20934,
-    "record_bindings": 19770,
-    "record_nodes": 11884,
-    "splits": 26,
-    "template_steps": 12310,
-    "thread_memberships": 1024,
-    "value_nodes": 11152
-  },
-  "thread_record_compression": {
-    "completed_ctas": 2,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 1034464,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "unresolved_count": 0,
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "atomic_add_value_semantics_unsupported",
-        "message": "Atomic add numerical semantics are unsupported",
-        "stage": "value_lowering"
-      }
-    ],
-    "equivalence_check": "unsupported",
-    "line": 2842,
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    },
-    "serialization": {
-      "action_patterns": 0,
-      "binding_patterns": 0,
-      "domain_refinements": 0,
-      "elapsed_seconds": 4.828e-05,
-      "event_families": 0,
-      "expanded_event_records": 0,
-      "largest_batch_members": 0,
-      "logical_actions": 0,
-      "logical_events": 0,
-      "peak_rss_mib_at_completion": 1104.06640625,
-      "reachability_queries": 0,
-      "relations": 0,
-      "rss_mib_at_completion": 996.3359375,
-      "scheduled_batches": 0,
-      "singleton_batches": 0,
-      "value_families": 0
-    },
-    "stage": "value_lowering"
-  },
-  "value_ir_instance_count": 335148,
-  "value_ir_node_count": 23176,
-  "value_view_complete": false,
-  "verification_elapsed_seconds": 71.474236352,
   "verification_limitations": [],
-  "verification_result": "race_free",
   "warning_count": 1396736,
   "warning_samples_truncated": true,
   "warnings": [
@@ -603,11 +588,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 516161,
-        "instruction": 103336,
+        "event": 156640,
+        "instruction": 32697,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -629,11 +614,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 520064,
-        "instruction": 103897,
+        "event": 281474,
+        "instruction": 50587,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -650,11 +635,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 516161,
-        "instruction": 103336,
+        "event": 156640,
+        "instruction": 32697,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -676,11 +661,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 523965,
-        "instruction": 104456,
+        "event": 285375,
+        "instruction": 51146,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -697,11 +682,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 520064,
-        "instruction": 103897,
+        "event": 281474,
+        "instruction": 50587,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -723,11 +708,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 523965,
-        "instruction": 104456,
+        "event": 285375,
+        "instruction": 51146,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -744,11 +729,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 516161,
-        "instruction": 103336,
+        "event": 156640,
+        "instruction": 32697,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -770,11 +755,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 527866,
-        "instruction": 105015,
+        "event": 289276,
+        "instruction": 51705,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -791,11 +776,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 520064,
-        "instruction": 103897,
+        "event": 281474,
+        "instruction": 50587,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -817,11 +802,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 527866,
-        "instruction": 105015,
+        "event": 289276,
+        "instruction": 51705,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -838,11 +823,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 523965,
-        "instruction": 104456,
+        "event": 285375,
+        "instruction": 51146,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -864,11 +849,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 527866,
-        "instruction": 105015,
+        "event": 289276,
+        "instruction": 51705,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -885,11 +870,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 516161,
-        "instruction": 103336,
+        "event": 156640,
+        "instruction": 32697,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -911,11 +896,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 531767,
-        "instruction": 105574,
+        "event": 293177,
+        "instruction": 52264,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -932,11 +917,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 520064,
-        "instruction": 103897,
+        "event": 281474,
+        "instruction": 50587,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -958,11 +943,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 531767,
-        "instruction": 105574,
+        "event": 293177,
+        "instruction": 52264,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -979,11 +964,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 523965,
-        "instruction": 104456,
+        "event": 285375,
+        "instruction": 51146,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1005,11 +990,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 531767,
-        "instruction": 105574,
+        "event": 293177,
+        "instruction": 52264,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1026,11 +1011,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 527866,
-        "instruction": 105015,
+        "event": 289276,
+        "instruction": 51705,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1052,11 +1037,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 531767,
-        "instruction": 105574,
+        "event": 293177,
+        "instruction": 52264,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1073,11 +1058,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 516161,
-        "instruction": 103336,
+        "event": 156640,
+        "instruction": 32697,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1099,11 +1084,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 535668,
-        "instruction": 106133,
+        "event": 297078,
+        "instruction": 52823,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1120,11 +1105,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 520064,
-        "instruction": 103897,
+        "event": 281474,
+        "instruction": 50587,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1146,11 +1131,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 535668,
-        "instruction": 106133,
+        "event": 297078,
+        "instruction": 52823,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1167,11 +1152,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 523965,
-        "instruction": 104456,
+        "event": 285375,
+        "instruction": 51146,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1193,11 +1178,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 535668,
-        "instruction": 106133,
+        "event": 297078,
+        "instruction": 52823,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1214,11 +1199,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 527866,
-        "instruction": 105015,
+        "event": 289276,
+        "instruction": 51705,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1240,11 +1225,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 535668,
-        "instruction": 106133,
+        "event": 297078,
+        "instruction": 52823,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1261,11 +1246,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 531767,
-        "instruction": 105574,
+        "event": 293177,
+        "instruction": 52264,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1287,11 +1272,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 535668,
-        "instruction": 106133,
+        "event": 297078,
+        "instruction": 52823,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1308,11 +1293,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 516161,
-        "instruction": 103336,
+        "event": 156640,
+        "instruction": 32697,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
@@ -1334,11 +1319,11 @@
         "bytes": 64,
         "effect_index": 1,
         "endpoint": {
-          "address": 58268,
+          "address": 34586,
           "kind": "memory"
         },
-        "event": 539569,
-        "instruction": 106692,
+        "event": 300979,
+        "instruction": 53382,
         "location": {
           "column": 2,
           "file": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",

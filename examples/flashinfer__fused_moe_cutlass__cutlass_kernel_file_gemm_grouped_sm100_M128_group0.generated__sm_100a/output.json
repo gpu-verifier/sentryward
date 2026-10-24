@@ -1,14 +1,4 @@
 {
-  "address_model": {
-    "address_invariants": [],
-    "kind": "symbolic",
-    "layers": [
-      0,
-      2
-    ],
-    "solver": "z3",
-    "solver_timeout_ms": 100
-  },
   "assumption_dependent": true,
   "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
@@ -51,410 +41,25 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "not_run",
-    "memory": "incomplete",
+    "equivalence": "passed",
     "synchronization": "passed"
   },
-  "counts": {
-    "edges": 3450212,
-    "events": 1532520,
-    "instructions": 423831,
-    "memory_accesses": 878500,
-    "threads": 384
-  },
-  "details": {
-    "witness_path": "unsupported_memory_pair"
-  },
-  "diagnostics": [
-    {
-      "code": "allocation_alias_relation_unknown",
-      "details": {
-        "witness_path": "unsupported_memory_pair"
-      },
-      "message": "allocation identity is unresolved between global tensor_map_target(input.arg0.1184+0) and global allocation mainloop.tensormaps",
-      "stage": "memory_check"
-    }
-  ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "incomplete",
-            "synchronization": "passed"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "allocation_alias_relation_unknown",
-              "details": {
-                "witness_path": "unsupported_memory_pair"
-              },
-              "message": "allocation identity is unresolved between global tensor_map_target(input.arg0.1184+0) and global allocation mainloop.tensormaps",
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "unsupported"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
-  },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [
-        {
-          "code": "unsupported_operation",
-          "details": {
-            "cta": 0,
-            "instruction": "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned [%rd358], [%r703], 128;",
-            "instruction_index": 2026,
-            "location": {
-              "file": "corpus/flashinfer__fused_moe_cutlass__cutlass_kernel_file_gemm_grouped_sm100_M128_group0.generated__sm_100a.ptx",
-              "line": 3162
-            },
-            "occurrence": 0,
-            "thread": 356
-          },
-          "message": "No value-IR model for 'tensormap' (including its memory effects/results)",
-          "stage": "value_lowering"
-        }
-      ],
-      "first_unavailable_reason": "memory occurrence has no value node",
-      "queries": 147456,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 147456,
-      "value_view_complete": false
-    },
-    "cluster_completion_joins": 0,
-    "cta_count": 1,
-    "dependency_compression": {
-      "bulk_read_wait": {
-        "consumers": 40,
-        "emitted_references": 0,
-        "original_references": 0,
-        "prefix_effects": 0
-      },
-      "tcgen_commit": {
-        "consumers": 124,
-        "emitted_references": 599,
-        "original_references": 22304,
-        "prefix_effects": 124
-      },
-      "tcgen_load_wait": {
-        "consumers": 4608,
-        "emitted_references": 9216,
-        "original_references": 170496,
-        "prefix_effects": 0
-      }
-    },
-    "diagnostic_sample_count": 0,
-    "discharged_codes": [
-      "mma_memory_effect_refinement",
-      "tcgen_pipeline_effect_refinement",
-      "tcgen_commit_notification_order_refinement"
-    ],
-    "executed_records": 2557247,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 9216,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 22240,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "shape_input_contract": {
-        "kind": "fixed_read_only",
-        "origin": "shape_arrays",
-        "regions": [
-          {
-            "allocation": "input.arg0.16",
-            "byte_offset": 0,
-            "bytes": 96,
-            "resource": "input.arg0.16"
-          },
-          {
-            "allocation": "input.arg0.1464",
-            "byte_offset": 0,
-            "bytes": 96,
-            "resource": "input.arg0.1464"
-          }
-        ],
-        "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
-      },
-      "trap_only_equality_assertions_hold": true
-    },
-    "implementation": "cpp",
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "input.arg0.16",
-        "offset": 16,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "shape_array"
-      },
-      {
-        "bytes": 8,
-        "object": "mainloop.tensormaps",
-        "offset": 1184,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "mainloop.ptr_A.array",
-        "offset": 1192,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "mainloop.dA.array",
-        "offset": 1200,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "mainloop.ptr_B.array",
-        "offset": 1208,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "mainloop.dB.array",
-        "offset": 1216,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "epilogue.ptr_C.array",
-        "offset": 1320,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "epilogue.dC.array",
-        "offset": 1328,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "epilogue.ptr_D.array",
-        "offset": 1336,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "epilogue.dD.array",
-        "offset": 1344,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "input.arg0.1464",
-        "offset": 1464,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "shape_array"
-      }
-    ],
-    "lowered_instruction_count": 423831,
-    "mma_refinement": {
-      "blocked": [],
-      "discharged": 352
-    },
-    "reached_opcodes": {
-      "add.s16": 2560,
-      "add.s32": 171565,
-      "add.s64": 67926,
-      "and.b16": 18464,
-      "and.b32": 13952,
-      "and.b64": 1512,
-      "and.pred": 21300,
-      "bar.arrive": 32,
-      "bar.sync": 896,
-      "bar.warp.sync": 1472,
-      "bfind.shiftamt.u32": 128,
-      "bra": 96009,
-      "bra.uni": 10080,
-      "brev.b32": 128,
-      "cp.async.bulk.commit_group": 40,
-      "cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 176,
-      "cp.async.bulk.wait_group.read": 40,
-      "cvt.rn.f16.f32": 147456,
-      "cvt.s16.s8": 18432,
-      "cvt.s64.s32": 5002,
-      "cvt.u16.u32": 256,
-      "cvt.u32.u16": 1312,
-      "cvt.u32.u64": 31880,
-      "cvt.u64.u16": 96,
-      "cvt.u64.u32": 64200,
-      "cvta.to.global.u64": 1920,
-      "div.s32": 64,
-      "div.u32": 1536,
-      "elect.sync": 22240,
-      "fence.mbarrier_init.release.cluster": 2304,
-      "fence.proxy.async.shared::cta": 8239,
-      "fence.proxy.tensormap::generic.acquire.gpu": 256,
-      "griddepcontrol.launch_dependents": 32,
-      "griddepcontrol.wait": 544,
-      "ld.global.b32": 12,
-      "ld.global.b64": 26236,
-      "ld.param.b32": 2976,
-      "ld.param.b64": 4064,
-      "ld.param.b8": 384,
-      "ld.param.v2.b32": 768,
-      "ld.param.v2.b64": 624,
-      "ld.shared.b16": 1152,
-      "ld.shared.b32": 31744,
-      "mad.lo.s32": 11791,
-      "mad.lo.s64": 41472,
-      "mapa.shared::cluster.u32": 12768,
-      "mbarrier.arrive.expect_tx.shared::cta.b64": 88,
-      "mbarrier.arrive.shared::cluster.b64": 12768,
-      "mbarrier.arrive.shared::cta.b64": 1288,
-      "mbarrier.init.shared::cta.b64": 64,
-      "mbarrier.try_wait.parity.shared::cta.b64": 30496,
-      "min.s32": 788,
-      "min.u32": 1152,
-      "mov.b16": 512,
-      "mov.b32": 329019,
-      "mov.b64": 6684,
-      "mov.pred": 4352,
-      "mov.s32": 22935,
-      "mov.u32": 6528,
-      "mul.f32": 147456,
-      "mul.hi.u16": 1280,
-      "mul.hi.u64": 788,
-      "mul.lo.s16": 1280,
-      "mul.lo.s32": 2336,
-      "mul.lo.s64": 384,
-      "mul.wide.s32": 16535,
-      "mul.wide.u32": 2064,
-      "not.b32": 1504,
-      "not.pred": 19584,
-      "or.b16": 129184,
-      "or.b32": 12336,
-      "or.b64": 10784,
-      "or.pred": 94208,
-      "rem.s32": 788,
-      "rem.u32": 32,
-      "ret": 384,
-      "selp.b16": 167560,
-      "selp.b32": 60500,
-      "selp.b64": 2580,
-      "setmaxnreg.dec.sync.aligned.u32": 256,
-      "setmaxnreg.inc.sync.aligned.u32": 128,
-      "setp.eq.b16": 19680,
-      "setp.eq.b32": 83698,
-      "setp.eq.b64": 10004,
-      "setp.ge.s32": 2432,
-      "setp.ge.u64": 1664,
-      "setp.gt.s16": 18432,
-      "setp.gt.s32": 2354,
-      "setp.gt.s64": 46080,
-      "setp.gt.u32": 2496,
-      "setp.le.s64": 55296,
-      "setp.lt.s32": 3872,
-      "setp.lt.s64": 13824,
-      "setp.lt.u32": 544,
-      "setp.lt.u64": 1792,
-      "setp.ne.b16": 1664,
-      "setp.ne.b32": 38699,
-      "setp.ne.b64": 1504,
-      "shfl.sync.idx.b32": 4736,
-      "shfl.sync.up.b32": 1280,
-      "shl.b32": 56604,
-      "shl.b64": 24744,
-      "shr.s64": 2304,
-      "shr.u16": 2560,
-      "shr.u32": 10048,
-      "shr.u64": 11412,
-      "st.b16": 147456,
-      "st.shared.b32": 355,
-      "st.shared.v2.b16": 40,
-      "st.shared.v2.b64": 80,
-      "sub.s16": 2560,
-      "sub.s32": 3540,
-      "sub.s64": 1632,
-      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 32,
-      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 36,
-      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 88,
-      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 32,
-      "tcgen05.ld.sync.aligned.16x256b.x4.b32": 9216,
-      "tcgen05.mma.cta_group::1.kind::f16": 352,
-      "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 32,
-      "tcgen05.wait::ld.sync.aligned": 4608,
-      "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned": 256,
-      "tensormap.replace.tile.global_address.shared::cta.b1024.b64": 8,
-      "tensormap.replace.tile.global_dim.shared::cta.b1024.b32": 40,
-      "tensormap.replace.tile.global_stride.shared::cta.b1024.b64": 32,
-      "vote.sync.ballot.b32": 128,
-      "xor.b32": 34336
-    },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 32768,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 66,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 423831,
-      "stored_bindings": 96032
-    },
-    "source_edge_storage": {
-      "binding_templates": 978,
-      "logical_edges": 423447,
-      "stored_bindings": 978
-    },
-    "tcgen_history_refinement": {
-      "blocked": [],
-      "notifications": 124,
-      "operations": 352
-    },
-    "thread_count": 384,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": []
+  "diagnostics": [],
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -462,6 +67,7 @@
       "__assertfail"
     ],
     "assertion_uses": 9216,
+    "atomic_uses": 0,
     "bounded_loop_uses": 0,
     "clc_failure": true,
     "clc_uses": 0,
@@ -476,6 +82,37 @@
     "isolated_launch": true,
     "noalias_unbounded": false,
     "opaque_compute_regions": [],
+    "pointer_array_contract": {
+      "kind": "fixed_read_only",
+      "origin": "pointer_arrays",
+      "regions": [
+        {
+          "allocation": "mainloop.ptr_A.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.1192"
+        },
+        {
+          "allocation": "mainloop.ptr_B.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.1208"
+        },
+        {
+          "allocation": "epilogue.ptr_C.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.1320"
+        },
+        {
+          "allocation": "epilogue.ptr_D.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.1336"
+        }
+      ],
+      "text": "Configured pointer-table entries retain their supplied objects and are not written during the analyzed execution."
+    },
     "pointer_contract": {
       "aliasing": "distinct_objects_noalias",
       "extent_bytes": "unbounded"
@@ -486,317 +123,1727 @@
       "origin": "shape_arrays",
       "regions": [
         {
-          "allocation": "input.arg0.16",
+          "allocation": "problem_shapes",
           "byte_offset": 0,
           "bytes": 96,
           "resource": "input.arg0.16"
         },
         {
-          "allocation": "input.arg0.1464",
+          "allocation": "scheduler.problem_shapes",
           "byte_offset": 0,
           "bytes": 96,
           "resource": "input.arg0.1464"
+        },
+        {
+          "allocation": "mainloop.dA.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.1200"
+        },
+        {
+          "allocation": "mainloop.dB.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.1216"
+        },
+        {
+          "allocation": "epilogue.dC.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.1328"
+        },
+        {
+          "allocation": "epilogue.dD.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.1344"
         }
       ],
       "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
     },
     "trap_only_equality_assertions_hold": true
   },
-  "frontend_value_validation": {
-    "required_orders": 32768,
-    "status": "pending"
-  },
-  "hb_queries": {
-    "memory": {
-      "algorithm": "event-family-relations",
-      "batches": 3,
-      "cache_hits": 0,
-      "dfs_queries": 0,
-      "edge_visits": 493359,
-      "filtered_queries": 64,
-      "queries": 196608,
-      "shared_peak_index_bytes": 12578816
-    },
-    "required_orders": {
-      "algorithm": "member-relations",
-      "batches": 26,
-      "edge_visits": 13207986,
-      "member_enumerations": 0,
-      "request_construction": {
-        "concrete_pair_materializations": 0,
-        "endpoint_reads": 105220,
-        "family_requests": 37292,
-        "logical_orders": 348288,
-        "owner_bindings": 62348,
-        "stored_orders": 42628
-      }
-    }
-  },
-  "implementation": "cpp",
-  "memory_analysis": {
-    "address_candidates": 196608,
+  "internal": {
     "address_model": {
-      "cache_hits": 0,
-      "ground_disjoint": 0,
-      "ground_overlap": 0,
-      "layer0_disjoint": 0,
-      "refined_pairs": 1,
-      "solver_queries": 0,
-      "solver_sat": 0,
-      "solver_unknown": 0,
-      "solver_unsat": 0
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
     },
-    "candidate_generation_fallback": false,
-    "exhaustive": false,
-    "hb_algorithm": "event-family-relations",
-    "hb_batches": 3,
-    "hb_cache_hits": 0,
-    "hb_dfs_queries": 0,
-    "hb_edge_visits": 493359,
-    "hb_filtered_queries": 64,
-    "hb_peak_index_bytes": 12578816,
-    "hb_queries": 196608,
-    "hb_query_seconds": 0.139253042,
-    "overlap_queries": 1,
-    "strategy": "conflict-first",
-    "unordered_candidates_examined": 1
+    "counts": {
+      "edges": 3302756,
+      "events": 1532520,
+      "instructions": 423831,
+      "memory_accesses": 878500,
+      "threads": 384
+    },
+    "equivalence": {
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 22651,
+      "comparison_elapsed_seconds": 0.104759939,
+      "context_declaration": {
+        "assumptions": [],
+        "fixed_inputs": [
+          {
+            "coordinates": [
+              "0",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "1",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "2",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "1",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "2",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          }
+        ],
+        "inputs": [],
+        "predicate_nodes": []
+      },
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 47034,
+        "affine_output_decline_singleton_projection_ambiguous": 768,
+        "affine_state_banks": 1,
+        "call_definition_node_visits": 6912,
+        "canonical_factor_visits": 6144,
+        "canonical_node_visits": 10114,
+        "certified_state_pattern_cache_hits": 764,
+        "certified_state_pattern_decline_no_certified_state": 4,
+        "certified_state_pattern_work": 48,
+        "coefficient_normalizations": 1,
+        "completed_reductions": 768,
+        "coordinate_digit_node_visits": 769,
+        "coverage_polynomial_peak": 4,
+        "coverage_polynomial_visits": 4608,
+        "coverage_stored_piece_visits": 768,
+        "ep_body_anchor_edges": 3080,
+        "ep_body_anchor_nodes": 4624,
+        "ep_body_call_rebuilds": 768,
+        "ep_body_deferred_call_anchors": 1536,
+        "ep_body_deferred_unmatched_anchors": 1536,
+        "ep_body_instance_cache_entries": 768,
+        "ep_body_obligations": 1536,
+        "ep_body_pattern_anchor_cache_hits": 2296,
+        "ep_body_proofs": 1536,
+        "ep_body_read_anchor_rejections": 768,
+        "ep_body_target_anchor_cache_hits": 768,
+        "ep_identity_proofs": 2304,
+        "ep_scalar_attempts": 2304,
+        "ep_scalar_proofs": 2304,
+        "finite_bilinear_banks": 1,
+        "finite_bilinear_fusions": 0,
+        "finite_bilinear_masks": 0,
+        "finite_bilinear_singleton_sums": 0,
+        "finite_bilinear_swaps": 0,
+        "finite_bilinear_work": 43776,
+        "finite_state_reuse_banks": 1,
+        "fp_idiom_power_constructions": 0,
+        "fp_idiom_rm_producers": 0,
+        "ideal_additive_compiler_exp_sequences": 0,
+        "ideal_compiler_exp_sequences": 0,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_single_constant_exp_sequences": 0,
+        "imported_context_nodes": 20377,
+        "importer_scope_banks": 2,
+        "importer_scope_binder_hits": 1664,
+        "importer_scope_binders_created": 1408,
+        "importer_scope_leaf_lookups": 3072,
+        "importer_scope_nested_body_fallbacks": 1536,
+        "intern_requests": 180953,
+        "local_pattern_candidates": 3840,
+        "masked_sum_prefix_queries": 2304,
+        "normalization_cache_context_changes": 4,
+        "normalization_node_visits": 13056,
+        "parametric_state_attempts": 0,
+        "pattern_build_peak_nodes": 3,
+        "pattern_build_unique_nodes": 2304,
+        "pattern_node_visits": 9984,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_temporary_nodes": 0,
+        "summary_bind_nodes": 1536,
+        "symbolic_byte_reads_without_extent_proof": 0
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 768,
+        "status": "proved"
+      },
+      "diagnostics": [],
+      "elapsed_s": 0.074325056,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "query_count": 2304,
+        "reset_s": 0.0,
+        "reuse_cache": false,
+        "shared_evictions": 0
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 0,
+        "fixed_input_elements": 40,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 768,
+      "finished_families": 768,
+      "fixed_input_context": {
+        "applied": [],
+        "applied_elements": 0,
+        "configured": [
+          {
+            "coordinates": [
+              "0",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "1",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "2",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "1",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "2",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e; provenance sha256=38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705",
+            "value": "256"
+          }
+        ],
+        "configured_elements": 40
+      },
+      "idealizations_applied": [],
+      "input_contract_applied_reads": [],
+      "legacy_scalar_fallback": false,
+      "mapping_input_memory_constraints": {},
+      "native_context": {
+        "elements": 40,
+        "input_sha256": "02f9f43dea8151d7ed92b0ab6c85e83b849718341ad2289194755185d0a8f81e",
+        "kind": "verified_current_fixed_input",
+        "provenance_sha256": "38842adc13940b41225f6b45c1d4369ce8034de967cc9c3e59833353d13e0705"
+      },
+      "normalized_reachable_nodes": 1026,
+      "numerical_result": "verified",
+      "pattern_nodes": 1818,
+      "peak_rss_kib": 4119984,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 3072,
+      "piece_union": {
+        "abstract_optimized_replacements": 0,
+        "abstract_reference_replacements": 0,
+        "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+        "collected_pieces": 0,
+        "late_certificates": "accepted_until_each_schema_is_complete",
+        "method": "complete_output_equalities_with_finite_piece_union",
+        "replacements": 0,
+        "schemas": [],
+        "stored_dag_work": 0,
+        "work_limit": 2000000
+      },
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        555,
+        5012
+      ],
+      "reference_term_patterns": 8,
+      "row_groups": [
+        {
+          "count": 768,
+          "families": [
+            [
+              0,
+              767
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 33,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 24,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 0.005059563999999945,
+            "cumulative_elapsed_s": 0.07225966,
+            "left_import_s": 0.018285916999999922,
+            "left_normalize_s": 0.004956768999999978,
+            "parametric_state_s": 5.7580000000034045e-05,
+            "piece_union_record_s": 1.8960000000141537e-05,
+            "piece_union_seal_s": 1.857000000005278e-05,
+            "right_import_s": 0.025635248000000086,
+            "right_normalize_s": 0.01116358499999997
+          }
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 0.005059563999999945,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.018285916999999922,
+        "left_normalize_s": 0.004956768999999978,
+        "parametric_state_s": 5.7580000000034045e-05,
+        "piece_union_record_s": 1.8960000000141537e-05,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 1.857000000005278e-05,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 0.025635248000000086,
+        "right_normalize_s": 0.01116358499999997,
+        "state_pattern_s": 0.0
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.001483734
+      },
+      "total_output_families": 768,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 1,
+      "dependency_compression": {
+        "bulk_read_wait": {
+          "consumers": 40,
+          "emitted_references": 0,
+          "original_references": 0,
+          "prefix_effects": 0
+        },
+        "tcgen_commit": {
+          "consumers": 124,
+          "emitted_references": 599,
+          "original_references": 22304,
+          "prefix_effects": 124
+        },
+        "tcgen_load_wait": {
+          "consumers": 4608,
+          "emitted_references": 9216,
+          "original_references": 170496,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 2557247,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 9216,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 22240,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_array_contract": {
+          "kind": "fixed_read_only",
+          "origin": "pointer_arrays",
+          "regions": [
+            {
+              "allocation": "mainloop.ptr_A.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1192"
+            },
+            {
+              "allocation": "mainloop.ptr_B.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1208"
+            },
+            {
+              "allocation": "epilogue.ptr_C.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1320"
+            },
+            {
+              "allocation": "epilogue.ptr_D.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1336"
+            }
+          ],
+          "text": "Configured pointer-table entries retain their supplied objects and are not written during the analyzed execution."
+        },
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "shape_input_contract": {
+          "kind": "fixed_read_only",
+          "origin": "shape_arrays",
+          "regions": [
+            {
+              "allocation": "problem_shapes",
+              "byte_offset": 0,
+              "bytes": 96,
+              "resource": "input.arg0.16"
+            },
+            {
+              "allocation": "scheduler.problem_shapes",
+              "byte_offset": 0,
+              "bytes": 96,
+              "resource": "input.arg0.1464"
+            },
+            {
+              "allocation": "mainloop.dA.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1200"
+            },
+            {
+              "allocation": "mainloop.dB.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1216"
+            },
+            {
+              "allocation": "epilogue.dC.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1328"
+            },
+            {
+              "allocation": "epilogue.dD.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1344"
+            }
+          ],
+          "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+        },
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "problem_shapes",
+          "offset": 16,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.tensormaps",
+          "offset": 1184,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.ptr_A.array",
+          "offset": 1192,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.dA.array",
+          "offset": 1200,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.ptr_B.array",
+          "offset": 1208,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.dB.array",
+          "offset": 1216,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "epilogue.ptr_C.array",
+          "offset": 1320,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "epilogue.dC.array",
+          "offset": 1328,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "epilogue.ptr_D.array",
+          "offset": 1336,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "epilogue.dD.array",
+          "offset": 1344,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "scheduler.problem_shapes",
+          "offset": 1464,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJlllEEEEENS1_10collective13CollectiveMmaINS1_40MainloopSm100ArrayTmaUmmaWarpSpecializedILi11ELi8ELi4ENS6_IJiiNS5_1CILi1EEEEEENS_4arch5Sm100EEENS6_IJNSC_ILi128EEENSC_ILi32EEENSC_ILi64EEEEEENS_6half_tEPNS6_IJlSD_NSC_ILi0EEEEEESM_SP_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_20SM100_MMA_F16BF16_SSISM_SM_fLi128ELi32ELNS5_4UMMA5MajorE0ELSU_0ELNST_7ScaleInE0ELSV_0EEEEEENS5_6LayoutINS6_IJSD_SD_SD_EEENS6_IJSN_SN_SN_EEEEENS6_IJNS5_10UnderscoreES12_S12_EEEEENS5_23SM90_TMA_LOAD_MULTICASTENS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi16EEENSY_INS6_IJNSC_ILi8EEESK_EEENS6_IJSK_SD_EEEEEEEvNS5_8identityES15_S1F_vS1G_EENS_8epilogue10collective18CollectiveEpilogueINS1I_34Sm100PtrArrayNoSmemWarpSpecializedEJNS6_IJSI_SJ_EEEvPNS6_IJSD_lSN_EEESM_S1O_NS1I_6thread17LinearCombinationISM_Li1EffLNS1P_9ScaleType4KindE2ELNS_15FloatRoundStyleE2ESM_EENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_16dp256b4xES1B_NSC_ILi16EEEEEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 423831,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 352
+      },
+      "reached_opcodes": {
+        "add.s16": 2560,
+        "add.s32": 171565,
+        "add.s64": 67926,
+        "and.b16": 18464,
+        "and.b32": 13952,
+        "and.b64": 1512,
+        "and.pred": 21300,
+        "bar.arrive": 32,
+        "bar.sync": 896,
+        "bar.warp.sync": 1472,
+        "bfind.shiftamt.u32": 128,
+        "bra": 96009,
+        "bra.uni": 10080,
+        "brev.b32": 128,
+        "cp.async.bulk.commit_group": 40,
+        "cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 176,
+        "cp.async.bulk.wait_group.read": 40,
+        "cvt.rn.f16.f32": 147456,
+        "cvt.s16.s8": 18432,
+        "cvt.s64.s32": 5002,
+        "cvt.u16.u32": 256,
+        "cvt.u32.u16": 1312,
+        "cvt.u32.u64": 31880,
+        "cvt.u64.u16": 96,
+        "cvt.u64.u32": 64200,
+        "cvta.to.global.u64": 1920,
+        "div.s32": 64,
+        "div.u32": 1536,
+        "elect.sync": 22240,
+        "fence.mbarrier_init.release.cluster": 2304,
+        "fence.proxy.async.shared::cta": 8239,
+        "fence.proxy.tensormap::generic.acquire.gpu": 256,
+        "griddepcontrol.launch_dependents": 32,
+        "griddepcontrol.wait": 544,
+        "ld.global.b32": 12,
+        "ld.global.b64": 26236,
+        "ld.param.b32": 2976,
+        "ld.param.b64": 4064,
+        "ld.param.b8": 384,
+        "ld.param.v2.b32": 768,
+        "ld.param.v2.b64": 624,
+        "ld.shared.b16": 1152,
+        "ld.shared.b32": 31744,
+        "mad.lo.s32": 11791,
+        "mad.lo.s64": 41472,
+        "mapa.shared::cluster.u32": 12768,
+        "mbarrier.arrive.expect_tx.shared::cta.b64": 88,
+        "mbarrier.arrive.shared::cluster.b64": 12768,
+        "mbarrier.arrive.shared::cta.b64": 1288,
+        "mbarrier.init.shared::cta.b64": 64,
+        "mbarrier.try_wait.parity.shared::cta.b64": 30496,
+        "min.s32": 788,
+        "min.u32": 1152,
+        "mov.b16": 512,
+        "mov.b32": 329019,
+        "mov.b64": 6684,
+        "mov.pred": 4352,
+        "mov.s32": 22935,
+        "mov.u32": 6528,
+        "mul.f32": 147456,
+        "mul.hi.u16": 1280,
+        "mul.hi.u64": 788,
+        "mul.lo.s16": 1280,
+        "mul.lo.s32": 2336,
+        "mul.lo.s64": 384,
+        "mul.wide.s32": 16535,
+        "mul.wide.u32": 2064,
+        "not.b32": 1504,
+        "not.pred": 19584,
+        "or.b16": 129184,
+        "or.b32": 12336,
+        "or.b64": 10784,
+        "or.pred": 94208,
+        "rem.s32": 788,
+        "rem.u32": 32,
+        "ret": 384,
+        "selp.b16": 167560,
+        "selp.b32": 60500,
+        "selp.b64": 2580,
+        "setmaxnreg.dec.sync.aligned.u32": 256,
+        "setmaxnreg.inc.sync.aligned.u32": 128,
+        "setp.eq.b16": 19680,
+        "setp.eq.b32": 83698,
+        "setp.eq.b64": 10004,
+        "setp.ge.s32": 2432,
+        "setp.ge.u64": 1664,
+        "setp.gt.s16": 18432,
+        "setp.gt.s32": 2354,
+        "setp.gt.s64": 46080,
+        "setp.gt.u32": 2496,
+        "setp.le.s64": 55296,
+        "setp.lt.s32": 3872,
+        "setp.lt.s64": 13824,
+        "setp.lt.u32": 544,
+        "setp.lt.u64": 1792,
+        "setp.ne.b16": 1664,
+        "setp.ne.b32": 38699,
+        "setp.ne.b64": 1504,
+        "shfl.sync.idx.b32": 4736,
+        "shfl.sync.up.b32": 1280,
+        "shl.b32": 56604,
+        "shl.b64": 24744,
+        "shr.s64": 2304,
+        "shr.u16": 2560,
+        "shr.u32": 10048,
+        "shr.u64": 11412,
+        "st.b16": 147456,
+        "st.shared.b32": 355,
+        "st.shared.v2.b16": 40,
+        "st.shared.v2.b64": 80,
+        "sub.s16": 2560,
+        "sub.s32": 3540,
+        "sub.s64": 1632,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 32,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 36,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 88,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 32,
+        "tcgen05.ld.sync.aligned.16x256b.x4.b32": 9216,
+        "tcgen05.mma.cta_group::1.kind::f16": 352,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 32,
+        "tcgen05.wait::ld.sync.aligned": 4608,
+        "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned": 256,
+        "tensormap.replace.tile.global_address.shared::cta.b1024.b64": 8,
+        "tensormap.replace.tile.global_dim.shared::cta.b1024.b32": 40,
+        "tensormap.replace.tile.global_stride.shared::cta.b1024.b64": 32,
+        "vote.sync.ballot.b32": 128,
+        "xor.b32": 34336
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 32768,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 33,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 423831,
+        "stored_bindings": 75101
+      },
+      "source_edge_storage": {
+        "binding_templates": 978,
+        "logical_edges": 423447,
+        "stored_bindings": 978
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 124,
+        "operations": 352
+      },
+      "thread_count": 384,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "frontend_value_validation": {
+      "required_orders": 32768,
+      "status": "validated"
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      },
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 24,
+        "edge_visits": 11919994,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 105220,
+          "family_requests": 37076,
+          "logical_orders": 348288,
+          "owner_bindings": 62348,
+          "stored_orders": 42628
+        }
+      },
+      "shared_constant_interference": {
+        "algorithm": "event-family-relations",
+        "batches": 4,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 3401988,
+        "filtered_queries": 105728,
+        "queries": 198016,
+        "shared_peak_index_bytes": 4409344
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 793961,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 432363,
+        "affine_member_rows": 0,
+        "candidate_relations": 417962,
+        "hb_frontier_pieces": 473566,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 878500
+      },
+      "hb_algorithm": "member-relations",
+      "hb_batches": 3012,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 11018971,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 793961,
+      "hb_query_seconds": 1.827984459000002,
+      "overlap_queries": 0,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 0
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 3978.32421875,
+    "required_order_domains": 42628,
+    "required_orders": 348288,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 63,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 622984,
+      "memory_binding_templates": 5386,
+      "memory_bindings": 676668,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 33913,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 297,
+      "thread_prefix_groups": 697515,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 1,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 2768678,
+      "path_entries": 207831,
+      "record_bindings": 378106,
+      "record_nodes": 202399,
+      "splits": 31,
+      "template_steps": 217912,
+      "thread_memberships": 384,
+      "value_nodes": 96009
+    },
+    "thread_record_compression": {
+      "completed_ctas": 1,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 2557247,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [],
+      "duplicate_write_value_checks": 0,
+      "equivalence_check": "equivalent",
+      "initial_memory_regions": 20696,
+      "initial_read_families": 77668,
+      "memory_action_storage": {
+        "logical_actions": 676668,
+        "stored_runs": 622984
+      },
+      "output_region_families": 0,
+      "output_regions": 147456,
+      "passes": [
+        {
+          "name": "packing",
+          "rewritten_instances": 3200,
+          "rewritten_nodes": 1796,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 858535,
+          "name": "type_edges",
+          "removed_nodes": 72011
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 2924,
+          "layouts": 704,
+          "mapping_blocks": 38122,
+          "name": "view_normalization",
+          "original_pieces": 272682,
+          "reused_initial_reads": 77712,
+          "reused_views": 392,
+          "segmented": 9337,
+          "slices": 256,
+          "stored_mapping_blocks": 37730,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
+        }
+      ],
+      "processed_memory_actions": 676668,
+      "processed_memory_families": 0,
+      "read_substitutions": 145396,
+      "scalar_fold": {
+        "construction_collections": 0,
+        "diagnostics": [],
+        "output_count": 147456,
+        "output_families_merged": 384,
+        "output_family_count": 768,
+        "output_root_count": 768,
+        "peak_construction_nodes": 56464,
+        "shared_view_projection_hits": 18120,
+        "source_outputs": 147456,
+        "spatial_families_projected": 1152,
+        "spatial_outputs_projected": 147456,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 388,
+          "edges": 8468,
+          "folds": 1536,
+          "indices": 3,
+          "initial_cells": 772,
+          "logical_iterations": 20480,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 2,
+          "nodes": 5011,
+          "nodes_before_final_collection": 56464,
+          "nodes_reclaimed": 51453,
+          "operations": 2312,
+          "parameters": 0,
+          "range_descriptions": 1536,
+          "storage_nodes": 5011,
+          "unique_fold_bodies": 1536
+        }
+      },
+      "serialization": {
+        "action_patterns": 622984,
+        "binding_patterns": 622984,
+        "domain_refinements": 1504610,
+        "elapsed_seconds": 5.555222256,
+        "event_families": 1052137,
+        "expanded_event_records": 0,
+        "largest_batch_members": 56,
+        "logical_actions": 676668,
+        "logical_events": 4226689,
+        "peak_rss_mib_at_completion": 4023.421875,
+        "reachability_queries": 0,
+        "relations": 3071037,
+        "rss_mib_at_completion": 2693.24609375,
+        "scheduled_batches": 1052137,
+        "singleton_batches": 845269,
+        "value_families": 463723
+      },
+      "shared_read_families": 3361,
+      "shared_read_instances": 54463,
+      "stored_read_substitutions": 90933
+    },
+    "value_ir_instance_count": 1606854,
+    "value_ir_node_count": 417717,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 29.33593984,
+    "verification_result": "race_free"
   },
-  "memory_analysis_complete": false,
-  "mma_operand_ordering": {},
-  "mode": "verify",
-  "peak_footprint_mib": 2125.7109375,
-  "peak_rss_mib": 2125.7109375,
-  "pipeline_elapsed_seconds": 29.33021349,
-  "race_count": 0,
-  "race_samples_truncated": false,
-  "races": [],
-  "required_order_domains": 42628,
-  "required_orders": 348288,
-  "result": "unsupported",
+  "peak_rss_mib": 4023.421875,
+  "pipeline_elapsed_seconds": 40.960309349,
+  "result": "verified",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "search_complete": false,
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 1,
-    "binding_diagnostics": [
-      {
-        "code": "incomplete_value_semantics",
-        "message": "unsupported_operation: No value-IR model for 'tensormap' (including its memory effects/results)"
-      }
-    ],
-    "execution_cohorts": 63,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 33913,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 297,
-    "thread_prefix_groups": 36349,
-    "value_diagnostic_count": 1,
-    "value_diagnostics": [
-      {
-        "code": "unsupported_operation",
-        "line": 3162,
-        "message": "No value-IR model for 'tensormap' (including its memory effects/results)"
-      }
-    ]
-  },
-  "source_violations": [],
-  "stage": "memory_check",
-  "synchronization_input": {
-    "compute_access_binding": "after_happens_before",
-    "kind": "ordering_endpoints",
-    "memory_address_payloads": false
-  },
-  "template_execution": {
-    "completed_ctas": 1,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 2768678,
-    "path_entries": 301481,
-    "record_bindings": 530116,
-    "record_nodes": 276835,
-    "splits": 56,
-    "template_steps": 295816,
-    "thread_memberships": 384,
-    "value_nodes": 146637
-  },
-  "thread_record_compression": {
-    "completed_ctas": 1,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 2557247,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "unresolved_count": 1,
-  "unsupported_memory_pair": {
-    "first": {
-      "access_index": 0,
-      "actor": 64,
-      "bytes": 16,
-      "effect_index": 0,
-      "endpoint": {
-        "address": 7205,
-        "address_space": "global",
-        "allocation": "unresolved",
-        "expression": {
-          "bytes": 16,
-          "coordinates": [
-            0,
-            0
-          ],
-          "descriptor": {
-            "allocation_location": [
-              "input.arg0.1184",
-              0
-            ],
-            "base_byte_offset": null,
-            "box_shape": [
-              64,
-              128
-            ],
-            "coordinate_strides_bytes": [
-              2,
-              null
-            ],
-            "element_bytes": 2,
-            "element_strides": [
-              1,
-              1
-            ],
-            "global_shape": [
-              128,
-              128
-            ],
-            "interleave": "none",
-            "oob_fill": "zero",
-            "resource": "unresolved",
-            "swizzle": "128B",
-            "symbolic_global": true
-          },
-          "logical_offset": 0,
-          "occurrence": [
-            [
-              0,
-              0,
-              0
-            ],
-            2,
-            0,
-            1143,
-            0
-          ],
-          "operator": "tma_region"
-        },
-        "kind": "memory"
-      },
-      "event": 423371,
-      "instruction": 113006,
-      "location": {
-        "column": 2,
-        "file": "corpus/flashinfer__fused_moe_cutlass__cutlass_kernel_file_gemm_grouped_sm100_M128_group0.generated__sm_100a.ptx",
-        "line": 1875
-      },
-      "mode": "read"
-    },
-    "reason": "allocation identity is unresolved between global tensor_map_target(input.arg0.1184+0) and global allocation mainloop.tensormaps",
-    "second": {
-      "access_index": 0,
-      "actor": 352,
-      "bytes": 4,
-      "effect_index": 1,
-      "endpoint": {
-        "address": 250395,
-        "address_space": "global",
-        "allocation": "mainloop.tensormaps",
-        "kind": "memory"
-      },
-      "event": 1510631,
-      "instruction": 415394,
-      "location": {
-        "column": 2,
-        "file": "corpus/flashinfer__fused_moe_cutlass__cutlass_kernel_file_gemm_grouped_sm100_M128_group0.generated__sm_100a.ptx",
-        "line": 3162
-      },
-      "mode": "write"
-    }
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "incomplete",
-            "synchronization": "passed"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "allocation_alias_relation_unknown",
-              "details": {
-                "witness_path": "unsupported_memory_pair"
-              },
-              "message": "allocation identity is unresolved between global tensor_map_target(input.arg0.1184+0) and global allocation mainloop.tensormaps",
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "unsupported",
-          "prerequisite_status": "memory_analysis_inconclusive"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "memory_analysis_inconclusive",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    }
-  },
-  "value_ir_instance_count": 119050,
-  "value_ir_node_count": 17270,
-  "value_view_complete": false,
   "verification_limitations": [],
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.514
 }

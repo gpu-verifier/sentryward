@@ -1,0 +1,260 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global2:dS": "dS",
+      "6:global1:Q": "Q",
+      "6:global1:I": "I",
+      "6:global7:dKaccum": "dKaccum"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global2:dS": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          1,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          32768,
+          32768,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          32768,
+          32768,
+          256,
+          2
+        ]
+      },
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          1,
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          16384,
+          16384,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          16384,
+          16384,
+          128,
+          2
+        ]
+      },
+      "6:global1:I": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          512,
+          512,
+          4
+        ],
+        "target_strides_bytes": [
+          512,
+          512,
+          4
+        ]
+      },
+      "6:global7:dKaccum": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          256,
+          64
+        ],
+        "source_strides_bytes": [
+          65536,
+          256,
+          4
+        ],
+        "target_strides_bytes": [
+          65536,
+          256,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global2:dS": "dS",
+      "6:global1:Q": "Q",
+      "6:global1:I": "I",
+      "6:global7:dKaccum": "dKaccum"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global2:dS": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          1,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          32768,
+          32768,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          32768,
+          32768,
+          256,
+          2
+        ]
+      },
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          1,
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          16384,
+          16384,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          16384,
+          16384,
+          128,
+          2
+        ]
+      },
+      "6:global1:I": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          512,
+          512,
+          4
+        ],
+        "target_strides_bytes": [
+          512,
+          512,
+          4
+        ]
+      },
+      "6:global7:dKaccum": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          256,
+          64
+        ],
+        "source_strides_bytes": [
+          65536,
+          256,
+          4
+        ],
+        "target_strides_bytes": [
+          65536,
+          256,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global7:dKaccum",
+    "right_allocation": "6:global7:dKaccum",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+      1,
+      256,
+      64
+    ],
+    "left_strides_bytes": [
+      65536,
+      256,
+      4
+    ],
+    "right_strides_bytes": [
+      65536,
+      256,
+      4
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "dS",
+        "dtype": "bfloat16",
+        "allocation": "6:global2:dS"
+      },
+      {
+        "name": "Q",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:Q"
+      },
+      {
+        "name": "I",
+        "dtype": "int32",
+        "allocation": "6:global1:I"
+      },
+      {
+        "name": "dKaccum",
+        "dtype": "float32",
+        "allocation": "6:global7:dKaccum"
+      }
+    ]
+  },
+  "provenance": {
+    "evidence": "flash_bwd_mla_dk_sm100.py: per token, dK_t[topk, dim] = dS_t^T @ Q_t (K-dim = heads, fp32 acc); epilogue_scatter_reduce atomically adds row k to dKaccum[batch, I[t,k], :], skipping I < 0 (-1 sentinel). Expressed with a one-hot (I == arange(seqlen_k)) matmul; no zero-initialisation is invented.",
+    "ptx": "corpus/flash_attention__bwd_mla_sparse_bf16__dk__sm_100a.ptx",
+    "optimized_input": "examples/flash_attention__bwd_mla_sparse_bf16__dk__sm_100a/input.json",
+    "semantics": "ideal_real; fixed saved configuration (b=1, s_q=1, heads=128, topk=128, dim=64, seqlen_k=256); read-modify-write dKaccum: prior contents are an input.",
+    "optimized_input_sha256": "0ab21cdea4df33d120bc2561f0109273ae76e3288a41df3db905865e2b79db75",
+    "ptx_sha256": "3c27da6c79696e856b492e567733b7b67fb51cdbbe5242be63604dbc80e1228f",
+    "upstream": [
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_bwd_mla_dk_sm100.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/interface.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/tile_scheduler.py"
+    ],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

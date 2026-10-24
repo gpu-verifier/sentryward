@@ -142,7 +142,7 @@ void TensorMaps(Json &root) {
 } // namespace
 
 KernelInput ParseKernelInput(const Json &value) {
-  Object(value, {"schema", "entry", "launch", "arguments", "declarations", "shape_arrays", "tma_descriptors", "branch_decisions", "assumptions", "address_invariants", "data_branch_loop_iterations"}, "$");
+  Object(value, {"schema", "entry", "launch", "arguments", "declarations", "shape_arrays", "tma_descriptors", "branch_decisions", "assumptions", "address_invariants", "data_branch_loop_iterations", "pointer_arrays", "tensor_properties"}, "$");
   if (value.value("schema", Json()) != "spverify.kernel-input/v1")
     Fail("invalid_schema", "$.schema", "expected spverify.kernel-input/v1");
   Json root = value;
@@ -184,7 +184,8 @@ KernelInput ParseKernelInput(const Json &value) {
   if (launch.contains("cluster_dim")) Dimensions(launch["cluster_dim"], "$.launch.cluster_dim");
   launch["dynamic_shared_bytes"] = Natural(launch.value("dynamic_shared_bytes", Json(0)), "$.launch.dynamic_shared_bytes");
   if (root.contains("entry")) String(root["entry"], "$.entry");
-  for (const auto *key : {"declarations", "arguments", "shape_arrays", "tma_descriptors", "branch_decisions"}) {
+  for (const auto *key : {"declarations", "arguments", "shape_arrays", "tma_descriptors", "branch_decisions", "pointer_arrays",
+                          "tensor_properties"}) {
     if (!root.contains(key)) root[key] = Json::array();
     Array(root[key], "$." + std::string(key));
   }
@@ -253,6 +254,45 @@ KernelInput ParseKernelInput(const Json &value) {
       rank = shape.size();
       for (const auto &dim : shape) { (void)Natural(dim, path); Scalar(dim, type, path); }
     }
+  }
+  // Pointer tables: entry k is the 8-byte pointer at table byte 8k, naming `object` at
+  // `byte_offset` (optional `extent_bytes`), or null.
+  for (std::size_t i = 0; i < root["pointer_arrays"].size(); ++i) {
+    auto &p = root["pointer_arrays"][i];
+    auto path = ItemPath("pointer_arrays", i);
+    Object(p, {"parameter", "offset", "entries"}, path);
+    Selector(p.value("parameter", Json()), path + ".parameter");
+    p["offset"] = Natural(p.value("offset", Json(0)), path + ".offset");
+    Array(p["entries"], path + ".entries");
+    if (p["entries"].empty()) Fail("invalid_pointer_array", path, "expected at least one entry");
+    for (std::size_t k = 0; k < p["entries"].size(); ++k) {
+      auto &entry = p["entries"][k];
+      const auto entry_path = path + ".entries[" + std::to_string(k) + "]";
+      if (entry.is_null()) continue;
+      Object(entry, {"object", "byte_offset", "extent_bytes"}, entry_path);
+      String(entry["object"], entry_path + ".object");
+      entry["byte_offset"] = Natural(entry.value("byte_offset", Json(0)), entry_path + ".byte_offset");
+      if (entry.contains("extent_bytes") &&
+          (entry["extent_bytes"] = Natural(entry["extent_bytes"], entry_path + ".extent_bytes")) == 0)
+        Fail("invalid_pointer_array", entry_path + ".extent_bytes", "expected a positive extent");
+    }
+  }
+  // Trusted element properties of an input object: one property per record
+  // (injective, lower_bound or upper_bound) under the stated integer element type.
+  for (std::size_t i = 0; i < root["tensor_properties"].size(); ++i) {
+    auto &t = root["tensor_properties"][i];
+    auto path = ItemPath("tensor_properties", i);
+    Object(t, {"object", "element_type", "property", "value"}, path);
+    String(t.value("object", Json()), path + ".object");
+    const auto type = t.value("element_type", Json());
+    if (type != "s32" && type != "u32" && type != "s64" && type != "u64")
+      Fail("invalid_tensor_property", path + ".element_type", "expected s32, u32, s64 or u64");
+    const auto property = t.value("property", Json());
+    if (property != "injective" && property != "lower_bound" && property != "upper_bound")
+      Fail("invalid_tensor_property", path + ".property", "expected injective, lower_bound or upper_bound");
+    if ((property == "injective") == t.contains("value"))
+      Fail("invalid_tensor_property", path + ".value", property == "injective" ? "injective takes no value" : "a bound requires a value");
+    if (t.contains("value")) Scalar(t["value"], type.get<std::string>(), path + ".value");
   }
   TensorMaps(root);
   std::set<std::uint64_t> lines;

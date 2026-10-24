@@ -103,7 +103,9 @@ def _check_summary(result):
     if not isinstance(checks, dict):
         return '**Checks:** ' + _inline(checks) + '. No check outcomes are inferred.\n\n'
     labels = {'synchronization': 'Synchronization', 'memory': 'Memory', 'equivalence': 'Equivalence'}
-    fields = [(label, checks.get(key, MISSING)) for key, label in labels.items()]
+    # Two-check outputs include the memory analysis in the synchronization check.
+    fields = [(label, checks.get(key, MISSING)) for key, label in labels.items()
+              if key != 'memory' or key in checks]
     fields.extend((key, value) for key, value in checks.items() if key not in labels)
     body = '**Checks:** ' + ' · '.join(html.escape(label) + ' ' + _inline(value) for label, value in fields) + '.\n\n'
     if (_view_kind(result) == 'race_candidate' and checks.get('synchronization') == 'passed'
@@ -894,7 +896,8 @@ def render_result(run_input, result, ptx, artifacts, title=None, *, report_path=
         body += _stopped_view(result, ptx, artifacts)
     elif status == 'race_candidate':
         body += '**Access records:** no usable retained pair is saved; the candidate status is preserved.\n\n'
-    if not pair and warnings and _mapping(result.get('checks')).get('memory') == 'passed':
+    checks = _mapping(result.get('checks'))
+    if not pair and warnings and checks.get('memory', checks.get('synchronization')) == 'passed':
         retained = [(index, record) for index, record in enumerate(warnings) if isinstance(record, dict) and ('first' in record or 'second' in record)]
         if retained:
             index, warning = retained[0]
@@ -1211,7 +1214,7 @@ def _numerical(result):
 def render_evidence(run_input, result, ptx, artifacts, *, report_path=None, source_paths=(), equivalence_path=None, artifact_base=None):
     """Group exact diagnostics, assumptions, configuration and artifact references."""
     body = EVIDENCE_START + '\n## Evidence appendix\n\nUse these records to check the verifier result and source explanation above. JSON pointers refer to the original saved files. Identical prerequisite copies use `same_records_as` to refer to the diagnostic evidence shown once; their original locations and content hashes remain recorded.\n\n'
-    diagnostics = ('rejection', 'rejection_kind', 'counterexample', 'witness_event_lists_truncated', 'witness_event_list_limit', 'source_event_scope', 'source_events', 'unmapped_witness_events', 'synthetic_events', 'races', 'warnings', 'unsupported_memory_pair', 'diagnostics', 'error', 'failed_required_orders', 'failed_required_orders_count', 'failed_required_orders_sample_limit', 'failed_required_orders_truncated', 'source_violations', 'frontend_source_violations', 'verification_limitations', 'recovered_source_violations')
+    diagnostics = ('rejection', 'rejection_kind', 'counterexample', 'witness_event_lists_truncated', 'witness_event_list_limit', 'source_event_scope', 'source_events', 'unmapped_witness_events', 'synthetic_events', 'races', 'warnings', 'unsupported_memory_pair', 'diagnostics', 'error', 'failed_required_orders', 'failed_required_orders_count', 'failed_required_orders_sample_limit', 'failed_required_orders_truncated', 'source_violations', 'frontend_source_violations', 'verification_limitations')
     body += _group_records(result, diagnostics, 'Diagnostic records — verify the finding', 'These are saved verifier records. Truncation flags describe missing records in the original result, not merely collapsed presentation.')
     assumption_keys = ('assumptions', 'semantic_assumptions', 'frontend_assumptions', 'assumption_effects', 'assumption_reporting', 'assumption_dependent')
     rules = 'Enabled and triggered answer different questions: whether a rule was selected, and whether its applicability was recorded. `triggered: null` means unknown or unmeasured, not inactive.\n\n'

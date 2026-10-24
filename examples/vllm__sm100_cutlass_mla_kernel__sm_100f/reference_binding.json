@@ -1,0 +1,297 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global6:q_nope": "q_nope",
+      "6:global4:q_pe": "q_pe",
+      "6:global19:kv_c_and_k_pe_cache": "kv_c_and_k_pe_cache",
+      "6:global10:page_table": "page_table",
+      "6:global16:sequence_lengths": "sequence_lengths"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global6:q_nope": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          128,
+          512
+        ],
+        "source_strides_bytes": [
+          131072,
+          1024,
+          2
+        ],
+        "target_strides_bytes": [
+          131072,
+          1024,
+          2
+        ]
+      },
+      "6:global4:q_pe": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          16384,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          16384,
+          128,
+          2
+        ]
+      },
+      "6:global19:kv_c_and_k_pe_cache": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          128,
+          576
+        ],
+        "source_strides_bytes": [
+          147456,
+          1152,
+          2
+        ],
+        "target_strides_bytes": [
+          147456,
+          1152,
+          2
+        ]
+      },
+      "6:global10:page_table": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1
+        ],
+        "source_strides_bytes": [
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          4,
+          4
+        ]
+      },
+      "6:global16:sequence_lengths": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global6:q_nope": "q_nope",
+      "6:global4:q_pe": "q_pe",
+      "6:global19:kv_c_and_k_pe_cache": "kv_c_and_k_pe_cache",
+      "6:global10:page_table": "page_table",
+      "6:global16:sequence_lengths": "sequence_lengths"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global6:q_nope": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          128,
+          512
+        ],
+        "source_strides_bytes": [
+          131072,
+          1024,
+          2
+        ],
+        "target_strides_bytes": [
+          131072,
+          1024,
+          2
+        ]
+      },
+      "6:global4:q_pe": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          16384,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          16384,
+          128,
+          2
+        ]
+      },
+      "6:global19:kv_c_and_k_pe_cache": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          128,
+          576
+        ],
+        "source_strides_bytes": [
+          147456,
+          1152,
+          2
+        ],
+        "target_strides_bytes": [
+          147456,
+          1152,
+          2
+        ]
+      },
+      "6:global10:page_table": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1
+        ],
+        "source_strides_bytes": [
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          4,
+          4
+        ]
+      },
+      "6:global16:sequence_lengths": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global3:out",
+    "right_allocation": "6:global3:out",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      1,
+      128,
+      512
+    ],
+    "left_strides_bytes": [
+      131072,
+      1024,
+      2
+    ],
+    "right_strides_bytes": [
+      131072,
+      1024,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "q_nope",
+        "allocation": "6:global6:q_nope",
+        "dtype": "float16"
+      },
+      {
+        "name": "q_pe",
+        "allocation": "6:global4:q_pe",
+        "dtype": "float16"
+      },
+      {
+        "name": "kv_c_and_k_pe_cache",
+        "allocation": "6:global19:kv_c_and_k_pe_cache",
+        "dtype": "float16"
+      },
+      {
+        "name": "page_table",
+        "allocation": "6:global10:page_table",
+        "dtype": "int32"
+      },
+      {
+        "name": "sequence_lengths",
+        "allocation": "6:global16:sequence_lengths",
+        "dtype": "int32"
+      },
+      {
+        "name": "softmax_scale",
+        "parameter": 0,
+        "parameter_offset": 8
+      },
+      {
+        "name": "seq_len",
+        "value": {
+          "input": "/shape_arrays/0/shapes/0/0"
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "source": "vLLM Sm100FmhaMlaKernelTmaWarpspecialized<128,128,(512,64), half, float, half, float, Sm100MlaPersistentTileScheduler, kIsCpAsync=false> (paged, page_size 128)",
+    "upstream": [
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/attention/mla/sm100_cutlass_mla_kernel.cu",
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/attention/mla/cutlass_sm100_mla/kernel/sm100_fmha_mla_tma_warpspecialized.hpp",
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/vllm/v1/attention/backends/mla/cutlass_mla.py",
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/tests/kernels/attention/test_cutlass_mla_decode.py"
+    ],
+    "scope": "B=1, H=128, D_latent=512, D_rope=64, page_size=128, one page per sequence (max_seq_len 128), page pool 1 page (page_count=1; test rule: cache has block_table.numel() pages), seq_lens=[128] (shape_arrays), split_kv=1, softmax_scale=1/sqrt(576) (test default), output_scale=1, ptr_lse null (O only), page_table in [0, 0] (tensor_properties).",
+    "optimized_input_sha256": "0d525191cc72049cbec06d48594b30ace38220078a96c92b6030dba4ce09a24c",
+    "ptx_sha256": "aa04ee986044183c0985d352d05a71449ef07843e0d5c236846187e85bc25b77",
+    "scope_shape_arrays": [
+      {
+        "parameter": 0,
+        "offset": 112,
+        "element_type": "s32",
+        "shapes": [
+          [
+            128
+          ]
+        ]
+      }
+    ]
+  }
+}

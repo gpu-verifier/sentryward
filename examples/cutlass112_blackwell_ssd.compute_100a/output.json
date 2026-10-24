@@ -1,351 +1,948 @@
 {
-  "active_stage": "verification",
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": null
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
+    }
+  ],
   "checks": {
     "equivalence": "not_run",
-    "memory": "not_run",
-    "synchronization": "not_run"
+    "synchronization": "failed"
   },
   "diagnostics": [
     {
-      "code": "timeout",
+      "code": "tmem_multiple_dealloc",
       "details": {
-        "resource": {
-          "kind": "time",
-          "limit": 499.999,
-          "origin": "configured_budget",
-          "unit": "seconds"
+        "internal_stage": "lifecycle_check"
+      },
+      "stage": "synchronization"
+    }
+  ],
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 159360,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "trap_only_equality_assertions_hold": true
+  },
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "analysis_target": "recovered_program",
+    "counts": {
+      "edges": 8300645,
+      "events": 2753414,
+      "instructions": 351558,
+      "threads": 384
+    },
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "incomplete"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "tmem_multiple_dealloc",
+                "stage": "lifecycle_check"
+              }
+            ],
+            "prerequisite_result": "invalid_lifecycle"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 12,
+      "dependency_compression": {
+        "bulk_read_wait": {
+          "consumers": 544,
+          "emitted_references": 1472,
+          "original_references": 8192,
+          "prefix_effects": 0
+        },
+        "tcgen_commit": {
+          "consumers": 72,
+          "emitted_references": 398,
+          "original_references": 4928,
+          "prefix_effects": 72
+        },
+        "tcgen_load_wait": {
+          "consumers": 5120,
+          "emitted_references": 12288,
+          "original_references": 179200,
+          "prefix_effects": 0
+        },
+        "tcgen_store_wait": {
+          "consumers": 2048,
+          "emitted_references": 4096,
+          "original_references": 18432,
+          "prefix_effects": 0
         }
       },
-      "stage": "verification"
-    }
-  ],
-  "elapsed_seconds": 500.074721047,
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "timeout",
-              "details": {
-                "resource": {
-                  "kind": "time",
-                  "limit": 499.999,
-                  "origin": "configured_budget",
-                  "unit": "seconds"
-                }
-              },
-              "stage": "verification"
-            }
-          ],
-          "prerequisite_result": "timeout",
-          "prerequisite_status": "timeout"
-        },
-        "stage": "verification"
-      }
-    ],
-    "prerequisite_status": "timeout",
-    "result": "timeout",
-    "scope": {
-      "operation": "equivalence"
-    },
-    "stage": "verification"
-  },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [],
-      "first_unavailable_reason": "",
-      "queries": 0,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": true
-    },
-    "cluster_completion_joins": 0,
-    "cta_count": 12,
-    "dependency_compression": {
-      "bulk_read_wait": {
-        "consumers": 6528,
-        "emitted_references": 17664,
-        "original_references": 98304,
-        "prefix_effects": 0
-      },
-      "tcgen_commit": {
-        "consumers": 864,
-        "emitted_references": 4776,
-        "original_references": 59136,
-        "prefix_effects": 864
-      },
-      "tcgen_load_wait": {
-        "consumers": 61440,
-        "emitted_references": 147456,
-        "original_references": 2150400,
-        "prefix_effects": 0
-      },
-      "tcgen_store_wait": {
-        "consumers": 24576,
-        "emitted_references": 49152,
-        "original_references": 221184,
-        "prefix_effects": 0
-      }
-    },
-    "diagnostic_sample_count": 0,
-    "discharged_codes": [
-      "mma_memory_effect_refinement",
-      "tcgen_pipeline_effect_refinement",
-      "tcgen_commit_notification_order_refinement"
-    ],
-    "executed_records": 32384820,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
       ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
+      "executed_records": 32384820,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 159360,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "trap_only_equality_assertions_hold": true
       },
-      "election_uses": 159360,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "delta",
+          "offset": 912,
+          "parameter": "_ZN7cutlass13device_kernelINS_3ssd6kernel27SsdKernelTmaWarpSpecializedINS1_10collective29SsdMainloopTmaWarpSpecializedINS_10bfloat16_tEffS6_N4cute5tupleIJNS7_1CILi128EEENS9_ILi64EEESA_EEELi2ELi2ENS7_8TiledMMAINS7_8MMA_AtomIJNS7_20SM100_MMA_F16BF16_SSIS6_S6_fLi128ELi128ELNS7_4UMMA5MajorE1ELSH_1ELNSG_7ScaleInE0ELSI_0EEEEEENS7_6LayoutINS8_IJNS9_ILi1EEESM_SM_EEENS8_IJNS9_ILi0EEESO_SO_EEEEENS8_IJNS7_10UnderscoreESR_SR_EEEEENSD_INSE_IJNS7_20SM100_MMA_F16BF16_TSIS6_S6_fLi128ELi64ELSH_0ELSH_0ELSI_0ELSI_0ELNSG_8SaturateE0EEEEEESQ_SS_EESY_NSD_INSE_IJNSF_IS6_S6_fLi128ELi64ELSH_1ELSH_0ELSI_0ELSI_0EEEEEESQ_SS_EENS7_14ComposedLayoutINS7_7SwizzleILi3ELi4ELi3EEENS7_18smem_ptr_flag_bitsILi16EEENSL_INS8_IJNS8_IJNS8_IJNS9_ILi8EEES17_EEENS9_ILi16EEEEEESM_NS8_IJNS9_ILi4EEENS9_ILi2EEEEEENS8_IJSM_S1C_EEEEEENS8_IJNS8_IJNS8_IJSB_NS9_ILi1024EEEEEESM_EEESO_NS8_IJS19_NS9_ILi512EEEEEENS8_IJSO_NS9_ILi8192EEEEEEEEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJNS8_IJSB_S1C_EEES19_EEESM_S17_S1E_EEENS8_IJNS8_IJNS8_IJSM_S1L_EEESB_EEESO_S1G_NS8_IJSO_NS9_ILi16384EEEEEEEEEEEEES1Z_NS12_IS14_S16_NSL_INS8_IJS1A_SM_S1D_NS8_IJSM_SM_EEEEEENS8_IJS1I_SO_S1K_NS8_IJSO_SO_EEEEEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJSA_S19_EEESM_S1D_S1E_EEENS8_IJNS8_IJSB_SM_EEESO_NS8_IJS19_S1L_EEES1W_EEEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_S18_S20_EEENS8_IJNS8_IJSM_S1J_EEES1H_S22_EEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJNS8_IJS17_S19_EEES19_EEESM_S1D_S1E_EEENS8_IJS1I_SO_S1K_S1W_EEEEEEENS12_IS14_S16_NSL_INS8_IJS2J_SM_S1D_S20_EEES23_EEEES2Q_EENS4_11SsdEpilogueIfS6_fSC_NS8_IJSA_NS9_ILi32EEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_NS8_IJS17_S1B_EEES1E_EEENS8_IJNS8_IJSM_NS9_ILi2048EEEEEENS8_IJSB_S1J_EEENS8_IJSO_NS9_ILi4096EEEEEEEEEEEEENS12_IS14_S16_NSL_INS8_IJS18_S1Q_S20_EEENS8_IJS1H_S2E_S22_EEEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_S18_S1E_EEENS8_IJS2E_S1H_S1M_EEEEEEELi2ELi2ELb1ELb1EEENS2_23PersistentTileSchedulerEEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "delta_a_cumsum",
+          "offset": 936,
+          "parameter": "_ZN7cutlass13device_kernelINS_3ssd6kernel27SsdKernelTmaWarpSpecializedINS1_10collective29SsdMainloopTmaWarpSpecializedINS_10bfloat16_tEffS6_N4cute5tupleIJNS7_1CILi128EEENS9_ILi64EEESA_EEELi2ELi2ENS7_8TiledMMAINS7_8MMA_AtomIJNS7_20SM100_MMA_F16BF16_SSIS6_S6_fLi128ELi128ELNS7_4UMMA5MajorE1ELSH_1ELNSG_7ScaleInE0ELSI_0EEEEEENS7_6LayoutINS8_IJNS9_ILi1EEESM_SM_EEENS8_IJNS9_ILi0EEESO_SO_EEEEENS8_IJNS7_10UnderscoreESR_SR_EEEEENSD_INSE_IJNS7_20SM100_MMA_F16BF16_TSIS6_S6_fLi128ELi64ELSH_0ELSH_0ELSI_0ELSI_0ELNSG_8SaturateE0EEEEEESQ_SS_EESY_NSD_INSE_IJNSF_IS6_S6_fLi128ELi64ELSH_1ELSH_0ELSI_0ELSI_0EEEEEESQ_SS_EENS7_14ComposedLayoutINS7_7SwizzleILi3ELi4ELi3EEENS7_18smem_ptr_flag_bitsILi16EEENSL_INS8_IJNS8_IJNS8_IJNS9_ILi8EEES17_EEENS9_ILi16EEEEEESM_NS8_IJNS9_ILi4EEENS9_ILi2EEEEEENS8_IJSM_S1C_EEEEEENS8_IJNS8_IJNS8_IJSB_NS9_ILi1024EEEEEESM_EEESO_NS8_IJS19_NS9_ILi512EEEEEENS8_IJSO_NS9_ILi8192EEEEEEEEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJNS8_IJSB_S1C_EEES19_EEESM_S17_S1E_EEENS8_IJNS8_IJNS8_IJSM_S1L_EEESB_EEESO_S1G_NS8_IJSO_NS9_ILi16384EEEEEEEEEEEEES1Z_NS12_IS14_S16_NSL_INS8_IJS1A_SM_S1D_NS8_IJSM_SM_EEEEEENS8_IJS1I_SO_S1K_NS8_IJSO_SO_EEEEEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJSA_S19_EEESM_S1D_S1E_EEENS8_IJNS8_IJSB_SM_EEESO_NS8_IJS19_S1L_EEES1W_EEEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_S18_S20_EEENS8_IJNS8_IJSM_S1J_EEES1H_S22_EEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJNS8_IJS17_S19_EEES19_EEESM_S1D_S1E_EEENS8_IJS1I_SO_S1K_S1W_EEEEEEENS12_IS14_S16_NSL_INS8_IJS2J_SM_S1D_S20_EEES23_EEEES2Q_EENS4_11SsdEpilogueIfS6_fSC_NS8_IJSA_NS9_ILi32EEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_NS8_IJS17_S1B_EEES1E_EEENS8_IJNS8_IJSM_NS9_ILi2048EEEEEENS8_IJSB_S1J_EEENS8_IJSO_NS9_ILi4096EEEEEEEEEEEEENS12_IS14_S16_NSL_INS8_IJS18_S1Q_S20_EEENS8_IJS1H_S2E_S22_EEEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_S18_S1E_EEENS8_IJS2E_S1H_S1M_EEEEEEELi2ELi2ELb1ELb1EEENS2_23PersistentTileSchedulerEEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "d",
+          "offset": 1544,
+          "parameter": "_ZN7cutlass13device_kernelINS_3ssd6kernel27SsdKernelTmaWarpSpecializedINS1_10collective29SsdMainloopTmaWarpSpecializedINS_10bfloat16_tEffS6_N4cute5tupleIJNS7_1CILi128EEENS9_ILi64EEESA_EEELi2ELi2ENS7_8TiledMMAINS7_8MMA_AtomIJNS7_20SM100_MMA_F16BF16_SSIS6_S6_fLi128ELi128ELNS7_4UMMA5MajorE1ELSH_1ELNSG_7ScaleInE0ELSI_0EEEEEENS7_6LayoutINS8_IJNS9_ILi1EEESM_SM_EEENS8_IJNS9_ILi0EEESO_SO_EEEEENS8_IJNS7_10UnderscoreESR_SR_EEEEENSD_INSE_IJNS7_20SM100_MMA_F16BF16_TSIS6_S6_fLi128ELi64ELSH_0ELSH_0ELSI_0ELSI_0ELNSG_8SaturateE0EEEEEESQ_SS_EESY_NSD_INSE_IJNSF_IS6_S6_fLi128ELi64ELSH_1ELSH_0ELSI_0ELSI_0EEEEEESQ_SS_EENS7_14ComposedLayoutINS7_7SwizzleILi3ELi4ELi3EEENS7_18smem_ptr_flag_bitsILi16EEENSL_INS8_IJNS8_IJNS8_IJNS9_ILi8EEES17_EEENS9_ILi16EEEEEESM_NS8_IJNS9_ILi4EEENS9_ILi2EEEEEENS8_IJSM_S1C_EEEEEENS8_IJNS8_IJNS8_IJSB_NS9_ILi1024EEEEEESM_EEESO_NS8_IJS19_NS9_ILi512EEEEEENS8_IJSO_NS9_ILi8192EEEEEEEEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJNS8_IJSB_S1C_EEES19_EEESM_S17_S1E_EEENS8_IJNS8_IJNS8_IJSM_S1L_EEESB_EEESO_S1G_NS8_IJSO_NS9_ILi16384EEEEEEEEEEEEES1Z_NS12_IS14_S16_NSL_INS8_IJS1A_SM_S1D_NS8_IJSM_SM_EEEEEENS8_IJS1I_SO_S1K_NS8_IJSO_SO_EEEEEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJSA_S19_EEESM_S1D_S1E_EEENS8_IJNS8_IJSB_SM_EEESO_NS8_IJS19_S1L_EEES1W_EEEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_S18_S20_EEENS8_IJNS8_IJSM_S1J_EEES1H_S22_EEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJNS8_IJS17_S19_EEES19_EEESM_S1D_S1E_EEENS8_IJS1I_SO_S1K_S1W_EEEEEEENS12_IS14_S16_NSL_INS8_IJS2J_SM_S1D_S20_EEES23_EEEES2Q_EENS4_11SsdEpilogueIfS6_fSC_NS8_IJSA_NS9_ILi32EEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_NS8_IJS17_S1B_EEES1E_EEENS8_IJNS8_IJSM_NS9_ILi2048EEEEEENS8_IJSB_S1J_EEENS8_IJSO_NS9_ILi4096EEEEEEEEEEEEENS12_IS14_S16_NSL_INS8_IJS18_S1Q_S20_EEENS8_IJS1H_S2E_S22_EEEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_S18_S1E_EEENS8_IJS2E_S1H_S1M_EEEEEEELi2ELi2ELb1ELb1EEENS2_23PersistentTileSchedulerEEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 351558,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 256
       },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
+      "reached_opcodes": {
+        "add.s32": 948276,
+        "add.s64": 337776,
+        "and.b32": 1943808,
+        "and.b64": 307200,
+        "and.pred": 4608,
+        "bar.arrive": 384,
+        "bar.sync": 86400,
+        "bar.warp.sync": 384,
+        "bra": 269832,
+        "bra.uni": 7296,
+        "cp.async.bulk.commit_group": 6528,
+        "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes": 204,
+        "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group": 6144,
+        "cp.async.bulk.tensor.4d.global.shared::cta.bulk_group": 12288,
+        "cp.async.bulk.tensor.4d.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 1920,
+        "cp.async.bulk.wait_group.read": 6528,
+        "cvt.rn.bf16x2.f32": 2297856,
+        "cvt.u32.u64": 307200,
+        "cvt.u64.u32": 40704,
+        "cvta.param.u64": 3852,
+        "cvta.shared.u64": 26112,
+        "cvta.to.shared.u64": 307200,
+        "elect.sync": 159360,
+        "ex2.approx.ftz.f32": 1929216,
+        "fence.mbarrier_init.release.cluster": 55296,
+        "fence.proxy.async.shared::cta": 52224,
+        "fma.rn.ftz.f32": 2359296,
+        "ld.param.b32": 4800,
+        "ld.param.b64": 204,
+        "ld.param.v4.b32": 9216,
+        "ld.shared.b32": 652800,
+        "ld.shared.v2.b32": 393216,
+        "ldmatrix.sync.aligned.x4.m8n8.shared.b16": 196608,
+        "ldmatrix.sync.aligned.x4.trans.m8n8.shared.b16": 98304,
+        "mad.lo.s32": 576,
+        "mapa.shared::cluster.u32": 99840,
+        "mbarrier.arrive.expect_tx.shared::cta.b64": 396,
+        "mbarrier.arrive.shared::cluster.b64": 99840,
+        "mbarrier.init.shared::cta.b64": 504,
+        "mbarrier.try_wait.parity.shared::cta.b64": 181644,
+        "mov.b32": 1171068,
+        "mov.b64": 1983648,
+        "mov.pred": 38784,
+        "mov.s32": 164340,
+        "mov.u32": 165888,
+        "mul.f32x2": 1572864,
+        "mul.ftz.f32": 4780032,
+        "mul.hi.u32": 780,
+        "mul.lo.s32": 396,
+        "mul.wide.s32": 12492,
+        "mul.wide.u32": 13824,
+        "neg.s32": 384,
+        "not.pred": 10752,
+        "or.b32": 717312,
+        "or.b64": 14592,
+        "or.pred": 13824,
+        "prefetch.tensormap": 36,
+        "ret": 4608,
+        "selp.b32": 231972,
+        "selp.f32": 1277952,
+        "setp.eq.b32": 269976,
+        "setp.ge.s32": 4608,
+        "setp.gt.s32": 13824,
+        "setp.gt.u32": 12288,
+        "setp.lt.s32": 13080,
+        "setp.lt.u32": 1228800,
+        "setp.ne.b32": 204096,
+        "shfl.sync.idx.b32": 82944,
+        "shl.b32": 2054436,
+        "shl.b64": 12288,
+        "shr.u32": 32268,
+        "shr.u64": 307200,
+        "stmatrix.sync.aligned.x4.trans.m8n8.shared.b16": 208896,
+        "sub.ftz.f32": 1818624,
+        "sub.s32": 37260,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 384,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 864,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 1536,
+        "tcgen05.ld.sync.aligned.16x256b.x16.b32": 24576,
+        "tcgen05.ld.sync.aligned.16x256b.x4.b32": 98304,
+        "tcgen05.ld.sync.aligned.16x256b.x8.b32": 24576,
+        "tcgen05.mma.cta_group::1.kind::f16": 3072,
+        "tcgen05.st.sync.aligned.16x128b.x16.b32": 49152,
+        "tcgen05.wait::ld.sync.aligned": 61440,
+        "tcgen05.wait::st.sync.aligned": 24576,
+        "xor.b32": 97164,
+        "xor.b64": 307200
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 25,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 351558,
+        "stored_bindings": 80833
+      },
+      "source_edge_storage": {
+        "binding_templates": 3018,
+        "logical_edges": 351174,
+        "stored_bindings": 3018
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 72,
+        "operations": 256
+      },
+      "thread_count": 4608,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
     },
     "implementation": "cpp",
-    "input_objects": [
+    "memory_analysis_complete": false,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 9597.078125,
+    "recovery_policy": "last_ordered_init",
+    "required_order_domains": 54920,
+    "required_orders": 1753472,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 47,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 1129595,
+      "memory_binding_templates": 92725,
+      "memory_bindings": 1789859,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 21086,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 1825,
+      "thread_prefix_groups": 6220760,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [
       {
-        "bytes": 8,
-        "object": "delta",
-        "offset": 912,
-        "parameter": "_ZN7cutlass13device_kernelINS_3ssd6kernel27SsdKernelTmaWarpSpecializedINS1_10collective29SsdMainloopTmaWarpSpecializedINS_10bfloat16_tEffS6_N4cute5tupleIJNS7_1CILi128EEENS9_ILi64EEESA_EEELi2ELi2ENS7_8TiledMMAINS7_8MMA_AtomIJNS7_20SM100_MMA_F16BF16_SSIS6_S6_fLi128ELi128ELNS7_4UMMA5MajorE1ELSH_1ELNSG_7ScaleInE0ELSI_0EEEEEENS7_6LayoutINS8_IJNS9_ILi1EEESM_SM_EEENS8_IJNS9_ILi0EEESO_SO_EEEEENS8_IJNS7_10UnderscoreESR_SR_EEEEENSD_INSE_IJNS7_20SM100_MMA_F16BF16_TSIS6_S6_fLi128ELi64ELSH_0ELSH_0ELSI_0ELSI_0ELNSG_8SaturateE0EEEEEESQ_SS_EESY_NSD_INSE_IJNSF_IS6_S6_fLi128ELi64ELSH_1ELSH_0ELSI_0ELSI_0EEEEEESQ_SS_EENS7_14ComposedLayoutINS7_7SwizzleILi3ELi4ELi3EEENS7_18smem_ptr_flag_bitsILi16EEENSL_INS8_IJNS8_IJNS8_IJNS9_ILi8EEES17_EEENS9_ILi16EEEEEESM_NS8_IJNS9_ILi4EEENS9_ILi2EEEEEENS8_IJSM_S1C_EEEEEENS8_IJNS8_IJNS8_IJSB_NS9_ILi1024EEEEEESM_EEESO_NS8_IJS19_NS9_ILi512EEEEEENS8_IJSO_NS9_ILi8192EEEEEEEEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJNS8_IJSB_S1C_EEES19_EEESM_S17_S1E_EEENS8_IJNS8_IJNS8_IJSM_S1L_EEESB_EEESO_S1G_NS8_IJSO_NS9_ILi16384EEEEEEEEEEEEES1Z_NS12_IS14_S16_NSL_INS8_IJS1A_SM_S1D_NS8_IJSM_SM_EEEEEENS8_IJS1I_SO_S1K_NS8_IJSO_SO_EEEEEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJSA_S19_EEESM_S1D_S1E_EEENS8_IJNS8_IJSB_SM_EEESO_NS8_IJS19_S1L_EEES1W_EEEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_S18_S20_EEENS8_IJNS8_IJSM_S1J_EEES1H_S22_EEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJNS8_IJS17_S19_EEES19_EEESM_S1D_S1E_EEENS8_IJS1I_SO_S1K_S1W_EEEEEEENS12_IS14_S16_NSL_INS8_IJS2J_SM_S1D_S20_EEES23_EEEES2Q_EENS4_11SsdEpilogueIfS6_fSC_NS8_IJSA_NS9_ILi32EEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_NS8_IJS17_S1B_EEES1E_EEENS8_IJNS8_IJSM_NS9_ILi2048EEEEEENS8_IJSB_S1J_EEENS8_IJSO_NS9_ILi4096EEEEEEEEEEEEENS12_IS14_S16_NSL_INS8_IJS18_S1Q_S20_EEENS8_IJS1H_S2E_S22_EEEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_S18_S1E_EEENS8_IJS2E_S1H_S1M_EEEEEEELi2ELi2ELb1ELb1EEENS2_23PersistentTileSchedulerEEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
+        "code": "tmem_multiple_dealloc",
+        "message": "CTA (0, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
       },
       {
-        "bytes": 8,
-        "object": "delta_a_cumsum",
-        "offset": 936,
-        "parameter": "_ZN7cutlass13device_kernelINS_3ssd6kernel27SsdKernelTmaWarpSpecializedINS1_10collective29SsdMainloopTmaWarpSpecializedINS_10bfloat16_tEffS6_N4cute5tupleIJNS7_1CILi128EEENS9_ILi64EEESA_EEELi2ELi2ENS7_8TiledMMAINS7_8MMA_AtomIJNS7_20SM100_MMA_F16BF16_SSIS6_S6_fLi128ELi128ELNS7_4UMMA5MajorE1ELSH_1ELNSG_7ScaleInE0ELSI_0EEEEEENS7_6LayoutINS8_IJNS9_ILi1EEESM_SM_EEENS8_IJNS9_ILi0EEESO_SO_EEEEENS8_IJNS7_10UnderscoreESR_SR_EEEEENSD_INSE_IJNS7_20SM100_MMA_F16BF16_TSIS6_S6_fLi128ELi64ELSH_0ELSH_0ELSI_0ELSI_0ELNSG_8SaturateE0EEEEEESQ_SS_EESY_NSD_INSE_IJNSF_IS6_S6_fLi128ELi64ELSH_1ELSH_0ELSI_0ELSI_0EEEEEESQ_SS_EENS7_14ComposedLayoutINS7_7SwizzleILi3ELi4ELi3EEENS7_18smem_ptr_flag_bitsILi16EEENSL_INS8_IJNS8_IJNS8_IJNS9_ILi8EEES17_EEENS9_ILi16EEEEEESM_NS8_IJNS9_ILi4EEENS9_ILi2EEEEEENS8_IJSM_S1C_EEEEEENS8_IJNS8_IJNS8_IJSB_NS9_ILi1024EEEEEESM_EEESO_NS8_IJS19_NS9_ILi512EEEEEENS8_IJSO_NS9_ILi8192EEEEEEEEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJNS8_IJSB_S1C_EEES19_EEESM_S17_S1E_EEENS8_IJNS8_IJNS8_IJSM_S1L_EEESB_EEESO_S1G_NS8_IJSO_NS9_ILi16384EEEEEEEEEEEEES1Z_NS12_IS14_S16_NSL_INS8_IJS1A_SM_S1D_NS8_IJSM_SM_EEEEEENS8_IJS1I_SO_S1K_NS8_IJSO_SO_EEEEEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJSA_S19_EEESM_S1D_S1E_EEENS8_IJNS8_IJSB_SM_EEESO_NS8_IJS19_S1L_EEES1W_EEEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_S18_S20_EEENS8_IJNS8_IJSM_S1J_EEES1H_S22_EEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJNS8_IJS17_S19_EEES19_EEESM_S1D_S1E_EEENS8_IJS1I_SO_S1K_S1W_EEEEEEENS12_IS14_S16_NSL_INS8_IJS2J_SM_S1D_S20_EEES23_EEEES2Q_EENS4_11SsdEpilogueIfS6_fSC_NS8_IJSA_NS9_ILi32EEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_NS8_IJS17_S1B_EEES1E_EEENS8_IJNS8_IJSM_NS9_ILi2048EEEEEENS8_IJSB_S1J_EEENS8_IJSO_NS9_ILi4096EEEEEEEEEEEEENS12_IS14_S16_NSL_INS8_IJS18_S1Q_S20_EEENS8_IJS1H_S2E_S22_EEEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_S18_S1E_EEENS8_IJS2E_S1H_S1M_EEEEEEELi2ELi2ELb1ELb1EEENS2_23PersistentTileSchedulerEEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
+        "code": "tmem_multiple_dealloc",
+        "message": "CTA (1, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
       },
       {
-        "bytes": 8,
-        "object": "d",
-        "offset": 1544,
-        "parameter": "_ZN7cutlass13device_kernelINS_3ssd6kernel27SsdKernelTmaWarpSpecializedINS1_10collective29SsdMainloopTmaWarpSpecializedINS_10bfloat16_tEffS6_N4cute5tupleIJNS7_1CILi128EEENS9_ILi64EEESA_EEELi2ELi2ENS7_8TiledMMAINS7_8MMA_AtomIJNS7_20SM100_MMA_F16BF16_SSIS6_S6_fLi128ELi128ELNS7_4UMMA5MajorE1ELSH_1ELNSG_7ScaleInE0ELSI_0EEEEEENS7_6LayoutINS8_IJNS9_ILi1EEESM_SM_EEENS8_IJNS9_ILi0EEESO_SO_EEEEENS8_IJNS7_10UnderscoreESR_SR_EEEEENSD_INSE_IJNS7_20SM100_MMA_F16BF16_TSIS6_S6_fLi128ELi64ELSH_0ELSH_0ELSI_0ELSI_0ELNSG_8SaturateE0EEEEEESQ_SS_EESY_NSD_INSE_IJNSF_IS6_S6_fLi128ELi64ELSH_1ELSH_0ELSI_0ELSI_0EEEEEESQ_SS_EENS7_14ComposedLayoutINS7_7SwizzleILi3ELi4ELi3EEENS7_18smem_ptr_flag_bitsILi16EEENSL_INS8_IJNS8_IJNS8_IJNS9_ILi8EEES17_EEENS9_ILi16EEEEEESM_NS8_IJNS9_ILi4EEENS9_ILi2EEEEEENS8_IJSM_S1C_EEEEEENS8_IJNS8_IJNS8_IJSB_NS9_ILi1024EEEEEESM_EEESO_NS8_IJS19_NS9_ILi512EEEEEENS8_IJSO_NS9_ILi8192EEEEEEEEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJNS8_IJSB_S1C_EEES19_EEESM_S17_S1E_EEENS8_IJNS8_IJNS8_IJSM_S1L_EEESB_EEESO_S1G_NS8_IJSO_NS9_ILi16384EEEEEEEEEEEEES1Z_NS12_IS14_S16_NSL_INS8_IJS1A_SM_S1D_NS8_IJSM_SM_EEEEEENS8_IJS1I_SO_S1K_NS8_IJSO_SO_EEEEEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJSA_S19_EEESM_S1D_S1E_EEENS8_IJNS8_IJSB_SM_EEESO_NS8_IJS19_S1L_EEES1W_EEEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_S18_S20_EEENS8_IJNS8_IJSM_S1J_EEES1H_S22_EEEEEEENS12_IS14_S16_NSL_INS8_IJNS8_IJNS8_IJS17_S19_EEES19_EEESM_S1D_S1E_EEENS8_IJS1I_SO_S1K_S1W_EEEEEEENS12_IS14_S16_NSL_INS8_IJS2J_SM_S1D_S20_EEES23_EEEES2Q_EENS4_11SsdEpilogueIfS6_fSC_NS8_IJSA_NS9_ILi32EEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_NS8_IJS17_S1B_EEES1E_EEENS8_IJNS8_IJSM_NS9_ILi2048EEEEEENS8_IJSB_S1J_EEENS8_IJSO_NS9_ILi4096EEEEEEEEEEEEENS12_IS14_S16_NSL_INS8_IJS18_S1Q_S20_EEENS8_IJS1H_S2E_S22_EEEEEEENS12_IS14_S16_NSL_INS8_IJS1Q_S18_S1E_EEENS8_IJS2E_S1H_S1M_EEEEEEELi2ELi2ELb1ELb1EEENS2_23PersistentTileSchedulerEEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
+        "code": "tmem_multiple_dealloc",
+        "message": "CTA (10, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
+      },
+      {
+        "code": "tmem_multiple_dealloc",
+        "message": "CTA (11, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
+      },
+      {
+        "code": "tmem_multiple_dealloc",
+        "message": "CTA (2, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
+      },
+      {
+        "code": "tmem_multiple_dealloc",
+        "message": "CTA (3, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
+      },
+      {
+        "code": "tmem_multiple_dealloc",
+        "message": "CTA (4, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
+      },
+      {
+        "code": "tmem_multiple_dealloc",
+        "message": "CTA (5, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
+      },
+      {
+        "code": "tmem_multiple_dealloc",
+        "message": "CTA (6, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
+      },
+      {
+        "code": "tmem_multiple_dealloc",
+        "message": "CTA (7, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
+      },
+      {
+        "code": "tmem_multiple_dealloc",
+        "message": "CTA (8, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
+      },
+      {
+        "code": "tmem_multiple_dealloc",
+        "message": "CTA (9, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
       }
     ],
-    "lowered_instruction_count": 4218696,
-    "mma_refinement": {
-      "blocked": [],
-      "discharged": 3072
+    "stage": "lifecycle_check",
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
     },
-    "reached_opcodes": {
-      "add.s32": 948276,
-      "add.s64": 337776,
-      "and.b32": 1943808,
-      "and.b64": 307200,
-      "and.pred": 4608,
-      "bar.arrive": 384,
-      "bar.sync": 86400,
-      "bar.warp.sync": 384,
-      "bra": 269832,
-      "bra.uni": 7296,
-      "cp.async.bulk.commit_group": 6528,
-      "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes": 204,
-      "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group": 6144,
-      "cp.async.bulk.tensor.4d.global.shared::cta.bulk_group": 12288,
-      "cp.async.bulk.tensor.4d.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 1920,
-      "cp.async.bulk.wait_group.read": 6528,
-      "cvt.rn.bf16x2.f32": 2297856,
-      "cvt.u32.u64": 307200,
-      "cvt.u64.u32": 40704,
-      "cvta.param.u64": 3852,
-      "cvta.shared.u64": 26112,
-      "cvta.to.shared.u64": 307200,
-      "elect.sync": 159360,
-      "ex2.approx.ftz.f32": 1929216,
-      "fence.mbarrier_init.release.cluster": 55296,
-      "fence.proxy.async.shared::cta": 52224,
-      "fma.rn.ftz.f32": 2359296,
-      "ld.param.b32": 4800,
-      "ld.param.b64": 204,
-      "ld.param.v4.b32": 9216,
-      "ld.shared.b32": 652800,
-      "ld.shared.v2.b32": 393216,
-      "ldmatrix.sync.aligned.x4.m8n8.shared.b16": 196608,
-      "ldmatrix.sync.aligned.x4.trans.m8n8.shared.b16": 98304,
-      "mad.lo.s32": 576,
-      "mapa.shared::cluster.u32": 99840,
-      "mbarrier.arrive.expect_tx.shared::cta.b64": 396,
-      "mbarrier.arrive.shared::cluster.b64": 99840,
-      "mbarrier.init.shared::cta.b64": 504,
-      "mbarrier.try_wait.parity.shared::cta.b64": 181644,
-      "mov.b32": 1171068,
-      "mov.b64": 1983648,
-      "mov.pred": 38784,
-      "mov.s32": 164340,
-      "mov.u32": 165888,
-      "mul.f32x2": 1572864,
-      "mul.ftz.f32": 4780032,
-      "mul.hi.u32": 780,
-      "mul.lo.s32": 396,
-      "mul.wide.s32": 12492,
-      "mul.wide.u32": 13824,
-      "neg.s32": 384,
-      "not.pred": 10752,
-      "or.b32": 717312,
-      "or.b64": 14592,
-      "or.pred": 13824,
-      "prefetch.tensormap": 36,
-      "ret": 4608,
-      "selp.b32": 231972,
-      "selp.f32": 1277952,
-      "setp.eq.b32": 269976,
-      "setp.ge.s32": 4608,
-      "setp.gt.s32": 13824,
-      "setp.gt.u32": 12288,
-      "setp.lt.s32": 13080,
-      "setp.lt.u32": 1228800,
-      "setp.ne.b32": 204096,
-      "shfl.sync.idx.b32": 82944,
-      "shl.b32": 2054436,
-      "shl.b64": 12288,
-      "shr.u32": 32268,
-      "shr.u64": 307200,
-      "stmatrix.sync.aligned.x4.trans.m8n8.shared.b16": 208896,
-      "sub.ftz.f32": 1818624,
-      "sub.s32": 37260,
-      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 384,
-      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 864,
-      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 1536,
-      "tcgen05.ld.sync.aligned.16x256b.x16.b32": 24576,
-      "tcgen05.ld.sync.aligned.16x256b.x4.b32": 98304,
-      "tcgen05.ld.sync.aligned.16x256b.x8.b32": 24576,
-      "tcgen05.mma.cta_group::1.kind::f16": 3072,
-      "tcgen05.st.sync.aligned.16x128b.x16.b32": 49152,
-      "tcgen05.wait::ld.sync.aligned": 61440,
-      "tcgen05.wait::st.sync.aligned": 24576,
-      "xor.b32": 97164,
-      "xor.b64": 307200
+    "template_execution": {
+      "completed_ctas": 12,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 32710044,
+      "path_entries": 2069580,
+      "record_bindings": 3550620,
+      "record_nodes": 2053896,
+      "splits": 276,
+      "template_steps": 2069136,
+      "thread_memberships": 4608,
+      "value_nodes": 1517980
     },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 0,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
+    "thread_record_compression": {
+      "completed_ctas": 12,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 32384820,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
     },
-    "source_binding_storage": {
-      "binding_templates": 300,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 4218696,
-      "stored_bindings": 969996
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "incomplete"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "tmem_multiple_dealloc",
+                "stage": "lifecycle_check"
+              }
+            ],
+            "prerequisite_result": "invalid_lifecycle",
+            "prerequisite_status": "source_lifecycle_violation"
+          },
+          "stage": "pipeline"
+        }
+      ],
+      "equivalence_check": "blocked",
+      "prerequisite_status": "source_lifecycle_violation",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      }
     },
-    "source_edge_storage": {
-      "binding_templates": 36216,
-      "logical_edges": 4214088,
-      "stored_bindings": 36216
-    },
-    "tcgen_history_refinement": {
-      "blocked": [],
-      "notifications": 864,
-      "operations": 3072
-    },
-    "thread_count": 4608,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": []
+    "value_ir_instance_count": 11272205,
+    "value_ir_node_count": 5053517,
+    "value_view_complete": true
   },
-  "frontend_source_violations": [
-    {
-      "code": "tmem_multiple_dealloc",
-      "message": "CTA (0, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
-    },
-    {
-      "code": "tmem_multiple_dealloc",
-      "message": "CTA (1, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
-    },
-    {
-      "code": "tmem_multiple_dealloc",
-      "message": "CTA (10, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
-    },
-    {
-      "code": "tmem_multiple_dealloc",
-      "message": "CTA (11, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
-    },
-    {
-      "code": "tmem_multiple_dealloc",
-      "message": "CTA (2, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
-    },
-    {
-      "code": "tmem_multiple_dealloc",
-      "message": "CTA (3, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
-    },
-    {
-      "code": "tmem_multiple_dealloc",
-      "message": "CTA (4, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
-    },
-    {
-      "code": "tmem_multiple_dealloc",
-      "message": "CTA (5, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
-    },
-    {
-      "code": "tmem_multiple_dealloc",
-      "message": "CTA (6, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
-    },
-    {
-      "code": "tmem_multiple_dealloc",
-      "message": "CTA (7, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
-    },
-    {
-      "code": "tmem_multiple_dealloc",
-      "message": "CTA (8, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
-    },
-    {
-      "code": "tmem_multiple_dealloc",
-      "message": "CTA (9, 0, 0): tmem.alloc.W1.I396.O0 has 4 distinct deallocation occurrences; first deallocation at warp 8, instruction 3343, occurrence 0"
-    }
-  ],
-  "implementation": "cpp",
-  "memory_analysis_complete": false,
-  "peak_footprint_mib": 87727.47265625,
-  "peak_rss_mib": 87727.47265625,
-  "resource": {
-    "kind": "time",
-    "limit": 499.999,
-    "origin": "configured_budget",
-    "unit": "seconds"
-  },
-  "result": "timeout",
+  "peak_rss_mib": 9597.078125,
+  "pipeline_elapsed_seconds": 47.928695484,
+  "result": "invalid_lifecycle",
   "rss_limit_mib": null,
-  "schema": "spverify.native-ptx-run/v1",
+  "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "timeout_scope": "whole_pipeline",
   "verification_limitations": [],
-  "warnings_complete": false
+  "warnings": [
+    {
+      "barrier": 2,
+      "code": "duplicate-barrier-initialization",
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "replaced_expected_arrivals": 1,
+      "replaced_instruction": 73049,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 418
+      },
+      "retained_expected_arrivals": 1,
+      "retained_instruction": 73064,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 480
+      }
+    },
+    {
+      "barrier": 2,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          1,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 11,
+      "replaced_expected_arrivals": 1,
+      "replaced_instruction": 73049,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 418
+      },
+      "retained_expected_arrivals": 1,
+      "retained_instruction": 73064,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 480
+      }
+    },
+    {
+      "barrier": 4,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 130,
+      "replaced_instruction": 73050,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 425
+      },
+      "retained_expected_arrivals": 130,
+      "retained_instruction": 73065,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 487
+      }
+    },
+    {
+      "barrier": 5,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 1,
+      "replaced_instruction": 165587,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 801
+      },
+      "retained_expected_arrivals": 1,
+      "retained_instruction": 165602,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 864
+      }
+    },
+    {
+      "barrier": 7,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 2,
+      "replaced_instruction": 165588,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 808
+      },
+      "retained_expected_arrivals": 2,
+      "retained_instruction": 165603,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 871
+      }
+    },
+    {
+      "barrier": 10,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 1,
+      "replaced_instruction": 73051,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 431
+      },
+      "retained_expected_arrivals": 1,
+      "retained_instruction": 73066,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 493
+      }
+    },
+    {
+      "barrier": 11,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 130,
+      "replaced_instruction": 73052,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 437
+      },
+      "retained_expected_arrivals": 130,
+      "retained_instruction": 73067,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 499
+      }
+    },
+    {
+      "barrier": 12,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 1,
+      "replaced_instruction": 165589,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 814
+      },
+      "retained_expected_arrivals": 1,
+      "retained_instruction": 165604,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 877
+      }
+    },
+    {
+      "barrier": 13,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 2,
+      "replaced_instruction": 165590,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 820
+      },
+      "retained_expected_arrivals": 2,
+      "retained_instruction": 165605,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 883
+      }
+    },
+    {
+      "barrier": 14,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 1,
+      "replaced_instruction": 134933,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 673
+      },
+      "retained_expected_arrivals": 1,
+      "retained_instruction": 134948,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 736
+      }
+    },
+    {
+      "barrier": 16,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 129,
+      "replaced_instruction": 134934,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 680
+      },
+      "retained_expected_arrivals": 129,
+      "retained_instruction": 134949,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 743
+      }
+    },
+    {
+      "barrier": 18,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 1,
+      "replaced_instruction": 134935,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 686
+      },
+      "retained_expected_arrivals": 1,
+      "retained_instruction": 134950,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 749
+      }
+    },
+    {
+      "barrier": 19,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 129,
+      "replaced_instruction": 134936,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 692
+      },
+      "retained_expected_arrivals": 129,
+      "retained_instruction": 134951,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 755
+      }
+    },
+    {
+      "barrier": 22,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 256,
+      "replaced_instruction": 104280,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 552
+      },
+      "retained_expected_arrivals": 256,
+      "retained_instruction": 104295,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 615
+      }
+    },
+    {
+      "barrier": 23,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 1,
+      "replaced_instruction": 104279,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 545
+      },
+      "retained_expected_arrivals": 1,
+      "retained_instruction": 104294,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 608
+      }
+    },
+    {
+      "barrier": 24,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 256,
+      "replaced_instruction": 104282,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 564
+      },
+      "retained_expected_arrivals": 256,
+      "retained_instruction": 104297,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 627
+      }
+    },
+    {
+      "barrier": 25,
+      "code": "duplicate-barrier-initialization",
+      "members": [
+        [
+          0,
+          11
+        ]
+      ],
+      "message": "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program.",
+      "multiplicity": 12,
+      "replaced_expected_arrivals": 1,
+      "replaced_instruction": 104281,
+      "replaced_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 558
+      },
+      "retained_expected_arrivals": 1,
+      "retained_instruction": 104296,
+      "retained_location": {
+        "column": 1,
+        "file": "corpus/cutlass112_blackwell_ssd.compute_100a.ptx",
+        "line": 621
+      }
+    }
+  ],
+  "wellsync_timeout_seconds": 500.0,
+  "whole_pipeline_timeout_seconds": 498.424
 }

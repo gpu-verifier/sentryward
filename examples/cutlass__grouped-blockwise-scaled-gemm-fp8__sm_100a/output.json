@@ -1,18 +1,4 @@
 {
-  "assumption_hints": [
-    {
-      "key": "representative_branches",
-      "label": "Representative branches",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    },
-    {
-      "key": "bounded_computation_loops",
-      "label": "Bounded computation loops",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    }
-  ],
   "assumptions": [
     {
       "enabled": true,
@@ -48,307 +34,419 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "not_run",
-    "memory": "not_run",
     "synchronization": "not_run"
-  },
-  "details": {
-    "required_parameters": [
-      {
-        "bytes": 8,
-        "offset": 1232,
-        "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
-        "ptx_line": 3222
-      }
-    ]
   },
   "diagnostics": [
     {
-      "code": "control_parameter_value_missing",
+      "code": "nonconstant_tma_descriptor",
       "details": {
+        "internal_stage": "ptx_execution",
         "location": {
           "column": 0,
           "file": "corpus/cutlass__grouped-blockwise-scaled-gemm-fp8__sm_100a.ptx",
-          "line": 3316
+          "line": 0
         },
-        "required_parameters": [
-          {
-            "bytes": 8,
-            "offset": 1232,
-            "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
-            "ptx_line": 3222
-          }
-        ]
+        "required_parameters": []
       },
-      "message": "control predicate is not statically determined",
-      "stage": "ptx_execution"
+      "message": "runtime tensor map changes at a reused global address",
+      "stage": "synchronization"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
+  "internal": {
+    "details": {
+      "required_parameters": []
     },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_parameter_value_missing",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/cutlass__grouped-blockwise-scaled-gemm-fp8__sm_100a.ptx",
-                  "line": 3316
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "not_run"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "nonconstant_tma_descriptor",
+                "details": {
+                  "location": {
+                    "column": 0,
+                    "file": "corpus/cutlass__grouped-blockwise-scaled-gemm-fp8__sm_100a.ptx",
+                    "line": 0
+                  },
+                  "required_parameters": []
                 },
-                "required_parameters": [
-                  {
-                    "bytes": 8,
-                    "offset": 1232,
-                    "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
-                    "ptx_line": 3222
-                  }
-                ]
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
+                "message": "runtime tensor map changes at a reused global address",
+                "stage": "ptx_execution"
+              }
+            ],
+            "prerequisite_result": "unsupported"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "frontend": {
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 0,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_array_contract": {
+          "kind": "fixed_read_only",
+          "origin": "pointer_arrays",
+          "regions": [
+            {
+              "allocation": "mainloop.ptr_A.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1192"
+            },
+            {
+              "allocation": "mainloop.ptr_B.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1208"
+            },
+            {
+              "allocation": "mainloop.ptr_SFA.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1224"
+            },
+            {
+              "allocation": "mainloop.ptr_SFB.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1240"
+            },
+            {
+              "allocation": "epilogue.ptr_C.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1928"
+            },
+            {
+              "allocation": "epilogue.ptr_D.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1944"
             }
           ],
-          "prerequisite_result": "unsupported"
+          "text": "Configured pointer-table entries retain their supplied objects and are not written during the analyzed execution."
         },
-        "stage": "pipeline"
-      }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
-  },
-  "frontend": {
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "shape_input_contract": {
+          "kind": "fixed_read_only",
+          "origin": "shape_arrays",
+          "regions": [
+            {
+              "allocation": "problem_shape.problem_shapes",
+              "byte_offset": 0,
+              "bytes": 48,
+              "resource": "input.arg0.16"
+            },
+            {
+              "allocation": "scheduler.problem_shapes",
+              "byte_offset": 0,
+              "bytes": 48,
+              "resource": "input.arg0.2160"
+            },
+            {
+              "allocation": "mainloop.layout_SFA.array",
+              "byte_offset": 0,
+              "bytes": 80,
+              "resource": "input.arg0.1232"
+            },
+            {
+              "allocation": "mainloop.layout_SFB.array",
+              "byte_offset": 0,
+              "bytes": 80,
+              "resource": "input.arg0.1248"
+            },
+            {
+              "allocation": "mainloop.dA.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1200"
+            },
+            {
+              "allocation": "mainloop.dB.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1216"
+            },
+            {
+              "allocation": "epilogue.dC.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1936"
+            },
+            {
+              "allocation": "epilogue.dD.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.1952"
+            }
+          ],
+          "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+        },
+        "trap_only_equality_assertions_hold": true
+      },
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "problem_shape.problem_shapes",
+          "offset": 16,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.tensormaps",
+          "offset": 1184,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.ptr_A.array",
+          "offset": 1192,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.dA.array",
+          "offset": 1200,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.ptr_B.array",
+          "offset": 1208,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.dB.array",
+          "offset": 1216,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.ptr_SFA.array",
+          "offset": 1224,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.layout_SFA.array",
+          "offset": 1232,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.ptr_SFB.array",
+          "offset": 1240,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.layout_SFB.array",
+          "offset": 1248,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "epilogue.tensormaps",
+          "offset": 1920,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "epilogue.ptr_C.array",
+          "offset": 1928,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "epilogue.dC.array",
+          "offset": 1936,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "epilogue.ptr_D.array",
+          "offset": 1944,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "epilogue.dD.array",
+          "offset": 1952,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "scheduler.problem_shapes",
+          "offset": 2160,
+          "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        }
       ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 0,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "shape_input_contract": {
-        "kind": "fixed_read_only",
-        "origin": "shape_arrays",
-        "regions": [
-          {
-            "allocation": "input.arg0.16",
-            "byte_offset": 0,
-            "bytes": 48,
-            "resource": "input.arg0.16"
-          },
-          {
-            "allocation": "input.arg0.2160",
-            "byte_offset": 0,
-            "bytes": 48,
-            "resource": "input.arg0.2160"
-          }
-        ],
-        "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
-      },
-      "trap_only_equality_assertions_hold": true
+      "required_parameters": [],
+      "user_branch_decisions": []
     },
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "input.arg0.16",
-        "offset": 16,
-        "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
-        "source": "shape_array"
-      },
-      {
-        "bytes": 8,
-        "object": "input.arg0.1184",
-        "offset": 1184,
-        "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
-        "source": "address_use"
-      },
-      {
-        "bytes": 8,
-        "object": "input.arg0.1920",
-        "offset": 1920,
-        "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
-        "source": "address_use"
-      },
-      {
-        "bytes": 8,
-        "object": "input.arg0.2160",
-        "offset": 2160,
-        "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
-        "source": "shape_array"
+    "implementation": "cpp",
+    "location": {
+      "column": 0,
+      "file": "corpus/cutlass__grouped-blockwise-scaled-gemm-fp8__sm_100a.ptx",
+      "line": 0
+    },
+    "memory_analysis_complete": false,
+    "peak_footprint_mib": 81.31640625,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "execution_cohorts": 0,
+      "mapping_complete": false,
+      "memory_binding_stored_rows": 0,
+      "memory_binding_templates": 0,
+      "memory_bindings": 0,
+      "memory_linking_templates_used": false,
+      "synchronization_groups": 0,
+      "synchronization_groups_materialized": false,
+      "synthetic_synchronization_nodes": 0,
+      "thread_prefix_groups": 0
+    },
+    "stage": "ptx_execution",
+    "template_execution": {
+      "completed_ctas": 0,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 0,
+      "path_entries": 0,
+      "record_bindings": 0,
+      "record_nodes": 0,
+      "splits": 0,
+      "template_steps": 0,
+      "thread_memberships": 0,
+      "value_nodes": 0
+    },
+    "thread_record_compression": {
+      "completed_ctas": 0,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 0,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "not_run"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "nonconstant_tma_descriptor",
+                "details": {
+                  "location": {
+                    "column": 0,
+                    "file": "corpus/cutlass__grouped-blockwise-scaled-gemm-fp8__sm_100a.ptx",
+                    "line": 0
+                  },
+                  "required_parameters": []
+                },
+                "message": "runtime tensor map changes at a reused global address",
+                "stage": "ptx_execution"
+              }
+            ],
+            "prerequisite_result": "unsupported",
+            "prerequisite_status": "ptx_execution_unsupported"
+          },
+          "stage": "pipeline"
+        }
+      ],
+      "equivalence_check": "blocked",
+      "prerequisite_status": "ptx_execution_unsupported",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
       }
-    ],
-    "required_parameters": [
-      {
-        "bytes": 8,
-        "offset": 1232,
-        "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
-        "ptx_line": 3222
-      }
-    ],
-    "user_branch_decisions": []
+    },
+    "value_ir_instance_count": 0,
+    "value_ir_node_count": 0,
+    "value_view_complete": false
   },
-  "implementation": "cpp",
-  "location": {
-    "column": 0,
-    "file": "corpus/cutlass__grouped-blockwise-scaled-gemm-fp8__sm_100a.ptx",
-    "line": 3316
-  },
-  "memory_analysis_complete": false,
-  "peak_footprint_mib": 207.1875,
-  "peak_rss_mib": 466.171875,
-  "pipeline_elapsed_seconds": 0.509053802,
+  "peak_rss_mib": 82.7265625,
+  "pipeline_elapsed_seconds": 0.633124936,
   "result": "unsupported",
   "rss_limit_mib": null,
   "scope": {
     "operation": "kernel_verification"
   },
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "execution_cohorts": 0,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 0,
-    "synchronization_groups_materialized": false,
-    "synthetic_synchronization_nodes": 0,
-    "thread_prefix_groups": 0
-  },
-  "stage": "ptx_execution",
-  "template_execution": {
-    "completed_ctas": 0,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 0,
-    "path_entries": 0,
-    "record_bindings": 0,
-    "record_nodes": 0,
-    "splits": 0,
-    "template_steps": 0,
-    "thread_memberships": 0,
-    "value_nodes": 0
-  },
-  "thread_record_compression": {
-    "completed_ctas": 0,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 0,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_parameter_value_missing",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/cutlass__grouped-blockwise-scaled-gemm-fp8__sm_100a.ptx",
-                  "line": 3316
-                },
-                "required_parameters": [
-                  {
-                    "bytes": 8,
-                    "offset": 1232,
-                    "parameter": "_ZN7cutlass13device_kernelI113cutlass3x_sm100_tensorop_gemm_grouped_64x128f32xe4m3_32x128f32xe4m3_f32_f16_f16_64x32x128_0x0x1_0_nnn_align16_1smEEvNT_6ParamsE_param_0",
-                    "ptx_line": 3222
-                  }
-                ]
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported",
-          "prerequisite_status": "ptx_execution_unsupported"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "ptx_execution_unsupported",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    }
-  },
-  "value_ir_instance_count": 0,
-  "value_ir_node_count": 0,
-  "value_view_complete": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.406
 }

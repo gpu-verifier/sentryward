@@ -3,6 +3,7 @@
 #include "sentryward/algorithm/diagnostics/performance_profile.h"
 #include "sentryward/algorithm/source_ir/builder.h"
 #include "sentryward/algorithm/base/affine_index.h"
+#include "sentryward/algorithm/checker/unit_quotient.h"
 #include "sentryward/frontend/ptx/dependency_history.h"
 #include "sentryward/frontend/ptx/group2_lifetime.h"
 #include "sentryward/frontend/ptx/layouts.h"
@@ -49,6 +50,55 @@ void UniquePush(auto &v, const auto &x) {
   if (std::find(v.begin(), v.end(), x) == v.end())
     v.push_back(x);
 }
+// One lane's MMA operand reads of one (tcgen group, space, allocation or alias
+// scope), in issue order, with the sized ones indexed by allocation and start
+// offset: a later write visits the reads that can overlap it (and, for an alias
+// scope, those of the other allocations) instead of every earlier read.
+// Candidates come back in issue order, so the links a caller adds are those of
+// the full scan from index `from` on, in the same order. Add O(log n);
+// Candidates O(offsets in the window × log n + result).
+struct MmaOperandReads {
+  using Read = std::tuple<MilestoneRef, ConstantAddressBinding, std::optional<std::uint64_t>>;
+  std::vector<Read> all;
+  struct Placed {
+    // start offset -> indices into `all`, ascending (appended in issue order)
+    std::map<std::uint64_t, std::vector<std::size_t>> by_offset;
+    std::uint64_t max_size = 0;
+  };
+  std::map<std::string, Placed> by_allocation;
+  void Add(MilestoneRef ref, ConstantAddressBinding binding, std::optional<std::uint64_t> size) {
+    if (size) {
+      auto &placed = by_allocation[binding.allocation];
+      placed.by_offset[binding.offset].push_back(all.size());
+      placed.max_size = std::max(placed.max_size, *size);
+    }
+    all.emplace_back(ref, std::move(binding), size);
+  }
+  // Sized reads with index >= `from` of `allocation` that may overlap
+  // [offset, offset + bytes), plus (`other_allocations`) every such read of
+  // another allocation, in issue order.
+  std::vector<std::size_t> Candidates(const std::string &allocation, std::uint64_t offset,
+                                      std::uint64_t bytes, bool other_allocations,
+                                      std::size_t from = 0) const {
+    std::vector<std::size_t> result;
+    const auto take = [&](const std::vector<std::size_t> &indices) {
+      result.insert(result.end(), std::lower_bound(indices.begin(), indices.end(), from), indices.end());
+    };
+    for (const auto &[name, placed] : by_allocation) {
+      if (name != allocation) {
+        if (other_allocations)
+          for (const auto &[start, indices] : placed.by_offset) { (void)start; take(indices); }
+        continue;
+      }
+      const auto lower = offset > placed.max_size ? offset - placed.max_size : 0;
+      const auto upper = offset > UINT64_MAX - bytes ? UINT64_MAX : offset + bytes;
+      for (auto it = placed.by_offset.lower_bound(lower); it != placed.by_offset.end() && it->first <= upper; ++it)
+        take(it->second);
+    }
+    std::sort(result.begin(), result.end());
+    return result;
+  }
+};
 std::vector<std::string> Brackets(const std::vector<std::string> &v) {
   std::vector<std::string> r;
   for (const auto &x : v)
@@ -73,10 +123,20 @@ struct Thread {
   PendingCompletions loads, stores;
   CompletionPrefix classic_notification;
   std::map<int, CompletionPrefix> tcgen_notifications;
+  // tcgen05 pipelines (PTX ISA, pipelined tcgen05 instructions): from the same
+  // warp, ld -> st, st -> ld and st -> st access TMEM in issue order. Tracked
+  // per thread until the matching tcgen05.wait, which orders everything anyway.
+  std::vector<InstId> tmem_loads_since_store;
+  std::optional<InstId> tmem_last_store;
+  // (branch, join) instruction ids of the merged one-armed diamond this lane is in.
+  std::optional<std::pair<std::uint32_t, std::uint32_t>> merged_arm;
   TcgenHistory history;
   std::map<std::string, InstId> pipeline;
-  std::map<std::tuple<unsigned,std::string,std::string>,
-      std::vector<std::tuple<MilestoneRef,ConstantAddressBinding,std::optional<std::uint64_t>>>> mma_operand_reads;
+  std::map<std::tuple<unsigned,std::string,std::string>, MmaOperandReads> mma_operand_reads;
+  // (pipeline, D fragment address, bytes) -> (the MMA that last wrote it, the size
+  // of its operand-read list when that MMA was linked). See Mma.
+  std::map<std::tuple<std::string, std::uint32_t, std::uint64_t>, std::pair<InstId, std::size_t>>
+      operand_watermarks;
   struct CopyWrite {
     MilestoneRef effect;
     ConstantAddressBinding binding;
@@ -86,7 +146,7 @@ struct Thread {
   std::map<std::tuple<unsigned,std::string,std::string>, std::vector<CopyWrite>> copy_writes;
 };
 using Site = std::tuple<std::uint32_t, std::uint32_t, std::uint64_t>;
-Site Key(std::uint32_t warp, const ExecutedInstruction &e) {
+Site Key(std::uint32_t warp, const RecordView &e) {
   return {warp, e.instruction_id(), e.occurrence()};
 }
 Site Key(const TmemAtomSite &s) {
@@ -95,6 +155,9 @@ Site Key(const TmemAtomSite &s) {
 struct Aligned {
   std::map<std::uint32_t, std::pair<InstId, InstId>> calls;
   bool completions = false;
+  // Executed inside a merged arm: lanes still must all participate, but the site does
+  // not publish memory across lanes (a skipping execution lacks the rendezvous).
+  bool merged_arm = false;
 };
 using ClusterKey = std::tuple<Coordinates, Coordinates, std::uint32_t>;
 struct ClusterWait {
@@ -107,6 +170,15 @@ struct TmemAddress {
   std::string resource;
   std::optional<std::uint32_t> columns;
 };
+// The MemoHit/MemoFill event of the evaluated-address memo, out of line and cold so
+// that the hot generated-memory loop keeps only the recording() branch (O(1) per
+// hit/fill).
+[[gnu::noinline, gnu::cold]] void NoteEvaluatedMemo(const CtaFacts &facts, bool hit, RecordRef at,
+                                                    std::uint64_t key, RegId reg) {
+  const MemoRef memo{at, key};
+  if (hit) facts.Note(query::MemoHit{memo, reg});
+  else facts.Note(query::MemoFill{memo, reg});
+}
 } // namespace
 struct ModelLowerer::Impl {
   bool retain_matrix_layout = false;
@@ -127,10 +199,20 @@ struct ModelLowerer::Impl {
   std::vector<bool> shared_value_instructions;
   Coordinates current_coordinates{};
   std::map<std::string, std::string> limitations;
+  // Every consumed CTA's tensormap.cp_fenceproxy destinations (object, region base), checked
+  // against input tensor maps in run.cpp on the per-unit path.
+  std::set<std::pair<std::string, std::uint64_t>> tensormap_destinations;
   std::set<std::pair<std::string, std::string>> violations;
   std::map<std::uint32_t, MmaPlan> plans;
   std::map<std::uint32_t,TcgenCopyPlan> copy_plans;
   std::vector<TcgenHistory> histories;
+  // Per merged branch: does its arm wait for loads, and which registers does it read
+  // before writing them (upward-exposed reads).
+  struct MergedArmFacts {
+    bool wait_load = false;
+    std::vector<std::string> exposed;
+  };
+  std::map<std::uint32_t, MergedArmFacts> merged_arm_facts;
   std::map<std::string, DependencyCounts> dependency_counts;
   std::vector<std::vector<std::string>> operands;
   std::vector<std::string> opcode_texts;
@@ -163,14 +245,18 @@ struct ModelLowerer::Impl {
       SyncId>
       warp_collectives;
   std::map<std::pair<std::uint32_t, std::uint32_t>, ActorId> actors;
-  const ExecutionProgram *execution = nullptr;
+  // Cross-CTA class mode (TrackUnits): per representative CTA its occurrence counts (sparse),
+  // the CTA-free part of its rendered violations, and the CTAs with a lowering diagnostic (their
+  // classes never admit, so their weight must be 1).
+  algorithm::UnitQuotient *units = nullptr;
+  std::vector<std::pair<std::uint32_t, std::vector<std::pair<std::uint32_t, std::uint64_t>>>> cta_occurrences;
+  std::vector<std::tuple<std::uint32_t, std::string, std::string>> cta_violations; // (cta, code, suffix)
+  std::set<std::uint32_t> diagnostic_ctas;
+  const CtaFacts *facts = nullptr;
   Resources *resources = nullptr;
   TmemLifetimeAnalysis *tmem = nullptr;
   MatrixResolver *matrix = nullptr;
-  const LaneTrace *current_lane = nullptr;
-  std::map<std::tuple<std::uint32_t, DynamicKey>,
-           std::vector<std::pair<std::uint32_t, const ExecutedInstruction *>>>
-      warp_sites;
+  std::optional<LaneRef> current_lane; // the lane being lowered (Add)
   Impl(const Module &m, const Function &f, std::function<void()> p)
       : module(m), function(f), poll(std::move(p)), source_name(m.source_name), registers(m, f) {
     for (const auto& [id, path] : m.file_table) debug_files.emplace(id, path);
@@ -208,10 +294,16 @@ struct ModelLowerer::Impl {
     if (poll)
       poll();
   }
+  // `weight` (class mode, Finish only): the class size of the unit the occurrence belongs to.
   void Diagnostic(std::string code, std::string message,
                   const Thread *t = nullptr,
-                  const ExecutedInstruction *e = nullptr, Json details = Json::object()) {
-    ++errors[code];
+                  const RecordView *e = nullptr, Json details = Json::object(), std::uint64_t weight = 1) {
+    errors[code] += weight;
+    if (units && facts) diagnostic_ctas.insert(facts->Linear());
+    // A ReportBearing event: per-CTA report evidence (closes the recording class); never after Add
+    // (facts is null).
+    if (facts && facts->recording()) [[unlikely]]
+      facts->Note(query::ReportBearing{query::ReportKind::LoweringDiagnostic, code});
     Json d{{"code",code},{"message",message},{"stage","event_view_construction"},{"details",std::move(details)}};
     if(e)d["details"]["ptx_line"]=function.instructions[e->instruction_id()].line;
     const auto key=d.dump();
@@ -222,7 +314,7 @@ struct ModelLowerer::Impl {
       diagnostics.push_back(std::move(d));
     }
     auto& evidence=diagnostics[it->second]["details"];
-    evidence["occurrence_count"]=evidence["occurrence_count"].get<std::size_t>()+1;
+    evidence["occurrence_count"]=evidence["occurrence_count"].get<std::size_t>()+weight;
     if(t) {
       const auto actor=t->actor.id.value();
       auto& ranges=evidence["actor_ranges"];
@@ -256,11 +348,11 @@ struct ModelLowerer::Impl {
         for(const auto &access:async->effects[index].accesses)
           if(const auto *address=std::get_if<AddressId>(&access.endpoint);
               address && access.mode==AccessMode::kWrite && access.bytes &&
-              addresses.bindings.at(address->value()).address_space=="shared") {
+              resources->Binding(*address).address_space=="shared") {
             UniquePush(shared_value_writes[site],Ref(id,Milestone::kEffect,index));break;
           }
   }
-  InstId Emit(Thread &t, const ExecutedInstruction &e, SourceOp op) {
+  InstId Emit(Thread &t, const RecordView &e, SourceOp op) {
     const auto &i = function.instructions[e.instruction_id()];
     auto id = source.append(t.actor.id, Location(i), std::move(op),
                             PtxOrigin{source_name, i.id,
@@ -274,13 +366,17 @@ struct ModelLowerer::Impl {
     }
     return id;
   }
-  InstId Async(Thread &t, const ExecutedInstruction &e,
+  InstId Async(Thread &t, const RecordView &e,
                std::vector<AsyncEffect> effects) {
     return Emit(t, e, AsyncOp{AsyncOpId(Next().value()), std::move(effects)});
   }
-  std::uint64_t Scalar(const ExecutedInstruction &e, std::string_view s,
+  std::uint64_t Scalar(const RecordView &e, std::string_view s,
                        std::string_view field, std::uint64_t max = UINT64_MAX) {
     return Unsigned(resources->ScalarValue(e, s, field), field, max);
+  }
+  // A 64-bit descriptor operand, read as its bit pattern.
+  std::uint64_t Descriptor(const RecordView &e, std::string_view s, std::string_view field) {
+    return Bits(resources->ScalarValue(e, s, field), field);
   }
   std::string Register(const Instruction &i, const std::string &name) {
     return registers.Resolve(i.scope, name);
@@ -310,30 +406,30 @@ struct ModelLowerer::Impl {
       UniquePush(result, Register(i, *i.predicate));
     return result;
   }
-  bool MemoryRegisters(Thread &, const ExecutedInstruction &, AddressId, std::uint32_t, bool);
-  void Compute(Thread &, const ExecutedInstruction &);
-  void WarpData(Thread &, const ExecutedInstruction &);
-  void Collective(Thread &, const ExecutedInstruction &, std::string_view);
-  void Mbarrier(Thread &, const ExecutedInstruction &, const Json &);
-  void Tcgen(Thread &, const ExecutedInstruction &, const Json &);
-  void Lifetime(Thread &, const ExecutedInstruction &);
+  bool MemoryRegisters(Thread &, const RecordView &, AddressId, std::uint32_t, bool);
+  void Compute(Thread &, const RecordView &);
+  void WarpData(Thread &, const RecordView &);
+  void Collective(Thread &, const RecordView &, std::string_view);
+  void Mbarrier(Thread &, const RecordView &, const Json &);
+  void Tcgen(Thread &, const RecordView &, const Json &);
+  void Lifetime(Thread &, const RecordView &);
   void LifetimeOrders();
   void CollectGroup2();
-  void Matrix(Thread &, const ExecutedInstruction &, bool);
-  TmemAddress ResolveTmem(Thread &, const ExecutedInstruction &,
+  void Matrix(Thread &, const RecordView &, bool);
+  TmemAddress ResolveTmem(Thread &, const RecordView &,
                           std::string_view);
-  void Mma(Thread &, const ExecutedInstruction &, const Json &);
-  InstId Copy(Thread &, const ExecutedInstruction &, std::vector<Fragment>,
+  void Mma(Thread &, const RecordView &, const Json &);
+  InstId Copy(Thread &, const RecordView &, std::vector<Fragment>,
               std::vector<Fragment>,
               std::optional<CompletionAction> completion = {});
-  void Instruction(Thread &, const ExecutedInstruction &);
-  void Add(std::uint32_t, Coordinates, const ExecutionProgram &, const ValueAddresses&);
+  void Instruction(Thread &, const RecordView &);
+  void Add(const CtaFacts &, ValueAddresses);
   LoweringResult Finish();
 };
 // Lift only a memory instruction that intersects pending register accesses.
 // Dependency edges target its individual operand reads, never the producer's
 // aggregate completion or the entire outstanding TMEM load/store queue.
-bool ModelLowerer::Impl::MemoryRegisters(Thread &t, const ExecutedInstruction &e,
+bool ModelLowerer::Impl::MemoryRegisters(Thread &t, const RecordView &e,
     AddressId address, std::uint32_t bytes, bool load) {
   if (t.writes.empty() && t.reads.empty()) return false;
   const auto &i=function.instructions[e.instruction_id()];
@@ -368,7 +464,7 @@ bool ModelLowerer::Impl::MemoryRegisters(Thread &t, const ExecutedInstruction &e
   for(const auto &r:outputs)t.writes.erase(r);
   return true;
 }
-void ModelLowerer::Impl::Compute(Thread &t, const ExecutedInstruction &e) {
+void ModelLowerer::Impl::Compute(Thread &t, const RecordView &e) {
   if (t.writes.empty() && t.reads.empty())
     return;
   ProfileScope profile("frontend.model.async_register_compute");
@@ -403,7 +499,7 @@ void ModelLowerer::Impl::Compute(Thread &t, const ExecutedInstruction &e) {
   for (const auto &r : destinations)
     t.writes.erase(r);
 }
-void ModelLowerer::Impl::WarpData(Thread &t, const ExecutedInstruction &e) {
+void ModelLowerer::Impl::WarpData(Thread &t, const RecordView &e) {
   ProfileScope profile("frontend.model.warp_data");
   const auto &i = function.instructions[e.instruction_id()];
   auto sources = Sources(i), destinations = Destinations(i);
@@ -433,7 +529,7 @@ void ModelLowerer::Impl::WarpData(Thread &t, const ExecutedInstruction &e) {
     Emit(t, e, Await{{Ref(id)}});
   }
 }
-void ModelLowerer::Impl::Collective(Thread &t, const ExecutedInstruction &e,
+void ModelLowerer::Impl::Collective(Thread &t, const RecordView &e,
                                     std::string_view operation) {
   ProfileScope profile("frontend.model.collective");
   const auto &ops = operands[e.instruction_id()];
@@ -473,11 +569,12 @@ void ModelLowerer::Impl::Collective(Thread &t, const ExecutedInstruction &e,
     auto expected =
         ops.size() == (reduced ? 4u : 2u)
             ? Scalar(e, ops.at(reduced ? 2 : 1), "named count", UINT32_MAX)
-            : execution->config.Threads();
-    if (!expected || expected % 32 || expected > execution->config.Threads())
+            : facts->launch().Threads();
+    if (!expected || expected % 32 || expected > facts->launch().Threads())
       throw SemanticError("invalid_named_barrier",
                           "invalid named barrier thread count");
-    const auto barrier = barriers.Intern("named", resources->coordinates, std::to_string(slot));
+    const auto barrier = resources->interner().Apply(
+        BarrierStep{{BarrierKey::Kind::Named, resources->frame.self(), std::to_string(slot)}});
     if (operation == "named_arrive")
       Emit(t, e, NamedBarrierArrive{barrier, static_cast<std::uint32_t>(expected)});
     else
@@ -485,10 +582,8 @@ void ModelLowerer::Impl::Collective(Thread &t, const ExecutedInstruction &e,
     return;
   }
   if (operation == "cluster_arrive" || operation == "cluster_wait") {
-    auto d = execution->config.cluster_dim.value_or(Coordinates{1, 1, 1});
-    Coordinates origin;
-    for (int k = 0; k < 3; ++k)
-      origin[k] = resources->coordinates[k] - resources->coordinates[k] % d[k];
+    const auto d = resources->frame.cluster_dim();
+    const auto origin = resources->frame.ClusterOrigin();
     ClusterKey key{origin, d, cluster_phases[t.actor.id]};
     const auto phase=cluster_phases[t.actor.id];
     auto &arrivals = cluster_arrivals[key];
@@ -506,7 +601,7 @@ void ModelLowerer::Impl::Collective(Thread &t, const ExecutedInstruction &e,
       auto id = Emit(t, e, Await{});
       cluster_waits.push_back(
           {key, id,
-           std::uint64_t(d[0]) * d[1] * d[2] * execution->config.Threads()});
+           std::uint64_t(d[0]) * d[1] * d[2] * facts->launch().Threads()});
       ++cluster_phases[t.actor.id];
     }
     auto id = sites.at(Key(warp, e)).back();
@@ -516,7 +611,7 @@ void ModelLowerer::Impl::Collective(Thread &t, const ExecutedInstruction &e,
   }
   throw SemanticError("unsupported_collective", "unknown collective");
 }
-void ModelLowerer::Impl::Mbarrier(Thread &t, const ExecutedInstruction &e,
+void ModelLowerer::Impl::Mbarrier(Thread &t, const RecordView &e,
                                   const Json &contract) {
   ProfileScope profile("frontend.model.mbarrier");
   const auto &i = function.instructions[e.instruction_id()];
@@ -532,7 +627,7 @@ void ModelLowerer::Impl::Mbarrier(Thread &t, const ExecutedInstruction &e,
                       static_cast<std::uint32_t>(Scalar(
                           e, ops.back(), "expected arrivals", UINT32_MAX))});
   else if (operation == "inval") {
-    const auto address=resources->Memory(e,brackets[0],Json::object(),8,"shared");
+    const auto address=resources->Memory(e,MemoryRequest(brackets[0],Json::object(),8,"shared"));
     barrier_invalidations[barrier].push_back(Emit(t,e,ImmediateStore{address.first,8}));
   }
   else if (operation == "expect_tx")
@@ -573,7 +668,7 @@ void ModelLowerer::Impl::Mbarrier(Thread &t, const ExecutedInstruction &e,
            MBarrierWaitParity{barrier, static_cast<std::uint8_t>(Scalar(
                                            e, ops.at(2), "wait parity", 1))});
     else {
-      auto origin = execution->RegisterOrigin(e, ops.at(2));
+      auto origin = facts->Origin(e, ops.at(2));
       if (!origin || !t.origins.contains(*origin))
         throw SemanticError("unresolved_state_token",
                             "state wait has no retained arrival token");
@@ -593,7 +688,7 @@ void ModelLowerer::Impl::Mbarrier(Thread &t, const ExecutedInstruction &e,
                         "unrepresented mbarrier operation");
 }
 TmemAddress ModelLowerer::Impl::ResolveTmem(Thread &t,
-                                            const ExecutedInstruction &e,
+                                            const RecordView &e,
                                             std::string_view operand) {
   if (!tmem)
     throw SemanticError("unresolved_tmem_pointer",
@@ -620,7 +715,7 @@ TmemAddress ModelLowerer::Impl::ResolveTmem(Thread &t,
   throw SemanticError("unresolved_tmem_pointer",
                       "TMEM operand lacks concrete allocation provenance");
 }
-void ModelLowerer::Impl::Mma(Thread &t, const ExecutedInstruction &e,
+void ModelLowerer::Impl::Mma(Thread &t, const RecordView &e,
                              const Json &contract) {
   (void)contract;
   ProfileScope profile("frontend.model.mma");
@@ -652,12 +747,12 @@ void ModelLowerer::Impl::Mma(Thread &t, const ExecutedInstruction &e,
       })))
     throw SemanticError("tcgen_mma_variant", "unsupported block-scaled operands or scale layout");
   const unsigned descriptor_index = sparse ? 4 : 3, mask_index = descriptor_index + 1;
-  Resources::BitsResolver scale_bits = [&](const ExecutedInstruction &record, std::string_view token,
+  Resources::BitsResolver scale_bits = [&](const RecordView &record, std::string_view token,
                                            unsigned) -> std::optional<Resources::KnownBits> {
     if (!tmem || !scaled) return {};
     auto value = tmem->provenance.Resolve(t.actor.warp.value(), record, token, t.actor.lane);
-    const auto *origin = execution->RegisterOrigin(record, token);
-    const auto *current = execution->RegisterOrigin(e, token);
+    const auto *origin = facts->Origin(record, token);
+    const auto *current = facts->Origin(e, token);
     if (std::holds_alternative<std::monostate>(value) && origin && current && *origin == *current)
       value = tmem->provenance.Resolve(t.actor.warp.value(), e, token, t.actor.lane);
     if (auto pointer = std::get_if<TmemPointer>(&value))
@@ -717,10 +812,11 @@ void ModelLowerer::Impl::Mma(Thread &t, const ExecutedInstruction &e,
   if (group == 2 && !peer_placement(d))
     throw SemanticError("tmem_group2_relative_peer_base",
                         "group2 requires matched allocation placement");
-  std::vector<Coordinates> owners{resources->coordinates};
+  const auto &frame = resources->frame;
+  std::vector<CtaRank> owners{frame.self()};
   if (group == 2) {
-    auto rank = resources->Rank(resources->coordinates);
-    owners = {resources->Target(rank & ~1u), resources->Target(rank | 1u)};
+    auto rank = frame.self().value;
+    owners = {frame.Rank(rank & ~1u), frame.Rank(rank | 1u)};
   }
   bool a_tmem = ops[1].starts_with('[');
   std::optional<TmemAddress> a;
@@ -731,8 +827,8 @@ void ModelLowerer::Impl::Mma(Thread &t, const ExecutedInstruction &e,
       throw SemanticError("tmem_group2_relative_peer_base",
                           "group2 A needs matched placement");
   } else
-    shared_a = Scalar(e, ops[1], "MMA shared A descriptor");
-  auto shared_b = Scalar(e, ops[2], "MMA shared B descriptor");
+    shared_a = Descriptor(e, ops[1], "MMA shared A descriptor");
+  auto shared_b = Descriptor(e, ops[2], "MMA shared B descriptor");
   std::optional<TmemAddress> metadata;
   if (sparse) {
     metadata = ResolveTmem(t, e, ops[3]);
@@ -782,7 +878,7 @@ void ModelLowerer::Impl::Mma(Thread &t, const ExecutedInstruction &e,
       try { full_descriptor = Scalar(e, ops[descriptor_index], "MMA descriptor"); }
       catch (const SemanticError &) {
         full_descriptor = {{"operator", "ptx_scalar"}, {"operands", Json::array({
-          resources->coordinates, t.actor.warp.value(), t.actor.lane,
+          frame.Json(frame.self()), t.actor.warp.value(), t.actor.lane,
           Json::array({e.instruction_id(), e.occurrence()}), ops[descriptor_index]})}};
       }
       return resources->Abstract("tensor", address.resource,
@@ -810,7 +906,7 @@ void ModelLowerer::Impl::Mma(Thread &t, const ExecutedInstruction &e,
     if (retain_matrix_layout) read_roles.resize(reads.size(),{MmaOperandRole::B,part});
     if (metadata) {
       const auto begin = reads.size();
-      Resources::BitsResolver allocation_bits = [&](const ExecutedInstruction &record,
+      Resources::BitsResolver allocation_bits = [&](const RecordView &record,
           std::string_view token, unsigned) -> std::optional<Resources::KnownBits> {
         const auto value = tmem->provenance.Resolve(t.actor.warp.value(), record, token, t.actor.lane);
         if (auto pointer = std::get_if<TmemPointer>(&value))
@@ -886,40 +982,60 @@ void ModelLowerer::Impl::Mma(Thread &t, const ExecutedInstruction &e,
     plan.split_accumulators.emplace_back(read,target);
   }
   if (retain_matrix_layout) mma_layouts.push_back(std::move(value_layout));
-  for (auto target : plan.writes) {
-    const auto &write=plan.effects[target].accesses.back();
-    const auto &binding=addresses.bindings.at(std::get<AddressId>(write.endpoint).value());
-    auto key=std::tuple{group,binding.address_space,binding.alias_scope.empty()?binding.allocation:binding.alias_scope};
-    auto previous=t.mma_operand_reads.find(key);
-    if (previous==t.mma_operand_reads.end()) continue;
-    for (const auto &[ref,old,size] : previous->second)
-      if (size && *size && write.bytes && *write.bytes &&
-          (old.allocation!=binding.allocation ||
-           std::max(old.offset,binding.offset)<std::min(old.offset+*size,binding.offset+*write.bytes))) {
-        UniquePush(plan.effects[target].predecessors,ref); plan.operand_links.emplace_back(target,ref);
-      }
-  }
-  // PTX 9.4: tcgen05-memory-consistency-model-pipelined-instructions.
-  for (auto target : plan.a_tmem_reads) {
-    const auto &read = plan.effects[target].accesses.front();
-    const auto &binding = addresses.bindings.at(std::get<AddressId>(read.endpoint).value());
-    const auto key = std::tuple{group, binding.address_space, binding.allocation};
-    const auto previous = t.copy_writes.find(key);
-    if (previous == t.copy_writes.end() || !binding.expression.empty() || !read.bytes) continue;
-    for (const auto &copy : previous->second) {
-      if (!copy.any_operand_address &&
-          !CopyFeedsOperandBase(copy.operand_address, plan.operand_addresses.at(target).second)) continue;
-      if (copy.binding.offset < binding.offset + *read.bytes && binding.offset < copy.binding.offset + copy.bytes) {
-        UniquePush(plan.effects[target].predecessors, copy.effect);
-        plan.copy_links.emplace_back(target, copy.effect);
-      }
-    }
-  }
   std::string pipeline = std::to_string(group) + ":" +
                          std::to_string(desc.m) + ":" + std::to_string(desc.n) +
                          ":" + d.resource + ":" +
                          std::to_string(d.address);
-  if (auto previous = t.pipeline.find(pipeline); previous != t.pipeline.end()) {
+  const auto previous_mma = t.pipeline.find(pipeline);
+  // Operand reads before a D fragment's watermark already precede it: they precede
+  // the previous MMA's write of the same fragment on this pipeline (directly, or
+  // by induction along the chain), and the pipeline link below orders that write
+  // before this one. Only the reads added since are linked: HB is that of linking
+  // every earlier read, at a per-fragment cost of the new reads only.
+  for (auto target : plan.writes) {
+    const auto &write=plan.effects[target].accesses.back();
+    if (!write.bytes || !*write.bytes) continue;
+    const auto &binding=resources->Binding(std::get<AddressId>(write.endpoint));
+    auto key=std::tuple{group,binding.address_space,binding.alias_scope.empty()?binding.allocation:binding.alias_scope};
+    auto previous=t.mma_operand_reads.find(key);
+    const auto fragment = std::tuple{pipeline, std::get<AddressId>(write.endpoint).value(), *write.bytes};
+    const auto watermark = t.operand_watermarks.find(fragment);
+    const std::size_t from = watermark != t.operand_watermarks.end() && previous_mma != t.pipeline.end() &&
+            watermark->second.first == previous_mma->second
+        ? watermark->second.second : 0;
+    t.operand_watermarks.insert_or_assign(
+        fragment, std::pair{id, previous == t.mma_operand_reads.end() ? std::size_t{0} : previous->second.all.size()});
+    if (previous==t.mma_operand_reads.end()) continue;
+    for (const auto index : previous->second.Candidates(binding.allocation,binding.offset,*write.bytes,true,from)) {
+      const auto &[ref,old,size]=previous->second.all[index];
+      if (*size &&
+          (old.allocation!=binding.allocation ||
+           std::max(old.offset,binding.offset)<std::min(old.offset+*size,binding.offset+*write.bytes))) {
+        UniquePush(plan.effects[target].predecessors,ref); plan.operand_links.emplace_back(target,ref);
+      }
+    }
+  }
+  // PTX 9.4: tcgen05-memory-consistency-model-pipelined-instructions.
+  for (auto target : plan.a_tmem_reads) {
+    const auto &read = plan.effects[target].accesses.front();
+    const auto &binding = resources->Binding(std::get<AddressId>(read.endpoint));
+    const auto key = std::tuple{group, binding.address_space, binding.allocation};
+    const auto previous = t.copy_writes.find(key);
+    if (previous == t.copy_writes.end() || !binding.expression.empty() || !read.bytes) continue;
+    for (const auto &copy : previous->second) {
+      const bool feeds = copy.any_operand_address ||
+          CopyFeedsOperandBase(copy.operand_address, plan.operand_addresses.at(target).second);
+      const bool contained = copy.binding.offset <= binding.offset &&
+          binding.offset + *read.bytes <= copy.binding.offset + copy.bytes;
+      if (!feeds && !contained) continue;
+      if (copy.binding.offset < binding.offset + *read.bytes && binding.offset < copy.binding.offset + copy.bytes) {
+        UniquePush(plan.effects[target].predecessors, copy.effect);
+        plan.copy_links.emplace_back(target, copy.effect);
+        if (!feeds) plan.contained_copy_links.emplace_back(target, copy.effect);
+      }
+    }
+  }
+  if (auto previous = previous_mma; previous != t.pipeline.end()) {
     const auto &prior = plans.at(previous->second.value());
     std::map<std::pair<std::uint32_t, std::uint64_t>,
              std::vector<std::uint32_t>>
@@ -954,9 +1070,9 @@ void ModelLowerer::Impl::Mma(Thread &t, const ExecutedInstruction &e,
   t.pipeline[pipeline] = id;
   for (auto index : plan.a_tmem_reads) {
     const auto &read=plan.effects[index].accesses.front();
-    const auto &binding=addresses.bindings.at(std::get<AddressId>(read.endpoint).value());
+    const auto &binding=resources->Binding(std::get<AddressId>(read.endpoint));
     auto key=std::tuple{group,binding.address_space,binding.alias_scope.empty()?binding.allocation:binding.alias_scope};
-    t.mma_operand_reads[key].emplace_back(Ref(id,Milestone::kEffect,index),binding,read.bytes);
+    t.mma_operand_reads[key].Add(Ref(id,Milestone::kEffect,index),binding,read.bytes);
   }
   t.history.work[group].push_back(id.value());
   t.history.records.push_back({id.value(), static_cast<int>(group), "mma"});
@@ -967,7 +1083,7 @@ void ModelLowerer::Impl::Mma(Thread &t, const ExecutedInstruction &e,
   Async(t, e, std::move(effects));
   profile.nodes = reads.size() + writes.size();
 }
-void ModelLowerer::Impl::Tcgen(Thread &t, const ExecutedInstruction &e,
+void ModelLowerer::Impl::Tcgen(Thread &t, const RecordView &e,
                                const Json &contract) {
   const auto &i = function.instructions[e.instruction_id()];
   const auto &ops = operands[i.id];
@@ -990,11 +1106,14 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const ExecutedInstruction &e,
         .Record(queue.Issued(), queue.Pending().size());
     queue.Acknowledge();
     aligned[key].calls[t.actor.lane] = {id, id};
-    if (operation == "wait_load")
+    aligned[key].merged_arm |= t.merged_arm.has_value();
+    if (operation == "wait_load") {
+      t.tmem_loads_since_store.clear();
       std::erase_if(t.writes, [&](const auto &item) {
         return completed.contains(item.second.instruction);
       });
-    else {
+    } else {
+      t.tmem_last_store.reset();
       for (auto &[r, values] : t.reads) {
         (void)r;
         std::erase_if(values, [&](const auto &ref) {
@@ -1024,9 +1143,10 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const ExecutedInstruction &e,
         throw SemanticError("tcgen_multicast_mask", "empty multicast mask");
       targets.clear();
       for (std::uint32_t rank = 0; rank < 16; ++rank)
-        if (mask & (1u << rank))
-          targets.push_back(barriers.Intern("physical", resources->Target(rank),
-                                            std::to_string(sh->second)));
+        if (mask & (1u << rank)) {
+          targets.push_back(resources->interner().Apply(
+              BarrierStep{{BarrierKey::Kind::Physical, resources->frame.Rank(rank), std::to_string(sh->second)}}));
+        }
     }
     auto id = Next();
     const auto &work = t.history.work[group];
@@ -1087,6 +1207,13 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const ExecutedInstruction &e,
       throw SemanticError("tcgen_register_fragment_map",
                           "one four-byte TMEM fragment required per register");
     auto id = Next();
+    // Pipeline predecessors of every TMEM access of this ld/st (one milestone
+    // per earlier pipelined instruction, not one edge per earlier fragment).
+    std::vector<MilestoneRef> pipeline;
+    if (t.tmem_last_store) pipeline.push_back(Ref(*t.tmem_last_store));
+    if (operation == "store")
+      for (auto load : t.tmem_loads_since_store)
+        pipeline.push_back(Ref(load, Milestone::kReadsComplete));
     std::vector<AsyncEffect> effects;
     effects.reserve(2 * regs.size());
     for (std::size_t k = 0; k < regs.size(); ++k) {
@@ -1097,22 +1224,26 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const ExecutedInstruction &e,
         if (t.writes.contains(regs[k])) read.predecessors.push_back(t.writes.at(regs[k]));
         effects.push_back(std::move(read));
       }
-      std::vector<MilestoneRef> reads;
       for (unsigned part = 0; part < count; ++part) {
         const auto &interval = intervals[count * k + part];
         if (interval.size != size)
           throw SemanticError("tcgen_register_fragment_map", "invalid TMEM register fragment size");
         auto memory = resources->Bind("tensor", address.resource, interval.offset, size);
         if (operation == "load") {
-          reads.push_back(Ref(id, Milestone::kEffect, index + part));
-          effects.push_back({{MemoryEffect{AccessMode::kRead, memory.first, size}}});
+          effects.push_back({{MemoryEffect{AccessMode::kRead, memory.first, size}}, {}, pipeline});
         } else {
+          std::vector<MilestoneRef> predecessors{Ref(id, Milestone::kEffect, index)};
+          predecessors.insert(predecessors.end(), pipeline.begin(), pipeline.end());
           effects.push_back({{MemoryEffect{AccessMode::kWrite, memory.first, size}}, {},
-                            {Ref(id, Milestone::kEffect, index)}});
+                            std::move(predecessors)});
         }
       }
       if (operation == "load") {
-        effects.push_back({{MemoryEffect{AccessMode::kWrite, reg, 4}}, {}, std::move(reads)});
+        // A true register dependency yields the loaded value but does not order
+        // the TMEM reads before the dependent instruction's memory accesses
+        // (PTX ISA, tcgen05 register dependencies): the register write has no
+        // TMEM-read predecessor, so the reads complete only at tcgen05.wait::ld.
+        effects.push_back({{MemoryEffect{AccessMode::kWrite, reg, 4}}});
         t.writes.insert_or_assign(regs[k],
                                   Ref(id, Milestone::kEffect, index + count));
       } else
@@ -1120,8 +1251,15 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const ExecutedInstruction &e,
     }
     Async(t, e, std::move(effects));
     (operation == "load" ? t.loads : t.stores).Issue(id);
+    if (operation == "load")
+      t.tmem_loads_since_store.push_back(id);
+    else {
+      t.tmem_last_store = id;
+      t.tmem_loads_since_store.clear();
+    }
     auto tail = Emit(t, e, Await{});
     aligned[key].calls[t.actor.lane] = {id, tail};
+    aligned[key].merged_arm |= t.merged_arm.has_value();
     return;
   }
   if (operation == "mma") {
@@ -1152,13 +1290,14 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const ExecutedInstruction &e,
         shape == "128x128b" ? 2048 : shape == "32x128b" ? 512 : 128;
     if (multicast) shape += ".warpx4";
     const auto target = ResolveTmem(t, e, ops[0]);
-    const auto descriptor = Scalar(e, ops[1], "copy shared descriptor");
-    std::vector<Coordinates> owners{resources->coordinates};
+    const auto descriptor = Descriptor(e, ops[1], "copy shared descriptor");
+    const auto &frame = resources->frame;
+    std::vector<CtaRank> owners{frame.self()};
     if (group == 2) {
       if (target.columns != 512)
         throw SemanticError("tmem_group2_relative_peer_base", "copy peers require matched placement");
-      const auto rank = resources->Rank(resources->coordinates);
-      owners = {resources->Target(rank & ~1U), resources->Target(rank | 1U)};
+      const auto rank = frame.self().value;
+      owners = {frame.Rank(rank & ~1U), frame.Rank(rank | 1U)};
     }
     std::optional<std::vector<std::pair<ByteInterval, ByteInterval>>> fragments;
     try { fragments = DecodeCopyFragments(descriptor, target.address, shape, target.columns); }
@@ -1189,17 +1328,19 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const ExecutedInstruction &e,
                        shapes.front() == "4x256b", {}};
     for (std::uint32_t index = 1; index < effects.size(); index += 2) {
       const auto &write = effects[index].accesses.front();
-      const auto &binding = addresses.bindings.at(std::get<AddressId>(write.endpoint).value());
+      const auto &binding = resources->Binding(std::get<AddressId>(write.endpoint));
       const auto key = std::tuple{static_cast<unsigned>(group), binding.address_space,
                                  binding.alias_scope.empty() ? binding.allocation : binding.alias_scope};
-      if (const auto previous = t.mma_operand_reads.find(key); previous != t.mma_operand_reads.end())
-        for (const auto &[ref, old, size] : previous->second)
-          if (size && write.bytes && old.expression.empty() && binding.expression.empty() &&
-              old.allocation == binding.allocation &&
+      if (const auto previous = t.mma_operand_reads.find(key);
+          previous != t.mma_operand_reads.end() && write.bytes && binding.expression.empty())
+        for (const auto candidate : previous->second.Candidates(binding.allocation, binding.offset, *write.bytes, false)) {
+          const auto &[ref, old, size] = previous->second.all[candidate];
+          if (old.expression.empty() &&
               old.offset < binding.offset + *write.bytes && binding.offset < old.offset + *size) {
             UniquePush(effects[index].predecessors, ref);
             plan.operand_links.emplace_back(index, ref);
           }
+        }
       if (write.bytes && *write.bytes && binding.expression.empty())
         t.copy_writes[{static_cast<unsigned>(group), binding.address_space, binding.allocation}].push_back(
             {Ref(id, Milestone::kEffect, index), binding, *write.bytes, target.address, plan.any_operand_address});
@@ -1217,7 +1358,7 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const ExecutedInstruction &e,
   throw SemanticError("unsupported_tcgen_operation",
                       "unknown TCGEN source semantics");
 }
-void ModelLowerer::Impl::Lifetime(Thread &t, const ExecutedInstruction &e) {
+void ModelLowerer::Impl::Lifetime(Thread &t, const RecordView &e) {
   ProfileScope profile("frontend.model.lifetime");
   if (!tmem)
     throw SemanticError("tmem_allocation_identity", "no lifetime analysis");
@@ -1309,10 +1450,9 @@ void ModelLowerer::Impl::LifetimeOrders() {
         if (!allocation)
           throw SemanticError("unresolved_lifetime_footprint",
                               "lifetime allocation missing");
-        auto name =
-            "cta:" + CoordinateText(resources->coordinates) + ":tensor:" +
-            (allocation->columns == 512 ? std::string("physical.tmem.cta.0")
-                                        : obligation.allocation.ResourceName());
+        auto name = resources->frame.Format(AllocationKey::Tensor(resources->frame.self(),
+            allocation->columns == 512 ? std::string("physical.tmem.cta.0")
+                                       : obligation.allocation.ResourceName())).allocation;
         auto [it, added] = selected.try_emplace({id, name});
         if (added) {
           std::vector<std::uint32_t> indices;
@@ -1324,7 +1464,7 @@ void ModelLowerer::Impl::LifetimeOrders() {
             for (const auto &access : op.effects[k].accesses)
               if (access.bytes)
                 if (auto p = std::get_if<AddressId>(&access.endpoint)) {
-                  const auto &binding = addresses.bindings.at(p->value());
+                  const auto &binding = resources->Binding(*p);
                   if (binding.address_space == "tensor") {
                     tensor = true;
                     match |= binding.allocation == name;
@@ -1346,7 +1486,7 @@ void ModelLowerer::Impl::LifetimeOrders() {
     Poll();
   }
 }
-InstId ModelLowerer::Impl::Copy(Thread &t, const ExecutedInstruction &e,
+InstId ModelLowerer::Impl::Copy(Thread &t, const RecordView &e,
                                 std::vector<Fragment> reads,
                                 std::vector<Fragment> writes,
                                 std::optional<CompletionAction> completion) {
@@ -1370,7 +1510,7 @@ InstId ModelLowerer::Impl::Copy(Thread &t, const ExecutedInstruction &e,
                         "copy source larger than destination");
   cursor = 0;
   for (auto [a, n] : writes) {
-    const auto binding = addresses.bindings.at(a.value());
+    const auto binding = resources->Binding(a);
     auto end = cursor + *n;
     std::set<std::uint64_t> points{cursor, end};
     for (auto [begin, stop, index] : ranges) {
@@ -1386,19 +1526,17 @@ InstId ModelLowerer::Impl::Copy(Thread &t, const ExecutedInstruction &e,
       for (auto [begin, stop, index] : ranges)
         if (begin <= *it && *it < stop)
           refs.push_back(Ref(id, Milestone::kEffect, index));
-      auto shifted =
-          addresses.Intern(binding.address_space, binding.allocation,
-                           binding.offset + *it - cursor, binding.alias_scope);
+      // Interned even for an expression binding.
+      auto shifted = resources->interner().Apply(
+          ConstantStep{AllocationKey::Opaque(binding.address_space, binding.allocation, binding.alias_scope),
+                       binding.offset + *it - cursor});
       if (!binding.expression.empty()) {
         auto expression = Json::parse(binding.expression);
         expression["address"]["offset"] = {{"operator", "add"},
             {"operands", Json::array({expression["address"]["offset"], *it - cursor})}};
         expression["byte_count"] = *next - *it;
-        const auto encoded = expression.dump();
-        shifted = addresses.Intern(binding.address_space, "expression:" + encoded, 0, binding.alias_scope);
-        auto &target = addresses.bindings.at(shifted.value());
-        target.allocation = binding.allocation;
-        target.expression = encoded;
+        shifted = resources->interner().Apply(SerializedExpressionStep(binding.address_space, expression.dump(),
+                                                                       binding.alias_scope, binding.allocation));
       }
       effects.push_back(
           {{MemoryEffect{AccessMode::kWrite, shifted, *next - *it}},
@@ -1415,26 +1553,54 @@ InstId ModelLowerer::Impl::Copy(Thread &t, const ExecutedInstruction &e,
   }
   return Async(t, e, std::move(effects));
 }
-void ModelLowerer::Impl::Instruction(Thread &t, const ExecutedInstruction &e) {
+void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
   const auto &i = function.instructions[e.instruction_id()];
   const auto &s = i.semantics;
   const auto &ops = operands[i.id];
   const auto &operation = s.operation;
-  const auto &contract = execution->config.InstructionContract(
+  const auto &contract = facts->launch().InstructionContract(
       i.line, i.id, t.actor.warp.value(), e.occurrence());
+  if (t.merged_arm && (e.instruction_id() <= t.merged_arm->first || e.instruction_id() >= t.merged_arm->second))
+    t.merged_arm.reset();
+  // Merged one-armed diamond (execution.cpp): no tcgen05 ordering may be pending at the
+  // branch, so no earlier operation may reach the arm through a tcgen05 pipeline, a wait in
+  // the arm or a pending register write.
+  if (const auto join = e.merged_arm_join()) {
+    auto [entry, added] = merged_arm_facts.try_emplace(e.instruction_id());
+    if (added) {
+      std::set<std::string> written;
+      for (auto index = e.instruction_id() + 1; index < *join && index < function.instructions.size(); ++index) {
+        const auto &arm = function.instructions[index];
+        entry->second.wait_load |= arm.opcode == "tcgen05" && arm.semantics.operation == "wait_load";
+        for (const auto &r : Sources(arm))
+          if (!written.contains(r)) UniquePush(entry->second.exposed, r);
+        for (const auto &r : Destinations(arm)) written.insert(r);
+      }
+    }
+    const auto &arm = entry->second;
+    if (t.tmem_last_store || !t.tmem_loads_since_store.empty() ||
+        (arm.wait_load && !t.loads.Pending().empty()) ||
+        std::any_of(arm.exposed.begin(), arm.exposed.end(), [&](const auto &r) { return t.writes.contains(r); }))
+      throw SemanticError("two_arm_merge_pending_tcgen05",
+                          "A merged data-dependent branch is entered with tcgen05 operations it could order");
+    t.merged_arm = {e.instruction_id(), *join};
+  }
   if (i.opcode=="tensormap" && s.modeled) {
     if (operation=="tensor_map_replace") {
-      const auto target=resources->Memory(e,ops.at(0),Json::object(),128,"shared");
+      const auto target=resources->Memory(e,MemoryRequest(ops.at(0),Json::object(),128,"shared"));
       Emit(t,e,ImmediateLoad{target.first,128});
       Emit(t,e,ImmediateStore{target.first,128});
     } else {
       if (Scalar(e,ops.at(2),"tensor map copy size")!=128)
         throw SemanticError("tensor_map_size","tensor map copy requires 128 bytes");
       auto fragment=[&](std::string_view operand,std::string_view space) -> Fragment {
-        const auto access=resources->Memory(e,operand,Json::object(),128,std::string(space));
-        const auto binding=addresses.bindings.at(access.first.value());
+        const auto access=resources->Memory(e,MemoryRequest(operand,Json::object(),128,std::string(space)));
+        const auto binding=resources->Binding(access.first);
         if (!binding.expression.empty()) throw SemanticError("tensor_map_fragment","tensor map copy requires constant region");
-        return {addresses.Intern(binding.address_space,binding.allocation,binding.offset+t.actor.lane*4),4};
+        if (space=="global") tensormap_destinations.emplace(binding.allocation,binding.offset);
+        // The stored alias is not carried.
+        return {resources->interner().Apply(ConstantStep{AllocationKey::Opaque(binding.address_space,binding.allocation,{}),
+                                                         binding.offset+t.actor.lane*4}),4};
       };
       const auto head=Copy(t,e,{fragment(ops.at(1),"shared")},{fragment(ops.at(0),"global")});
       const auto tail=Emit(t,e,Await{{Ref(head)}});
@@ -1518,7 +1684,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const ExecutedInstruction &e) {
       auto brackets = Brackets(ops);
       if (brackets.empty())
         throw SemanticError("missing_memory_operand", "missing address/width");
-      auto [a, n] = resources->Memory(e, brackets[0], contract, *atomic_width, space);
+      auto [a, n] = resources->Memory(e, MemoryRequest(brackets[0], contract, *atomic_width, space));
       if (n != *atomic_width)
         throw SemanticError("immediate_access_size", "footprint extent disagrees with opcode");
       // .cluster is narrowed to .cta: conservative, since a cluster contains the CTA.
@@ -1540,7 +1706,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const ExecutedInstruction &e) {
     if (brackets.empty() || !i.memory_width)
       throw SemanticError("missing_memory_operand", "missing address/width");
     auto [a, n] =
-        resources->Memory(e, brackets[0], contract, *i.memory_width, space);
+        resources->Memory(e, MemoryRequest(brackets[0], contract, *i.memory_width, space));
     if (n != *i.memory_width)
       throw SemanticError("immediate_access_size",
                           "footprint extent disagrees with opcode");
@@ -1608,13 +1774,13 @@ void ModelLowerer::Impl::Instruction(Thread &t, const ExecutedInstruction &e) {
     std::vector<Fragment> reads;
     if (source_size)
       reads.push_back(resources->Memory(
-          e, ops[1],
+          e, MemoryRequest(ops[1],
           AccessContract(contract, "source_resource", "source_region"),
-          source_size, "global"));
+          source_size, "global")));
     std::vector<Fragment> writes{resources->Memory(
-        e, ops[0],
+        e, MemoryRequest(ops[0],
         AccessContract(contract, "destination_resource", "destination_region"),
-        size, "shared")};
+        size, "shared"))};
     if ((!reads.empty() && reads[0].second != source_size) ||
         writes[0].second != size)
       throw SemanticError("cp_async_fragment_size",
@@ -1661,7 +1827,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const ExecutedInstruction &e) {
   }
   if (operation == "tma_load_complete_tx" || operation == "tma_bulk_tensor") {
     ProfileScope profile("frontend.model.tma");
-    auto transfer = resources->Tma(e, contract, operation == "tma_bulk_tensor");
+    auto transfer = resources->Tma(e, TmaRequest(contract, operation == "tma_bulk_tensor"));
     auto id = Next();
     std::vector<AsyncEffect> effects;
     std::map<std::tuple<AddressId, std::optional<std::uint64_t>, std::uint64_t>, std::uint32_t>
@@ -1732,28 +1898,28 @@ void ModelLowerer::Impl::Instruction(Thread &t, const ExecutedInstruction &e) {
     const auto bytes=Scalar(e,ops[2],"bulk reduction size",UINT32_MAX);
     if (bytes%16) throw SemanticError("bulk_reduction_variant","reduction size must be a u32 multiple of 16");
     const auto element=std::stoul(type.substr(type.find_first_of("0123456789")))/8;
-    const auto read=resources->Memory(e,brackets[1],Json::object(),bytes,"shared");
-    const auto write=resources->Memory(e,brackets[0],Json::object(),bytes,"global");
+    const auto read=resources->Memory(e,MemoryRequest(brackets[1],Json::object(),bytes,"shared"));
+    const auto write=resources->Memory(e,MemoryRequest(brackets[0],Json::object(),bytes,"global"));
     if (read.second!=bytes || write.second!=bytes) throw SemanticError("bulk_reduction_fragmentation","nonlinear reduction footprint");
-    const auto read_base=addresses.bindings[read.first.value()], write_base=addresses.bindings[write.first.value()];
-    auto fragment=[&](const ConstantAddressBinding &base,std::uint64_t offset) {
+    const auto read_base=resources->Binding(read.first), write_base=resources->Binding(write.first);
+    auto fragment=[&](const ConstantAddressBinding &base,AddressId base_id,std::uint64_t offset) {
       if (base.expression.empty()) {
-        if (base.offset%16) throw SemanticError("bulk_reduction_alignment","reduction base must be 16-byte aligned");
-        return addresses.Intern(base.address_space,base.allocation,base.offset+offset,base.alias_scope);
+        resources->interner().RequireAligned(base,16,base_id);
+        return resources->interner().Apply(
+            ConstantStep{AllocationKey::Opaque(base.address_space,base.allocation,base.alias_scope),base.offset+offset});
       }
       auto expression=Json::parse(base.expression);
       auto old=expression["address"]["offset"];
       if (offset) expression["address"]["offset"]={{"operator","add"},{"operands",Json::array({old,offset})}};
       expression["byte_count"]=element;
-      auto address=addresses.Intern(base.address_space,"expression:"+expression.dump(),0,base.alias_scope);
-      addresses.bindings[address.value()].allocation=base.allocation;
-      addresses.bindings[address.value()].expression=expression.dump(); return address;
+      return resources->interner().Apply(
+          SerializedExpressionStep(base.address_space,expression.dump(),base.alias_scope,base.allocation));
     };
     auto id=Next(); std::vector<AsyncEffect> effects;
     for (std::uint64_t offset=0;offset<bytes;offset+=element) {
       const auto index=effects.size();
-      effects.push_back({{MemoryEffect{AccessMode::kRead,fragment(read_base,offset),element}}});
-      effects.push_back({{MemoryEffect{AccessMode::kWrite,fragment(write_base,offset),element,
+      effects.push_back({{MemoryEffect{AccessMode::kRead,fragment(read_base,read.first,offset),element}}});
+      effects.push_back({{MemoryEffect{AccessMode::kWrite,fragment(write_base,write.first,offset),element,
           scope=="cta"?AtomicScope::kCta:scope=="gpu"?AtomicScope::kGpu:AtomicScope::kSys}},
           {},{Ref(id,Milestone::kEffect,index)}});
     }
@@ -1794,17 +1960,17 @@ void ModelLowerer::Impl::Instruction(Thread &t, const ExecutedInstruction &e) {
                           "size must be positive multiple of16");
     if (spaces[1]=="shared::cta") {
       auto destination=resources->Shared(e,b[0]);
-      if (!destination || destination->first==resources->coordinates)
+      if (!destination || destination->first==resources->frame.self())
         throw SemanticError("bulk_copy_variant","shared bulk copy requires a resolved remote destination");
     }
     std::vector<Fragment> reads{resources->Memory(
-        e, b[1], AccessContract(contract, "source_resource", "source_region"),
-        size, spaces[1])},
+        e, MemoryRequest(b[1], AccessContract(contract, "source_resource", "source_region"),
+        size, spaces[1]))},
         writes{
-            resources->Memory(e, b[0],
+            resources->Memory(e, MemoryRequest(b[0],
                               AccessContract(contract, "destination_resource",
                                              "destination_region"),
-                              size, spaces[0])};
+                              size, spaces[0]))};
     if (reads[0].second != size || writes[0].second != size)
       throw SemanticError("bulk_copy_fragment_size",
                           "bulk footprints disagree with size");
@@ -1855,14 +2021,14 @@ void ModelLowerer::Impl::Instruction(Thread &t, const ExecutedInstruction &e) {
                           "async store operands/modifiers mismatch");
     auto dest = resources->Shared(e, b[0]),
          complete = resources->Shared(e, b[1]);
-    auto d = execution->config.cluster_dim.value_or(Coordinates{1, 1, 1});
+    const auto d = resources->frame.cluster_dim();
     if (!dest || !complete || std::uint64_t(d[0]) * d[1] * d[2] <= 1 ||
         dest->first != complete->first)
       throw SemanticError("st_async_owner",
                           "store needs same destination and barrier owner in "
                           "multi-CTA cluster");
-    auto write = resources->Memory(e, b[0], contract, *i.memory_width,
-                                   "shared::cluster");
+    auto write = resources->Memory(e, MemoryRequest(b[0], contract, *i.memory_width,
+                                   "shared::cluster"));
     if (write.second != *i.memory_width)
       throw SemanticError("st_async_fragmentation", "store extent mismatch");
     auto barrier = resources->Barrier(e, b[1], contract);
@@ -1891,14 +2057,12 @@ void ModelLowerer::Impl::Instruction(Thread &t, const ExecutedInstruction &e) {
     return;
   }
   if (operation == "try_cancel_complete_tx") {
-    if (execution->config.fixed_input.value("cluster_launch_cancellation",
-                                            true))
+    if (facts->launch().ClusterLaunchCancellation())
       throw SemanticError("cluster_launch_control_outcome",
                           "CLC needs fixed no-cancellation scenario");
-    auto d = execution->config.cluster_dim.value_or(Coordinates{1, 1, 1});
-    Coordinates origin;
-    for (int k = 0; k < 3; ++k)
-      origin[k] = resources->coordinates[k] - resources->coordinates[k] % d[k];
+    const auto &frame = resources->frame;
+    const auto d = frame.cluster_dim();
+    const auto origin = frame.ClusterOrigin();
     if (clc_requests.contains(origin))
       throw SemanticError("repeated_failed_clc",
                           "another CLC after failed cancellation");
@@ -1911,19 +2075,20 @@ void ModelLowerer::Impl::Instruction(Thread &t, const ExecutedInstruction &e) {
     if (!response || !barrier || response->second % 16 || barrier->second % 8)
       throw SemanticError("clc_shared_addresses",
                           "CLC requires aligned shared addresses");
-    std::vector<Coordinates> owners{resources->coordinates};
+    std::vector<CtaRank> owners{frame.self()};
     if (Has(i, "multicast::cluster::all")) {
       owners.clear();
-      for (std::uint32_t rank = 0; rank < d[0] * d[1] * d[2]; ++rank)
-        owners.push_back(resources->Target(rank));
+      for (std::uint32_t rank = 0; rank < d[0] * d[1] * d[2]; ++rank) {
+        owners.push_back(frame.Rank(rank));
+      }
     }
     auto id = Next();
     std::vector<AsyncEffect> effects;
     for (auto owner : owners) {
       auto a = resources->Bind("shared", "physical.shared.cta.0",
                                response->second, 16, owner);
-      auto target =
-          barriers.Intern("physical", owner, std::to_string(barrier->second));
+      auto target = resources->interner().Apply(
+          BarrierStep{{BarrierKey::Kind::Physical, owner, std::to_string(barrier->second)}});
       auto index = static_cast<std::uint32_t>(effects.size());
       effects.push_back({{MemoryEffect{AccessMode::kWrite, a.first, 16}}});
       effects.push_back({{},
@@ -1972,18 +2137,20 @@ void ModelLowerer::Impl::CollectGroup2() {
       auto resource = allocation->columns == 512
                           ? std::string("physical.tmem.cta.0")
                           : use.allocation.ResourceName();
-      auto own_rank = resources->Rank(resources->coordinates);
+      const auto &frame = resources->frame;
+      auto own_rank = frame.self().value;
       std::set<std::string> names;
-      for (auto rank : {own_rank & ~1u, own_rank | 1u})
-        names.insert("cta:" + CoordinateText(resources->Target(rank)) +
-                     ":tensor:" + resource);
+      for (auto rank : {own_rank & ~1u, own_rank | 1u}) {
+        auto name = frame.Format(AllocationKey::Tensor(frame.Rank(rank), resource)).allocation;
+        names.insert(std::move(name));
+      }
       bool has_tensor = false, matched = false;
       for (std::uint32_t index = 0; index < op->effects.size(); ++index) {
         bool match = false;
         for (const auto &access : op->effects[index].accesses)
           if (access.bytes)
             if (auto memory = std::get_if<AddressId>(&access.endpoint)) {
-              const auto &binding = addresses.bindings.at(memory->value());
+              const auto &binding = resources->Binding(*memory);
               if (binding.address_space == "tensor") {
                 has_tensor = true;
                 match |= names.contains(binding.allocation);
@@ -2009,21 +2176,24 @@ void ModelLowerer::Impl::CollectGroup2() {
     if (by_id.contains(identifier))
       records.emplace_back(site, "dealloc", identifier);
   std::set<Site> seen;
-  for (const auto &lane : execution->lane_traces)
-    for (std::size_t index=0;index<lane.instructions.size();++index) {
-      const auto &e=lane.instructions.metadata(index);
+  for (std::size_t k = 0; k < facts->LaneCount(); ++k) {
+    const auto lane = facts->Lane(k);
+    const auto warp = facts->Warp(lane);
+    for (std::size_t index=0;index<facts->Size(lane);++index) {
+      const auto e=facts->Meta({lane,index});
       const auto &instruction = function.instructions[e.instruction_id()];
       if (instruction.opcode == "tcgen05" && Has(instruction, "cta_group::2") &&
           Has(instruction, "relinquish_alloc_permit") &&
-          seen.insert(Key(lane.warp_id, e)).second)
-        records.emplace_back(TmemAtomSite{lane.warp_id, e.instruction_id(),
+          seen.insert(Key(warp, e)).second)
+        records.emplace_back(TmemAtomSite{warp, e.instruction_id(),
                                           e.occurrence(), instruction.line,
                                           opcode_texts[instruction.id]},
                              "relinquish_alloc_permit", std::nullopt);
     }
+  }
   for (const auto &[site, operation, allocation_id] : records) {
     Group2LifetimeSite record;
-    record.cta_coordinates = resources->coordinates;
+    record.cta_coordinates = resources->frame.SelfCoordinates();
     record.operation = operation;
     record.instruction_index = site.instruction_index;
     record.occurrence = site.occurrence;
@@ -2053,15 +2223,15 @@ void ModelLowerer::Impl::CollectGroup2() {
                          std::tuple{b.instruction, b.effect_index, b.milestone};
                 });
     }
-    group2_sites[execution->config.cluster_dim.value_or(Coordinates{1, 1, 1})]
+    group2_sites[resources->frame.cluster_dim()]
         .push_back(std::move(record));
   }
 }
-void ModelLowerer::Impl::Matrix(Thread &t, const ExecutedInstruction &e,
+void ModelLowerer::Impl::Matrix(Thread &t, const RecordView &e,
                                 bool load) {
   ProfileScope profile("frontend.model.matrix");
   const auto &i = function.instructions[e.instruction_id()];
-  const auto &contract = execution->config.InstructionContract(
+  const auto &contract = facts->launch().InstructionContract(
       i.line, i.id, t.actor.warp.value(), e.occurrence());
   auto fragments = matrix->Resolve(*current_lane, e, *resources, contract);
   std::vector<std::string> regs;
@@ -2109,21 +2279,25 @@ void ModelLowerer::Impl::Matrix(Thread &t, const ExecutedInstruction &e,
   auto tail = Emit(t, e, Await{{Ref(id)}});
   aligned[Key(t.actor.warp.value(), e)].calls[t.actor.lane] = {id, tail};
 }
-void ModelLowerer::Impl::Add(std::uint32_t cta, Coordinates coordinates,
-                             const ExecutionProgram &p, const ValueAddresses& value_addresses) {
+void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_addresses) {
   ProfileScope profile("frontend.model.cta");
-  execution = &p;
+  const FactSource::ConsumerScope consumer(cta_facts, {Consumer::Lowering, 0});
+  const auto cta = cta_facts.Linear();
+  const auto coordinates = cta_facts.frame().SelfCoordinates();
+  facts = &cta_facts;
   current_coordinates=coordinates;
   shared_value_sites.clear();
   shared_value_instructions.assign(function.instructions.size(),false);
-  for(const auto &site:p.shared_constant_writes)shared_value_sites.insert(site);
-  for(const auto &dependency:p.shared_value_dependencies)shared_value_sites.insert(dependency.read);
+  const auto shared_writes = cta_facts.SharedConstantWrites();
+  const auto shared_dependencies = cta_facts.SharedValueDependencies();
+  for(const auto &site:shared_writes)shared_value_sites.insert(site);
+  for(const auto &dependency:shared_dependencies)shared_value_sites.insert(dependency.read);
   for(const auto &site:shared_value_sites)shared_value_instructions.at(site.instruction.instruction)=true;
-  shared_value_dependencies.insert(shared_value_dependencies.end(),p.shared_value_dependencies.begin(),p.shared_value_dependencies.end());
-  Resources r(p, coordinates, addresses, barriers);
-  r.value_addresses = value_addresses;
+  shared_value_dependencies.insert(shared_value_dependencies.end(),shared_dependencies.begin(),shared_dependencies.end());
+  Resources r(cta_facts, cta_facts.frame(), addresses, barriers,
+              SlotConfig{Consumer::Lowering, std::move(value_addresses)});
   resources = &r;
-  MatrixResolver matrix_resolver(p);
+  MatrixResolver matrix_resolver(cta_facts);
   matrix = &matrix_resolver;
   std::optional<TmemLifetimeAnalysis> analysis;
   bool has_tcgen =
@@ -2134,7 +2308,7 @@ void ModelLowerer::Impl::Add(std::uint32_t cta, Coordinates coordinates,
     TmemAnalysisOptions options;
     options.allow_cta_group2 = true;
     options.poll = poll;
-    analysis = AnalyzeTmemLifetimes(p, options);
+    analysis = AnalyzeTmemLifetimes(cta_facts, ExpansionSite::Tmem, options);
     tmem = &*analysis;
     bool lifetimes =
         std::any_of(function.instructions.begin(), function.instructions.end(),
@@ -2147,24 +2321,29 @@ void ModelLowerer::Impl::Add(std::uint32_t cta, Coordinates coordinates,
         return issue.code == "tmem_unresolved_use_pointer";
       });
     for (const auto &issue : tmem->issues)
-      if (issue.code == "tmem_multiple_dealloc")
-        violations.emplace(
-            issue.code, "CTA " + CoordinateText(coordinates) + ": " +
-                            issue.message + "; first deallocation at warp " +
-                            std::to_string(issue.site.warp) + ", instruction " +
-                            std::to_string(issue.site.instruction_index) +
-                            ", occurrence " +
-                            std::to_string(issue.site.occurrence));
+      if (issue.code == "tmem_multiple_dealloc") {
+        if (cta_facts.recording()) [[unlikely]]
+          cta_facts.Note(query::ReportBearing{query::ReportKind::RenderedViolation, issue.code});
+        auto suffix = issue.message + "; first deallocation at warp " +
+                      std::to_string(issue.site.warp) + ", instruction " +
+                      std::to_string(issue.site.instruction_index) +
+                      ", occurrence " + std::to_string(issue.site.occurrence);
+        violations.emplace(issue.code, "CTA " + r.frame.Text(r.frame.self()) + ": " + suffix);
+        if (units) cta_violations.emplace_back(cta, issue.code, std::move(suffix));
+      }
     if (tmem->cluster_pairing_required)
       limitations["tmem_group2_pairing"] =
           "Group2 lifetime requires a cluster participation and progress "
           "certificate.";
   }
   auto actor_begin = source.program.actors.size();
-  std::vector<std::uintptr_t> member_cohorts(p.lane_traces.size(),0);
-  if(p.template_execution.used) {
-    for(std::size_t group=0;group<p.thread_template_groups.size();++group)
-      for(auto member:p.thread_template_groups[group]) {
+  const auto lane_count = cta_facts.LaneCount();
+  const bool template_execution = cta_facts.TemplateExecution();
+  std::vector<std::uintptr_t> member_cohorts(lane_count,0);
+  if(template_execution) {
+    const auto template_groups = cta_facts.TemplateGroups();
+    for(std::size_t group=0;group<template_groups.size();++group)
+      for(auto member:template_groups[group]) {
         if(member>=member_cohorts.size() || member_cohorts[member])
           throw SemanticError("invalid_thread_partition","template members must form a partition");
         member_cohorts[member]=group+1;
@@ -2172,11 +2351,12 @@ void ModelLowerer::Impl::Add(std::uint32_t cta, Coordinates coordinates,
     if(std::find(member_cohorts.begin(),member_cohorts.end(),0)!=member_cohorts.end())
       throw SemanticError("invalid_thread_partition","template partition does not cover every thread");
   }
-  for (std::size_t k = 0; k < p.lane_traces.size(); ++k) {
-    const auto &lane = p.lane_traces[k];
-    ActorInfo actor{ActorId(actor_begin + k), CtaId(cta), WarpId(lane.warp_id),
-                    lane.lane_id};
-    if (!actors.emplace(std::pair{lane.warp_id, lane.lane_id}, actor.id).second)
+  for (std::size_t k = 0; k < lane_count; ++k) {
+    const auto lane = cta_facts.Lane(k);
+    const auto warp_id = cta_facts.Warp(lane), lane_id = cta_facts.LaneId(lane);
+    ActorInfo actor{ActorId(actor_begin + k), CtaId(cta), WarpId(warp_id),
+                    lane_id};
+    if (!actors.emplace(std::pair{warp_id, lane_id}, actor.id).second)
       throw SemanticError("duplicate_lane", "duplicate lane trace");
     source.program.actors.push_back(actor);
   }
@@ -2197,8 +2377,8 @@ void ModelLowerer::Impl::Add(std::uint32_t cta, Coordinates coordinates,
     std::shared_ptr<GeneratedFamily> family;
     std::shared_ptr<std::vector<std::size_t>> variable_columns;
   };
-  std::map<const void*, Projection> projections;
-  const bool synchronous_template=p.template_execution.used &&
+  std::map<ProjectionKey, Projection> projections;
+  const bool synchronous_template=template_execution &&
       std::all_of(function.instructions.begin(),function.instructions.end(),[](const auto &i) {
         const auto &s=i.semantics;
         if(IsWarpDataCollective(i))return false;
@@ -2223,35 +2403,42 @@ void ModelLowerer::Impl::Add(std::uint32_t cta, Coordinates coordinates,
     const auto token=Trim(std::string_view(brackets.front()).substr(1,brackets.front().size()-2));
     const auto address=SplitAddress(token);
     const auto& base=address ? address->first : token;
-    const auto reg=std::find(p.register_names.begin(),p.register_names.end(),base);
-    if(reg!=p.register_names.end())memory_registers[i.id]=reg-p.register_names.begin();
+    if(const auto reg=cta_facts.Reg(base))memory_registers[i.id]=*reg;
     SourceOp operation=i.semantics.memory_mode=="read"
       ?SourceOp(ImmediateLoad{AddressId{},static_cast<std::uint32_t>(*i.memory_width)})
       :SourceOp(ImmediateStore{AddressId{},static_cast<std::uint32_t>(*i.memory_width)});
     prototypes->at(i.id)={InstId{},ActorId{},Location(i),std::move(operation),
         PtxOrigin{source_name,i.id,0,origin_opcodes[i.id]}};
   }
-  std::unordered_map<std::string_view,std::uint32_t> register_ids;
-  register_ids.reserve(p.register_names.size());
-  for(std::uint32_t id=0;id<p.register_names.size();++id)
-    register_ids.emplace(p.register_names[id],id);
   std::vector<std::optional<std::uint32_t>> collective_masks(function.instructions.size());
   for(const auto& i:function.instructions) {
     if(!IsWarpDataCollective(i) || operands[i.id].empty())continue;
-    const auto found=register_ids.find(Trim(operands[i.id].back()));
-    if(found!=register_ids.end())collective_masks[i.id]=found->second;
+    if(const auto reg=cta_facts.Reg(Trim(operands[i.id].back())))collective_masks[i.id]=*reg;
   }
   std::uint64_t visits = 0;
-  for (std::size_t k = 0; k < p.lane_traces.size(); ++k) {
-    const auto &lane = p.lane_traces[k];
-    const auto binding_begin=p.template_execution.used ? source.program.instructions.beginThread() : 0;
-    current_lane = &lane;
-    ProfileCall("frontend.resources.index_lane", [&] { r.SetLane(lane); });
+  // A thread extends only the preceding thread's family block. Lower each
+  // template cohort contiguously (stable by thread), so interleaved cohorts,
+  // such as one elected lane per warp, form one block each. Cohorts keep the
+  // order of their first thread, so non-interleaved cohorts keep thread order.
+  std::vector<std::size_t> thread_order(lane_count);
+  std::iota(thread_order.begin(), thread_order.end(), std::size_t{0});
+  if (template_execution) {
+    std::unordered_map<std::uintptr_t, std::size_t> first_thread;
+    for (std::size_t k = 0; k < member_cohorts.size(); ++k) first_thread.try_emplace(member_cohorts[k], k);
+    std::stable_sort(thread_order.begin(), thread_order.end(), [&](std::size_t a, std::size_t b) {
+      return first_thread.at(member_cohorts[a]) < first_thread.at(member_cohorts[b]);
+    });
+  }
+  for (const auto k : thread_order) {
+    const auto lane_ref = cta_facts.Lane(k);
+    const auto binding_begin=template_execution ? source.program.instructions.beginThread() : 0;
+    current_lane = lane_ref;
+    ProfileCall("frontend.resources.index_lane", [&] { r.SetLane(lane_ref); });
     Thread thread;
     thread.actor = source.program.actors[actor_begin + k];
     Projection* projection=nullptr;
     if (synchronous_template) {
-      auto [entry,inserted]=projections.try_emplace(lane.instructions.metadataIdentity());
+      auto [entry,inserted]=projections.try_emplace(cta_facts.Projection(lane_ref));
       auto &view=entry->second;
       if (inserted) {
         view.skipped_counts.resize(function.instructions.size());
@@ -2260,9 +2447,9 @@ void ModelLowerer::Impl::Add(std::uint32_t cta, Coordinates coordinates,
           view.body=std::make_shared<std::vector<std::pair<std::uint32_t,std::uint32_t>>>();
           view.bindings=std::make_shared<AddressBindings>();
         }
-        for (std::size_t index=0;index<lane.instructions.size();++index) {
+        for (std::size_t index=0;index<cta_facts.Size(lane_ref);++index) {
           if ((index&1023)==0) Poll();
-          const auto &record=lane.instructions.metadata(index);
+          const auto record=cta_facts.Meta({lane_ref,index});
           if (record.predicate_value()==false) continue;
           const auto &s=function.instructions[record.instruction_id()].semantics;
           if (s.category=="compute" || s.category=="control" || s.memory_space=="param" || s.memory_space=="const")
@@ -2287,44 +2474,50 @@ void ModelLowerer::Impl::Add(std::uint32_t cta, Coordinates coordinates,
       bool supported=true;
       for(auto index:memory_positions) {
         if((++visits&1023)==0)Poll();
-        const auto instruction=lane.instructions.metadata(index).instruction_id();
+        const auto instruction=cta_facts.Meta({lane_ref,index}).instruction_id();
         const auto& reg=memory_registers[instruction];
-        const auto& metadata=lane.instructions.metadata(index);
+        const auto metadata=cta_facts.Meta({lane_ref,index});
         const auto& static_instruction=function.instructions[instruction];
-        const auto& contract=p.config.InstructionContract(static_instruction.line,instruction,lane.warp_id,metadata.occurrence());
-        const auto evaluation=reg && contract.empty()?lane.instructions.registerEvaluationIdentity(index,*reg):std::nullopt;
+        const auto& contract=cta_facts.launch().InstructionContract(static_instruction.line,instruction,cta_facts.Warp(lane_ref),metadata.occurrence());
+        const auto evaluation=reg && contract.empty()?cta_facts.PathEvaluationKey({lane_ref,index},*reg):std::nullopt;
         const auto evaluation_key=evaluation && *evaluation<=UINT32_MAX?
             std::optional<std::uint64_t>((std::uint64_t(*evaluation)<<32)|instruction):std::nullopt;
         if(evaluation_key)if(const auto cached=evaluated_addresses.find(*evaluation_key);cached!=evaluated_addresses.end()) {
+          // A MemoHit event: the hit reuses the fill's resolution (one branch; inert unless recording).
+          if(cta_facts.recording()) [[unlikely]] NoteEvaluatedMemo(cta_facts,true,{lane_ref,index},*evaluation_key,*reg);
           resolved.push_back(cached->second);continue;
         }
         const bool uniform_global=static_instruction.semantics.memory_space==std::optional<std::string>("global") &&
-            contract.empty() && reg && std::any_of(metadata.known_registers().begin(),metadata.known_registers().end(),
-                [&](const auto& binding){return binding.first==*reg;});
+            contract.empty() && reg && cta_facts.PathUniformBinding({lane_ref,index},*reg);
         if(uniform_global)if(const auto cached=projection->uniform_global_addresses.find(index);
             cached!=projection->uniform_global_addresses.end()) {
           resolved.push_back(cached->second);continue;
         }
-        const auto e=reg ? lane.instructions.readRegisters(index,std::span(&*reg,1))
-                         : lane.instructions.read(index);
+        const auto held=reg ? cta_facts.ReadSlice({lane_ref,index},std::span(&*reg,1))
+                            : cta_facts.ReadFull({lane_ref,index});
+        const auto e=held.view();
         const auto& i=function.instructions[e.instruction_id()];
         try {
           if((i.predicate && !e.predicate_value()) || e.canonical_wait_probe() || memory_tokens[i.id].empty()) {
             supported=false;break;
           }
-          const auto [address,bytes]=r.Memory(e,memory_tokens[i.id],contract,*i.memory_width,
+          MemoryRequest request(memory_tokens[i.id],contract,*i.memory_width,
               i.semantics.memory_space.value_or("generic"));
+          const auto [address,bytes]=r.Memory(e,request);
           if(bytes!=i.memory_width){supported=false;break;}
           resolved.push_back(address);
           if(evaluation_key && evaluated_addresses.size()<100000 &&
-              addresses.bindings.at(address.value()).expression.empty())
+              r.Binding(address).expression.empty()) {
             evaluated_addresses.emplace(*evaluation_key,address);
-          if(uniform_global && addresses.bindings.at(address.value()).expression.empty())
+            // A MemoFill event (one branch; inert unless recording).
+            if(cta_facts.recording()) [[unlikely]] NoteEvaluatedMemo(cta_facts,false,{lane_ref,index},*evaluation_key,*reg);
+          }
+          if(uniform_global && r.Binding(address).expression.empty())
             projection->uniform_global_addresses.emplace(index,address);
         } catch(const std::exception&) {supported=false;break;}
       }
       if(supported) {
-        if(!projection->uniform_body && p.config.instruction_contracts.empty()) {
+        if(!projection->uniform_body && cta_facts.launch().instruction_contracts().empty()) {
           projection->uniform_body=std::make_shared<std::vector<AddressId>>(resolved);
           projection->varying_slots=std::make_shared<std::vector<std::size_t>>(resolved.size(),SIZE_MAX);
           std::vector<AddressId> varying;
@@ -2416,20 +2609,20 @@ void ModelLowerer::Impl::Add(std::uint32_t cta, Coordinates coordinates,
         continue;
       }
     }
-    const auto count=projection ? projection->positions.size() : lane.instructions.size();
+    const auto count=projection ? projection->positions.size() : cta_facts.Size(lane_ref);
     for (std::size_t ordinal=0; ordinal<count; ++ordinal) {
       const auto index=projection ? projection->positions[ordinal] : ordinal;
-      const auto &metadata=lane.instructions.metadata(index);
+      const auto metadata=cta_facts.Meta({lane_ref,index});
       const auto &semantics=function.instructions[metadata.instruction_id()].semantics;
-      std::optional<ExecutedInstruction> concrete;
-      if (!lane.instructions.materialized()) {
+      RecordHolder concrete; // Slice{mask} or Full; the metadata record otherwise
+      if (!cta_facts.Expanded(lane_ref)) {
         const auto& mask=collective_masks[metadata.instruction_id()];
         if(mask)
-          concrete=lane.instructions.readRegisters(index,std::span(&*mask,1));
+          concrete=cta_facts.ReadSlice({lane_ref,index},std::span(&*mask,1));
         else if(semantics.category!="compute" && semantics.category!="control")
-          concrete=lane.instructions.read(index);
+          concrete=cta_facts.ReadFull({lane_ref,index});
       }
-      const auto &e=concrete ? *concrete : metadata;
+      const auto e=concrete ? concrete.view() : metadata;
       if (e.predicate_value() == false)
         continue;
       if ((++visits & 1023) == 0)
@@ -2450,7 +2643,7 @@ void ModelLowerer::Impl::Add(std::uint32_t cta, Coordinates coordinates,
       }
     }
     histories.push_back(std::move(thread.history));
-    if(p.template_execution.used)
+    if(template_execution)
       source.program.instructions.extendThreadFamily(binding_begin,cta,member_cohorts[k]);
   }
   for(const auto& [identity,projection]:projections) {
@@ -2470,19 +2663,20 @@ void ModelLowerer::Impl::Add(std::uint32_t cta, Coordinates coordinates,
       (void)actor;
       requirements.push_back(Ref(id,Milestone::kIssue));
     }
-    for (std::size_t k=0;k<p.lane_traces.size();++k) {
-      const auto &lane=p.lane_traces[k];
-      if (lane.warp_id!=warp) continue;
+    for (std::size_t k=0;k<lane_count;++k) {
+      const auto lane=cta_facts.Lane(k);
+      if (cta_facts.Warp(lane)!=warp) continue;
       const auto actor=source.program.actors[actor_begin+k];
       if (entries.contains(actor.id)) continue;
       if (!terminals.contains(actor.id)) {
-        if (lane.instructions.empty() ||
-            (function.instructions[lane.instructions.metadata(lane.instructions.size()-1).instruction_id()].control!="return" &&
-             function.instructions[lane.instructions.metadata(lane.instructions.size()-1).instruction_id()].control!="exit")) {
+        const auto size=cta_facts.Size(lane);
+        if (size==0 ||
+            (function.instructions[cta_facts.Meta({lane,size-1}).instruction_id()].control!="return" &&
+             function.instructions[cta_facts.Meta({lane,size-1}).instruction_id()].control!="exit")) {
           Diagnostic("incomplete_cluster_warp","warp peer has no cluster operation or terminal return"); continue;
         }
         Thread terminal; terminal.actor=actor;
-        terminals.emplace(actor.id,Emit(terminal,lane.instructions.metadata(lane.instructions.size()-1),Await{}));
+        terminals.emplace(actor.id,Emit(terminal,cta_facts.Meta({lane,size-1}),Await{}));
       }
       requirements.push_back(Ref(terminals.at(actor.id)));
     }
@@ -2508,18 +2702,28 @@ void ModelLowerer::Impl::Add(std::uint32_t cta, Coordinates coordinates,
           throw SemanticError("incomplete_aligned_warp", "missing lane");
         calls.push_back(it->second);
       }
-      source.alignWarp(calls, entry.completions);
+      if (!entry.merged_arm) source.alignWarp(calls, entry.completions);
     }
   }
   ++ctas;
+  if (units) {
+    // O(static instructions) per representative CTA.
+    std::vector<std::pair<std::uint32_t, std::uint64_t>> counts;
+    for (std::size_t id = 0; id < occurrence_counts.size(); ++id)
+      if (occurrence_counts[id]) {
+        counts.emplace_back(static_cast<std::uint32_t>(id), occurrence_counts[id]);
+        occurrence_counts[id] = 0;
+      }
+    cta_occurrences.emplace_back(cta, std::move(counts));
+  }
   profile.nodes = visits;
   SENTRYWARD_DEBUG_PRINT(lowering_0);
   SENTRYWARD_DEBUG_PRINT(lowering_1);
-  execution = nullptr;
+  facts = nullptr;
   resources = nullptr;
   tmem = nullptr;
   matrix = nullptr;
-  current_lane = nullptr;
+  current_lane.reset();
   sites.clear();
   aligned.clear();
   cluster_warp_rendezvous.clear();
@@ -2530,6 +2734,34 @@ void ModelLowerer::Impl::Add(std::uint32_t cta, Coordinates coordinates,
 }
 LoweringResult ModelLowerer::Impl::Finish() {
   ProfileScope profile("frontend.model.finalize");
+  // Class mode: the class size of an occurrence's unit (by its actor's CTA, or by a CTA's coordinates).
+  const auto actor_weight = [&](ActorId actor) -> std::uint64_t {
+    if (!units) return 1;
+    return units->Weight(source.program.actors.at(actor.value()).cta.value());
+  };
+  const auto instruction_weight = [&](InstId id) -> std::uint64_t {
+    return actor_weight(source.instruction(id).actor);
+  };
+  if (units) {
+    // A CTA whose lowering emitted a diagnostic closed its class (a ReportBearing event), so it
+    // stands for itself.
+    for (const auto cta : diagnostic_ctas)
+      if (units->Weight(cta) != 1) throw std::logic_error("lowering diagnostic in a representative with members");
+    // Unit closure: every barrier owner and every cluster collective (keyed by its cluster
+    // origin) belongs to a consumed unit. (Group2 lifetimes pair inside a cluster by construction:
+    // PairGroup2Lifetimes buckets them by cluster origin.)
+    const auto representative = [&](Coordinates cta) {
+      for (int axis = 0; axis < 3; ++axis)
+        if (cta[axis] >= units->grid[axis]) return false;
+      const auto unit = units->UnitOf(units->Linear(cta));
+      return units->classes.at(units->units.at(unit).klass).units.front() == unit;
+    };
+    for (const auto &owner : barriers.Owners())
+      if (!representative(owner)) throw algorithm::UnitClassRestart{"unit_closure"};
+    for (const auto &[key, arrivals] : cluster_arrivals)
+      if (!representative(std::get<0>(key))) throw algorithm::UnitClassRestart{"unit_closure"};
+    units->add_time_orders = orders.size();
+  }
   std::vector<Group2LifetimeResult> group2_results;
   if (!group2_sites.empty()) {
     ProfileScope group2("frontend.model.group2_pairing");
@@ -2568,7 +2800,9 @@ LoweringResult ModelLowerer::Impl::Finish() {
     }
     for (const auto &[barrier,invalidations] : barrier_invalidations) {
       if (invalidations.size()!=1 || initializers[barrier]!=1) {
-        Diagnostic("mbarrier_inval_lifetime","invalidation requires a single initialization and final invalidation"); continue;
+        Diagnostic("mbarrier_inval_lifetime","invalidation requires a single initialization and final invalidation",
+                   nullptr, nullptr, Json::object(), instruction_weight(invalidations.front()));
+        continue;
       }
       for (auto use : uses[barrier]) orders.push_back({"mbarrier_final_invalidation",use,Ref(invalidations.front(),Milestone::kIssue),
           "Every operation on the mbarrier must finish before its final invalidation."});
@@ -2580,7 +2814,8 @@ LoweringResult ModelLowerer::Impl::Finish() {
     auto &arrivals = cluster_arrivals[wait.key];
     if (arrivals.size() != wait.expected) {
       Diagnostic("incomplete_cluster_collective",
-                 "cluster phase lacks required thread arrivals");
+                 "cluster phase lacks required thread arrivals", nullptr, nullptr, Json::object(),
+                 instruction_weight(wait.id));
       continue;
     }
     InstId gate;
@@ -2616,7 +2851,9 @@ LoweringResult ModelLowerer::Impl::Finish() {
     const auto write=shared_value_writes.find(dependency.write);
     const auto read=shared_value_reads.find(dependency.read);
     if(write==shared_value_writes.end() || write->second.empty() || read==shared_value_reads.end()) {
-      Diagnostic("shared_constant_source_unmodeled","A shared constant's source write or consuming read has no modeled memory event.");
+      Diagnostic("shared_constant_source_unmodeled","A shared constant's source write or consuming read has no modeled memory event.",
+                 nullptr, nullptr, Json::object(),
+                 units ? units->Weight(units->Linear(dependency.read.cta)) : 1);
       continue;
     }
     for(auto from:write->second)orders.push_back({"shared_constant_read_from",from,read->second,
@@ -2625,12 +2862,35 @@ LoweringResult ModelLowerer::Impl::Finish() {
   ProfileCall("frontend.model.seal_families",[&]{source.program.instructions.sealThreadFamilies();});
   LoweringResult result;
   result.mma_layouts = std::move(mma_layouts);
+  for (const auto &[object, begin] : tensormap_destinations) result.tensormap_destinations.push_back({object, begin});
   for (std::size_t i = 0; i < occurrence_counts.size(); ++i)
     if (occurrence_counts[i])
       counts[opcode_texts[i]] += occurrence_counts[i];
+  // Class mode: every launch total weighted by class size.
+  std::uint64_t cta_count = ctas, thread_count = source.program.actors.size();
+  if (units) {
+    cta_count = 0;
+    for (const auto &[cta, sparse] : cta_occurrences) {
+      const auto weight = units->Weight(cta);
+      cta_count += weight;
+      for (const auto &[id, count] : sparse) counts[opcode_texts[id]] += count * weight;
+    }
+    thread_count = 0;
+    for (const auto &actor : source.program.actors) thread_count += units->Weight(actor.cta.value());
+    // Members' per-CTA violation texts: the representative's CTA-free part, rendered with the
+    // member's same-rank coordinates, into the same `violations` set.
+    for (const auto &[cta, code, suffix] : cta_violations) {
+      const auto &klass = units->ClassOf(cta);
+      const auto rank = units->RankOf(cta);
+      for (std::size_t i = 1; i < klass.units.size(); ++i) {
+        const UnitFrame member(units->CtaCoordinates(units->units.at(klass.units[i]).ctas.at(rank)), std::nullopt);
+        violations.emplace(code, "CTA " + member.Text(member.self()) + ": " + suffix);
+      }
+    }
+  }
   result.metadata = {
-      {"cta_count", ctas},
-      {"thread_count", source.program.actors.size()},
+      {"cta_count", cta_count},
+      {"thread_count", thread_count},
       {"cluster_completion_joins", gates.size()},
       {"reached_opcodes", counts},
       {"lowered_instruction_count", source.program.instructions.size()},
@@ -2687,9 +2947,25 @@ LoweringResult ModelLowerer::Impl::Finish() {
     for (const auto &code : outcome["discharged_codes"])
       limitations.erase(code.get<std::string>());
   }
+  // Threads are lowered by cohort, not by ID: report each diagnostic's actors
+  // as sorted, merged ranges.
+  for (auto &diagnostic : diagnostics) {
+    if (!diagnostic.contains("details") || !diagnostic["details"].contains("actor_ranges")) continue;
+    auto &ranges = diagnostic["details"]["actor_ranges"];
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> sorted;
+    for (const auto &range : ranges) sorted.emplace_back(range[0].get<std::uint32_t>(), range[1].get<std::uint32_t>());
+    std::sort(sorted.begin(), sorted.end());
+    Json merged = Json::array();
+    for (const auto &[first, last] : sorted) {
+      if (!merged.empty() && merged.back()[1].get<std::uint32_t>() + 1 >= first)
+        merged.back()[1] = std::max(merged.back()[1].get<std::uint32_t>(), last);
+      else merged.push_back({first, last});
+    }
+    ranges = std::move(merged);
+  }
   result.diagnostics = std::move(diagnostics);
   result.artifact.program = std::move(source.program);
-  result.artifact.addresses = std::move(addresses.bindings);
+  result.artifact.addresses = UnitInterner::Release(std::move(addresses));
   result.artifact.required_orders = std::move(orders);
   for (auto &[code, message] : limitations)
     result.artifact.verification_limitations.push_back({code, message});
@@ -2705,12 +2981,12 @@ ModelLowerer::ModelLowerer(const Module &m, const Function &f,
   impl_->atomics = atomics;
 }
 ModelLowerer::~ModelLowerer() = default;
-void ModelLowerer::AddCta(std::uint32_t cta, Coordinates coords,
-                          const ExecutionProgram &program, ValueAddresses value_addresses) {
-  impl_->Add(cta, coords, program, value_addresses);
+void ModelLowerer::AddCta(const CtaFacts &facts, ValueAddresses value_addresses) {
+  impl_->Add(facts, std::move(value_addresses));
 }
 const algorithm::SourceProgram &ModelLowerer::currentProgram() const noexcept {
   return impl_->source.program;
 }
+void ModelLowerer::TrackUnits(algorithm::UnitQuotient *quotient) noexcept { impl_->units = quotient; }
 LoweringResult ModelLowerer::Finish() { return impl_->Finish(); }
 } // namespace sentryward::frontend::ptx

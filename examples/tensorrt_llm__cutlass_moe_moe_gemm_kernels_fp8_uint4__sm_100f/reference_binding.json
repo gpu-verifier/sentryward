@@ -1,0 +1,223 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global11:activations": "activations",
+      "6:global14:expert_weights": "expert_weights",
+      "6:global13:weight_scales": "weight_scales"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global11:activations": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          512,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global14:expert_weights": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4,
+          16384
+        ],
+        "source_strides_bytes": [
+          16384,
+          1
+        ],
+        "target_strides_bytes": [
+          16384,
+          1
+        ]
+      },
+      "6:global13:weight_scales": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          256
+        ],
+        "source_strides_bytes": [
+          512,
+          2
+        ],
+        "target_strides_bytes": [
+          512,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global11:activations": "activations",
+      "6:global14:expert_weights": "expert_weights",
+      "6:global13:weight_scales": "weight_scales"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global11:activations": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          512,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global14:expert_weights": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4,
+          16384
+        ],
+        "source_strides_bytes": [
+          16384,
+          1
+        ],
+        "target_strides_bytes": [
+          16384,
+          1
+        ]
+      },
+      "6:global13:weight_scales": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          256
+        ],
+        "source_strides_bytes": [
+          512,
+          2
+        ],
+        "target_strides_bytes": [
+          512,
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global6:output",
+    "right_allocation": "6:global6:output",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      512,
+      256
+    ],
+    "left_strides_bytes": [
+      512,
+      2
+    ],
+    "right_strides_bytes": [
+      512,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "activations",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global11:activations"
+      },
+      {
+        "name": "expert_weights",
+        "dtype": "uint8",
+        "allocation": "6:global14:expert_weights"
+      },
+      {
+        "name": "weight_scales",
+        "dtype": "float16",
+        "allocation": "6:global13:weight_scales"
+      },
+      {
+        "name": "row_end_0",
+        "value": {
+          "input": "/shape_arrays/0/shapes/0/0"
+        }
+      },
+      {
+        "name": "row_end_1",
+        "value": {
+          "input": "/shape_arrays/0/shapes/1/0"
+        }
+      },
+      {
+        "name": "row_end_2",
+        "value": {
+          "input": "/shape_arrays/0/shapes/2/0"
+        }
+      },
+      {
+        "name": "row_end_3",
+        "value": {
+          "input": "/shape_arrays/0/shapes/3/0"
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tensorrt_llm__cutlass_moe_moe_gemm_kernels_fp8_uint4__sm_100f.ptx",
+    "optimized_input": "examples/tensorrt_llm__cutlass_moe_moe_gemm_kernels_fp8_uint4__sm_100f/input.json",
+    "evidence": "MoeFCGemm<DqMmaMultistage 16x128x128, e4m3 A, uint4 B ColumnMajorTileInterleave<128,2>, half converter and scales, PER_COLUMN_SCALE_ONLY, mma.m16n8k32 e4m3>; B dequantized to fp16, scaled, converted to e4m3 (satfinite) before the MMA; LinearCombinationRelu<half>, alpha 1, beta 0, threshold 0. Byte/nibble map cross-checked against TRT-LLM preprocess_weights_for_mixed_gemm(arch 80, W4_AFP8). Written 2026-10-21 before the value stage could reach equivalence for this kernel.",
+    "semantics": "Fixed saved configuration (4 experts of 128 rows from the shape array); ideal-real tensor arithmetic; all written outputs.",
+    "optimized_input_sha256": "747dc60d0729ff7698d0c1e970d173aa9366de0149b4531122505d925a4c180a",
+    "ptx_sha256": "157170f0e94f19377fd912b280c5665b0f0dc570cbf045ea11b3cabc2728ed9c",
+    "upstream": [
+      "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/cutlass_kernels/moe_gemm/moe_gemm_kernels_fp8_uint4.cu",
+      "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/cutlass_extensions/include/cutlass_extensions/gemm/kernel/moe_cutlass_kernel.h"
+    ],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [
+      {
+        "parameter": 0,
+        "offset": 0,
+        "element_type": "s64",
+        "shapes": [
+          [
+            128
+          ],
+          [
+            256
+          ],
+          [
+            384
+          ],
+          [
+            512
+          ]
+        ]
+      }
+    ]
+  }
+}

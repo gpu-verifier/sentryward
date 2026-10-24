@@ -1,14 +1,4 @@
 {
-  "address_model": {
-    "address_invariants": [],
-    "kind": "symbolic",
-    "layers": [
-      0,
-      2
-    ],
-    "solver": "z3",
-    "solver_timeout_ms": 100
-  },
   "assumption_dependent": true,
   "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
@@ -18,7 +8,7 @@
       "key": "duplicate_tma_store_benign",
       "label": "Duplicate TMA stores",
       "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
-      "triggered": true
+      "triggered": null
     },
     {
       "category": "analysis assumption",
@@ -51,480 +41,1769 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "incomplete",
-    "memory": "passed",
-    "synchronization": "passed"
-  },
-  "counts": {
-    "edges": 29914336,
-    "events": 11842672,
-    "instructions": 2401968,
-    "memory_accesses": 7061648,
-    "threads": 8192
+    "equivalence": "not_run",
+    "synchronization": "failed"
   },
   "diagnostics": [
     {
-      "code": "input_alignment_not_proven",
+      "code": "access_completion_before_deallocation_not_proven",
       "details": {
-        "allocation": "K",
-        "element_bytes": 2,
-        "offset_expression": "word[,64](add[,32,32,-1,2,4294967296,1](1,var[right:binder:3297:0=2:1=0:2=3,0,2](),atom[kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor0000o11101213_tensorptrbf16gmemalign16oi64div81i64div8i64div8_tensorptrbf16gmemalign16o1i64d_0_param_1+0](),var[right:shared-binder:2:2,0,15](),idiv[,4294967296](word#141,),word[,32](word#141,),),)",
-        "remainder_expression": "imod[,2](add[,1,1](atom[kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor0000o11101213_tensorptrbf16gmemalign16oi64div81i64div8i64div8_tensorptrbf16gmemalign16o1i64d_0_param_1+0](),word[,32](word#141,),),)"
+        "constraint": "access_completion_before_dealloc",
+        "count": 524288,
+        "internal_stage": "lifecycle_check",
+        "witnesses": [
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 98278,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 98639,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 99000,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 99361,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 99722,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 100083,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 100444,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 100805,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 101166,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 101527,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 101888,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 102249,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 102610,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 102971,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 103332,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 103693,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 104054,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 104415,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 104776,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 105137,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 105498,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 105859,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 106220,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 106581,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 106942,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 107303,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 107664,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 108025,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 108386,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 108747,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 109108,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          },
+          {
+            "failed_target_count": 32,
+            "from_effects": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              18,
+              20,
+              22,
+              24,
+              26,
+              28,
+              30
+            ],
+            "from_effects_count": 16,
+            "from_effects_truncated": false,
+            "from_instruction": 109469,
+            "kind": "access_completion_before_dealloc",
+            "message": "tcgen05.load must complete before the allocation is deallocated",
+            "to_instruction": 144448
+          }
+        ],
+        "witnesses_truncated": true
       },
-      "message": "Could not prove that the input read is element-aligned",
-      "stage": "equivalence_import"
+      "message": "tcgen05.load must complete before the allocation is deallocated",
+      "stage": "synchronization"
     }
   ],
-  "equivalence": {
-    "access_validity": "no_unresolved_symbolic_byte_reads",
-    "arena_nodes": 217,
-    "blocked_stage": "right_import_s",
-    "checks": {
-      "equivalence": "incomplete",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "comparison_elapsed_seconds": 0.600563407,
-    "context_declaration": {
-      "assumptions": [
-        {
-          "input": "page_table",
-          "interpretation": "s32",
-          "interval": {
-            "lower": "0",
-            "lower_inclusive": true,
-            "upper": "3",
-            "upper_inclusive": true
-          },
-          "kind": "input_elements",
-          "reason": "User-authorized current four-physical-page scenario, confirmed 2026-10-09."
-        }
-      ],
-      "fixed_inputs": [],
-      "inputs": [],
-      "predicate_nodes": []
-    },
-    "context_policy": "explicit native caller premises; no implied provenance certification",
-    "counters": {
-      "add_term_visits": 389,
-      "affine_state_banks": 1,
-      "coordinate_digit_node_visits": 5,
-      "exact_word_reconstruction": 1,
-      "finite_bilinear_banks": 1,
-      "finite_state_reuse_banks": 1,
-      "fp_idiom_power_constructions": 0,
-      "fp_idiom_rm_producers": 0,
-      "ideal_additive_compiler_exp_sequences": 0,
-      "ideal_compiler_exp_sequences": 0,
-      "ideal_compiler_log2_polynomials": 0,
-      "ideal_compiler_lse_sequences": 0,
-      "ideal_single_constant_exp_sequences": 0,
-      "imported_context_nodes": 341,
-      "importer_scope_banks": 2,
-      "importer_scope_binder_hits": 7,
-      "importer_scope_binders_created": 4,
-      "importer_scope_leaf_lookups": 11,
-      "importer_scope_nested_body_fallbacks": 22,
-      "input_index_radix_quotients": 30,
-      "intern_requests": 1277,
-      "known_bits_cache_hits": 1,
-      "known_bits_edges": 4,
-      "known_bits_nodes": 5,
-      "packed_radix_probes": 30,
-      "packed_radix_rewrites": 30,
-      "select_max_probe_ancestor_nodes": 0,
-      "select_max_probe_temporary_nodes": 0,
-      "symbolic_byte_reads_without_extent_proof": 0
-    },
-    "definedness": {
-      "partial_equivalence_families": 0,
-      "proved_families": 0,
-      "status": "not_proven"
-    },
-    "diagnostics": [
+  "evidence": {
+    "failed_required_orders": [
       {
-        "code": "input_alignment_not_proven",
-        "details": {
-          "allocation": "K",
-          "element_bytes": 2,
-          "offset_expression": "word[,64](add[,32,32,-1,2,4294967296,1](1,var[right:binder:3297:0=2:1=0:2=3,0,2](),atom[kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor0000o11101213_tensorptrbf16gmemalign16oi64div81i64div8i64div8_tensorptrbf16gmemalign16o1i64d_0_param_1+0](),var[right:shared-binder:2:2,0,15](),idiv[,4294967296](word#141,),word[,32](word#141,),),)",
-          "remainder_expression": "imod[,2](add[,1,1](atom[kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor0000o11101213_tensorptrbf16gmemalign16oi64div81i64div8i64div8_tensorptrbf16gmemalign16o1i64d_0_param_1+0](),word[,32](word#141,),),)"
-        },
-        "message": "Could not prove that the input read is element-aligned",
-        "stage": "equivalence_import"
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 98278,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 98639,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 99000,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 99361,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 99722,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 100083,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 100444,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 100805,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 101166,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 101527,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 101888,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 102249,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 102610,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 102971,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 103332,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 103693,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 104054,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 104415,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 104776,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 105137,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 105498,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 105859,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 106220,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 106581,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 106942,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 107303,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 107664,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 108025,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 108386,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 108747,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 109108,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
+      },
+      {
+        "failed_target_count": 32,
+        "from_effects": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "from_effects_count": 16,
+        "from_effects_truncated": false,
+        "from_instruction": 109469,
+        "kind": "access_completion_before_dealloc",
+        "message": "tcgen05.load must complete before the allocation is deallocated",
+        "to_instruction": 144448
       }
     ],
-    "elapsed_s": 0.063607779,
-    "engine": "reference_guided_cpp",
-    "ep_profile": {
-      "body_instantiation_s": 0.0,
-      "body_scalar_s": 0.0,
-      "candidate_discovery_and_bookkeeping_s": 0.0,
-      "cross_product_s": 0.0,
-      "enabled": false,
-      "equal_s": 0.0,
-      "fraction": {
-        "computations": 0,
-        "previously_completed": 0,
-        "repeated_across_queries": 0,
-        "requests": 0,
-        "shared_hits": 0,
-        "unique_query_nodes": 0
-      },
-      "fraction_witness_s": 0.0,
-      "match_total_s": 0.0,
-      "normal": {
-        "computations": 0,
-        "previously_completed": 0,
-        "repeated_across_queries": 0,
-        "requests": 0,
-        "shared_hits": 0,
-        "unique_query_nodes": 0
-      },
-      "ordinary_polynomial_s": 0.0,
-      "polynomial": {
-        "computations": 0,
-        "previously_completed": 0,
-        "repeated_across_queries": 0,
-        "requests": 0,
-        "shared_hits": 0,
-        "unique_query_nodes": 0
-      },
-      "query_count": 0,
-      "reset_s": 0.0,
-      "reuse_cache": false,
-      "shared_evictions": 0
-    },
-    "equivalence_context": {
-      "applied_predicates": 0,
-      "element_assumptions": 1,
-      "fixed_input_elements": 0,
-      "scoped_predicates": 0
-    },
-    "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
-    "equivalent_families": 0,
-    "finished_families": 0,
-    "idealizations_applied": [],
-    "input_contract": [
-      {
-        "element_type": "s32",
-        "max_inclusive": 3,
-        "min_inclusive": 0,
-        "object": "page_table",
-        "region": "whole_object",
-        "source": "User-authorized current four-physical-page scenario, confirmed 2026-10-09."
-      }
-    ],
-    "input_contract_applied_reads": [
-      {
-        "element_type": "s32",
-        "object": "page_table",
-        "side": "left"
-      },
-      {
-        "element_type": "s32",
-        "object": "page_table",
-        "side": "right"
-      }
-    ],
-    "legacy_scalar_fallback": false,
-    "mapping_input_memory_constraints": {},
-    "native_context": null,
-    "normalized_reachable_nodes": 0,
-    "numerical_result": "unsupported",
-    "pattern_nodes": 2,
-    "peak_rss_kib": 10507512,
-    "peak_rss_scope": "process_lifetime_not_comparison_delta",
-    "piece_nodes": 0,
-    "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
-    "raw_nodes": [
-      204,
-      130429
-    ],
-    "reference_term_patterns": 0,
-    "result": "unsupported",
-    "rows": [
-      {
-        "family": 0,
-        "left_import_s": 0.0011855839999999965
-      }
-    ],
-    "scalar_engine": "mandatory_exponential_polynomial",
-    "scope": {
-      "kind": "mapped_expression_equivalence",
-      "operation": "equivalence"
-    },
-    "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
-    "stages_s": {
-      "affine_state_pattern_s": 0.0,
-      "exponential_polynomial_s": 0.0,
-      "left_import_s": 0.0011855839999999965,
-      "left_normalize_s": 0.0,
-      "parametric_state_s": 0.0,
-      "piece_union_record_s": 0.0,
-      "piece_union_reuse_s": 0.0,
-      "piece_union_seal_s": 0.0,
-      "proof_reuse_s": 0.0,
-      "right_import_s": 0.0,
-      "right_normalize_s": 0.0,
-      "state_pattern_s": 0.0
-    },
-    "timings": {
-      "load_and_scope_analysis": 0.036511796
-    },
-    "total_output_families": 64,
-    "transport": "in_memory_cpp_objects",
-    "unmatched_reasons": {}
-  },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [],
-      "first_unavailable_reason": "",
-      "queries": 131072,
-      "resolved": 131072,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": true
-    },
-    "branch_scope_capture": {
-      "reason": "branch scope unavailable: unsupported_operation: No exact per-thread value model for compute operation 'vote'",
-      "status": "unavailable"
-    },
-    "cluster_completion_joins": 0,
-    "cta_count": 16,
-    "dependency_compression": {
-      "bulk_read_wait": {
-        "consumers": 512,
-        "emitted_references": 1024,
-        "original_references": 1024,
-        "prefix_effects": 0
-      },
-      "cp_async_mbarrier": {
-        "consumers": 8192,
-        "emitted_references": 145408,
-        "original_references": 327680,
-        "prefix_effects": 8192
-      },
-      "tcgen_commit": {
-        "consumers": 128,
-        "emitted_references": 752,
-        "original_references": 2688,
-        "prefix_effects": 128
-      },
-      "tcgen_store_wait": {
-        "consumers": 10240,
-        "emitted_references": 32768,
-        "original_references": 61440,
-        "prefix_effects": 0
-      }
-    },
-    "diagnostic_sample_count": 0,
-    "discharged_codes": [
-      "mma_memory_effect_refinement",
-      "tcgen_pipeline_effect_refinement",
-      "tcgen_commit_notification_order_refinement"
-    ],
-    "executed_records": 7940192,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 19456,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
-    },
-    "implementation": "cpp",
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "K",
-        "offset": 0,
-        "parameter": "kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor0000o11101213_tensorptrbf16gmemalign16oi64div81i64div8i64div8_tensorptrbf16gmemalign16o1i64d_0_param_1",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "V",
-        "offset": 0,
-        "parameter": "kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor0000o11101213_tensorptrbf16gmemalign16oi64div81i64div8i64div8_tensorptrbf16gmemalign16o1i64d_0_param_2",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "page_table",
-        "offset": 0,
-        "parameter": "kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor0000o11101213_tensorptrbf16gmemalign16oi64div81i64div8i64div8_tensorptrbf16gmemalign16o1i64d_0_param_4",
-        "source": "declaration"
-      }
-    ],
-    "lowered_instruction_count": 2401968,
-    "mma_refinement": {
-      "blocked": [],
-      "discharged": 512
-    },
-    "reached_opcodes": {
-      "add.f32": 4096,
-      "add.rm.f32x2": 32768,
-      "add.rn.f32x2": 260096,
-      "add.s16": 14336,
-      "add.s32": 347136,
-      "add.s64": 88064,
-      "add.u32": 7168,
-      "and.b16": 2048,
-      "and.b32": 320512,
-      "and.b64": 2048,
-      "and.pred": 6656,
-      "bar.arrive": 10240,
-      "bar.sync": 19456,
-      "bar.warp.sync": 4096,
-      "bra": 135136,
-      "bra.uni": 3072,
-      "cp.async.bulk.commit_group": 512,
-      "cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.L2::cache_hint": 1024,
-      "cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.L2::cache_hint": 32,
-      "cp.async.bulk.wait_group.read": 512,
-      "cp.async.cg.shared.global": 131072,
-      "cp.async.commit_group": 8192,
-      "cp.async.mbarrier.arrive.noinc.shared.b64": 8192,
-      "cvt.rn.bf16x2.f32": 393216,
-      "cvt.s64.s32": 12288,
-      "cvt.u32.u16": 14336,
-      "cvt.u32.u64": 4096,
-      "cvt.u64.u32": 8192,
-      "cvta.param.u64": 1568,
-      "div.u32": 2048,
-      "elect.sync": 19456,
-      "ex2.approx.ftz.f32": 460800,
-      "fence.mbarrier_init.release.cluster": 8192,
-      "fence.proxy.async.shared::cta": 2048,
-      "fma.rn.f32x2": 360448,
-      "ld.global.s32": 4096,
-      "ld.param.b32": 44032,
-      "ld.param.b64": 90112,
-      "ld.param.v2.b32": 8192,
-      "ld.param.v2.b8": 16384,
-      "ld.shared.b32": 4608,
-      "mad.lo.s32": 16384,
-      "mad.lo.s64": 8192,
-      "max.f32": 335872,
-      "max.s32": 10240,
-      "max.u16": 2048,
-      "mbarrier.arrive.expect_tx.shared.b64": 32,
-      "mbarrier.arrive.shared.b64": 19072,
-      "mbarrier.init.shared.b64": 352,
-      "mbarrier.try_wait.parity.shared.b64": 41984,
-      "mbarrier.try_wait.parity.shared::cta.b64": 1024,
-      "mov.b16": 2048,
-      "mov.b32": 301472,
-      "mov.b64": 2249248,
-      "mov.u32": 64512,
-      "mul.f32": 8192,
-      "mul.hi.u32": 10240,
-      "mul.lo.s32": 22528,
-      "mul.lo.s64": 20480,
-      "mul.rn.f32x2": 262144,
-      "mul.wide.s32": 4096,
-      "mul.wide.u32": 6144,
-      "neg.s32": 2048,
-      "not.pred": 17408,
-      "or.b32": 49664,
-      "prefetch.tensormap": 1024,
-      "rcp.approx.ftz.f32": 2048,
-      "ret": 8192,
-      "selp.b16": 4096,
-      "selp.b32": 90624,
-      "selp.f32": 274432,
-      "setmaxnreg.dec.sync.aligned.u32": 6144,
-      "setmaxnreg.inc.sync.aligned.u32": 2048,
-      "setp.eq.b32": 288768,
-      "setp.ge.f32": 2048,
-      "setp.ge.s32": 11264,
-      "setp.gt.s32": 57856,
-      "setp.lt.f32": 2048,
-      "setp.lt.s32": 19968,
-      "setp.lt.u32": 12288,
-      "setp.ne.b16": 2048,
-      "setp.ne.b32": 135168,
-      "setp.ne.b64": 2048,
-      "setp.ne.f32": 2048,
-      "setp.neu.f32": 4096,
-      "shfl.sync.idx.b32": 160768,
-      "shl.b32": 141824,
-      "shl.b64": 20480,
-      "shr.s32": 15360,
-      "shr.u32": 64512,
-      "st.shared.b32": 4096,
-      "st.shared.v4.b32": 32768,
-      "sub.f32": 6144,
-      "sub.rn.f32x2": 65536,
-      "sub.s32": 47104,
-      "sub.s64": 2048,
-      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 512,
-      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 128,
-      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 512,
-      "tcgen05.ld.sync.aligned.32x32b.x16.b32": 32768,
-      "tcgen05.ld.sync.aligned.32x32b.x32.b32": 16384,
-      "tcgen05.mma.cta_group::1.kind::f16": 512,
-      "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 512,
-      "tcgen05.st.sync.aligned.32x32b.x16.b32": 32768,
-      "tcgen05.wait::st.sync.aligned": 10240,
-      "vote.sync.ballot.b32": 2048,
-      "xor.b32": 38912
-    },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 0,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 304,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 2401968,
-      "stored_bindings": 90720
-    },
-    "source_edge_storage": {
-      "binding_templates": 13216,
-      "logical_edges": 2393776,
-      "stored_bindings": 13216
-    },
-    "tcgen_history_refinement": {
-      "blocked": [],
-      "notifications": 128,
-      "operations": 512
-    },
-    "thread_count": 8192,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": [
-      {
-        "line": 4134,
-        "note": "Always execute softmax correction; do not jump over the TMEM rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported.",
-        "taken": false
-      }
-    ]
+    "failed_required_orders_count": 524288,
+    "failed_required_orders_sample_limit": 32,
+    "failed_required_orders_truncated": true
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -532,6 +1811,7 @@
       "__assertfail"
     ],
     "assertion_uses": 0,
+    "atomic_uses": 0,
     "bounded_loop_uses": 0,
     "clc_failure": true,
     "clc_uses": 0,
@@ -553,1026 +1833,2160 @@
     "representative_branch_uses": 0,
     "trap_only_equality_assertions_hold": true
   },
-  "hb_queries": {
-    "memory": {
-      "algorithm": "not-built",
-      "batches": 0,
-      "cache_hits": 0,
-      "dfs_queries": 0,
-      "edge_visits": 0,
-      "filtered_queries": 0,
-      "queries": 0,
-      "shared_peak_index_bytes": 0
-    },
-    "required_orders": {
-      "algorithm": "member-relations",
-      "batches": 623,
-      "edge_visits": 28778252,
-      "member_enumerations": 0,
-      "request_construction": {
-        "concrete_pair_materializations": 0,
-        "endpoint_reads": 1313792,
-        "family_requests": 83200,
-        "logical_orders": 2719744,
-        "owner_bindings": 2265600,
-        "stored_orders": 84992
-      }
-    }
-  },
-  "implementation": "cpp",
-  "memory_analysis": {
-    "address_candidates": 51149840,
+  "internal": {
     "address_model": {
-      "cache_hits": 0,
-      "ground_disjoint": 0,
-      "ground_overlap": 0,
-      "layer0_disjoint": 0,
-      "refined_pairs": 0,
-      "solver_queries": 0,
-      "solver_sat": 0,
-      "solver_unknown": 0,
-      "solver_unsat": 0
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
     },
-    "candidate_generation_fallback": false,
-    "exhaustive": false,
-    "family_analysis": {
-      "access_families": 730864,
-      "affine_member_rows": 121600,
-      "candidate_relations": 36394496,
-      "hb_frontier_pieces": 4639326,
-      "hb_member_enumerations": 0,
-      "logical_accesses": 7061648
+    "counts": {
+      "edges": 29865184,
+      "events": 11842672,
+      "instructions": 2401968,
+      "threads": 8192
     },
-    "hb_algorithm": "member-relations",
-    "hb_batches": 3862,
-    "hb_cache_hits": 0,
-    "hb_dfs_queries": 0,
-    "hb_edge_visits": 109451232,
-    "hb_filtered_queries": 0,
-    "hb_peak_index_bytes": 0,
-    "hb_queries": 51149840,
-    "hb_query_seconds": 16.678971932,
-    "overlap_queries": 682496,
-    "strategy": "conflict-family",
-    "unordered_candidates_examined": 682496
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "incomplete"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "access_completion_before_deallocation_not_proven",
+                "details": {
+                  "constraint": "access_completion_before_dealloc",
+                  "count": 524288,
+                  "witnesses": [
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 98278,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 98639,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 99000,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 99361,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 99722,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 100083,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 100444,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 100805,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 101166,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 101527,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 101888,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 102249,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 102610,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 102971,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 103332,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 103693,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 104054,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 104415,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 104776,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 105137,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 105498,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 105859,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 106220,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 106581,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 106942,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 107303,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 107664,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 108025,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 108386,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 108747,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 109108,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 109469,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    }
+                  ],
+                  "witnesses_truncated": true
+                },
+                "message": "tcgen05.load must complete before the allocation is deallocated",
+                "stage": "lifecycle_check"
+              }
+            ],
+            "prerequisite_result": "invalid_lifecycle"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "error": {
+      "code": "access_completion_before_deallocation_not_proven",
+      "message": "tcgen05.load must complete before the allocation is deallocated"
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 131072,
+        "resolved": 131072,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 16,
+      "dependency_compression": {
+        "bulk_read_wait": {
+          "consumers": 512,
+          "emitted_references": 1024,
+          "original_references": 1024,
+          "prefix_effects": 0
+        },
+        "cp_async_mbarrier": {
+          "consumers": 8192,
+          "emitted_references": 145408,
+          "original_references": 327680,
+          "prefix_effects": 8192
+        },
+        "tcgen_commit": {
+          "consumers": 128,
+          "emitted_references": 752,
+          "original_references": 2688,
+          "prefix_effects": 128
+        },
+        "tcgen_store_wait": {
+          "consumers": 10240,
+          "emitted_references": 32768,
+          "original_references": 61440,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 7938144,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 19456,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "K",
+          "offset": 0,
+          "parameter": "kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor0000o11101213_tensorptrbf16gmemalign16oi64div81i64div8i64div8_tensorptrbf16gmemalign16o1i64d_0_param_1",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "V",
+          "offset": 0,
+          "parameter": "kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor0000o11101213_tensorptrbf16gmemalign16oi64div81i64div8i64div8_tensorptrbf16gmemalign16o1i64d_0_param_2",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "page_table",
+          "offset": 0,
+          "parameter": "kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor0000o11101213_tensorptrbf16gmemalign16oi64div81i64div8i64div8_tensorptrbf16gmemalign16o1i64d_0_param_4",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 2401968,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 512
+      },
+      "reached_opcodes": {
+        "add.f32": 4096,
+        "add.rm.f32x2": 32768,
+        "add.rn.f32x2": 260096,
+        "add.s16": 14336,
+        "add.s32": 347136,
+        "add.s64": 88064,
+        "add.u32": 7168,
+        "and.b16": 2048,
+        "and.b32": 320512,
+        "and.b64": 2048,
+        "and.pred": 6656,
+        "bar.arrive": 10240,
+        "bar.sync": 19456,
+        "bar.warp.sync": 4096,
+        "bra": 133088,
+        "bra.uni": 3072,
+        "cp.async.bulk.commit_group": 512,
+        "cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.L2::cache_hint": 1024,
+        "cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.L2::cache_hint": 32,
+        "cp.async.bulk.wait_group.read": 512,
+        "cp.async.cg.shared.global": 131072,
+        "cp.async.commit_group": 8192,
+        "cp.async.mbarrier.arrive.noinc.shared.b64": 8192,
+        "cvt.rn.bf16x2.f32": 393216,
+        "cvt.s64.s32": 12288,
+        "cvt.u32.u16": 14336,
+        "cvt.u32.u64": 4096,
+        "cvt.u64.u32": 8192,
+        "cvta.param.u64": 1568,
+        "div.u32": 2048,
+        "elect.sync": 19456,
+        "ex2.approx.ftz.f32": 460800,
+        "fence.mbarrier_init.release.cluster": 8192,
+        "fence.proxy.async.shared::cta": 2048,
+        "fma.rn.f32x2": 360448,
+        "ld.global.s32": 4096,
+        "ld.param.b32": 44032,
+        "ld.param.b64": 90112,
+        "ld.param.v2.b32": 8192,
+        "ld.param.v2.b8": 16384,
+        "ld.shared.b32": 4608,
+        "mad.lo.s32": 16384,
+        "mad.lo.s64": 8192,
+        "max.f32": 335872,
+        "max.s32": 10240,
+        "max.u16": 2048,
+        "mbarrier.arrive.expect_tx.shared.b64": 32,
+        "mbarrier.arrive.shared.b64": 19072,
+        "mbarrier.init.shared.b64": 352,
+        "mbarrier.try_wait.parity.shared.b64": 41984,
+        "mbarrier.try_wait.parity.shared::cta.b64": 1024,
+        "mov.b16": 2048,
+        "mov.b32": 301472,
+        "mov.b64": 2249248,
+        "mov.u32": 64512,
+        "mul.f32": 8192,
+        "mul.hi.u32": 10240,
+        "mul.lo.s32": 22528,
+        "mul.lo.s64": 20480,
+        "mul.rn.f32x2": 262144,
+        "mul.wide.s32": 4096,
+        "mul.wide.u32": 6144,
+        "neg.s32": 2048,
+        "not.pred": 17408,
+        "or.b32": 49664,
+        "prefetch.tensormap": 1024,
+        "rcp.approx.ftz.f32": 2048,
+        "ret": 8192,
+        "selp.b16": 4096,
+        "selp.b32": 90624,
+        "selp.f32": 274432,
+        "setmaxnreg.dec.sync.aligned.u32": 6144,
+        "setmaxnreg.inc.sync.aligned.u32": 2048,
+        "setp.eq.b32": 288768,
+        "setp.ge.f32": 2048,
+        "setp.ge.s32": 11264,
+        "setp.gt.s32": 57856,
+        "setp.lt.f32": 2048,
+        "setp.lt.s32": 19968,
+        "setp.lt.u32": 12288,
+        "setp.ne.b16": 2048,
+        "setp.ne.b32": 135168,
+        "setp.ne.b64": 2048,
+        "setp.ne.f32": 2048,
+        "setp.neu.f32": 4096,
+        "shfl.sync.idx.b32": 160768,
+        "shl.b32": 141824,
+        "shl.b64": 20480,
+        "shr.s32": 15360,
+        "shr.u32": 64512,
+        "st.shared.b32": 4096,
+        "st.shared.v4.b32": 32768,
+        "sub.f32": 6144,
+        "sub.rn.f32x2": 65536,
+        "sub.s32": 47104,
+        "sub.s64": 2048,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 512,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 128,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 512,
+        "tcgen05.ld.sync.aligned.32x32b.x16.b32": 32768,
+        "tcgen05.ld.sync.aligned.32x32b.x32.b32": 16384,
+        "tcgen05.mma.cta_group::1.kind::f16": 512,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 512,
+        "tcgen05.st.sync.aligned.32x32b.x16.b32": 32768,
+        "tcgen05.wait::st.sync.aligned": 10240,
+        "vote.sync.ballot.b32": 2048,
+        "xor.b32": 38912
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 224,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 2401968,
+        "stored_bindings": 73568
+      },
+      "source_edge_storage": {
+        "binding_templates": 13216,
+        "logical_edges": 2393776,
+        "stored_bindings": 13216
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 128,
+        "operations": 512
+      },
+      "thread_count": 8192,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": [
+        {
+          "line": 4134,
+          "note": "Always execute softmax correction; do not jump over the TMEM rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported.",
+          "taken": false
+        }
+      ]
+    },
+    "hb_queries": {
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 487,
+        "edge_visits": 13778594,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 1313792,
+          "family_requests": 65792,
+          "logical_orders": 2719744,
+          "owner_bindings": 2265600,
+          "stored_orders": 84992
+        }
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis_complete": false,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 5156.80859375,
+    "required_order_domains": 84992,
+    "required_orders": 2719744,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 400,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 2376464,
+      "memory_binding_templates": 110545,
+      "memory_bindings": 4212240,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 45440,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 2576,
+      "thread_prefix_groups": 921392,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "stage": "lifecycle_check",
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 16,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 8022656,
+      "path_entries": 214064,
+      "record_bindings": 263008,
+      "record_nodes": 172480,
+      "splits": 192,
+      "template_steps": 174800,
+      "thread_memberships": 8192,
+      "value_nodes": 167829
+    },
+    "thread_record_compression": {
+      "completed_ctas": 16,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 7938144,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "incomplete"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "access_completion_before_deallocation_not_proven",
+                "details": {
+                  "constraint": "access_completion_before_dealloc",
+                  "count": 524288,
+                  "witnesses": [
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 98278,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 98639,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 99000,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 99361,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 99722,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 100083,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 100444,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 100805,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 101166,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 101527,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 101888,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 102249,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 102610,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 102971,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 103332,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 103693,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 104054,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 104415,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 104776,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 105137,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 105498,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 105859,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 106220,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 106581,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 106942,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 107303,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 107664,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 108025,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 108386,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 108747,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 109108,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_effects": [
+                        0,
+                        2,
+                        4,
+                        6,
+                        8,
+                        10,
+                        12,
+                        14,
+                        16,
+                        18,
+                        20,
+                        22,
+                        24,
+                        26,
+                        28,
+                        30
+                      ],
+                      "from_effects_count": 16,
+                      "from_effects_truncated": false,
+                      "from_instruction": 109469,
+                      "kind": "access_completion_before_dealloc",
+                      "message": "tcgen05.load must complete before the allocation is deallocated",
+                      "to_instruction": 144448
+                    }
+                  ],
+                  "witnesses_truncated": true
+                },
+                "message": "tcgen05.load must complete before the allocation is deallocated",
+                "stage": "lifecycle_check"
+              }
+            ],
+            "prerequisite_result": "invalid_lifecycle",
+            "prerequisite_status": "unsafe_lifecycle"
+          },
+          "stage": "pipeline"
+        }
+      ],
+      "equivalence_check": "blocked",
+      "prerequisite_status": "unsafe_lifecycle",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      }
+    },
+    "value_ir_instance_count": 24519776,
+    "value_ir_node_count": 707456,
+    "value_view_complete": true
   },
-  "memory_analysis_complete": true,
-  "mma_operand_ordering": {},
-  "mode": "verify",
-  "peak_footprint_mib": 10262.24609375,
-  "peak_rss_mib": 10262.24609375,
-  "pipeline_elapsed_seconds": 283.151018678,
-  "race_count": 0,
-  "race_samples_truncated": false,
-  "races": [],
-  "required_order_domains": 84992,
-  "required_orders": 2719744,
-  "result": "unsupported",
+  "peak_rss_mib": 5242.25,
+  "pipeline_elapsed_seconds": 64.192120713,
+  "result": "invalid_lifecycle",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "search_complete": true,
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 0,
-    "binding_diagnostics": [],
-    "execution_cohorts": 400,
-    "mapping_complete": true,
-    "memory_binding_stored_rows": 2376336,
-    "memory_binding_templates": 110481,
-    "memory_bindings": 4212240,
-    "memory_linking_templates_used": true,
-    "synchronization_groups": 45440,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 2576,
-    "thread_prefix_groups": 949504,
-    "value_diagnostic_count": 0,
-    "value_diagnostics": []
-  },
-  "source_violations": [],
-  "synchronization_input": {
-    "compute_access_binding": "after_happens_before",
-    "kind": "ordering_endpoints",
-    "memory_address_payloads": false
-  },
-  "template_execution": {
-    "completed_ctas": 16,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 8022656,
-    "path_entries": 224128,
-    "record_bindings": 271520,
-    "record_nodes": 177472,
-    "splits": 208,
-    "template_steps": 179872,
-    "thread_memberships": 8192,
-    "value_nodes": 171205
-  },
-  "thread_record_compression": {
-    "completed_ctas": 16,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 7940192,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "unresolved_count": 0,
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [],
-    "duplicate_write_value_checks": 682496,
-    "equivalence_check": "translation_or_supported_fragment_blocked",
-    "initial_memory_regions": 22020,
-    "initial_read_families": 22144,
-    "memory_action_storage": {
-      "logical_actions": 4212240,
-      "stored_runs": 3058896
-    },
-    "output_region_families": 0,
-    "output_regions": 22016,
-    "passes": [
-      {
-        "name": "packing",
-        "rewritten_instances": 919040,
-        "rewritten_nodes": 24064,
-        "semantics": "exact_fixed_width"
-      },
-      {
-        "abstraction": "matched approximation and clamp replaced by ideal Exp2",
-        "name": "software_exp2",
-        "rewritten_instances": 131072,
-        "rewritten_nodes": 4096,
-        "semantics": "ideal_exp2"
-      },
-      {
-        "converted_instances": 8904464,
-        "name": "type_edges",
-        "removed_nodes": 222416
-      },
-      {
-        "name": "memory_elimination"
-      },
-      {
-        "elements": 0,
-        "identities": 135648,
-        "layouts": 22544,
-        "mapping_blocks": 80400,
-        "name": "view_normalization",
-        "original_pieces": 2375680,
-        "reused_initial_reads": 22144,
-        "reused_views": 128,
-        "segmented": 512,
-        "slices": 49152,
-        "stored_mapping_blocks": 80272,
-        "typed_output_pieces": 0,
-        "typed_output_regions": 0
-      }
-    ],
-    "processed_memory_actions": 4212240,
-    "processed_memory_families": 0,
-    "read_substitutions": 916944,
-    "result": "verified",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "construction_collections": 2,
-      "diagnostics": [],
-      "output_count": 262144,
-      "output_families_merged": 0,
-      "output_family_count": 64,
-      "output_root_count": 64,
-      "peak_construction_nodes": 1021385,
-      "result": "verified",
-      "scope": {
-        "operation": "scalar_fold"
-      },
-      "shared_view_projection_hits": 248464,
-      "source_outputs": 22016,
-      "spatial_families_projected": 16,
-      "spatial_outputs_projected": 262144,
-      "spatial_template_operations": 0,
-      "statistics": {
-        "constants": 234,
-        "edges": 245888,
-        "folds": 24512,
-        "indices": 7,
-        "initial_cells": 15012,
-        "logical_iterations": 243616,
-        "logical_iterations_overflow": false,
-        "max_fold_nesting": 4,
-        "nodes": 130429,
-        "nodes_before_final_collection": 1021385,
-        "nodes_reclaimed": 1042181,
-        "operations": 90662,
-        "parameters": 2,
-        "range_descriptions": 24512,
-        "storage_nodes": 130429,
-        "unique_fold_bodies": 24512
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    },
-    "serialization": {
-      "action_patterns": 3058896,
-      "binding_patterns": 2376336,
-      "domain_refinements": 10027648,
-      "elapsed_seconds": 48.141093466,
-      "event_families": 1543216,
-      "expanded_event_records": 0,
-      "largest_batch_members": 128,
-      "logical_actions": 4212240,
-      "logical_events": 36655840,
-      "peak_rss_mib_at_completion": 9687.04296875,
-      "reachability_queries": 0,
-      "relations": 9414560,
-      "rss_mib_at_completion": 5983.81640625,
-      "scheduled_batches": 1543216,
-      "singleton_batches": 762448,
-      "value_families": 677824
-    },
-    "shared_read_families": 22128,
-    "shared_read_instances": 686944,
-    "stored_read_substitutions": 230000
-  },
-  "value_ir_instance_count": 15056370,
-  "value_ir_node_count": 502738,
-  "value_view_complete": true,
-  "verification_elapsed_seconds": 137.024780766,
   "verification_limitations": [],
-  "verification_result": "race_free",
-  "warning_count": 10919936,
-  "warning_samples_truncated": true,
-  "warnings": [
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 417,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 649448,
-        "instruction": 148179,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 418,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 652259,
-        "instruction": 148202,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 419,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 655070,
-        "instruction": 148225,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 420,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 657881,
-        "instruction": 148248,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 421,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 660692,
-        "instruction": 148271,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 422,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 663503,
-        "instruction": 148294,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 423,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 666314,
-        "instruction": 148317,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 424,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 669125,
-        "instruction": 148340,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 425,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 671936,
-        "instruction": 148363,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 426,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 674747,
-        "instruction": 148386,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 427,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 677558,
-        "instruction": 148409,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 428,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 680369,
-        "instruction": 148432,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 429,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 683180,
-        "instruction": 148455,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 430,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 685991,
-        "instruction": 148478,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 431,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 688802,
-        "instruction": 148501,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    },
-    {
-      "code": "duplicate-tma-store",
-      "first": {
-        "access_index": 0,
-        "actor": 416,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 646637,
-        "instruction": 148156,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      },
-      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "global",
-        "allocation": "O",
-        "bytes": 128,
-        "offset": 0
-      },
-      "second": {
-        "access_index": 0,
-        "actor": 432,
-        "bytes": 128,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 54245,
-          "kind": "memory"
-        },
-        "event": 691613,
-        "instruction": 148524,
-        "location": {
-          "column": 2,
-          "file": "corpus/flash_attention__fwd_paged_bf16_h128__sm_100a.ptx",
-          "line": 1421
-        },
-        "mode": "write"
-      }
-    }
-  ],
+  "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.501
+  "whole_pipeline_timeout_seconds": 498.499
 }

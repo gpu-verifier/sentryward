@@ -87,7 +87,6 @@ struct Expression {
 };
 
 struct FunctionContext {
-  mutable std::shared_ptr<const std::map<std::string,std::uint32_t,std::less<>>> register_ids;
   algorithm::SharedString source_file, function_name;
   std::vector<v::SourceOrigin> instruction_origins;
   std::map<Key, Type> declarations;
@@ -98,33 +97,38 @@ struct FunctionContext {
   FunctionContext(const Module&, const Function&);
 };
 
+// The thread fields of `origin` for `lane`: its linear thread id, warp, lane
+// and block coordinates. Returns the linear thread id.
+std::uint64_t SetThread(v::SourceOrigin& origin, const FactSource& facts, LaneRef lane) {
+  const auto thread=std::uint64_t(facts.Warp(lane))*facts.launch().warp_size()+facts.LaneId(lane);
+  const auto& dim=facts.launch().block_dim();
+  origin.thread=thread; origin.warp=facts.Warp(lane); origin.lane=facts.LaneId(lane);
+  origin.thread_coordinates={thread%dim[0],thread/dim[0]%dim[1],thread/dim[0]/dim[1]};
+  return thread;
+}
+
 class ValueTemplateExtractor {
 public:
   ValueTemplateExtractor(v::Graph &graph, std::vector<ValueIrDiagnostic> &diagnostics,
-                const ExecutionProgram &program, const LaneTrace &lane,
-                std::uint32_t cta, Coordinates coordinates, const FunctionContext& context, bool prune,
+                const FactSource &facts, LaneRef lane,
+                std::uint32_t cta, const UnitFrame& frame, const FunctionContext& context, bool prune,
                 std::shared_ptr<std::vector<std::uint8_t>> live, BranchScopeCapture* branch_capture = nullptr)
-      : branch_capture_(branch_capture), graph_(graph), diagnostics_(diagnostics), program_(program), lane_(&lane),
-        module_(*program.module), function_(*program.function), cta_(cta), coordinates_(coordinates),
+      : branch_capture_(branch_capture), graph_(graph), diagnostics_(diagnostics), facts_(facts),
+        lane_(lane),
+        module_(facts.module()), function_(facts.function()), cta_(cta), frame_(frame),
         declarations_(context.declarations), symbols_(context.symbols), symbol_spaces_(context.symbol_spaces),
         loop_ends_(context.loop_ends), source_file_(context.source_file), function_name_(context.function_name),
         instruction_origins_(context.instruction_origins) {
-    if (!context.register_ids) {
-      auto ids=std::make_shared<std::map<std::string,std::uint32_t,std::less<>>>();
-      for (std::uint32_t id=0;id<program.register_names.size();++id) ids->emplace(program.register_names[id],id);
-      context.register_ids=std::move(ids);
-    }
-    register_ids_=context.register_ids;
     live_ = std::move(live);
     if (!live_->empty()) return;
-    live_->assign(lane_->instructions.size(), true);
+    live_->assign(facts_.Size(lane_), true);
     if (!prune) return;
     // Bit 1: ordinary value semantics. Bit 2: optional branch evidence only.
     // One backward pass, one stored byte per template record. A failed
     // evidence-only producer cannot invalidate unrelated numerical outputs.
     std::map<Key,std::uint8_t> needed;
-    for (std::size_t cursor = lane_->instructions.size(); cursor-- > 0;) {
-      const auto& record = lane_->instructions.metadata(cursor);
+    for (std::size_t cursor = facts_.Size(lane_); cursor-- > 0;) {
+      const auto record = facts_.Meta({lane_, cursor});
       const auto& instruction = function_.instructions.at(record.instruction_id());
       if (record.predicate_value() == false) continue;
       if (branch_capture_ && record.branch_scope_decision() && instruction.predicate) {
@@ -135,7 +139,7 @@ public:
       if (instruction.control != "none" && instruction.control != "call") continue;
       const bool pure = instruction.semantics.category == "compute" &&
           !instruction.semantics.memory_effect && instruction.control == "none" &&
-          !In(instruction.opcode, {"shfl", "mma", "addc", "subc", "madc"}) && !Has(instruction, "cc");
+          !In(instruction.opcode, {"shfl", "vote", "mma", "addc", "subc", "madc"}) && !Has(instruction, "cc");
       std::uint8_t used=0;
       for(const auto& name:instruction.destinations)
         if(auto found=needed.find(Resolve(name,instruction.scope));found!=needed.end())used|=found->second;
@@ -168,14 +172,14 @@ public:
   }
   bool cohort_template = false;
   std::uint64_t publications=0;
-  std::vector<const LaneTrace*> members;
-  std::unique_ptr<ValueTemplateExtractor> Fork(std::vector<const LaneTrace*> selected) const {
+  std::vector<LaneRef> members;
+  std::unique_ptr<ValueTemplateExtractor> Fork(std::vector<LaneRef> selected) const {
     auto child=std::make_unique<ValueTemplateExtractor>(*this);
     child->lane_=selected.front();
     child->members=std::move(selected);
-    child->record_=nullptr;
-    const auto from=std::uint64_t(lane_->warp_id)*program_.config.warp_size+lane_->lane_id;
-    const auto to=std::uint64_t(child->lane_->warp_id)*program_.config.warp_size+child->lane_->lane_id;
+    child->record_.reset();
+    const auto from=std::uint64_t(facts_.Warp(lane_))*facts_.launch().warp_size()+facts_.LaneId(lane_);
+    const auto to=SetThread(child->origin_,facts_,child->lane_);
     const auto rebind=[&](auto&& self, Expression& value)->void {
       if (!value.missing_definition && value.components.empty())
         value.value=graph_.bindThread(value.value,cta_,from,to);
@@ -186,50 +190,37 @@ public:
     if (child->carry_) rebind(rebind,*child->carry_);
     if (child->shuffle_source_) rebind(rebind,*child->shuffle_source_);
     if (child->shuffle_selector_) rebind(rebind,*child->shuffle_selector_);
-    child->origin_.thread=to;
-    child->origin_.warp=child->lane_->warp_id; child->origin_.lane=child->lane_->lane_id;
-    const auto& dim=program_.config.block_dim;
-    child->origin_.thread_coordinates={to%dim[0],to/dim[0]%dim[1],to/dim[0]/dim[1]};
     return child;
   }
-  std::vector<std::vector<const LaneTrace*>> Partition() const;
-  std::pair<unsigned,bool> ShuffleTarget(const LaneTrace&) const;
-  std::optional<Scalar> KnownAt(const LaneTrace& lane,std::string_view name) const {
-    const auto found=register_ids_->find(name);
-    if (found==register_ids_->end()) return {};
-    const std::array ids{found->second};
-    const auto record=lane.instructions.readRegisters(cursor_,ids);
-    if (const auto* value=program_.KnownRegister(record,name)) return *value;
-    return {};
-  }
+  std::vector<std::vector<LaneRef>> Partition() const;
   bool demand_mode = false;
   AddressValueExtractor::Definition demand_definition;
-  std::function<std::optional<DynamicKey>(const ExecutedInstruction&, const Key&)> demand_producer;
+  std::function<std::optional<DynamicKey>(const RecordView&, const Key&)> demand_producer;
   std::function<std::optional<Expression>(std::uint32_t, DynamicKey, const std::string&)> demand_peer;
-  std::optional<Expression> Demand(const ExecutedInstruction&, const std::string&);
+  std::optional<Expression> Demand(const RecordView&, const std::string&);
   std::optional<Expression> DemandOperand(const std::string&, const Type&);
   std::map<std::pair<DynamicKey, std::string>, std::optional<Expression>> demand_cache;
   unsigned demand_depth = 0;
   bool Step();
-  [[nodiscard]] bool Done() const { return cursor_ >= lane_->instructions.size(); }
-  void Abandon() { Fail("unresolved_cross_thread_value", "Cross-thread operand has no matching extracted occurrence"); Invalidate(); shuffle_source_.reset(); shuffle_selector_.reset(); matrix_pending_ = false; warp_mma_pending_ = false; ++cursor_; }
+  [[nodiscard]] bool Done() const { return cursor_ >= facts_.Size(lane_); }
+  void Abandon() { Fail("unresolved_cross_thread_value", "Cross-thread operand has no matching extracted occurrence"); Invalidate(); shuffle_source_.reset(); shuffle_selector_.reset(); matrix_pending_ = false; warp_mma_pending_ = false; vote_pending_ = false; ++cursor_; }
 
 
 private:
   BranchScopeCapture* branch_capture_ = nullptr;
-  std::shared_ptr<const std::map<std::string,std::uint32_t,std::less<>>> register_ids_;
   std::shared_ptr<std::vector<std::uint8_t>> live_;
   v::NodeUse Add(std::unique_ptr<const v::Operation> op, std::vector<v::Value> operands = {}, v::SourceOrigin origin = {}) {
     origin.lowering_index = suboperation_++;
     if (demand_mode) return {graph_.add(std::move(op), std::move(operands), std::move(origin)), 0};
     if (const auto* coordinate = dynamic_cast<const v::CoordinateOp*>(op.get())) {
       const auto axis = static_cast<unsigned>(coordinate->axis());
-      const auto cluster = program_.config.cluster_dim.value_or(Coordinates{1,1,1});
+      const auto cluster = frame_.cluster_dim();
       switch (coordinate->kind()) {
         case v::CoordinateKind::ThreadIndex: origin.coordinate_value = origin.thread_coordinates->at(axis); break;
-        case v::CoordinateKind::BlockIndex: origin.coordinate_value = coordinates_[axis]; break;
-        case v::CoordinateKind::ClusterBlockIndex: origin.coordinate_value = coordinates_[axis] % cluster[axis]; break;
-        case v::CoordinateKind::ClusterRank: origin.coordinate_value = (coordinates_[2] % cluster[2] * cluster[1] + coordinates_[1] % cluster[1]) * cluster[0] + coordinates_[0] % cluster[0]; break;
+        case v::CoordinateKind::BlockIndex: origin.coordinate_value = frame_.SelfCoordinates()[axis]; break;
+        case v::CoordinateKind::ClusterBlockIndex: origin.coordinate_value = frame_.SelfCoordinates()[axis] % cluster[axis]; break;
+        case v::CoordinateKind::ClusterRank:
+          origin.coordinate_value = frame_.self().value; break;
       }
     }
     return graph_.addTemplate(std::move(op), std::move(operands), std::move(origin));
@@ -238,8 +229,27 @@ private:
   std::optional<Expression> Special(std::string text);
   Expression LinearThread();
   bool Shuffle();
+  // The value cross-thread readers select their sources from: the one published
+  // Value when every source thread's publication is that producer at its own
+  // thread and its node holds every source thread (fromThread re-indexes it), else
+  // a ThreadForward node (Graph::addThreadUnion) of each source thread's own
+  // publication. `sources` are (warp, lane) pairs, possibly repeated. Null when
+  // a publication is missing.
+  std::optional<v::Value> SourceValue(std::uint32_t instruction, std::uint64_t occurrence,
+                                      const std::vector<std::pair<std::uint32_t, std::uint32_t>>& sources);
   bool MatrixMemory();
   bool WarpMma();
+  bool Vote();
+  // One Step of a collective: false while `run` waits for its peers; otherwise
+  // a thrown exception is reported as `code`, `pending` clears and the cursor
+  // advances.
+  bool RunCollective(bool (ValueTemplateExtractor::*run)(), const char* code, bool& pending);
+  // origin_ for `record` on this lane: CTA, thread, occurrence, source file and
+  // function; the other fields are empty.
+  void BeginOrigin(const RecordView& record);
+  // The Partition rule of a whitelisted instruction (built on first use); null
+  // where Partition returns at its whitelist or constant-copy exit.
+  const PartitionSpec* PartitionRule(const Instruction&) const;
 
   Key Resolve(std::string_view name, const Scope &scope) const;
   std::optional<Expression> Operand(std::string text, const Type &type, bool defer_missing = false);
@@ -257,23 +267,32 @@ private:
   void AsyncCopy();
   void BulkCopy();
   void Tma();
+  void TensorMap();
+  // A bracketed operand's address in `space` ("shared" or "global"), plus `extra` bytes.
+  std::optional<v::Value> SpaceAddress(std::string_view operand, std::string_view space,
+                                       std::optional<Expression> extra);
   bool ResolvedTma();
   void Tcgen();
   void TcgenMma();
   v::Value Native(v::NativeMatrixOpcode, v::ValueType, std::vector<v::Value>, v::NativeMatrixAttributes);
   v::Value ClusterRank();
+  // Pointer constant of a resolved slot binding.
+  v::Value SlotAddressValue(const algorithm::ConstantAddressBinding& binding);
   std::optional<Expression> Reinterpret(Expression expression, const Type &type);
   void Fail(std::string code, std::string message);
   void Invalidate();
   void Bind(const std::string &name, Expression value);
   v::Graph &graph_;
   std::vector<ValueIrDiagnostic> &diagnostics_;
-  const ExecutionProgram &program_;
-  const LaneTrace *lane_;
+  const FactSource &facts_;
+  LaneRef lane_;
   const Module &module_;
   const Function &function_;
+  // The value-IR CTA id (pointer owners, origins, bindThread): the value
+  // view's CtaFacts::Linear(), or kAddressExtractorCta. Never read from frame_.
   std::uint32_t cta_;
-  Coordinates coordinates_;
+  // Naming only: origin coordinates and the cluster rank.
+  const UnitFrame& frame_;
   const std::map<Key, Type>& declarations_;
   const std::set<Key>& symbols_;
   const std::map<Key, std::string>& symbol_spaces_;
@@ -281,8 +300,10 @@ private:
   std::set<Key> invalidated_;
   std::optional<Expression> carry_;
   const Instruction *instruction_ = nullptr;
-  ExecutedInstruction current_record_;
-  const ExecutedInstruction *record_ = nullptr;
+  // ReadFull, or CopyMeta at dead positions: the record copy only (RecordCopy).
+  // record_ views it, the expanded record, or a Demand producer.
+  RecordCopy current_record_;
+  std::optional<RecordView> record_;
   v::SourceOrigin origin_;
   std::size_t cursor_ = 0;
   std::uint64_t suboperation_ = 0;
@@ -295,6 +316,7 @@ private:
   bool shuffle_valid_ = false;
   bool matrix_pending_ = false;
   bool warp_mma_pending_ = false;
+  bool vote_pending_ = false;
 public:
   using ShuffleKey = std::tuple<std::uint32_t, std::uint32_t, std::uint64_t, std::uint32_t,
       std::vector<std::pair<std::uint64_t, std::uint64_t>>>;
@@ -312,121 +334,154 @@ public:
   std::map<ShuffleKey, Expression>* shuffle_values = nullptr;
   std::map<ShuffleKey, MatrixAddressState>* matrix_addresses = nullptr;
   std::map<ShuffleKey, WarpMmaState>* warp_mma_inputs = nullptr;
-  Resources* memory_resources = nullptr;
-  Resources* descriptor_resources = nullptr;
+  // The builder's Partition rules (ValueIrExtractor::partition_specs_).
+  PartitionSpecCache* partition_specs = nullptr;
+  // The value view's slot resolution (bulk-copy and TMA endpoints, MMA
+  // descriptors); null in the address-value extractor.
+  Resources* resources = nullptr;
   const TmemProvenanceIndex* tmem_provenance = nullptr;
 
 };
 
-std::pair<unsigned,bool> ValueTemplateExtractor::ShuffleTarget(const LaneTrace& lane) const {
-  const auto& meta=lane.instructions.metadata(cursor_);
-  const auto& i=function_.instructions[meta.instruction_id()];
-  const auto known=[&](unsigned index)->Integer {
-    const auto text=Trim(module_.view(i.operands.at(index)));
-    if (auto literal=ParseInteger(text)) return *literal;
-    if (const auto value=KnownAt(lane,text))
-      if (auto integer=ScalarInteger(*value)) return *integer;
-    throw std::invalid_argument("Shuffle selector/clamp/membermask is dynamic");
-  };
-  const auto b=known(2),c=known(3),mask=known(4);
-  const auto amount=(b&31).convert_to<unsigned>();
-  const auto segment=((c>>8)&31).convert_to<unsigned>();
-  const auto maximum=(lane.lane_id&segment)|((c&31).convert_to<unsigned>()&~segment);
-  int source=(lane.lane_id&segment)|(amount&~segment);
-  if (Has(i,"bfly")) source=lane.lane_id^amount;
-  if (Has(i,"up")) source=int(lane.lane_id)-int(amount);
-  if (Has(i,"down")) source=lane.lane_id+amount;
-  const bool valid=Has(i,"up") ? source>=int(maximum) : source<=int(maximum);
-  if (!valid) source=lane.lane_id;
-  const auto bits=(mask&0xffffffff).convert_to<std::uint32_t>();
-  if (source<0 || source>=32 || !(bits&(1u<<lane.lane_id)) || !(bits&(1u<<source)))
-    throw std::invalid_argument("Shuffle issuer or source is outside membermask");
-  return {unsigned(source),valid};
+// Partition's whitelist: the instruction classes whose members can disagree
+// on a fact or on a published value.
+struct PartitionKinds {
+  bool tensor=false, bulk=false, copy=false, mma=false, matrix=false, shuffle=false, election=false,
+       allocation=false, tc_mma=false, parameter=false, vote=false;
+};
+PartitionKinds PartitionKindsOf(const Instruction& i) {
+  PartitionKinds kind;
+  kind.tensor=i.opcode=="cp" && Has(i,"tensor") && Has(i,"bulk");
+  kind.bulk=i.opcode=="cp" && Has(i,"bulk");
+  kind.copy=i.opcode=="cp" && i.semantics.operation=="copy";
+  kind.mma=i.opcode=="mma";
+  kind.matrix=In(i.opcode,{"ldmatrix","stmatrix"});
+  kind.shuffle=i.opcode=="shfl";
+  kind.election=i.opcode=="elect";
+  kind.allocation=i.opcode=="tcgen05" && Has(i,"alloc");
+  kind.tc_mma=i.opcode=="tcgen05" && Has(i,"mma");
+  kind.parameter=i.opcode=="ld" && Has(i,"param");
+  kind.vote=i.opcode=="vote";
+  return kind;
 }
 
-std::vector<std::vector<const LaneTrace*>> ValueTemplateExtractor::Partition() const {
+// The Partition rule of a whitelisted instruction: its key fragments in the
+// order PartitionCursor::Next appends them; std::nullopt for a copy whose
+// operands are all integers (Partition's constant-copy exit). Token fragments
+// are the matches of `names` over each operand spelling, in order; an operand
+// whose trimmed spelling is an integer contributes none.
+std::optional<PartitionSpec> BuildPartitionSpec(const Module& module, const Instruction& i,
+                                                const PartitionKinds& kind) {
+  if (kind.copy && std::all_of(i.operands.begin()+2,i.operands.end(),[&](const auto& operand) {
+        return ParseInteger(Trim(module.view(operand))).has_value();
+      })) return std::nullopt;
+  PartitionSpec spec;
+  spec.instruction=i.id;
+  auto& fragments=spec.fragments;
+  if (kind.mma || kind.matrix) fragments.push_back({PartitionFragment::Warp,{},{},0});
+  if (kind.allocation) fragments.push_back({PartitionFragment::Issuer,{},{},0});
+  spec.record_at=static_cast<std::uint32_t>(fragments.size());
+  // false: the operand is absent; its Missing fragment throws std::out_of_range
+  // in PartitionCursor::Next.
+  const auto tokens=[&](std::size_t operand) {
+    if (operand>=i.operands.size()) {
+      fragments.push_back({PartitionFragment::Missing,{},{},static_cast<std::uint32_t>(operand)});
+      return false;
+    }
+    static const std::regex names(R"([%A-Za-z_$][A-Za-z0-9_.$]*)");
+    const std::string spelling(module.view(i.operands[operand]));
+    if (ParseInteger(Trim(spelling))) return true;
+    for (std::sregex_iterator at(spelling.begin(),spelling.end(),names),end;at!=end;++at)
+      fragments.push_back({PartitionFragment::Token,at->str(),{},0});
+    return true;
+  };
+  if (kind.bulk || kind.parameter)
+    for (std::size_t operand=i.destinations.empty()?0:1;operand<i.operands.size();++operand) tokens(operand);
+  if (kind.tc_mma)
+    for (std::size_t operand=Has(i,"sp")?4:3;operand<i.operands.size();++operand) tokens(operand);
+  if (kind.tensor) fragments.push_back({PartitionFragment::Contract,{},{},0});
+  if (kind.copy) for (std::size_t operand=2;operand<i.operands.size();++operand) tokens(operand);
+  if (kind.election) {
+    if (!tokens(1)) return spec;
+    auto text=Trim(module.view(i.operands[1]));
+    auto literal=ParseInteger(text);
+    fragments.push_back({PartitionFragment::Elected,std::move(text),std::move(literal),1});
+  }
+  // shfl: the members share b, c and the membermask (the first phase reads the
+  // leader's); source validity and producers are per-member parts of the read.
+  if (kind.shuffle)
+    for (unsigned operand=2;operand<5;++operand) if (!tokens(operand)) return spec;
+  if (kind.vote) tokens(2);
+  return spec;
+}
+
+const PartitionSpec* ValueTemplateExtractor::PartitionRule(const Instruction& i) const {
+  // Only an opcode some rule can whitelist gets an entry (the cache stays
+  // sparse); its flags and rule are computed once per function.
+  if (!In(i.opcode,{"cp","ld","mma","ldmatrix","stmatrix","shfl","elect","tcgen05","vote"})) return nullptr;
+  if (!partition_specs) throw std::logic_error("Partition without the value view's rule cache");
+  auto& rules=partition_specs->rules;
+  auto found=rules.find(i.id);
+  if (found==rules.end()) {
+    std::unique_ptr<const PartitionSpec> rule;
+    const auto kind=PartitionKindsOf(i);
+    if (kind.bulk || kind.copy || kind.mma || kind.matrix || kind.shuffle || kind.election || kind.allocation ||
+        kind.tc_mma || kind.parameter || kind.vote)
+      if (auto spec=BuildPartitionSpec(module_,i,kind)) rule=std::make_unique<const PartitionSpec>(std::move(*spec));
+    found=rules.emplace(i.id,std::move(rule)).first;
+  }
+  return found->second.get();
+}
+
+std::vector<std::vector<LaneRef>> ValueTemplateExtractor::Partition() const {
   if (Done() || members.size()<2) return {};
-  const auto& meta=lane_->instructions.metadata(cursor_);
+  const auto meta=facts_.Meta({lane_,cursor_});
   const auto& i=function_.instructions.at(meta.instruction_id());
   if (!(*live_)[cursor_] || meta.predicate_value()==false) return {};
-  const bool tensor=i.opcode=="cp" && Has(i,"tensor") && Has(i,"bulk");
-  const bool bulk=i.opcode=="cp" && Has(i,"bulk");
-  const bool copy=i.opcode=="cp" && i.semantics.operation=="copy";
-  const bool mma=i.opcode=="mma";
-  const bool matrix=In(i.opcode,{"ldmatrix","stmatrix"});
-  const bool shuffle=i.opcode=="shfl";
-  const bool election=i.opcode=="elect";
-  const bool allocation=i.opcode=="tcgen05" && Has(i,"alloc");
-  const bool tc_mma=i.opcode=="tcgen05" && Has(i,"mma");
-  const bool parameter=i.opcode=="ld" && Has(i,"param");
-  if (!(bulk || copy || mma || matrix || shuffle || election || allocation || tc_mma || parameter)) return {};
-  if (copy && std::all_of(i.operands.begin()+2,i.operands.end(),[&](const auto& operand) {
-        return ParseInteger(Trim(module_.view(operand))).has_value();
-      })) return {};
-  std::map<std::string,std::vector<const LaneTrace*>> partitions;
-  for (const auto* member:members) {
-    std::ostringstream key;
-    if (mma || matrix) key << "warp:" << member->warp_id;
-    if (allocation) key << "issuer:" << (member->lane_id==0);
-    const auto& record=member->instructions.metadata(cursor_);
-    const auto append=[&](std::string_view text) {
-      static const std::regex names(R"([%A-Za-z_$][A-Za-z0-9_.$]*)");
-      const std::string spelling(text);
-      if (ParseInteger(Trim(spelling))) return;
-      for (std::sregex_iterator at(spelling.begin(),spelling.end(),names),end;at!=end;++at)
-        {
-          if (const auto value=KnownAt(*member,at->str())) key << at->str() << '=' << ScalarJson(*value).dump() << ';';
-        }
-    };
-    if (bulk || parameter)
-      for (std::size_t operand=i.destinations.empty()?0:1;operand<i.operands.size();++operand)
-        append(module_.view(i.operands[operand]));
-    if (tc_mma)
-      for (std::size_t operand=Has(i,"sp")?4:3;operand<i.operands.size();++operand)
-        append(module_.view(i.operands[operand]));
-    if (tensor) key << program_.config.InstructionContract(i.line,i.id,member->warp_id,record.occurrence()).dump();
-    if (copy) for (std::size_t operand=2;operand<i.operands.size();++operand) append(module_.view(i.operands[operand]));
-    if (election) {
-      append(module_.view(i.operands.at(1)));
-      const auto text=Trim(module_.view(i.operands.at(1)));
-      auto raw=ParseInteger(text);
-      if (!raw) {
-        if (const auto value=KnownAt(*member,text)) raw=ScalarInteger(*value);
-      }
-      if (raw) {
-        const auto mask=(*raw&0xffffffff).convert_to<std::uint32_t>();
-        auto chosen=program_.config.elect_lane.value_or(32);
-        if (chosen>=32 || !(mask&(1u<<chosen))) chosen=std::countr_zero(mask);
-        key << "elected:" << (member->lane_id==chosen);
-      }
-    }
-    if (shuffle) {
-      for (unsigned operand=2;operand<5;++operand) append(module_.view(i.operands.at(operand)));
-      try {
-        const auto [source,valid]=ShuffleTarget(*member);
-        key << "valid:" << valid;
-        if (shuffle_source_) {
-          const auto found=shuffle_values->find({member->warp_id,i.id,record.occurrence(),source,origin_.unroll_context});
-          if (found==shuffle_values->end()) return {};
-          key << "source:" << graph_.structuralKey(found->second.value,origin_);
-        }
-      } catch (const std::invalid_argument&) { key << "invalid:" << member->lane_id; }
-    }
+  const auto* spec=PartitionRule(i);
+  if (!spec) return {};
+  // Per member: the fact-stage class, then the structural keys of its matrix
+  // peers, so a veto or an exception arises at the member that causes it.
+  // Parts are numbered by first appearance, so they are ordered by first
+  // member and part 0 holds the leader.
+  auto stage1=facts_.BeginPartition(members,cursor_,*spec);
+  std::vector<std::vector<LaneRef>> parts;
+  std::unordered_map<std::string,std::uint32_t> numbering; // "<class>:" ++ stage-2 key -> part
+  std::string key;
+  MemberFacts derived;
+  try {
+  while (!stage1.Done()) {
+    const auto member=stage1.Member();
+    // The member's stage-1 key enters the part key through its class.
+    stage1.Next(derived);
+    key.assign(std::to_string(stage1.Class(stage1.Evaluated()-1)));
+    key+=':';
     if (matrix_pending_) {
-      const auto found=matrix_addresses->find({member->warp_id,i.id,record.occurrence(),0,origin_.unroll_context});
-      if (found==matrix_addresses->end() || found->second.arrived!=UINT32_MAX) return {};
+      const auto found=matrix_addresses->find({facts_.Warp(member),i.id,facts_.Meta({member,cursor_}).occurrence(),0,
+                                               origin_.unroll_context});
+      if (found==matrix_addresses->end() || found->second.arrived!=UINT32_MAX) {
+        stage1.Finish(query::PartitionEnd::Vetoed);
+        return {};
+      }
       const auto shape=DecodeMatrixShape(module_,i,i.opcode=="stmatrix");
       for (unsigned m=0;m<shape.count;++m) for (unsigned half=0;half<(shape.transpose?2u:1u);++half) {
-        const unsigned peer=8*m+(shape.transpose?2*(member->lane_id%4)+half:member->lane_id/4);
-        key << "source:" << graph_.structuralKey(found->second.addresses[peer]->value,origin_);
+        const unsigned peer=8*m+(shape.transpose?2*(facts_.LaneId(member)%4)+half:facts_.LaneId(member)/4);
+        key+="source:";
+        key+=graph_.structuralKey(found->second.addresses[peer]->value,origin_);
       }
     }
-    partitions[key.str()].push_back(member);
+    const auto [part,added]=numbering.try_emplace(key,static_cast<std::uint32_t>(parts.size()));
+    if (added) parts.emplace_back();
+    parts[part->second].push_back(member);
   }
-  std::vector<std::vector<const LaneTrace*>> result;
-  if (partitions.size()<2) return result;
-  for (auto& [key,part]:partitions) result.push_back(std::move(part));
-  return result;
+  } catch (...) {
+    // An exception ends the partition stage (recorded as Threw), then propagates.
+    stage1.Finish(query::PartitionEnd::Threw);
+    throw;
+  }
+  stage1.Finish(query::PartitionEnd::Complete);
+  if (parts.size()<2) return {};
+  return parts;
 }
 
 FunctionContext::FunctionContext(const Module& module, const Function& function)
@@ -530,16 +585,18 @@ std::optional<Integer> ValueTemplateExtractor::Known(std::string text, bool unif
   if (auto literal = ParseInteger(text)) return literal;
   if (text == "true") return Integer(1);
   if (text == "false") return Integer(0);
-  const auto& record = uniform_only ? lane_->instructions.metadata(cursor_) : *record_;
-  if (const auto* value = program_.KnownRegister(record, text)) return ScalarInteger(*value);
-  return {};
+  if (!uniform_only) {
+    if (const auto* value = facts_.Value(*record_, text)) return ScalarInteger(*value);
+    return {};
+  }
+  return facts_.LegacyUniformOnlyValue({lane_, cursor_}, members, text);
 }
 Expression ValueTemplateExtractor::LinearThread() {
   auto coordinate = [&](v::Axis axis) {
     return Expression{Add(std::make_unique<v::CoordinateOp>(v::CoordinateKind::ThreadIndex, axis), {}, origin_).result(), U32()};
   };
   auto result = coordinate(v::Axis::X);
-  const auto& dim = program_.config.block_dim;
+  const auto& dim = facts_.launch().block_dim();
   for (unsigned axis = 1; axis < 3; ++axis) {
     if (dim[axis] == 1) continue;
     auto scale = Constant(U32(), std::to_string(axis == 1 ? dim[0] : dim[0] * dim[1]));
@@ -561,17 +618,17 @@ std::optional<Expression> ValueTemplateExtractor::Special(std::string text) {
   if (text == "%cluster_ctarank")
     return Expression{Add(std::make_unique<v::CoordinateOp>(v::CoordinateKind::ClusterRank), {}, origin_).result(), U32()};
   if (text == "%laneid" || text == "%warpid") {
-    auto thread = LinearThread(), width = Constant(U32(), std::to_string(program_.config.warp_size));
+    auto thread = LinearThread(), width = Constant(U32(), std::to_string(facts_.launch().warp_size()));
     return Expression{Add(std::make_unique<v::BinaryOp>(text == "%laneid" ? v::BinaryOpcode::Remainder : v::BinaryOpcode::Divide, U32().value),
         {thread.value, width.value}, origin_).result(), U32()};
   }
   if (text.starts_with("%ntid.") && std::string("xyz").find(text.back()) < 3)
-    return Constant(U32(), std::to_string(program_.config.block_dim[std::string("xyz").find(text.back())]));
+    return Constant(U32(), std::to_string(facts_.launch().block_dim()[std::string("xyz").find(text.back())]));
   if (text.starts_with("%clock") || text.starts_with("%globaltimer")) {
     Fail("unsupported_special_register", "Clock/timer values have no coordinate or parameter representation"); return {};
   }
-  if (auto known = program_.config.special_registers.find(text); known != program_.config.special_registers.end())
-    return Constant(U32(), known->second.convert_to<std::string>());
+  if (const auto known = facts_.Special(text))
+    return Constant(U32(), known->convert_to<std::string>());
   return {};
 }
 std::optional<Expression> ValueTemplateExtractor::Bits(Expression expression) {
@@ -796,14 +853,14 @@ std::optional<Expression> ValueTemplateExtractor::Operand(std::string text, cons
     return result;
   }
   if (!declarations_.contains(key)) {
-    if (auto parameter = program_.config.parameters.find(text); parameter != program_.config.parameters.end())
+    if (auto parameter = facts_.launch().parameters().find(text); parameter != facts_.launch().parameters().end())
       return Constant(type, parameter->second.convert_to<std::string>());
   }
   if (!declarations_.contains(key) && text.starts_with('%')) {
     if (auto special = Special(text)) return special;
   }
-  for (const auto &warp : program_.config.warps)
-    if (warp.warp_id == lane_->warp_id)
+  for (const auto &warp : facts_.launch().warps())
+    if (warp.warp_id == facts_.Warp(lane_))
       if (auto value = warp.initial_registers.find(text); value != warp.initial_registers.end() && !invalidated_.contains(key)) {
         auto result = Constant(declarations_.contains(key) ? declarations_.at(key) : type,
                                value->second.convert_to<std::string>());
@@ -848,7 +905,10 @@ std::optional<Expression> ValueTemplateExtractor::Address(std::string text) {
 bool ValueTemplateExtractor::Shuffle() {
   const auto& i = *instruction_;
   const auto key = [&](std::uint32_t lane) {
-    return ShuffleKey{lane_->warp_id, i.id, record_->occurrence(), lane, origin_.unroll_context};
+    return ShuffleKey{facts_.Warp(lane_), i.id, record_->occurrence(), lane, origin_.unroll_context};
+  };
+  const auto binary = [&](v::BinaryOpcode op, Expression x, Expression y) {
+    return Expression{Add(std::make_unique<v::BinaryOp>(op, U32().value), {x.value, y.value}, origin_).result(), U32()};
   };
   if (!shuffle_source_) {
     if (i.operands.size() != 5 || !Has(i, "sync") || !Has(i, "b32") ||
@@ -858,7 +918,7 @@ bool ValueTemplateExtractor::Shuffle() {
     auto c = Known(std::string(module_.view(i.operands[3])));
     auto mask = Known(std::string(module_.view(i.operands[4])));
     if (!b || !c || !mask) throw std::invalid_argument("Shuffle lane selector/clamp/membermask is dynamic");
-    const auto lane = lane_->lane_id;
+    const auto lane = facts_.LaneId(lane_);
     const auto members = (*mask & 0xffffffff).convert_to<std::uint32_t>();
     const auto amount = (*b & 31).convert_to<std::uint32_t>();
     const auto segment = ((*c >> 8) & 31).convert_to<std::uint32_t>();
@@ -888,12 +948,9 @@ bool ValueTemplateExtractor::Shuffle() {
     shuffle_source_ = *value;
     shuffle_from_ = source;
     if (this->members.empty()) shuffle_values->insert_or_assign(key(lane),*value);
-    else for (const auto* member:this->members)
-      shuffle_values->insert_or_assign(ShuffleKey{member->warp_id,i.id,record_->occurrence(),member->lane_id,origin_.unroll_context},*value);
+    else for (const auto member:this->members)
+      shuffle_values->insert_or_assign(ShuffleKey{facts_.Warp(member),i.id,record_->occurrence(),facts_.LaneId(member),origin_.unroll_context},*value);
     auto linear = LinearThread();
-    auto binary = [&](v::BinaryOpcode op, Expression a, Expression b) {
-      return Expression{Add(std::make_unique<v::BinaryOp>(op, U32().value), {a.value,b.value}, origin_).result(), U32()};
-    };
     if (!shuffle_valid_) shuffle_selector_ = linear;
     else if (Has(i, "bfly")) shuffle_selector_ = binary(v::BinaryOpcode::BitXor, linear, Constant(U32(), std::to_string(amount)));
     else if (Has(i, "up") || Has(i, "down"))
@@ -905,33 +962,109 @@ bool ValueTemplateExtractor::Shuffle() {
     ++publications;
     return false;
   }
-  shuffle_from_=ShuffleTarget(*lane_).first;
-  for (const auto* member:members) {
-    const auto source=ShuffleTarget(*member).first;
-    if (!shuffle_values->contains({member->warp_id,i.id,record_->occurrence(),source,origin_.unroll_context})) return false;
+  // Each member reads its own source lane: ShuffleSource is its PTX source and
+  // validity. Members whose validity differs keep one cohort; the selector then
+  // falls back to the member's own thread where the source is invalid.
+  shuffle_from_=ShuffleSource(facts_,{lane_,cursor_}).first;
+  const std::vector<LaneRef> self{lane_};
+  const auto& readers = members.empty() ? self : members;
+  std::vector<std::pair<std::uint32_t, std::uint32_t>> sources;
+  sources.reserve(readers.size());
+  bool mixed = false;
+  for (const auto member:readers) {
+    const auto [source, valid] = ShuffleSource(facts_,{member,cursor_});
+    if (!shuffle_values->contains({facts_.Warp(member),i.id,record_->occurrence(),source,origin_.unroll_context})) return false;
+    sources.emplace_back(facts_.Warp(member), source);
+    mixed |= valid != shuffle_valid_;
   }
-  const auto source = shuffle_values->find(key(shuffle_from_));
-  if (source == shuffle_values->end()) return false;
+  const auto base = SourceValue(i.id, record_->occurrence(), sources);
+  if (!base) return false;
   const auto destinations = Split(module_.view(i.operands[0]), '|');
-  auto result = source->second;
-  result.value = graph_.fromThread(result.value, shuffle_selector_->value);
+  auto result = shuffle_values->find(key(shuffle_from_))->second;
+  Expression selector = *shuffle_selector_, valid = Constant(Pred(), shuffle_valid_ ? "true" : "false");
+  if (mixed) {
+    auto b = Known(std::string(module_.view(i.operands[2])));
+    auto c = Known(std::string(module_.view(i.operands[3])));
+    if (!b || !c) throw std::invalid_argument("Shuffle lane selector/clamp is dynamic");
+    const auto amount = (*b & 31).convert_to<std::uint32_t>();
+    const auto segment = ((*c >> 8) & 31).convert_to<std::uint32_t>();
+    const auto clamp = (*c & 31).convert_to<std::uint32_t>() & ~segment;
+    const auto compare = [&](v::ComparePredicate op, Expression x, Expression y) {
+      return Expression{Add(std::make_unique<v::CompareOp>(op, Pred().value), {x.value, y.value}, origin_).result(), Pred()};
+    };
+    const auto constant = [&](std::uint32_t n) { return Constant(U32(), std::to_string(n)); };
+    // PTX shfl.sync: maxLane = (lane & segmask) | (c & ~segmask); up is valid when
+    // lane - b >= maxLane, the other modes when their source lane <= maxLane.
+    const auto linear = LinearThread();
+    const auto lane = binary(v::BinaryOpcode::BitAnd, linear, constant(31));
+    const auto maximum = binary(v::BinaryOpcode::BitOr, binary(v::BinaryOpcode::BitAnd, lane, constant(segment)), constant(clamp));
+    if (Has(i, "up")) valid = compare(v::ComparePredicate::GreaterEqual, lane, binary(v::BinaryOpcode::Add, maximum, constant(amount)));
+    else {
+      const auto source_lane = Has(i, "down") ? binary(v::BinaryOpcode::Add, lane, constant(amount)) :
+          Has(i, "bfly") ? binary(v::BinaryOpcode::BitXor, lane, constant(amount)) :
+          binary(v::BinaryOpcode::BitOr, binary(v::BinaryOpcode::BitAnd, lane, constant(segment)), constant(amount & ~segment));
+      valid = compare(v::ComparePredicate::LessEqual, source_lane, maximum);
+    }
+    // The selector a valid lane uses (as the first phase builds it for a valid leader).
+    Expression source_thread = Has(i, "bfly") ? binary(v::BinaryOpcode::BitXor, linear, constant(amount)) :
+        Has(i, "up") ? binary(v::BinaryOpcode::Subtract, linear, constant(amount)) :
+        Has(i, "down") ? binary(v::BinaryOpcode::Add, linear, constant(amount)) :
+        binary(v::BinaryOpcode::BitOr, binary(v::BinaryOpcode::BitAnd, linear, constant((~31u) | segment)), constant(amount & ~segment));
+    selector = Expression{Add(std::make_unique<v::SelectOp>(U32().value), {valid.value, source_thread.value, linear.value}, origin_).result(), U32()};
+  }
+  result.value = graph_.fromThread(*base, selector.value);
   Bind(destinations[0], result);
-  if (destinations.size() == 2) Bind(destinations[1], Constant(Pred(), shuffle_valid_ ? "true" : "false"));
+  if (destinations.size() == 2) Bind(destinations[1], valid);
   return true;
+}
+
+std::optional<v::Value> ValueTemplateExtractor::SourceValue(
+    std::uint32_t instruction, std::uint64_t occurrence, const std::vector<std::pair<std::uint32_t, std::uint32_t>>& sources) {
+  const auto cta = *origin_.cta;
+  const auto warp_size = facts_.launch().warp_size();
+  std::vector<std::uint64_t> threads;
+  std::vector<v::Value> values;
+  std::set<std::uint64_t> seen;
+  for (const auto [warp, lane] : sources) {
+    const auto thread = std::uint64_t(warp) * warp_size + lane;
+    if (!seen.insert(thread).second) continue;
+    const auto found = shuffle_values->find({warp, instruction, occurrence, lane, origin_.unroll_context});
+    if (found == shuffle_values->end()) return std::nullopt;
+    threads.push_back(thread);
+    values.push_back(found->second.value);
+  }
+  if (threads.empty()) return std::nullopt;
+  // A publication is its cohort's prototype at that cohort's leader: rebinding it
+  // from there to thread t gives t's own value (unchanged outside its domain).
+  const auto own = [&](const v::Value& value) { return graph_.instanceOrigin(value).thread.value_or(0); };
+  const auto at = [&](const v::Value& value, std::uint64_t thread) { return graph_.bindThread(value, cta, own(value), thread); };
+  // One producer template: every publication is the first one rebound, and its node
+  // (no selector or view in the way) holds each source thread.
+  const auto& first = values.front();
+  bool single = !first.threadSelector() && !first.conversion();
+  for (std::size_t k = 1; single && k < values.size(); ++k) single = at(values[k], own(first)) == first;
+  if (single) {
+    const auto& node = graph_.definingNode(first);
+    for (const auto thread : threads)
+      if (!node.memberIndex(thread)) { single = false; break; }
+  }
+  if (single) return first;
+  for (std::size_t k = 0; k < values.size(); ++k) values[k] = at(values[k], threads[k]);
+  return graph_.addThreadUnion(origin_, threads, std::move(values));
 }
 
 bool ValueTemplateExtractor::MatrixMemory() {
   const auto& i = *instruction_;
   const bool store = i.opcode == "stmatrix";
   const auto shape = DecodeMatrixShape(module_, i, store);
-  const ShuffleKey collective{lane_->warp_id,i.id,record_->occurrence(),0,origin_.unroll_context};
+  const ShuffleKey collective{facts_.Warp(lane_),i.id,record_->occurrence(),0,origin_.unroll_context};
   auto& state=(*matrix_addresses)[collective];
   if (!matrix_pending_) {
     auto address = Address(shape.address);
     if (!address) { Invalidate(); return true; }
-    for (const auto* member:members) {
-      state.addresses[member->lane_id]=*address;
-      state.arrived |= std::uint32_t{1} << member->lane_id;
+    for (const auto member:members) {
+      state.addresses[facts_.LaneId(member)]=*address;
+      state.arrived |= std::uint32_t{1} << facts_.LaneId(member);
     }
     matrix_pending_ = true;
     ++publications;
@@ -954,7 +1087,7 @@ bool ValueTemplateExtractor::MatrixMemory() {
     if (store) { data = Operand(names[matrix], *PtxType("b32")); if (!data) return true; }
     std::vector<Expression> parts;
     for (unsigned half = 0; half < (shape.transpose ? 2u : 1u); ++half) {
-      const unsigned peer = 8*matrix + (shape.transpose ? 2*(lane_->lane_id%4)+half : lane_->lane_id/4);
+      const unsigned peer = 8*matrix + (shape.transpose ? 2*(facts_.LaneId(lane_)%4)+half : facts_.LaneId(lane_)/4);
       auto address = *state.addresses[peer];
       const auto relative=shape.transpose ? binary(v::BinaryOpcode::Multiply,lane_col,Constant(U32(),"2").value) : lane_row;
       const auto selector=binary(v::BinaryOpcode::Add,warp_base,
@@ -974,7 +1107,7 @@ bool ValueTemplateExtractor::MatrixMemory() {
     }
     if (!store) Bind(names[matrix], shape.transpose ? Expression{{}, *PtxType("b32"), std::move(parts)} : parts[0]);
   }
-  for (const auto* member:members) state.consumed |= std::uint32_t{1} << member->lane_id;
+  for (const auto member:members) state.consumed |= std::uint32_t{1} << facts_.LaneId(member);
   if (state.consumed == UINT32_MAX) matrix_addresses->erase(collective);
   matrix_pending_ = false;
   return true;
@@ -982,10 +1115,11 @@ bool ValueTemplateExtractor::MatrixMemory() {
 
 bool ValueTemplateExtractor::WarpMma() {
   const auto& i=*instruction_;
-  const bool bf=Has(i,"bf16");
-  const std::vector<std::string> expected{"sync","aligned","m16n8k16","row","col","f32",
-      bf ? "bf16" : "f16",bf ? "bf16" : "f16","f32"};
-  if (i.modifiers!=expected || i.operands.size()!=4)
+  const auto element=i.modifiers.size()==9 ? i.modifiers[6] : std::string();
+  const bool eight=element=="e4m3" || element=="e5m2";
+  const std::vector<std::string> expected{"sync","aligned",eight ? "m16n8k32" : "m16n8k16","row","col","f32",
+      element,element,"f32"};
+  if (!In(element,{"f16","bf16","e4m3","e5m2"}) || i.modifiers!=expected || i.operands.size()!=4)
     throw std::invalid_argument("Unsupported warp MMA shape, layout or arithmetic type");
   const auto names=[&](std::size_t operand,std::size_t count) {
     const auto text=Trim(module_.view(i.operands.at(operand)));
@@ -995,7 +1129,7 @@ bool ValueTemplateExtractor::WarpMma() {
     return result;
   };
   const auto destinations=names(0,4);
-  const ShuffleKey collective{lane_->warp_id,i.id,record_->occurrence(),0,origin_.unroll_context};
+  const ShuffleKey collective{facts_.Warp(lane_),i.id,record_->occurrence(),0,origin_.unroll_context};
   auto& state=(*warp_mma_inputs)[collective];
   if (!warp_mma_pending_) {
     std::vector<v::Value> values;
@@ -1007,17 +1141,14 @@ bool ValueTemplateExtractor::WarpMma() {
         if (!value) { Invalidate(); return true; }
         values.push_back(value->value);
       }
-    for (const auto* member:members) {
-      state.inputs[member->lane_id]=values;
+    for (const auto member:members) {
+      state.inputs[facts_.LaneId(member)]=values;
       auto origin=origin_;
-      origin.thread=member->warp_id*program_.config.warp_size+member->lane_id;
-      for (auto& value:state.inputs[member->lane_id])
-        value=graph_.bindThread(value,cta_,*origin_.thread,*origin.thread);
-      origin.warp=member->warp_id; origin.lane=member->lane_id;
-      const auto& dim=program_.config.block_dim;
-      origin.thread_coordinates={*origin.thread%dim[0],*origin.thread/dim[0]%dim[1],*origin.thread/dim[0]/dim[1]};
-      state.origins[member->lane_id]=origin;
-      state.arrived |= std::uint32_t{1} << member->lane_id;
+      const auto thread=SetThread(origin,facts_,member);
+      for (auto& value:state.inputs[facts_.LaneId(member)])
+        value=graph_.bindThread(value,cta_,*origin_.thread,thread);
+      state.origins[facts_.LaneId(member)]=origin;
+      state.arrived |= std::uint32_t{1} << facts_.LaneId(member);
     }
     warp_mma_pending_=true;
     ++publications;
@@ -1032,7 +1163,7 @@ bool ValueTemplateExtractor::WarpMma() {
     constant_origin.thread_coordinates.reset();
     for (unsigned lane=0;lane<32;++lane)
       selectors[lane]=graph_.add(std::make_unique<v::ConstantOp>(U32().value,
-          std::to_string(lane_->warp_id*32+lane)),{},constant_origin).result();
+          std::to_string(facts_.Warp(lane_)*32+lane)),{},constant_origin).result();
     std::vector<v::Value> operands;
     operands.reserve(320);
     for (unsigned role=0;role<3;++role) {
@@ -1044,10 +1175,10 @@ bool ValueTemplateExtractor::WarpMma() {
           operands.push_back(graph_.fromThread(values[begin+reg],selectors[lane]));
       }
     }
-    state.result=graph_.addCollective(std::make_unique<v::WarpMmaOp>(bf),std::move(operands),
+    state.result=graph_.addCollective(std::make_unique<v::WarpMmaOp>(element),std::move(operands),
         {state.origins.begin(),state.origins.end()}).result();
     for (unsigned index=0;index<state.indices.size();++index)
-      state.indices[index]=lane_->warp_id==0 ? selectors[index] :
+      state.indices[index]=facts_.Warp(lane_)==0 ? selectors[index] :
           graph_.add(std::make_unique<v::ConstantOp>(U32().value,std::to_string(index)),{},constant_origin).result();
     for (auto& values:state.inputs) std::vector<v::Value>().swap(values);
   }
@@ -1058,61 +1189,136 @@ bool ValueTemplateExtractor::WarpMma() {
   for (unsigned reg=0;reg<4;++reg) {
     const auto row=binary(v::BinaryOpcode::Add,binary(v::BinaryOpcode::Divide,lane,4),(reg/2)*8);
     const auto col=binary(v::BinaryOpcode::Add,binary(v::BinaryOpcode::Multiply,binary(v::BinaryOpcode::Remainder,lane,4),2),reg%2);
-    const auto result=graph_.node(state.result->nodeId()).result(0,lane_->lane_id);
+    const auto result=graph_.node(state.result->nodeId()).result(0,facts_.LaneId(lane_));
     Bind(destinations[reg],{graph_.component(result,{row,col}),*PtxType("f32")});
   }
-  for (const auto* member:members) state.consumed |= std::uint32_t{1} << member->lane_id;
+  for (const auto member:members) state.consumed |= std::uint32_t{1} << facts_.LaneId(member);
   if (state.consumed == UINT32_MAX) warp_mma_inputs->erase(collective);
   warp_mma_pending_=false;
   return true;
 }
 
+// vote.sync.{ballot.b32,any.pred,all.pred,uni.pred} d, {!}a, membermask: each
+// member lane publishes its predicate as for shfl; once every lane of the
+// membermask has published, each member reads lane j's predicate as an idx
+// shuffle from lane j (selector (thread & ~31) | j) and combines them.
+// Partition keys the members by the membermask's value (BuildPartitionSpec); the
+// sources, from whichever cohorts published them, are one SourceValue.
+bool ValueTemplateExtractor::Vote() {
+  const auto& i = *instruction_;
+  const auto mode = i.modifiers.size() == 3 ? i.modifiers[1] : std::string();
+  const bool ballot = mode == "ballot";
+  if (i.operands.size() != 3 || i.modifiers.size() != 3 || i.modifiers[0] != "sync" ||
+      !In(mode, {"ballot", "any", "all", "uni"}) || i.modifiers[2] != (ballot ? "b32" : "pred"))
+    throw std::invalid_argument("Unsupported vote form");
+  const auto raw = Known(std::string(module_.view(i.operands[2])));
+  if (!raw || *raw < -(Integer(1) << 31) || *raw > UINT32_MAX || !(*raw & 0xffffffff))
+    throw std::invalid_argument("Vote membermask is invalid or not statically determined");
+  const auto mask = (*raw & 0xffffffff).convert_to<std::uint32_t>();
+  if (!vote_pending_) {
+    auto predicate = Operand(std::string(module_.view(i.operands[1])), Pred());
+    if (!predicate) { Invalidate(); return true; }
+    for (const auto member:members) {
+      const auto lane = facts_.LaneId(member);
+      if (lane >= 32 || !(mask & (std::uint32_t{1} << lane)))
+        throw std::invalid_argument("Vote issuer is outside the membermask");
+      shuffle_values->insert_or_assign(ShuffleKey{facts_.Warp(member),i.id,record_->occurrence(),lane,origin_.unroll_context},*predicate);
+    }
+    vote_pending_ = true;
+    ++publications;
+    return false;
+  }
+  std::vector<std::pair<std::uint32_t, std::uint32_t>> sources;
+  for (const auto member:members)
+    for (unsigned lane = 0; lane < 32; ++lane)
+      if (mask & (std::uint32_t{1} << lane)) {
+        if (!shuffle_values->contains({facts_.Warp(member),i.id,record_->occurrence(),lane,origin_.unroll_context})) return false;
+        sources.emplace_back(facts_.Warp(member), lane);
+      }
+  const auto base = SourceValue(i.id, record_->occurrence(), sources);
+  if (!base) return false;
+  const auto binary = [&](v::BinaryOpcode op, const Type& type, v::Value a, v::Value b) {
+    return Add(std::make_unique<v::BinaryOp>(op, type.value), {a, b}, origin_).result();
+  };
+  const auto warp_base = binary(v::BinaryOpcode::BitAnd, U32(), LinearThread().value, Constant(U32(), std::to_string(~31u)).value);
+  std::optional<v::Value> any, all, none;
+  for (unsigned lane = 0; lane < 32; ++lane) {
+    if (!(mask & (std::uint32_t{1} << lane))) continue;
+    const auto selector = binary(v::BinaryOpcode::BitOr, U32(), warp_base, Constant(U32(), std::to_string(lane)).value);
+    const auto predicate = graph_.fromThread(*base, selector);
+    if (ballot) {
+      const auto bit = Add(std::make_unique<v::SelectOp>(U32().value), {predicate,
+          Constant(U32(), std::to_string(std::uint32_t{1} << lane)).value, Constant(U32(), "0").value}, origin_).result();
+      any = any ? binary(v::BinaryOpcode::BitOr, U32(), *any, bit) : bit;
+      continue;
+    }
+    any = any ? binary(v::BinaryOpcode::BitOr, Pred(), *any, predicate) : predicate;
+    all = all ? binary(v::BinaryOpcode::BitAnd, Pred(), *all, predicate) : predicate;
+    if (mode == "uni") {
+      const auto negated = Add(std::make_unique<v::UnaryOp>(v::UnaryOpcode::BitNot, Pred().value), {predicate}, origin_).result();
+      none = none ? binary(v::BinaryOpcode::BitAnd, Pred(), *none, negated) : negated;
+    }
+  }
+  const auto destination = Trim(module_.view(i.operands[0]));
+  if (ballot) {
+    auto result = Reinterpret(Expression{*any, U32()}, *PtxType("b32"));
+    if (!result) { Invalidate(); return true; }
+    Bind(destination, *result);
+  } else {
+    const auto result = mode == "any" ? *any : mode == "all" ? *all : binary(v::BinaryOpcode::BitOr, Pred(), *all, *none);
+    Bind(destination, Expression{result, Pred()});
+  }
+  return true;
+}
+
+bool ValueTemplateExtractor::RunCollective(bool (ValueTemplateExtractor::*run)(), const char* code, bool& pending) {
+  try { if (!(this->*run)()) return false; }
+  catch (const std::exception& error) { Fail(code, error.what()); Invalidate(); }
+  pending = false; ++cursor_; return true;
+}
+
+void ValueTemplateExtractor::BeginOrigin(const RecordView& record) {
+  origin_ = {};
+  origin_.cta = cta_;
+  const auto coordinates = frame_.SelfCoordinates();
+  origin_.cta_coordinates = std::array<std::uint64_t, 3>{coordinates[0], coordinates[1], coordinates[2]};
+  SetThread(origin_, facts_, lane_);
+  origin_.instruction_index = record.instruction_id();
+  origin_.occurrence = record.occurrence();
+  origin_.source_file = source_file_;
+  origin_.function = function_name_;
+}
+
 bool ValueTemplateExtractor::Step() {
   if (Done()) return false;
-  if (!lane_->instructions.materialized())
-    current_record_ = (*live_)[cursor_] ? lane_->instructions.read(cursor_) : lane_->instructions.metadata(cursor_);
-  const auto &record = lane_->instructions.materialized() ? lane_->instructions.at(cursor_) : current_record_;
-  record_ = &record;
-  if (warp_mma_pending_) {
-    try { if (!WarpMma()) return false; }
-    catch (const std::exception& error) { Fail("unsupported_warp_mma",error.what()); Invalidate(); }
-    warp_mma_pending_=false; ++cursor_; return true;
+  if (facts_.Expanded(lane_)) record_ = facts_.Meta({lane_, cursor_});
+  else {
+    const bool live = (*live_)[cursor_];
+    current_record_ = facts_.Keep(live ? facts_.ReadFull({lane_, cursor_}) : facts_.CopyMeta({lane_, cursor_}));
+    record_ = live ? facts_.ViewFull(current_record_, {lane_, cursor_})
+                   : facts_.ViewPrototypeCopy(current_record_, {lane_, cursor_});
   }
-  if (matrix_pending_) {
-    try { if (!MatrixMemory()) return false; }
-    catch (const std::exception& error) { Fail("unsupported_matrix_memory", error.what()); Invalidate(); }
-    matrix_pending_ = false; ++cursor_; return true;
-  }
+  const auto record = *record_;
+  if (warp_mma_pending_) return RunCollective(&ValueTemplateExtractor::WarpMma, "unsupported_warp_mma", warp_mma_pending_);
+  if (vote_pending_) return RunCollective(&ValueTemplateExtractor::Vote, "unsupported_vote", vote_pending_);
+  if (matrix_pending_) return RunCollective(&ValueTemplateExtractor::MatrixMemory, "unsupported_matrix_memory", matrix_pending_);
   if (shuffle_source_) {
     if (!Shuffle()) return false;
     shuffle_source_.reset(); shuffle_selector_.reset(); ++cursor_; return true;
   }
   suboperation_ = 0;
   {
-    record_ = &record;
-    origin_ = {};
-    origin_.cta = cta_;
-    origin_.cta_coordinates = std::array<std::uint64_t, 3>{coordinates_[0], coordinates_[1], coordinates_[2]};
-    origin_.warp = lane_->warp_id;
-    origin_.lane = lane_->lane_id;
-    origin_.thread = static_cast<std::uint64_t>(lane_->warp_id) * program_.config.warp_size + lane_->lane_id;
-    origin_.instruction_index = record.instruction_id();
-    origin_.occurrence = record.occurrence();
-    const auto linear = *origin_.thread;
-    const auto& dim = program_.config.block_dim;
-    origin_.thread_coordinates = {linear % dim[0], linear / dim[0] % dim[1], linear / dim[0] / dim[1]};
+    BeginOrigin(record);
     for (const auto& [header, end] : loop_ends_) {
       if (record.instruction_id() < header || record.instruction_id() > end) continue;
       if (cursor_) {
-        const auto& previous = lane_->instructions.metadata(cursor_ - 1);
+        const auto previous = facts_.Meta({lane_, cursor_ - 1});
         if (previous.instruction_id() < header || previous.instruction_id() > end) iterations_[header] = 0;
         else if (record.instruction_id() == header && previous.instruction_id() >= header &&
                  function_.instructions[previous.instruction_id()].branch_target == header) ++iterations_[header];
       }
       origin_.unroll_context.emplace_back(header, iterations_[header]);
     }
-    origin_.source_file = source_file_;
-    origin_.function = function_name_;
     if (record.instruction_id() >= function_.instructions.size()) {
       Fail("invalid_execution_record", "Recorded instruction index is out of range"); ++cursor_; return true;
     }
@@ -1125,6 +1331,9 @@ bool ValueTemplateExtractor::Step() {
     origin_.executed = record.predicate_value().value_or(true);
     const auto reached_group = graph_.observeOccurrence(origin_);
     if (!(*live_)[cursor_]) { ++cursor_; return true; }
+    if (record.merged_arm_join())
+      Fail("two_arm_merge_values", "Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); "
+           "values after its join are not exported");
     if (!record.opaque_compute_diamond_indices().empty()) {
       Fail("opaque_compute_diamond", "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported");
       for (const auto &name : record.opaque_compute_register_writes()) {
@@ -1164,7 +1373,7 @@ bool ValueTemplateExtractor::Step() {
           throw std::invalid_argument("branch capture does not name a conditional direct branch");
         const auto name = *instruction_->predicate;
         const auto value = registers_.find(Resolve(name, instruction_->scope));
-        const auto producer = program_.RegisterOrigin(record, name);
+        const auto producer = facts_.Origin(record, name);
         if (value == registers_.end() || value->second.missing_definition ||
             !value->second.components.empty() || !producer)
           throw std::invalid_argument("pre-decision predicate definition is unavailable");
@@ -1177,22 +1386,18 @@ bool ValueTemplateExtractor::Step() {
       }
       ++cursor_; return true;
     }
-    if (instruction_->opcode=="mma") {
-      try { if (!WarpMma()) return false; }
-      catch (const std::exception& error) { Fail("unsupported_warp_mma",error.what()); Invalidate(); }
-      warp_mma_pending_=false; ++cursor_; return true;
-    }
-    if (In(instruction_->opcode, {"ldmatrix", "stmatrix"})) {
-      try { if (!MatrixMemory()) return false; }
-      catch (const std::exception& error) { Fail("unsupported_matrix_memory", error.what()); Invalidate(); }
-      matrix_pending_ = false; ++cursor_; return true;
-    }
+    if (instruction_->opcode=="mma")
+      return RunCollective(&ValueTemplateExtractor::WarpMma, "unsupported_warp_mma", warp_mma_pending_);
+    if (In(instruction_->opcode, {"ldmatrix", "stmatrix"}))
+      return RunCollective(&ValueTemplateExtractor::MatrixMemory, "unsupported_matrix_memory", matrix_pending_);
     if (instruction_->opcode == "shfl") {
       try {
         if (!Shuffle()) return false;
       } catch (const std::exception& error) { Fail("unsupported_shuffle", error.what()); Invalidate(); }
       shuffle_source_.reset(); shuffle_selector_.reset(); ++cursor_; return true;
     }
+    if (instruction_->opcode == "vote" && shuffle_values && !demand_mode)
+      return RunCollective(&ValueTemplateExtractor::Vote, "unsupported_vote", vote_pending_);
     try { InstructionValue(); }
     catch (const std::invalid_argument &error) {
       Fail("invalid_value_operation", error.what()); Invalidate();
@@ -1213,14 +1418,14 @@ void ValueTemplateExtractor::InstructionValue() {
   }
   if (i.opcode == "setmaxnreg") return;
   if (i.opcode == "clusterlaunchcontrol" && i.semantics.operation == "try_cancel_complete_tx") {
-    if (program_.config.fixed_input.value("cluster_launch_cancellation", true)) {
+    if (facts_.launch().ClusterLaunchCancellation()) {
       Fail("cluster_launch_control_outcome", "CLC numerical response needs the no-cancellation scenario"); return;
     }
     if (i.operands.size() != 2) throw std::invalid_argument("CLC response requires destination and barrier");
     auto address = Address(Trim(module_.view(i.operands[0])));
     if (!address) return;
     const auto response = Add(std::make_unique<v::FailedClcResponseOp>(), {}, origin_).result();
-    const auto shape = program_.config.cluster_dim.value_or(Coordinates{1,1,1});
+    const auto shape = frame_.cluster_dim();
     const auto count = Has(i,"multicast::cluster::all") ? shape[0]*shape[1]*shape[2] : 1u;
     for (unsigned rank = 0; rank < count; ++rank) {
       auto destination = address->value;
@@ -1285,13 +1490,14 @@ void ValueTemplateExtractor::InstructionValue() {
   }
   if (i.opcode == "cp" && i.semantics.operation == "copy") { AsyncCopy(); return; }
   if (i.opcode == "cp" && i.semantics.operation == "bulk_complete_tx") { BulkCopy(); return; }
+  if (i.opcode == "tensormap") { TensorMap(); return; }
   if (i.semantics.category == "compute") { Compute(); return; }
   if (i.semantics.memory_effect || !i.destinations.empty() || !i.semantics.modeled) {
     Fail("unsupported_operation", "No value-IR model for '" + i.opcode + "' (including its memory effects/results)");
     Invalidate();
   }
   // Synchronization-only events have no scalar value semantics. Their identity
-  // remains in ExecutionProgram, and memory-node origins support a future join.
+  // remains in the execution records, and memory-node origins support a future join.
 }
 
 void ValueTemplateExtractor::Compute() {
@@ -1309,10 +1515,10 @@ void ValueTemplateExtractor::Compute() {
       Fail("unsupported_election", "Election membermask is invalid or not statically determined"); Invalidate(); return;
     }
     const auto mask = (*raw & 0xffffffff).convert_to<std::uint32_t>();
-    if (lane_->lane_id >= 32 || !mask || !(mask & (1u << lane_->lane_id))) {
+    if (facts_.LaneId(lane_) >= 32 || !mask || !(mask & (1u << facts_.LaneId(lane_)))) {
       Fail("unsupported_election", "Election issuer is outside membermask"); Invalidate(); return;
     }
-    auto chosen = program_.config.elect_lane;
+    auto chosen = facts_.launch().elect_lane();
     if (!chosen) {
       if (std::popcount(mask) != 1) {
         Fail("unsupported_election", "Election policy is not configured"); Invalidate(); return;
@@ -1322,7 +1528,7 @@ void ValueTemplateExtractor::Compute() {
       chosen = std::countr_zero(mask);
     }
     if (destinations[0] != "_") Bind(destinations[0], Constant(U32(), std::to_string(*chosen)));
-    Bind(destinations[1], Constant(Pred(), lane_->lane_id == *chosen ? "true" : "false"));
+    Bind(destinations[1], Constant(Pred(), facts_.LaneId(lane_) == *chosen ? "true" : "false"));
     return;
   }
   static const std::map<std::string, std::pair<unsigned, unsigned>> arities{
@@ -1577,7 +1783,7 @@ void ValueTemplateExtractor::Memory() {
     if (!parameter) {
       Fail("unresolved_parameter_field", "Parameter field requires a static base and constant byte offset"); Invalidate(); return;
     }
-    if (const auto* known = program_.KnownRegister(*record_, parameter->first))
+    if (const auto* known = facts_.Value(*record_, parameter->first))
       if (const auto* pointer = std::get_if<ParameterPointer>(known)) {
         parameter->first = pointer->region;
         parameter->second += pointer->offset;
@@ -1627,7 +1833,7 @@ void ValueTemplateExtractor::Memory() {
     if (load && Has(i, "param")) {
       const Integer offset = parameter->second + n * type->bits / 8;
       std::optional<v::PointerProperties> pointer;
-      for (const auto& binding : program_.config.pointer_parameters)
+      for (const auto& binding : facts_.launch().pointer_parameters())
         if ((binding.parameter == parameter->first || (binding.parameter_index &&
               *binding.parameter_index < function_.parameters.size() &&
               function_.parameters[*binding.parameter_index].name == parameter->first)) &&
@@ -1637,7 +1843,7 @@ void ValueTemplateExtractor::Memory() {
           // allocation identity used by the checked memory model. Preserve
           // the declared object identity for an actual allocation-base input.
           // A nonzero suballocation base is not an allocation-base pointer.
-          for(const auto& resource:program_.config.resources)
+          for(const auto& resource:facts_.launch().resources())
             if(resource.value("id",std::string{})==binding.resource && resource.contains("allocation")) {
               const auto& allocation=resource.at("allocation");
               if(allocation.value("resolution",std::string{})=="concrete" &&
@@ -1649,21 +1855,33 @@ void ValueTemplateExtractor::Memory() {
             }
         }
       std::optional<std::string> specialized;
-      if (!pointer && type->value.element().isBitLike() && type->bits <= 64) {
+      // A floating field is specialized by its exact bits, read as b<width>.
+      const bool floating = !type->value.element().isBitLike() && type->value.isScalar() &&
+          type->value.element().kind() == v::ElementKind::Floating;
+      const auto read_type = floating ? *PtxType("b" + std::to_string(type->bits)) : *type;
+      if (!pointer && (type->value.element().isBitLike() || floating) && type->bits <= 64) {
         // Carry the existing public-input specialization across the value
         // boundary. Do not use simulated memory values or register contracts.
-        if (auto region = program_.config.parameter_regions.find(parameter->first);
-            region != program_.config.parameter_regions.end() && offset <= INT64_MAX) {
+        if (auto region = facts_.launch().parameter_regions().find(parameter->first);
+            region != facts_.launch().parameter_regions().end() && offset <= INT64_MAX) {
           if (auto value = region->second.ReadInteger(offset.convert_to<std::int64_t>(), type->bits / 8,
                   type->value.element().kind() == v::ElementKind::SignedInteger))
             specialized = value->convert_to<std::string>();
-        } else if (count == 1) {
+        } else if (count == 1 && !floating) {
           auto spelling = Trim(module_.view(i.operands[1]));
           if (spelling.starts_with('[') && spelling.ends_with(']'))
             spelling = Trim(std::string_view(spelling).substr(1, spelling.size() - 2));
-          if (auto value = program_.config.parameters.find(spelling); value != program_.config.parameters.end())
+          if (auto value = facts_.launch().parameters().find(spelling); value != facts_.launch().parameters().end())
             specialized = value->second.convert_to<std::string>();
         }
+      }
+      if (floating && specialized) {
+        const auto &node = Add(std::make_unique<v::InputParameterOp>(read_type.value,
+            parameter->first + "+" + offset.convert_to<std::string>(), pointer, specialized), {}, origin_);
+        auto value = Reinterpret(Expression{node.result(), read_type}, *type);
+        if (!value) { Invalidate(); return; }
+        Bind(components[n], *value);
+        continue;
       }
       const auto &node = Add(std::make_unique<v::InputParameterOp>(type->value,
           parameter->first + "+" + offset.convert_to<std::string>(), pointer, specialized), {}, origin_);
@@ -1715,16 +1933,13 @@ void ValueTemplateExtractor::BulkCopy() {
   const auto endpoint = [&](unsigned index) -> std::optional<v::Value> {
     auto text = Trim(module_.view(i.operands[index]));
     if (!text.starts_with('[') || !text.ends_with(']')) return {};
-    if (memory_resources) {
-      auto& resources = *memory_resources;
-      resources.SetLane(*lane_);
-      const auto fragment = resources.Memory(*record_, text.substr(1, text.size()-2),
-                                            nlohmann::json::object(), size, spaces[index]);
-      const auto& binding = resources.addresses.bindings.at(fragment.first.value());
-      if (fragment.second == size && binding.expression.empty() && binding.alias_scope.empty()) {
-        auto offset = Constant(U64(), std::to_string(binding.offset));
-        return graph_.asPointer(offset.value, {binding.allocation, binding.address_space, {}, {}});
-      }
+    if (resources) {
+      resources->SetLane(lane_);
+      const auto fragment = resources->Memory(*record_, MemoryRequest(text.substr(1, text.size()-2),
+                                             nlohmann::json::object(), size, spaces[index]));
+      const auto& binding = resources->Binding(fragment.first);
+      if (fragment.second == size && binding.expression.empty() && binding.alias_scope.empty())
+        return SlotAddressValue(binding);
     }
     if (spaces[1] == "shared::cta") return {};
     auto address = Address(text);
@@ -1739,6 +1954,85 @@ void ValueTemplateExtractor::BulkCopy() {
   const auto type = v::ValueType::matrix(v::ElementType::bit(8), {size});
   auto data = Add(std::make_unique<v::LoadOp>(type), {*source}, origin_).result();
   Add(std::make_unique<v::StoreOp>(), {*destination, data}, origin_);
+}
+
+std::optional<v::Value> ValueTemplateExtractor::SpaceAddress(std::string_view operand, std::string_view space,
+                                                            std::optional<Expression> extra) {
+  const std::string text = Trim(operand);
+  if (text.size() < 2 || text.front() != '[' || text.back() != ']') return {};
+  const auto split = SplitAddress(std::string_view(text).substr(1, text.size() - 2));
+  if (!split) return {};
+  auto base = Operand(split->first, U64());
+  if (!base || base->type.elements != 1 || base->type.spelling == "pred" ||
+      base->type.spelling.starts_with('f') || base->type.spelling.starts_with("bf")) return {};
+  if (base->type.value.element().kind() == v::ElementKind::Bit)
+    base = Reinterpret(*base, *PtxType("u" + std::to_string(base->type.bits)));
+  if (!base) return {};
+  const auto add = [&](const Expression& offset) {
+    base = Expression{Operation("ptx.address_add", "byte offset", {base->type}, {*base, offset}).result(), base->type};
+  };
+  if (split->second != 0) add(Constant(base->type, split->second.convert_to<std::string>()));
+  if (extra) {
+    auto offset = *extra;
+    if (offset.type.value != base->type.value)
+      offset = Expression{Add(std::make_unique<v::ConvertOp>(base->type.value), {offset.value}, origin_).result(), base->type};
+    add(offset);
+  }
+  v::PointerProperties pointer{"", std::string(space), {}, {}};
+  if (space == "shared") pointer.owner_cta = cta_;
+  return graph_.asPointer(base->value, pointer);
+}
+
+// Tensor-map edits, with the memory effects lowering gives them. TMA consumers
+// take their descriptor from the executor's resolution (ResolvedTma); these
+// effects keep the descriptor bytes themselves sound for any other reader.
+// - tensormap.replace reads and rewrites the 128-byte object at its address.
+//   CUtensorMap's layout is opaque, so the rewritten object is an OpaqueValue.
+// - tensormap.cp_fenceproxy (warp-aligned) copies it to global memory, each lane
+//   its own 4 bytes at 4 * lane.
+// An edit this cannot place is unsupported, never a no-op.
+void ValueTemplateExtractor::TensorMap() {
+  const auto& i = *instruction_;
+  constexpr std::uint64_t kBytes = 128;
+  const auto text = [&](std::size_t n) { return Trim(module_.view(i.operands.at(n))); };
+  const auto bytes = [](std::uint64_t n) { return v::ValueType::matrix(v::ElementType::bit(8), {n}); };
+  if (Has(i, "replace")) {
+    std::optional<std::string> space;
+    if (Has(i, "shared::cta")) space = "shared";
+    else if (Has(i, "global")) space = "global";
+    if (!Has(i, "tile") || !space || i.operands.size() < 2 || i.operands.size() > 3) {
+      Fail("unsupported_tensormap", "Unsupported tensormap.replace form"); Invalidate(); return;
+    }
+    const auto target = SpaceAddress(text(0), *space, std::nullopt);
+    if (!target) {
+      Fail("unsupported_tensormap", "tensormap.replace target is not an addressable object"); Invalidate(); return;
+    }
+    Add(std::make_unique<v::LoadOp>(bytes(kBytes)), {*target}, origin_);
+    const auto opaque = Add(std::make_unique<v::OpaqueValueOp>(bytes(kBytes), "tensormap.replace"), {}, origin_).result();
+    Add(std::make_unique<v::StoreOp>(), {*target, opaque}, origin_);
+    return;
+  }
+  if (Has(i, "cp_fenceproxy")) {
+    const auto size = i.operands.size() == 3 ? Known(text(2)) : std::nullopt;
+    if (!Has(i, "global") || !Has(i, "shared::cta") || !Has(i, "aligned") || !size || *size != Integer(kBytes)) {
+      Fail("unsupported_tensormap", "Unsupported tensormap.cp_fenceproxy form"); Invalidate(); return;
+    }
+    const auto binary = [&](v::BinaryOpcode op, v::Value a, v::Value b) {
+      return Add(std::make_unique<v::BinaryOp>(op, U32().value), {a, b}, origin_).result();
+    };
+    const auto lane = binary(v::BinaryOpcode::BitAnd, LinearThread().value, Constant(U32(), "31").value);
+    const Expression offset{binary(v::BinaryOpcode::Multiply, lane, Constant(U32(), "4").value), U32()};
+    const auto destination = SpaceAddress(text(0), "global", offset), source = SpaceAddress(text(1), "shared", offset);
+    if (!destination || !source) {
+      Fail("unsupported_tensormap", "tensormap.cp_fenceproxy endpoints are not addressable"); Invalidate(); return;
+    }
+    const auto data = Add(std::make_unique<v::LoadOp>(bytes(4)), {*source}, origin_).result();
+    v::MemoryAttributes descriptor_memory;
+    descriptor_memory.interpretation = v::MemoryAttributes::Interpretation::TensorMap;
+    Add(std::make_unique<v::StoreOp>(descriptor_memory), {*destination, data}, origin_);
+    return;
+  }
+  Fail("unsupported_tensormap", "Unsupported tensormap operation"); Invalidate();
 }
 
 void ValueTemplateExtractor::AsyncCopy() {
@@ -1806,6 +2100,10 @@ v::Value ValueTemplateExtractor::Native(v::NativeMatrixOpcode opcode, v::ValueTy
 v::Value ValueTemplateExtractor::ClusterRank() {
   return Add(std::make_unique<v::CoordinateOp>(v::CoordinateKind::ClusterRank), {}, origin_).result();
 }
+v::Value ValueTemplateExtractor::SlotAddressValue(const algorithm::ConstantAddressBinding& binding) {
+  auto offset = Constant(U64(), std::to_string(binding.offset));
+  return graph_.asPointer(offset.value, {binding.allocation, binding.address_space, {}, {}});
+}
 
 void ValueTemplateExtractor::Tma() {
   if (ResolvedTma()) return;
@@ -1869,9 +2167,9 @@ void ValueTemplateExtractor::Tma() {
     return;
   }
   const auto data = Add(std::make_unique<v::LoadOp>(matrix, tensor_memory), {global}, origin_).result();
-  auto shape = program_.config.cluster_dim.value_or(Coordinates{1,1,1});
+  auto shape = frame_.cluster_dim();
   const auto cluster_size = shape[0] * shape[1] * shape[2];
-  const auto current = (coordinates_[2] % shape[2] * shape[1] + coordinates_[1] % shape[1]) * shape[0] + coordinates_[0] % shape[0];
+  const auto current = frame_.self().value;
   std::optional<Expression> mask;
   if (multicast) {
     mask = Operand(text(3), U32());
@@ -1906,26 +2204,23 @@ void ValueTemplateExtractor::Tma() {
 }
 
 bool ValueTemplateExtractor::ResolvedTma() {
-  if (!memory_resources) return false;
-  auto& resources = *memory_resources;
-  resources.SetLane(*lane_);
+  if (!resources) return false;
+  resources->SetLane(lane_);
   TmaAccesses transfer;
   try {
-    const auto& contract = program_.config.InstructionContract(instruction_->line, instruction_->id,
-        lane_->warp_id, record_->occurrence());
-    transfer = resources.Tma(*record_, contract, Has(*instruction_, "bulk_group"));
+    const auto& contract = facts_.launch().InstructionContract(instruction_->line, instruction_->id,
+        facts_.Warp(lane_), record_->occurrence());
+    transfer = resources->Tma(*record_, TmaRequest(contract, Has(*instruction_, "bulk_group")));
   } catch (const SemanticError&) { return false; }
   for (const auto& pair : transfer.pairs)
     for (const auto* endpoint : {&pair.source, &pair.destination})
       if (*endpoint) {
         const auto& [id, bytes] = **endpoint;
-        const auto& binding = resources.addresses.bindings.at(id.value());
+        const auto& binding = resources->Binding(id);
         if (!bytes || !*bytes || !binding.expression.empty() || !binding.alias_scope.empty()) return false;
       }
   const auto address = [&](const Fragment& fragment) {
-    const auto& binding = resources.addresses.bindings.at(fragment.first.value());
-    auto offset = Constant(U64(), std::to_string(binding.offset));
-    return graph_.asPointer(offset.value, {binding.allocation, binding.address_space, {}, {}});
+    return SlotAddressValue(resources->Binding(fragment.first));
   };
   std::map<std::tuple<algorithm::AddressId, std::optional<std::uint64_t>, std::uint64_t>, v::Value> reads;
   for (const auto& pair : transfer.pairs) {
@@ -1997,20 +2292,20 @@ void ValueTemplateExtractor::TcgenMma() {
   for (const auto& mod : i.modifiers) mode += '.' + mod;
   std::optional<MmaDescriptor> fixed_descriptor;
   auto known_descriptor=Known(text(descriptor_index));
-  if (!known_descriptor && scaled && descriptor_resources && tmem_provenance) {
-    descriptor_resources->SetLane(*lane_);
-    const auto resolver=[&](const ExecutedInstruction& record,std::string_view token,unsigned)
+  if (!known_descriptor && scaled && resources && tmem_provenance) {
+    resources->SetLane(lane_);
+    const auto resolver=[&](const RecordView& record,std::string_view token,unsigned)
         ->std::optional<Resources::KnownBits> {
-      auto value=tmem_provenance->Resolve(lane_->warp_id,record,token,lane_->lane_id);
-      const auto* origin=program_.RegisterOrigin(record,token);
-      const auto* current=program_.RegisterOrigin(*record_,token);
+      auto value=tmem_provenance->Resolve(facts_.Warp(lane_),record,token,facts_.LaneId(lane_));
+      const auto* origin=facts_.Origin(record,token);
+      const auto* current=facts_.Origin(*record_,token);
       if(std::holds_alternative<std::monostate>(value) && origin && current && *origin==*current)
-        value=tmem_provenance->Resolve(lane_->warp_id,*record_,token,lane_->lane_id);
+        value=tmem_provenance->Resolve(facts_.Warp(lane_),*record_,token,facts_.LaneId(lane_));
       if(const auto* pointer=std::get_if<TmemPointer>(&value))
         return Resources::KnownBits{pointer->encoded_offset&0xc0000000U,0xc0000000U};
       return {};
     };
-    const auto [value,mask]=descriptor_resources->FixedBits(*record_,text(descriptor_index),32,resolver);
+    const auto [value,mask]=resources->FixedBits(*record_,text(descriptor_index),32,resolver);
     if(mask==UINT32_MAX)known_descriptor=Integer(value);
   }
   if (!sparse)
@@ -2199,7 +2494,7 @@ void ValueTemplateExtractor::Tcgen() {
   }
   if (Has(i,"alloc")) {
     if (i.operands.size()!=2) throw std::invalid_argument("Invalid TMEM allocation operands");
-    if (lane_->lane_id != 0) return;
+    if (facts_.LaneId(lane_) != 0) return;
     auto dst=Address(text(0)), columns=Operand(text(1),U32()); if (!dst || !columns) return;
     dst->value=graph_.asPointer(dst->value,{"","shared",cta_,{}});
     auto pointer=Native(v::NativeMatrixOpcode::TmemAllocation,U32().value,{columns->value},v::NativeMatrixAttributes{i.modifiers});
@@ -2214,7 +2509,7 @@ void ValueTemplateExtractor::Tcgen() {
 std::optional<Expression> ValueTemplateExtractor::DemandOperand(const std::string& text, const Type& requested) {
   const auto key = Resolve(text, instruction_->scope);
   const auto type = declarations_.contains(key) ? declarations_.at(key) : requested;
-  if (const auto* known = program_.KnownRegister(*record_, text)) {
+  if (const auto* known = facts_.Value(*record_, text)) {
     if (const auto number = ScalarInteger(*known))
       return Constant(type, number->convert_to<std::string>());
     if (const auto* pointer = std::get_if<AllocationPointer>(known); pointer && type.bits == 64) {
@@ -2228,7 +2523,7 @@ std::optional<Expression> ValueTemplateExtractor::DemandOperand(const std::strin
   const auto cache_key = std::pair{*producer, text};
   if (const auto found = demand_cache.find(cache_key); found != demand_cache.end()) return found->second;
   demand_cache.emplace(cache_key, std::nullopt);
-  const auto* definition = demand_definition(*lane_, *producer);
+  const auto definition = demand_definition(lane_, *producer);
   if (!definition || definition->predicate_value() == false ||
       !definition->opaque_compute_diamond_indices().empty()) return {};
   const auto& instruction = function_.instructions.at(definition->instruction_id());
@@ -2238,10 +2533,10 @@ std::optional<Expression> ValueTemplateExtractor::DemandOperand(const std::strin
   return result;
 }
 
-std::optional<Expression> ValueTemplateExtractor::Demand(const ExecutedInstruction& record, const std::string& text) {
+std::optional<Expression> ValueTemplateExtractor::Demand(const RecordView& record, const std::string& text) {
   struct Restore {
     ValueTemplateExtractor& self;
-    const ExecutedInstruction* record;
+    std::optional<RecordView> record;
     const Instruction* instruction;
     v::SourceOrigin origin;
     std::map<Key, Expression> registers;
@@ -2252,18 +2547,10 @@ std::optional<Expression> ValueTemplateExtractor::Demand(const ExecutedInstructi
     }
   } restore{*this, record_, instruction_, origin_, std::move(registers_), suboperation_};
   ++demand_depth;
-  record_ = &record;
+  record_ = record;
   instruction_ = &function_.instructions.at(record.instruction_id());
   suboperation_ = 0;
-  origin_ = {};
-  origin_.cta = cta_; origin_.cta_coordinates = {coordinates_[0], coordinates_[1], coordinates_[2]};
-  origin_.warp = lane_->warp_id; origin_.lane = lane_->lane_id;
-  origin_.thread = std::uint64_t(lane_->warp_id) * program_.config.warp_size + lane_->lane_id;
-  origin_.instruction_index = record.instruction_id(); origin_.occurrence = record.occurrence();
-  origin_.source_file = source_file_; origin_.function = function_name_;
-  const auto& dim = program_.config.block_dim;
-  const auto t = *origin_.thread;
-  origin_.thread_coordinates = {t % dim[0], t / dim[0] % dim[1], t / dim[0] / dim[1]};
+  BeginOrigin(record);
   try {
     if (text.starts_with('[')) return Address(text);
     if (instruction_->opcode == "shfl") Shuffle();
@@ -2354,10 +2641,14 @@ public:
           : graph.convert(source,conversion.spec->target,conversion.spec->attributes);
     } else {
       const auto& node = graph.definingNode(value);
-      auto member = node.instanceThreads().indexOf(*thread);
-      if (node.instanceThreads().empty() && node.origin().thread == thread) member = 0;
+      const auto member = node.memberIndex(*thread);
       if (!member) throw std::invalid_argument("address selected thread is absent");
       result = node.result(value.resultIndex(),*member);
+      // A ThreadForward instance is that source thread's own value.
+      if (dynamic_cast<const v::ThreadForwardOp*>(&node.operation())) {
+        if (value.pointer()) throw std::invalid_argument("annotated address selection of a thread union");
+        return Selected(graph.forwarded(result));
+      }
     }
     if (value.pointer()) result = graph.asPointer(result,*value.pointer());
     return result;
@@ -2469,7 +2760,7 @@ public:
 
 struct ValueAddressIndex::Impl {
   const v::Graph& graph;
-  const ExecutionProgram& program;
+  const CtaFacts& facts;
   using Key = std::tuple<std::uint32_t, std::uint64_t, bool>;
   std::map<Key, std::vector<std::size_t>> nodes;
   std::size_t queries = 0, resolved = 0;
@@ -2478,36 +2769,37 @@ struct ValueAddressIndex::Impl {
   struct AddressReference { v::Value value; std::size_t memory_node, instance; };
   std::map<AddressKey, std::vector<AddressReference>> address_references;
   std::string first_unavailable;
-  Impl(const v::Graph& g, const ExecutionProgram& p, std::uint32_t cta, std::size_t begin)
-      : graph(g), program(p) {
+  Impl(const v::Graph& g, const CtaFacts& f, std::uint32_t cta, std::size_t begin)
+      : graph(g), facts(f) {
     for (std::size_t id = begin; id < graph.size(); ++id) {
       const auto& node = graph.node(id);
       const bool load = dynamic_cast<const v::LoadOp*>(&node.operation());
       if (!load && !dynamic_cast<const v::StoreOp*>(&node.operation())) continue;
-      if (node.instances().empty()) continue;
-      const auto origin = node.instances().at(0).origin;
+      if (node.instanceCount() == 0) continue;
+      const auto& origin = node.origin();
       if (origin.cta != cta || !origin.instruction_index || !origin.occurrence) continue;
       nodes[{*origin.instruction_index, *origin.occurrence, load}].push_back(id);
     }
   }
 };
-ValueAddressIndex::ValueAddressIndex(const v::Graph& graph, const ExecutionProgram& program,
-    std::uint32_t cta, std::size_t first_node, bool defer_serialization)
-    : impl_(std::make_unique<Impl>(graph, program, cta, first_node)) {
+ValueAddressIndex::ValueAddressIndex(const v::Graph& graph, const CtaFacts& facts,
+    std::size_t first_node, bool defer_serialization)
+    : impl_(std::make_unique<Impl>(graph, facts, facts.Linear(), first_node)) {
   impl_->defer_serialization = defer_serialization;
 }
 ValueAddressIndex::~ValueAddressIndex() = default;
 std::size_t ValueAddressIndex::queries() const { return impl_->queries; }
 std::size_t ValueAddressIndex::resolved() const { return impl_->resolved; }
 std::string ValueAddressIndex::firstUnavailableReason() const { return impl_->first_unavailable; }
-std::optional<nlohmann::json> ValueAddressIndex::Extract(const LaneTrace& lane,
-    const ExecutedInstruction& record, std::string_view text) {
+std::optional<nlohmann::json> ValueAddressIndex::Extract(LaneRef lane,
+    const RecordView& record, std::string_view text) {
+  const FactSource::ConsumerScope consumer(impl_->facts, {Consumer::AddressIndex, 0});
   ++impl_->queries;
   const auto unavailable = [&](std::string reason) -> std::optional<nlohmann::json> {
     if (impl_->first_unavailable.empty()) impl_->first_unavailable = std::move(reason);
     return {};
   };
-  const auto& instruction = impl_->program.function->instructions.at(record.instruction_id());
+  const auto& instruction = impl_->facts.function().instructions.at(record.instruction_id());
   const auto canonical = [](std::string_view text) {
     auto result = Trim(text);
     if (result.starts_with('[') && result.ends_with(']'))
@@ -2516,7 +2808,7 @@ std::optional<nlohmann::json> ValueAddressIndex::Extract(const LaneTrace& lane,
   };
   const auto operand = [&](std::size_t i) {
     return i < instruction.operands.size() &&
-        canonical(impl_->program.module->view(instruction.operands[i])) == canonical(text);
+        canonical(impl_->facts.module().view(instruction.operands[i])) == canonical(text);
   };
   std::optional<bool> load;
   if ((instruction.opcode == "ld" || instruction.opcode == "ldu") && operand(1)) load = true;
@@ -2529,7 +2821,8 @@ std::optional<nlohmann::json> ValueAddressIndex::Extract(const LaneTrace& lane,
   if (!load) return unavailable("memory address operand not indexed");
   const auto found = impl_->nodes.find({record.instruction_id(), record.occurrence(), *load});
   if (found == impl_->nodes.end()) return unavailable("memory occurrence has no value node");
-  const auto thread = std::uint64_t(lane.warp_id) * impl_->program.config.warp_size + lane.lane_id;
+  const auto thread = std::uint64_t(impl_->facts.Warp(lane)) * impl_->facts.launch().warp_size() +
+      impl_->facts.LaneId(lane);
   std::optional<v::Value> address;
   std::size_t memory_node = 0, memory_instance = 0;
   std::uint64_t first = UINT64_MAX;
@@ -2616,56 +2909,62 @@ void MaterializeValueAddresses(std::vector<algorithm::ConstantAddressBinding>& b
   }
 }
 
+// The address-value extractor's value-IR CTA id, the literal 0. It reaches
+// pointer owners and origins, hence the address DAG JSON in artifact.addresses,
+// so it is neither the real CTA id nor read from a frame.
+constexpr std::uint32_t kAddressExtractorCta = 0;
 struct AddressValueExtractor::Impl {
-  const ExecutionProgram& program;
-  Coordinates coordinates;
+  const FactSource& facts;
+  const UnitFrame& frame;
   FunctionContext context;
   v::Graph graph;
   std::vector<ValueIrDiagnostic> diagnostics;
-  std::map<const LaneTrace*, std::unique_ptr<ValueTemplateExtractor>> lanes;
+  std::map<LaneRef, std::unique_ptr<ValueTemplateExtractor>> lanes;
   struct Definitions {
     std::map<DynamicKey, std::size_t> positions;
     std::map<Key, std::vector<std::pair<std::size_t, DynamicKey>>> writes;
   };
-  std::map<const void*, Definitions> paths;
-  std::map<std::pair<std::uint32_t,std::uint32_t>,const LaneTrace*> peers;
+  std::map<PathKey, Definitions> paths;
+  // The program's lanes, a snapshot taken at construction.
+  std::map<std::pair<std::uint32_t,std::uint32_t>,LaneRef> peers;
   Definition definition;
   unsigned active_queries = 0;
-  ValueTemplateExtractor& Get(const LaneTrace&);
-  Impl(const ExecutionProgram& p, Coordinates c) : program(p), coordinates(c), context(*p.module, *p.function) {
-    for (const auto& lane : p.lane_traces) peers.emplace(std::pair{lane.warp_id,lane.lane_id},&lane);
+  ValueTemplateExtractor& Get(LaneRef);
+  Impl(const FactSource& f, const UnitFrame& u)
+      : facts(f), frame(u), context(f.module(), f.function()) {
+    for (const auto lane : facts.ProgramLanes()) peers.emplace(std::pair{facts.Warp(lane),facts.LaneId(lane)},lane);
   }
 };
-AddressValueExtractor::AddressValueExtractor(const ExecutionProgram& p, Coordinates c)
-    : impl_(std::make_unique<Impl>(p,c)) {}
+AddressValueExtractor::AddressValueExtractor(const FactSource& f, const UnitFrame& frame)
+    : impl_(std::make_unique<Impl>(f,frame)) {}
 AddressValueExtractor::~AddressValueExtractor() = default;
-ValueTemplateExtractor& AddressValueExtractor::Impl::Get(const LaneTrace& lane) {
-  auto& extractor = lanes[&lane];
+ValueTemplateExtractor& AddressValueExtractor::Impl::Get(LaneRef lane) {
+  auto& extractor = lanes[lane];
   if (!extractor) {
     auto live = std::make_shared<std::vector<std::uint8_t>>(1, 1);
-    extractor = std::make_unique<ValueTemplateExtractor>(graph, diagnostics, program, lane,
-        0, coordinates, context, false, live);
+    extractor = std::make_unique<ValueTemplateExtractor>(graph, diagnostics, facts, lane,
+        kAddressExtractorCta, frame, context, false, live);
     extractor->demand_mode = true;
-    auto [path, inserted] = paths.try_emplace(lane.instructions.metadataIdentity());
+    auto [path, inserted] = paths.try_emplace(facts.Path(lane));
     if (inserted) {
       const auto add = [&](const std::string& name, Scope scope, std::size_t index, DynamicKey key) {
         while (!scope.empty() && !context.declarations.contains({scope,name})) scope.pop_back();
         path->second.writes[{scope,name}].emplace_back(index,key);
       };
-      for (std::size_t index = 0; index < lane.instructions.size(); ++index) {
-        const auto& event = lane.instructions.metadata(index);
+      for (std::size_t index = 0; index < facts.Size(lane); ++index) {
+        const auto event = facts.Meta({lane, index});
         path->second.positions.emplace(event.Key(), index);
         if (event.predicate_value() == false) continue;
-        const auto& instruction = program.function->instructions.at(event.instruction_id());
+        const auto& instruction = facts.function().instructions.at(event.instruction_id());
         for (const auto& name : instruction.destinations) add(name,instruction.scope,index,event.Key());
         for (const auto& name : event.opaque_compute_register_writes()) add(name,instruction.scope,index,event.Key());
         for (const auto skipped : event.opaque_compute_diamond_indices()) {
-          const auto& omitted = program.function->instructions.at(skipped);
+          const auto& omitted = facts.function().instructions.at(skipped);
           for (const auto& name : omitted.destinations) add(name,omitted.scope,index,event.Key());
         }
       }
     }
-    extractor->demand_producer = [definitions=&path->second](const ExecutedInstruction& event, const Key& key)
+    extractor->demand_producer = [definitions=&path->second](const RecordView& event, const Key& key)
         -> std::optional<DynamicKey> {
       const auto position = definitions->positions.find(event.Key());
       const auto writes = definitions->writes.find(key);
@@ -2675,17 +2974,18 @@ ValueTemplateExtractor& AddressValueExtractor::Impl::Get(const LaneTrace& lane) 
           [](const auto& entry, std::size_t position) { return entry.first < position; });
       return found == entries.begin() ? std::nullopt : std::optional{std::prev(found)->second};
     };
-    extractor->demand_peer = [this,warp=lane.warp_id,path_id=lane.instructions.metadataIdentity()](std::uint32_t source, DynamicKey key, const std::string& name)
+    extractor->demand_peer = [this,warp=facts.Warp(lane),token=facts.PeerPathToken(lane)](
+        std::uint32_t source, DynamicKey key, const std::string& name)
         -> std::optional<Expression> {
       const auto peer = peers.find({warp,source});
       if (peer == peers.end() || active_queries >= 128) return {};
       // A shared recorded path establishes occurrence alignment. Divergent
       // peer paths need an explicit collective-occurrence mapping.
-      if (peer->second->instructions.metadataIdentity() != path_id) return {};
-      const auto* record = definition(*peer->second,key);
+      if (!facts.LegacyPeerAligned(token, peer->second)) return {};
+      const auto record = definition(peer->second,key);
       if (!record || record->predicate_value() == false) return {};
       ++active_queries;
-      auto result = Get(*peer->second).Demand(*record,"[" + name + "]");
+      auto result = Get(peer->second).Demand(*record,"[" + name + "]");
       --active_queries;
       return result;
     };
@@ -2693,8 +2993,8 @@ ValueTemplateExtractor& AddressValueExtractor::Impl::Get(const LaneTrace& lane) 
   extractor->demand_definition = definition;
   return *extractor;
 }
-std::optional<nlohmann::json> AddressValueExtractor::Extract(const LaneTrace& lane,
-    const ExecutedInstruction& record, std::string_view text, const Definition& definition) {
+std::optional<nlohmann::json> AddressValueExtractor::Extract(LaneRef lane,
+    const RecordView& record, std::string_view text, const Definition& definition) {
   impl_->definition = definition;
   auto expression = impl_->Get(lane).Demand(record, std::string(text));
   impl_->diagnostics.clear();
@@ -2703,38 +3003,38 @@ std::optional<nlohmann::json> AddressValueExtractor::Extract(const LaneTrace& la
   catch (const std::exception&) { return {}; }
 }
 
-void ValueIrExtractor::AddCta(std::uint32_t cta, Coordinates coordinates,
-                              const ExecutionProgram &program) {
+void ValueIrExtractor::AddCta(const CtaFacts &facts) {
+  const FactSource::ConsumerScope consumer(facts, {Consumer::ValueView, 0});
+  const auto cta = facts.Linear();
   if (stop_on_unsupported_ && !diagnostics_.empty()) return;
-  if (!program.module || !program.function) {
+  if (!facts.Specialized()) {
+    // The message names the storage type; its text is part of the output.
     diagnostics_.push_back({"invalid_execution_program", "ExecutionProgram has no PTX module/function", {}});
     return;
   }
-  if (program.lane_traces.empty()) return;
+  if (facts.LaneCount() == 0) return;
   std::map<ValueTemplateExtractor::ShuffleKey, Expression> shuffle;
   std::map<ValueTemplateExtractor::ShuffleKey, ValueTemplateExtractor::MatrixAddressState> matrix_addresses;
   std::map<ValueTemplateExtractor::ShuffleKey,ValueTemplateExtractor::WarpMmaState> warp_mma_inputs;
-  const FunctionContext context(*program.module,*program.function);
+  const auto &function = facts.function();
+  if (partition_specs_.function!=&function) partition_specs_={&function,{}};
+  const auto &launch = facts.launch();
+  const FunctionContext context(facts.module(),function);
   AddressTable addresses;
   BarrierTable barriers;
-  Resources resources(program,coordinates,addresses,barriers);
+  Resources resources(facts,facts.frame(),addresses,barriers,SlotConfig{Consumer::ValueView,{}});
   std::optional<TmemLifetimeAnalysis> scale_provenance;
-  if(std::any_of(program.function->instructions.begin(),program.function->instructions.end(),
+  if(std::any_of(function.instructions.begin(),function.instructions.end(),
       [](const auto& i){return i.opcode=="tcgen05" && Has(i,"block_scale");})) {
     TmemAnalysisOptions options;options.allow_cta_group2=true;
-    scale_provenance=AnalyzeTmemLifetimes(program,options);
+    scale_provenance=AnalyzeTmemLifetimes(facts,ExpansionSite::BlockScaleTmem,options);
   }
-  const bool static_tensor_maps=std::none_of(program.function->instructions.begin(),program.function->instructions.end(),
-      [](const auto& i){return i.opcode=="tensormap";});
-  const auto origins=[&](const std::vector<const LaneTrace*>& members) {
+  const auto origins=[&](const std::vector<LaneRef>& members) {
     std::vector<v::SourceOrigin> result;
-    for (const auto* lane:members) {
+    for (const auto lane:members) {
       v::SourceOrigin origin;
-      origin.cta=cta; origin.warp=lane->warp_id; origin.lane=lane->lane_id;
-      const std::uint64_t thread=std::uint64_t(lane->warp_id)*program.config.warp_size+lane->lane_id;
-      origin.thread=thread;
-      const auto& dim=program.config.block_dim;
-      origin.thread_coordinates={thread%dim[0],thread/dim[0]%dim[1],thread/dim[0]/dim[1]};
+      origin.cta=cta;
+      SetThread(origin,facts,lane);
       result.push_back(std::move(origin));
     }
     return result;
@@ -2744,40 +3044,44 @@ void ValueIrExtractor::AddCta(std::uint32_t cta, Coordinates coordinates,
     v::ThreadTemplate state;
   };
   std::vector<Cohort> cohorts;
-  std::map<const void*,std::shared_ptr<std::vector<std::uint8_t>>> liveness;
-  std::vector<std::vector<std::size_t>> groups=program.thread_template_groups;
+  std::map<PathKey,std::shared_ptr<std::vector<std::uint8_t>>> liveness;
+  const auto template_groups=facts.TemplateGroups();
+  std::vector<std::vector<std::size_t>> groups(template_groups.begin(),template_groups.end());
   if (groups.empty()) {
-    std::map<const void*,std::vector<std::size_t>> paths;
-    for (std::size_t index=0;index<program.lane_traces.size();++index)
-      paths[program.lane_traces[index].instructions.metadataIdentity()].push_back(index);
-    for (auto& [path,members]:paths) groups.push_back(std::move(members));
+    for (const auto& cohort:facts.LanePathCohorts()) {
+      auto& members=groups.emplace_back();
+      members.reserve(cohort.size());
+      for (const auto lane:cohort) members.push_back(lane.index);
+    }
   }
-  std::vector<bool> seen(program.lane_traces.size());
+  std::vector<bool> seen(facts.LaneCount());
   for (const auto& group:groups) {
     if (group.empty()) throw std::invalid_argument("empty frontend thread template");
     // Initial register values are part of a template's input environment.
-    std::map<std::string,std::vector<const LaneTrace*>> environments;
+    std::map<std::string,std::vector<LaneRef>> environments;
     for (auto index:group) {
       if (index>=seen.size() || seen[index]) throw std::invalid_argument("invalid frontend template partition");
       seen[index]=true;
-      const auto& lane=program.lane_traces[index];
+      const auto lane=facts.Lane(index);
       std::ostringstream key;
-      for (const auto& warp:program.config.warps) if (warp.warp_id==lane.warp_id)
+      for (const auto& warp:launch.warps()) if (warp.warp_id==facts.Warp(lane))
         for (const auto& [name,value]:warp.initial_registers) key << name << '=' << value << ';';
-      environments[key.str()].push_back(&lane);
+      environments[key.str()].push_back(lane);
     }
     for (auto& [key,members]:environments) {
-      const auto& lane=*members.front();
-      auto& live=liveness[lane.instructions.metadataIdentity()];
+      const auto lane=members.front();
+      auto& live=liveness[facts.Path(lane)];
       if (!live) live=std::make_shared<std::vector<std::uint8_t>>();
-      auto extractor=std::make_unique<ValueTemplateExtractor>(graph_,diagnostics_,program,lane,cta,coordinates,context,prune_unused_compute_,live,branch_capture_);
+      auto extractor=std::make_unique<ValueTemplateExtractor>(graph_,diagnostics_,facts,lane,cta,facts.frame(),context,prune_unused_compute_,live,branch_capture_);
       extractor->cohort_template=true;
       extractor->members=members;
       extractor->shuffle_values=&shuffle;
       extractor->matrix_addresses=&matrix_addresses;
       extractor->warp_mma_inputs=&warp_mma_inputs;
-      if (static_tensor_maps) extractor->memory_resources=&resources;
-      extractor->descriptor_resources=&resources;
+      extractor->partition_specs=&partition_specs_;
+      // TMA descriptors come from the executor's resolution, as in lowering: the
+      // program's maps and those it published at run time (one version per location).
+      extractor->resources=&resources;
       if(scale_provenance)extractor->tmem_provenance=&scale_provenance->provenance;
       cohorts.push_back({std::move(extractor),graph_.makeThreadTemplate(origins(members))});
     }
@@ -2845,9 +3149,6 @@ void ValueIrExtractor::AddCta(std::uint32_t cta, Coordinates coordinates,
     report.Metric("splits",splits); report.Metric("cohorts",cohorts.size());
     report.Metric("nodes",graph_.size()); report.Emit();
   }
-  statistics_.template_steps+=steps;
-  statistics_.splits+=splits;
-  statistics_.final_templates+=cohorts.size();
   for (const auto& cohort:cohorts) graph_.finishThreadTemplate(cohort.state);
   graph_.sealCta(cta);
 }
