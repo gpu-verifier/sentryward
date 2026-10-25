@@ -17,11 +17,11 @@ The planner discovers committed `examples/<name>/input.json` files paired with
 | --- | --- |
 | PTX, input, reference or binding | Verify the affected kernel. |
 | Verifier, shared reference helpers, dependencies or verification options | Verify all affected task identities. |
-| Report skill | Reuse matching verification evidence and regenerate reports. |
+| Report skill or publication code | Reuse matching verification evidence and regenerate reports. |
 | Ordinary documentation | Preserve cached verification. |
 
 The identity includes input hashes, verifier sources, the actual native binary,
-Python and system packages, and resource limits. Reports are always recomposed
+Python and system packages, and resource limits; shard count is excluded. Reports are always recomposed
 and checked against their frozen input and result files. Exit code zero does not
 mean verification passed; the verifier's result and diagnostics remain intact.
 

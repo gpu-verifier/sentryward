@@ -11,7 +11,7 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 
 from tools.automation.common import encode, file_hash, object_url, write_json
-from tools.automation.publication import GitHub, fetch_baseline, prepare_snapshot, publish
+from tools.automation.publication import GitHub, fetch_baseline, publish
 from tools.automation.__main__ import report_tasks
 
 
@@ -169,6 +169,9 @@ class PublicationTests(unittest.TestCase):
 
         with patch("tools.automation.reporting.generate_report", side_effect=compose):
             report_tasks(ROOT, self.plan, self.output)
+        preview = json.loads((self.output / "preview-results.json").read_text())
+        self.assertEqual([r["automation"]["report_status"] for r in preview["results"]], ["failed", "base"])
+        self.assertEqual(preview["counts"], {"potential_race": 2})
         result = publish(self.plan, self.output, self.store, self.api)
         catalog = json.loads(self.api.file(result["pointer"]["catalog_path"], result["commit"]))
         failed, passed = catalog["results"]
@@ -269,10 +272,19 @@ class PublicationTests(unittest.TestCase):
             publish(self.plan, self.output, self.store, self.api)
         self.assertEqual(self.api.refs["results"], first["commit"])
 
-    def test_preparing_same_run_after_an_interruption_is_deterministic(self):
-        first, _ = prepare_snapshot(self.plan, self.output, self.store)
-        again, _ = prepare_snapshot(self.plan, self.output, self.store)
-        self.assertEqual(again, first)
+    def test_publication_retries_same_snapshot_after_an_interrupted_commit(self):
+        def interrupt(commit):
+            raise OSError("Git commit interrupted")
+
+        self.api.after_commit = interrupt
+        with self.assertRaisesRegex(OSError, "interrupted"):
+            publish(self.plan, self.output, self.store, self.api)
+        self.assertNotIn("results", self.api.refs)
+        prepared = copy.deepcopy(self.api.trees)
+        self.api.after_commit = None
+        retried = publish(self.plan, self.output, self.store, self.api)
+        self.assertEqual(retried["status"], "published")
+        self.assertEqual(self.api.trees, prepared)
 
     def test_old_source_is_not_published(self):
         self.api.refs["main"] = "c" * 40

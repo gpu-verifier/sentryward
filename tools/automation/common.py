@@ -11,9 +11,9 @@ from urllib.parse import urlsplit
 from urllib.request import build_opener, HTTPRedirectHandler
 
 
-class NoEvidenceRedirects(HTTPRedirectHandler):
+class NoRedirects(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        raise ValueError("Evidence downloads must not redirect")
+        raise ValueError("Evidence requests must not redirect")
 
 
 def encode(value):
@@ -111,10 +111,7 @@ def download_verified(url, path, sha256, *, base):
     fd, temporary = tempfile.mkstemp(dir=path.parent)
     try:
         h = hashlib.sha256()
-        with os.fdopen(fd, "wb") as out, build_opener(NoEvidenceRedirects()).open(url, timeout=60) as response:
-            # Redirects cannot silently replace a trusted evidence origin.
-            if not response.url.startswith(https_base(base) + "/"):
-                raise ValueError("Evidence redirect leaves configured store")
+        with os.fdopen(fd, "wb") as out, build_opener(NoRedirects()).open(url, timeout=60) as response:
             for block in iter(lambda: response.read(1024 * 1024), b""):
                 h.update(block)
                 out.write(block)

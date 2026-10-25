@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from tools.automation.common import download_verified, https_base, NoEvidenceRedirects
+from tools.automation.common import download_verified, https_base, NoRedirects
 
 
 class EvidenceDownloadTests(unittest.TestCase):
@@ -42,4 +42,4 @@ class EvidenceDownloadTests(unittest.TestCase):
 
     def test_redirect_is_rejected_before_requesting_new_origin(self):
         with self.assertRaisesRegex(ValueError, "redirect"):
-            NoEvidenceRedirects().redirect_request(None, None, 302, "moved", {}, "https://elsewhere.test")
+            NoRedirects().redirect_request(None, None, 302, "moved", {}, "https://elsewhere.test")

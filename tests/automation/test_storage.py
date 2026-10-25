@@ -7,17 +7,13 @@ import unittest
 from urllib.error import HTTPError
 
 from tools.automation.common import object_key
-from tools.automation.storage import NoRedirects, S3Store, sign
+from tools.automation.storage import S3Store, sign
 
 
 def http_error(code):
     error = HTTPError("https://s3.example.test/bucket/key", code, "simulated", {}, io.BytesIO())
     error.close()
     return error
-
-
-class Response(io.BytesIO):
-    pass
 
 
 class MemoryStore(S3Store):
@@ -54,7 +50,7 @@ class MemoryStore(S3Store):
         if not uri.startswith(self.public_base + "/"):
             raise AssertionError(uri)
         body = self.objects[uri[len(self.public_base) + 1:]]
-        return Response(body if self.public_override is None else self.public_override)
+        return io.BytesIO(body if self.public_override is None else self.public_override)
 
 
 class StorageTests(unittest.TestCase):
@@ -99,7 +95,7 @@ class StorageTests(unittest.TestCase):
         class Capture:
             def open(self, request, timeout):
                 captured.append(request)
-                return Response(b"stored")
+                return io.BytesIO(b"stored")
 
         self.store.opener = Capture()
         data = S3Store.request(self.store, "PUT", "objects/a/file name.json", b"payload",
@@ -142,11 +138,6 @@ class StorageTests(unittest.TestCase):
             self.store.upload(self.path)
         self.assertEqual(caught.exception.code, 503)
         self.assertEqual([call[0] for call in self.store.calls], ["PUT"])
-
-    def test_authenticated_requests_must_not_follow_redirects(self):
-        with self.assertRaisesRegex(ValueError, "must not redirect"):
-            NoRedirects().redirect_request(None, None, 307, "redirect", {}, "https://other.example.test")
-
 
 if __name__ == "__main__":
     unittest.main()

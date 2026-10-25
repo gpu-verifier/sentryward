@@ -13,12 +13,11 @@ from .pipeline import plan, runtime_identity, verify_task, identity_manifest, co
 
 def report_tasks(root, plan_data, work):
     from .reporting import generate_report
-    collect_records(plan_data, work)
-    for task in plan_data["tasks"]:
+    rows = collect_records(plan_data, work)
+    for task, record in zip(plan_data["tasks"], rows):
         case = Path(work) / "cases" / task["name"]
         if not (case / "record.json").exists() or not (case / "output.json").exists():
             continue
-        record = read_json(case / "record.json")
         identity = identity_manifest(plan_data, task, case)
         try:
             generate_report(Path(root), case, identity)
@@ -28,7 +27,6 @@ def report_tasks(root, plan_data, work):
             record["automation"]["report_status"] = "base"
             record["automation"].pop("report_error", None)
         write_json(case / "record.json", record)
-    rows = collect_records(plan_data, work)
     write_json(Path(work) / "preview-results.json", catalog(plan_data, rows))
 
 

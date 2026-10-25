@@ -8,14 +8,9 @@ import os
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import quote, urlsplit
-from urllib.request import Request, build_opener, HTTPRedirectHandler
+from urllib.request import Request, build_opener
 
-from .common import https_base, object_key, file_hash
-
-
-class NoRedirects(HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        raise ValueError("Authenticated storage requests must not redirect")
+from .common import NoRedirects, https_base, object_key, file_hash
 
 
 def sign(method, url, body, *, access_key, secret_key, region, token=None, headers=None, timestamp=None):

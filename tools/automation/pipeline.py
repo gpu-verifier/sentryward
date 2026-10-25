@@ -56,12 +56,13 @@ def plan(root, runtime, *, run_id, source_repository, config, baseline=None,
     root = Path(root).resolve()
     sha = revision(subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip())
     paths = set(tracked_files(root))
-    # Report-only configuration does not invalidate expensive verification.
-    verifier_paths = [p for p in paths if p != "config/automation.json" and
-                      (p.startswith(VERIFIER_PATHS) or p == "Makefile") and
-                      p != "tools/automation/reporting.py"]
+    # Post-processing changes do not invalidate expensive verification.
+    verifier_paths = [p for p in paths if (p.startswith(VERIFIER_PATHS) or p == "Makefile") and
+                      p not in {"config/automation.json", "tools/automation/reporting.py",
+                                "tools/automation/publication.py", "tools/automation/storage.py"}]
     verifier_key = digest({"source": fingerprint(root, verifier_paths),
-                           "runtime": runtime, "options": config["verification"]})
+                           "runtime": runtime,
+                           "options": {k: v for k, v in config["verification"].items() if k != "shards"}})
     report_paths = [p for p in paths if p.startswith("skills/generate-kernel-report/") or
                     p == "tools/automation/reporting.py"]
     report_version = fingerprint(root, report_paths)
@@ -189,12 +190,11 @@ def verify_task(root, plan_data, task, output, *, process_runner=run_process):
             previous = task["previous"]
             record["verification_origin"] = previous.get("verification_origin") or {
                 "run_id": previous.get("provenance", {}).get("run_id"), "evidence": previous.get("evidence")}
-            for filename, entry in previous["bundle_files"].items():
-                # Only raw result is needed to rerender facts; source inputs come from this checkout.
-                if filename == "output.json":
-                    cached = case / filename
-                    if not cached.exists() or file_hash(cached) != entry["sha256"]:
-                        download_verified(entry["uri"], cached, entry["sha256"], base=plan_data["evidence_base_url"])
+            # Source inputs come from this checkout; only the raw result is reused.
+            entry = previous["bundle_files"]["output.json"]
+            cached = case / "output.json"
+            if not cached.exists() or file_hash(cached) != entry["sha256"]:
+                download_verified(entry["uri"], cached, entry["sha256"], base=plan_data["evidence_base_url"])
             auto["state"] = "reused"
         else:
             options = plan_data["config"]["verification"]

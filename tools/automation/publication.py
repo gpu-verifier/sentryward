@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from .common import encode, identifier, read_json, repository, revision, file_hash, write_json, confined, digest
+from .common import encode, identifier, repository, revision, file_hash, write_json, confined, digest
 from .pipeline import catalog, collect_records, identity_manifest
 
 
@@ -92,7 +92,7 @@ EVIDENCE_FILES = ("input.json", "kernel.ptx", "reference.py", "reference_binding
                   "stdout.json", "stderr.log", "output.json", "run.json", "identity.json", "report/report.md")
 
 
-def snapshot_identity(plan_data, output):
+def snapshot_identity(plan_data, output, rows):
     files = {}
     for task in plan_data["tasks"]:
         case = confined(output, "cases/" + identifier(task["name"]))
@@ -100,14 +100,12 @@ def snapshot_identity(plan_data, output):
             path = confined(case, name)
             if path.exists():
                 files[f"{task['name']}/{name}"] = file_hash(path)
-    return digest({"plan": plan_data, "records": collect_records(plan_data, output), "files": files})
+    return digest({"plan": plan_data, "records": rows, "files": files})
 
 
-def prepare_snapshot(plan_data, output, store):
+def prepare_snapshot(plan_data, output, store, rows, snapshot):
     """No Git mutation until every published evidence object has been verified."""
-    rows = collect_records(plan_data, output)
     run_id = identifier(plan_data["run_id"])
-    snapshot = snapshot_identity(plan_data, output)
     prefix = f"runs/{run_id}/{snapshot}"
     tasks = {task["name"]: task for task in plan_data["tasks"]}
     tree = []
@@ -158,7 +156,7 @@ def publish(plan_data, output, store, api):
     if api.ref("main") != expected_source:
         return {"status": "superseded", "source_revision": expected_source}
     rows = collect_records(plan_data, output)
-    snapshot = snapshot_identity(plan_data, output)
+    snapshot = snapshot_identity(plan_data, output, rows)
     parent = api.ref("results")
     if parent:
         current = json.loads(api.file("latest.json", parent))
@@ -179,7 +177,7 @@ def publish(plan_data, output, store, api):
             if (prior and prior["automation"].get("verification_key") == tasks[row["name"]]["verification_key"]
                     and row["automation"]["state"] not in {"current", "reused"}):
                 raise ValueError("Publication would discard a completed result: " + row["name"])
-    entries, pointer = prepare_snapshot(plan_data, output, store)
+    entries, pointer = prepare_snapshot(plan_data, output, store, rows, snapshot)
     # Retrying an older snapshot must not rewrite immutable files or roll back latest.
     if parent:
         try:

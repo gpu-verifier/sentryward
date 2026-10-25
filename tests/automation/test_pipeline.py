@@ -175,6 +175,28 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(self.keys(before), self.keys(after))
         self.assertEqual(self.task(before)["report_version"], self.task(after)["report_version"])
 
+    def test_publication_and_sharding_changes_reuse_completed_verification(self):
+        paths = ("tools/automation/publication.py", "tools/automation/storage.py")
+        for relative in paths:
+            self.write(relative, "# publication implementation\n")
+        self.commit()
+        before = self.plan()
+        rows = [self.verify(before, name) for name in ("alpha", "beta")]
+        baseline = pipeline.catalog(before, rows)
+        for relative in paths:
+            with self.subTest(relative=relative):
+                path = self.root / relative
+                original = path.read_text()
+                path.write_text(original + "# updated\n")
+                after = self.plan(baseline=baseline)
+                path.write_text(original)
+                self.assertEqual(self.keys(before), self.keys(after))
+                self.assertTrue(all(t["action"] == "reuse" for t in after["tasks"]))
+        self.config["verification"]["shards"] = 1
+        after = self.plan(baseline=baseline)
+        self.assertEqual(self.keys(before), self.keys(after))
+        self.assertTrue(all(t["action"] == "reuse" and t["shard"] == 0 for t in after["tasks"]))
+
     def test_new_kernel_is_discovered_without_workflow_changes(self):
         before = self.plan()
         self.add_case("gamma")
