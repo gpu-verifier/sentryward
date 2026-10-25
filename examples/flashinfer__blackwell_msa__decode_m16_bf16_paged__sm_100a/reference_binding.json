@@ -367,8 +367,8 @@
       "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/benchmarks/bench_blackwell_msa_sm100.py"
     ],
     "ptx_sha256": "5b284e0f7d81e595336ea88ab2270d17d0c1a9c9e70a22851a41bf2d59916594",
-    "optimized_input_sha256": "28c92b572e85bdcaa142e2338599560e66abd5d2f019a1af4f8172abb7755134",
-    "scope": "refs input.json: total_q=1 (p30), 16 q heads (p31), 1 kv head (p32), seqlen_q=1 (p40), non-causal (p38=0), topk 16 (p33), msa_max_pages=64 (p41); task_kv_head (kv_lens) shape array [8192] (upstream benchmark coordinate official_decode_bf16_b32_q8_kv8192_h64_hkv4_k16_paged, one sequence); K/V pool 64 pages [64, 1, 128, 128] per TMA descriptors; task_kind injective in [0, 63], kv_indices injective in [0, 63]",
+    "optimized_input_sha256": "11a86b27ae08ad6d7c4dfabeb10c6c5869dfd2397d6d1888f9adf1036323a4c4",
+    "scope": "input.json: total_q=1 (p30), 16 q heads (p31), 1 kv head (p32), seqlen_q=1 (p40), non-causal (p38=0), topk 16 (p33), msa_max_pages=64 (p41); task_kv_head (kv_lens) shape array [8192] (upstream benchmark coordinate official_decode_bf16_b32_q8_kv8192_h64_hkv4_k16_paged, one sequence); K/V pool 64 pages [64, 1, 128, 128] per TMA descriptors; task_kind injective in [0, 63], kv_indices injective in [0, 63]",
     "semantics": "ideal_real; O = softmax-weighted V over the 16 selected 128-token blocks (per selection slot), msa_lse = natural-log LSE of exp2(softmax_scale_log2 * q.k); bf16 O, f32 LSE",
     "scope_branch_choices": [],
     "scope_shape_arrays": [

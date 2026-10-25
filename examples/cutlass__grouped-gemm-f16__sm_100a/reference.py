@@ -20,7 +20,7 @@ def _group(a, b, alpha):
 def reference(A0, A1, A2, A3, B0, B1, B2, B3, fixed_problem_shape_problem_shapes,
               fixed_scheduler_problem_shapes, fixed_mainloop_dA_array, fixed_mainloop_dB_array,
               fixed_epilogue_dC_array, fixed_epilogue_dD_array, alpha):
-    # fixed_*: shape-array tables (read-only kernel inputs fixed by input.json), bound only so the native
-    # fixed-input context finds a common identity (fixed_input_context.hpp decode_verified); not used here.
+    # fixed_*: fixed shape-array tables (read-only kernel inputs fixed by input.json), passed for the
+    # binding; not used by the computation.
     return (_group(A0, B0, alpha), _group(A1, B1, alpha),
             _group(A2, B2, alpha), _group(A3, B3, alpha))

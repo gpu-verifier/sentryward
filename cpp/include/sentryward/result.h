@@ -169,9 +169,26 @@ inline std::string PublicStage(const std::string& s) {
  if(starts({"ptx_execution","source_ir","event_view","memory_","synchronization","lifecycle","cluster_","shared_memory","verification","frontend"}))return "synchronization";
  return "pipeline";
 }
+// The public top-level fields and the witness fields under "evidence" (sentryward/results.py
+// PUBLIC_FIELDS and EVIDENCE_FIELDS); everything else moves under "internal".
+inline const std::set<std::string> kPublicFields={"schema","scope","result","checks","diagnostics","warnings","warning_count",
+  "warning_samples_truncated","warnings_complete","assumptions","assumption_dependent","assumption_reporting","assumption_hints",
+  "frontend_assumptions","verification_limitations","pipeline_elapsed_seconds","elapsed_seconds","peak_rss_mib","rss_limit_mib",
+  "wellsync_timeout_seconds","whole_pipeline_timeout_seconds","resource","timeout_scope"};
+inline const std::set<std::string> kEvidenceFields={"races","race_count","race_samples_truncated","failed_required_orders",
+  "failed_required_orders_count","failed_required_orders_sample_limit","failed_required_orders_truncated","counterexample",
+  "rejection","rejection_kind","source_events","synthetic_events","source_event_scope","provenance_events_total",
+  "unmapped_witness_events","witness_event_list_limit","witness_event_lists_truncated","unsupported_memory_pair"};
+// Whether a report already has the published form (as results.py is_public): it has an
+// "internal" or "evidence" section, or only public fields and exactly the two public checks.
 inline bool IsPublic(const Json& out) {
- return out.is_object() && (out.contains("internal") || (out.contains("checks") && out["checks"].is_object() &&
-   out["checks"].contains("synchronization") && !out["checks"].contains("memory")));
+ if(!out.is_object())return false;
+ if(out.contains("internal") || out.contains("evidence"))return true;
+ if(!out.contains("checks") || !out["checks"].is_object() || out["checks"].size()!=2 ||
+    !out["checks"].contains("synchronization") || !out["checks"].contains("equivalence"))return false;
+ for(auto it=out.begin();it!=out.end();++it)
+   if(!kPublicFields.contains(it.key()) && !it.key().starts_with("_"))return false;
+ return true;
 }
 // Internal sections keep their diagnostics but no conclusion of their own.
 inline void StripSections(Json& section) {
@@ -187,14 +204,6 @@ inline void StripSections(Json& section) {
 // of top-level fields and diagnostics; large values are moved, not copied.
 inline void Publish(Json& out) {
  if(!out.is_object() || IsPublic(out))return;
- static const std::set<std::string> kPublic={"schema","scope","result","checks","diagnostics","warnings","warning_count",
-   "warning_samples_truncated","warnings_complete","assumptions","assumption_dependent","assumption_reporting","assumption_hints",
-   "frontend_assumptions","verification_limitations","pipeline_elapsed_seconds","elapsed_seconds","peak_rss_mib","rss_limit_mib",
-   "wellsync_timeout_seconds","whole_pipeline_timeout_seconds","resource","timeout_scope"};
- static const std::set<std::string> kEvidence={"races","race_count","race_samples_truncated","failed_required_orders",
-   "failed_required_orders_count","failed_required_orders_sample_limit","failed_required_orders_truncated","counterexample",
-   "rejection","rejection_kind","source_events","synthetic_events","source_event_scope","provenance_events_total",
-   "unmapped_witness_events","witness_event_list_limit","witness_event_lists_truncated","unsupported_memory_pair"};
  const Json checks=out.value("checks",Json::object());
  const auto check=[&](const char* key,const char* fallback){return checks.contains(key) && checks[key].is_string()?checks[key].get<std::string>():std::string(fallback);};
  const auto sync=check("synchronization","not_run"),memory=check("memory",sync.c_str());
@@ -214,8 +223,8 @@ inline void Publish(Json& out) {
  Json published=Json::object(),evidence=Json::object(),internal=Json::object();
  for(auto it=out.begin();it!=out.end();++it) {
    const auto& key=it.key();
-   if(kPublic.contains(key) || key.starts_with("_"))published[key]=std::move(it.value());
-   else if(kEvidence.contains(key))evidence[key]=std::move(it.value());
+   if(kPublicFields.contains(key) || key.starts_with("_"))published[key]=std::move(it.value());
+   else if(kEvidenceFields.contains(key))evidence[key]=std::move(it.value());
    else internal[key]=std::move(it.value());
  }
  published["checks"]={{"synchronization",merged},{"equivalence",check("equivalence","not_requested")}};

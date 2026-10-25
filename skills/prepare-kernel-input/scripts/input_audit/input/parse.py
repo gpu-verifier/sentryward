@@ -89,8 +89,10 @@ def parse_kernel_input(value: Mapping[str, Any]) -> KernelInput:
         assumptions = validate_assumptions(root.get("assumptions", {}))
     except ValueError as error:
         raise InputContractError("invalid_assumptions", "$.assumptions", str(error)) from error
-    address_invariants = _address_invariants(root.get("address_invariants", []))
-    pointer_arrays = _records(root.get("pointer_arrays", []), "$.pointer_arrays")
+    address_invariants = _records(root.get("address_invariants", []), "$.address_invariants",
+                                  code="invalid_address_invariant")
+    pointer_arrays = _records(root.get("pointer_arrays", []), "$.pointer_arrays",
+                              {"parameter", "offset", "entries"})
     tensor_properties = _records(root.get("tensor_properties", []), "$.tensor_properties",
                                  {"object", "element_type", "property", "value"})
     loop_iterations = (_integer(root["data_branch_loop_iterations"], "$.data_branch_loop_iterations", minimum=1)
@@ -189,23 +191,16 @@ def parse_kernel_input(value: Mapping[str, Any]) -> KernelInput:
                        address_invariants, loop_iterations, pointer_arrays, tensor_properties)
 
 
-def _records(value: Any, path: str, keys: set[str] | None = None) -> tuple[Mapping[str, Any], ...]:
+def _records(value: Any, path: str, keys: set[str] | None = None, *,
+             code: str = "invalid_type") -> tuple[Mapping[str, Any], ...]:
+    """Object records passed through to the verifier; `keys` whitelists their fields."""
     items = _list(value, path)
     for index, item in enumerate(items):
         if keys is None:
             if not isinstance(item, Mapping):
-                raise InputContractError("invalid_type", f"{path}[{index}]", "expected an object")
+                raise InputContractError(code, f"{path}[{index}]", "expected an object")
         else:
             _object(item, keys, f"{path}[{index}]")
-    return tuple(dict(item) for item in items)
-
-
-def _address_invariants(value: Any) -> tuple[Mapping[str, Any], ...]:
-    items = _list(value, "$.address_invariants")
-    for index, item in enumerate(items):
-        if not isinstance(item, Mapping):
-            raise InputContractError("invalid_address_invariant", f"$.address_invariants[{index}]",
-                                     "expected an object")
     return tuple(dict(item) for item in items)
 
 
@@ -235,14 +230,14 @@ def validate_kernel_input(value: KernelInput) -> KernelInput:
         "dynamic_shared_bytes": value.launch.dynamic_shared_bytes,
     }, "arguments": [], "declarations": []}
     raw["assumptions"] = validate_assumptions(value.assumptions)
-    if value.address_invariants:
-        raw["address_invariants"] = [dict(item) if isinstance(item, Mapping) else item
-                                     for item in value.address_invariants]
+    for name in ("address_invariants", "pointer_arrays", "tensor_properties"):
+        items = getattr(value, name)
+        if items:
+            # Malformed records stay as they are: parse_kernel_input reports them.
+            raw[name] = ([dict(item) if isinstance(item, Mapping) else item for item in items]
+                         if isinstance(items, (tuple, list)) else items)
     if value.data_branch_loop_iterations is not None:
         raw["data_branch_loop_iterations"] = value.data_branch_loop_iterations
-    for name in ("pointer_arrays", "tensor_properties"):
-        if getattr(value, name):
-            raw[name] = [dict(item) for item in getattr(value, name)]
     if value.entry is not None:
         raw["entry"] = value.entry
     if value.launch.cluster_dim is not None:

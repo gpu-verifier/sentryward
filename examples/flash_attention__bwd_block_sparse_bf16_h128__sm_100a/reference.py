@@ -7,7 +7,7 @@
 # Source: https://github.com/NVIDIA/cutlass/blob/v4.6.2/include/cute/atom/mma_traits_sm100_frag.hpp#L168-L196
 """FlashAttention-4 SM100 block-sparse backward, bf16, d=128, MHA, 2-CTA, no mask_mod, non-causal.
 
-Scenario (refs/<kernel>/input.json): b=2, h=8, seqlen_q=seqlen_k=256, sparse block (256, 256)
+Scenario (input.json): b=2, h=8, seqlen_q=seqlen_k=256, sparse block (256, 256)
 (q_subtile_factor = kv_subtile_factor = 2).  Backward block-sparse tensors are Q-direction:
 for each (b, h, sparse KV block j), cnt[b,h,j] slots of idx[b,h,j,:] name the sparse Q blocks that
 the KV tile iterates over (mask list first, then full list; get_m_block_from_iter_bwd).  With no

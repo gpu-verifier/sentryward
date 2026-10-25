@@ -367,8 +367,8 @@
       "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/benchmarks/bench_blackwell_msa_sm100.py"
     ],
     "ptx_sha256": "84413cd8b5dec8b4ea65128d77084ac88a9087b323e68c8fdc81c818cdf90fa3",
-    "optimized_input_sha256": "da197ef51d2ee4ad27d9a7e95dada2e47c36f3fca55bdfea29802dbcae455b25",
-    "scope": "refs input.json: total_q=1 (p30), 16 q heads (p31), 1 kv head (p32), seqlen_q=1 (p40), non-causal (p38=0), topk 16 (p33), msa_max_pages=16 (p41); task_kv_head (kv_lens) shape array [2048] (request 0 of upstream test decode-paged-fp8); FP8 e4m3 K/V pool 16 pages [16, 1, 128, 128] per TMA descriptors; task_kind injective in [0, 15], kv_indices injective in [0, 15]",
+    "optimized_input_sha256": "34d9d1f9a9b3e39eb52210975983e4d7a3068b268d9f1e1605d354740d0594c4",
+    "scope": "input.json: total_q=1 (p30), 16 q heads (p31), 1 kv head (p32), seqlen_q=1 (p40), non-causal (p38=0), topk 16 (p33), msa_max_pages=16 (p41); task_kv_head (kv_lens) shape array [2048] (request 0 of upstream test decode-paged-fp8); FP8 e4m3 K/V pool 16 pages [16, 1, 128, 128] per TMA descriptors; task_kind injective in [0, 15], kv_indices injective in [0, 15]",
     "semantics": "ideal_real; O = softmax-weighted V over the 16 selected 128-token blocks (per selection slot), msa_lse = natural-log LSE of exp2(softmax_scale_log2 * q.k); bf16 O, f32 LSE; FP8 e4m3 K/V decoded exactly (no K/V scale on this route)",
     "scope_branch_choices": [],
     "scope_shape_arrays": [

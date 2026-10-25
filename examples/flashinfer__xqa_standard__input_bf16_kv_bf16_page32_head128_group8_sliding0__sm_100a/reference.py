@@ -10,8 +10,8 @@ import torch
 
 
 def reference(q, k_cache, v_cache, page_list, q_scale, attention_sinks, seq_len, seqLenList):
-    # seqLenList: fixed shape-array tensor(s) bound only so the native fixed-input context finds a
-    # common identity (fixed_input_context.hpp decode_verified); values are not used here.
+    # seqLenList: fixed shape-array tensor(s), passed for the binding;
+    # not used by the computation.
     # q/output: [batch, beam=1, nbQHeads, 128]; K/V pool: [pages, tokensPerPage, nbKHeads, 128] (VLLM/NHD).
     batch, beam, q_heads, dim = q.shape
     pages_per_seq = page_list.shape[1]

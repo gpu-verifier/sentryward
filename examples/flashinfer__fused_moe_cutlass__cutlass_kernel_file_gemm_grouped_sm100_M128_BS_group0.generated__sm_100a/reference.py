@@ -16,9 +16,8 @@ from examples._reference.pytorch_blockscaled import product
 
 
 def reference(A0, A1, A2, A3, B0, B1, B2, B3, SFA0, SFA1, SFA2, SFA3, SFB0, SFB1, SFB2, SFB3, alpha, table_problem_shapes, table_scheduler_problem_shapes, table_mainloop_dA_array, table_mainloop_dB_array, table_epilogue_dC_array, table_epilogue_dD_array, table_mainloop_layout_SFA_array, table_mainloop_layout_SFB_array):
-    # table_problem_shapes, table_scheduler_problem_shapes, table_mainloop_dA_array, table_mainloop_dB_array, table_epilogue_dC_array, table_epilogue_dD_array, table_mainloop_layout_SFA_array, table_mainloop_layout_SFB_array: fixed shape-array tables, bound only so the native fixed-input
-    # context finds a common identity on both binding sides (fixed_input_context.hpp decode_verified);
-    # their values enter through the binding shapes and scalars, not through this computation.
+    # table_problem_shapes, table_scheduler_problem_shapes, table_mainloop_dA_array, table_mainloop_dB_array, table_epilogue_dC_array, table_epilogue_dD_array, table_mainloop_layout_SFA_array, table_mainloop_layout_SFB_array: fixed shape-array tables, passed for the binding and
+    # not used by the computation; their values enter through the binding shapes and scalars.
     outputs = []
     for a, b, sa, sb in zip((A0, A1, A2, A3), (B0, B1, B2, B3), (SFA0, SFA1, SFA2, SFA3), (SFB0, SFB1, SFB2, SFB3)):
         acc = product(a, b, sa, sb, packed=False, block=32, e8m0=True)

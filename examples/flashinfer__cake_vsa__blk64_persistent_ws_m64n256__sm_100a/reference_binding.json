@@ -287,7 +287,7 @@
       "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/attention/test_cake_vsa.py",
       "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/attention/test_cake_vsa_planning.py"
     ],
-    "scope": "M=sequence_q=64, H=1, MB=1, total_tiles=tiles_per_cta=1, grid 1 (kept); topk=max_kv_blocks=32 and N=2048 (NB=32) from the upstream ws-profile tests; q2k_num=[28] as an M1 shape array (routes to this kernel: count%4==0, 28 > 24); q2k_indices bounds [0,31]; return_lse=0 (lse not written); kv_block_lens never loaded.",
+    "scope": "M=sequence_q=64, H=1, MB=1, total_tiles=tiles_per_cta=1, grid 1; topk=max_kv_blocks=32 and N=2048 (NB=32) from the upstream ws-profile tests; q2k_num=[28] as an M1 shape array (routes to this kernel: count%4==0, 28 > 24); q2k_indices bounds [0,31]; return_lse=0 (lse not written); kv_block_lens never loaded.",
     "scope_branch_choices": [],
     "scope_shape_arrays": [
       {

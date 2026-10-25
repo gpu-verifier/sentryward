@@ -48,8 +48,10 @@
 #include <charconv>
 #include <chrono>
 #include <cmath>
+#include <cerrno>
 #include <condition_variable>
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <mutex>
@@ -218,8 +220,8 @@ Options Arguments(int argc, char **argv) {
 #endif
              "--value-thread-range FIRST:COUNT  Extract a thread subset; requires cross-subset validation\n"
              "--no-thread-record-compression  Disable template execution and shared records for comparison\n"
-             "--max-steps-per-thread N  Per-thread PTX execution budget (default 100000; threads\n"
-             "                           executed together on one path get 100 times as many steps)\n"
+             "--max-steps-per-thread N  PTX instructions one thread may execute (default 100000); threads\n"
+             "                           that run one shared path together get 100*N steps as a group\n"
              "--analyze-values  Verify both semantic views and eliminate constant-address memory\n"
 #ifdef SENTRYWARD_DEVELOPMENT_EXPORTS
 #include "sentryward/development/runner/checkpoint_save_help.inc"
@@ -510,12 +512,12 @@ bool RowModulusViolation(const sentryward::value_analysis::UnitLifting &lifting)
   return false;
 }
 // The first-item rule: a class-mode quotient's fold failure is the one the
-// per-unit fold would report first when the lowering made
-// no lifting-specific choice (F1), failed in phase (e) at the
-// quotient's first item with no output family and no completed output (F2),
-// with a context-free code and a literal message (F3), and no member's record
-// precedes that item's first record (F4: for every class with records in its
-// allocation X0, minoff(X0) + δ_u(X0) > o0 for each member u). Items never span
+// per-unit fold would report first when the lowering made no lifting-specific
+// choice, failed while lowering output records (phase 'e') at the quotient's
+// first item with no output family and no completed output, with a
+// context-free code and a literal message, and no member's record precedes
+// that item's first record (for every class with records in its allocation
+// X0, minoff(X0) + δ_u(X0) > o0 for each member u). Items never span
 // CTAs and the fold handles them in record order from an empty state, so the
 // per-unit fold then fails at the same item of the same CTA in the same way.
 // Reads only quotient-side objects (the fold result, the quotient's records
@@ -529,12 +531,12 @@ bool FirstFailureMatchesPerUnit(const sentryward::value_ir::Graph &values,
   namespace va = sentryward::value_analysis;
   const auto &stop = folded.failure_site;
   if (!folded.diagnostic) return false;
-  if (folded.lifting.parameters || folded.lifting.declined) return false; // F1
-  if (stop.phase != 'e') return false;                                     // F2
+  if (folded.lifting.parameters || folded.lifting.declined) return false; // a lifting-specific choice
+  if (stop.phase != 'e') return false;                                     // not the output-record phase
   if (stop.output_families) return false;
   if (stop.items != 1 || !stop.record || *stop.record >= records.outputs.size()) return false;
   if (stop.completed_outputs) return false;
-  if (!va::FoldFailureContextFree(folded.diagnostic->code)) return false; // F3
+  if (!va::FoldFailureContextFree(folded.diagnostic->code)) return false; // a context-dependent code
   if (!stop.literal_message) return false;
   const auto unit_of = [&](const va::OutputWrite &output) -> std::optional<va::UnitLifting::Origin> {
     const auto cta = values.node(output.writer.node).instanceOrigin(output.writer.instance).cta_coordinates;
@@ -553,7 +555,7 @@ bool FirstFailureMatchesPerUnit(const sentryward::value_ir::Graph &values,
   for (const auto &output : records.outputs) {
     if (output.region.allocation != x0) continue;
     const auto unit = unit_of(output);
-    if (!unit) return false; // F4
+    if (!unit) return false; // member precedence needs every record's unit
     auto [at, fresh] = minimum.try_emplace(*unit, output.region.offset);
     if (!fresh) at->second = std::min(at->second, output.region.offset);
   }
@@ -743,9 +745,10 @@ Json AnalyzeScalarFold(const sentryward::value_ir::Graph& values,
 }
 } // namespace
 // Per-unit restart: a class-mode run that cannot finish exactly (unit
-// closure, (I.5), a cross-unit Unknown or work cap) re-executes this binary
-// (same pid, same arguments) with class mode off, so the per-unit run is
-// exactly a fresh run without classes, process-global ids included. The environment
+// closure, the tensormap locality rule, a cross-unit Unknown or work cap)
+// re-executes this binary (same pid, same arguments) with class mode off, so
+// the per-unit run is exactly a fresh run without classes, process-global ids
+// included. The environment
 // variable SENTRYWARD_UNIT_RESTART alone selects the per-unit run (TakeUnitRestart;
 // no option): it carries the time already spent (the watchdog keeps counting).
 struct UnitRestartState {
@@ -800,11 +803,18 @@ std::optional<std::uint64_t> AllocatedBytes() {
 }
 [[noreturn]] void RestartPerUnit(char **argv, const UnitRestartState &state, int stdin_spool) {
   const Json carried{{"elapsed_s", state.elapsed_s}};
-  if (setenv("SENTRYWARD_UNIT_RESTART", carried.dump().c_str(), 1))
-    throw std::runtime_error("unit-class restart: environment");
+  if (setenv("SENTRYWARD_UNIT_RESTART", carried.dump().c_str(), 1)) {
+    const int error = errno;
+    throw std::runtime_error(std::string("could not restart the analysis without CTA classes (set environment): ") +
+                             std::strerror(error));
+  }
   // The spooled reference becomes the re-run's stdin (dup2 clears close-on-exec).
-  if (stdin_spool >= 0 && (lseek(stdin_spool, 0, SEEK_SET) != 0 || dup2(stdin_spool, STDIN_FILENO) < 0))
-    throw std::runtime_error("unit-class restart: reference stdin");
+  if (stdin_spool >= 0 && (lseek(stdin_spool, 0, SEEK_SET) != 0 || dup2(stdin_spool, STDIN_FILENO) < 0)) {
+    const int error = errno;
+    throw std::runtime_error(
+        std::string("could not restart the analysis without CTA classes (restore the stdin reference): ") +
+        std::strerror(error));
+  }
   std::cout.flush();
   std::cerr.flush();
   // The same executable by its resolved path, so the re-run keeps the process
@@ -816,7 +826,9 @@ std::optional<std::uint64_t> AllocatedBytes() {
   }
   execv("/proc/self/exe", argv);
   execv(argv[0], argv);
-  throw std::runtime_error("unit-class restart: exec failed");
+  const int error = errno;
+  throw std::runtime_error(std::string("could not restart the analysis without CTA classes (exec): ") +
+                           std::strerror(error));
 }
 
 int main(int argc, char **argv) {
@@ -885,7 +897,8 @@ int main(int argc, char **argv) {
     std::unique_ptr<alg::UnitQuotient> quotient;
     std::optional<sentryward::value_analysis::UnitLifting> unit_lifting;
     const auto restart_per_unit = [&] {
-      if (unit_restart) throw std::logic_error("unit-class restart during the per-unit re-run");
+      if (unit_restart)
+        throw std::logic_error("internal error: CTA class bookkeeping (restart requested by the run without classes)");
       RestartPerUnit(argv, UnitRestartState{monitor.Elapsed()}, reference_spool);
     };
 #ifdef SENTRYWARD_DEVELOPMENT_EXPORTS
@@ -1143,9 +1156,9 @@ int main(int argc, char **argv) {
         throw std::invalid_argument("launch exceeds native actor ID domain");
       try {
       std::unique_ptr<ptx::ModelLowerer> lowerer;
-      // Cross-CTA: launch units, precondition (I) and, in class mode, the
-      // unit-major loop below. With class mode off (a gate, the per-unit
-      // re-run or SENTRYWARD_UNIT_CLASSES=off) nothing below observes the run.
+      // Cross-CTA: launch units, the unit-independence precondition and, in
+      // class mode, the unit-major loop below. With class mode off (a gate or
+      // the per-unit re-run) nothing below observes the run.
       ptx::UnitGates unit_gates;
       unit_gates.value_analysis = options.analyze_values;
       unit_gates.scalar_fold = options.analyze_scalar_fold;
@@ -1253,7 +1266,7 @@ int main(int argc, char **argv) {
                 if (op=="clusterlaunchcontrol") facts["clc_uses"]=facts["clc_uses"].get<std::uint64_t>()+count;
                 if (op=="atom" || op=="red") facts["atomic_uses"]=facts["atomic_uses"].get<std::uint64_t>()+count;
               }
-              // R-atom of precondition (I): a global atomic this CTA executes.
+              // Unit independence forbids an executed global atomic: restart if this CTA executes one.
               if (unit_plan.class_mode)
                 for (const auto id : unit_plan.precondition.atomic_sites)
                   if (id < static_counts.size() && static_counts[id] != 0)
@@ -1474,9 +1487,9 @@ int main(int argc, char **argv) {
           decisions.push_back({{"line", line}, {"assumption", decision.assumption}, {"rule", decision.rule},
                                {"taken", decision.taken}, {"not_taken", decision.not_taken}});
         if (unit_plan.class_mode) {
-          // The quotient tables (lowering weights by them at Finish); (I.5)
-          // needs every unit's slots, so it is decided only now. An input map
-          // overwrite (I.5c) is found again by the per-unit run.
+          // The quotient tables (lowering weights by them at Finish); the tensormap
+          // locality rule needs every unit's slots, so it is decided only now. An
+          // input map overwrite is found again by the per-unit run.
           *quotient = classes->Quotient();
           if (!classes->TensormapLocality()) throw alg::UnitClassRestart{"tensormap_locality"};
           // Values are lifted only when some class has members (fewer
@@ -1523,8 +1536,8 @@ int main(int argc, char **argv) {
             !BindingEvidence(*semantic_program, *quotient).expandable)
           throw alg::UnitClassRestart{"binding_evidence"};
         auto lowered = semantic_program ? std::move(semantic_program->lowering) : lowerer->Finish();
-        // (I.5c) on every path: class mode restarted on it, so this is the
-        // per-unit program's (every CTA lowered).
+        // The tensormap input-map overlap, on every path: class mode restarted on
+        // it, so this is the per-unit program's (every CTA lowered).
         if (ptx::TensormapInputOverlap(lowered.tensormap_destinations, unit_plan.input_maps))
           lowered.artifact.verification_limitations.push_back({"tensormap_input_overwrite",
               "A tensormap.cp_fenceproxy destination overlaps an input tensor map's location; descriptor "

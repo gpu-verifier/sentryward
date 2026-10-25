@@ -110,7 +110,7 @@
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
       "arena_nodes": 1946,
-      "comparison_elapsed_seconds": 0.010479334,
+      "comparison_elapsed_seconds": 0.010224358,
       "context_declaration": {
         "assumptions": [
           {
@@ -118,14 +118,14 @@
             "input": "scale_a",
             "interpretation": "e8m0",
             "kind": "input_elements",
-            "reason": "Additional decoded finite-scale premise explicitly authorized by user 2026-10-09; exact e8m0 interpretation, not generic uint8 finiteness."
+            "reason": "Additional decoded finite-scale premise (analysis scope); exact e8m0 interpretation, not generic uint8 finiteness."
           },
           {
             "finite": true,
             "input": "scale_b",
             "interpretation": "e8m0",
             "kind": "input_elements",
-            "reason": "Additional decoded finite-scale premise explicitly authorized by user 2026-10-09; exact e8m0 interpretation, not generic uint8 finiteness."
+            "reason": "Additional decoded finite-scale premise (analysis scope); exact e8m0 interpretation, not generic uint8 finiteness."
           }
         ],
         "fixed_inputs": [],
@@ -221,7 +221,7 @@
         "status": "proved"
       },
       "diagnostics": [],
-      "elapsed_s": 0.008786891,
+      "elapsed_s": 0.008589785,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -278,14 +278,14 @@
           "finite": true,
           "object": "scale_a",
           "region": "whole_object",
-          "source": "Additional decoded finite-scale premise explicitly authorized by user 2026-10-09; exact e8m0 interpretation, not generic uint8 finiteness."
+          "source": "Additional decoded finite-scale premise (analysis scope); exact e8m0 interpretation, not generic uint8 finiteness."
         },
         {
           "element_type": "e8m0",
           "finite": true,
           "object": "scale_b",
           "region": "whole_object",
-          "source": "Additional decoded finite-scale premise explicitly authorized by user 2026-10-09; exact e8m0 interpretation, not generic uint8 finiteness."
+          "source": "Additional decoded finite-scale premise (analysis scope); exact e8m0 interpretation, not generic uint8 finiteness."
         }
       ],
       "input_contract_applied_reads": [
@@ -316,7 +316,7 @@
       "normalized_reachable_nodes": 524,
       "numerical_result": "verified",
       "pattern_nodes": 92,
-      "peak_rss_kib": 556420,
+      "peak_rss_kib": 556052,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
       "piece_nodes": 112,
       "piece_union": {
@@ -397,16 +397,16 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 5.260099999999999e-05,
-            "cumulative_elapsed_s": 0.00117078,
-            "left_import_s": 0.000282502,
-            "left_normalize_s": 7.979999999999999e-05,
-            "parametric_state_s": 6.099999999999552e-07,
-            "piece_union_record_s": 1.8000000000001522e-07,
-            "piece_union_seal_s": 3.3999999999993237e-07,
-            "right_import_s": 0.000119911,
-            "right_normalize_s": 9.34009999999999e-05,
-            "state_pattern_s": 0.00012919100000000007,
+            "affine_state_pattern_s": 6.669e-05,
+            "cumulative_elapsed_s": 0.001144399,
+            "left_import_s": 0.000282412,
+            "left_normalize_s": 7.535099999999998e-05,
+            "parametric_state_s": 5.999999999999062e-07,
+            "piece_union_record_s": 4.200000000001078e-07,
+            "piece_union_seal_s": 2.8999999999990405e-07,
+            "right_import_s": 0.000115711,
+            "right_normalize_s": 9.218000000000008e-05,
+            "state_pattern_s": 0.00011021100000000003,
             "unary_reduction_s": 1.879999999999894e-06
           }
         },
@@ -469,17 +469,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 2.3079999999999976e-05,
-            "cumulative_elapsed_s": 0.001764964,
-            "left_import_s": 0.00018036099999999998,
-            "left_normalize_s": 5.234100000000002e-05,
-            "parametric_state_s": 2.199999999999945e-07,
-            "piece_union_record_s": 1.4999999999997654e-07,
-            "piece_union_seal_s": 6.000000000007735e-08,
-            "right_import_s": 0.0001283810000000001,
-            "right_normalize_s": 7.361999999999994e-05,
-            "state_pattern_s": 8.138999999999998e-05,
-            "unary_reduction_s": 1.2100000000001866e-06
+            "affine_state_pattern_s": 2.1700000000000148e-05,
+            "cumulative_elapsed_s": 0.001721093,
+            "left_import_s": 0.000175831,
+            "left_normalize_s": 4.707100000000009e-05,
+            "parametric_state_s": 1.8999999999995583e-07,
+            "piece_union_record_s": 1.4000000000003593e-07,
+            "piece_union_seal_s": 1.2999999999987848e-07,
+            "right_import_s": 0.00012503100000000006,
+            "right_normalize_s": 7.269000000000004e-05,
+            "state_pattern_s": 8.176099999999986e-05,
+            "unary_reduction_s": 8.199999999999007e-07
           }
         },
         {
@@ -541,17 +541,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.9519999999999867e-05,
-            "cumulative_elapsed_s": 0.002323369,
-            "left_import_s": 0.00016056199999999994,
-            "left_normalize_s": 4.337999999999998e-05,
-            "parametric_state_s": 1.6999999999985776e-07,
-            "piece_union_record_s": 1.4999999999997654e-07,
-            "piece_union_seal_s": 6.000000000007735e-08,
-            "right_import_s": 0.00012346099999999984,
-            "right_normalize_s": 8.427100000000035e-05,
-            "state_pattern_s": 7.928100000000006e-05,
-            "unary_reduction_s": 8.199999999999007e-07
+            "affine_state_pattern_s": 1.9850999999999983e-05,
+            "cumulative_elapsed_s": 0.002273207,
+            "left_import_s": 0.00017450099999999987,
+            "left_normalize_s": 4.3259999999999826e-05,
+            "parametric_state_s": 1.9000000000017267e-07,
+            "piece_union_record_s": 3.999999999976245e-08,
+            "piece_union_seal_s": 4.000000000019613e-08,
+            "right_import_s": 0.00012020100000000012,
+            "right_normalize_s": 7.039999999999998e-05,
+            "state_pattern_s": 7.716000000000016e-05,
+            "unary_reduction_s": 7.900000000000788e-07
           }
         },
         {
@@ -613,16 +613,16 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.7810000000000048e-05,
-            "cumulative_elapsed_s": 0.002846473,
-            "left_import_s": 0.00016405100000000013,
-            "left_normalize_s": 3.954100000000014e-05,
-            "parametric_state_s": 1.4000000000003593e-07,
-            "piece_union_record_s": 3.999999999976245e-08,
-            "piece_union_seal_s": 6.000000000007735e-08,
-            "right_import_s": 0.00012182099999999982,
-            "right_normalize_s": 6.660999999999993e-05,
-            "state_pattern_s": 6.900000000000005e-05,
+            "affine_state_pattern_s": 1.8341000000000277e-05,
+            "cumulative_elapsed_s": 0.002801171,
+            "left_import_s": 0.00016049200000000036,
+            "left_normalize_s": 3.827999999999991e-05,
+            "parametric_state_s": 1.6999999999985776e-07,
+            "piece_union_record_s": 4.999999999970306e-08,
+            "piece_union_seal_s": 3.000000000025552e-08,
+            "right_import_s": 0.00012060000000000022,
+            "right_normalize_s": 6.581999999999985e-05,
+            "state_pattern_s": 8.03599999999998e-05,
             "unary_reduction_s": 6.300000000001617e-07
           }
         },
@@ -685,17 +685,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 2.9991000000000045e-05,
-            "cumulative_elapsed_s": 0.003366957,
-            "left_import_s": 0.00015114100000000004,
-            "left_normalize_s": 3.9299999999999925e-05,
+            "affine_state_pattern_s": 1.8160000000000138e-05,
+            "cumulative_elapsed_s": 0.003295965,
+            "left_import_s": 0.00015165100000000004,
+            "left_normalize_s": 3.767099999999997e-05,
             "parametric_state_s": 1.7000000000029145e-07,
-            "piece_union_record_s": 4.000000000019613e-08,
-            "piece_union_seal_s": 4.000000000019613e-08,
-            "right_import_s": 0.0001162009999999998,
-            "right_normalize_s": 6.807999999999988e-05,
-            "state_pattern_s": 7.034999999999984e-05,
-            "unary_reduction_s": 5.399999999998288e-07
+            "piece_union_record_s": 5.000000000013674e-08,
+            "piece_union_seal_s": 2.9999999999821836e-08,
+            "right_import_s": 0.00011095100000000019,
+            "right_normalize_s": 6.484999999999998e-05,
+            "state_pattern_s": 6.71510000000001e-05,
+            "unary_reduction_s": 5.5999999999971e-07
           }
         },
         {
@@ -757,17 +757,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.6821000000000197e-05,
-            "cumulative_elapsed_s": 0.003855821,
-            "left_import_s": 0.00015587200000000004,
-            "left_normalize_s": 3.5899999999999734e-05,
-            "parametric_state_s": 1.5999999999991715e-07,
-            "piece_union_record_s": 4.000000000019613e-08,
-            "piece_union_seal_s": 3.999999999976245e-08,
-            "right_import_s": 0.00011135000000000008,
-            "right_normalize_s": 6.330000000000007e-05,
-            "state_pattern_s": 6.521000000000001e-05,
-            "unary_reduction_s": 4.899999999996921e-07
+            "affine_state_pattern_s": 1.6899999999999814e-05,
+            "cumulative_elapsed_s": 0.003786979,
+            "left_import_s": 0.00015312099999999999,
+            "left_normalize_s": 3.52200000000003e-05,
+            "parametric_state_s": 1.4000000000003593e-07,
+            "piece_union_record_s": 3.000000000025552e-08,
+            "piece_union_seal_s": 4.000000000019613e-08,
+            "right_import_s": 0.00010811100000000014,
+            "right_normalize_s": 6.168999999999966e-05,
+            "state_pattern_s": 7.596099999999982e-05,
+            "unary_reduction_s": 5.999999999999062e-07
           }
         },
         {
@@ -829,17 +829,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.6829999999999797e-05,
-            "cumulative_elapsed_s": 0.004377065,
-            "left_import_s": 0.00016737099999999993,
-            "left_normalize_s": 3.648000000000019e-05,
-            "parametric_state_s": 1.6999999999985776e-07,
-            "piece_union_record_s": 3.999999999976245e-08,
-            "piece_union_seal_s": 5.999999999964367e-08,
-            "right_import_s": 0.00013580199999999997,
-            "right_normalize_s": 6.007999999999968e-05,
-            "state_pattern_s": 6.689999999999995e-05,
-            "unary_reduction_s": 5.500000000002031e-07
+            "affine_state_pattern_s": 1.6469999999999332e-05,
+            "cumulative_elapsed_s": 0.004277682,
+            "left_import_s": 0.00016734099999999967,
+            "left_normalize_s": 3.5600000000000215e-05,
+            "parametric_state_s": 1.4000000000003593e-07,
+            "piece_union_record_s": 3.00000000006892e-08,
+            "piece_union_seal_s": 2.9999999999821836e-08,
+            "right_import_s": 0.00011518099999999979,
+            "right_normalize_s": 5.651099999999954e-05,
+            "state_pattern_s": 6.294999999999999e-05,
+            "unary_reduction_s": 5.300000000003219e-07
           }
         },
         {
@@ -901,17 +901,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.64700000000002e-05,
-            "cumulative_elapsed_s": 0.004858689,
-            "left_import_s": 0.00015246200000000078,
-            "left_normalize_s": 3.4440000000000165e-05,
-            "parametric_state_s": 1.4999999999997654e-07,
-            "piece_union_record_s": 4.999999999970306e-08,
-            "piece_union_seal_s": 4.999999999970306e-08,
-            "right_import_s": 0.00012143099999999997,
-            "right_normalize_s": 5.565999999999991e-05,
-            "state_pattern_s": 6.330000000000051e-05,
-            "unary_reduction_s": 4.899999999996921e-07
+            "affine_state_pattern_s": 1.6709999999999642e-05,
+            "cumulative_elapsed_s": 0.004746156,
+            "left_import_s": 0.0001473109999999998,
+            "left_normalize_s": 3.428000000000025e-05,
+            "parametric_state_s": 1.4000000000003593e-07,
+            "piece_union_record_s": 3.999999999976245e-08,
+            "piece_union_seal_s": 3.999999999976245e-08,
+            "right_import_s": 0.00011874100000000033,
+            "right_normalize_s": 5.4999999999999494e-05,
+            "state_pattern_s": 6.09199999999999e-05,
+            "unary_reduction_s": 5.199999999995139e-07
           }
         },
         {
@@ -973,17 +973,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.5349999999999912e-05,
-            "cumulative_elapsed_s": 0.005348203,
-            "left_import_s": 0.00014927099999999943,
-            "left_normalize_s": 4.9200999999999585e-05,
-            "parametric_state_s": 1.4999999999997654e-07,
-            "piece_union_record_s": 3.999999999976245e-08,
-            "piece_union_seal_s": 4.999999999970306e-08,
-            "right_import_s": 0.00010588099999999951,
-            "right_normalize_s": 6.713999999999939e-05,
-            "state_pattern_s": 6.395000000000012e-05,
-            "unary_reduction_s": 4.5999999999987023e-07
+            "affine_state_pattern_s": 1.650000000000002e-05,
+            "cumulative_elapsed_s": 0.0052307,
+            "left_import_s": 0.00016009100000000023,
+            "left_normalize_s": 3.504000000000007e-05,
+            "parametric_state_s": 1.4000000000003593e-07,
+            "piece_union_record_s": 2.9999999999821836e-08,
+            "piece_union_seal_s": 4.000000000062981e-08,
+            "right_import_s": 0.0001056010000000003,
+            "right_normalize_s": 6.400100000000016e-05,
+            "state_pattern_s": 6.27309999999999e-05,
+            "unary_reduction_s": 6.099999999998468e-07
           }
         },
         {
@@ -1045,17 +1045,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.5839999999999604e-05,
-            "cumulative_elapsed_s": 0.005822937,
-            "left_import_s": 0.0001506509999999999,
-            "left_normalize_s": 3.5020999999999664e-05,
-            "parametric_state_s": 1.4000000000003593e-07,
-            "piece_union_record_s": 2.9999999999821836e-08,
-            "piece_union_seal_s": 5.999999999964367e-08,
-            "right_import_s": 0.00011416100000000064,
-            "right_normalize_s": 5.638999999999991e-05,
-            "state_pattern_s": 6.509099999999976e-05,
-            "unary_reduction_s": 4.100000000001672e-07
+            "affine_state_pattern_s": 1.5460000000000126e-05,
+            "cumulative_elapsed_s": 0.005696263,
+            "left_import_s": 0.00014597100000000082,
+            "left_normalize_s": 3.3739999999999985e-05,
+            "parametric_state_s": 1.3000000000009532e-07,
+            "piece_union_record_s": 3.999999999976245e-08,
+            "piece_union_seal_s": 2.9999999999821836e-08,
+            "right_import_s": 0.0001110909999999998,
+            "right_normalize_s": 5.5041000000000465e-05,
+            "state_pattern_s": 6.721999999999978e-05,
+            "unary_reduction_s": 4.799999999997515e-07
           }
         },
         {
@@ -1117,17 +1117,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.5450000000000186e-05,
-            "cumulative_elapsed_s": 0.006299721,
-            "left_import_s": 0.0001501310000000004,
-            "left_normalize_s": 3.2620000000000565e-05,
-            "parametric_state_s": 1.6999999999985776e-07,
-            "piece_union_record_s": 3.999999999976245e-08,
-            "piece_union_seal_s": 5.999999999964367e-08,
-            "right_import_s": 0.00010651099999999924,
-            "right_normalize_s": 7.095100000000052e-05,
-            "state_pattern_s": 6.347100000000071e-05,
-            "unary_reduction_s": 4.499999999999296e-07
+            "affine_state_pattern_s": 1.6380000000000734e-05,
+            "cumulative_elapsed_s": 0.006165787,
+            "left_import_s": 0.00016147200000000018,
+            "left_normalize_s": 3.377100000000015e-05,
+            "parametric_state_s": 1.4999999999997654e-07,
+            "piece_union_record_s": 2.9999999999821836e-08,
+            "piece_union_seal_s": 3.999999999976245e-08,
+            "right_import_s": 0.00010271999999999972,
+            "right_normalize_s": 5.66000000000004e-05,
+            "state_pattern_s": 6.135100000000029e-05,
+            "unary_reduction_s": 5.800000000000249e-07
           }
         },
         {
@@ -1189,17 +1189,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.5600000000000162e-05,
-            "cumulative_elapsed_s": 0.006778845,
-            "left_import_s": 0.00015528100000000017,
-            "left_normalize_s": 3.452999999999963e-05,
-            "parametric_state_s": 1.5999999999991715e-07,
-            "piece_union_record_s": 5.1000000000044066e-08,
+            "affine_state_pattern_s": 1.5249999999999639e-05,
+            "cumulative_elapsed_s": 0.00663074,
+            "left_import_s": 0.00014771100000000002,
+            "left_normalize_s": 3.242999999999996e-05,
+            "parametric_state_s": 1.3000000000009532e-07,
+            "piece_union_record_s": 1.9999999999881224e-08,
             "piece_union_seal_s": 2.9999999999821836e-08,
-            "right_import_s": 0.00011272099999999965,
-            "right_normalize_s": 6.295100000000033e-05,
-            "state_pattern_s": 6.236000000000002e-05,
-            "unary_reduction_s": 4.100000000001672e-07
+            "right_import_s": 0.00011072099999999939,
+            "right_normalize_s": 6.252100000000028e-05,
+            "state_pattern_s": 6.086999999999933e-05,
+            "unary_reduction_s": 4.800000000006188e-07
           }
         },
         {
@@ -1261,17 +1261,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.4949999999999686e-05,
-            "cumulative_elapsed_s": 0.007272128,
-            "left_import_s": 0.00015014099999999947,
-            "left_normalize_s": 3.427000000000031e-05,
+            "affine_state_pattern_s": 1.5421000000000705e-05,
+            "cumulative_elapsed_s": 0.007118264,
+            "left_import_s": 0.00016006200000000075,
+            "left_normalize_s": 3.5170000000000166e-05,
             "parametric_state_s": 1.5999999999991715e-07,
-            "piece_union_record_s": 4.999999999970306e-08,
+            "piece_union_record_s": 2.9999999999821836e-08,
             "piece_union_seal_s": 2.9999999999821836e-08,
-            "right_import_s": 0.00011788100000000024,
-            "right_normalize_s": 7.44309999999998e-05,
-            "state_pattern_s": 6.284999999999971e-05,
-            "unary_reduction_s": 4.6999999999981085e-07
+            "right_import_s": 0.00011366999999999974,
+            "right_normalize_s": 6.230000000000038e-05,
+            "state_pattern_s": 6.191000000000009e-05,
+            "unary_reduction_s": 5.500000000002031e-07
           }
         },
         {
@@ -1333,17 +1333,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.6300000000000342e-05,
-            "cumulative_elapsed_s": 0.007746862,
-            "left_import_s": 0.00015485100000000012,
-            "left_normalize_s": 3.3980000000000295e-05,
-            "parametric_state_s": 1.7999999999979838e-07,
-            "piece_union_record_s": 4.999999999970306e-08,
-            "piece_union_seal_s": 3.00000000006892e-08,
-            "right_import_s": 0.0001102309999999997,
-            "right_normalize_s": 5.943099999999955e-05,
-            "state_pattern_s": 6.393000000000024e-05,
-            "unary_reduction_s": 4.800000000006188e-07
+            "affine_state_pattern_s": 1.5890000000000175e-05,
+            "cumulative_elapsed_s": 0.007582868,
+            "left_import_s": 0.0001520009999999997,
+            "left_normalize_s": 3.2759999999999734e-05,
+            "parametric_state_s": 1.3000000000009532e-07,
+            "piece_union_record_s": 3.00000000006892e-08,
+            "piece_union_seal_s": 3.999999999976245e-08,
+            "right_import_s": 0.00010771099999999992,
+            "right_normalize_s": 5.840100000000046e-05,
+            "state_pattern_s": 6.163100000000036e-05,
+            "unary_reduction_s": 4.999999999996327e-07
           }
         },
         {
@@ -1405,17 +1405,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.4771000000000228e-05,
-            "cumulative_elapsed_s": 0.008251076,
-            "left_import_s": 0.00016165200000000084,
-            "left_normalize_s": 4.009999999999951e-05,
-            "parametric_state_s": 1.1999999999928734e-07,
+            "affine_state_pattern_s": 1.5420000000000364e-05,
+            "cumulative_elapsed_s": 0.008069801,
+            "left_import_s": 0.0001574310000000004,
+            "left_normalize_s": 3.400999999999925e-05,
+            "parametric_state_s": 1.6000000000078451e-07,
             "piece_union_record_s": 2.9999999999821836e-08,
-            "piece_union_seal_s": 2.9999999999821836e-08,
-            "right_import_s": 0.00011328000000000032,
-            "right_normalize_s": 6.99299999999993e-05,
-            "state_pattern_s": 6.526999999999922e-05,
-            "unary_reduction_s": 4.799999999988841e-07
+            "piece_union_seal_s": 2.0000000001615947e-08,
+            "right_import_s": 0.0001211010000000002,
+            "right_normalize_s": 5.653100000000029e-05,
+            "state_pattern_s": 6.328000000000063e-05,
+            "unary_reduction_s": 5.400000000002625e-07
           }
         },
         {
@@ -1477,38 +1477,38 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.4820999999999931e-05,
-            "cumulative_elapsed_s": 0.00871498,
-            "left_import_s": 0.00015025200000000002,
-            "left_normalize_s": 3.4040000000000806e-05,
-            "parametric_state_s": 1.1999999999928734e-07,
-            "piece_union_record_s": 2.9999999999821836e-08,
-            "piece_union_seal_s": 2.9999999999821836e-08,
-            "right_import_s": 0.00011106000000000137,
-            "right_normalize_s": 5.646000000000123e-05,
-            "state_pattern_s": 6.112100000000079e-05,
-            "unary_reduction_s": 5.600000000001437e-07
+            "affine_state_pattern_s": 1.5080000000000648e-05,
+            "cumulative_elapsed_s": 0.008520225,
+            "left_import_s": 0.00014775099999999979,
+            "left_normalize_s": 3.2080999999999776e-05,
+            "parametric_state_s": 1.500000000008439e-07,
+            "piece_union_record_s": 1.9999999999881224e-08,
+            "piece_union_seal_s": 3.999999999976245e-08,
+            "right_import_s": 0.00010702100000000055,
+            "right_normalize_s": 5.389000000000088e-05,
+            "state_pattern_s": 5.907099999999908e-05,
+            "unary_reduction_s": 4.5999999999900287e-07
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 0.0003162050000000002,
+        "affine_state_pattern_s": 0.00032022300000000175,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.002636552000000001,
-        "left_normalize_s": 0.0006549440000000005,
-        "parametric_state_s": 2.989999999997964e-06,
-        "piece_union_record_s": 1.010999999998029e-06,
+        "left_import_s": 0.0026451500000000015,
+        "left_normalize_s": 0.0006157349999999996,
+        "parametric_state_s": 2.8900000000021357e-06,
+        "piece_union_record_s": 1.0299999999999546e-06,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 1.0299999999984367e-06,
+        "piece_union_seal_s": 9.00000000000835e-07,
         "proof_reuse_s": 0.0,
-        "right_import_s": 0.0018700840000000002,
-        "right_normalize_s": 0.0010827059999999997,
-        "state_pattern_s": 0.001132665000000001
+        "right_import_s": 0.0018141630000000006,
+        "right_normalize_s": 0.001008426000000002,
+        "state_pattern_s": 0.0011145379999999991
       },
       "timings": {
-        "load_and_scope_analysis": 0.000347843
+        "load_and_scope_analysis": 0.000336323
       },
       "total_output_families": 16,
       "transport": "in_memory_cpp_objects",
@@ -1770,7 +1770,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 1629992,
-      "hb_query_seconds": 0.09167594599999997,
+      "hb_query_seconds": 0.09091609799999992,
       "overlap_queries": 85312,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 85312
@@ -1778,7 +1778,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 523.6640625,
+    "peak_footprint_mib": 500.5078125,
     "required_order_domains": 544,
     "required_orders": 17408,
     "search_complete": true,
@@ -1924,16 +1924,16 @@
         "action_patterns": 146082,
         "binding_patterns": 63522,
         "domain_refinements": 177238,
-        "elapsed_seconds": 3.975160122,
+        "elapsed_seconds": 3.951610603,
         "event_families": 99272,
         "expanded_event_records": 0,
         "largest_batch_members": 62,
         "logical_actions": 229002,
         "logical_events": 1080452,
-        "peak_rss_mib_at_completion": 543.37890625,
+        "peak_rss_mib_at_completion": 543.01953125,
         "reachability_queries": 0,
         "relations": 327394,
-        "rss_mib_at_completion": 431.703125,
+        "rss_mib_at_completion": 431.52734375,
         "scheduled_batches": 99272,
         "singleton_batches": 65521,
         "value_families": 40506
@@ -1945,11 +1945,11 @@
     "value_ir_instance_count": 489993,
     "value_ir_node_count": 39825,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 1.670748449,
+    "verification_elapsed_seconds": 1.663012136,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 543.37890625,
-  "pipeline_elapsed_seconds": 6.250226951,
+  "peak_rss_mib": 543.01953125,
+  "pipeline_elapsed_seconds": 6.223909958,
   "result": "verified",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -2714,5 +2714,5 @@
     }
   ],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.474
+  "whole_pipeline_timeout_seconds": 498.484
 }

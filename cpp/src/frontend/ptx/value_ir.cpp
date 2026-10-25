@@ -2646,7 +2646,8 @@ public:
       result = node.result(value.resultIndex(),*member);
       // A ThreadForward instance is that source thread's own value.
       if (dynamic_cast<const v::ThreadForwardOp*>(&node.operation())) {
-        if (value.pointer()) throw std::invalid_argument("annotated address selection of a thread union");
+        if (value.pointer())
+          throw std::invalid_argument("an address forwarded from another thread carries a pointer annotation");
         return Selected(graph.forwarded(result));
       }
     }

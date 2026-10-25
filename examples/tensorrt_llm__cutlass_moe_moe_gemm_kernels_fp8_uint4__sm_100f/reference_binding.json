@@ -189,7 +189,7 @@
   "provenance": {
     "ptx": "corpus/tensorrt_llm__cutlass_moe_moe_gemm_kernels_fp8_uint4__sm_100f.ptx",
     "optimized_input": "examples/tensorrt_llm__cutlass_moe_moe_gemm_kernels_fp8_uint4__sm_100f/input.json",
-    "evidence": "MoeFCGemm<DqMmaMultistage 16x128x128, e4m3 A, uint4 B ColumnMajorTileInterleave<128,2>, half converter and scales, PER_COLUMN_SCALE_ONLY, mma.m16n8k32 e4m3>; B dequantized to fp16, scaled, converted to e4m3 (satfinite) before the MMA; LinearCombinationRelu<half>, alpha 1, beta 0, threshold 0. Byte/nibble map cross-checked against TRT-LLM preprocess_weights_for_mixed_gemm(arch 80, W4_AFP8). Written 2026-10-21 before the value stage could reach equivalence for this kernel.",
+    "evidence": "MoeFCGemm<DqMmaMultistage 16x128x128, e4m3 A, uint4 B ColumnMajorTileInterleave<128,2>, half converter and scales, PER_COLUMN_SCALE_ONLY, mma.m16n8k32 e4m3>; B dequantized to fp16, scaled, converted to e4m3 (satfinite) before the MMA; LinearCombinationRelu<half>, alpha 1, beta 0, threshold 0. Byte/nibble map follows TRT-LLM preprocess_weights_for_mixed_gemm(arch 80, W4_AFP8).",
     "semantics": "Fixed saved configuration (4 experts of 128 rows from the shape array); ideal-real tensor arithmetic; all written outputs.",
     "optimized_input_sha256": "747dc60d0729ff7698d0c1e970d173aa9366de0149b4531122505d925a4c180a",
     "ptx_sha256": "157170f0e94f19377fd912b280c5665b0f0dc570cbf045ea11b3cabc2728ed9c",

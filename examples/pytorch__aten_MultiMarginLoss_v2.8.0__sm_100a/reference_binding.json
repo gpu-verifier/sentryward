@@ -144,7 +144,7 @@
   "checker_context": {
     "predicates": [
       {
-        "source": "Restates this input's own user-authorized branch decision (PTX line 115 taken; all-positive-margin scenario) exactly as the sibling pytorch__aten_MultiMarginLoss__sm_100a checker_context: forall i in [0,7], 1-input[0,5]+input[0,i]>0, with margin=1 (parameter 8) and target[0]=5 from shape_arrays.",
+        "source": "Restates this input's branch decision (PTX line 115 taken; all-positive-margin scenario) exactly as the sibling pytorch__aten_MultiMarginLoss__sm_100a checker_context: forall i in [0,7], 1-input[0,5]+input[0,i]>0, with margin=1 (parameter 8) and target[0]=5 from shape_arrays.",
         "binders": [
           {
             "min_inclusive": 0,
@@ -239,20 +239,20 @@
   "provenance": {
     "ptx": "corpus/pytorch__aten_MultiMarginLoss_v2.8.0__sm_100a.ptx",
     "optimized_input": "examples/pytorch__aten_MultiMarginLoss_v2.8.0__sm_100a/input.json",
-    "optimized_input_sha256": "f30ac419e457c2db4927f6aee24d52747664fbb292de2b4199dd6fa0b661815e",
+    "optimized_input_sha256": "777f8e8bd6bf69d707e1d5c846fb29c3c6f0b9ce4a6a810ec8a062c733539032",
     "ptx_sha256": "da5d13c3d952259ad179cf00d35d68e721a57201b7b74d3e0b654b1febc1d841",
     "source": "// Source: https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/aten/src/ATen/native/cuda/MultiMarginLoss.cu",
     "upstream": [
       "https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/aten/src/ATen/native/cuda/MultiMarginLoss.cu#L68-L127",
       "https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/aten/src/ATen/native/cuda/MultiMarginLoss.cu#L297-L402"
     ],
-    "scope": "Current fixed launch and input JSON; all mathematical outputs retained. nframe=1, dim=8, sizeAverage=reduce=true, margin=1, weights=null.",
+    "scope": "Fixed launch and input JSON; all mathematical outputs retained. nframe=1, dim=8, sizeAverage=reduce=true, margin=1, weights=null.",
     "notes": "Same reference as pytorch__aten_MultiMarginLoss__sm_100a. v2.8.0 lacks the __syncthreads() between thread 0's gradInput[target] write and the gradOutput scaling loop (added by line 125 of the 2b3ec348 version), so the kernel has a genuine race on gradInput[target]; the reference is the intended gradient.",
     "scope_branch_choices": [
       {
         "line": 115,
         "taken": true,
-        "note": "MultiMarginLoss backward: the margin term z = margin - input[target] + input[i] is positive for every class i (all margins violated), so the gradient path is executed. User-authorized scenario for the race example."
+        "note": "MultiMarginLoss backward: the margin term z = margin - input[target] + input[i] is positive for every class i (all margins violated), so the gradient path is executed. Analysis scope: conclusions are conditional on this branch choice."
       }
     ],
     "scope_shape_arrays": [

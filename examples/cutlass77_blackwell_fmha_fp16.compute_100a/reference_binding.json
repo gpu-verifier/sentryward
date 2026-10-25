@@ -200,7 +200,7 @@
   "provenance": {
     "ptx": "corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx",
     "optimized_input": "examples/cutlass77_blackwell_fmha_fp16.compute_100a/input.json",
-    "optimized_input_sha256": "17433b9b71ee2587c92424774a772991615af32e415b80d7f4e383e9eebcc035",
+    "optimized_input_sha256": "7576a60e20d1a401f815330e4ed42f68c8a5344f54ee11255200e0bb58309305",
     "ptx_sha256": "0a33644edd13e4ab2bc599e8a79a0acb2634b6caf224742df8a3a55730197404",
     "upstream": [
       "https://github.com/NVIDIA/cutlass/blob/e64a9136dd929639e5f7c969fe5af3bf7415cd4f/examples/77_blackwell_fmha/kernel/sm100_fmha_fwd_kernel_tma_warpspecialized.hpp",
@@ -209,58 +209,58 @@
       "https://github.com/NVIDIA/cutlass/blob/e64a9136dd929639e5f7c969fe5af3bf7415cd4f/examples/77_blackwell_fmha/77_blackwell_fmha.cu",
       "https://github.com/NVIDIA/cutlass/blob/e64a9136dd929639e5f7c969fe5af3bf7415cd4f/examples/77_blackwell_fmha/reference/fmha_fwd_reference.hpp"
     ],
-    "semantics": "ideal_real; fixed saved configuration; reference written from the pinned upstream source (see NOTES.md); all semantic output tensors",
+    "semantics": "ideal_real; fixed saved configuration; reference written from the pinned upstream source; all semantic output tensors",
     "scope": "SQ=256 SK=256 D=64 H_R=H_K=B=1, NoMask; mainloop Params scale_softmax=0.125, scale_softmax_log2=0.1803368777036667, scale_output=1 (source defaults for D=64)",
     "scope_branch_choices": [
       {
         "line": 313216,
         "taken": false,
-        "note": "Always execute softmax correction; do not jump over the TMEM rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+        "note": "Always execute softmax correction; do not jump over the TMEM rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
       },
       {
         "line": 313227,
         "taken": false,
-        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
       },
       {
         "line": 313286,
         "taken": false,
-        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
       },
       {
         "line": 313345,
         "taken": false,
-        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
       },
       {
         "line": 313400,
         "taken": false,
-        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
       },
       {
         "line": 313519,
         "taken": false,
-        "note": "Always execute softmax correction; do not jump over the TMEM rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+        "note": "Always execute softmax correction; do not jump over the TMEM rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
       },
       {
         "line": 313530,
         "taken": false,
-        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
       },
       {
         "line": 313589,
         "taken": false,
-        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
       },
       {
         "line": 313648,
         "taken": false,
-        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
       },
       {
         "line": 313703,
         "taken": false,
-        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+        "note": "Always execute the per-lane correction multiplication; do not jump over the rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
       }
     ],
     "scope_shape_arrays": []

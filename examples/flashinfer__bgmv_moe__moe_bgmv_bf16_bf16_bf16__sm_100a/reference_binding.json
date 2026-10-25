@@ -295,7 +295,7 @@
   "provenance": {
     "ptx": "corpus/flashinfer__bgmv_moe__moe_bgmv_bf16_bf16_bf16__sm_100a.ptx",
     "optimized_input": "examples/flashinfer__bgmv_moe__moe_bgmv_bf16_bf16_bf16__sm_100a/input.json",
-    "optimized_input_sha256": "bc24b069c878e9cdc783361e077d48fd59fd50dccca98be268e061cbc36a970b",
+    "optimized_input_sha256": "624683fe13772caed522967ec2ec606be1d886e51c7ebf3d6792b348be487217",
     "ptx_sha256": "d9db4a306ea2f50b875056265614df99ba955c1a09a5003dd3f786d8d55fd557",
     "evidence": "moe_bgmv_shrink_sliced_kernel<384,8,8,4,3,4,8,8,32,4,bf16,bf16,bf16,false>(Y, X, w_ptr, sorted_token_ids, expert_ids, lora_indices, num_pairs=2, num_experts=8, num_tokens=1, lora_stride=24576, scale=1.0); w_ptr[e] = lora_a + e*3072 elements; grid (1,1,1).",
     "semantics": "One slice, two pairs of token 0; Y read-modify-write in bf16 (partial rounded to bf16, then bf16 add); ideal real otherwise.",
@@ -305,7 +305,7 @@
       "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/fused_moe/bgmv_moe.py",
       "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/moe/test_bgmv_moe.py"
     ],
-    "scope": "Final input: num_pairs 2, num_experts 8, num_tokens 1, num_loras 4 (lora_indices in [0, 3]), expert_ids in [0, 7], sorted_token_ids in [0, 0], one weight buffer lora_a [L, E, R, F] behind the w_ptr table.",
+    "scope": "Input: num_pairs 2, num_experts 8, num_tokens 1, num_loras 4 (lora_indices in [0, 3]), expert_ids in [0, 7], sorted_token_ids in [0, 0], one weight buffer lora_a [L, E, R, F] behind the w_ptr table.",
     "scope_branch_choices": [],
     "scope_shape_arrays": [],
     "scope_pointer_arrays": [

@@ -159,7 +159,7 @@
   "provenance": {
     "ptx": "corpus/cutlass__sparse-gemm-f16-stream-k-1sm__sm_100a.ptx",
     "optimized_input": "examples/cutlass__sparse-gemm-f16-stream-k-1sm__sm_100a/input.json",
-    "optimized_input_sha256": "8f0d2b4046e214a52f2f63d37dad7feb05a71367ceae094f5b3bed1ed499a5c8",
+    "optimized_input_sha256": "0c0cff56bf0d89a84feeb9e9bb26dc209b70e0760ddabb32aa89b7b836d350d5",
     "ptx_sha256": "bb8318b3e1b78ef0b499d64dc50cf9dac7af694c59da9f34ab28039095336378",
     "upstream": [
       "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cutlass/gemm/kernel/sm100_sparse_gemm_tma_warpspecialized.hpp",
@@ -168,14 +168,14 @@
       "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/python/cutlass_library/generator.py",
       "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cutlass/gemm/kernel/sm100_tile_scheduler_stream_k.hpp"
     ],
-    "semantics": "ideal_real; fixed saved configuration; reference written from the pinned upstream source (see NOTES.md); all semantic output tensors",
+    "semantics": "ideal_real; fixed saved configuration; reference written from the pinned upstream source; all semantic output tensors",
     "scope": "M=512 N=512 K=1024 L=1, alpha=1, C void, split-K 2 units (grid z=2)",
     "scope_branch_choices": [],
     "scope_shape_arrays": [],
     "unmapped_written_objects": [
       {
         "object": "reduction_workspace",
-        "reason": "stream-K/split-K fixup scratch (partial accumulators in fragment order plus flags); implementation-internal, not a semantic output; see NOTES.md"
+        "reason": "stream-K/split-K fixup scratch (partial accumulators in fragment order plus flags); implementation-internal, not a semantic output"
       }
     ]
   }

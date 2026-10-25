@@ -12,8 +12,8 @@ import torch
 
 
 def reference(Q, KV, SFKV, weights, cu_seq_len_k_start, cu_seq_len_k_end):
-    # cu_seq_len_k_start, cu_seq_len_k_end: fixed shape-array tensor(s) bound only so the native fixed-input context finds a
-    # common identity (fixed_input_context.hpp decode_verified); values are not used here.
+    # cu_seq_len_k_start, cu_seq_len_k_end: fixed shape-array tensor(s), passed for the binding;
+    # not used by the computation.
     # Q: [num_q_tokens, num_heads, head_dim] e4m3; KV: [num_kv_tokens, head_dim] e4m3.
     # SFKV: [num_kv_tokens] f32 per-token KV scale; weights: [num_q_tokens, num_heads] f32.
     score = Q.float() @ KV.float().transpose(0, 1)  # [M, H, N]

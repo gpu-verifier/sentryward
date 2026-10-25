@@ -18,8 +18,8 @@ def _weights(expert_weights, experts, k, n):
 
 
 def reference(activations, expert_weights, weight_scales, row_end_0, row_end_1, row_end_2, row_end_3, table_last_row_for_problem):
-    # table_last_row_for_problem: the fixed shape-array table, bound only so the native fixed-input context finds a
-    # common identity (fixed_input_context.hpp decode_verified); its values enter through row_end_0..3.
+    # table_last_row_for_problem: the fixed shape-array table, passed for the binding and not used
+    # by the computation; its values enter through row_end_0..3.
     experts, n = weight_scales.shape
     weights = _weights(expert_weights, experts, activations.shape[1], n)
     parts = []

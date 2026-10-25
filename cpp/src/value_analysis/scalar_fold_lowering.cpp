@@ -1851,7 +1851,7 @@ class Lower {
         // A ThreadForward instance is that source thread's own value.
         if(dynamic_cast<const v::ThreadForwardOp*>(&n.operation())) {
           if(!value.indices().empty() || value.pointer())
-            fail("scalar_fold_thread_selector","annotated selection of a thread union");
+            fail("scalar_fold_thread_selector","a value forwarded from another thread carries component indices or a pointer annotation");
           return selected(input.forwarded(result));
         }
         if(!value.indices().empty())result=input.component(result,{value.indices().begin(),value.indices().end()});

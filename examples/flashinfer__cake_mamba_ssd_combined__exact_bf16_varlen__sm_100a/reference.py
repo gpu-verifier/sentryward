@@ -24,7 +24,7 @@ Intermediate BF16 rounding of chunk operands is abstracted as in the sibling.
 
 The routing tables are fixed shape_arrays.  Their values enter as scalar
 arguments (JSON pointers) that fix the static loop structure.  The table
-tensors are also bound as int32 arguments for the fixed-input identity check.
+tensors are also passed as int32 arguments for the binding; only their shapes are checked.
 """
 import torch
 

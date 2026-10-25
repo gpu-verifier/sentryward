@@ -13,7 +13,7 @@ dK/dV; all three accumulators are read-modify-write (TMA bulk reduce-add), so th
 contents are inputs.  dQ and dK are unscaled here (softmax_scale is applied by postprocess).
 
 The accumulators use the kernel-internal flat layouts that flash_bwd_postprocess consumes; the
-reference returns them in memory order (see _pack_dq / _pack_dkv and NOTES.md).
+reference returns them in memory order (see _pack_dq / _pack_dkv).
 """
 import torch
 

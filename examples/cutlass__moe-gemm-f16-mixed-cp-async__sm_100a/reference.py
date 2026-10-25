@@ -18,11 +18,11 @@ import torch
 
 def reference(A, B, fixed_tokens_per_expert_problem_shape, fixed_tokens_per_expert, alpha, tokens_0,
               tokens_1, tokens_2, tokens_3):
-    # fixed_*: shape-array tables (read-only kernel inputs fixed by input.json), bound only so the native
-    # fixed-input context finds a common identity (fixed_input_context.hpp decode_verified); not used here.
+    # fixed_*: fixed shape-array tables (read-only kernel inputs fixed by input.json), passed for the
+    # binding; not used by the computation.
     max_n = B.shape[1]
     if any(t != max_n for t in (tokens_0, tokens_1, tokens_2, tokens_3)):
         raise NotImplementedError("reference covers tokens_per_expert[g] == max_n only")
-    # Per-expert 2-D products (a batched 3-D matmul would export as expand/bmm).
+    # Per-expert 2-D products.
     experts = [alpha * (A[g].float() @ B[g].float().T) for g in range(A.shape[0])]
     return torch.stack(experts).to(torch.float16)

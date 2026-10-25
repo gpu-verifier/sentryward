@@ -13,8 +13,7 @@ logsumexp values with base 2 (cascade.cuh doc comment).
     v_merged = (w_a / d) * v_a + (w_b / d) * v_b      (d > 0 guard, as the kernel)
     s_merged = log2(d) + m
 
-log2 is written as ln(d) / ln(2) with a symbolic ln(2) (log of the constant 2):
-the capture lowering has no aten.log2.  See NOTES.md.
+log2 is written as ln(d) / ln(2) with a symbolic ln(2) (log of the constant 2).
 """
 import torch
 

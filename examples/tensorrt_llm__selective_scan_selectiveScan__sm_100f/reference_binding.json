@@ -533,7 +533,7 @@
       "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/thop/selectiveScanOp.cpp",
       "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/tests/unittest/_torch/thop/parallel/test_selective_scan_op.py"
     ],
-    "optimized_input_sha256": "4e4ec1ccc2d94f3a5ef5003a291ea6ec4aa8f0e9b711a62ecafb3d830d833c2c",
+    "optimized_input_sha256": "e4bf857236a6c5d1167a2856a7099b966ae3b535ef4b9dbf3c6c186bb5287227",
     "ptx_sha256": "65d547073f01e530f4523ca7c9075f9838ce75743169bc993e054f779b7b90d0",
     "scope": "selective_scan_loop_kernel<float,float,DSTATE=16,CHANNELS_PER_BLOCK=128,STAGES=12,SEQ_UNROLL=6>; batch=1, dim=128, dstate=16, dt_rank=16, max_seqlen=4; remove_padding=false, delta_softplus=true; last_token_ids=[4] from shape_arrays; D and z present; paged state with slot_mapping in [0, slots-1] = [0, 0] (tensor_properties, slots = state.size(0) = batch_size per tests/unittest/_torch/thop/parallel/test_selective_scan_op.py:69-73); zero initial scan state; workspace pointers Os/St/dc/dA/CB/desc null (thop/selectiveScanOp.cpp:131-139). Outputs: out [1,4,128] and state cache object x [1,16,128] (final state in slot slot_mapping[0]).",
     "scope_branch_choices": [],

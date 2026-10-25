@@ -22,8 +22,8 @@ from examples._reference.pytorch_blockscaled import product
 
 def reference(A, B, scale_a, scale_b, fixed_tokens_per_expert_problem_shape, fixed_tokens_per_expert, alpha,
               tokens_0, tokens_1, tokens_2, tokens_3):
-    # fixed_*: shape-array tables (read-only kernel inputs fixed by input.json), bound only so the native
-    # fixed-input context finds a common identity (fixed_input_context.hpp decode_verified); not used here.
+    # fixed_*: fixed shape-array tables (read-only kernel inputs fixed by input.json), passed for the
+    # binding; not used by the computation.
     max_n = B.shape[1]
     if any(t != max_n for t in (tokens_0, tokens_1, tokens_2, tokens_3)):
         raise NotImplementedError("reference covers tokens_per_expert[g] == max_n only")

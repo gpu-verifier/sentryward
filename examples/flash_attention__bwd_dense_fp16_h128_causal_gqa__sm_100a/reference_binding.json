@@ -705,7 +705,7 @@
     "optimized_input_sha256": "26b91fa325a9b83e201dcc4004055b45d9ee1e079d1336ec1472113888372c9e",
     "ptx_sha256": "2dfd13f8dfda40ca6d997ca87616a8adbc307c4c31ad8478ba9a2d42aa50a5cf",
     "semantics": "ideal_real; fixed saved configuration (b=1, hq=4, hkv=1, sq=128, sk=256, d=128, causal, 2-CTA, non-deterministic); all written outputs (three RMW fp32 accumulators).",
-    "evidence": "flash_bwd_sm100.py: P=exp2(S*scale_log2-LSE) with bottom-right causal mask; dS=P*(dO V^T-dPsum); P,dS rounded to fp16 for the MMAs; GQA (qhead_per_kvhead=4) => dKV_postprocess: dK=sum_h dS^T Q (unscaled) and dV=sum_h P^T dO bulk-reduce-added into fp32 dKaccum/dVaccum; dQ=dS K bulk-reduce-added unscaled into dQaccum. Prior accumulator contents are inputs. Accumulators are bound as memory-order views of the 2-CTA internal tile layouts (dQ_reduce_ncol=8; dK_reduce_ncol=32) derived in NOTES.md.",
+    "evidence": "flash_bwd_sm100.py: P=exp2(S*scale_log2-LSE) with bottom-right causal mask; dS=P*(dO V^T-dPsum); P,dS rounded to fp16 for the MMAs; GQA (qhead_per_kvhead=4) => dKV_postprocess: dK=sum_h dS^T Q (unscaled) and dV=sum_h P^T dO bulk-reduce-added into fp32 dKaccum/dVaccum; dQ=dS K bulk-reduce-added unscaled into dQaccum. Prior accumulator contents are inputs. Accumulators are bound as memory-order views of the 2-CTA internal tile layouts (dQ_reduce_ncol=8; dK_reduce_ncol=32; see _pack_dq and _pack_dkv in reference.py).",
     "scope_branch_choices": [],
     "scope_shape_arrays": []
   }

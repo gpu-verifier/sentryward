@@ -348,37 +348,37 @@
       "user_branch_decisions": [
         {
           "line": 190,
-          "note": "radixSelect: digit 0 is not the unique k-th value (count != 1); User-authorized scenario: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value.",
+          "note": "radixSelect: digit 0 is not the unique k-th value (count != 1); analysis scope: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value.",
           "taken": true
         },
         {
           "line": 280,
-          "note": "radixSelect: kToFind > count of digit 0 (count 0); continue to digit 1; User-authorized scenario: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value.",
+          "note": "radixSelect: kToFind > count of digit 0 (count 0); continue to digit 1; analysis scope: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value.",
           "taken": true
         },
         {
           "line": 297,
-          "note": "radixSelect: digit 1 is not the unique k-th value; User-authorized scenario: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value.",
+          "note": "radixSelect: digit 1 is not the unique k-th value; analysis scope: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value.",
           "taken": false
         },
         {
           "line": 300,
-          "note": "radixSelect: kToFind > count of digit 1 (count 0); continue to digit 2; User-authorized scenario: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value.",
+          "note": "radixSelect: kToFind > count of digit 1 (count 0); continue to digit 2; analysis scope: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value.",
           "taken": false
         },
         {
           "line": 306,
-          "note": "radixSelect: digit 2 is not the unique k-th value (count 64); User-authorized scenario: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value.",
+          "note": "radixSelect: digit 2 is not the unique k-th value (count 64); analysis scope: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value.",
           "taken": false
         },
         {
           "line": 309,
-          "note": "radixSelect: kToFind <= count of digit 2 (64); select digit 2 and proceed to the next digit position; User-authorized scenario: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value.",
+          "note": "radixSelect: kToFind <= count of digit 2 (64); select digit 2 and proceed to the next digit position; analysis scope: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value.",
           "taken": true
         },
         {
           "line": 341,
-          "note": "index search: the loaded value equals the k-th value, so this thread records its index; User-authorized scenario: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value.",
+          "note": "index search: the loaded value equals the k-th value, so this thread records its index; analysis scope: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value.",
           "taken": true
         }
       ]
@@ -413,7 +413,7 @@
       },
       "candidate_generation_fallback": false,
       "exhaustive": false,
-      "first_race_seconds": 0.093259363,
+      "first_race_seconds": 0.093135182,
       "hb_algorithm": "persistent-chain",
       "hb_batches": 0,
       "hb_cache_hits": 0,
@@ -422,7 +422,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 41270784,
       "hb_queries": 262144,
-      "hb_query_seconds": 0.00525842,
+      "hb_query_seconds": 0.0052656099999999996,
       "overlap_queries": 65,
       "strategy": "conflict-first",
       "unordered_candidates_examined": 65
@@ -430,7 +430,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 98.82421875,
+    "peak_footprint_mib": 100.18359375,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": false,
@@ -541,8 +541,8 @@
     "value_ir_node_count": 5378,
     "value_view_complete": false
   },
-  "peak_rss_mib": 110.8203125,
-  "pipeline_elapsed_seconds": 0.368149874,
+  "peak_rss_mib": 110.890625,
+  "pipeline_elapsed_seconds": 0.367135645,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",

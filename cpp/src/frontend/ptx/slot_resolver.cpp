@@ -213,7 +213,8 @@ SlotTerminal<ResolvedFootprint> SlotResolver::MemoryBody(const RecordView &e, co
   auto region = contract.value("region", Json::object());
   std::string id = contract.value("resource", "");
   // The step's own space (its key's), not the table: the binding interned for
-  // it has that space (E2). A mismatch leaves the step interned.
+  // it has that space (a stored binding equals its step). A mismatch leaves the
+  // step interned.
   auto checked = [&](ConstantStep &&step, std::uint64_t size) {
     auto want = space == "cluster_shared" ? "shared" : space;
     if (!space.empty() && space != "generic" && step.key.space != want) {
@@ -326,7 +327,7 @@ SlotTerminal<ResolvedFootprint> SlotResolver::MemoryBody(const RecordView &e, co
   if (id.empty()) {
     if (!core_.active_lane_) throw SemanticError("active_thread_context_missing", "memory operand has no active thread");
     std::optional<Json> value_expression;
-    // Every bridge or extractor call precedes every step (E3).
+    // Every bridge or extractor call precedes every step (see slot_resolver.h).
     if (config_.bridge) {
       fallback = FallbackUse::Bridge;
       value_expression = config_.bridge(*core_.active_lane_, e, text);
@@ -338,7 +339,7 @@ SlotTerminal<ResolvedFootprint> SlotResolver::MemoryBody(const RecordView &e, co
       const auto resource = value_expression->at("allocation").get<std::string>();
       // Resolve aliases and explicit allocation placement using the same resource table.
       auto placement = MemoryResource(resource, 0, 0);
-      // The base binding's fields, read from its step (E2).
+      // The base binding's fields, read from its step (which the stored binding equals).
       const auto binding = frame.Format(placement.key);
       const auto binding_offset = placement.offset;
       prefix.push_back({std::move(placement)});
@@ -555,7 +556,7 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
       }
     opaque_coordinate = true;
     if (!core_.active_lane_) throw SemanticError("active_thread_context_missing", "TMA coordinate has no thread");
-    // Every extractor call precedes every step (E3).
+    // Every extractor call precedes every step (see slot_resolver.h).
     fallback = FallbackUse::Extractor;
     auto expression = ExtractAddress(e, "[" + token + "]");
     // If extraction is unavailable, a fresh occurrence-scoped atom is a sound
@@ -677,7 +678,8 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
       PatchStep patch{address, {}, {}, std::move(serialized)};
       if (known_resource) {
         auto placement = MemoryResource(resource, 0, 0);
-        // The placement binding's allocation and offset, from its step (E2).
+        // The placement binding's allocation and offset, from its step (which the
+        // stored binding equals).
         patch.allocation = placement.key;
         patch.offset = placement.offset;
         steps.push_back({std::move(placement)});

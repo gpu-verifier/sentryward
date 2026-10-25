@@ -310,8 +310,8 @@
       "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/benchmarks/bench_blackwell_msa_sm100.py"
     ],
     "ptx_sha256": "1b39d86dd6ddfaac5ee3d154324401dec126f1e4d23b9eb1a5e9737387fe9598",
-    "optimized_input_sha256": "dd4b6c4a336976036eaca3b715356d37b43ec8b9e0c9907e74290f4a31ad31ca",
-    "scope": "refs input.json: total_q=1 (p30), 16 q heads (p31), 1 kv head (p32), seqlen_q=1 (p40), non-causal (p38=0), topk 16 (p33); kv_indptr shape array [0, 4096] (kv_len 4096 of upstream test decode-flat-bf16-q8-k16); flat K/V [4096, 1, 128] per TMA descriptors; task_kind injective in [0, 31]",
+    "optimized_input_sha256": "4ea9e3286c4bae160237c717e22c69296fc04143140a847b515000f4f37c3b4c",
+    "scope": "input.json: total_q=1 (p30), 16 q heads (p31), 1 kv head (p32), seqlen_q=1 (p40), non-causal (p38=0), topk 16 (p33); kv_indptr shape array [0, 4096] (kv_len 4096 of upstream test decode-flat-bf16-q8-k16); flat K/V [4096, 1, 128] per TMA descriptors; task_kind injective in [0, 31]",
     "semantics": "ideal_real; O = softmax-weighted V over the 16 selected 128-token blocks (per selection slot), msa_lse = natural-log LSE of exp2(softmax_scale_log2 * q.k); bf16 O, f32 LSE",
     "scope_branch_choices": [],
     "scope_shape_arrays": [

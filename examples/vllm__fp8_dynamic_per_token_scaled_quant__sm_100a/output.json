@@ -110,7 +110,7 @@
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
       "arena_nodes": 4172,
-      "comparison_elapsed_seconds": 0.014734044,
+      "comparison_elapsed_seconds": 0.014810663,
       "context_declaration": {
         "assumptions": [],
         "fixed_inputs": [],
@@ -192,7 +192,7 @@
         "status": "proved"
       },
       "diagnostics": [],
-      "elapsed_s": 0.010392421,
+      "elapsed_s": 0.01044347,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -250,7 +250,7 @@
       "normalized_reachable_nodes": 297,
       "numerical_result": "verified",
       "pattern_nodes": 9,
-      "peak_rss_kib": 190436,
+      "peak_rss_kib": 129600,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
       "piece_nodes": 958,
       "piece_union": {
@@ -287,36 +287,36 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.0870000000001798e-05,
-            "cumulative_elapsed_s": 0.010190371,
-            "left_import_s": 0.0014016249999999962,
-            "left_normalize_s": 0.0005789600000000053,
-            "parametric_state_s": 6.160000000001364e-06,
-            "piece_union_record_s": 2.399999999993987e-06,
-            "piece_union_seal_s": 2.0800000000023924e-06,
-            "right_import_s": 0.005141623000000002,
-            "right_normalize_s": 0.002479129000000001
+            "affine_state_pattern_s": 1.1270000000002892e-05,
+            "cumulative_elapsed_s": 0.010228329,
+            "left_import_s": 0.0014119530000000014,
+            "left_normalize_s": 0.0005766139999999976,
+            "parametric_state_s": 6.9899999999955675e-06,
+            "piece_union_record_s": 2.1700000000009906e-06,
+            "piece_union_seal_s": 2.100000000000322e-06,
+            "right_import_s": 0.005160774,
+            "right_normalize_s": 0.002493358
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 1.0870000000001798e-05,
+        "affine_state_pattern_s": 1.1270000000002892e-05,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.0014016249999999962,
-        "left_normalize_s": 0.0005789600000000053,
-        "parametric_state_s": 6.160000000001364e-06,
-        "piece_union_record_s": 2.399999999993987e-06,
+        "left_import_s": 0.0014119530000000014,
+        "left_normalize_s": 0.0005766139999999976,
+        "parametric_state_s": 6.9899999999955675e-06,
+        "piece_union_record_s": 2.1700000000009906e-06,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 2.0800000000023924e-06,
+        "piece_union_seal_s": 2.100000000000322e-06,
         "proof_reuse_s": 0.0,
-        "right_import_s": 0.005141623000000002,
-        "right_normalize_s": 0.002479129000000001,
+        "right_import_s": 0.005160774,
+        "right_normalize_s": 0.002493358,
         "state_pattern_s": 0.0
       },
       "timings": {
-        "load_and_scope_analysis": 0.000267961
+        "load_and_scope_analysis": 0.00026609
       },
       "total_output_families": 81,
       "transport": "in_memory_cpp_objects",
@@ -466,12 +466,12 @@
       "user_branch_decisions": [
         {
           "line": 52,
-          "note": "vectorize_read_with_alignment<16>: the token's input row pointer is 32-byte aligned (PyTorch allocations are 256-byte aligned and the 2048-byte row stride keeps every row aligned), so the vectorized path is taken instead of the scalar fallback. User-authorized scenario; the frontend cannot decide alignment of a symbolic pointer.",
+          "note": "vectorize_read_with_alignment<16>: the token's input row pointer is 32-byte aligned (PyTorch allocations are 256-byte aligned and the 2048-byte row stride keeps every row aligned), so the vectorized path is taken instead of the scalar fallback. Analysis scope: conclusions are conditional on this branch choice; the frontend cannot decide alignment of a symbolic pointer.",
           "taken": false
         },
         {
           "line": 1116,
-          "note": "vectorize_with_alignment<16>: the token's input row (32-byte aligned) and fp8 output row (16-byte aligned) allow the vectorized quantization path; the scalar fallback is not taken. User-authorized scenario; the frontend cannot decide alignment of symbolic pointers.",
+          "note": "vectorize_with_alignment<16>: the token's input row (32-byte aligned) and fp8 output row (16-byte aligned) allow the vectorized quantization path; the scalar fallback is not taken. Analysis scope: conclusions are conditional on this branch choice; the frontend cannot decide alignment of symbolic pointers.",
           "taken": false
         }
       ]
@@ -522,7 +522,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 611,
-      "hb_query_seconds": 5.359e-05,
+      "hb_query_seconds": 5.322e-05,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -530,7 +530,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 37.48046875,
+    "peak_footprint_mib": 37.578125,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -676,16 +676,16 @@
         "action_patterns": 137,
         "binding_patterns": 137,
         "domain_refinements": 16446,
-        "elapsed_seconds": 0.009517488,
+        "elapsed_seconds": 0.009659318,
         "event_families": 3433,
         "expanded_event_records": 0,
         "largest_batch_members": 186,
         "logical_actions": 1361,
         "logical_events": 86537,
-        "peak_rss_mib_at_completion": 185.97265625,
+        "peak_rss_mib_at_completion": 126.5625,
         "reachability_queries": 0,
         "relations": 12855,
-        "rss_mib_at_completion": 47.53515625,
+        "rss_mib_at_completion": 47.44921875,
         "scheduled_batches": 3433,
         "singleton_batches": 1751,
         "value_families": 2239
@@ -697,11 +697,11 @@
     "value_ir_instance_count": 50636,
     "value_ir_node_count": 1402,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 0.072246786,
+    "verification_elapsed_seconds": 0.073639965,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 185.97265625,
-  "pipeline_elapsed_seconds": 0.161400072,
+  "peak_rss_mib": 126.5625,
+  "pipeline_elapsed_seconds": 0.162230413,
   "result": "verified",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -713,5 +713,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.549
+  "whole_pipeline_timeout_seconds": 498.561
 }

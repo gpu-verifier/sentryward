@@ -108,10 +108,15 @@ other loads from the table are unknown.
 }
 ```
 
-Distinct objects are distinct allocations. Entries that share one buffer use one
-object with different `byte_offset` values; conclusions then rely on the stated
-offsets and extents, which describe one launch.
+Distinct objects are distinct allocations. An entry that names an object
+already declared in the input, by a pointer declaration or a `tma_descriptors`
+record, aliases that object. Entries that share one buffer use one object with
+different `byte_offset` values; conclusions then rely on the stated offsets and
+extents, which describe one launch.
 
+The entries are trusted, not checked: the verifier does not see the table's
+runtime contents. Results record the tables under
+`frontend_assumptions.pointer_array_contract`.
 
 ## Tensor properties
 
@@ -133,8 +138,9 @@ read as `element_type` (`s32`, `u32`, `s64` or `u64`):
 }
 ```
 
-`object` names a declared pointer object or a pointer-array entry object. A
-bound requires `value`, which must fit `element_type`; `injective` takes none.
+`object` names a declared pointer object, a `tma_descriptors` object or a
+pointer-array entry object. A bound requires `value`, which must fit
+`element_type`; `injective` takes none.
 An object's properties use one element type; repeated bounds combine to the
 tightest, and contradictory bounds make the input invalid.
 
@@ -203,17 +209,6 @@ The production parser is [public_input_parse.cpp](../cpp/src/frontend/ptx/public
 Unspecified keys use [repository defaults](../config/default-assumptions.json).
 Unknown names and non-Boolean values are rejected with distinct diagnostics.
 
-Immediate visibility remains a fixed premise of the current model; removing its
-configuration switch did not add weak-memory analysis. Do not put
-`immediate_visibility` in the `assumptions` object. Existing
-`immediate_visibility: true` configurations can omit the field without changing
-this premise; configurations requesting `false` are not supported.
-The removed `warp_tmem_load_completion: false` override can also be omitted.
-A former `true` override must not be silently dropped: its TMEM completion
-semantics require review.
-
-
-
 | Key | Default |
 | --- | --- |
 | `duplicate_tma_store_benign` | `true` |
@@ -235,8 +230,9 @@ For example, this fragment opts into representative data-dependent control:
 See [assumptions.md](assumptions.md) for each assumption's exact scope and
 limitations. `address_invariants` are separate trusted constraints, not Boolean
 assumptions; their [forms and examples](assumptions.md#address-invariants)
-are documented there. Neither assumptions nor address invariants are established
-by the verifier merely because they appear in the configuration.
+are documented there. The verifier does not establish assumptions, address
+invariants, `tensor_properties`, `pointer_arrays` or `shape_arrays` merely
+because they appear in the configuration; it trusts them as stated.
 
 
 ## Related files

@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 import tempfile
 
-from report_layout import MARKER, compose, saved_result, validate_inputs
+from report_layout import MARKER, compose, load_saved_result, validate_inputs
 
 
 def verify_identity(identity, artifacts):
@@ -83,7 +83,7 @@ def main():
         verify_identity(args.identity, artifacts)
         run_input, result = (
             json.loads(args.input.read_text()),
-            saved_result(json.loads(args.result.read_text())),
+            load_saved_result(args.result),
         )
         ptx = args.ptx.read_text()
         if args.bindings:

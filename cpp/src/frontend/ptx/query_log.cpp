@@ -195,7 +195,7 @@ struct RankLog {
   std::vector<SlotEntry> slots;
   std::vector<GlobalOffset> offsets;
   std::vector<SignedOffset> shifts;
-  // (I.5a): this CTA's tensormap.cp_fenceproxy global destinations.
+  // For the tensormap locality rule: this CTA's tensormap.cp_fenceproxy global destinations.
   std::vector<GlobalOffset> fences;
   bool fence_nonconstant = false;
 };
@@ -456,11 +456,12 @@ struct UniformKeyHash {
   }
 };
 struct LaneKey {
-  std::uint64_t a, b; // (lane, pos), (reg, slice, kind)
+  std::uint64_t a, b; // (lane, pos), (reg, slice)
+  std::uint8_t kind;
   bool operator==(const LaneKey &) const = default;
 };
 struct LaneKeyHash {
-  std::size_t operator()(const LaneKey &k) const noexcept { return Mix(k.a ^ Mix(k.b)); }
+  std::size_t operator()(const LaneKey &k) const noexcept { return Mix(k.a ^ Mix(k.b ^ Mix(k.kind))); }
 };
 struct PairHash {
   std::size_t operator()(const std::pair<std::uint64_t, std::uint64_t> &k) const noexcept {
@@ -528,14 +529,14 @@ private:
       // Path-uniform: one lane of the path answers for all of them.
       if (!First(uniform_seen_, {facts_.Path(at.lane), pos, reg, 0}, answer)) return;
     } else {
-      const LaneKey key{(std::uint64_t(at.lane.index) << 32) | pos,
-                        (std::uint64_t(reg) << 32) ^ (std::uint64_t(slice) << 8) ^ std::uint64_t(kind)};
+      const LaneKey key{(std::uint64_t(at.lane.index) << 32) | pos, (std::uint64_t(reg) << 32) | slice,
+                        static_cast<std::uint8_t>(kind)};
       if (!First(lane_seen_, key, answer)) return;
     }
     rank_.values.push_back({at.lane.index, pos, reg, slice, kind, answer});
   }
   void Handle(const query::ValueRead &e, ConsumerTag, bool in_slot, bool in_partition) {
-    if (in_slot || in_partition || Closed()) return; // covered by the slot re-run / the H9 classes
+    if (in_slot || in_partition || Closed()) return; // covered by the slot re-run / the PartitionRead classes
     const auto ref = e.view.ref();
     if (!ref) {
       // An unpositioned view is an empty holder's default record, which binds
@@ -583,7 +584,8 @@ private:
     const bool memory = std::is_same_v<T, ResolvedFootprint>;
     const auto instruction = q.site.instruction_id();
     const auto &i = facts_.function().instructions.at(instruction);
-    // (I.5a): a tensormap.cp_fenceproxy destination (lowering's 128-byte global Memory slot).
+    // A tensormap.cp_fenceproxy destination (lowering's 128-byte global Memory slot), kept for
+    // the tensormap locality rule.
     const bool fence = memory && q.memory && q.memory->space == "global" && q.memory->bytes == 128 &&
                        i.opcode == "tensormap" && !i.modifiers.empty() && i.modifiers[0] == "cp_fenceproxy";
     if (Closed() && !fence) return;
@@ -774,8 +776,9 @@ bool AddSignedDelta(UnitDelta &delta, const std::string &object, std::int64_t me
   const auto [it, added] = delta.try_emplace(object, d);
   return added || it->second == d;
 }
-// C2 (H1-H4, H6, H9) then C3 (H5) of one rank's log on the member CTA's own
-// facts; δ accumulates across ranks. False with the first failing question.
+// The logged answers (special, uniform, memo, Partition and value reads), then
+// the logged slots, of one rank's log re-asked on the member CTA's own facts; δ
+// accumulates across ranks. False with the first failing question.
 bool Replay(const UnitLog &log, std::uint32_t rank, const CtaFacts &facts, UnitDelta &delta) {
   const auto &r = log.ranks.at(rank);
   try {
@@ -808,7 +811,7 @@ bool Replay(const UnitLog &log, std::uint32_t rank, const CtaFacts &facts, UnitD
       }
     }
     {
-      // H1, one record read per (lane, pos, kind, slice) group (the log is sorted).
+      // Value reads, one record read per (lane, pos, kind, slice) group (the log is sorted).
       // The log is lane-major: a lane's value caches are dropped once its reads
       // are done, so a replay holds one lane's memoized values at a time.
       // A Full group is read as a Slice over its own registers, the only ones compared:
@@ -842,9 +845,9 @@ bool Replay(const UnitLog &log, std::uint32_t rank, const CtaFacts &facts, UnitD
         if (!log.answers.Same(e.answer, facts.Value(*view, e.reg))) return false;
       }
     }
-    // C3: every logged slot re-run on the member, then compared up to δ.
+    // Slot replay: every logged slot re-run on the member, then compared up to δ.
     ReplayContexts contexts(facts);
-    // Slots follow lowering's lane order: as in H1, a lane's value caches are
+    // Slots follow lowering's lane order: as for value reads, a lane's value caches are
     // dropped when the sites move to another lane (a return recomputes them).
     std::optional<std::uint32_t> site_lane;
     std::vector<RegId> site_regs;
@@ -906,15 +909,15 @@ bool AlignOk(const UnitLog &log, const UnitDelta &delta) {
     }
   return true;
 }
-// C1: equal structure keys on every rank (hash first, then bytes).
+// Equal structure keys on every rank (hash first, then bytes).
 bool SameStructure(const std::vector<StructureKey> &a, const std::vector<StructureKey> &b) {
   if (a.size() != b.size()) return false;
   for (std::size_t k = 0; k < a.size(); ++k)
     if (a[k].hash != b[k].hash || a[k].bytes != b[k].bytes) return false;
   return true;
 }
-// C2, C3 (every rank's log replayed, δ accumulating) and H8 (AbsoluteCheck) of a
-// unit against one class log.
+// Equal answers and slot outcomes (every rank's log replayed, δ accumulating)
+// and the alignment checks (AbsoluteCheck) of a unit against one class log.
 bool Admits(const UnitLog &log, std::span<const CtaFacts *const> facts, UnitDelta &delta) {
   for (std::uint32_t rank = 0; rank < facts.size(); ++rank)
     if (!Replay(log, rank, *facts[rank], delta)) return false;
@@ -934,12 +937,12 @@ struct UnitClasses::Impl {
   };
   struct ClassInfo {
     std::uint32_t rep;
-    Keys keys;
+    Keys keys;                    // null for a class without a log
     std::shared_ptr<UnitLog> log; // null once closed (no admission needs it); never changes once set
     std::string closed;
     std::vector<std::uint32_t> members; // admitted units, in order
     std::vector<UnitDelta> deltas;
-    std::vector<std::pair<std::string, std::uint64_t>> fences; // (I.5a) representative regions
+    std::vector<std::pair<std::string, std::uint64_t>> fences; // the representative's tensormap regions
     bool fence_nonconstant = false;
   };
   std::vector<ClassInfo> classes;
@@ -967,7 +970,6 @@ struct UnitClasses::Impl {
   void Found(std::uint32_t unit, Pending &p) {
     ClassInfo info;
     info.rep = unit;
-    info.keys = std::make_shared<const std::vector<StructureKey>>(std::move(p.keys));
     std::uint64_t log_bytes = 0;
     if (p.log) {
       for (const auto &r : p.log->ranks) {
@@ -981,7 +983,9 @@ struct UnitClasses::Impl {
     else if (class_bytes + log_bytes > budget) info.closed = "log_budget";
     else if (!p.log->closed.empty()) info.closed = p.log->closed;
     else {
+      // Only a class with a log can admit units, so only it keeps the structure keys.
       info.log = std::move(p.log);
+      info.keys = std::make_shared<const std::vector<StructureKey>>(std::move(p.keys));
       class_bytes += log_bytes;
     }
     membership.at(unit) = {static_cast<std::uint32_t>(classes.size()), 0};
@@ -1006,7 +1010,7 @@ struct UnitClasses::Impl {
     classes[klass].deltas.push_back(std::move(delta));
     membership.at(unit) = {klass, static_cast<std::uint32_t>(classes[klass].members.size())};
   }
-  // (I.5) over every unit's cp_fenceproxy regions (representative + δ for members).
+  // The tensormap locality rule over every unit's cp_fenceproxy regions (representative + δ for members).
   struct Region {
     std::string object;
     std::uint64_t begin;
@@ -1016,25 +1020,29 @@ struct UnitClasses::Impl {
     if (!plan.precondition.tensormap_copies) return true;
     std::vector<Region> regions;
     for (const auto &c : classes) {
-      if (c.fence_nonconstant) return false; // (I.5a)
+      if (c.fence_nonconstant) return false; // a region that is not constant
       for (const auto &[object, offset] : c.fences) {
         regions.push_back({object, offset, c.rep});
         for (std::size_t m = 0; m < c.members.size(); ++m) {
           const auto found = c.deltas[m].find(object);
           if (found == c.deltas[m].end()) return false; // never expected: the member's own slot fixes δ
-          regions.push_back({object, std::uint64_t(std::int64_t(offset) + found->second), c.members[m]});
+          std::int64_t moved; // the member's region; one outside the int64 offset range is unknown
+          if (offset > std::uint64_t(INT64_MAX) || __builtin_add_overflow(std::int64_t(offset), found->second, &moved) ||
+              moved < 0)
+            return false;
+          regions.push_back({object, std::uint64_t(moved), c.members[m]});
         }
       }
       if (c.closed == "futility" || c.closed == "log_budget" || c.closed == "not_recorded") return false; // unknown
     }
-    // (I.5b): no two units' 128-byte tensormap regions overlap; (I.5c): none
-    // overlaps an input map's location (an absolute address cannot be placed).
+    // No two units' 128-byte tensormap regions overlap, and none overlaps an
+    // input map's location (an absolute address cannot be placed).
     std::sort(regions.begin(), regions.end(), [](const Region &a, const Region &b) {
       return std::tie(a.object, a.begin, a.unit) < std::tie(b.object, b.begin, b.unit);
     });
     for (std::size_t i = 0; i + 1 < regions.size(); ++i)
       for (std::size_t j = i + 1; j < regions.size() && regions[j].object == regions[i].object &&
-                                  regions[j].begin < regions[i].begin + 128;
+                                  regions[j].begin - regions[i].begin < 128; // sorted: no wrap
            ++j)
         if (regions[j].unit != regions[i].unit) return false;
     if (regions.empty() || plan.input_maps.empty()) return true;
@@ -1061,7 +1069,8 @@ UnitClasses::PreAdmission UnitClasses::PreAdmit(std::span<const CtaFacts *const>
   PreAdmission result;
   result.classes = snapshot->classes;
   const auto size = s.plan.UnitSize();
-  if (facts.size() != size || keys.size() != size) throw std::logic_error("pre-admission needs every rank");
+  if (facts.size() != size || keys.size() != size)
+    throw std::logic_error("internal error: CTA class bookkeeping (look-ahead admission without every CTA of the unit)");
   for (const auto &candidate : snapshot->logged) {
     if (!SameStructure(*candidate.keys, keys)) continue;
     UnitDelta delta;
@@ -1078,16 +1087,20 @@ std::optional<std::uint32_t> UnitClasses::Admit(std::uint32_t unit, std::span<co
                                                 std::vector<StructureKey> keys, PreAdmission pre) {
   auto &s = *impl_;
   const auto size = s.plan.UnitSize();
-  if (facts.size() != size) throw std::logic_error("class-mode admission needs every rank of the unit");
-  if (keys.size() != size) throw std::logic_error("class-mode admission needs every rank's key");
+  if (facts.size() != size)
+    throw std::logic_error("internal error: CTA class bookkeeping (admission without every CTA of the unit)");
+  if (keys.size() != size)
+    throw std::logic_error("internal error: CTA class bookkeeping (admission without every CTA's structure key)");
   // Classes [0, pre.classes) are decided by the look-ahead: the first of them that admits
   // the unit is the sequential first (earlier ones fail on these facts either way).
-  if (pre.classes > s.classes.size()) throw std::logic_error("pre-admission saw a later class");
+  if (pre.classes > s.classes.size())
+    throw std::logic_error("internal error: CTA class bookkeeping (look-ahead admission saw a later class)");
   if (pre.joined) {
     s.Join(unit, *pre.joined, std::move(pre.delta));
     return pre.joined;
   }
-  // C1, then C2, C3 and H8: the later candidate classes in creation order.
+  // Structure keys, then answers, slot outcomes and alignment checks: the later
+  // candidate classes in creation order.
   // Class mode with values: value lifting adds no admission condition.
   // The only modulus a value stage applies to an absolute global offset
   // is an audited row width R (a row map's row width), known only after
@@ -1140,7 +1153,7 @@ algorithm::UnitQuotient UnitClasses::Quotient() const {
     algorithm::UnitQuotient::Unit entry;
     entry.kappa = unit.kappa;
     const auto &membership = s.membership.at(u);
-    if (!membership) throw std::logic_error("unit without a class");
+    if (!membership) throw std::logic_error("internal error: CTA class bookkeeping (a launch unit has no class)");
     entry.klass = membership->first;
     for (const auto &cta : unit.ctas) entry.ctas.push_back(q.Linear(cta));
     q.units.push_back(std::move(entry));

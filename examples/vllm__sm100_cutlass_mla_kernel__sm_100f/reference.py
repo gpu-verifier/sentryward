@@ -16,8 +16,8 @@ LOG2E_F32 = 1.44269502162933349609375  # static_cast<float>(M_LOG2E), kernel :16
 def reference(q_nope, q_pe, kv_c_and_k_pe_cache, page_table, sequence_lengths, softmax_scale, seq_len):
     # q_nope: [B, H, 512], q_pe: [B, H, 64], cache: [pages, page_size, 576] (fp16);
     # page_table: [B, pages_per_seq] int32 physical page ids (bounded by tensor_properties).
-    # sequence_lengths: [B] fixed shape-array tensor, bound only so the fixed-input context finds a common
-    # identity; the mask uses seq_len, the same fixed value (/shape_arrays/0/shapes/0/0) as a scalar (B == 1).
+    # sequence_lengths: [B] fixed shape-array tensor, passed for the binding and not used
+    # by the computation; the mask uses seq_len, the same fixed value (/shape_arrays/0/shapes/0/0) as a scalar (B == 1).
     batch, heads, latent = q_nope.shape
     pages, page_size, dim = kv_c_and_k_pe_cache.shape
     pages_per_seq = page_table.shape[1]

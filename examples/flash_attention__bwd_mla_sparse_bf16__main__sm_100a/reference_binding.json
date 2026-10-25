@@ -504,8 +504,8 @@
     "evidence": "flash_bwd_mla_sm100.py: P_true = P * scale_P per 128-column block; dP = dO V[I]^T; dS = P_true * (dP - dPsum) * softmax_scale (bf16, TMA store); dV[I] += P_true^T dO + dS^T Qv by fp32 atomics skipping I < 0; V rows outside [0, seqlen_k) zero-filled (topk_gather_kv.py, PTX cp.async src-size form).",
     "ptx": "corpus/flash_attention__bwd_mla_sparse_bf16__main__sm_100a.ptx",
     "optimized_input": "examples/flash_attention__bwd_mla_sparse_bf16__main__sm_100a/input.json",
-    "semantics": "ideal_real; proposed input (b=1, s_q=128, h=128, h_k=1, dv=512, topk=128, s_k=256, non-causal); outputs dS and the read-modify-write fp32 dV accumulator (prior contents are an input).",
-    "optimized_input_sha256": "7983b3dc700b43931fa2283fe0e0a75ce57b3e01f337de423b7e0f554160b625",
+    "semantics": "ideal_real; fixed saved configuration (b=1, s_q=128, h=128, h_k=1, dv=512, topk=128, s_k=256, non-causal); outputs dS and the read-modify-write fp32 dV accumulator (prior contents are an input).",
+    "optimized_input_sha256": "5ddc06c965a495f43444256e8b6718a91166296e13c71b1b410290ceb5f8442f",
     "ptx_sha256": "14b74ae4b2abd9e44efbe0ecd9379fec3172a32d1715e2712fc57bf2dc5f6c92",
     "upstream": [
       "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_bwd_mla_sm100.py",

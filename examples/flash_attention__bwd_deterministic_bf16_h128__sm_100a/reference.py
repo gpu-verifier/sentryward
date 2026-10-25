@@ -9,14 +9,14 @@
 
 Fixed scenario (examples/<kernel>/input.json): b=1, h_q=4, h_kv=1, seqlen_q=128, seqlen_k=256,
 d=dv=128, cluster 2 (use_2cta_instrs), deterministic=True, not causal (no causal r2p mask code in
-the PTX; see NOTES.md).  Because qhead_per_kvhead > 1 the kernel accumulates dK and dV into fp32
+the PTX).  Because qhead_per_kvhead > 1 the kernel accumulates dK and dV into fp32
 dKaccum/dVaccum (dKV_postprocess); all three accumulators are read-modify-write (TMA bulk
 reduce-add), so their prior contents are inputs.  dQ and dK are unscaled here (softmax_scale is
 applied by postprocess).  Deterministic mode orders the adds with int32 semaphores, which the
 kernel also writes (wait_eq / arrive_inc); they are returned as old contents + arrival count.
 
 The accumulators use the kernel-internal flat layouts that flash_bwd_postprocess consumes; the
-reference returns them in memory order (see _pack_dq / _pack_dkv and NOTES.md).
+reference returns them in memory order (see _pack_dq / _pack_dkv).
 """
 import torch
 

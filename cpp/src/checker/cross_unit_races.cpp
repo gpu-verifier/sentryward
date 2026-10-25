@@ -192,7 +192,8 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
             const auto [delta_v, j] = *it;
             if ((a == b && i == j) || (i == 0 && j == 0)) continue; // same unit; representative pair
             if (++unit_pairs > limits.unit_pairs) return cap("unit_pairs");
-            const std::int64_t d = delta_v - delta_u;
+            std::int64_t d;
+            if (__builtin_sub_overflow(delta_v, delta_u, &d)) return unknown("delta_overflow:" + allocation);
             if (!memo.insert(d).second) continue;
             if (!Meet(A.write_hull, B.all_hull, I(d))) continue;
             // Exact: every write part of A against the parts of B whose translated span meets it.

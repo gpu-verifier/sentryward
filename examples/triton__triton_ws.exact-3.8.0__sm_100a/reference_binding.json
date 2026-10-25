@@ -128,7 +128,7 @@
       "https://github.com/triton-lang/triton/blob/1826d8ef0baa70686860658f5ab5dd7cb0d3b163/python/test/unit/language/test_warp_specialization.py#L189-L253",
       "https://github.com/triton-lang/triton/blob/1826d8ef0baa70686860658f5ab5dd7cb0d3b163/python/test/unit/language/test_warp_specialization.py#L320-L331"
     ],
-    "scope": "M=N=K=512, BLOCK 128x128x64, num_stages=3, GROUP_SIZE_M=8, USE_FP8=False, A_USE_TMA=B_USE_TMA=True, num_warps=4 (local harness build/corpus/expanded/secondary/triton/triton_ws_harness_exact_3_8.py L73-89, which the PTX .loc lines name). Grid 16 = (512/128)^2 covers every C tile.",
+    "scope": "M=N=K=512, BLOCK 128x128x64, num_stages=3, GROUP_SIZE_M=8, USE_FP8=False, A_USE_TMA=B_USE_TMA=True, num_warps=4. Grid 16 = (512/128)^2 covers every C tile.",
     "evidence": "PTX params: 0 A, 1 B, 2 C pointers; 3/4/5 a/b/c_stride0 = 512 (stride1 = 1 specialized away); 6/7/8 M/N/K = 512; 9 global descriptor scratch (each CTA writes three 128-byte tensormaps at ctaid*384 via tensormap.cp_fenceproxy); 10 profile scratch (unused). In-kernel tensormaps: elemtype 6 (F16), swizzle 128B. C is written by one 2-D TMA store per CTA. B is [N,K]; the dot is a @ b.T with f32 accumulation and f16 output.",
     "semantics": "ideal_real",
     "ptx_sha256": "e09723bc263f56efb4898bab77dbb77c187c7ca06f12d6dc9b31f12c81fa9f2e",

@@ -169,11 +169,33 @@ KernelInput ParseKernelInput(const Json &value) {
     // Representative control flow loop bound; it should exceed the deepest pipeline the kernel wraps around.
     root["data_branch_loop_iterations"] = Natural(root["data_branch_loop_iterations"], "$.data_branch_loop_iterations", 1);
   if (root.contains("address_invariants")) {
-    // Constraint contents are validated by the symbolic address model.
+    // The invariant forms are checked here; the symbolic address model parses term expressions.
     Array(root["address_invariants"], "$.address_invariants");
-    for (std::size_t i = 0; i < root["address_invariants"].size(); ++i)
-      if (!root["address_invariants"][i].is_object())
-        Fail("invalid_address_invariant", ItemPath("address_invariants", i), "expected an object");
+    for (std::size_t i = 0; i < root["address_invariants"].size(); ++i) {
+      const auto &invariant = root["address_invariants"][i];
+      const auto path = ItemPath("address_invariants", i);
+      if (!invariant.is_object()) Fail("invalid_address_invariant", path, "expected an object");
+      const auto names = [&](const std::string &field) {
+        Array(invariant.at(field), path + "." + field);
+        for (std::size_t k = 0; k < invariant.at(field).size(); ++k)
+          String(invariant.at(field)[k], path + "." + field + "[" + std::to_string(k) + "]");
+      };
+      if (invariant.contains("term")) {
+        Object(invariant, {"term", "lower_bound", "upper_bound", "multiple_of"}, path);
+        if (!invariant.contains("lower_bound") && !invariant.contains("upper_bound") && !invariant.contains("multiple_of"))
+          Fail("invalid_address_invariant", path, "a term invariant needs lower_bound, upper_bound or multiple_of");
+      } else if (invariant.contains("joint_injective")) {
+        Object(invariant, {"joint_injective"}, path);
+        names("joint_injective");
+      } else if (invariant.contains("distinct_allocations")) {
+        Object(invariant, {"distinct_allocations"}, path);
+        names("distinct_allocations");
+      } else {
+        Fail("invalid_address_invariant", path,
+             "unknown invariant form; expected term, joint_injective or distinct_allocations "
+             "(element bounds of input objects are tensor_properties)");
+      }
+    }
   }
   auto &launch = root["launch"];
   Object(launch, {"grid_dim", "block_dim", "cluster_dim", "dynamic_shared_bytes"}, "$.launch");

@@ -9,7 +9,7 @@
 """FlashAttention-4 SM100 backward, packed varlen, bf16, d=128, h=hkv=8 (MHA), non-causal, 2-CTA.
 
 Scenario (input.json): batch 2, cu_seqlens_q = [0,128,256], cu_seqlens_k = [0,160,320]
-(shape_arrays), corpus recipe dense_bwd(bf16, d=128, varlen=True) with causal=False.
+(shape_arrays), bf16, d=128, causal=False.
 - Tokens are packed (t, h, d).  cu_seqlens are routing inputs: the same-sequence mask, the batch
   and local position of every token and its padded LSE/dPsum/dQaccum row are computed from them.
 - P = exp2(S*scale_log2 - LSE_log2[h, padded_row(q)]) on same-sequence pairs (mask_seqlen only).
@@ -35,7 +35,7 @@ def _pack_dq_rows(dq_rows, ncol):
 def reference(Q, K, V, dO, LSE, dPsum, dQaccum, cu_seqlens_q, cu_seqlens_k,
               scheduler_cu_seqlens_k, softmax_scale, scale_log2):
     # scheduler_cu_seqlens_k is the tile scheduler's copy of cu_seqlens_k (a fixed shape-array
-    # table); it only drives work distribution and is bound for the fixed-input context.
+    # table); it only drives work distribution and is passed for the binding; not used by the computation.
     total_q, heads, dim = Q.shape
     total_k = K.shape[0]
     padded_rows = LSE.shape[1]

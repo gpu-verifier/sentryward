@@ -32,7 +32,7 @@ def reference(A0, A1, A2, A3, B0, B1, B2, B3, SFA0, SFA1, SFA2, SFA3, SFB0, SFB1
               fixed_problem_shape_problem_shapes, fixed_scheduler_problem_shapes,
               fixed_mainloop_layout_SFA_array, fixed_mainloop_layout_SFB_array, fixed_mainloop_dA_array,
               fixed_mainloop_dB_array, fixed_epilogue_dC_array, fixed_epilogue_dD_array, alpha):
-    # fixed_*: shape-array tables (read-only kernel inputs fixed by input.json), bound only so the native
-    # fixed-input context finds a common identity (fixed_input_context.hpp decode_verified); not used here.
+    # fixed_*: fixed shape-array tables (read-only kernel inputs fixed by input.json), passed for the
+    # binding; not used by the computation.
     return (_group(A0, B0, SFA0, SFB0, alpha), _group(A1, B1, SFA1, SFB1, alpha),
             _group(A2, B2, SFA2, SFB2, alpha), _group(A3, B3, SFA3, SFB3, alpha))

@@ -72,7 +72,7 @@ input shapes; other shapes may require synchronization that was removable here.
 ### Install
 
 ```bash
-pip install sentryward                # synchronization and memory checks
+pip install sentryward                # the synchronization check, including race freedom
 pip install "sentryward[reference]"   # adds PyTorch for reference equivalence
 ```
 
@@ -82,7 +82,7 @@ C++20 compiler, OpenSSL, Boost headers and, optionally, Z3.
 ### Verify a kernel
 
 ```bash
-# Check synchronization and memory
+# Run the synchronization check, including race freedom
 sentryward kernel.ptx --input input.json > output.json
 
 # Also check equivalence to a PyTorch reference
@@ -196,7 +196,11 @@ a report from the current output when needed.
 
 - Problem sizes and the launch configuration are fixed.
 - Branches and loop bounds may depend on the launch configuration, but not on
-  tensor data unless explicit representative-control assumptions are enabled;
+  tensor data, with two exceptions. Integer comparisons decided by stated
+  [tensor property](docs/input-json.md#tensor-properties) bounds take the
+  decided outcome. A forward branch over a straight-line block of register
+  and tensor-memory operations can be [merged](docs/assumptions.md#merged-forward-branches).
+  Other data-dependent control needs the representative-control assumptions;
   see [Representative branches](docs/assumptions.md#representative-branches),
   off by default.
 - Atomics (`atom`, `red`) are analyzed only under
@@ -211,7 +215,7 @@ a report from the current output when needed.
 ## Documentation
 
 - [Assumptions and limitations](docs/assumptions.md): configurable assumptions and trusted address constraints.
-- [input.json](docs/input-json.md): launch configuration, ABI arguments, tensor maps and assumptions.
+- [input.json](docs/input-json.md): launch configuration, ABI arguments, tensor maps, pointer tables, tensor properties and assumptions.
 - [reference_binding.json](docs/reference-binding-json.md): reference arguments, input/output correspondence and the equivalence contract.
 - [output.json](docs/output-json.md): result categories, checks, diagnostics and warnings.
 

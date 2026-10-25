@@ -32,6 +32,7 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <set>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -318,14 +319,14 @@ private:
 
 // The physical whole-lane expansion triggers.
 enum class ExpansionSite : std::uint8_t {
-  BlockScaleTmem, // T1: the value view's TMEM analysis (block-scaled tcgen05)
-  Matrix,         // T2: MatrixResolver (ldmatrix/stmatrix)
-  Tmem            // T3: lowering's TMEM analysis (every tcgen05 kernel)
+  BlockScaleTmem, // the value view's TMEM analysis (block-scaled tcgen05)
+  Matrix,         // MatrixResolver (ldmatrix/stmatrix)
+  Tmem            // lowering's TMEM analysis (every tcgen05 kernel)
 };
 
 // ---- the event funnel (inert unless a sink is attached) ---------------------
 // In class mode the driver attaches a recorder (query_log.h) to a
-// representative CTA's facts; events H1-H10 below are the questions it logs.
+// representative CTA's facts; the query events below are the questions it logs.
 class QuerySink;
 enum class Consumer : std::uint8_t { Driver, ValueView, AddressIndex, Lowering, Cohorts, Executor };
 struct ConsumerTag {
@@ -343,31 +344,32 @@ struct ResolvedTma;       // resources.h
 template <class T> struct SlotOutcome;
 struct PartitionSpec;     // below
 namespace query {
-struct ValueRead { RecordView view; RegId reg; const Scalar *answer; };                    // H1: Value
-struct ValueAtRead { RecordRef at; RegId reg; std::optional<Scalar> answer; };            // H1: ValueAt
-// H2. `members`: the span LegacyUniformOnlyValue received.
+struct ValueRead { RecordView view; RegId reg; const Scalar *answer; };                    // Value
+struct ValueAtRead { RecordRef at; RegId reg; std::optional<Scalar> answer; };            // ValueAt
+// LegacyUniformOnlyValue. `members`: the span it received.
 struct LegacyUniform { RecordRef leader; bool expanded; std::string_view name;
                        std::optional<Integer> answer; std::span<const LaneRef> members; };
-struct UniformBinding { RecordRef at; RegId reg; bool present; };                         // H3
-struct SpecialRead { std::string_view name; std::optional<Integer> answer; };             // H4
+struct UniformBinding { RecordRef at; RegId reg; bool present; };                         // PathUniformBinding
+struct SpecialRead { std::string_view name; std::optional<Integer> answer; };             // Special
 struct SlotBegin {};
-struct SlotEnd {};                                                                        // H5 brackets
-struct SlotMemory { const SlotQuery *query; const SlotOutcome<ResolvedFootprint> *outcome; }; // H5
+struct SlotEnd {};                                                                        // bracket one slot
+struct SlotMemory { const SlotQuery *query; const SlotOutcome<ResolvedFootprint> *outcome; }; // a slot outcome
 struct SlotTma { const SlotQuery *query; const SlotOutcome<ResolvedTma> *outcome; };
-// H6 (lowering's evaluated-address memo). `reg`: the
+// Lowering's evaluated-address memo. `reg`: the
 // address register whose PathEvaluationKey the memo key holds.
 struct MemoFill { MemoRef memo; RegId reg; };
 struct MemoHit { MemoRef memo; RegId reg; };
 struct UniformBodySkip { LaneRef lane; std::span<const std::size_t> positions;
-                         std::span<const std::size_t> varying_slots; };                   // H6
-struct BindingRead { algorithm::AddressId id; };                                          // H7
-// H8. `binding`: the checked binding; its allocation names the δ the check constrains.
+                         std::span<const std::size_t> varying_slots; };                   // lowering's skipped uniform body
+struct BindingRead { algorithm::AddressId id; };                                          // Resources::Binding
+// An alignment check of an absolute offset. `binding`: the checked binding; its
+// allocation names the δ the check constrains.
 struct AbsoluteCheck { algorithm::AddressId id; std::uint64_t modulus;
                        const algorithm::ConstantAddressBinding *binding; };
 // How one Partition fact stage ended. Threw: an exception cut the call short,
 // so its in-partition reads have no complete answer (never mergeable).
 enum class PartitionEnd : std::uint8_t { Complete, Vetoed, Threw };
-// H9: one Partition fact stage. Derived answers only: `classes` numbers the
+// One Partition fact stage. Derived answers only: `classes` numbers the
 // evaluated members' stage-1 keys by first occurrence (never the raw values).
 // Self-contained: the classes are copied out of the cursor. It also carries
 // the cursor's member span and rule (to re-run the stage on a member) and,
@@ -377,7 +379,7 @@ struct PartitionRead { RecordRef leader; std::size_t evaluated; std::uint32_t in
                        std::vector<std::uint32_t> classes; PartitionEnd end;
                        std::span<const LaneRef> members; const PartitionSpec *spec;
                        std::vector<std::optional<std::pair<unsigned, bool>>> shuffles; };
-// H10: an event that puts per-CTA evidence into the report. A lowering
+// An event that puts per-CTA evidence into the report. A lowering
 // Diagnostic closes the class; a rendered violation is re-rendered per
 // member and does not.
 enum class ReportKind : std::uint8_t { LoweringDiagnostic, RenderedViolation };
@@ -518,7 +520,7 @@ public:
     return a.record_->metadata_ == b.record_->metadata_;
   }
 
-  // values (event H1)
+  // values (ValueRead and ValueAtRead events)
   [[nodiscard]] const Scalar *Value(const RecordView &view, RegId reg) const; // first binding with id == reg
   // The first binding whose register name is `name` (a string compare per binding).
   [[nodiscard]] const Scalar *Value(const RecordView &view, std::string_view name) const;
@@ -526,7 +528,7 @@ public:
   [[nodiscard]] std::optional<Scalar> ValueAt(RecordRef at, RegId reg) const;
   // The first register origin whose register name is `name`. Structure, never an event.
   [[nodiscard]] const DynamicKey *Origin(const RecordView &view, std::string_view name) const;
-  // == config.special_registers lookup (event H4). Takes the caller's string:
+  // == config.special_registers lookup (a SpecialRead event). Takes the caller's string:
   // the map is not transparent, so a string_view key would allocate per read.
   [[nodiscard]] std::optional<Integer> Special(const std::string &name) const;
 
@@ -534,7 +536,7 @@ public:
   // from selp in cohort-template mode: the value in the leader's shared
   // template record (sharedMetadata, which expansion never replaces) when its
   // sequence has one; otherwise every member's metadata() value must be known
-  // and agree. Empty `members` means {leader}. Event H2.
+  // and agree. Empty `members` means {leader}. A LegacyUniform event.
   [[nodiscard]] std::optional<Integer> LegacyUniformOnlyValue(RecordRef leader, std::span<const LaneRef> members,
                                                             std::string_view name) const;
 
@@ -609,7 +611,7 @@ private:
   const FactSource &facts_;
   ConsumerTag saved_;
 };
-// The bracket of one slot resolution (event H5: SlotBegin/SlotEnd).
+// The bracket of one slot resolution (the SlotBegin/SlotEnd events).
 class FactSource::SlotScope {
 public:
   // Not noexcept: Note may throw once a sink is attached. The destructor is
@@ -638,9 +640,9 @@ public:
 private:
   const FactSource &facts_;
 };
-// The fact reads of one Partition member (PartitionCursor::Next): H1 reads
-// inside it are in_partition (replay compares the stage's H9 classes, not these
-// reads). The consumer stage between two members is outside it.
+// The fact reads of one Partition member (PartitionCursor::Next): value reads
+// inside it are in_partition (replay compares the stage's PartitionRead classes,
+// not these reads). The consumer stage between two members is outside it.
 class FactSource::PartitionScope {
 public:
   explicit PartitionScope(const FactSource &facts) noexcept : facts_(facts) { ++facts.partition_depth_; }
@@ -674,7 +676,7 @@ public:
   std::string_view Next(MemberFacts &facts);
   [[nodiscard]] std::size_t Evaluated() const noexcept { return next_; }
   [[nodiscard]] std::uint32_t Class(std::size_t index) const { return classes_.at(index); }
-  // Event H9 (only if recording()), once: the first call wins, so the caller's
+  // The PartitionRead event (only if recording()), once: the first call wins, so the caller's
   // exception path may end a stage that a veto or completion already ended.
   void Finish(query::PartitionEnd end);
 
@@ -691,7 +693,7 @@ private:
   std::string text_;
   std::vector<std::uint32_t> classes_;
   std::unordered_map<std::string, std::uint32_t> numbering_;
-  // Per evaluated member, MemberFacts::shuffle; filled only while recording (H9).
+  // Per evaluated member, MemberFacts::shuffle; filled only while recording (PartitionRead).
   std::vector<std::optional<std::pair<unsigned, bool>>> shuffles_;
   std::size_t next_ = 0;
   bool finished_ = false;
@@ -720,7 +722,7 @@ public:
   [[nodiscard]] std::span<const std::vector<std::size_t>> TemplateGroups() const noexcept {
     return program_->thread_template_groups;
   }
-  // C1 structure: the split tree (index == PathId::value) and each
+  // Structure-key input: the split tree (index == PathId::value) and each
   // TemplateGroups() entry's path. Both empty on the lane path.
   [[nodiscard]] std::span<const TemplatePathNode> TemplatePaths() const noexcept { return program_->template_paths; }
   [[nodiscard]] std::span<const PathId> GroupPaths() const noexcept { return program_->group_paths; }
@@ -730,7 +732,7 @@ public:
   [[nodiscard]] std::span<const SharedValueDependency> SharedValueDependencies() const noexcept {
     return program_->shared_value_dependencies;
   }
-  // C1 structure only. Every SharedConstantWrites() site, then each
+  // Structure-key input only. Every SharedConstantWrites() site, then each
   // SharedValueDependencies() entry's write and read site, in order.
   [[nodiscard]] std::vector<SharedSiteRef> SharedSitesRelative() const;
 
@@ -767,7 +769,7 @@ public:
   // where they equal the lane's own metadata reads.
   // uniform_global: whether the template record at `at` binds `reg` uniformly
   // (the shared prototype, which expansion never replaces); without a
-  // template, whether metadata(pos) binds it. Event H3.
+  // template, whether metadata(pos) binds it. A UniformBinding event.
   [[nodiscard]] bool PathUniformBinding(RecordRef at, RegId reg) const;
   // The memo key: the arena node of the template binding of `reg` at `at`; none without a template.
   [[nodiscard]] std::optional<std::size_t> PathEvaluationKey(RecordRef at, RegId reg) const {
@@ -778,9 +780,9 @@ public:
   // The value view's lane-path grouping: lanes by Path(), groups in order of
   // their first lane. On the lane path every lane is its own group, in lane order.
   [[nodiscard]] std::vector<std::vector<LaneRef>> LanePathCohorts() const;
-  // C1 structure: the ids of the registers bound on the
+  // Structure-key input: the ids of the registers bound on the
   // shared prototype at `at`, ascending; never their values. Empty without a
-  // template (the lane path), where C2 compares every value instead.
+  // template (the lane path), where member replay compares every value instead.
   void PrototypeRegisterIds(RecordRef at, std::vector<RegId> &out) const;
 
   // Class mode: the driver attaches a recorder before a representative CTA's

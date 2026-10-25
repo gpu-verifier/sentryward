@@ -15,7 +15,7 @@ import torch
 
 def reference(Q, KV_nope, KV_scale, KV_rope, indices, scheduler_metadata, num_splits, sm_scale_log2):
     # scheduler_metadata [num_sm_parts, 8] / num_splits [b + 1]: fixed shape-array tensors (no-split schedule),
-    # bound only so the fixed-input context finds a common identity; their values are not used here.
+    # passed for the binding; not used by the computation.
     # Q: [b, s_q, h_q, 576] bf16.  KV_*: three typed views of the same packed cache bytes
     # [num_blocks, page_block_size, 656]: e4m3 bytes, f32 words (164/token), bf16 halves (328/token).
     # indices: [b, s_q, topk] int32 token ids into the flattened cache (-1 = invalid).

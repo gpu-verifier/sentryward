@@ -207,7 +207,7 @@
   "provenance": {
     "ptx": "corpus/pytorch__aten_MaxUnpooling__sm_100a.ptx",
     "optimized_input": "examples/pytorch__aten_MaxUnpooling__sm_100a/input.json",
-    "optimized_input_sha256": "da87c5555fac2d41cf5f743803dc0d7b1aa6f28af1a97dff873d188ecb67d634",
+    "optimized_input_sha256": "941e5b5e4c49239931f70c2cbac9f68664caebb16cbe30fb4e8ca287cffa993d",
     "ptx_sha256": "75f012f0134b6209a7e4dda2ea8a9931348f4c6b69fad516155d011df32af926",
     "source": "// Source: https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/MaxUnpooling.cu ; https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/cuda/detail/KernelUtils.h",
     "upstream": [
@@ -221,7 +221,7 @@
       {
         "line": 148,
         "taken": true,
-        "note": "CUDA_KERNEL_ASSERT(maxind >= 0 && maxind < outputImageSize) holds: the loaded max-pool index is in range, so the __assertfail path is not executed. User-authorized scenario; the index values themselves remain symbolic."
+        "note": "CUDA_KERNEL_ASSERT(maxind >= 0 && maxind < outputImageSize) holds: the loaded max-pool index is in range, so the __assertfail path is not executed. Analysis scope: conclusions are conditional on this branch choice; the index values themselves remain symbolic."
       }
     ],
     "scope_shape_arrays": []

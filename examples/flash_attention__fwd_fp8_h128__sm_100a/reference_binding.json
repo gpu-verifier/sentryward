@@ -172,18 +172,18 @@
     }
   },
   "provenance": {
-    "optimized_input_sha256": "715bb65b15c7ce2515c3a4aa206f6f75eab3408434b52372a0c99096383db030",
+    "optimized_input_sha256": "0ae6b3840ca734ad877fc6555b5be493477f45720283f55f6dd79753c5f1c24c",
     "upstream": [
       "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_fwd_sm100.py",
       "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/interface.py",
       "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/tile_scheduler.py"
     ],
-    "derived_from": "references/flash_attention__fwd_fp8_h128__sm_100a/reference.cu",
+    "derived_from": "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_fwd_sm100.py",
     "scope_branch_choices": [
       {
         "line": 3970,
         "taken": false,
-        "note": "Always execute softmax correction; do not jump over the TMEM rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+        "note": "Always execute softmax correction; do not jump over the TMEM rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
       }
     ],
     "semantics": "ideal_real; fixed saved configuration; all declared output tensors",
@@ -192,8 +192,8 @@
     "source_interface": {
       "name": "flash_attention__fwd_fp8_h128__sm_100a",
       "family": "attention",
-      "source": "references/flash_attention__fwd_fp8_h128__sm_100a/reference.cu",
-      "ptx": "references/flash_attention__fwd_fp8_h128__sm_100a/reference.ptx",
+      "source": "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_fwd_sm100.py",
+      "ptx": "",
       "entry": "reference",
       "upstream": [
         "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_fwd_sm100.py",
@@ -292,7 +292,7 @@
         {
           "line": 3970,
           "taken": false,
-          "note": "Always execute softmax correction; do not jump over the TMEM rescale update. User-enabled pattern-based scenario; analysis is conditional on this branch choice. Revisit when dynamic branch analysis is supported."
+          "note": "Always execute softmax correction; do not jump over the TMEM rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
         }
       ],
       "optimized_objects": {
@@ -437,10 +437,10 @@
       "equivalence_status": "not_checked"
     },
     "historical_paths": {
-      "interface": "references/flash_attention__fwd_fp8_h128__sm_100a/interface.json",
-      "mapping": "references/flash_attention__fwd_fp8_h128__sm_100a/mapping.md"
+      "interface": "examples/flash_attention__fwd_fp8_h128__sm_100a/reference_binding.json#/provenance/source_interface",
+      "mapping": "examples/flash_attention__fwd_fp8_h128__sm_100a/reference_binding.json#/provenance/mapping_notes"
     },
-    "mapping_notes": "# flash_attention__fwd_fp8_h128__sm_100a\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in interface.json.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| Q | e4m3 | 2 x 8 x 128 x 128 | input | Q |\n| K | e4m3 | 2 x 8 x 256 x 128 | input | K |\n| V | e4m3 | 2 x 8 x 256 x 128 | input | V |\n| O | bf16 | 2 x 8 x 128 x 128 | output | O |\n| scale_log2 | float | 0.12751743082459868 | input | scale_log2 |\n\n## Computation and mapping\n\nQ[b,h,q,d], K[b,kh,k,d], and V[b,kh,k,v] are the logical tensors.\nkh = floor(h / (query_heads / kv_heads)).\nscore[k] = scale_log2 * sum_d Q[b,h,q,d] * K[b,kh,k,d].\nO = sum_k 2^(score[k]-max(score)) * V[k] / sum_k 2^(score[k]-max(score)).\nThe selected FP8 example has no Q/K/V descale tensors; no extra scale is invented.\nQ/O descriptor coordinates are [d,q,h,b]; K/V use [d,k,kh,b].\nThe selected entry has no LSE output pointer, so the reference does not invent one.\n\n## Validation boundary\n\nCompiled to PTX and numerically checked on CPU. Not compared against an optimized\nGPU execution or proven equivalent. Precision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_fwd_sm100.py\n- https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/interface.py\n- https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/tile_scheduler.py\n"
+    "mapping_notes": "# flash_attention__fwd_fp8_h128__sm_100a\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in source_interface.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| Q | e4m3 | 2 x 8 x 128 x 128 | input | Q |\n| K | e4m3 | 2 x 8 x 256 x 128 | input | K |\n| V | e4m3 | 2 x 8 x 256 x 128 | input | V |\n| O | bf16 | 2 x 8 x 128 x 128 | output | O |\n| scale_log2 | float | 0.12751743082459868 | input | scale_log2 |\n\n## Computation and mapping\n\nQ[b,h,q,d], K[b,kh,k,d], and V[b,kh,k,v] are the logical tensors.\nkh = floor(h / (query_heads / kv_heads)).\nscore[k] = scale_log2 * sum_d Q[b,h,q,d] * K[b,kh,k,d].\nO = sum_k 2^(score[k]-max(score)) * V[k] / sum_k 2^(score[k]-max(score)).\nThe selected FP8 example has no Q/K/V descale tensors; no extra scale is invented.\nQ/O descriptor coordinates are [d,q,h,b]; K/V use [d,k,kh,b].\nThe selected entry has no LSE output pointer, so the reference does not invent one.\n\n## Validation boundary\n\nNot compared against an optimized GPU execution.\nPrecision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_fwd_sm100.py\n- https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/interface.py\n- https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/tile_scheduler.py\n"
   },
   "outputs": {
     "kind": "dense_tensor",

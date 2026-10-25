@@ -6,10 +6,10 @@
 // UnitInterner::Commit at the Resources::Memory/Tma call site, so the tables,
 // results and exceptions are those of applying each write immediately.
 //
-// Exactness: E1 the bodies read back only bindings of their own
-// steps, and read them from the step (E2: a stored binding equals its step);
-// E3 every bridge or extractor call precedes every step, so deferring the
-// writes only lets pure memo work run past a would-be alias_scope_conflict.
+// Exactness: the bodies read back only bindings of their own steps, and
+// read them from the step (a stored binding equals its step); every bridge or
+// extractor call precedes every step, so deferring the writes only lets pure
+// memo work run past a would-be alias_scope_conflict.
 // The memos (memory resources, the extractor) are per instance.
 #include "sentryward/frontend/ptx/resources.h"
 

@@ -1582,7 +1582,8 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
         (arm.wait_load && !t.loads.Pending().empty()) ||
         std::any_of(arm.exposed.begin(), arm.exposed.end(), [&](const auto &r) { return t.writes.contains(r); }))
       throw SemanticError("two_arm_merge_pending_tcgen05",
-                          "A merged data-dependent branch is entered with tcgen05 operations it could order");
+                          "tcgen05 operations are pending at a data-dependent branch whose conditionally skipped "
+                          "block is analyzed on every thread; their order through the branch is not modeled");
     t.merged_arm = {e.instruction_id(), *join};
   }
   if (i.opcode=="tensormap" && s.modeled) {
@@ -2746,7 +2747,9 @@ LoweringResult ModelLowerer::Impl::Finish() {
     // A CTA whose lowering emitted a diagnostic closed its class (a ReportBearing event), so it
     // stands for itself.
     for (const auto cta : diagnostic_ctas)
-      if (units->Weight(cta) != 1) throw std::logic_error("lowering diagnostic in a representative with members");
+      if (units->Weight(cta) != 1)
+        throw std::logic_error(
+            "internal error: CTA class bookkeeping (a CTA with a lowering diagnostic stands for other CTAs)");
     // Unit closure: every barrier owner and every cluster collective (keyed by its cluster
     // origin) belongs to a consumed unit. (Group2 lifetimes pair inside a cluster by construction:
     // PairGroup2Lifetimes buckets them by cluster origin.)

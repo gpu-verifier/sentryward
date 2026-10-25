@@ -78,7 +78,7 @@ void ValidateConstantInputs(const FrontendConfig &config,
           return region.path == "$.tensor_properties" && region.allocation == *identity;
         }))
       throw InputError("constant_input_modified", "$.tensor_properties",
-                       "kernel may write an object with tensor_properties");
+                       "kernel may write object " + *identity + ", which has tensor_properties");
     if (!binding.expression.empty() || !bytes || binding.address_space == "generic") {
       // Public shape regions are a caller contract, not a derived non-aliasing fact.
       if (std::any_of(regions.begin(), regions.end(), [&](const auto &region) {

@@ -8,7 +8,7 @@ physical page page_table[0, b] of k/v [num_pages, num_kv_heads, 128, D].
 Kernel sentinel handling (load_warp): a negative page id is replaced by 0;
 the TMA coordinate page * num_kv_heads + kv_head beyond the descriptor extent
 num_pages * num_kv_heads reads zeros (oob_fill zero). Both are expressed with
-torch.where; the page id is never hardcoded.
+torch.where.
 """
 import torch
 

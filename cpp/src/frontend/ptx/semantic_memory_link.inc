@@ -275,7 +275,7 @@ bool LinkMemoryDomains(SemanticProgram& result) {
         std::size_t unplaced=pieces.size();
         for(std::size_t p=0;p<emitted.size() && unplaced;++p)
           index.intersect(emitted[p],[&](std::size_t i,auto){if(position[i]==SIZE_MAX){position[i]=p;--unplaced;}});
-        require(!unplaced,"Canonical memory binding piece outside the refined domain");
+        require(!unplaced,"A memory binding thread range lies outside the binding's thread domains");
         std::vector<std::size_t> order(pieces.size());
         std::iota(order.begin(),order.end(),0);
         std::sort(order.begin(),order.end(),[&](std::size_t x,std::size_t y){

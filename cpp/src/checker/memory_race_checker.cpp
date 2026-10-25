@@ -360,7 +360,7 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
         parts.push_back({std::move(part), std::move(*footprint), write, cta});
         continue;
       }
-      // One footprint per member (step 0), unmerged.
+      // One footprint per member (its own offset, stride 0), unmerged.
       for (std::size_t member = first; member < stop; ++member) {
         auto single = family;
         single.first = family.at(member);
@@ -389,8 +389,14 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
   const auto& b = parts.at(outcome.second_part);
   const auto& q = *options.units;
   OverlapEvidence evidence;
-  evidence.description = "cross-unit global overlap (units " + std::to_string(outcome.first_unit) + " and " +
-                         std::to_string(outcome.second_unit) + ")";
+  // Units are clusters, or single CTAs when the launch has no clusters (kappa is then the CTA id).
+  const auto coordinates = [](const UnitQuotient::Coordinates& c) {
+    return "(" + std::to_string(c[0]) + "," + std::to_string(c[1]) + "," + std::to_string(c[2]) + ")";
+  };
+  const bool single_cta_units = q.unit_shape == UnitQuotient::Coordinates{1, 1, 1};
+  evidence.description = std::string("global byte ranges of ") + (single_cta_units ? "CTAs " : "clusters ") +
+                         coordinates(q.units.at(outcome.first_unit).kappa) + " and " +
+                         coordinates(q.units.at(outcome.second_unit).kappa) + " intersect";
   evidence.constant_region = ByteOverlap{"global", outcome.allocation, outcome.region_offset, outcome.region_bytes};
   const auto rank_a = q.RankOf(a.cta), rank_b = q.RankOf(b.cta);
   result.cross_unit_race = CrossUnitEvidence{q.units.at(outcome.first_unit).kappa,

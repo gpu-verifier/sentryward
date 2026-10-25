@@ -13,7 +13,6 @@ import torch
 
 
 def reference(A0, A1, B0, B1, alpha, table_problem_sizes, table_scheduler_problem_sizes, table_stride_output, table_stride_A, table_stride_B):
-    # table_problem_sizes, table_scheduler_problem_sizes, table_stride_output, table_stride_A, table_stride_B: fixed shape-array tables, bound only so the native fixed-input
-    # context finds a common identity on both binding sides (fixed_input_context.hpp decode_verified);
-    # their values enter through the binding shapes and scalars, not through this computation.
+    # table_problem_sizes, table_scheduler_problem_sizes, table_stride_output, table_stride_A, table_stride_B: fixed shape-array tables, passed for the binding and
+    # not used by the computation; their values enter through the binding shapes and scalars.
     return tuple((alpha * (a.float() @ b.float().T)).to(torch.bfloat16) for a, b in ((A0, B0), (A1, B1)))

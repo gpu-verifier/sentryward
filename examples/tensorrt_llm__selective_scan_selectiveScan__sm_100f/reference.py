@@ -17,8 +17,8 @@ import torch
 def reference(u, delta, A, BC, D, delta_bias, z, state, slot_mapping,
               last_token_ids, batch, dim, dstate, dt_rank, max_seqlen,
               last_token_id0, remove_padding, delta_softplus):
-    # last_token_ids is the shape-array table (bound for the fixed-input
-    # context); its concrete entry enters as the scalar last_token_id0.
+    # last_token_ids is the fixed shape-array table, passed for the binding;
+    # its concrete entry enters as the scalar last_token_id0.
     if remove_padding:
         raise ValueError("This reference covers the padded layout only")
     if not delta_softplus:

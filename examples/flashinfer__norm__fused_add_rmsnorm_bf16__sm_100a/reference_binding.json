@@ -214,7 +214,7 @@
       "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/norm.cuh#L506-L541",
       "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/csrc/norm.cu#L120-L149"
     ],
-    "scope": "Current fixed launch and input JSON: batch_size=grid.x=2, d=1024, stride_input=stride_residual=1024, weight_bias=0, eps=1e-6, block (32,4), smem (4+1024)*4=4112. Both in-place outputs retained.",
+    "scope": "Fixed launch and input JSON: batch_size=grid.x=2, d=1024, stride_input=stride_residual=1024, weight_bias=0, eps=1e-6, block (32,4), smem (4+1024)*4=4112. Both in-place outputs retained.",
     "notes": "input is overwritten with x*rsqrt(mean(x^2)+eps)*(weight_bias+weight), residual with bf16(x), where x=float(input)+float(residual) is kept in float for the normalization.",
     "scope_branch_choices": [],
     "scope_shape_arrays": []

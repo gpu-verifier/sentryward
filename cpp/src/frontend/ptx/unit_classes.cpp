@@ -7,7 +7,7 @@
 #include <utility>
 
 namespace sentryward::frontend::ptx {
-// ---- precondition (I) -------------------------------------------------------
+// ---- the unit-independence precondition -------------------------------------
 namespace {
 bool In(std::string_view value, std::initializer_list<std::string_view> set) noexcept {
   for (const auto item : set)
@@ -50,31 +50,32 @@ PreconditionReport PreconditionScan(const Function &function) {
       if (!mods.empty() && mods[0] == "async") continue; // red.async: shared::cluster only
       const auto space = SpaceOf(mods);
       if (space != "global" && space != "generic") continue;
-      report.atomic_sites.push_back(static_cast<std::uint32_t>(index)); // R-atom: every scope, where executed
+      report.atomic_sites.push_back(static_cast<std::uint32_t>(index)); // global atomic: every scope, where executed
     } else if (op == "ld" || op == "st") {
       if (!mods.empty() && (mods[0] == "async" || mods[0] == "bulk")) continue;
       const auto space = SpaceOf(mods);
       if (space != "global" && space != "generic") continue;
       const auto [sem, scope] = SemScopeOf(mods);
-      if (sem == "volatile" || sem == "mmio") violation(); // R-strong
-      else if (In(sem, {"relaxed", "acquire", "release"}) && Wide(scope)) violation(); // R-strong
+      if (sem == "volatile" || sem == "mmio") violation(); // a system-scope strong access
+      else if (In(sem, {"relaxed", "acquire", "release"}) && Wide(scope)) violation(); // strong, wider than the unit
     } else if (op == "multimem") {
-      violation(); // R-multimem
+      violation(); // a multimem access
     } else if (op == "fence") {
       const auto scope = SemScopeOf(mods).scope;
       if (!Wide(scope)) continue;
-      // (I.3'): proxy fences only restrict base causality order; memory
+      // The proxy-fence exception: proxy fences only restrict base causality order; memory
       // fences (sc, acq_rel, acquire, release, mbarrier_init) stay rejected.
-      if (mods.empty() || mods[0] != "proxy") violation(); // R-fence
+      if (mods.empty() || mods[0] != "proxy") violation(); // a memory fence wider than the unit
     } else if (op == "membar") {
-      if (!mods.empty() && (mods[0] == "gl" || mods[0] == "sys")) violation(); // R-fence
+      if (!mods.empty() && (mods[0] == "gl" || mods[0] == "sys")) violation(); // a memory fence wider than the unit
     } else if (op == "tensormap" && !mods.empty() && mods[0] == "cp_fenceproxy") {
-      // A copy fused with fence.proxy.tensormap::generic.release.<scope>: a proxy fence (I.3'), checked by (I.5).
+      // A copy fused with fence.proxy.tensormap::generic.release.<scope>: an admitted proxy fence,
+      // checked by the tensormap locality rule.
       ++report.tensormap_copies;
     } else if (op == "cp" && mods.size() >= 3 && mods[0] == "reduce" && mods[1] == "async" && mods[2] == "bulk") {
       for (std::size_t k = 3; k < mods.size(); ++k) {
         if (mods[k] == "global") {
-          violation(); // R-reduce
+          violation(); // a global bulk reduction
           break;
         }
         if (mods[k].starts_with("shared")) break;
@@ -90,8 +91,9 @@ bool TensormapInputOverlap(const std::vector<TensormapRegion> &regions,
   for (const auto &map : maps) {
     if (map.allocation.empty()) return true;
     for (const auto &region : regions)
-      if (region.object == map.allocation && region.begin < map.offset + 128 && map.offset < region.begin + 128)
-        return true;
+      if (region.object == map.allocation &&
+          (region.begin >= map.offset ? region.begin - map.offset : map.offset - region.begin) < 128)
+        return true; // two 128-byte regions overlap (written without overflow)
   }
   return false;
 }
@@ -146,7 +148,7 @@ UnitPlan PlanUnits(const FrontendConfig &config, const Function &function,
   // the ones class mode keeps off.
   plan.active = exact && units > 1 && !gates.value_thread_range;
   // Class mode needs a cluster grid that tiles the launch, more than one unit, none of the run
-  // options in UnitGates and precondition (I). Values are lifted through the
+  // options in UnitGates and the unit-independence precondition. Values are lifted through the
   // scalar fold; without it nothing lifts them.
   plan.class_mode = plan.active && !gates.trusted_reference && !gates.value_dump &&
                     !gates.branch_scope && !gates.scalar_fold_dump && !gates.exhaustive_search &&
@@ -173,7 +175,7 @@ UnitPlan PlanUnits(const FrontendConfig &config, const Function &function,
   return plan;
 }
 
-// ---- C1: the structure key --------------------------------------------------
+// ---- the structure key ------------------------------------------------------
 namespace {
 constexpr std::uint64_t Mix(std::uint64_t z) noexcept {
   z += 0x9e3779b97f4a7c15ULL;

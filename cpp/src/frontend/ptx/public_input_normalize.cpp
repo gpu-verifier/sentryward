@@ -361,7 +361,9 @@ FrontendConfig NormalizeKernelInput(const KernelInput &supplied, const Module &m
     const auto path = "$.tensor_properties[" + std::to_string(n) + "]";
     const auto object = t["object"].get<std::string>();
     if (!object_resources.contains(object))
-      Fail("unknown_tensor_property_object", path + ".object", "no declared input object has this name");
+      Fail("unknown_tensor_property_object", path + ".object",
+           "no input object has this name (names come from pointer and tensor_map declarations, "
+           "tma_descriptors and pointer_arrays entries; a pointer without a name is input.arg<index>.<offset>)");
     const auto type = t["element_type"].get<std::string>();
     const unsigned bits = type.ends_with("64") ? 64 : 32;
     const bool sign = type.starts_with('s');
@@ -433,7 +435,7 @@ FrontendConfig NormalizeKernelInput(const KernelInput &supplied, const Module &m
     raw["fixed_input"]["tensor_property_inputs"] = inputs;
     raw["fixed_input"]["tensor_property_contract"] = {
         {"kind", "fixed_read_only"}, {"origin", "tensor_properties"},
-        {"text", "Objects with tensor properties keep their elements within the stated properties and are not written during the analyzed execution."},
+        {"text", "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."},
         {"properties", input["tensor_properties"]}, {"regions", regions_out}};
   }
   auto result = ParseConfig(raw);

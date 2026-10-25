@@ -320,7 +320,7 @@
     "evidence": "interface.py: O = softmax(scale*(Q K^T + Qv V^T)) V with V gathered by gather_kv_indices; flash_fwd_mla_sm100.py: seqlen_k_limit = seqlen_k (non-causal; PTX compares indices with V.shape[0] only); topk_gather_kv.py: valid iff 0 <= idx < seqlen_k_limit, invalid columns -inf and rows zero-filled; epilogue: row_sum == 0 gives output 0.",
     "ptx": "corpus/flash_attention__fwd_mla_sparse_bf16__sm_100a.ptx",
     "optimized_input": "examples/flash_attention__fwd_mla_sparse_bf16__sm_100a/input.json",
-    "semantics": "ideal_real; proposed input (b=1, s_q=1, h=128, h_k=1, d=64, dv=512, s_k=256, topk=128, non-causal, sparse top-k gather); output O only (no LSE/P/RowMax parameters).",
+    "semantics": "ideal_real; fixed saved configuration (b=1, s_q=1, h=128, h_k=1, d=64, dv=512, s_k=256, topk=128, non-causal, sparse top-k gather); output O only (no LSE/P/RowMax parameters).",
     "optimized_input_sha256": "058c339d95e56bca9cc8503212caf37e857b065146126c905a7d11f1b45d1892",
     "ptx_sha256": "4a8d56f3afe07bf96b087b8d54618ba02b74dc5afeb1c186e9c23c3a4bc4d54f",
     "upstream": [

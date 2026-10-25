@@ -1,10 +1,10 @@
 #pragma once
-// Cross-CTA launch-unit classes: launch units, the static precondition (I)
-// (no access of one unit can be ordered with another unit's: no global atomic,
-// reduction or multimem, and no strong access or memory fence wider than the
-// unit) with the (I.3') rule admitting wider proxy fences, the class-mode
-// gates, and the C1 structure key. Class mode runs where the plan allows it
-// (query_log.h, run.cpp); otherwise every unit is analysed.
+// Cross-CTA launch-unit classes: launch units, the static part of the
+// unit-independence precondition (no access of one unit can be ordered with
+// another unit's: no global atomic, reduction or multimem, and no strong access
+// or memory fence wider than the unit) with its exception admitting wider proxy
+// fences, the class-mode gates, and the structure key. Class mode runs where
+// the plan allows it (query_log.h, run.cpp); otherwise every unit is analysed.
 #include "sentryward/frontend/ptx/config.h"
 #include "sentryward/frontend/ptx/module.h"
 
@@ -24,18 +24,20 @@ struct LaunchUnit {
   std::vector<Coordinates> ctas; // rank order: rank = x + cx*(y + cy*z) (as ConfigForCta's %cluster_ctarank)
 };
 
-// The static part of precondition (I) over the launched entry's instructions,
-// with the (I.3') rule. Calls are opaque summaries (no corpus entry calls a
-// .func with a body), so the entry's instructions are the scan.
+// The static part of the unit-independence precondition over the launched
+// entry's instructions, with the proxy-fence exception. Calls are opaque
+// summaries (no corpus entry calls a .func with a body), so the entry's
+// instructions are the scan.
 struct PreconditionReport {
-  // No site violates a rule (R-atom, R-reduce, R-strong, R-fence, R-multimem);
+  // No site is a global reduction, a multimem access, or a strong access or
+  // memory fence wider than the unit (global atomics: atomic_sites);
   // fence.proxy.* and tensormap.cp_fenceproxy sites wider than the unit are
-  // admitted by (I.3').
+  // admitted as proxy fences.
   bool holds = true;
-  std::uint64_t tensormap_copies = 0; // tensormap.cp_fenceproxy sites: (I.5) applies
-  // R-atom sites (global atom/red, every scope), by instruction index: a site
-  // violates (I) only where some CTA executes it, which class mode checks on
-  // every executed CTA's counts (run.cpp) and restarts per unit.
+  std::uint64_t tensormap_copies = 0; // tensormap.cp_fenceproxy sites: the tensormap locality rule applies
+  // Global atomic sites (global atom/red, every scope), by instruction index: a
+  // site violates the precondition only where some CTA executes it, which class
+  // mode checks on every executed CTA's counts (run.cpp) and restarts per unit.
   std::vector<std::uint32_t> atomic_sites;
 };
 [[nodiscard]] PreconditionReport PreconditionScan(const Function &function);
@@ -68,7 +70,7 @@ struct UnitPlan {
   std::vector<LaunchUnit> units; // filled when active
   PreconditionReport precondition;
   // Input tensor maps with a global location (allocation_location or address):
-  // (I.5c) checks that no cp_fenceproxy region overlaps them.
+  // the tensormap locality rule checks that no cp_fenceproxy region overlaps them.
   struct InputMap {
     // The bound allocation object of allocation_location (its resource's concrete allocation, at
     // base + offset; the resource id for a pointer resource without one); empty when it cannot be
@@ -84,10 +86,11 @@ struct TensormapRegion {
   std::string object;
   std::uint64_t begin = 0;
 };
-// (I.5c), on both paths: some region overlaps an input tensor map's location, or an input map
-// cannot be placed while regions exist. Class mode's (I.5) restarts on it (query_log.cpp); the
-// per-unit run then reports the verification limitation tensormap_input_overwrite (run.cpp), since
-// descriptor fetches are not modeled as reads. O(regions x input maps).
+// The input-map part of the tensormap locality rule, on both paths: some region overlaps an
+// input tensor map's location, or an input map cannot be placed while regions exist. Class
+// mode's locality check restarts on it (query_log.cpp); the per-unit run then reports the
+// verification limitation tensormap_input_overwrite (run.cpp), since descriptor fetches are
+// not modeled as reads. O(regions x input maps).
 [[nodiscard]] bool TensormapInputOverlap(const std::vector<TensormapRegion> &regions,
                                          const std::vector<UnitPlan::InputMap> &maps) noexcept;
 
@@ -95,7 +98,7 @@ struct TensormapRegion {
 [[nodiscard]] UnitPlan PlanUnits(const FrontendConfig &config, const Function &function,
                                  const UnitGates &gates);
 
-// C1, the structure key: the canonical bytes of one CTA's structure,
+// The structure key: the canonical bytes of one CTA's structure,
 // computed by the driver before any consumer reads the facts. Lanes (warp,
 // lane, path), the split tree and groups, one metadata sequence per path (per
 // lane on the lane path) with the prototype's bound register ids (never their

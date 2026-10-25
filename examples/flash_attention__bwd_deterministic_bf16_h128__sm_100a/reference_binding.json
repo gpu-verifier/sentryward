@@ -940,7 +940,7 @@
     ],
     "ptx": "corpus/flash_attention__bwd_deterministic_bf16_h128__sm_100a.ptx",
     "optimized_input": "examples/flash_attention__bwd_deterministic_bf16_h128__sm_100a/input.json",
-    "optimized_input_sha256": "64b44bc65df373cc91359d4eae68fdf11a3862a6b87adb32194a2a16a965da2f",
+    "optimized_input_sha256": "77b36cde64c3ea8ca2f7120a77f9314453feebc9423bf60f708adc08c8832818",
     "ptx_sha256": "e054d8d5093e463600165d0ba7b7de6d0b65197be24d1915bac15ca5b918b537",
     "semantics": "ideal_real; fixed saved configuration (b=1, hq=4, hkv=1, sq=128, sk=256, d=128, non-causal, deterministic, 2-CTA); all written outputs (three RMW fp32 accumulators and three int32 semaphore buffers; semaphore progress requires zero initial contents, as allocated by interface.py).",
     "evidence": "flash_bwd_sm100.py: P=exp2(S*scale_log2-LSE) (non-causal); dS=P*(dO V^T-dPsum); P,dS rounded to bf16 for the MMAs; GQA (qhead_per_kvhead=4) => dKV_postprocess: dK=sum_h dS^T Q (unscaled) and dV=sum_h P^T dO bulk-reduce-added into fp32 dKaccum/dVaccum; dQ=dS K bulk-reduce-added unscaled into dQaccum (deterministic: dQ_reduce_ncol=16). Deterministic semaphores: dQ slot +1 per visiting cluster, dK/dV slots +qhead_per_kvhead (barrier.arrive_inc). Prior contents of all RMW buffers are inputs.",

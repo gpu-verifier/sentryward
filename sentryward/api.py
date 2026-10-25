@@ -88,14 +88,13 @@ def _verify(ptx, *, input, reference, reference_binding, timeout_seconds, memory
         result.pop('_process', None)
         result['elapsed_seconds'] = time.monotonic() - started
         if result['elapsed_seconds'] > timeout_seconds and result.get('result') != 'timeout':
-            # The completed report is public; its synchronization check already
-            # includes the memory check.
+            # The completed report is public and keeps its two checks: normalize
+            # reads its synchronization check as including the memory check.
             checks = result.get('checks', {})
             result = normalize({'result': 'timeout', 'stage': 'result_processing',
                 'diagnostics': [{'code': 'invocation_time_budget_exceeded',
                     'stage': 'result_processing', 'details': {'limit_seconds': timeout_seconds}}],
                 'checks': {'synchronization': checks.get('synchronization', 'not_run'),
-                           'memory': checks.get('synchronization', 'not_run'),
                            'equivalence': checks.get('equivalence', 'not_run')},
                 'partial_report': result})
         return result

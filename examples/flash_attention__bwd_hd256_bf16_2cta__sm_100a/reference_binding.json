@@ -369,7 +369,7 @@
     "optimized_input": "examples/flash_attention__bwd_hd256_bf16_2cta__sm_100a/input.json",
     "optimized_input_sha256": "a3ec685db5a2609cecc1e9b732335991a91a7b64a2f092aff9c94f723bb2c7b2",
     "ptx_sha256": "61e013adbe6bfa860cf68975481de3fbc3f640723f139616e11d2a4575f458ab",
-    "semantics": "ideal_real; fixed saved configuration; output dQ (bf16, overwritten by TMA store). scale from input argument scale_softmax (param 18) = 0.0625 (user decision P)",
+    "semantics": "ideal_real; fixed saved configuration; output dQ (bf16, overwritten by TMA store). scale from input argument scale_softmax (param 18) = 0.0625 = 1/sqrt(256)",
     "evidence": "dqkernel compute_step: P = exp2(S*scale*log2e_f32 - lse_log2); dS = bf16((dP - sum_odo) * P * scale); dQ = dS @ K accumulated in TMEM, stored bf16 by dQ_epilogue (TMA). Non-causal (PTX mask = residual OOB only).",
     "scope_branch_choices": [],
     "scope_shape_arrays": []

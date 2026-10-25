@@ -3,8 +3,8 @@
 // representative units; pairs of global accesses with at least one access in a member unit are
 // checked here, exactly, on the representatives' families translated by each unit's δ (its
 // allocations' offsets relative to its representative). Accesses of different units are never
-// ordered (precondition (I)), so every overlap with a write is a race. Representative pairs
-// belong to the normal checker.
+// ordered (the unit-independence precondition, unit_classes.h), so every overlap with a write
+// is a race. Representative pairs belong to the normal checker.
 //
 // Cost: O(P log P) for P global family parts, per ordered class pair (A, B) on one
 // allocation O(|A| log |B|) to find the units whose δ falls in the hull window plus one O(1) memo

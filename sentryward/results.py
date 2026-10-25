@@ -127,6 +127,10 @@ def normalize(report, *, operation=None):
         reason = reason or "unclassified_resource_limit"
     checks = dict(out.get("checks", {}))
     kernel = operation in {"kernel_verification", "verification"} or out.get("mode") == "verify"
+    if "synchronization" in checks and "memory" not in checks:
+        # The two public checks: synchronization includes the memory analysis
+        # (see publish).
+        checks["memory"] = checks["synchronization"]
     for key in ("synchronization","memory","equivalence"):
         checks.setdefault(key,"not_run" if kernel and key != "equivalence" else "not_requested")
     verified = out.pop("verification_status", "")
@@ -190,7 +194,23 @@ EVIDENCE_FIELDS = frozenset({"races", "race_count", "race_samples_truncated", "f
     "witness_event_lists_truncated", "unsupported_memory_pair"})
 
 def public_stage(stage):
-    """Public stage of an internal stage name (mirrors result.h PublicStage)."""
+    """Public stage of an internal stage name (mirrors result.h PublicStage).
+
+    The first matching rule applies:
+    - ``input``: reading the user's input: ``input_validation``,
+      ``input_configuration``, ``cli_arguments``, ``file_io``, ``ptx_parser``,
+      ``launch_binding`` and names starting with ``ptx_input``.
+    - ``equivalence``: value analysis, scalar fold, expressions, reference
+      import and comparison: ``memory_effect_binding``, names starting with
+      ``value_``, ``semantic_ir``, ``scalar_``, ``expression``, ``equivalence``,
+      ``reference_``, ``left_`` or ``right_``, and names ending in ``_s``.
+    - ``synchronization``: PTX execution, event and memory views and the
+      synchronization, memory and lifecycle checks: names starting with
+      ``ptx_execution``, ``source_ir``, ``event_view``, ``memory_``,
+      ``synchronization``, ``lifecycle``, ``cluster_``, ``shared_memory``,
+      ``verification`` or ``frontend``.
+    - ``pipeline``: every other stage.
+    """
     if stage in {"input_validation", "input_configuration", "cli_arguments", "file_io", "ptx_parser",
                  "launch_binding"} or stage.startswith("ptx_input"):
         return "input"
@@ -203,11 +223,20 @@ def public_stage(stage):
     return "pipeline"
 
 def is_public(report):
+    """Whether a report already has the form publish() produces.
+
+    A published report keeps its other fields under ``internal`` and its
+    witnesses under ``evidence``. Without either section, it holds only public
+    fields and exactly the two public checks. A raw report with any other
+    field, such as a wrapper's ``stage``, is not published, whatever its checks.
+    """
     if not isinstance(report, dict):
         return False
+    if "internal" in report or "evidence" in report:
+        return True
     checks = report.get("checks")
-    return "internal" in report or (isinstance(checks, dict) and "synchronization" in checks
-                                    and "memory" not in checks)
+    return (isinstance(checks, dict) and set(checks) == {"synchronization", "equivalence"}
+            and all(key in PUBLIC_FIELDS or key.startswith("_") for key in report))
 
 def _strip_sections(section):
     for key in REPORT_FIELDS:
@@ -222,6 +251,9 @@ def publish(report):
     Two checks, diagnostics with public stages, failure evidence, assumptions and
     resource figures stay at the top level; everything else moves under internal,
     whose sections keep their diagnostics but no conclusion of their own.
+    Fields whose names start with ``_`` are interface bookkeeping, such as
+    ``_process`` from ``_run_ptx``. They stay at the top level unchanged and
+    are not public report fields. A published report is returned unchanged.
     """
     if not isinstance(report, dict) or is_public(report):
         return report
