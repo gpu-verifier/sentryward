@@ -13,6 +13,8 @@ import subprocess
 import sys
 import time
 
+from sentryward.results import failure
+
 from .common import (confined, digest, file_hash, identifier,
                      object_url, read_json, repository, revision, write_json,
                      download_verified)
@@ -138,11 +140,6 @@ def run_process(command, case, timeout):
             return proc.returncode, True
 
 
-def raw_failure(code, message):
-    return {"result": code, "checks": {"synchronization": "not_run", "memory": "not_run", "equivalence": "not_run"},
-            "diagnostics": [{"code": code, "stage": "automation_worker", "message": message}]}
-
-
 def artifact_descriptors(plan_data, task, case):
     files, bundle = {}, {}
     kinds = {"input.json": "input", "kernel.ptx": "ptx", "output.json": "result",
@@ -172,7 +169,9 @@ def verify_task(root, plan_data, task, output, *, process_runner=run_process):
             "report_version": task["report_version"], "attempted_revision": plan_data["source_revision"],
             "report_status": "pending", "reason": task["reason"]}
     record = {"name": task["name"], "result": None, "automation": auto,
+              "budgets": plan_data["config"]["verification"],
               "files": {}, "provenance": {"source_revision": plan_data["source_revision"],
+              "source_repository": plan_data["source_repository"],
               "runtime": plan_data["runtime"], "run_id": plan_data["run_id"]}}
     history = task.get("historical")
     if history and history.get("synchronization_removal"):
@@ -182,7 +181,6 @@ def verify_task(root, plan_data, task, output, *, process_runner=run_process):
         if history:
             record["historical"] = {k: v for k, v in history.items()
                                     if k not in {"historical", "bundle_files", "synchronization_removal"}}
-            record["result"] = history.get("result")
         auto["report_status"] = "not_run"
     else:
         started = time.monotonic()
@@ -205,14 +203,16 @@ def verify_task(root, plan_data, task, output, *, process_runner=run_process):
             command += ["--reference", str(case / "reference.py"), "--reference-binding", str(case / "reference_binding.json")]
             returncode, expired = process_runner(command, case, options["timeout_seconds"] + 15)
             if expired:
-                write_json(case / "output.json", raw_failure("timeout", "Worker process-group deadline exceeded"))
+                write_json(case / "output.json", failure("timeout", "timeout",
+                           "Worker process-group deadline exceeded", stage="automation_worker"))
             else:
                 try:
                     raw = read_json(case / "stdout.json")
                     if not isinstance(raw, dict) or not isinstance(raw.get("result"), str) or not raw["result"].strip():
                         raise ValueError("Verifier did not produce a result object")
                 except (ValueError, OSError) as error:
-                    raw = raw_failure("tool_failure", f"Invalid verifier output (exit {returncode}): {error}")
+                    raw = failure("tool_failure", "tool_failure",
+                                  f"Invalid verifier output (exit {returncode}): {error}", stage="automation_worker")
                 # Preserve the complete output, including unknown fields and result categories.
                 write_json(case / "output.json", raw)
             auto.update(state="current", exit_code=returncode)
@@ -229,10 +229,6 @@ def verify_task(root, plan_data, task, output, *, process_runner=run_process):
         record["analysis_time_seconds"] = raw.get("verification_elapsed_seconds", raw.get("elapsed_seconds"))
         record["worker_elapsed_seconds"] = time.monotonic() - started
         record["files"], record["bundle_files"] = artifact_descriptors(plan_data, task, case)
-        write_json(case / "run.json", {"source_revision": plan_data["source_revision"],
-                   "runtime": plan_data["runtime"], "options": plan_data["config"]["verification"],
-                   "verification_key": task["verification_key"], "automation": auto,
-                   "input_hashes": task["hashes"], "source_repository": plan_data["source_repository"]})
     write_json(case / "record.json", record)
     return record
 
@@ -272,11 +268,15 @@ def collect_records(plan_data, output):
                 raise ValueError("Worker record belongs to another source revision")
             if row["automation"]["state"] not in {"current", "reused", "pending", "deferred_resource", "failed"}:
                 raise ValueError("Unknown worker execution state")
+            if row["automation"]["state"] in {"pending", "deferred_resource"} and row["result"] is not None:
+                raise ValueError("Unexecuted task cannot have a current verdict")
             case = record.parent
             if row.get("provenance", {}).get("source_revision") != plan_data["source_revision"] or row["provenance"].get("runtime") != plan_data["runtime"]:
                 raise ValueError("Worker provenance differs from planned runtime")
             if row["provenance"].get("run_id") != plan_data["run_id"]:
                 raise ValueError("Worker provenance belongs to another run")
+            if row["provenance"].get("source_repository") != plan_data["source_repository"] or row.get("budgets") != plan_data["config"]["verification"]:
+                raise ValueError("Worker repository or budgets differ from the plan")
             for filename, expected in task["hashes"].items():
                 if file_hash(confined(case, filename)) != expected:
                     raise ValueError("Worker input identity mismatch")

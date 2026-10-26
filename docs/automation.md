@@ -1,12 +1,13 @@
 # Continuous verification
 
-The workflow verifies changed kernels, generates reports from the saved results,
-and publishes an immutable snapshot on the `results` branch. Generated files stay
-out of `main`. The website reads the snapshot through `latest.json`.
+The workflow selects kernels that need verification, runs the existing SentryWard
+CLI, and publishes their results, evidence and checked reports as immutable
+snapshots on the `results` branch. Each kernel has one record for its version,
+input hashes, budgets, execution status and report references. Generated files stay
+out of `main`; the website follows `latest.json` to the current snapshot.
 
-This first version produces deterministic reports using the existing report skill.
-It does not call a model. AI explanations, cost accounting and server execution
-are separate follow-up work.
+Reports use the existing skill's deterministic composer and checker. AI
+explanations, cost accounting and server execution are separate follow-up work.
 
 ## What runs
 
@@ -21,9 +22,10 @@ The planner discovers committed `examples/<name>/input.json` files paired with
 | Ordinary documentation | Preserve cached verification. |
 
 The identity includes input hashes, verifier sources, the actual native binary,
-Python and system packages, and resource limits; shard count is excluded. Reports are always recomposed
-and checked against their frozen input and result files. Exit code zero does not
-mean verification passed; the verifier's result and diagnostics remain intact.
+Python and system packages, and resource limits; shard count is excluded. Reports
+are always recomposed and checked against their frozen input and result files.
+Exit code zero does not mean verification passed; the verifier's result and
+diagnostics remain intact.
 
 PRs produce credential-free checks and previews. Enabled `main` pushes publish
 results; a daily run reconciles unfinished work against the latest snapshot.
@@ -42,8 +44,8 @@ Execution status is separate from the verifier's conclusion:
 | --- | --- |
 | `current` | This task produced a verifier result, including inconclusive outcomes. |
 | `reused` | Matching saved evidence was retrieved and checked. |
-| `pending` | Outside the manual selection. |
-| `deferred_resource` | Recorded memory demand exceeds the runner budget. |
+| `pending` | Outside the manual selection; no current verdict. |
+| `deferred_resource` | Recorded memory demand exceeds the runner budget; no current verdict. |
 | `failed` | Execution or evidence collection failed. |
 
 Historical timeout cases are scheduled. High-memory cases remain explicitly

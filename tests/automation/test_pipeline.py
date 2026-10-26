@@ -250,7 +250,9 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(timeout, 515)
         self.assertEqual((self.root / "examples/alpha/input.json").read_bytes(), original)
         self.assertFalse((self.root / "examples/alpha/output.json").exists())
-        self.assertTrue((case / "run.json").is_file())
+        self.assertEqual(row["provenance"]["source_repository"], planned["source_repository"])
+        self.assertEqual(row["budgets"], self.config["verification"])
+        self.assertFalse((case / "run.json").exists())
 
     def test_unknown_result_category_is_not_rewritten(self):
         self.raw["result"] = "future_verifier_category"
@@ -408,7 +410,8 @@ class PipelineTests(unittest.TestCase):
         planned = self.plan()
         row = self.verify(planned)
         snapshot = pipeline.catalog(planned, [row])
-        self.assertEqual(row["result"], "verified")
+        self.assertIsNone(row["result"])
+        self.assertEqual(row["historical"]["result"], "verified")
         self.assertEqual(row["automation"]["state"], "deferred_resource")
         self.assertEqual(snapshot["counts"], {})
         self.assertEqual(row["historical"]["checks"], {"memory": "passed"})
@@ -420,6 +423,14 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(descriptor["revision"], planned["source_revision"])
             self.assertEqual(descriptor["sha256"], file_hash(self.root / descriptor["path"]))
         self.assertEqual(row["automation"]["attempted_revision"], snapshot["publication"]["source_revision"])
+        pending = self.verify(self.plan(names=["beta"]), output=self.folder / "pending")
+        self.assertEqual(pending["automation"]["state"], "pending")
+        self.assertIsNone(pending["result"])
+        self.assertEqual(pending["historical"]["result"], "verified")
+        row["result"] = "verified"
+        write_json(self.output / "cases/alpha/record.json", row)
+        with self.assertRaisesRegex(ValueError, "Unexecuted task"):
+            pipeline.collect_records(planned, self.output)
 
 
 if __name__ == "__main__":

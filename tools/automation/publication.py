@@ -89,7 +89,7 @@ def fetch_baseline(repo, output):
 
 # Only supervisor-owned files belong to a published verification bundle.
 EVIDENCE_FILES = ("input.json", "kernel.ptx", "reference.py", "reference_binding.json",
-                  "stdout.json", "stderr.log", "output.json", "run.json", "identity.json", "report/report.md")
+                  "stdout.json", "stderr.log", "output.json", "identity.json", "report/report.md")
 
 
 def snapshot_identity(plan_data, output, rows):

@@ -124,7 +124,9 @@ class PublicationTests(unittest.TestCase):
             "name": "kernel", "result": "potential_race", "checks": {"memory": "failed"}, "diagnostics": [],
             "automation": {"state": "current", "verification_key": "v1", "report_status": "base",
                            "attempted_revision": self.source},
-            "provenance": {"source_revision": self.source, "runtime": self.plan["runtime"], "run_id": "run-1"},
+            "provenance": {"source_revision": self.source, "source_repository": self.plan["source_repository"],
+                           "runtime": self.plan["runtime"], "run_id": "run-1"},
+            "budgets": self.plan["config"]["verification"],
             "files": {}, "bundle_files": {},
         }
         for filename, kind in (("input.json", "input"), ("kernel.ptx", "ptx"), ("output.json", "result")):
@@ -345,6 +347,8 @@ class PublicationTests(unittest.TestCase):
         changes = (
             lambda row: row["automation"].update(attempted_revision="f" * 40),
             lambda row: row["provenance"].update(source_revision="f" * 40),
+            lambda row: row["provenance"].update(source_repository="other/repository"),
+            lambda row: row.update(budgets={"timeout_seconds": 1}),
             lambda row: row["provenance"].update(run_id="another-run"),
             lambda row: row["provenance"].update(runtime={"native_sha256": "f" * 64}),
             lambda row: row.update(result="verified"),
