@@ -1,0 +1,100 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          64,
+          64
+        ],
+        "source_strides_bytes": [
+          256,
+          4
+        ],
+        "target_strides_bytes": [
+          256,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          64,
+          64
+        ],
+        "source_strides_bytes": [
+          256,
+          4
+        ],
+        "target_strides_bytes": [
+          256,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:B",
+    "right_allocation": "6:global1:B",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+      64,
+      64
+    ],
+    "left_strides_bytes": [
+      256,
+      4
+    ],
+    "right_strides_bytes": [
+      256,
+      4
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "X",
+        "allocation": "6:global1:A",
+        "dtype": "float32",
+        "shape": [
+          64,
+          64
+        ]
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tritongluon-06-tcgen05-tmem.ptx",
+    "optimized_input": "examples/tritongluon-06-tcgen05-tmem/input.json",
+    "optimized_input_sha256": "b173d7f52554a76ce02a6ccbe6306c4b7e269ab815c46ecd5f851c70afa14c8e",
+    "ptx_sha256": "750e231128fd001625e1b3b27c6309e9a98261ba906b4fc1bb9136247b21fbda",
+    "upstream": [
+      "https://github.com/triton-lang/triton/blob/c01b6774b1865984607d89d89d3a10833de92037/python/tutorials/gluon/06-tcgen05.py#L97-L139"
+    ],
+    "scope": "Upstream test_tmem_example_kernel with M=64, N=64, num_warps=4, float32, grid (1,).",
+    "evidence": "PTX offsets (tid&63)+64*m for 64 rows, 128 threads, b32 loads; tcgen05.alloc 64 columns. Parameter 0 in_ptr=A, 1 out_ptr=B; 2/3 are Triton scratch pointers.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

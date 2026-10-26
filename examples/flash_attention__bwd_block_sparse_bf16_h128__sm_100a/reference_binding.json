@@ -1,0 +1,861 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V",
+      "6:global2:dO": "dO",
+      "6:global3:LSE": "LSE",
+      "6:global5:dPsum": "dPsum",
+      "6:global7:dQaccum": "dQaccum",
+      "6:global14:mask_block_cnt": "mask_block_cnt",
+      "6:global14:mask_block_idx": "mask_block_idx",
+      "6:global14:full_block_cnt": "full_block_cnt",
+      "6:global14:full_block_idx": "full_block_idx"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          256,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          256,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          256,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global2:dO": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          256,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global3:LSE": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          256
+        ],
+        "source_strides_bytes": [
+          8192,
+          1024,
+          4
+        ],
+        "target_strides_bytes": [
+          8192,
+          1024,
+          4
+        ]
+      },
+      "6:global5:dPsum": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          256
+        ],
+        "source_strides_bytes": [
+          8192,
+          1024,
+          4
+        ],
+        "target_strides_bytes": [
+          8192,
+          1024,
+          4
+        ]
+      },
+      "6:global7:dQaccum": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          2,
+          2,
+          8,
+          2,
+          2,
+          64,
+          4
+        ],
+        "source_strides_bytes": [
+          1048576,
+          131072,
+          65536,
+          32768,
+          4096,
+          2048,
+          1024,
+          16,
+          4
+        ],
+        "target_strides_bytes": [
+          1048576,
+          131072,
+          65536,
+          32768,
+          4096,
+          2048,
+          1024,
+          16,
+          4
+        ]
+      },
+      "6:global14:mask_block_cnt": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          1
+        ],
+        "source_strides_bytes": [
+          32,
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4,
+          4
+        ]
+      },
+      "6:global14:mask_block_idx": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          1,
+          1
+        ],
+        "source_strides_bytes": [
+          32,
+          4,
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4,
+          4,
+          4
+        ]
+      },
+      "6:global14:full_block_cnt": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          1
+        ],
+        "source_strides_bytes": [
+          32,
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4,
+          4
+        ]
+      },
+      "6:global14:full_block_idx": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          1,
+          1
+        ],
+        "source_strides_bytes": [
+          32,
+          4,
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4,
+          4,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V",
+      "6:global2:dO": "dO",
+      "6:global3:LSE": "LSE",
+      "6:global5:dPsum": "dPsum",
+      "6:global7:dQaccum": "dQaccum",
+      "6:global14:mask_block_cnt": "mask_block_cnt",
+      "6:global14:mask_block_idx": "mask_block_idx",
+      "6:global14:full_block_cnt": "full_block_cnt",
+      "6:global14:full_block_idx": "full_block_idx"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          256,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          256,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          256,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global2:dO": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          256,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global3:LSE": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          256
+        ],
+        "source_strides_bytes": [
+          8192,
+          1024,
+          4
+        ],
+        "target_strides_bytes": [
+          8192,
+          1024,
+          4
+        ]
+      },
+      "6:global5:dPsum": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          256
+        ],
+        "source_strides_bytes": [
+          8192,
+          1024,
+          4
+        ],
+        "target_strides_bytes": [
+          8192,
+          1024,
+          4
+        ]
+      },
+      "6:global7:dQaccum": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          2,
+          2,
+          8,
+          2,
+          2,
+          64,
+          4
+        ],
+        "source_strides_bytes": [
+          1048576,
+          131072,
+          65536,
+          32768,
+          4096,
+          2048,
+          1024,
+          16,
+          4
+        ],
+        "target_strides_bytes": [
+          1048576,
+          131072,
+          65536,
+          32768,
+          4096,
+          2048,
+          1024,
+          16,
+          4
+        ]
+      },
+      "6:global14:mask_block_cnt": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          1
+        ],
+        "source_strides_bytes": [
+          32,
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4,
+          4
+        ]
+      },
+      "6:global14:mask_block_idx": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          1,
+          1
+        ],
+        "source_strides_bytes": [
+          32,
+          4,
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4,
+          4,
+          4
+        ]
+      },
+      "6:global14:full_block_cnt": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          1
+        ],
+        "source_strides_bytes": [
+          32,
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4,
+          4
+        ]
+      },
+      "6:global14:full_block_idx": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          1,
+          1
+        ],
+        "source_strides_bytes": [
+          32,
+          4,
+          4,
+          4
+        ],
+        "target_strides_bytes": [
+          32,
+          4,
+          4,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global7:dQaccum",
+        "right_allocation": "6:global7:dQaccum",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          8,
+          2,
+          2,
+          8,
+          2,
+          2,
+          64,
+          4
+        ],
+        "left_strides_bytes": [
+          1048576,
+          131072,
+          65536,
+          32768,
+          4096,
+          2048,
+          1024,
+          16,
+          4
+        ],
+        "right_strides_bytes": [
+          1048576,
+          131072,
+          65536,
+          32768,
+          4096,
+          2048,
+          1024,
+          16,
+          4
+        ]
+      },
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global2:dK",
+        "right_allocation": "6:global2:dK",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          256,
+          8,
+          128
+        ],
+        "left_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ]
+      },
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global2:dV",
+        "right_allocation": "6:global2:dV",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          256,
+          8,
+          128
+        ],
+        "left_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          524288,
+          2048,
+          256,
+          2
+        ]
+      }
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "Q",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:Q"
+      },
+      {
+        "name": "K",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:K"
+      },
+      {
+        "name": "V",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:V"
+      },
+      {
+        "name": "dO",
+        "dtype": "bfloat16",
+        "allocation": "6:global2:dO"
+      },
+      {
+        "name": "LSE",
+        "dtype": "float32",
+        "allocation": "6:global3:LSE"
+      },
+      {
+        "name": "dPsum",
+        "dtype": "float32",
+        "allocation": "6:global5:dPsum"
+      },
+      {
+        "name": "dQaccum",
+        "dtype": "float32",
+        "allocation": "6:global7:dQaccum"
+      },
+      {
+        "name": "mask_block_cnt",
+        "dtype": "int32",
+        "allocation": "6:global14:mask_block_cnt"
+      },
+      {
+        "name": "mask_block_idx",
+        "dtype": "int32",
+        "allocation": "6:global14:mask_block_idx"
+      },
+      {
+        "name": "full_block_cnt",
+        "dtype": "int32",
+        "allocation": "6:global14:full_block_cnt"
+      },
+      {
+        "name": "full_block_idx",
+        "dtype": "int32",
+        "allocation": "6:global14:full_block_idx"
+      },
+      {
+        "name": "softmax_scale",
+        "value": {
+          "input": "/arguments/14/value"
+        }
+      },
+      {
+        "name": "scale_log2",
+        "value": {
+          "input": "/arguments/15/value"
+        }
+      },
+      {
+        "name": "sparse_block_q",
+        "value": 256
+      },
+      {
+        "name": "sparse_block_kv",
+        "value": 256
+      }
+    ]
+  },
+  "provenance": {
+    "upstream": [
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_bwd_sm100.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/interface.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/tile_scheduler.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/block_sparse_utils.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/block_sparsity.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/mask.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/copy_utils.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/tests/cute/test_mask_mod.py",
+      "https://github.com/NVIDIA/cutlass/blob/v4.6.2/include/cute/atom/mma_traits_sm100_frag.hpp"
+    ],
+    "ptx": "corpus/flash_attention__bwd_block_sparse_bf16_h128__sm_100a.ptx",
+    "optimized_input": "examples/flash_attention__bwd_block_sparse_bf16_h128__sm_100a/input.json",
+    "optimized_input_sha256": "aaa04a594c9e03ff5e9bfcbe5a77bd8e6f71696029f54bd50f37befad44d5606",
+    "ptx_sha256": "a4d7112014986def3b19a7fd76bb64ea7c5e4c8a0b267cf241147896c7dd55ed",
+    "semantics": "ideal_real; fixed scenario b=2, h=8, sq=sk=256, d=128, MHA, sparse block (256,256), no mask_mod, non-causal, 2-CTA; index tensors bounded by input tensor_properties [0, 0]; all written outputs: dQaccum (RMW fp32, 2-CTA tile layout), dK and dV (bf16, overwritten; zero for empty KV tiles).",
+    "evidence": "flash_bwd_sm100.py compute_loop: P=exp2(S*scale_log2-LSE), dS=P*(dP-dPsum), both rounded to bf16; Q-direction block-sparse iteration (block_sparse_utils.py get_block_sparse_iteration_info_bwd / get_m_block_from_iter_bwd) visits idx*q_subtile_factor+subtile for slot<cnt of the mask then full list; no mask_mod => only seqlen_k masking; MHA epilogue: dK scaled by softmax_scale, dV unscaled, bf16 TMA store; empty KV tiles zero dK/dV; dQ bulk-reduce-added unscaled.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [
+      {
+        "parameter": 34,
+        "offset": 0,
+        "element_type": "s32",
+        "shapes": [
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ]
+        ]
+      },
+      {
+        "parameter": 36,
+        "offset": 0,
+        "element_type": "s32",
+        "shapes": [
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ]
+        ]
+      }
+    ]
+  }
+}

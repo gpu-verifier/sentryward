@@ -231,19 +231,58 @@ bool LinkMemoryDomains(SemanticProgram& result) {
       const auto add=[&](Domain d){if(!d.count)return;cuts.push_back(d);lo=std::min(lo,d.first);hi=std::max(hi,d.last());};
       for(const auto& s:group.sources)add(s.threads);
       for(const auto& v:group.values)add(v.threads);
-      std::vector<Domain> pieces{{lo,1,hi-lo+1}};
       // Membership refinement is in actual input domain boundaries. It never
       // compares expressions or manufactures per-member source lists.
-      for(auto cut:cuts) {
-        std::vector<Domain> next;
-        for(auto d:pieces) {
-          const auto m=a::IntersectAffine(d,cut);
-          if(!m.count || m.count==d.count){next.push_back(d);continue;}
-          Domain inside{d.first+d.step*m.left,d.step*m.left_step,m.count};
-          next.push_back(inside);auto outside=a::SubtractAffine(d,inside);
-          next.insert(next.end(),outside.begin(),outside.end());
+      const auto refine=[&](const std::vector<Domain>& by) {
+        std::vector<Domain> pieces{{lo,1,hi-lo+1}};
+        for(auto cut:by) {
+          std::vector<Domain> next;
+          for(auto d:pieces) {
+            const auto m=a::IntersectAffine(d,cut);
+            if(!m.count || m.count==d.count){next.push_back(d);continue;}
+            Domain inside{d.first+d.step*m.left,d.step*m.left_step,m.count};
+            next.push_back(inside);auto outside=a::SubtractAffine(d,inside);
+            next.insert(next.end(),outside.begin(),outside.end());
+          }
+          pieces=std::move(next);
         }
-        pieces=std::move(next);
+        return pieces;
+      };
+      // The pieces depend only on the set of column domains: refine by the
+      // sorted, deduplicated cuts (a repeated cut never splits again), not in
+      // collection order, which follows value-graph (cohort) creation order.
+      const auto key_of=[](const Domain& d){return std::tuple(d.first,d.count>1?d.step:0,d.count);};
+      const auto domain_less=[&](const Domain& x,const Domain& y){return key_of(x)<key_of(y);};
+      auto canonical=cuts;
+      for(auto& d:canonical)if(d.count==1)d.step=0;
+      std::vector<Domain> pieces;
+      if(std::adjacent_find(canonical.begin(),canonical.end(),
+          [&](const Domain& x,const Domain& y){return !domain_less(x,y);})==canonical.end()) {
+        pieces=refine(canonical);  // collected in canonical order: same pieces and order as by `cuts`
+      } else {
+        std::sort(canonical.begin(),canonical.end(),domain_less);
+        canonical.erase(std::unique(canonical.begin(),canonical.end(),
+            [&](const Domain& x,const Domain& y){return key_of(x)==key_of(y);}),canonical.end());
+        pieces=refine(canonical);
+        // Emission order is observable downstream (action columns, initial-read
+        // families), so keep it: each piece goes where the collection-order
+        // refinement emitted its first members, ties by domain.
+        const auto emitted=refine(cuts);
+        a::AffineIndex index;
+        for(std::size_t i=0;i<pieces.size();++i)index.add(pieces[i],i);
+        index.seal();
+        std::vector<std::size_t> position(pieces.size(),SIZE_MAX);
+        std::size_t unplaced=pieces.size();
+        for(std::size_t p=0;p<emitted.size() && unplaced;++p)
+          index.intersect(emitted[p],[&](std::size_t i,auto){if(position[i]==SIZE_MAX){position[i]=p;--unplaced;}});
+        require(!unplaced,"A memory binding thread range lies outside the binding's thread domains");
+        std::vector<std::size_t> order(pieces.size());
+        std::iota(order.begin(),order.end(),0);
+        std::sort(order.begin(),order.end(),[&](std::size_t x,std::size_t y){
+          return position[x]!=position[y]?position[x]<position[y]:domain_less(pieces[x],pieces[y]);});
+        std::vector<Domain> ordered;ordered.reserve(pieces.size());
+        for(auto i:order)ordered.push_back(pieces[i]);
+        pieces=std::move(ordered);
       }
       for(auto domain:pieces) {
         struct S {SourceAccess access;const SourceColumn* column;std::uint64_t begin,step,order;};

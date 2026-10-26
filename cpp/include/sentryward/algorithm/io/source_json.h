@@ -58,6 +58,8 @@ struct SourceArtifact final {
   // Address-invariant environment Gamma (JSON array) and per-pair SMT budget
   // for the symbolic address model.
   std::string address_invariants_json = "[]";
+  // Normalized tensor_properties records (frontend fixed_input.tensor_property_inputs).
+  std::string tensor_properties_json = "[]";
   SymbolicSolverOptions address_solver;
 };
 

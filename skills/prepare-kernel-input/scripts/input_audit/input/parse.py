@@ -84,12 +84,17 @@ def _scalar(value: Any, type_name: str, path: str) -> int | float | bool | None:
 
 
 def parse_kernel_input(value: Mapping[str, Any]) -> KernelInput:
-    root = _object(value, {"schema", "entry", "launch", "arguments", "declarations", "shape_arrays", "tma_descriptors", "branch_decisions", "assumptions", "address_invariants", "data_branch_loop_iterations"}, "$")
+    root = _object(value, {"schema", "entry", "launch", "arguments", "declarations", "shape_arrays", "tma_descriptors", "branch_decisions", "assumptions", "address_invariants", "data_branch_loop_iterations", "pointer_arrays", "tensor_properties"}, "$")
     try:
         assumptions = validate_assumptions(root.get("assumptions", {}))
     except ValueError as error:
         raise InputContractError("invalid_assumptions", "$.assumptions", str(error)) from error
-    address_invariants = _address_invariants(root.get("address_invariants", []))
+    address_invariants = _records(root.get("address_invariants", []), "$.address_invariants",
+                                  code="invalid_address_invariant")
+    pointer_arrays = _records(root.get("pointer_arrays", []), "$.pointer_arrays",
+                              {"parameter", "offset", "entries"})
+    tensor_properties = _records(root.get("tensor_properties", []), "$.tensor_properties",
+                                 {"object", "element_type", "property", "value"})
     loop_iterations = (_integer(root["data_branch_loop_iterations"], "$.data_branch_loop_iterations", minimum=1)
                        if "data_branch_loop_iterations" in root else None)
     if root.get("schema") != SCHEMA:
@@ -183,15 +188,19 @@ def parse_kernel_input(value: Mapping[str, Any]) -> KernelInput:
         decisions.append(BranchDecision(line, taken, note, seed))
     return KernelInput(parsed_launch, entry, tuple(arguments), tuple(declarations), tuple(shape_arrays),
                        parse_descriptors(root.get("tma_descriptors", [])), tuple(decisions), assumptions,
-                       address_invariants, loop_iterations)
+                       address_invariants, loop_iterations, pointer_arrays, tensor_properties)
 
 
-def _address_invariants(value: Any) -> tuple[Mapping[str, Any], ...]:
-    items = _list(value, "$.address_invariants")
+def _records(value: Any, path: str, keys: set[str] | None = None, *,
+             code: str = "invalid_type") -> tuple[Mapping[str, Any], ...]:
+    """Object records passed through to the verifier; `keys` whitelists their fields."""
+    items = _list(value, path)
     for index, item in enumerate(items):
-        if not isinstance(item, Mapping):
-            raise InputContractError("invalid_address_invariant", f"$.address_invariants[{index}]",
-                                     "expected an object")
+        if keys is None:
+            if not isinstance(item, Mapping):
+                raise InputContractError(code, f"{path}[{index}]", "expected an object")
+        else:
+            _object(item, keys, f"{path}[{index}]")
     return tuple(dict(item) for item in items)
 
 
@@ -221,9 +230,12 @@ def validate_kernel_input(value: KernelInput) -> KernelInput:
         "dynamic_shared_bytes": value.launch.dynamic_shared_bytes,
     }, "arguments": [], "declarations": []}
     raw["assumptions"] = validate_assumptions(value.assumptions)
-    if value.address_invariants:
-        raw["address_invariants"] = [dict(item) if isinstance(item, Mapping) else item
-                                     for item in value.address_invariants]
+    for name in ("address_invariants", "pointer_arrays", "tensor_properties"):
+        items = getattr(value, name)
+        if items:
+            # Malformed records stay as they are: parse_kernel_input reports them.
+            raw[name] = ([dict(item) if isinstance(item, Mapping) else item for item in items]
+                         if isinstance(items, (tuple, list)) else items)
     if value.data_branch_loop_iterations is not None:
         raw["data_branch_loop_iterations"] = value.data_branch_loop_iterations
     if value.entry is not None:

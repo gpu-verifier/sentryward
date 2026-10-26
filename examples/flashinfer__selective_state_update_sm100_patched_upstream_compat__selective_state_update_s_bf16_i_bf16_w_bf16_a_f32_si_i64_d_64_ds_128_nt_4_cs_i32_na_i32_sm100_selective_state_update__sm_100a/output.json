@@ -1,41 +1,33 @@
 {
-  "assumption_hints": [
-    {
-      "key": "representative_branches",
-      "label": "Representative branches",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    },
-    {
-      "key": "bounded_computation_loops",
-      "label": "Bounded computation loops",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    }
-  ],
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "duplicate_tma_store_benign",
       "label": "Duplicate TMA stores",
       "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "representative_election",
       "label": "Representative election",
       "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "clc_always_fails",
       "label": "Failed launch cancellation",
       "text": "Every cluster launch cancellation request fails.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "representative_branches",
       "label": "Representative branches",
@@ -43,328 +35,649 @@
       "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "bounded_computation_loops",
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "not_run",
-    "memory": "not_run",
-    "synchronization": "not_run"
-  },
-  "details": {
-    "required_parameters": []
+    "equivalence": "incomplete",
+    "synchronization": "passed"
   },
   "diagnostics": [
     {
-      "code": "control_predicate_not_static",
+      "code": "opaque_compute_diamond",
       "details": {
-        "location": {
-          "column": 0,
-          "file": "corpus/flashinfer__selective_state_update_sm100_patched_upstream_compat__selective_state_update_s_bf16_i_bf16_w_bf16_a_f32_si_i64_d_64_ds_128_nt_4_cs_i32_na_i32_sm100_selective_state_update__sm_100a.ptx",
-          "line": 266
-        },
-        "required_parameters": []
+        "internal_stage": "value_lowering"
       },
-      "message": "control predicate is not statically determined",
-      "stage": "ptx_execution"
+      "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
+      "stage": "equivalence"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
     },
-    "diagnostics": [
+    "election_uses": 0,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "s64",
+          "object": "state_batch_indices",
+          "property": "lower_bound",
+          "value": 0
+        },
+        {
+          "element_type": "s64",
+          "object": "dst_state_batch_indices",
+          "property": "lower_bound",
+          "value": 0
+        },
+        {
+          "element_type": "s64",
+          "object": "state_batch_indices",
+          "property": "upper_bound",
+          "value": 2147483647
+        },
+        {
+          "element_type": "s64",
+          "object": "dst_state_batch_indices",
+          "property": "upper_bound",
+          "value": 2147483647
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "dst_state_batch_indices",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg0.192"
+        },
+        {
+          "allocation": "state_batch_indices",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg0.176"
+        }
+      ],
+      "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [
       {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/flashinfer__selective_state_update_sm100_patched_upstream_compat__selective_state_update_s_bf16_i_bf16_w_bf16_a_f32_si_i64_d_64_ds_128_nt_4_cs_i32_na_i32_sm100_selective_state_update__sm_100a.ptx",
-                  "line": 266
-                },
-                "required_parameters": []
+        "lines": [
+          256,
+          372
+        ],
+        "object": "state_batch_indices"
+      }
+    ],
+    "trap_only_equality_assertions_hold": true
+  },
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "counts": {
+      "edges": 18112,
+      "events": 13140,
+      "instructions": 4960,
+      "memory_accesses": 3424,
+      "threads": 128
+    },
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "opaque_compute_diamond",
+          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
+          "stage": "value_lowering"
+        }
+      ],
+      "expression_diagnostic": {
+        "diagnostics": [
+          {
+            "code": "opaque_compute_diamond",
+            "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
+            "stage": "value_lowering"
+          }
+        ],
+        "line": 113,
+        "serialization": {
+          "action_patterns": 0,
+          "binding_patterns": 0,
+          "domain_refinements": 0,
+          "elapsed_seconds": 4.2141e-05,
+          "event_families": 0,
+          "expanded_event_records": 0,
+          "largest_batch_members": 0,
+          "logical_actions": 0,
+          "logical_events": 0,
+          "peak_rss_mib_at_completion": 139.50390625,
+          "reachability_queries": 0,
+          "relations": 0,
+          "rss_mib_at_completion": 114.171875,
+          "scheduled_batches": 0,
+          "singleton_batches": 0,
+          "value_families": 0
+        },
+        "stage": "value_lowering"
+      },
+      "stage": "value_lowering"
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [
+          {
+            "code": "opaque_compute_diamond",
+            "details": {
+              "cta": 0,
+              "instruction": "@%p6 bra \t$L__BB0_9;",
+              "instruction_index": 68,
+              "location": {
+                "file": "corpus/flashinfer__selective_state_update_sm100_patched_upstream_compat__selective_state_update_s_bf16_i_bf16_w_bf16_a_f32_si_i64_d_64_ds_128_nt_4_cs_i32_na_i32_sm100_selective_state_update__sm_100a.ptx",
+                "line": 113
               },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
+              "occurrence": 0,
+              "thread": 4
+            },
+            "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
+            "stage": "value_lowering"
+          }
+        ],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": false
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 16,
+      "dependency_compression": {},
+      "diagnostic_sample_count": 0,
+      "executed_records": 389440,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 0,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "s64",
+              "object": "state_batch_indices",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s64",
+              "object": "dst_state_batch_indices",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s64",
+              "object": "state_batch_indices",
+              "property": "upper_bound",
+              "value": 2147483647
+            },
+            {
+              "element_type": "s64",
+              "object": "dst_state_batch_indices",
+              "property": "upper_bound",
+              "value": 2147483647
             }
           ],
-          "prerequisite_result": "unsupported"
+          "regions": [
+            {
+              "allocation": "dst_state_batch_indices",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg0.192"
+            },
+            {
+              "allocation": "state_batch_indices",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg0.176"
+            }
+          ],
+          "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
         },
-        "stage": "pipeline"
-      }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
-  },
-  "frontend": {
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
+        "tensor_property_decisions": [
+          {
+            "lines": [
+              256,
+              372
+            ],
+            "object": "state_batch_indices"
+          }
+        ],
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "state",
+          "offset": 96,
+          "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "x",
+          "offset": 104,
+          "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "dt",
+          "offset": 112,
+          "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "dt_bias",
+          "offset": 120,
+          "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "A",
+          "offset": 128,
+          "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "B",
+          "offset": 136,
+          "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "C",
+          "offset": 144,
+          "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "D",
+          "offset": 152,
+          "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "z",
+          "offset": 160,
+          "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "output",
+          "offset": 168,
+          "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "state_batch_indices",
+          "offset": 176,
+          "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "state_scale",
+          "offset": 184,
+          "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "dst_state_batch_indices",
+          "offset": 192,
+          "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "rand_seed",
+          "offset": 240,
+          "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
+          "source": "declaration"
+        }
       ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
+      "lowered_instruction_count": 4960,
+      "reached_opcodes": {
+        "add.f32": 12352,
+        "add.s32": 8640,
+        "add.s64": 21184,
+        "and.b32": 2048,
+        "and.pred": 512,
+        "bar.sync": 4096,
+        "bra": 10112,
+        "bra.uni": 3136,
+        "cvt.f32.bf16": 32832,
+        "cvt.rn.bf16.f32": 8256,
+        "cvt.s64.s32": 2048,
+        "cvt.u64.u32": 12992,
+        "cvta.to.global.u64": 17088,
+        "div.approx.f32": 64,
+        "div.s32": 2048,
+        "div.u32": 2048,
+        "ex2.approx.f32": 2112,
+        "fma.rn.f32": 16384,
+        "ld.global.b16": 6272,
+        "ld.global.b32": 2048,
+        "ld.global.b64": 4096,
+        "ld.global.v4.b16": 2048,
+        "ld.global.v4.b32": 512,
+        "ld.param.b32": 6144,
+        "ld.param.b64": 32064,
+        "ld.param.b8": 4096,
+        "ld.param.s32": 2048,
+        "ld.shared.b16": 2112,
+        "ld.shared.b32": 64,
+        "ld.shared.v4.b16": 4096,
+        "mad.lo.s64": 6848,
+        "mov.b16": 8192,
+        "mov.b32": 6912,
+        "mov.b64": 4096,
+        "mov.u32": 10240,
+        "mul.f32": 24768,
+        "mul.lo.s64": 4096,
+        "mul.wide.u32": 4096,
+        "or.b32": 4096,
+        "or.pred": 6656,
+        "ret": 2048,
+        "selp.f32": 2048,
+        "setp.eq.b16": 4096,
+        "setp.eq.b32": 5120,
+        "setp.eq.b64": 12864,
+        "setp.gt.s32": 2048,
+        "setp.gt.u32": 6144,
+        "setp.gtu.f32": 2048,
+        "setp.lt.u32": 1024,
+        "setp.ne.b32": 4096,
+        "shfl.sync.down.b32": 10240,
+        "shl.b32": 16192,
+        "shl.b64": 15040,
+        "st.global.b16": 64,
+        "st.global.v4.b16": 2048,
+        "st.shared.b16": 128,
+        "st.shared.b32": 64,
+        "st.shared.v4.b32": 512,
+        "sub.f32": 64
       },
-      "election_uses": 0,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
       },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
+      "source_binding_storage": {
+        "binding_templates": 12,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 4960,
+        "stored_bindings": 497
+      },
+      "source_edge_storage": {
+        "binding_templates": 128,
+        "logical_edges": 4832,
+        "stored_bindings": 128
+      },
+      "thread_count": 2048,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
     },
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "state",
-        "offset": 96,
-        "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "x",
-        "offset": 104,
-        "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "dt",
-        "offset": 112,
-        "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "dt_bias",
-        "offset": 120,
-        "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "A",
-        "offset": 128,
-        "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "B",
-        "offset": 136,
-        "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "C",
-        "offset": 144,
-        "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "D",
-        "offset": 152,
-        "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "z",
-        "offset": 160,
-        "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "output",
-        "offset": 168,
-        "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "state_batch_indices",
-        "offset": 176,
-        "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "state_scale",
-        "offset": 184,
-        "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "dst_state_batch_indices",
-        "offset": 192,
-        "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "rand_seed",
-        "offset": 240,
-        "parameter": "_ZN10flashinfer5mamba36selective_state_update_kernel_simpleI13__nv_bfloat16S2_fS2_lvLi64ELi128ELi4ELi4ELi0EEEvNS0_26SelectiveStateUpdateParamsE_param_0",
-        "source": "declaration"
+    "hb_queries": {
+      "memory": {
+        "algorithm": "persistent-chain",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 36224,
+        "filtered_queries": 0,
+        "queries": 24904,
+        "shared_peak_index_bytes": 2779840
       }
-    ],
-    "required_parameters": [],
-    "user_branch_decisions": []
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 24904,
+      "address_model": {
+        "cache_hits": 1,
+        "congruence_disjoint": 16286,
+        "ground_disjoint": 8128,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 24385,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "hb_algorithm": "persistent-chain",
+      "hb_batches": 0,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 0,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 2779840,
+      "hb_queries": 24904,
+      "hb_query_seconds": 0.000296251,
+      "overlap_queries": 24384,
+      "strategy": "conflict-first",
+      "unordered_candidates_examined": 24384
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 131.23828125,
+    "required_order_domains": 0,
+    "required_orders": 0,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 1,
+      "binding_diagnostics": [
+        {
+          "code": "incomplete_value_semantics",
+          "message": "opaque_compute_diamond: Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
+        }
+      ],
+      "execution_cohorts": 23,
+      "mapping_complete": false,
+      "memory_binding_stored_rows": 0,
+      "memory_binding_templates": 0,
+      "memory_bindings": 0,
+      "memory_linking_templates_used": false,
+      "synchronization_groups": 290,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 0,
+      "thread_prefix_groups": 2433,
+      "value_diagnostic_count": 1,
+      "value_diagnostics": [
+        {
+          "code": "opaque_compute_diamond",
+          "line": 113,
+          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
+        }
+      ]
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 16,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 407552,
+      "path_entries": 38928,
+      "record_bindings": 16672,
+      "record_nodes": 17696,
+      "splits": 176,
+      "template_steps": 18464,
+      "thread_memberships": 2048,
+      "value_nodes": 11417
+    },
+    "thread_record_compression": {
+      "completed_ctas": 16,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 389440,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "opaque_compute_diamond",
+          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
+          "stage": "value_lowering"
+        }
+      ],
+      "equivalence_check": "unsupported",
+      "line": 113,
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      },
+      "serialization": {
+        "action_patterns": 0,
+        "binding_patterns": 0,
+        "domain_refinements": 0,
+        "elapsed_seconds": 4.2141e-05,
+        "event_families": 0,
+        "expanded_event_records": 0,
+        "largest_batch_members": 0,
+        "logical_actions": 0,
+        "logical_events": 0,
+        "peak_rss_mib_at_completion": 139.50390625,
+        "reachability_queries": 0,
+        "relations": 0,
+        "rss_mib_at_completion": 114.171875,
+        "scheduled_batches": 0,
+        "singleton_batches": 0,
+        "value_families": 0
+      },
+      "stage": "value_lowering"
+    },
+    "value_ir_instance_count": 17568,
+    "value_ir_node_count": 1652,
+    "value_view_complete": false,
+    "verification_elapsed_seconds": 0.202783574,
+    "verification_result": "race_free"
   },
-  "implementation": "cpp",
-  "location": {
-    "column": 0,
-    "file": "corpus/flashinfer__selective_state_update_sm100_patched_upstream_compat__selective_state_update_s_bf16_i_bf16_w_bf16_a_f32_si_i64_d_64_ds_128_nt_4_cs_i32_na_i32_sm100_selective_state_update__sm_100a.ptx",
-    "line": 266
-  },
-  "memory_analysis_complete": false,
-  "peak_footprint_mib": 61.421875,
-  "peak_rss_mib": 161.21875,
-  "pipeline_elapsed_seconds": 0.077827751,
+  "peak_rss_mib": 139.50390625,
+  "pipeline_elapsed_seconds": 0.209293498,
   "result": "unsupported",
   "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "execution_cohorts": 0,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 0,
-    "synchronization_groups_materialized": false,
-    "synthetic_synchronization_nodes": 0,
-    "thread_prefix_groups": 0
-  },
-  "stage": "ptx_execution",
-  "template_execution": {
-    "completed_ctas": 0,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 0,
-    "path_entries": 0,
-    "record_bindings": 0,
-    "record_nodes": 0,
-    "splits": 0,
-    "template_steps": 0,
-    "thread_memberships": 0,
-    "value_nodes": 0
-  },
-  "thread_record_compression": {
-    "completed_ctas": 0,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 0,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/flashinfer__selective_state_update_sm100_patched_upstream_compat__selective_state_update_s_bf16_i_bf16_w_bf16_a_f32_si_i64_d_64_ds_128_nt_4_cs_i32_na_i32_sm100_selective_state_update__sm_100a.ptx",
-                  "line": 266
-                },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported",
-          "prerequisite_status": "ptx_execution_unsupported"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "ptx_execution_unsupported",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    }
-  },
-  "value_ir_instance_count": 0,
-  "value_ir_node_count": 0,
-  "value_view_complete": false,
+  "verification_limitations": [],
+  "warning_count": 0,
+  "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.465
 }

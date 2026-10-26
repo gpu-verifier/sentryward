@@ -6,11 +6,13 @@
 #include "sentryward/algorithm/io/source_json.h"
 #include "sentryward/algorithm/io/source_storage.h"
 
+#include <algorithm>
 #include <initializer_list>
 #include <istream>
 #include <limits>
 #include <map>
 #include <new>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <utility>
@@ -22,12 +24,12 @@
 
 #include "sentryward/algorithm/analysis/reachability.h"
 #include "sentryward/algorithm/analysis/family_relation_query.h"
+#include "sentryward/algorithm/checker/unit_quotient.h"
 #include "sentryward/algorithm/checker/verifier.h"
 #include "sentryward/algorithm/event_ir/lowering.h"
 #include "sentryward/algorithm/memory/access.h"
 #include "sentryward/algorithm/source_ir/validator.h"
 #include "sentryward/algorithm/source_ir/initialization_recovery.h"
-#include "sentryward/algorithm/io/tmem_recovery.h"
 
 namespace sentryward::algorithm {
 namespace {
@@ -1078,35 +1080,318 @@ std::optional<std::string> ValidateSharedConstantWrites(const SourceArtifact& in
   for(const auto& binding:input.addresses)
     if(binding.address_space=="shared" && !binding.alias_scope.empty() && queries.contains(binding.allocation))
       queried_aliases[binding.alias_scope].insert(binding.allocation);
+  // Each candidate write must be ordered before the chosen source or after its read. The checks are
+  // batched (reachesBatch answers up to 64 sources per traversal) and flushed in visit order, so the
+  // reported failure is the one the first failing check, or an earlier structural error, gives.
+  static const std::string intervene="Another shared-memory write may intervene between the chosen constant source and its read.";
+  struct Pending { EventId access,write,read; };
+  std::vector<Pending> pending;
+  const auto flush=[&]()->bool {
+    if(pending.empty())return true;
+    std::vector<HbQuery> before;before.reserve(pending.size());
+    for(const auto& p:pending)before.push_back({p.access,p.write});
+    const auto ordered=hb.reachesBatch(before);
+    std::vector<HbQuery> after;
+    for(std::size_t i=0;i<pending.size();++i)if(!ordered[i])after.push_back({pending[i].read,pending[i].access});
+    pending.clear();
+    if(after.empty())return true;
+    const auto answers=hb.reachesBatch(after);
+    return std::all_of(answers.begin(),answers.end(),[](auto answer){return answer!=0;});
+  };
+  const auto fail=[&](const MemoryAccess& access,const char* message)->MemoryAnalysisError {
+    return {flush()?std::string(message):intervene,access.event,access.address};
+  };
   scan=VisitMemoryAccesses(certificate.happensBeforeGraph.events(),input.program,
       [&](const MemoryAccess& access)->std::optional<MemoryAnalysisError> {
         if(access.mode!=AccessMode::kWrite || access.bytes==0)return {};
         const auto* id=std::get_if<AddressId>(&access.address);
         if(!id)return {};
         const auto binding=bindings.find(id->value());
-        if(binding==bindings.end())return MemoryAnalysisError{"Shared constant validation found an unbound write.",access.event,access.address};
+        if(binding==bindings.end())return fail(access,"Shared constant validation found an unbound write.");
         if(binding->second->address_space!="shared")return {};
         const auto aliases=queried_aliases.find(binding->second->alias_scope);
         if(binding->second->allocation=="unresolved" || (aliases!=queried_aliases.end() &&
             (aliases->second.size()>1 || !aliases->second.contains(binding->second->allocation))))
-          return MemoryAnalysisError{"Shared constant validation does not support writes with unresolved shared-memory aliasing.",access.event,access.address};
+          return fail(access,"Shared constant validation does not support writes with unresolved shared-memory aliasing.");
         const auto index=queries.find(binding->second->allocation);
         if(index==queries.end())return {};
         const auto region=span(access);
-        if(!region)return MemoryAnalysisError{"Shared constant validation requires a constant footprint for a potentially interfering write.",access.event,access.address};
+        if(!region)return fail(access,"Shared constant validation requires a constant footprint for a potentially interfering write.");
         auto it=index->second.starts.lower_bound(region->begin>=index->second.max_width?
             region->begin-index->second.max_width+1:0);
         for(;it!=index->second.starts.end() && it->first<region->end;++it)
           for(const auto& query:it->second) {
             if(query.end<=region->begin || access.event==query.write)continue;
-            if(!hb.reaches(access.event,query.write) && !hb.reaches(query.read,access.event))
-              return MemoryAnalysisError{"Another shared-memory write may intervene between the chosen constant source and its read.",access.event,access.address};
+            pending.push_back({access.event,query.write,query.read});
           }
+        if(pending.size()>=(std::size_t(1)<<16) && !flush())
+          return MemoryAnalysisError{intervene,access.event,access.address};
         return {};
       });
   if(!scan)return scan.error().message;
+  if(!flush())return intervene;
   return {};
 }
+
+// Cross-CTA class mode: per-occurrence evidence of the quotient program stands
+// for every unit of its CTA's class.
+class QuotientEvidence {
+ public:
+  QuotientEvidence(const UnitQuotient& quotient, const SourceProgram& program)
+      : quotient_(quotient), program_(program), actors_(quotient, program.actors) {}
+  // The CTA of an instruction (its actor's); instruction ids are dense in emission order.
+  [[nodiscard]] std::uint32_t Cta(InstId id) const {
+    if (id.value() >= program_.instructions.size()) throw std::logic_error("instruction outside the program");
+    if (program_.instructions.id(id.value()) != id) throw std::logic_error("instruction ids are not dense");
+    return actors_.Cta(program_.instructions.actor(id.value()));
+  }
+  [[nodiscard]] std::uint64_t Weight(std::uint32_t cta) const { return quotient_.Weight(cta); }
+  [[nodiscard]] const UnitQuotient& quotient() const noexcept { return quotient_; }
+
+ private:
+  const UnitQuotient& quotient_;
+  const SourceProgram& program_;
+  ActorWeights actors_;
+};
+
+// The CTA of an instruction, and CTA-specific ids taken relative to their CTA (repeated entries): an
+// instruction id relative to the CTA's first instruction and an actor id to its first actor, both only
+// inside the run of consecutive ids that starts there (what the CTA's own lowering emitted; instructions
+// appended later, such as cluster completion joins, are not relative), and a barrier lifetime id
+// relative to the lowest lifetime the CTA initializes. Built on first use: one pass over instruction
+// headers, plus the barrier initializers and an O(actors log actors) pass over the actors.
+class CtaRelativeIds {
+ public:
+  static constexpr std::uint32_t kNoCta = UINT32_MAX;
+  explicit CtaRelativeIds(const SourceProgram& program) : program_(program) {}
+  [[nodiscard]] std::uint32_t Cta(InstId id) {
+    Build();
+    if (id.value() >= program_.instructions.size() || program_.instructions.id(id.value()) != id) return kNoCta;
+    const auto actor = program_.instructions.actor(id.value()).value();
+    return actor < actor_cta_.size() ? actor_cta_[actor] : kNoCta;
+  }
+  [[nodiscard]] std::optional<std::int64_t> Relative(MessageIdKind kind, std::uint32_t cta, std::uint32_t value) {
+    Build();
+    if (cta >= instructions_.size()) return std::nullopt;
+    const auto in_range = [&](const Run& run) -> std::optional<std::int64_t> {
+      if (value < run.first || value >= run.end) return std::nullopt;
+      return std::int64_t(value) - run.first;
+    };
+    switch (kind) {
+      case MessageIdKind::kInstruction: return in_range(instructions_[cta]);
+      case MessageIdKind::kActor: return in_range(actors_[cta]);
+      case MessageIdKind::kBarrierLifetime:
+        if (barrier_base_[cta] == UINT32_MAX) return std::nullopt;
+        return std::int64_t(value) - barrier_base_[cta];
+      case MessageIdKind::kOther: break;
+    }
+    return std::nullopt;
+  }
+
+ private:
+  // The run [first, end) of consecutive ids from a CTA's first one; ids are added in increasing order.
+  struct Run {
+    std::uint32_t first = UINT32_MAX;
+    std::uint64_t end = 0;
+    bool open = true;
+    void Add(std::uint32_t value) {
+      if (first == UINT32_MAX) {
+        first = value;
+        end = std::uint64_t(value) + 1;
+      } else if (open && value == end) ++end;
+      else open = false;
+    }
+  };
+  void Build() {
+    if (built_) return;
+    built_ = true;
+    std::uint32_t ctas = 0;
+    for (const auto& actor : program_.actors) {
+      if (actor.id.value() >= actor_cta_.size()) actor_cta_.resize(actor.id.value() + 1, kNoCta);
+      actor_cta_[actor.id.value()] = actor.cta.value();
+      ctas = std::max(ctas, actor.cta.value() + 1);
+    }
+    instructions_.assign(ctas, {});
+    actors_.assign(ctas, {});
+    barrier_base_.assign(ctas, UINT32_MAX);
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> actors; // (id, CTA), in id order
+    actors.reserve(program_.actors.size());
+    for (const auto& actor : program_.actors) actors.emplace_back(actor.id.value(), actor.cta.value());
+    std::sort(actors.begin(), actors.end());
+    for (const auto& [id, cta] : actors) actors_[cta].Add(id);
+    const auto cta_of = [&](std::size_t index) {
+      const auto actor = program_.instructions.actor(index).value();
+      return actor < actor_cta_.size() ? actor_cta_[actor] : kNoCta;
+    };
+    for (std::size_t index = 0; index < program_.instructions.size(); ++index) {
+      const auto cta = cta_of(index);
+      if (cta == kNoCta) continue;
+      instructions_[cta].Add(program_.instructions.id(index).value());
+      if (program_.instructions.holdsOperation<MBarrierInit>(index)) {
+        const auto barrier = std::get<MBarrierInit>(program_.instructions[index].op).barrier.value();
+        barrier_base_[cta] = std::min(barrier_base_[cta], barrier);
+      }
+    }
+  }
+  const SourceProgram& program_;
+  bool built_ = false;
+  std::vector<std::uint32_t> actor_cta_;
+  std::vector<Run> instructions_, actors_;
+  std::vector<std::uint32_t> barrier_base_;
+};
+
+// Repeated entries (docs/output-json.md "Repeated entries"), on both paths: entries of one list that
+// are identical apart from the launch unit they occur in are reported once with `multiplicity` and
+// `members`. Identical apart from the unit: the two CTAs have the same rank in their units, and the
+// entries are equal once every CTA-specific id (an id field or an id rendered in the message) is
+// taken relative to its CTA (CtaRelativeIds). An entry with a non-relative id, or without a CTA,
+// stands alone. The entry shown is the occurrence in the lowest unit, with its own ids; entries are
+// listed in the order of those occurrences. The list's first entry is that occurrence alone, followed
+// by an entry for its other occurrences.
+//
+// In class mode a representative's occurrence stands for every unit of its class, so both paths group
+// the same occurrences and render the same list. Where class mode cannot render the per-unit list
+// exactly (a non-relative entry of a class with members, an entry without a CTA unless the analysed
+// program is numbered as the per-unit one, or a shown occurrence whose CTA the analysed program numbers
+// differently, UnitQuotient::NumberedAsPerUnit) it restarts per unit.
+//
+// Cost: each entry is keyed once (O(entry size)) and hashed; the CTA tables are built once
+// for a non-empty list; members are sorted once per group: O(entries log entries) per unit, and
+// O(representative entries + class sizes per group) in class mode.
+class RepeatedEntries {
+ public:
+  struct IdField {
+    const char* name;
+    MessageIdKind kind;
+    std::uint32_t value;
+  };
+  // `layout`: the launch's units (null: units are not defined and entries stay as listed);
+  // `quotient`: class mode (then `layout` is it).
+  RepeatedEntries(const LaunchUnits* layout, const UnitQuotient* quotient, CtaRelativeIds& ids)
+      : layout_(layout), quotient_(quotient), ids_(ids) {}
+  void Add(Json item, std::uint32_t cta, std::initializer_list<IdField> fields,
+           const std::vector<MessageId>& message_ids = {}) {
+    const auto position = next_++;
+    if (!layout_) {
+      groups_.push_back({std::move(item), position, 0, cta, {}});
+      return;
+    }
+    if (cta == CtaRelativeIds::kNoCta) {
+      // Without a CTA the entry cannot stand for a class, nor be checked against the per-unit numbering.
+      if (quotient_ && (quotient_->Shared() || quotient_->unit_shape[1] != 1 || quotient_->unit_shape[2] != 1))
+        throw UnitClassRestart{"repeated_entries"};
+      groups_.push_back({std::move(item), position, 0, cta, {}});
+      return;
+    }
+    const auto unit = layout_->UnitOf(cta);
+    std::uint32_t source = unit, lowest = unit;
+    if (quotient_) {
+      source = quotient_->units.at(unit).klass;
+      lowest = quotient_->classes.at(source).units.front();
+    }
+    auto key = Key(item, cta, fields, message_ids);
+    if (!key) {
+      if (quotient_ && quotient_->Weight(cta) > 1) throw UnitClassRestart{"repeated_entries"};
+      groups_.push_back({std::move(item), position, lowest, cta, {source}});
+      return;
+    }
+    const auto [found, fresh] = index_.try_emplace(std::move(*key), groups_.size());
+    if (fresh) {
+      groups_.push_back({std::move(item), position, lowest, cta, {source}});
+      return;
+    }
+    auto& group = groups_[found->second];
+    group.sources.push_back(source);
+    if (lowest < group.unit) {
+      group.item = std::move(item);
+      group.position = position;
+      group.unit = lowest;
+      group.cta = cta;
+    }
+  }
+  void Render(Json& list) {
+    std::sort(groups_.begin(), groups_.end(),
+              [](const Group& a, const Group& b) { return a.position < b.position; });
+    const auto first_member = quotient_ ? quotient_->FirstMemberUnit() : 0;
+    for (auto& group : groups_) {
+      if (group.sources.empty()) {
+        list.push_back(std::move(group.item));
+        continue;
+      }
+      if (quotient_ && !quotient_->NumberedAsPerUnit(group.cta, first_member))
+        throw UnitClassRestart{"repeated_entries"};
+      std::vector<std::uint32_t> units;
+      if (quotient_)
+        for (const auto klass : group.sources) {
+          const auto& members = quotient_->classes.at(klass).units;
+          units.insert(units.end(), members.begin(), members.end());
+        }
+      else units = std::move(group.sources);
+      std::sort(units.begin(), units.end());
+      if (list.empty()) {
+        // The shown occurrence alone, then its other occurrences.
+        list.push_back(group.item);
+        units.erase(std::lower_bound(units.begin(), units.end(), group.unit));
+        if (units.empty()) continue;
+      } else if (units.size() == 1) {
+        list.push_back(std::move(group.item));
+        continue;
+      }
+      group.item["multiplicity"] = units.size();
+      auto runs = Json::array();
+      for (std::size_t i = 0; i < units.size();) {
+        std::size_t j = i;
+        while (j + 1 < units.size() && units[j + 1] <= units[j] + 1) ++j;
+        runs.push_back({units[i], units[j]});
+        i = j + 1;
+      }
+      group.item["members"] = std::move(runs);
+      list.push_back(std::move(group.item));
+    }
+  }
+
+ private:
+  struct Group {
+    Json item;
+    std::size_t position;
+    std::uint32_t unit, cta;
+    std::vector<std::uint32_t> sources; // units, or classes in class mode; empty: never merged
+  };
+  // The entry with its CTA-specific ids relative to `cta`, prefixed by the CTA's rank; none when an id
+  // is not relative.
+  std::optional<std::string> Key(const Json& item, std::uint32_t cta, std::initializer_list<IdField> fields,
+                                 const std::vector<MessageId>& message_ids) {
+    Json relative = item;
+    for (const auto& field : fields) {
+      const auto value = ids_.Relative(field.kind, cta, field.value);
+      if (!value) return std::nullopt;
+      relative[field.name] = *value;
+    }
+    if (!message_ids.empty()) {
+      const auto& text = item.at("message").get_ref<const std::string&>();
+      std::string message;
+      std::size_t at = 0;
+      for (const auto& id : message_ids) {
+        const auto value = ids_.Relative(id.kind, cta, id.value);
+        if (!value || id.begin < at || id.begin + id.size > text.size()) return std::nullopt;
+        message.append(text, at, id.begin - at);
+        message += '\x1f';
+        message += std::to_string(static_cast<int>(id.kind)) + ':' + std::to_string(*value);
+        message += '\x1f';
+        at = id.begin + id.size;
+      }
+      message.append(text, at);
+      relative["message"] = std::move(message);
+    }
+    return std::to_string(layout_->RankOf(cta)) + ' ' + relative.dump(-1, ' ', false, Json::error_handler_t::replace);
+  }
+  const LaunchUnits* layout_;
+  const UnitQuotient* quotient_;
+  CtaRelativeIds& ids_;
+  std::size_t next_ = 0;
+  std::vector<Group> groups_;
+  std::unordered_map<std::string, std::size_t> index_;
+};
 
 template <typename Input>
 std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_options,
@@ -1145,18 +1430,25 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
         {"solver_timeout_ms", input.address_solver.timeout_ms},
         {"address_invariants", address_invariants}};
     report["assumption_dependent"] = !address_invariants.empty() ||
+        report["frontend_assumptions"].contains("tensor_properties") ||
         std::any_of(input.semantic_assumptions.begin(), input.semantic_assumptions.end(),
                     [](const auto& item) { return item.second; });
     memory_options.warn_duplicate_tma_stores = input.semantic_assumptions.at("duplicate_tma_store_benign");
+    std::optional<QuotientEvidence> units;
+    if (memory_options.units) units.emplace(*memory_options.units, input.program);
+    // Repeated entries are reported per launch unit on both paths (RepeatedEntries).
+    const LaunchUnits* launch_units = memory_options.units ? memory_options.units : memory_options.launch_units;
+    CtaRelativeIds relative_ids(input.program);
     const auto recovery = ProfileCall("input.recover_initializers", [&] { return RecoverDuplicateInitializers(input.program); });
     report["warnings"] = Json::array();
     if (recovery.applied()) {
       report["analysis_target"] = "recovered_program";
       report["recovery_policy"] = "last_ordered_init";
       std::unordered_set<std::uint32_t> replaced;
+      RepeatedEntries warnings(launch_units, memory_options.units, relative_ids);
       for (const auto& warning : recovery.warnings) {
         replaced.insert(warning.replaced_instruction.value());
-        report["warnings"].push_back({
+        Json item{
             {"code", "duplicate-barrier-initialization"},
             {"message", "Earlier initialization is ignored; the last program-ordered initialization is retained. Analysis applies to the recovered program."},
             {"barrier", warning.barrier.value()},
@@ -1165,8 +1457,13 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
             {"replaced_location", LocationJson(warning.replaced_location)},
             {"retained_location", LocationJson(warning.retained_location)},
             {"replaced_expected_arrivals", warning.replaced_expected_arrivals},
-            {"retained_expected_arrivals", warning.retained_expected_arrivals}});
+            {"retained_expected_arrivals", warning.retained_expected_arrivals}};
+        warnings.Add(std::move(item), relative_ids.Cta(warning.replaced_instruction),
+                     {{"barrier", MessageIdKind::kBarrierLifetime, warning.barrier.value()},
+                      {"replaced_instruction", MessageIdKind::kInstruction, warning.replaced_instruction.value()},
+                      {"retained_instruction", MessageIdKind::kInstruction, warning.retained_instruction.value()}});
       }
+      warnings.Render(report["warnings"]);
       // Original init Issue and Complete denote the same event.
       std::map<const void*,SharedOptional<std::vector<MilestoneRef>>> rewritten_targets;
       for (auto& order : input.required_orders) {
@@ -1194,34 +1491,20 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
       report["stage"] = "event_view_validation";
       report["reason"] = ToString(diagnostics.front().code);
       report["diagnostics"] = Json::array();
+      RepeatedEntries entries(launch_units, memory_options.units, relative_ids);
       for (const auto& diagnostic : diagnostics) {
         Json item{{"code", ToString(diagnostic.code)}, {"message", diagnostic.message}};
-        if (diagnostic.instruction) item["instruction"] = diagnostic.instruction->value();
-        report["diagnostics"].push_back(std::move(item));
+        if (!diagnostic.instruction) {
+          entries.Add(std::move(item), CtaRelativeIds::kNoCta, {}, diagnostic.message_ids);
+          continue;
+        }
+        item["instruction"] = diagnostic.instruction->value();
+        entries.Add(std::move(item), relative_ids.Cta(*diagnostic.instruction),
+                    {{"instruction", MessageIdKind::kInstruction, diagnostic.instruction->value()}},
+                    diagnostic.message_ids);
       }
+      entries.Render(report["diagnostics"]);
       return RenderReport(report);
-    }
-    const auto original_violations = input.source_violations;
-    const auto tmem_recovery = verify ? ProfileCall("input.recover_tmem", [&] { return RecoverSsdDeallocations(input); })
-                                     : std::vector<TmemDeallocationRecovery>{};
-    if (!tmem_recovery.empty()) {
-      report["analysis_target"] = "recovered_program";
-      report["recovery_policy"] = recovery.applied()
-          ? "last_ordered_init+deferred_tmem_deallocation" : "deferred_tmem_deallocation";
-      report["recovered_source_violations"] = Json::array();
-      for (const auto& violation : original_violations)
-        if (violation.code == "tmem_multiple_dealloc")
-          report["recovered_source_violations"].push_back({{"code", violation.code}, {"message", violation.message}});
-      for (const auto& item : tmem_recovery) {
-        Json deallocations = Json::array();
-        for (const auto id : item.deallocations) deallocations.push_back(id.value());
-        report["warnings"].push_back({{"code", "duplicate-tmem-deallocation"},
-            {"message", "Four SSD deallocation warps are replaced by one deferred retirement after the allocation's accesses. Original warp rendezvous are retained. Analysis applies to the recovered program."},
-            {"cta", item.cta.value()}, {"allocation_instruction", item.allocation.value()},
-            {"retirement_instruction", item.retirement.value()}, {"deallocation_instructions", std::move(deallocations)},
-            {"allocation_location", LocationJson(item.allocation_location)},
-            {"deallocation_location", LocationJson(item.deallocation_location)}});
-      }
     }
     ProfileCall("input.compact_source", [&] { CompactSourceStorage(input); });
     ReportRecordGraphSize("source.after_recovery", input.program.instructions, input.program.edges);
@@ -1250,7 +1533,8 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
         });
         report["counts"]["memory_accesses"] = compute_accesses->size();
         model = std::make_unique<SymbolicAddressModel>(
-            input.addresses, input.address_invariants_json, input.address_solver);
+            input.addresses, input.address_invariants_json, input.address_solver, 4096,
+            input.tensor_properties_json);
         ReportAddressMemory(model->constantModel(), "memory.address_model");
         if (const auto error = model->validate()) Fail(error->message);
       }
@@ -1350,42 +1634,98 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
       std::size_t failure_count = 0;
       bool shared_value_unproven=false;
       std::map<std::string,Json> lifecycle_diagnostics;
-      for (std::size_t index = 0; index < input.required_orders.size(); ++index) {
-        const auto& order = input.required_orders[index];
-        if (const auto failed=ordered[index].count()) {
-          failure_count+=failed;
-          const auto kind=order.kind.str();
-          const std::string code=kind=="access_completion_before_dealloc"?"access_completion_before_deallocation_not_proven":
+      const auto code_of=[](const std::string& kind) -> std::string {
+        return kind=="access_completion_before_dealloc"?"access_completion_before_deallocation_not_proven":
             kind=="mbarrier_final_invalidation"?"barrier_completion_before_invalidation_not_proven":
             kind=="allocation_before_dealloc"?"allocation_before_deallocation_not_proven":
             kind=="tmem_group2_access_before_dealloc"?"paired_access_completion_before_deallocation_not_proven":
             kind=="shared_constant_read_from"?"shared_constant_dependency_unproven":kind+"_not_proven";
+      };
+      // The witness of failed required order `index`: its first failed target.
+      const auto failed_order_witness=[&](std::size_t index) {
+        const auto& order=input.required_orders[index];
+        const auto& [family,members]=*ordered[index].failed.begin();
+        const auto& f=static_hb->relations().families().families()[family];
+        const auto event=EventId(f.first.value()+f.stride*members.first());
+        const auto target=lifecycle_origins.origin(event);
+        if(!target)throw std::logic_error("required-order witness lacks source origin");
+        Json witness={{"kind",order.kind.str()},{"message",order.message.str()},
+          {"from_instruction",order.from.instruction.value()},{"to_instruction",target->value()},
+          {"failed_target_count",ordered[index].count()}};
+        if(order.from_effects) {
+          auto effects=Json::array();
+          const auto count=order.from_effects->size();
+          for(std::size_t i=0;i<std::min(count,effect_sample_limit);++i)effects.push_back((*order.from_effects)[i]);
+          witness["from_effects"]=std::move(effects);
+          witness["from_effects_count"]=count;
+          witness["from_effects_truncated"]=count>effect_sample_limit;
+        }
+        return witness;
+      };
+      // Class mode: a failed order of a representative CTA fails in every unit of its class
+      // (counts weighted; samples drawn from that expansion in the per-unit path's order).
+      std::vector<std::pair<std::size_t,std::uint32_t>> class_failures; // (order, its CTA)
+      for (std::size_t index = 0; index < input.required_orders.size(); ++index) {
+        const auto& order = input.required_orders[index];
+        if (const auto failed=ordered[index].count()) {
+          const auto kind=order.kind.str();
+          const std::string code=code_of(kind);
           auto& diagnostic=lifecycle_diagnostics[code];
           if(diagnostic.is_null())diagnostic={{"code",code},{"stage","lifecycle_check"},{"message",order.message.str()},
              {"details",{{"constraint",kind},{"count",0},{"witnesses",Json::array()}}}};
           auto& evidence=diagnostic["details"];
-          evidence["count"]=evidence["count"].get<std::size_t>()+failed;
           shared_value_unproven|=order.kind.view()=="shared_constant_read_from";
+          if(units) {
+            const auto cta=units->Cta(order.from.instruction);
+            const auto weight=units->Weight(cta);
+            failure_count+=failed*weight;
+            evidence["count"]=evidence["count"].get<std::size_t>()+failed*weight;
+            class_failures.emplace_back(index,cta);
+            continue;
+          }
+          failure_count+=failed;
+          evidence["count"]=evidence["count"].get<std::size_t>()+failed;
           if(evidence["witnesses"].size()<failure_sample_limit || unresolved.size()<failure_sample_limit) {
-            const auto& [family,members]=*ordered[index].failed.begin();
-            const auto& f=static_hb->relations().families().families()[family];
-            const auto event=EventId(f.first.value()+f.stride*members.first());
-            const auto target=lifecycle_origins.origin(event);
-            if(!target)throw std::logic_error("required-order witness lacks source origin");
-            Json witness={{"kind",kind},{"message",order.message.str()},
-              {"from_instruction",order.from.instruction.value()},{"to_instruction",target->value()},
-              {"failed_target_count",failed}};
-            if(order.from_effects) {
-              auto effects=Json::array();
-              const auto count=order.from_effects->size();
-              for(std::size_t i=0;i<std::min(count,effect_sample_limit);++i)effects.push_back((*order.from_effects)[i]);
-              witness["from_effects"]=std::move(effects);
-              witness["from_effects_count"]=count;
-              witness["from_effects_truncated"]=count>effect_sample_limit;
-            }
+            auto witness=failed_order_witness(index);
             if(unresolved.size()<failure_sample_limit)unresolved.push_back(witness);
             if(evidence["witnesses"].size()<failure_sample_limit)evidence["witnesses"].push_back(std::move(witness));
           }
+          evidence["witnesses_truncated"]=evidence["count"].get<std::size_t>()>evidence["witnesses"].size();
+        }
+      }
+      if(units && !class_failures.empty()) {
+        // The expansion in the per-unit path's order: orders emitted while a CTA was lowered, CTA by CTA in launch
+        // order (each CTA's are its representative CTA's), then those emitted at Finish, unit by unit.
+        // Each instance carries the representative's witness (its numbering). Bounded: it stops once
+        // every sample list is full.
+        const auto& q=units->quotient();
+        std::map<std::uint32_t,std::vector<std::size_t>> by_cta, by_unit;
+        for(const auto& [index,cta]:class_failures)
+          (index<q.add_time_orders?by_cta[cta]:by_unit[q.UnitOf(cta)]).push_back(index);
+        std::map<std::size_t,Json> witnesses;
+        std::size_t open=1+lifecycle_diagnostics.size();
+        const auto emit=[&](std::size_t index) {
+          auto [cached,fresh]=witnesses.try_emplace(index);
+          if(fresh)cached->second=failed_order_witness(index);
+          // Appends to a sample list; filling it closes one of the open lists.
+          const auto sample=[&](Json& list) {
+            if(list.size()>=failure_sample_limit)return;
+            list.push_back(cached->second);
+            if(list.size()==failure_sample_limit)--open;
+          };
+          sample(unresolved);
+          sample(lifecycle_diagnostics[code_of(input.required_orders[index].kind.str())]["details"]["witnesses"]);
+          return open!=0;
+        };
+        bool more=true;
+        for(std::uint32_t cta=0;more && cta<q.grid[0]*q.grid[1]*q.grid[2];++cta)
+          if(const auto found=by_cta.find(q.RepresentativeCta(cta));found!=by_cta.end())
+            for(const auto index:found->second)if(!(more=emit(index)))break;
+        for(std::uint32_t unit=0;more && unit<q.units.size();++unit)
+          if(const auto found=by_unit.find(q.classes.at(q.units[unit].klass).units.front());found!=by_unit.end())
+            for(const auto index:found->second)if(!(more=emit(index)))break;
+        for(auto& [code,diagnostic]:lifecycle_diagnostics) {
+          auto& evidence=diagnostic["details"];
           evidence["witnesses_truncated"]=evidence["count"].get<std::size_t>()>evidence["witnesses"].size();
         }
       }
@@ -1456,6 +1796,13 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
       for (const auto& race : result.memory->races) {
         report["races"].push_back(finding_json(race));
       }
+      if (const auto& cross = result.memory->cross_unit_race; cross && !report["races"].empty()) {
+        // Cross-CTA class mode: the representatives' accesses, translated into these units.
+        report["races"][0]["cross_unit"] = {{"first_unit", cross->first_unit}, {"first_cta", cross->first_cta},
+            {"second_unit", cross->second_unit}, {"second_cta", cross->second_cta},
+            {"allocation", cross->allocation}, {"first_delta", cross->first_delta},
+            {"second_delta", cross->second_delta}};
+      }
       for (const auto& warning : result.memory->duplicate_tma_store_warnings) {
         Json finding = finding_json(warning);
         finding["code"] = "duplicate-tma-store";
@@ -1520,7 +1867,8 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
       report["memory_analysis"]["address_model"] = {
           {"refined_pairs", address.refined}, {"cache_hits", address.cache_hits},
           {"layer0_disjoint", address.layer0_disjoint}, {"ground_disjoint", address.ground_disjoint},
-          {"ground_overlap", address.ground_overlap}, {"solver_queries", address.solver_queries},
+          {"ground_overlap", address.ground_overlap}, {"congruence_disjoint", address.congruence_disjoint},
+          {"injective_disjoint", address.injective_disjoint}, {"solver_queries", address.solver_queries},
           {"solver_unsat", address.solver_unsat}, {"solver_sat", address.solver_sat},
           {"solver_unknown", address.solver_unknown}};
       if (result.memory->candidate_generation_fallback) {

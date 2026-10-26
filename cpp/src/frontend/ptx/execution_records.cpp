@@ -71,6 +71,26 @@ public:
     Add(part.offset);
     Add(part.bytes);
   }
+  void Add(const BoundedInteger &part) {
+    Add(bool(part.value));
+    if (!part.value) return;
+    Add(part.value->lower);
+    Add(part.value->upper);
+    Add(part.value->identity);
+  }
+  void Add(const AffineForm &part) {
+    Add(part.constant);
+    for (const auto &[atom, coefficient] : part.terms) {
+      Add(atom.object); Add(atom.element_type); Add(atom.byte_offset); Add(coefficient);
+    }
+  }
+  void Add(const BoundedAllocationPointer &part) {
+    Add(bool(part.value));
+    if (!part.value) return;
+    Add(part.value->resource);
+    Add(part.value->offset);
+    Add(part.value->offset_identity);
+  }
   void Add(std::monostate) { Mix(0); }
   void Add(const Scalar &part) {
     Add(part.index());
@@ -100,6 +120,7 @@ public:
     Add(part.assumed_equality);
     Add(part.opaque_compute_register_reads);
     Add(part.opaque_compute_register_writes);
+    Add(part.merged_arm_join);
   }
 };
 bool EqualScalar(const Scalar &left, const Scalar &right) {
@@ -147,6 +168,8 @@ std::uint64_t ScalarStorage(const Scalar &value) {
     else if constexpr (std::is_same_v<T, PointerBits>)
       return part.pointer ? sizeof(PointerValue) + PointerStorage(*part.pointer) : 0;
     else if constexpr (std::is_same_v<T, DescriptorFragment>) return StringStorage(part.descriptor);
+    else if constexpr (std::is_same_v<T, BoundedInteger> || std::is_same_v<T, BoundedAllocationPointer>)
+      return part.value ? sizeof(*part.value) : 0;
     else return 0;
   }, value);
 }

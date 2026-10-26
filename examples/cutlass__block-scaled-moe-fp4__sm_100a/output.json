@@ -1,41 +1,33 @@
 {
-  "assumption_hints": [
-    {
-      "key": "representative_branches",
-      "label": "Representative branches",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    },
-    {
-      "key": "bounded_computation_loops",
-      "label": "Bounded computation loops",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    }
-  ],
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "duplicate_tma_store_benign",
       "label": "Duplicate TMA stores",
       "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
-      "triggered": null
+      "triggered": true
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "representative_election",
       "label": "Representative election",
       "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
-      "triggered": null
+      "triggered": true
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "clc_always_fails",
       "label": "Failed launch cancellation",
       "text": "Every cluster launch cancellation request fails.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "representative_branches",
       "label": "Representative branches",
@@ -43,237 +35,1710 @@
       "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "bounded_computation_loops",
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "not_run",
-    "memory": "not_run",
-    "synchronization": "not_run"
-  },
-  "details": {
-    "required_parameters": []
+    "equivalence": "incomplete",
+    "synchronization": "passed"
   },
   "diagnostics": [
     {
-      "code": "control_predicate_not_static",
+      "code": "expression_form_unsupported",
       "details": {
-        "location": {
-          "column": 0,
-          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
-          "line": 891
-        },
-        "required_parameters": []
+        "internal_stage": "left_import_s"
       },
-      "message": "control predicate is not statically determined",
-      "stage": "ptx_execution"
+      "message": "constant nan type f32",
+      "stage": "equivalence"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
-                  "line": 891
-                },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
   },
-  "frontend": {
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 4608,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 2336,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "shape_input_contract": {
+      "kind": "fixed_read_only",
+      "origin": "shape_arrays",
+      "regions": [
+        {
+          "allocation": "tokens_per_expert.problem_shape",
+          "byte_offset": 0,
+          "bytes": 16,
+          "resource": "input.arg0.24"
+        },
+        {
+          "allocation": "tokens_per_expert",
+          "byte_offset": 0,
+          "bytes": 16,
+          "resource": "input.arg0.1824"
+        }
       ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 0,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
+      "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
     },
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "tokens_per_expert",
-        "offset": 1824,
-        "parameter": "_ZN7cutlass13device_kernelI117cutlass3x_sm100_bstensorop_moe_gemm_ue8m0xf4_ue8m0xf4_f32_void_bf16_128x128x128_1x1x1_0_tnn_align32_mixed_cpasync_1smEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      }
-    ],
-    "required_parameters": [],
-    "user_branch_decisions": []
+    "trap_only_equality_assertions_hold": true
   },
-  "implementation": "cpp",
-  "location": {
-    "column": 0,
-    "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
-    "line": 891
-  },
-  "memory_analysis_complete": false,
-  "peak_footprint_mib": 19.34375,
-  "peak_rss_mib": 466.45703125,
-  "pipeline_elapsed_seconds": 0.052319433,
-  "result": "unsupported",
-  "rss_limit_mib": null,
-  "scope": {
-    "operation": "kernel_verification"
-  },
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "execution_cohorts": 0,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 0,
-    "synchronization_groups_materialized": false,
-    "synthetic_synchronization_nodes": 0,
-    "thread_prefix_groups": 0
-  },
-  "stage": "ptx_execution",
-  "template_execution": {
-    "completed_ctas": 0,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 0,
-    "path_entries": 0,
-    "record_bindings": 0,
-    "record_nodes": 0,
-    "splits": 0,
-    "template_steps": 0,
-    "thread_memberships": 0,
-    "value_nodes": 0
-  },
-  "thread_record_compression": {
-    "completed_ctas": 0,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 0,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
     },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
+    "counts": {
+      "edges": 2859075,
+      "events": 1133928,
+      "instructions": 189522,
+      "memory_accesses": 776915,
+      "threads": 384
+    },
+    "equivalence": {
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 80,
+      "blocked_stage": "left_import_s",
+      "comparison_elapsed_seconds": 0.089209942,
+      "context_declaration": {
+        "assumptions": [],
+        "fixed_inputs": [
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "tokens_per_expert.problem_shape",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
           },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
-                  "line": 891
-                },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported",
-          "prerequisite_status": "ptx_execution_unsupported"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "ptx_execution_unsupported",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "tokens_per_expert.problem_shape",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "tokens_per_expert.problem_shape",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "tokens_per_expert.problem_shape",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "tokens_per_expert",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "tokens_per_expert",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "tokens_per_expert",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "tokens_per_expert",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          }
+        ],
+        "inputs": [],
+        "predicate_nodes": []
+      },
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 108,
+        "affine_state_banks": 1,
+        "finite_bilinear_banks": 1,
+        "finite_state_reuse_banks": 1,
+        "fp4_reference_boundary_templates": 8,
+        "fp_idiom_power_constructions": 0,
+        "fp_idiom_rm_producers": 0,
+        "ideal_additive_compiler_exp_sequences": 0,
+        "ideal_compiler_exp_sequences": 0,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_single_constant_exp_sequences": 0,
+        "imported_context_nodes": 116,
+        "importer_scope_banks": 1,
+        "importer_scope_binders_created": 1,
+        "importer_scope_leaf_lookups": 1,
+        "input_index_radix_quotients": 3,
+        "intern_requests": 279,
+        "known_bits_cache_hits": 2,
+        "known_bits_edges": 9,
+        "known_bits_nodes": 11,
+        "packed_decoder_candidates": 1,
+        "packed_decoder_replacements": 1,
+        "packed_decoder_truth_tables": 1,
+        "packed_radix_probes": 5,
+        "packed_radix_rewrites": 3,
+        "packed_slice_identity_mappings": 2,
+        "packed_transport_visits": 27,
+        "predicate_integer_affine_normalizations": 1,
+        "proved_select_arms_imported": 1,
+        "select_complementary_polarities": 1,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_calls": 3,
+        "select_max_probe_temporary_nodes": 0,
+        "symbolic_byte_reads_without_extent_proof": 0
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 0,
+        "status": "not_proven"
       },
       "diagnostics": [
         {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
+          "code": "expression_form_unsupported",
+          "details": {},
+          "message": "constant nan type f32",
+          "stage": "left_import_s"
         }
       ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
+      "elapsed_s": 0.01345869,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "query_count": 0,
+        "reset_s": 0.0,
+        "reuse_cache": false,
+        "shared_evictions": 0
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 0,
+        "fixed_input_elements": 8,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 0,
+      "finished_families": 0,
+      "fixed_input_context": {
+        "applied": [],
+        "applied_elements": 0,
+        "configured": [
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "tokens_per_expert.problem_shape",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "tokens_per_expert.problem_shape",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "tokens_per_expert.problem_shape",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "tokens_per_expert.problem_shape",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "tokens_per_expert",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "tokens_per_expert",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "tokens_per_expert",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "tokens_per_expert",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105; provenance sha256=",
+            "value": "128"
+          }
+        ],
+        "configured_elements": 8
+      },
+      "idealizations_applied": [],
+      "input_contract_applied_reads": [],
+      "legacy_scalar_fallback": false,
+      "mapping_input_memory_constraints": {},
+      "native_context": {
+        "elements": 8,
+        "input_sha256": "38221ed9afd7a4a44f3335b8d3feb7a19c0fdcd720496100213d3af3b9ae0105",
+        "kind": "verified_current_fixed_input",
+        "provenance_sha256": ""
+      },
+      "normalized_reachable_nodes": 0,
+      "numerical_result": "unsupported",
+      "pattern_nodes": 2,
+      "peak_rss_kib": 2340152,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 0,
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        650,
+        18043
+      ],
+      "reference_term_patterns": 0,
+      "row_groups": [
+        {
+          "count": 1,
+          "families": [
+            [
+              0,
+              0
+            ]
+          ],
+          "record": {},
+          "timing_s": {}
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 0.0,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.0,
+        "left_normalize_s": 0.0,
+        "parametric_state_s": 0.0,
+        "piece_union_record_s": 0.0,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 0.0,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 0.0,
+        "right_normalize_s": 0.0,
+        "state_pattern_s": 0.0
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.00329687
+      },
+      "total_output_families": 2048,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 1,
+      "dependency_compression": {
+        "bulk_read_wait": {
+          "consumers": 512,
+          "emitted_references": 960,
+          "original_references": 7680,
+          "prefix_effects": 0
+        },
+        "cp_async_mbarrier": {
+          "consumers": 512,
+          "emitted_references": 2944,
+          "original_references": 5120,
+          "prefix_effects": 512
+        },
+        "tcgen_commit": {
+          "consumers": 12,
+          "emitted_references": 39,
+          "original_references": 120,
+          "prefix_effects": 12
+        },
+        "tcgen_load_wait": {
+          "consumers": 512,
+          "emitted_references": 4096,
+          "original_references": 10240,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "tcgen_cp_memory_effect_refinement",
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 443036,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 4608,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 2336,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "shape_input_contract": {
+          "kind": "fixed_read_only",
+          "origin": "shape_arrays",
+          "regions": [
+            {
+              "allocation": "tokens_per_expert.problem_shape",
+              "byte_offset": 0,
+              "bytes": 16,
+              "resource": "input.arg0.24"
+            },
+            {
+              "allocation": "tokens_per_expert",
+              "byte_offset": 0,
+              "bytes": 16,
+              "resource": "input.arg0.1824"
+            }
+          ],
+          "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+        },
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "tokens_per_expert.problem_shape",
+          "offset": 24,
+          "parameter": "_ZN7cutlass13device_kernelI117cutlass3x_sm100_bstensorop_moe_gemm_ue8m0xf4_ue8m0xf4_f32_void_bf16_128x128x128_1x1x1_0_tnn_align32_mixed_cpasync_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "B",
+          "offset": 896,
+          "parameter": "_ZN7cutlass13device_kernelI117cutlass3x_sm100_bstensorop_moe_gemm_ue8m0xf4_ue8m0xf4_f32_void_bf16_128x128x128_1x1x1_0_tnn_align32_mixed_cpasync_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "tokens_per_expert",
+          "offset": 1824,
+          "parameter": "_ZN7cutlass13device_kernelI117cutlass3x_sm100_bstensorop_moe_gemm_ue8m0xf4_ue8m0xf4_f32_void_bf16_128x128x128_1x1x1_0_tnn_align32_mixed_cpasync_1smEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 189522,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 8
+      },
+      "reached_opcodes": {
+        "add.s32": 37658,
+        "add.s64": 13854,
+        "and.b16": 192,
+        "and.b32": 8640,
+        "and.b64": 4064,
+        "and.pred": 1332,
+        "bar.arrive": 32,
+        "bar.sync": 4992,
+        "bar.warp.sync": 672,
+        "bfind.shiftamt.u32": 128,
+        "bra": 23920,
+        "bra.uni": 1216,
+        "brev.b32": 128,
+        "cp.async.bulk.commit_group": 512,
+        "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group": 1024,
+        "cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 4,
+        "cp.async.bulk.tensor.4d.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 8,
+        "cp.async.bulk.wait_group.read": 512,
+        "cp.async.cg.shared.global.L2::128B": 2048,
+        "cp.async.mbarrier.arrive.shared::cta.b64": 512,
+        "cvt.rn.bf16x2.f32": 32768,
+        "cvt.s64.s32": 1438,
+        "cvt.u16.u32": 128,
+        "cvt.u32.u64": 10248,
+        "cvt.u64.u32": 4384,
+        "cvta.param.u64": 160,
+        "cvta.shared.u64": 128,
+        "cvta.to.global.u64": 896,
+        "cvta.to.shared.u64": 2176,
+        "div.u32": 480,
+        "elect.sync": 2336,
+        "fence.mbarrier_init.release.cluster": 1920,
+        "fence.proxy.async.shared::cta": 3332,
+        "ld.global.b32": 566,
+        "ld.global.s32": 384,
+        "ld.param.b32": 5376,
+        "ld.param.b64": 3392,
+        "ld.param.b8": 384,
+        "ld.param.v2.b32": 1152,
+        "ld.param.v2.b64": 384,
+        "ld.param.v2.b8": 32,
+        "ld.shared.b32": 672,
+        "ld.shared.v2.b32": 640,
+        "ld.shared.v4.b32": 640,
+        "mad.lo.s32": 960,
+        "mad.lo.s64": 512,
+        "mapa.shared::cluster.u32": 1792,
+        "mbarrier.arrive.expect_tx.shared::cta.b64": 4,
+        "mbarrier.arrive.shared::cluster.b64": 1792,
+        "mbarrier.arrive.shared::cta.b64": 516,
+        "mbarrier.init.shared::cta.b64": 67,
+        "mbarrier.try_wait.parity.shared::cta.b64": 5792,
+        "min.s32": 788,
+        "mov.b32": 37258,
+        "mov.b64": 5300,
+        "mov.pred": 992,
+        "mov.s32": 2409,
+        "mov.u32": 7872,
+        "mul.f32": 65536,
+        "mul.hi.u64": 788,
+        "mul.lo.s32": 608,
+        "mul.lo.s64": 160,
+        "mul.wide.s32": 2320,
+        "mul.wide.u32": 2256,
+        "neg.s32": 640,
+        "not.b32": 480,
+        "not.pred": 128,
+        "or.b16": 160,
+        "or.b32": 2336,
+        "or.b64": 608,
+        "or.pred": 800,
+        "rem.s32": 788,
+        "ret": 384,
+        "selp.b32": 16180,
+        "selp.b64": 1428,
+        "setp.eq.b32": 17902,
+        "setp.eq.b64": 3732,
+        "setp.ge.s32": 2048,
+        "setp.ge.u64": 512,
+        "setp.gt.s32": 2482,
+        "setp.gt.u32": 128,
+        "setp.lt.s32": 3584,
+        "setp.lt.u32": 512,
+        "setp.lt.u64": 640,
+        "setp.ne.b16": 512,
+        "setp.ne.b32": 11528,
+        "setp.ne.b64": 2070,
+        "shfl.sync.idx.b32": 4096,
+        "shfl.sync.up.b32": 1280,
+        "shl.b16": 64,
+        "shl.b32": 10660,
+        "shl.b64": 1248,
+        "shr.s32": 1664,
+        "shr.u32": 6912,
+        "shr.u64": 8340,
+        "st.shared.v4.b32": 4,
+        "stmatrix.sync.aligned.x4.trans.m8n8.shared.b16": 8192,
+        "sub.s32": 1268,
+        "sub.s64": 608,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 32,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 12,
+        "tcgen05.cp.cta_group::1.32x128b.warpx4": 8,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 32,
+        "tcgen05.ld.sync.aligned.16x256b.x4.b32": 4096,
+        "tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32": 8,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 32,
+        "tcgen05.wait::ld.sync.aligned": 512,
+        "vote.sync.ballot.b32": 128,
+        "xor.b32": 9024,
+        "xor.b64": 2048
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 1792,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 24,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 189522,
+        "stored_bindings": 22575
+      },
+      "source_edge_storage": {
+        "binding_templates": 930,
+        "logical_edges": 189138,
+        "stored_bindings": 930
+      },
+      "tcgen_copy_refinement": {
+        "blocked": [],
+        "discharged": 8
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 12,
+        "operations": 16
+      },
+      "thread_count": 384,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "frontend_value_validation": {
+      "required_orders": 1792,
+      "status": "validated"
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      },
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 6,
+        "edge_visits": 486092,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 16660,
+          "family_requests": 3196,
+          "logical_orders": 137600,
+          "owner_bindings": 14524,
+          "stored_orders": 6036
+        }
+      },
+      "shared_constant_interference": {
+        "algorithm": "event-family-relations",
+        "batches": 2,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 40,
+        "filtered_queries": 896,
+        "queries": 1344,
+        "shared_peak_index_bytes": 28672
       }
     },
-    "scope": {
-      "operation": "value_analysis"
-    }
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 7006133,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 135787,
+        "affine_member_rows": 0,
+        "candidate_relations": 651549,
+        "hb_frontier_pieces": 220581,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 776915
+      },
+      "hb_algorithm": "member-relations",
+      "hb_batches": 521,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 12387824,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 7006133,
+      "hb_query_seconds": 1.5546168029999998,
+      "overlap_queries": 176128,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 176128
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 2260.625,
+    "required_order_domains": 6036,
+    "required_orders": 137600,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 45,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 272921,
+      "memory_binding_templates": 46545,
+      "memory_bindings": 510455,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 9025,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 385,
+      "thread_prefix_groups": 532177,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 1,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 454257,
+      "path_entries": 24286,
+      "record_bindings": 28051,
+      "record_nodes": 20286,
+      "splits": 22,
+      "template_steps": 20865,
+      "thread_memberships": 384,
+      "value_nodes": 6914
+    },
+    "thread_record_compression": {
+      "completed_ctas": 1,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 443036,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [],
+      "duplicate_write_value_checks": 170624,
+      "equivalence_check": "translation_or_supported_fragment_blocked",
+      "initial_memory_regions": 3408,
+      "initial_read_families": 1551,
+      "memory_action_storage": {
+        "logical_actions": 510455,
+        "stored_runs": 388505
+      },
+      "output_region_families": 0,
+      "output_regions": 5504,
+      "passes": [
+        {
+          "name": "packing",
+          "rewritten_instances": 1740,
+          "rewritten_nodes": 336,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 356538,
+          "name": "type_edges",
+          "removed_nodes": 70341
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 529,
+          "layouts": 44056,
+          "mapping_blocks": 60703,
+          "name": "view_normalization",
+          "original_pieces": 209920,
+          "reused_initial_reads": 3477,
+          "reused_views": 38534,
+          "segmented": 4112,
+          "slices": 7,
+          "stored_mapping_blocks": 22169,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
+        }
+      ],
+      "processed_memory_actions": 510455,
+      "processed_memory_families": 0,
+      "read_substitutions": 189130,
+      "scalar_fold": {
+        "construction_collections": 0,
+        "diagnostics": [],
+        "output_count": 65536,
+        "output_families_merged": 0,
+        "output_family_count": 2048,
+        "output_root_count": 2048,
+        "peak_construction_nodes": 76890,
+        "shared_view_projection_hits": 93888,
+        "source_outputs": 5504,
+        "spatial_families_projected": 512,
+        "spatial_outputs_projected": 65536,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 995,
+          "edges": 33032,
+          "folds": 4096,
+          "indices": 3,
+          "initial_cells": 1056,
+          "logical_iterations": 40960,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 2,
+          "nodes": 18042,
+          "nodes_before_final_collection": 76890,
+          "nodes_reclaimed": 58848,
+          "operations": 11892,
+          "parameters": 0,
+          "range_descriptions": 4096,
+          "storage_nodes": 18042,
+          "unique_fold_bodies": 4096
+        }
+      },
+      "serialization": {
+        "action_patterns": 388505,
+        "binding_patterns": 272921,
+        "domain_refinements": 970770,
+        "elapsed_seconds": 76.104745028,
+        "event_families": 639902,
+        "expanded_event_records": 0,
+        "largest_batch_members": 112,
+        "logical_actions": 510455,
+        "logical_events": 3485497,
+        "peak_rss_mib_at_completion": 2285.3046875,
+        "reachability_queries": 0,
+        "relations": 1447233,
+        "rss_mib_at_completion": 1625.35546875,
+        "scheduled_batches": 639902,
+        "singleton_batches": 302656,
+        "value_families": 453268
+      },
+      "shared_read_families": 22348,
+      "shared_read_instances": 136949,
+      "stored_read_substitutions": 52181
+    },
+    "value_ir_instance_count": 1750602,
+    "value_ir_node_count": 401927,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 8.81701409,
+    "verification_result": "race_free"
   },
-  "value_ir_instance_count": 0,
-  "value_ir_node_count": 0,
-  "value_view_complete": false,
-  "warnings": [],
+  "peak_rss_mib": 2285.3046875,
+  "pipeline_elapsed_seconds": 89.554722063,
+  "result": "unsupported",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "verification_limitations": [],
+  "warning_count": 2729984,
+  "warning_samples_truncated": true,
+  "warnings": [
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 129,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 116747,
+        "instruction": 30232,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 130,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 132822,
+        "instruction": 31398,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 131,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 148897,
+        "instruction": 32564,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 132,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 164970,
+        "instruction": 33729,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 133,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 181043,
+        "instruction": 34894,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 134,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 197116,
+        "instruction": 36059,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 135,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 213189,
+        "instruction": 37224,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 136,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 229262,
+        "instruction": 38389,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 137,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 245335,
+        "instruction": 39554,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 138,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 261408,
+        "instruction": 40719,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 139,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 277481,
+        "instruction": 41884,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 140,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 293554,
+        "instruction": 43049,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 141,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 309627,
+        "instruction": 44214,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 142,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 325700,
+        "instruction": 45379,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 143,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 341773,
+        "instruction": 46544,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 100672,
+        "instruction": 29066,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 144,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 6451,
+          "kind": "memory"
+        },
+        "event": 357846,
+        "instruction": 47709,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__block-scaled-moe-fp4__sm_100a.ptx",
+          "line": 3941
+        },
+        "mode": "write"
+      }
+    }
+  ],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.103
 }

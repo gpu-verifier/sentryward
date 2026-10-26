@@ -48,20 +48,24 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "enabled": true,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": null
     }
   ],
   "checks": {
     "equivalence": "not_run",
-    "memory": "not_run",
     "synchronization": "not_run"
-  },
-  "details": {
-    "required_parameters": []
   },
   "diagnostics": [
     {
       "code": "control_predicate_not_static",
       "details": {
+        "internal_stage": "ptx_execution",
         "location": {
           "column": 0,
           "file": "corpus/cutlass__sparse-gemm-f16-stream-k-2sm__sm_100a.ptx",
@@ -70,210 +74,190 @@
         "required_parameters": []
       },
       "message": "control predicate is not statically determined",
-      "stage": "ptx_execution"
+      "stage": "synchronization"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
+  "internal": {
+    "details": {
+      "required_parameters": []
     },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/cutlass__sparse-gemm-f16-stream-k-2sm__sm_100a.ptx",
-                  "line": 10016
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "not_run"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "control_predicate_not_static",
+                "details": {
+                  "location": {
+                    "column": 0,
+                    "file": "corpus/cutlass__sparse-gemm-f16-stream-k-2sm__sm_100a.ptx",
+                    "line": 10016
+                  },
+                  "required_parameters": []
                 },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
-  },
-  "frontend": {
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 4096,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 3105,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 28960,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
+                "message": "control predicate is not statically determined",
+                "stage": "ptx_execution"
+              }
+            ],
+            "prerequisite_result": "unsupported"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
     },
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "reduction_workspace",
-        "offset": 2640,
-        "parameter": "_ZN7cutlass13device_kernelI106cutlass3x_sm100_sptensorop_spgemm_f16_f16_f32_void_f16_256x128x64_4x4x1_0_tnt_align16_stream_k_2sm_epi_tmaEEvNT_6ParamsE_param_0",
-        "source": "declaration"
+    "frontend": {
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 4096,
+        "atomic_uses": 16,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 3105,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 28960,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "trap_only_equality_assertions_hold": true
+      },
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "reduction_workspace",
+          "offset": 2640,
+          "parameter": "_ZN7cutlass13device_kernelI106cutlass3x_sm100_sptensorop_spgemm_f16_f16_f32_void_f16_256x128x64_4x4x1_0_tnt_align16_stream_k_2sm_epi_tmaEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        }
+      ],
+      "required_parameters": [],
+      "user_branch_decisions": []
+    },
+    "implementation": "cpp",
+    "location": {
+      "column": 0,
+      "file": "corpus/cutlass__sparse-gemm-f16-stream-k-2sm__sm_100a.ptx",
+      "line": 10016
+    },
+    "memory_analysis_complete": false,
+    "peak_footprint_mib": 444.96875,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": true,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "execution_cohorts": 0,
+      "mapping_complete": false,
+      "memory_binding_stored_rows": 0,
+      "memory_binding_templates": 0,
+      "memory_bindings": 0,
+      "memory_linking_templates_used": false,
+      "synchronization_groups": 0,
+      "synchronization_groups_materialized": false,
+      "synthetic_synchronization_nodes": 0,
+      "thread_prefix_groups": 24509
+    },
+    "stage": "ptx_execution",
+    "template_execution": {
+      "completed_ctas": 16,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 2078947,
+      "path_entries": 114203,
+      "record_bindings": 127788,
+      "record_nodes": 102125,
+      "splits": 209,
+      "template_steps": 105150,
+      "thread_memberships": 4096,
+      "value_nodes": 27808
+    },
+    "thread_record_compression": {
+      "completed_ctas": 16,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 2007235,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "not_run"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "control_predicate_not_static",
+                "details": {
+                  "location": {
+                    "column": 0,
+                    "file": "corpus/cutlass__sparse-gemm-f16-stream-k-2sm__sm_100a.ptx",
+                    "line": 10016
+                  },
+                  "required_parameters": []
+                },
+                "message": "control predicate is not statically determined",
+                "stage": "ptx_execution"
+              }
+            ],
+            "prerequisite_result": "unsupported",
+            "prerequisite_status": "ptx_execution_unsupported"
+          },
+          "stage": "pipeline"
+        }
+      ],
+      "equivalence_check": "blocked",
+      "prerequisite_status": "ptx_execution_unsupported",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
       }
-    ],
-    "required_parameters": [],
-    "user_branch_decisions": []
+    },
+    "value_ir_instance_count": 187774,
+    "value_ir_node_count": 17721,
+    "value_view_complete": false
   },
-  "implementation": "cpp",
-  "location": {
-    "column": 0,
-    "file": "corpus/cutlass__sparse-gemm-f16-stream-k-2sm__sm_100a.ptx",
-    "line": 10016
-  },
-  "memory_analysis_complete": false,
-  "peak_footprint_mib": 465.25390625,
-  "peak_rss_mib": 465.25390625,
-  "pipeline_elapsed_seconds": 4.688520289,
+  "peak_rss_mib": 444.96875,
+  "pipeline_elapsed_seconds": 3.96901825,
   "result": "unsupported",
   "rss_limit_mib": null,
   "scope": {
     "operation": "kernel_verification"
   },
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "execution_cohorts": 0,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 0,
-    "synchronization_groups_materialized": false,
-    "synthetic_synchronization_nodes": 0,
-    "thread_prefix_groups": 24509
-  },
-  "stage": "ptx_execution",
-  "template_execution": {
-    "completed_ctas": 16,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 2078947,
-    "path_entries": 114203,
-    "record_bindings": 129053,
-    "record_nodes": 102477,
-    "splits": 209,
-    "template_steps": 105534,
-    "thread_memberships": 4096,
-    "value_nodes": 29036
-  },
-  "thread_record_compression": {
-    "completed_ctas": 16,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 2007235,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/cutlass__sparse-gemm-f16-stream-k-2sm__sm_100a.ptx",
-                  "line": 10016
-                },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported",
-          "prerequisite_status": "ptx_execution_unsupported"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "ptx_execution_unsupported",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    }
-  },
-  "value_ir_instance_count": 187774,
-  "value_ir_node_count": 17721,
-  "value_view_complete": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.467
 }

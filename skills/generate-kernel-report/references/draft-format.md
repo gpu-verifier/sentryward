@@ -37,7 +37,7 @@ Code excerpts support optional `operands`: e.g. `[{"token":"%r7","meaning":"Rele
 
 ## Evidence
 
-- `{"kind":"result","pointer":"/rejection/code"}` or `{"kind":"input","pointer":"/launch/block_dim"}` resolves the exact JSON pointer. Optional `equals` checks its exact value and type. Null is valid evidence; an absent pointer is an error. Array indices are zero based.
+- `{"kind":"result","pointer":"/evidence/rejection/code"}` or `{"kind":"input","pointer":"/launch/block_dim"}` resolves the exact JSON pointer in the saved file. Public outputs save witnesses under `/evidence` and analysis details under `/internal`; older outputs save them at the top level, e.g. `/rejection/code`. For a public output, the unprefixed pointer is also accepted; the report cites its saved location. Optional `equals` checks its exact value and type. Null is valid evidence; an absent pointer is an error. Array indices are zero based.
 - `{"kind":"ptx","lines":"12-14,20","contains":["%p1","bra"]}` checks physical PTX lines and literal tokens. Tokens must occur in those lines. This does not prove the written interpretation.
 - `{"kind":"source","file":"kernel.cu","lines":"40-46","contains":["consumer_wait"]}` reads only an explicitly supplied `--source kernel.cu`. Do not substitute a saved source line for a PTX line.
 
@@ -71,7 +71,7 @@ Use `kind:"timeline"` when you can support the participants and order. Required 
 - `participants`: one to four objects with distinct `id`, readable `label`, and `evidence` establishing the mapping.
 - `steps`: ordered objects with `participant`, `action`, `evidence`. A witness step also supplies its exact integer `event`.
 - `conditions`: `participants`, `branches`, `iterations`, `completion`, each an object with `text` and `evidence`. Explain the actual scope or why an item is inapplicable; do not fill these with generic caveats.
-- For `verifier witness`, `sequence` is the exact saved `/counterexample/.../events` JSON pointer. The renderer rejects reversed/unlisted events and marks skipped or truncated intervals.
+- For `verifier witness`, `sequence` is the exact saved `/evidence/counterexample/.../events` JSON pointer (`/counterexample/.../events` in older outputs; also accepted for public outputs). The renderer rejects reversed/unlisted events and marks skipped or truncated intervals.
 
 Rows are logical steps, not elapsed time. Empty cells mean no step shown, not that a participant is idle. A possible interleaving must be consistent with all relevant source conditions, not merely listing order. Missing participant mappings prevent a **verifier witness** participant table; they do not prevent a **possible interleaving** derived independently from thread guards and source ordering. For that view, establish concrete participants, the admitting branch/iteration, and the relevant completion constraints; say whether it is bound to the retained pair. If those source relations cannot be established, use the supported relation diagram. Do not silently turn static thread groups into observed issuers.
 

@@ -1,14 +1,4 @@
 {
-  "address_model": {
-    "address_invariants": [],
-    "kind": "symbolic",
-    "layers": [
-      0,
-      2
-    ],
-    "solver": "z3",
-    "solver_timeout_ms": 100
-  },
   "assumption_dependent": true,
   "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
@@ -51,1092 +41,25 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "passed",
-    "memory": "passed",
     "synchronization": "passed"
   },
-  "counts": {
-    "edges": 16384,
-    "events": 17408,
-    "instructions": 8704,
-    "memory_accesses": 8704,
-    "threads": 1024
-  },
   "diagnostics": [],
-  "equivalence": {
-    "access_validity": "no_unresolved_symbolic_byte_reads",
-    "arena_nodes": 420,
-    "checks": {
-      "equivalence": "passed",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "comparison_elapsed_seconds": 0.009487057,
-    "context_declaration": {
-      "assumptions": [],
-      "fixed_inputs": [
-        {
-          "coordinates": [
-            "0"
-          ],
-          "input": "positions",
-          "interpretation": "s64",
-          "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
-          "value": "3"
-        },
-        {
-          "coordinates": [
-            "1"
-          ],
-          "input": "positions",
-          "interpretation": "s64",
-          "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
-          "value": "7"
-        },
-        {
-          "coordinates": [
-            "2"
-          ],
-          "input": "positions",
-          "interpretation": "s64",
-          "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
-          "value": "11"
-        },
-        {
-          "coordinates": [
-            "3"
-          ],
-          "input": "positions",
-          "interpretation": "s64",
-          "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
-          "value": "5"
-        }
-      ],
-      "inputs": [],
-      "predicate_nodes": []
-    },
-    "context_policy": "explicit native caller premises; no implied provenance certification",
-    "counters": {
-      "add_term_visits": 3367,
-      "affine_state_banks": 1,
-      "canonical_node_visits": 177,
-      "coordinate_digit_node_visits": 68,
-      "ep_identity_proofs": 40,
-      "ep_scalar_attempts": 40,
-      "ep_scalar_proofs": 40,
-      "finite_bilinear_banks": 1,
-      "finite_state_reuse_ambiguous_anchor_declines": 40,
-      "finite_state_reuse_banks": 1,
-      "fixed_input_reads_substituted": 4,
-      "fp_idiom_power_constructions": 0,
-      "fp_idiom_rm_producers": 0,
-      "ideal_additive_compiler_exp_sequences": 0,
-      "ideal_compiler_exp_sequences": 0,
-      "ideal_compiler_log2_polynomials": 0,
-      "ideal_compiler_lse_sequences": 0,
-      "ideal_single_constant_exp_sequences": 0,
-      "imported_context_nodes": 659,
-      "intern_requests": 12053,
-      "normalization_node_visits": 669,
-      "parametric_state_attempts": 0,
-      "proved_select_arms_imported": 44,
-      "select_max_probe_ancestor_nodes": 0,
-      "select_max_probe_temporary_nodes": 0,
-      "symbolic_byte_reads_without_extent_proof": 0
-    },
-    "definedness": {
-      "partial_equivalence_families": 0,
-      "proved_families": 40,
-      "status": "proved"
-    },
-    "diagnostics": [],
-    "elapsed_s": 0.008228773,
-    "engine": "reference_guided_cpp",
-    "ep_profile": {
-      "body_instantiation_s": 0.0,
-      "body_scalar_s": 0.0,
-      "candidate_discovery_and_bookkeeping_s": 0.0,
-      "cross_product_s": 0.0,
-      "enabled": false,
-      "equal_s": 0.0,
-      "fraction": {
-        "computations": 0,
-        "previously_completed": 0,
-        "repeated_across_queries": 0,
-        "requests": 0,
-        "shared_hits": 0,
-        "unique_query_nodes": 0
-      },
-      "fraction_witness_s": 0.0,
-      "match_total_s": 0.0,
-      "normal": {
-        "computations": 0,
-        "previously_completed": 0,
-        "repeated_across_queries": 0,
-        "requests": 0,
-        "shared_hits": 0,
-        "unique_query_nodes": 0
-      },
-      "ordinary_polynomial_s": 0.0,
-      "polynomial": {
-        "computations": 0,
-        "previously_completed": 0,
-        "repeated_across_queries": 0,
-        "requests": 0,
-        "shared_hits": 0,
-        "unique_query_nodes": 0
-      },
-      "query_count": 40,
-      "reset_s": 0.0,
-      "reuse_cache": false,
-      "shared_evictions": 0
-    },
-    "equivalence_context": {
-      "applied_predicates": 0,
-      "element_assumptions": 0,
-      "fixed_input_elements": 4,
-      "scoped_predicates": 0
-    },
-    "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
-    "equivalent_families": 40,
-    "finished_families": 40,
-    "fixed_input_context": {
-      "applied": [
-        {
-          "coordinates": [
-            "0"
-          ],
-          "input": "positions",
-          "interpretation": "s64",
-          "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
-          "side": "left",
-          "value": "3"
-        },
-        {
-          "coordinates": [
-            "1"
-          ],
-          "input": "positions",
-          "interpretation": "s64",
-          "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
-          "side": "left",
-          "value": "7"
-        },
-        {
-          "coordinates": [
-            "2"
-          ],
-          "input": "positions",
-          "interpretation": "s64",
-          "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
-          "side": "left",
-          "value": "11"
-        },
-        {
-          "coordinates": [
-            "3"
-          ],
-          "input": "positions",
-          "interpretation": "s64",
-          "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
-          "side": "left",
-          "value": "5"
-        }
-      ],
-      "applied_elements": 4,
-      "configured": [
-        {
-          "coordinates": [
-            "0"
-          ],
-          "input": "positions",
-          "interpretation": "s64",
-          "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
-          "value": "3"
-        },
-        {
-          "coordinates": [
-            "1"
-          ],
-          "input": "positions",
-          "interpretation": "s64",
-          "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
-          "value": "7"
-        },
-        {
-          "coordinates": [
-            "2"
-          ],
-          "input": "positions",
-          "interpretation": "s64",
-          "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
-          "value": "11"
-        },
-        {
-          "coordinates": [
-            "3"
-          ],
-          "input": "positions",
-          "interpretation": "s64",
-          "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
-          "value": "5"
-        }
-      ],
-      "configured_elements": 4
-    },
-    "idealizations_applied": [],
-    "input_contract_applied_reads": [],
-    "legacy_scalar_fallback": false,
-    "mapping_input_memory_constraints": {},
-    "native_context": {
-      "elements": 4,
-      "input_sha256": "280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533",
-      "kind": "verified_current_fixed_input",
-      "provenance_sha256": "79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894"
-    },
-    "normalized_reachable_nodes": 177,
-    "numerical_result": "verified",
-    "pattern_nodes": 2,
-    "peak_rss_kib": 165088,
-    "peak_rss_scope": "process_lifetime_not_comparison_delta",
-    "piece_nodes": 0,
-    "piece_union": {
-      "abstract_optimized_replacements": 0,
-      "abstract_reference_replacements": 0,
-      "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
-      "collected_pieces": 0,
-      "late_certificates": "accepted_until_each_schema_is_complete",
-      "method": "complete_output_equalities_with_finite_piece_union",
-      "replacements": 0,
-      "schemas": [],
-      "stored_dag_work": 0,
-      "work_limit": 2000000
-    },
-    "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
-    "raw_nodes": [
-      72,
-      236
-    ],
-    "reference_term_patterns": 0,
-    "result": "verified",
-    "rows": [
-      {
-        "affine_state_pattern_s": 2.2000000000000535e-06,
-        "cumulative_elapsed_s": 0.000759932,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 0,
-        "left_import_s": 0.000264481,
-        "left_normalize_s": 4.036000000000003e-05,
-        "parametric_state_s": 4.2499999999999136e-06,
-        "piece_union_record_s": 7.90999999999997e-06,
-        "piece_union_seal_s": 3.100000000000021e-07,
-        "right_import_s": 0.00012445999999999996,
-        "right_normalize_s": 1.740999999999993e-05,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 6.900000000000222e-07,
-        "cumulative_elapsed_s": 0.000969633,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 1,
-        "left_import_s": 0.00012424099999999998,
-        "left_normalize_s": 1.9520000000000084e-05,
-        "parametric_state_s": 1.319999999999967e-06,
-        "piece_union_record_s": 3.049999999999993e-06,
-        "piece_union_seal_s": 2.9999999999930256e-08,
-        "right_import_s": 5.084999999999996e-05,
-        "right_normalize_s": 6.409999999999988e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 3.500000000000898e-07,
-        "cumulative_elapsed_s": 0.001171054,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 2,
-        "left_import_s": 9.249000000000009e-05,
-        "left_normalize_s": 1.9510000000000144e-05,
-        "parametric_state_s": 1.0699999999999339e-06,
-        "piece_union_record_s": 3.039999999999944e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 7.559100000000007e-05,
-        "right_normalize_s": 6.919999999999886e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 2.999999999999531e-07,
-        "cumulative_elapsed_s": 0.001331824,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 3,
-        "left_import_s": 6.894999999999991e-05,
-        "left_normalize_s": 1.7050000000000008e-05,
-        "parametric_state_s": 8.499999999999393e-07,
-        "piece_union_record_s": 2.5800000000000736e-06,
-        "piece_union_seal_s": 3.0000000000038676e-08,
-        "right_import_s": 6.310000000000018e-05,
-        "right_normalize_s": 5.610000000000077e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.9999999999989644e-07,
-        "cumulative_elapsed_s": 0.001519105,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 4,
-        "left_import_s": 7.952999999999997e-05,
-        "left_normalize_s": 1.876099999999995e-05,
-        "parametric_state_s": 9.400000000000554e-07,
-        "piece_union_record_s": 2.660000000000032e-06,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "right_import_s": 7.605999999999997e-05,
-        "right_normalize_s": 7.110000000000059e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.9000000000017267e-07,
-        "cumulative_elapsed_s": 0.001682585,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 5,
-        "left_import_s": 6.970000000000001e-05,
-        "left_normalize_s": 1.7630000000000033e-05,
-        "parametric_state_s": 8.79999999999978e-07,
-        "piece_union_record_s": 2.570000000000133e-06,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "right_import_s": 6.471000000000016e-05,
-        "right_normalize_s": 5.999999999999929e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.6999999999985776e-07,
-        "cumulative_elapsed_s": 0.001854066,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 6,
-        "left_import_s": 7.449999999999991e-05,
-        "left_normalize_s": 1.7850000000000027e-05,
-        "parametric_state_s": 8.899999999999186e-07,
-        "piece_union_record_s": 2.480000000000017e-06,
-        "piece_union_seal_s": 3.0000000000038676e-08,
-        "right_import_s": 6.668000000000017e-05,
-        "right_normalize_s": 6.8900000000000645e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 2.5999999999975695e-07,
-        "cumulative_elapsed_s": 0.002021196,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 7,
-        "left_import_s": 6.923999999999993e-05,
-        "left_normalize_s": 1.7319999999999922e-05,
-        "parametric_state_s": 8.899999999999186e-07,
-        "piece_union_record_s": 2.499999999999898e-06,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "right_import_s": 6.947000000000008e-05,
-        "right_normalize_s": 5.649999999999839e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 2.100000000000539e-07,
-        "cumulative_elapsed_s": 0.002315947,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 8,
-        "left_import_s": 0.00014025000000000018,
-        "left_normalize_s": 1.9249999999999736e-05,
-        "parametric_state_s": 1.0499999999998358e-06,
-        "piece_union_record_s": 2.9100000000000653e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 0.0001217010000000001,
-        "right_normalize_s": 7.570000000000146e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 2.099999999996202e-07,
-        "cumulative_elapsed_s": 0.002518037,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 9,
-        "left_import_s": 0.00011199999999999969,
-        "left_normalize_s": 1.7249999999999904e-05,
-        "parametric_state_s": 9.300000000001148e-07,
-        "piece_union_record_s": 2.709999999999952e-06,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "right_import_s": 6.166999999999978e-05,
-        "right_normalize_s": 5.489999999999922e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 2.100000000000539e-07,
-        "cumulative_elapsed_s": 0.002711978,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 10,
-        "left_import_s": 8.178100000000039e-05,
-        "left_normalize_s": 1.8610000000000067e-05,
-        "parametric_state_s": 9.49999999999996e-07,
-        "piece_union_record_s": 2.620000000000053e-06,
-        "piece_union_seal_s": 2.0000000000314905e-08,
-        "right_import_s": 8.064000000000031e-05,
-        "right_normalize_s": 7.1699999999999195e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.9000000000017267e-07,
-        "cumulative_elapsed_s": 0.002882658,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 11,
-        "left_import_s": 7.462000000000007e-05,
-        "left_normalize_s": 1.6159999999999872e-05,
-        "parametric_state_s": 8.600000000000968e-07,
-        "piece_union_record_s": 2.4499999999997614e-06,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "right_import_s": 6.893000000000003e-05,
-        "right_normalize_s": 5.670000000000154e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 2.6000000000019063e-07,
-        "cumulative_elapsed_s": 0.003086149,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 12,
-        "left_import_s": 8.378100000000022e-05,
-        "left_normalize_s": 1.855999999999993e-05,
-        "parametric_state_s": 8.79999999999978e-07,
-        "piece_union_record_s": 2.550000000000035e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 8.820000000000008e-05,
-        "right_normalize_s": 7.479999999999813e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 4.200000000001078e-07,
-        "cumulative_elapsed_s": 0.003260869,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 13,
-        "left_import_s": 7.646999999999992e-05,
-        "left_normalize_s": 1.5799999999999842e-05,
-        "parametric_state_s": 8.000000000000194e-07,
-        "piece_union_record_s": 2.7199999999998926e-06,
-        "piece_union_seal_s": 2.0000000000314905e-08,
-        "right_import_s": 7.140000000000011e-05,
-        "right_normalize_s": 5.499999999999863e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.9000000000017267e-07,
-        "cumulative_elapsed_s": 0.0034419,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 14,
-        "left_import_s": 7.861100000000013e-05,
-        "left_normalize_s": 1.791999999999983e-05,
-        "parametric_state_s": 8.899999999999186e-07,
-        "piece_union_record_s": 2.409999999999999e-06,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "right_import_s": 7.265000000000006e-05,
-        "right_normalize_s": 6.739999999999871e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.9000000000017267e-07,
-        "cumulative_elapsed_s": 0.00361633,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 15,
-        "left_import_s": 7.82999999999999e-05,
-        "left_normalize_s": 1.6060000000000033e-05,
-        "parametric_state_s": 8.000000000000194e-07,
-        "piece_union_record_s": 2.500000000000332e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 6.937999999999996e-05,
-        "right_normalize_s": 5.45000000000016e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 2.199999999999945e-07,
-        "cumulative_elapsed_s": 0.003912791,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 16,
-        "left_import_s": 0.00014102099999999985,
-        "left_normalize_s": 1.8730000000000222e-05,
-        "parametric_state_s": 9.100000000002335e-07,
-        "piece_union_record_s": 2.7400000000002075e-06,
-        "piece_union_seal_s": 3.000000000025552e-08,
-        "right_import_s": 0.00012341,
-        "right_normalize_s": 7.4900000000001875e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.89999999999739e-07,
-        "cumulative_elapsed_s": 0.004132722,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 17,
-        "left_import_s": 0.00012587099999999962,
-        "left_normalize_s": 1.6230000000000758e-05,
-        "parametric_state_s": 1.020000000000014e-06,
-        "piece_union_record_s": 2.5899999999993636e-06,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "right_import_s": 6.68299999999995e-05,
-        "right_normalize_s": 5.429999999999845e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.999999999996796e-07,
-        "cumulative_elapsed_s": 0.004331932,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 18,
-        "left_import_s": 8.58600000000001e-05,
-        "left_normalize_s": 1.802999999999961e-05,
-        "parametric_state_s": 7.799999999997045e-07,
-        "piece_union_record_s": 2.4599999999992683e-06,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "right_import_s": 8.340999999999991e-05,
-        "right_normalize_s": 6.809999999999455e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.89999999999739e-07,
-        "cumulative_elapsed_s": 0.004505833,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 19,
-        "left_import_s": 7.654100000000028e-05,
-        "left_normalize_s": 1.5890000000000175e-05,
-        "parametric_state_s": 7.499999999998827e-07,
-        "piece_union_record_s": 2.430000000000314e-06,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "right_import_s": 7.108000000000027e-05,
-        "right_normalize_s": 5.380000000000142e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.6999999999985776e-07,
-        "cumulative_elapsed_s": 0.004706104,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 20,
-        "left_import_s": 8.433000000000052e-05,
-        "left_normalize_s": 1.7800000000000107e-05,
-        "parametric_state_s": 9.499999999995623e-07,
-        "piece_union_record_s": 2.4899999999999575e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 8.597099999999979e-05,
-        "right_normalize_s": 6.769999999999693e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 2.9000000000001247e-07,
-        "cumulative_elapsed_s": 0.004884354,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 21,
-        "left_import_s": 7.833999999999966e-05,
-        "left_normalize_s": 1.6089999999999854e-05,
-        "parametric_state_s": 8.30000000000275e-07,
-        "piece_union_record_s": 2.4200000000003732e-06,
-        "piece_union_seal_s": 2.0000000000748586e-08,
-        "right_import_s": 7.305999999999979e-05,
-        "right_normalize_s": 5.489999999999488e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 2.099999999996202e-07,
-        "cumulative_elapsed_s": 0.005074185,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 22,
-        "left_import_s": 8.000000000000021e-05,
-        "left_normalize_s": 1.7969999999999965e-05,
-        "parametric_state_s": 7.699999999997639e-07,
-        "piece_union_record_s": 2.4600000000001357e-06,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "right_import_s": 7.969099999999979e-05,
-        "right_normalize_s": 6.909999999999729e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 2.2000000000042819e-07,
-        "cumulative_elapsed_s": 0.005248805,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 23,
-        "left_import_s": 7.686999999999972e-05,
-        "left_normalize_s": 1.6149999999999498e-05,
-        "parametric_state_s": 7.600000000006907e-07,
-        "piece_union_record_s": 2.400000000000492e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 7.095000000000018e-05,
-        "right_normalize_s": 5.469999999999607e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.89999999999739e-07,
-        "cumulative_elapsed_s": 0.005528116,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 24,
-        "left_import_s": 0.0001342009999999996,
-        "left_normalize_s": 1.8890000000000573e-05,
-        "parametric_state_s": 8.399999999993482e-07,
-        "piece_union_record_s": 2.549999999999601e-06,
-        "piece_union_seal_s": 3.00000000006892e-08,
-        "right_import_s": 0.0001131099999999996,
-        "right_normalize_s": 7.779999999999766e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.999999999996796e-07,
-        "cumulative_elapsed_s": 0.005729506,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 25,
-        "left_import_s": 0.0001122499999999995,
-        "left_normalize_s": 1.645000000000032e-05,
-        "parametric_state_s": 8.100000000003937e-07,
-        "piece_union_record_s": 2.4400000000002545e-06,
-        "piece_union_seal_s": 3.00000000006892e-08,
-        "right_import_s": 6.192000000000003e-05,
-        "right_normalize_s": 5.510000000000237e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.6999999999985776e-07,
-        "cumulative_elapsed_s": 0.005923377,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 26,
-        "left_import_s": 8.208100000000034e-05,
-        "left_normalize_s": 1.8429999999999835e-05,
-        "parametric_state_s": 7.999999999995858e-07,
-        "piece_union_record_s": 2.450000000000195e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 8.126000000000053e-05,
-        "right_normalize_s": 7.089999999999527e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 2.9000000000001247e-07,
-        "cumulative_elapsed_s": 0.006103758,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 27,
-        "left_import_s": 8.12199999999999e-05,
-        "left_normalize_s": 1.7370999999999533e-05,
-        "parametric_state_s": 8.000000000004531e-07,
-        "piece_union_record_s": 2.77999999999997e-06,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "right_import_s": 6.93899999999999e-05,
-        "right_normalize_s": 6.250000000000179e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.6999999999985776e-07,
-        "cumulative_elapsed_s": 0.006300968,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 28,
-        "left_import_s": 8.311000000000082e-05,
-        "left_normalize_s": 1.833000000000043e-05,
-        "parametric_state_s": 7.800000000005719e-07,
-        "piece_union_record_s": 2.6000000000001716e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 8.342999999999979e-05,
-        "right_normalize_s": 6.879999999999907e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 4.800000000006188e-07,
-        "cumulative_elapsed_s": 0.006476839,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 29,
-        "left_import_s": 7.736999999999935e-05,
-        "left_normalize_s": 1.6340000000000104e-05,
-        "parametric_state_s": 8.109999999998674e-07,
-        "piece_union_record_s": 2.3900000000005514e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 7.138000000000023e-05,
-        "right_normalize_s": 5.4099999999999634e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.7999999999979838e-07,
-        "cumulative_elapsed_s": 0.006668599,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 30,
-        "left_import_s": 8.095999999999971e-05,
-        "left_normalize_s": 1.809000000000012e-05,
-        "parametric_state_s": 7.599999999998233e-07,
-        "piece_union_record_s": 2.450000000000195e-06,
-        "piece_union_seal_s": 3.00000000006892e-08,
-        "right_import_s": 8.08600000000003e-05,
-        "right_normalize_s": 6.780000000000501e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.999999999996796e-07,
-        "cumulative_elapsed_s": 0.00683965,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 31,
-        "left_import_s": 7.504000000000018e-05,
-        "left_normalize_s": 1.6139999999999557e-05,
-        "parametric_state_s": 7.899999999996452e-07,
-        "piece_union_record_s": 2.4899999999999575e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 6.913100000000005e-05,
-        "right_normalize_s": 5.429999999999845e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.6999999999985776e-07,
-        "cumulative_elapsed_s": 0.0069827,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 32,
-        "left_import_s": 5.6879999999999604e-05,
-        "left_normalize_s": 1.7679999999999953e-05,
-        "parametric_state_s": 1.0399999999998952e-06,
-        "piece_union_record_s": 7.570000000000146e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 5.09099999999995e-05,
-        "right_normalize_s": 6.890000000000715e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.89999999999739e-07,
-        "cumulative_elapsed_s": 0.00710562,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 33,
-        "left_import_s": 4.985999999999966e-05,
-        "left_normalize_s": 1.5610000000000103e-05,
-        "parametric_state_s": 8.500000000001562e-07,
-        "piece_union_record_s": 2.4200000000003732e-06,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "right_import_s": 4.6710000000000154e-05,
-        "right_normalize_s": 5.51999999999931e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.5999999999991715e-07,
-        "cumulative_elapsed_s": 0.007278001,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 34,
-        "left_import_s": 7.487100000000066e-05,
-        "left_normalize_s": 1.7899999999999514e-05,
-        "parametric_state_s": 8.79999999999978e-07,
-        "piece_union_record_s": 2.499999999999898e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 6.718000000000002e-05,
-        "right_normalize_s": 6.949999999999491e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.7999999999979838e-07,
-        "cumulative_elapsed_s": 0.007437411,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 35,
-        "left_import_s": 6.910999999999983e-05,
-        "left_normalize_s": 1.594999999999982e-05,
-        "parametric_state_s": 8.19999999999467e-07,
-        "piece_union_record_s": 2.430000000000314e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 6.353000000000001e-05,
-        "right_normalize_s": 5.700000000000843e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.7000000000072513e-07,
-        "cumulative_elapsed_s": 0.007615572,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 36,
-        "left_import_s": 7.884000000000016e-05,
-        "left_normalize_s": 1.7989999999999846e-05,
-        "parametric_state_s": 8.099999999995264e-07,
-        "piece_union_record_s": 2.419999999999506e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 6.908099999999948e-05,
-        "right_normalize_s": 6.9199999999996695e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 2.0000000000054696e-07,
-        "cumulative_elapsed_s": 0.007778632,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 37,
-        "left_import_s": 7.104999999999959e-05,
-        "left_normalize_s": 1.582000000000059e-05,
-        "parametric_state_s": 8.700000000000374e-07,
-        "piece_union_record_s": 2.5199999999997794e-06,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "right_import_s": 6.50200000000007e-05,
-        "right_normalize_s": 5.609999999999643e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 1.8000000000066574e-07,
-        "cumulative_elapsed_s": 0.007950423,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 38,
-        "left_import_s": 7.441000000000045e-05,
-        "left_normalize_s": 1.8139999999999823e-05,
-        "parametric_state_s": 7.899999999987778e-07,
-        "piece_union_record_s": 2.5300000000005873e-06,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "right_import_s": 6.729099999999884e-05,
-        "right_normalize_s": 6.7799999999996335e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      },
-      {
-        "affine_state_pattern_s": 2.5000000000025e-07,
-        "cumulative_elapsed_s": 0.008116953,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 39,
-        "left_import_s": 7.541999999999965e-05,
-        "left_normalize_s": 1.6670000000001614e-05,
-        "parametric_state_s": 8.000000000004531e-07,
-        "piece_union_record_s": 2.439999999999387e-06,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "right_import_s": 6.388000000000053e-05,
-        "right_normalize_s": 5.4499999999988585e-06,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "status": "equivalent",
-        "total_definedness": "proved"
-      }
-    ],
-    "scalar_engine": "mandatory_exponential_polynomial",
-    "scope": {
-      "kind": "mapped_expression_equivalence",
-      "operation": "equivalence"
-    },
-    "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
-    "stages_s": {
-      "affine_state_pattern_s": 1.1310000000000161e-05,
-      "exponential_polynomial_s": 0.0,
-      "left_import_s": 0.0035944509999999994,
-      "left_normalize_s": 0.0007203020000000013,
-      "parametric_state_s": 3.827099999999771e-05,
-      "piece_union_record_s": 0.00011263000000000115,
-      "piece_union_reuse_s": 0.0,
-      "piece_union_seal_s": 1.309999999999376e-06,
-      "proof_reuse_s": 0.0,
-      "right_import_s": 0.0030039769999999997,
-      "right_normalize_s": 0.00026376999999999586,
-      "state_pattern_s": 0.0
-    },
-    "timings": {
-      "load_and_scope_analysis": 0.000278861
-    },
-    "total_output_families": 40,
-    "transport": "in_memory_cpp_objects",
-    "unmatched_reasons": {}
-  },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [],
-      "first_unavailable_reason": "",
-      "queries": 0,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": true
-    },
-    "cluster_completion_joins": 0,
-    "cta_count": 4,
-    "dependency_compression": {},
-    "diagnostic_sample_count": 0,
-    "executed_records": 84480,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 0,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "shape_input_contract": {
-        "kind": "fixed_read_only",
-        "origin": "shape_arrays",
-        "regions": [
-          {
-            "allocation": "positions",
-            "byte_offset": 0,
-            "bytes": 32,
-            "resource": "input.arg0.0"
-          }
-        ],
-        "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
-      },
-      "trap_only_equality_assertions_hold": true
-    },
-    "implementation": "cpp",
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "positions",
-        "offset": 0,
-        "parameter": "_ZN4vllm23rotary_embedding_kernelIN3c108BFloat16ES2_Lb1EEEvPKlPT_S6_PKT0_illliiilb_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "query",
-        "offset": 0,
-        "parameter": "_ZN4vllm23rotary_embedding_kernelIN3c108BFloat16ES2_Lb1EEEvPKlPT_S6_PKT0_illliiilb_param_1",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "key",
-        "offset": 0,
-        "parameter": "_ZN4vllm23rotary_embedding_kernelIN3c108BFloat16ES2_Lb1EEEvPKlPT_S6_PKT0_illliiilb_param_2",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "cos_sin_cache",
-        "offset": 0,
-        "parameter": "_ZN4vllm23rotary_embedding_kernelIN3c108BFloat16ES2_Lb1EEEvPKlPT_S6_PKT0_illliiilb_param_3",
-        "source": "declaration"
-      }
-    ],
-    "lowered_instruction_count": 8704,
-    "reached_opcodes": {
-      "add.s32": 2304,
-      "add.s64": 9472,
-      "bra": 768,
-      "cvt.f32.bf16": 5120,
-      "cvt.rn.bf16.f32": 2560,
-      "cvt.s64.s32": 3584,
-      "cvt.u64.u32": 1024,
-      "cvta.to.global.u64": 2304,
-      "div.s32": 1280,
-      "fma.rn.f32": 1280,
-      "ld.global.nc.b16": 2560,
-      "ld.global.nc.u64": 1024,
-      "ld.global.u16": 2560,
-      "ld.param.s8": 1024,
-      "ld.param.u32": 3072,
-      "ld.param.u64": 7424,
-      "mad.lo.s64": 2560,
-      "mov.u32": 4352,
-      "mul.f32": 3840,
-      "mul.lo.s32": 3328,
-      "mul.lo.s64": 1024,
-      "mul.wide.s32": 2304,
-      "mul.wide.u32": 1024,
-      "neg.f32": 1280,
-      "ret": 1024,
-      "selp.f32": 1280,
-      "setp.eq.s16": 1280,
-      "setp.eq.s64": 1024,
-      "setp.ge.s32": 2048,
-      "setp.lt.s32": 1280,
-      "shl.b64": 2304,
-      "shr.s32": 1024,
-      "shr.u32": 1024,
-      "st.global.u16": 2560,
-      "sub.f32": 1280,
-      "sub.s32": 1280
-    },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 0,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 8,
-      "generated_address_rows": 120,
-      "generated_body_rows": 80,
-      "generated_memory_instances": 7680,
-      "logical_instructions": 8704,
-      "stored_bindings": 0
-    },
-    "source_edge_storage": {
-      "binding_templates": 1024,
-      "logical_edges": 7680,
-      "stored_bindings": 1024
-    },
-    "thread_count": 1024,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": []
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -1144,6 +67,7 @@
       "__assertfail"
     ],
     "assertion_uses": 0,
+    "atomic_uses": 0,
     "bounded_loop_uses": 0,
     "clc_failure": true,
     "clc_uses": 0,
@@ -1178,259 +102,709 @@
     },
     "trap_only_equality_assertions_hold": true
   },
-  "hb_queries": {
-    "memory": {
-      "algorithm": "not-built",
-      "batches": 0,
-      "cache_hits": 0,
-      "dfs_queries": 0,
-      "edge_visits": 0,
-      "filtered_queries": 0,
-      "queries": 0,
-      "shared_peak_index_bytes": 0
-    }
-  },
-  "implementation": "cpp",
-  "memory_analysis": {
-    "address_candidates": 2560,
+  "internal": {
     "address_model": {
-      "cache_hits": 0,
-      "ground_disjoint": 0,
-      "ground_overlap": 0,
-      "layer0_disjoint": 0,
-      "refined_pairs": 0,
-      "solver_queries": 0,
-      "solver_sat": 0,
-      "solver_unknown": 0,
-      "solver_unsat": 0
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
     },
-    "candidate_generation_fallback": false,
-    "exhaustive": false,
-    "family_analysis": {
-      "access_families": 128,
-      "affine_member_rows": 0,
-      "candidate_relations": 40,
-      "hb_frontier_pieces": 0,
-      "hb_member_enumerations": 0,
-      "logical_accesses": 8704
+    "counts": {
+      "edges": 4096,
+      "events": 4352,
+      "instructions": 2176,
+      "memory_accesses": 2176,
+      "threads": 256
     },
-    "hb_algorithm": "member-relations",
-    "hb_batches": 1,
-    "hb_cache_hits": 0,
-    "hb_dfs_queries": 0,
-    "hb_edge_visits": 0,
-    "hb_filtered_queries": 0,
-    "hb_peak_index_bytes": 0,
-    "hb_queries": 2560,
-    "hb_query_seconds": 3.737e-05,
-    "overlap_queries": 0,
-    "strategy": "conflict-family",
-    "unordered_candidates_examined": 0
+    "equivalence": {
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 420,
+      "comparison_elapsed_seconds": 0.004585215,
+      "context_declaration": {
+        "assumptions": [],
+        "fixed_inputs": [
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "positions",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
+            "value": "3"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "positions",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
+            "value": "7"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "positions",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
+            "value": "11"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "positions",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
+            "value": "5"
+          }
+        ],
+        "inputs": [],
+        "predicate_nodes": []
+      },
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 3367,
+        "affine_state_banks": 1,
+        "canonical_node_visits": 177,
+        "coordinate_digit_node_visits": 68,
+        "ep_identity_proofs": 40,
+        "ep_scalar_attempts": 40,
+        "ep_scalar_proofs": 40,
+        "finite_bilinear_banks": 1,
+        "finite_state_reuse_ambiguous_anchor_declines": 40,
+        "finite_state_reuse_banks": 1,
+        "fixed_input_reads_substituted": 4,
+        "fp_idiom_power_constructions": 0,
+        "fp_idiom_rm_producers": 0,
+        "ideal_additive_compiler_exp_sequences": 0,
+        "ideal_compiler_exp_sequences": 0,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_single_constant_exp_sequences": 0,
+        "imported_context_nodes": 659,
+        "intern_requests": 12053,
+        "normalization_node_visits": 669,
+        "parametric_state_attempts": 0,
+        "proved_select_arms_imported": 44,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_temporary_nodes": 0,
+        "symbolic_byte_reads_without_extent_proof": 0
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 40,
+        "status": "proved"
+      },
+      "diagnostics": [],
+      "elapsed_s": 0.003415347,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "query_count": 40,
+        "reset_s": 0.0,
+        "reuse_cache": false,
+        "shared_evictions": 0
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 0,
+        "fixed_input_elements": 4,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 40,
+      "finished_families": 40,
+      "fixed_input_context": {
+        "applied": [
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "positions",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
+            "side": "left",
+            "value": "3"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "positions",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
+            "side": "left",
+            "value": "7"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "positions",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
+            "side": "left",
+            "value": "11"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "positions",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
+            "side": "left",
+            "value": "5"
+          }
+        ],
+        "applied_elements": 4,
+        "configured": [
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "positions",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
+            "value": "3"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "positions",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
+            "value": "7"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "positions",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
+            "value": "11"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "positions",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533; provenance sha256=79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894",
+            "value": "5"
+          }
+        ],
+        "configured_elements": 4
+      },
+      "idealizations_applied": [],
+      "input_contract_applied_reads": [],
+      "legacy_scalar_fallback": false,
+      "mapping_input_memory_constraints": {},
+      "native_context": {
+        "elements": 4,
+        "input_sha256": "280f9b9be97dbaedc346511e578258f17c3dc571604879f32186343e236a7533",
+        "kind": "verified_current_fixed_input",
+        "provenance_sha256": "79b8a18a23b4a17f925afcacb84311cb06c15ba5f04438dfb69541493e181894"
+      },
+      "normalized_reachable_nodes": 177,
+      "numerical_result": "verified",
+      "pattern_nodes": 2,
+      "peak_rss_kib": 38200,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 0,
+      "piece_union": {
+        "abstract_optimized_replacements": 0,
+        "abstract_reference_replacements": 0,
+        "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+        "collected_pieces": 0,
+        "late_certificates": "accepted_until_each_schema_is_complete",
+        "method": "complete_output_equalities_with_finite_piece_union",
+        "replacements": 0,
+        "schemas": [],
+        "stored_dag_work": 0,
+        "work_limit": 2000000
+      },
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        72,
+        236
+      ],
+      "reference_term_patterns": 0,
+      "row_groups": [
+        {
+          "count": 40,
+          "families": [
+            [
+              0,
+              39
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 9.550000000000313e-06,
+            "cumulative_elapsed_s": 0.003327516,
+            "left_import_s": 0.0012993479999999996,
+            "left_normalize_s": 0.00030793199999999877,
+            "parametric_state_s": 3.1009999999999664e-05,
+            "piece_union_record_s": 7.971999999999867e-05,
+            "piece_union_seal_s": 1.2899999999994405e-06,
+            "right_import_s": 0.0011196729999999985,
+            "right_normalize_s": 0.00011524000000000001
+          }
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 9.550000000000313e-06,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.0012993479999999996,
+        "left_normalize_s": 0.00030793199999999877,
+        "parametric_state_s": 3.1009999999999664e-05,
+        "piece_union_record_s": 7.971999999999867e-05,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 1.2899999999994405e-06,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 0.0011196729999999985,
+        "right_normalize_s": 0.00011524000000000001,
+        "state_pattern_s": 0.0
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.000210262
+      },
+      "total_output_families": 40,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 4,
+      "dependency_compression": {},
+      "diagnostic_sample_count": 0,
+      "executed_records": 84480,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 0,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "shape_input_contract": {
+          "kind": "fixed_read_only",
+          "origin": "shape_arrays",
+          "regions": [
+            {
+              "allocation": "positions",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.0"
+            }
+          ],
+          "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+        },
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "positions",
+          "offset": 0,
+          "parameter": "_ZN4vllm23rotary_embedding_kernelIN3c108BFloat16ES2_Lb1EEEvPKlPT_S6_PKT0_illliiilb_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "query",
+          "offset": 0,
+          "parameter": "_ZN4vllm23rotary_embedding_kernelIN3c108BFloat16ES2_Lb1EEEvPKlPT_S6_PKT0_illliiilb_param_1",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "key",
+          "offset": 0,
+          "parameter": "_ZN4vllm23rotary_embedding_kernelIN3c108BFloat16ES2_Lb1EEEvPKlPT_S6_PKT0_illliiilb_param_2",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "cos_sin_cache",
+          "offset": 0,
+          "parameter": "_ZN4vllm23rotary_embedding_kernelIN3c108BFloat16ES2_Lb1EEEvPKlPT_S6_PKT0_illliiilb_param_3",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 2176,
+      "reached_opcodes": {
+        "add.s32": 2304,
+        "add.s64": 9472,
+        "bra": 768,
+        "cvt.f32.bf16": 5120,
+        "cvt.rn.bf16.f32": 2560,
+        "cvt.s64.s32": 3584,
+        "cvt.u64.u32": 1024,
+        "cvta.to.global.u64": 2304,
+        "div.s32": 1280,
+        "fma.rn.f32": 1280,
+        "ld.global.nc.b16": 2560,
+        "ld.global.nc.u64": 1024,
+        "ld.global.u16": 2560,
+        "ld.param.s8": 1024,
+        "ld.param.u32": 3072,
+        "ld.param.u64": 7424,
+        "mad.lo.s64": 2560,
+        "mov.u32": 4352,
+        "mul.f32": 3840,
+        "mul.lo.s32": 3328,
+        "mul.lo.s64": 1024,
+        "mul.wide.s32": 2304,
+        "mul.wide.u32": 1024,
+        "neg.f32": 1280,
+        "ret": 1024,
+        "selp.f32": 1280,
+        "setp.eq.s16": 1280,
+        "setp.eq.s64": 1024,
+        "setp.ge.s32": 2048,
+        "setp.lt.s32": 1280,
+        "shl.b64": 2304,
+        "shr.s32": 1024,
+        "shr.u32": 1024,
+        "st.global.u16": 2560,
+        "sub.f32": 1280,
+        "sub.s32": 1280
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 2,
+        "generated_address_rows": 30,
+        "generated_body_rows": 20,
+        "generated_memory_instances": 1920,
+        "logical_instructions": 2176,
+        "stored_bindings": 0
+      },
+      "source_edge_storage": {
+        "binding_templates": 256,
+        "logical_edges": 1920,
+        "stored_bindings": 256
+      },
+      "thread_count": 1024,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 640,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 32,
+        "affine_member_rows": 0,
+        "candidate_relations": 10,
+        "hb_frontier_pieces": 0,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 2176
+      },
+      "hb_algorithm": "member-relations",
+      "hb_batches": 1,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 0,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 640,
+      "hb_query_seconds": 1.974e-05,
+      "overlap_queries": 0,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 0
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 28.6953125,
+    "required_order_domains": 0,
+    "required_orders": 0,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 3,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 68,
+      "memory_binding_templates": 68,
+      "memory_bindings": 2176,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 13,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 0,
+      "thread_prefix_groups": 450,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 4,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 88064,
+      "path_entries": 736,
+      "record_bindings": 428,
+      "record_nodes": 452,
+      "splits": 4,
+      "template_steps": 472,
+      "thread_memberships": 1024,
+      "value_nodes": 291
+    },
+    "thread_record_compression": {
+      "completed_ctas": 4,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 84480,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [],
+      "duplicate_write_value_checks": 0,
+      "equivalence_check": "equivalent",
+      "initial_memory_regions": 769,
+      "initial_read_families": 22,
+      "memory_action_storage": {
+        "logical_actions": 2176,
+        "stored_runs": 68
+      },
+      "output_region_families": 0,
+      "output_regions": 640,
+      "passes": [
+        {
+          "name": "packing",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 10432,
+          "name": "type_edges",
+          "removed_nodes": 93
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 0,
+          "layouts": 0,
+          "mapping_blocks": 0,
+          "name": "view_normalization",
+          "original_pieces": 0,
+          "reused_initial_reads": 1282,
+          "reused_views": 0,
+          "segmented": 0,
+          "slices": 0,
+          "stored_mapping_blocks": 0,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
+        }
+      ],
+      "processed_memory_actions": 2176,
+      "processed_memory_families": 0,
+      "read_substitutions": 1536,
+      "scalar_fold": {
+        "construction_collections": 0,
+        "diagnostics": [],
+        "output_count": 2560,
+        "output_families_merged": 0,
+        "output_family_count": 40,
+        "output_root_count": 40,
+        "peak_construction_nodes": 63,
+        "shared_view_projection_hits": 0,
+        "source_outputs": 640,
+        "spatial_families_projected": 10,
+        "spatial_outputs_projected": 640,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 33,
+          "edges": 354,
+          "folds": 0,
+          "indices": 1,
+          "initial_cells": 48,
+          "logical_iterations": 0,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 0,
+          "nodes": 235,
+          "nodes_before_final_collection": 237,
+          "nodes_reclaimed": 2,
+          "operations": 153,
+          "parameters": 0,
+          "range_descriptions": 0,
+          "storage_nodes": 235,
+          "unique_fold_bodies": 0
+        }
+      },
+      "serialization": {
+        "action_patterns": 68,
+        "binding_patterns": 68,
+        "domain_refinements": 3968,
+        "elapsed_seconds": 0.002259267,
+        "event_families": 283,
+        "expanded_event_records": 0,
+        "largest_batch_members": 192,
+        "logical_actions": 2176,
+        "logical_events": 31808,
+        "peak_rss_mib_at_completion": 37.09765625,
+        "reachability_queries": 0,
+        "relations": 2335,
+        "rss_mib_at_completion": 37.1640625,
+        "scheduled_batches": 283,
+        "singleton_batches": 0,
+        "value_families": 223
+      },
+      "shared_read_families": 2,
+      "shared_read_instances": 254,
+      "stored_read_substitutions": 1282
+    },
+    "value_ir_instance_count": 19904,
+    "value_ir_node_count": 171,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 0.029622298,
+    "verification_result": "race_free"
   },
-  "memory_analysis_complete": true,
-  "mma_operand_ordering": {},
-  "mode": "verify",
-  "peak_footprint_mib": 60.19921875,
-  "peak_rss_mib": 161.21875,
-  "pipeline_elapsed_seconds": 0.379444384,
-  "race_count": 0,
-  "race_samples_truncated": false,
-  "races": [],
-  "required_order_domains": 0,
-  "required_orders": 0,
+  "peak_rss_mib": 37.3046875,
+  "pipeline_elapsed_seconds": 0.06372658,
   "result": "verified",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "search_complete": true,
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 0,
-    "binding_diagnostics": [],
-    "execution_cohorts": 12,
-    "mapping_complete": true,
-    "memory_binding_stored_rows": 272,
-    "memory_binding_templates": 272,
-    "memory_bindings": 8704,
-    "memory_linking_templates_used": true,
-    "synchronization_groups": 52,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 0,
-    "thread_prefix_groups": 1800,
-    "value_diagnostic_count": 0,
-    "value_diagnostics": []
-  },
-  "source_violations": [],
-  "synchronization_input": {
-    "compute_access_binding": "after_happens_before",
-    "kind": "ordering_endpoints",
-    "memory_address_payloads": false
-  },
-  "template_execution": {
-    "completed_ctas": 4,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 88064,
-    "path_entries": 736,
-    "record_bindings": 428,
-    "record_nodes": 452,
-    "splits": 4,
-    "template_steps": 472,
-    "thread_memberships": 1024,
-    "value_nodes": 291
-  },
-  "thread_record_compression": {
-    "completed_ctas": 4,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 84480,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "unresolved_count": 0,
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [],
-    "duplicate_write_value_checks": 0,
-    "equivalence_check": "equivalent",
-    "initial_memory_regions": 3076,
-    "initial_read_families": 88,
-    "memory_action_storage": {
-      "logical_actions": 8704,
-      "stored_runs": 272
-    },
-    "output_region_families": 0,
-    "output_regions": 2560,
-    "passes": [
-      {
-        "name": "packing",
-        "rewritten_instances": 0,
-        "rewritten_nodes": 0,
-        "semantics": "exact_fixed_width"
-      },
-      {
-        "abstraction": "matched approximation and clamp replaced by ideal Exp2",
-        "name": "software_exp2",
-        "rewritten_instances": 0,
-        "rewritten_nodes": 0,
-        "semantics": "ideal_exp2"
-      },
-      {
-        "converted_instances": 41728,
-        "name": "type_edges",
-        "removed_nodes": 372
-      },
-      {
-        "name": "memory_elimination"
-      },
-      {
-        "elements": 0,
-        "identities": 0,
-        "layouts": 0,
-        "mapping_blocks": 0,
-        "name": "view_normalization",
-        "original_pieces": 0,
-        "reused_initial_reads": 5128,
-        "reused_views": 0,
-        "segmented": 0,
-        "slices": 0,
-        "stored_mapping_blocks": 0,
-        "typed_output_pieces": 0,
-        "typed_output_regions": 0
-      }
-    ],
-    "processed_memory_actions": 8704,
-    "processed_memory_families": 0,
-    "read_substitutions": 6144,
-    "result": "verified",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "construction_collections": 0,
-      "diagnostics": [],
-      "output_count": 2560,
-      "output_families_merged": 0,
-      "output_family_count": 40,
-      "output_root_count": 40,
-      "peak_construction_nodes": 243,
-      "result": "verified",
-      "scope": {
-        "operation": "scalar_fold"
-      },
-      "shared_view_projection_hits": 0,
-      "source_outputs": 2560,
-      "spatial_families_projected": 40,
-      "spatial_outputs_projected": 2560,
-      "spatial_template_operations": 0,
-      "statistics": {
-        "constants": 33,
-        "edges": 354,
-        "folds": 0,
-        "indices": 1,
-        "initial_cells": 48,
-        "logical_iterations": 0,
-        "logical_iterations_overflow": false,
-        "max_fold_nesting": 0,
-        "nodes": 235,
-        "nodes_before_final_collection": 243,
-        "nodes_reclaimed": 8,
-        "operations": 153,
-        "parameters": 0,
-        "range_descriptions": 0,
-        "storage_nodes": 235,
-        "unique_fold_bodies": 0
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    },
-    "serialization": {
-      "action_patterns": 272,
-      "binding_patterns": 272,
-      "domain_refinements": 15872,
-      "elapsed_seconds": 0.009901658,
-      "event_families": 1132,
-      "expanded_event_records": 0,
-      "largest_batch_members": 192,
-      "logical_actions": 8704,
-      "logical_events": 127232,
-      "peak_rss_mib_at_completion": 161.21875,
-      "reachability_queries": 0,
-      "relations": 9340,
-      "rss_mib_at_completion": 41.58203125,
-      "scheduled_batches": 1132,
-      "singleton_batches": 0,
-      "value_families": 892
-    },
-    "shared_read_families": 8,
-    "shared_read_instances": 1016,
-    "stored_read_substitutions": 5128
-  },
-  "value_ir_instance_count": 79616,
-  "value_ir_node_count": 684,
-  "value_view_complete": true,
-  "verification_elapsed_seconds": 0.094568458,
   "verification_limitations": [],
-  "verification_result": "race_free",
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.507
+  "whole_pipeline_timeout_seconds": 498.502
 }

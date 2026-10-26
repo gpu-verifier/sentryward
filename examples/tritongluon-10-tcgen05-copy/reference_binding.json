@@ -1,0 +1,101 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          256,
+          4
+        ],
+        "target_strides_bytes": [
+          256,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          256,
+          4
+        ],
+        "target_strides_bytes": [
+          256,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:B",
+    "right_allocation": "6:global1:B",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+      128,
+      64
+    ],
+    "left_strides_bytes": [
+      256,
+      4
+    ],
+    "right_strides_bytes": [
+      256,
+      4
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "X",
+        "allocation": "6:global1:A",
+        "dtype": "float32",
+        "shape": [
+          128,
+          64
+        ]
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tritongluon-10-tcgen05-copy.ptx",
+    "optimized_input": "examples/tritongluon-10-tcgen05-copy/input.json",
+    "optimized_input_sha256": "3effb0be0ec6b89b702613ab8f0bc2d25d3ee53dfd4ecdae5743271097df5507",
+    "ptx_sha256": "71bccfd88b25a8db0fedf568cd449e67618feeaebacb84bf7d2896c3bbdc107b",
+    "upstream": [
+      "https://github.com/triton-lang/triton/blob/c01b6774b1865984607d89d89d3a10833de92037/python/tutorials/gluon/10-tcgen05-copy.py#L116-L157"
+    ],
+    "scope": "tcgen05_copy_example M=128, N=64, float32, grid (1,), 128 threads; in_stride0 = out_stride0 = 64 (input.stride(), output.stride() of a contiguous [128, 64] tensor).",
+    "evidence": "PTX: 128 row loads per thread, eight tcgen05.cp 128x256b (64 columns), stride1 specialized to 1.",
+    "dynamic_shared_allocation": "32784 bytes: SMEM tile 128x64x4 = 32768 + mbarrier at 32768, rounded to 16 B.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

@@ -62,7 +62,10 @@ struct FrontendConfig {
   std::vector<PointerParameter> pointer_parameters;
   std::vector<LoopBound> loop_bounds;
   std::vector<BranchOverride> branch_overrides;
+  // Steps of one thread executed by itself; a template group (threads sharing
+  // one path, one step for all of them) has kTemplateStepFactor times as many.
   std::uint64_t max_steps_per_lane = 100000;
+  static constexpr std::uint64_t kTemplateStepFactor = 100;
   std::optional<std::pair<std::uint32_t, std::uint32_t>> analysis_thread_range;
   bool compress_compute = true;
   bool compress_thread_records = true;

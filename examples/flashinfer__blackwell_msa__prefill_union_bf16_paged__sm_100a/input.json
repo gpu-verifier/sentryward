@@ -152,5 +152,128 @@
     "duplicate_tma_store_benign": true,
     "representative_election": true,
     "clc_always_fails": true
-  }
+  },
+  "shape_arrays": [
+    {
+      "parameter": 7,
+      "offset": 0,
+      "element_type": "s32",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          128
+        ]
+      ]
+    },
+    {
+      "parameter": 10,
+      "offset": 0,
+      "element_type": "s32",
+      "shapes": [
+        [
+          128
+        ]
+      ]
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "object": "q",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        128,
+        16,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        4096,
+        256,
+        128
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        2
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 1,
+      "object": "k",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        128,
+        2,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        128,
+        32768
+      ],
+      "box_shape": [
+        64,
+        64,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 2,
+      "object": "v",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        128,
+        2,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        128,
+        32768
+      ],
+      "box_shape": [
+        64,
+        64,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ]
 }

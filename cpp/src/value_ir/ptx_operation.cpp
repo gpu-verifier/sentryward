@@ -26,6 +26,14 @@ void FailedClcResponseOp::validateOperands(std::span<const ValueType> operands) 
   Require(operands.empty(), "Failed CLC response takes no operands");
 }
 void FailedClcResponseOp::printAttributes(std::ostream& out) const { out << " canceled=false"; }
+OpaqueValueOp::OpaqueValueOp(ValueType type, std::string provenance)
+    : TypedOperation({std::move(type)}), provenance_(std::move(provenance)) {
+  Require(!provenance_.empty(), "Opaque value needs a provenance");
+}
+void OpaqueValueOp::validateOperands(std::span<const ValueType> operands) const {
+  Require(operands.empty(), "Opaque value takes no operands");
+}
+void OpaqueValueOp::printAttributes(std::ostream& out) const { out << " provenance=" << provenance_; }
 PtxScalarOp::PtxScalarOp(PtxScalarOpcode opcode, ValueType source_type,
                          std::vector<ValueType> results, PtxScalarAttributes attributes)
     : TypedOperation(std::move(results)), opcode_(opcode), source_type_(std::move(source_type)), attributes_(std::move(attributes)) {

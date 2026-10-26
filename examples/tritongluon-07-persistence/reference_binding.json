@@ -6,14 +6,86 @@
       "6:global1:A": "6:global1:A",
       "6:global1:B": "6:global1:B"
     },
-    "parameters": {}
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2000,
+          2000
+        ],
+        "source_strides_bytes": [
+          4000,
+          2
+        ],
+        "target_strides_bytes": [
+          4000,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2000,
+          1000
+        ],
+        "source_strides_bytes": [
+          2000,
+          2
+        ],
+        "target_strides_bytes": [
+          2000,
+          2
+        ]
+      }
+    }
   },
   "right_inputs": {
     "allocations": {
       "6:global1:A": "6:global1:A",
       "6:global1:B": "6:global1:B"
     },
-    "parameters": {}
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2000,
+          2000
+        ],
+        "source_strides_bytes": [
+          4000,
+          2
+        ],
+        "target_strides_bytes": [
+          4000,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2000,
+          1000
+        ],
+        "source_strides_bytes": [
+          2000,
+          2
+        ],
+        "target_strides_bytes": [
+          2000,
+          2
+        ]
+      }
+    }
   },
   "outputs": {
     "kind": "dense_tensor",
@@ -68,6 +140,6 @@
     "scope_branch_choices": [],
     "scope_shape_arrays": [],
     "dynamic_shared_allocation": "147504 bytes: three A/B buffers consume147456 bytes; TMA barriers at147456/147464/147472 and MMA barrier at147488 require through147496; rounded to16-byte alignment.",
-    "historical_source_status": "Pinned tutorial inspected; PTX instruction semantics and specialized constants cross-checked."
+    "historical_source_status": "Pinned upstream tutorial; PTX instruction semantics and specialized constants match it."
   }
 }

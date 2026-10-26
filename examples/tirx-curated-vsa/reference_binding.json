@@ -1,0 +1,253 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:D": "D",
+      "6:global1:B": "B",
+      "6:global1:A": "A",
+      "6:global11:q2k_indices": "q2k_indices"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:D": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          16384,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          16384,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          16384,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global11:q2k_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8,
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          32768,
+          256,
+          4
+        ],
+        "target_strides_bytes": [
+          32768,
+          256,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:D": "D",
+      "6:global1:B": "B",
+      "6:global1:A": "A",
+      "6:global11:q2k_indices": "q2k_indices"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:D": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          16384,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          16384,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          16384,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global11:q2k_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          8,
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          32768,
+          256,
+          4
+        ],
+        "target_strides_bytes": [
+          32768,
+          256,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:C",
+    "right_allocation": "6:global1:C",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      128,
+      128,
+      8,
+      128
+    ],
+    "left_strides_bytes": [
+      262144,
+      2048,
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      262144,
+      2048,
+      256,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "q",
+        "allocation": "6:global1:D",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "k",
+        "allocation": "6:global1:B",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "v",
+        "allocation": "6:global1:A",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "q2k_indices",
+        "allocation": "6:global11:q2k_indices",
+        "dtype": "int32"
+      },
+      {
+        "name": "scale_log2",
+        "parameter": 5
+      }
+    ]
+  },
+  "provenance": {
+    "source": "https://github.com/mlc-ai/TIRx-kernels/blob/ff128be7470d674a94169e12c1556590e4046cba/tirx_kernels/vsa/vsa_multishape.py",
+    "upstream": [
+      "https://github.com/mlc-ai/TIRx-kernels/blob/ff128be7470d674a94169e12c1556590e4046cba/tirx_kernels/vsa/vsa_multishape.py",
+      "https://github.com/mlc-ai/TIRx-kernels/blob/ff128be7470d674a94169e12c1556590e4046cba/tirx_kernels/bench_suite/config/vsa/curated_vsa_multishape.yaml",
+      "https://github.com/mlc-ai/TIRx-kernels/blob/01130e3bb1cf8a009fc1e7e6db2a860cd51df9ed/tirx_kernels/vsa/vsa_multishape.py"
+    ],
+    "scope": "CONFIGS[0] pooled_blk128_s16384_topk64: S=16384, H=8, D=128, block 128, topk 64; PTX static_shape tasks=1024, cta_stride=148, topk 64; grid 148 covers all 1024 tiles; scale_log2=(1/sqrt(128))*log2(e); q2k_indices bounds [0,127] (contract, not host-checked). PTX params: p0 q2k_indices, p1 k=B, p2 out=C, p3 q=D, p4 v=A, p5 scale_log2.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [],
+    "optimized_input_sha256": "8659ce4cbc0ba9d16b32e6f0820917f243f3fafff7050f87d50102f42f2aea85",
+    "ptx_sha256": "aa6f59c72b1660a19b0643944fca083a4d1e7060aaea90229060623983b06902"
+  }
+}

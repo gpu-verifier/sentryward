@@ -1,14 +1,4 @@
 {
-  "address_model": {
-    "address_invariants": [],
-    "kind": "symbolic",
-    "layers": [
-      0,
-      2
-    ],
-    "solver": "z3",
-    "solver_timeout_ms": 100
-  },
   "assumption_dependent": true,
   "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
@@ -51,462 +41,34 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "not_run",
-    "memory": "incomplete",
+    "equivalence": "incomplete",
     "synchronization": "passed"
-  },
-  "counts": {
-    "edges": 5872542,
-    "events": 1915926,
-    "instructions": 479445,
-    "memory_accesses": 1075992,
-    "threads": 768
-  },
-  "details": {
-    "witness_path": "unsupported_memory_pair"
   },
   "diagnostics": [
     {
-      "code": "allocation_alias_relation_unknown",
+      "code": "expression_form_unsupported",
       "details": {
-        "witness_path": "unsupported_memory_pair"
+        "internal_stage": "left_import_s"
       },
-      "message": "allocation identity is unresolved between global tensor_map_target(input.arg0.2208+0) and global allocation epilogue.tensormaps",
-      "stage": "memory_check"
+      "message": "constant nan type f32",
+      "stage": "equivalence"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "incomplete",
-            "synchronization": "passed"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "allocation_alias_relation_unknown",
-              "details": {
-                "witness_path": "unsupported_memory_pair"
-              },
-              "message": "allocation identity is unresolved between global tensor_map_target(input.arg0.2208+0) and global allocation epilogue.tensormaps",
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "unsupported"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
-  },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [
-        {
-          "code": "unsupported_operation",
-          "details": {
-            "cta": 0,
-            "instruction": "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned [%rd347], [%r539], 128;",
-            "instruction_index": 1608,
-            "location": {
-              "file": "corpus/flashinfer__gemm_sm100_module__group_gemm_mxfp4_groupwise_e4m3_bf16_mma2_swapfalse_sm100__sm_100a.ptx",
-              "line": 2811
-            },
-            "occurrence": 0,
-            "thread": 356
-          },
-          "message": "No value-IR model for 'tensormap' (including its memory effects/results)",
-          "stage": "value_lowering"
-        }
-      ],
-      "first_unavailable_reason": "",
-      "queries": 0,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": false
-    },
-    "cluster_completion_joins": 1,
-    "cta_count": 2,
-    "dependency_compression": {
-      "bulk_read_wait": {
-        "consumers": 80,
-        "emitted_references": 46,
-        "original_references": 552,
-        "prefix_effects": 0
-      },
-      "tcgen_commit": {
-        "consumers": 28,
-        "emitted_references": 179,
-        "original_references": 2880,
-        "prefix_effects": 28
-      },
-      "tcgen_load_wait": {
-        "consumers": 3072,
-        "emitted_references": 6144,
-        "original_references": 39936,
-        "prefix_effects": 0
-      }
-    },
-    "diagnostic_sample_count": 0,
-    "discharged_codes": [
-      "tcgen_cp_memory_effect_refinement",
-      "mma_memory_effect_refinement",
-      "tcgen_pipeline_effect_refinement",
-      "tcgen_commit_notification_order_refinement"
-    ],
-    "executed_records": 1599948,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 9216,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 12160,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "shape_input_contract": {
-        "kind": "fixed_read_only",
-        "origin": "shape_arrays",
-        "regions": [
-          {
-            "allocation": "input.arg0.16",
-            "byte_offset": 0,
-            "bytes": 48,
-            "resource": "input.arg0.16"
-          },
-          {
-            "allocation": "input.arg0.3184",
-            "byte_offset": 0,
-            "bytes": 48,
-            "resource": "input.arg0.3184"
-          }
-        ],
-        "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
-      },
-      "trap_only_equality_assertions_hold": true
-    },
-    "group2_progress": {
-      "blocked": [],
-      "checked_pairs": 3,
-      "premises": [
-        "Baseline synchronization and asynchronous work must independently make progress.",
-        "Resident peer CTAs must be scheduled fairly and have admitted TMEM capacity.",
-        "Allocation placement and retirement RequiredOrders are separate obligations.",
-        "Source references, actor ordering, and collective participation must be validated."
-      ]
-    },
-    "implementation": "cpp",
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "input.arg0.16",
-        "offset": 16,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "shape_array"
-      },
-      {
-        "bytes": 8,
-        "object": "mainloop.tensormaps",
-        "offset": 2208,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "mainloop.ptr_A.array",
-        "offset": 2216,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "mainloop.dA.array",
-        "offset": 2224,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "mainloop.ptr_B.array",
-        "offset": 2232,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "mainloop.dB.array",
-        "offset": 2240,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "mainloop.ptr_SFA.array",
-        "offset": 2248,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "mainloop.layout_SFA.array",
-        "offset": 2256,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "mainloop.ptr_SFB.array",
-        "offset": 2264,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "mainloop.layout_SFB.array",
-        "offset": 2272,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "epilogue.tensormaps",
-        "offset": 2944,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "epilogue.ptr_C.array",
-        "offset": 2952,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "epilogue.dC.array",
-        "offset": 2960,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "epilogue.ptr_D.array",
-        "offset": 2968,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "epilogue.dD.array",
-        "offset": 2976,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "input.arg0.3184",
-        "offset": 3184,
-        "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
-        "source": "shape_array"
-      }
-    ],
-    "lowered_instruction_count": 479445,
-    "mma_refinement": {
-      "blocked": [],
-      "discharged": 64
-    },
-    "reached_opcodes": {
-      "add.s16": 1024,
-      "add.s32": 110680,
-      "add.s64": 22106,
-      "and.b16": 1792,
-      "and.b32": 19808,
-      "and.b64": 1528,
-      "and.pred": 4968,
-      "bar.arrive": 64,
-      "bar.sync": 12544,
-      "bar.warp.sync": 2752,
-      "barrier.cluster.arrive.relaxed.aligned": 768,
-      "barrier.cluster.wait.aligned": 768,
-      "bfind.shiftamt.u32": 256,
-      "bra": 84834,
-      "bra.uni": 6696,
-      "brev.b32": 256,
-      "cp.async.bulk.commit_group": 80,
-      "cp.async.bulk.tensor.2d.cta_group::2.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 64,
-      "cp.async.bulk.tensor.2d.global.shared::cta.bulk_group": 48,
-      "cp.async.bulk.tensor.4d.cta_group::2.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 32,
-      "cp.async.bulk.tensor.4d.cta_group::2.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 32,
-      "cp.async.bulk.wait_group.read": 80,
-      "cvt.rn.bf16x2.f32": 98304,
-      "cvt.s64.s32": 828,
-      "cvt.u16.u32": 1856,
-      "cvt.u32.u16": 3840,
-      "cvt.u32.u64": 21016,
-      "cvt.u64.u16": 384,
-      "cvt.u64.u32": 11304,
-      "cvta.to.global.u64": 1616,
-      "cvta.to.shared.u64": 256,
-      "div.u32": 1472,
-      "elect.sync": 12160,
-      "fence.mbarrier_init.release.cluster": 4608,
-      "fence.proxy.async.shared::cta": 18686,
-      "fence.proxy.tensormap::generic.acquire.gpu": 1280,
-      "griddepcontrol.launch_dependents": 64,
-      "griddepcontrol.wait": 1152,
-      "ld.global.b32": 4904,
-      "ld.global.b64": 64,
-      "ld.global.s32": 1576,
-      "ld.param.b32": 6912,
-      "ld.param.b64": 12240,
-      "ld.param.b8": 768,
-      "ld.param.v2.b32": 1536,
-      "ld.param.v2.b64": 1168,
-      "ld.param.v4.b32": 768,
-      "ld.shared.b16": 3840,
-      "ld.shared.b32": 23552,
-      "mad.lo.s32": 10366,
-      "mapa.shared::cluster.u32": 14080,
-      "mbarrier.arrive.expect_tx.shared::cta.b64": 16,
-      "mbarrier.arrive.shared::cluster.b64": 17152,
-      "mbarrier.arrive.shared::cta.b64": 1056,
-      "mbarrier.init.shared::cta.b64": 122,
-      "mbarrier.try_wait.parity.shared::cta.b64": 34176,
-      "min.s32": 1960,
-      "min.u32": 768,
-      "mov.b16": 2016,
-      "mov.b32": 359258,
-      "mov.b64": 8568,
-      "mov.pred": 11328,
-      "mov.s32": 12540,
-      "mov.u32": 10752,
-      "mul.f32": 196608,
-      "mul.hi.u16": 4224,
-      "mul.hi.u64": 1576,
-      "mul.lo.s16": 4224,
-      "mul.lo.s32": 2112,
-      "mul.lo.s64": 768,
-      "mul.wide.s32": 5446,
-      "mul.wide.u32": 5600,
-      "neg.s32": 1280,
-      "not.b32": 1472,
-      "not.pred": 9088,
-      "or.b16": 1856,
-      "or.b32": 3840,
-      "or.b64": 1728,
-      "or.pred": 11904,
-      "rem.s32": 1576,
-      "ret": 768,
-      "selp.b16": 1712,
-      "selp.b32": 50792,
-      "selp.b64": 2856,
-      "setmaxnreg.dec.sync.aligned.u32": 512,
-      "setmaxnreg.inc.sync.aligned.u32": 256,
-      "setp.eq.b16": 960,
-      "setp.eq.b32": 54036,
-      "setp.eq.b64": 7728,
-      "setp.ge.s32": 3328,
-      "setp.ge.u64": 1792,
-      "setp.gt.s32": 5412,
-      "setp.gt.u32": 1920,
-      "setp.le.s32": 768,
-      "setp.lt.s32": 14592,
-      "setp.lt.u32": 1856,
-      "setp.lt.u64": 2048,
-      "setp.ne.b16": 1792,
-      "setp.ne.b32": 48896,
-      "setp.ne.b64": 1472,
-      "shfl.sync.idx.b32": 9472,
-      "shfl.sync.up.b32": 2560,
-      "shl.b32": 35160,
-      "shl.b64": 1864,
-      "shr.s32": 3840,
-      "shr.u16": 4224,
-      "shr.u32": 12736,
-      "shr.u64": 7472,
-      "st.shared.b32": 278,
-      "st.shared.v2.b16": 32,
-      "st.shared.v2.b64": 400,
-      "st.shared.v4.b32": 24576,
-      "sub.s16": 4224,
-      "sub.s32": 4072,
-      "sub.s64": 1728,
-      "tcgen05.alloc.cta_group::2.sync.aligned.shared::cta.b32": 64,
-      "tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 28,
-      "tcgen05.cp.cta_group::2.32x128b.warpx4": 32,
-      "tcgen05.dealloc.cta_group::2.sync.aligned.b32": 64,
-      "tcgen05.ld.sync.aligned.32x32b.x32.b32": 6144,
-      "tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale": 64,
-      "tcgen05.relinquish_alloc_permit.cta_group::2.sync.aligned": 64,
-      "tcgen05.wait::ld.sync.aligned": 3072,
-      "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned": 1280,
-      "tensormap.replace.tile.global_address.shared::cta.b1024.b64": 40,
-      "tensormap.replace.tile.global_dim.shared::cta.b1024.b32": 200,
-      "tensormap.replace.tile.global_stride.shared::cta.b1024.b64": 160,
-      "vote.sync.ballot.b32": 256,
-      "xor.b32": 27552
-    },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 27312,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 132,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 479445,
-      "stored_bindings": 93843
-    },
-    "source_edge_storage": {
-      "binding_templates": 1221,
-      "logical_edges": 478677,
-      "stored_bindings": 1222
-    },
-    "tcgen_copy_refinement": {
-      "blocked": [],
-      "discharged": 32
-    },
-    "tcgen_history_refinement": {
-      "blocked": [],
-      "notifications": 28,
-      "operations": 96
-    },
-    "thread_count": 768,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": []
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -514,6 +76,7 @@
       "__assertfail"
     ],
     "assertion_uses": 9216,
+    "atomic_uses": 0,
     "bounded_loop_uses": 0,
     "clc_failure": true,
     "clc_uses": 0,
@@ -528,6 +91,49 @@
     "isolated_launch": true,
     "noalias_unbounded": false,
     "opaque_compute_regions": [],
+    "pointer_array_contract": {
+      "kind": "fixed_read_only",
+      "origin": "pointer_arrays",
+      "regions": [
+        {
+          "allocation": "mainloop.ptr_A.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.2216"
+        },
+        {
+          "allocation": "mainloop.ptr_B.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.2232"
+        },
+        {
+          "allocation": "epilogue.ptr_C.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.2952"
+        },
+        {
+          "allocation": "epilogue.ptr_D.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.2968"
+        },
+        {
+          "allocation": "mainloop.ptr_SFA.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.2248"
+        },
+        {
+          "allocation": "mainloop.ptr_SFB.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.2264"
+        }
+      ],
+      "text": "Configured pointer-table entries retain their supplied objects and are not written during the analyzed execution."
+    },
     "pointer_contract": {
       "aliasing": "distinct_objects_noalias",
       "extent_bytes": "unbounded"
@@ -538,317 +144,2532 @@
       "origin": "shape_arrays",
       "regions": [
         {
-          "allocation": "input.arg0.16",
+          "allocation": "problem_shapes",
           "byte_offset": 0,
           "bytes": 48,
           "resource": "input.arg0.16"
         },
         {
-          "allocation": "input.arg0.3184",
+          "allocation": "scheduler.problem_shapes",
           "byte_offset": 0,
           "bytes": 48,
           "resource": "input.arg0.3184"
+        },
+        {
+          "allocation": "mainloop.dA.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.2224"
+        },
+        {
+          "allocation": "mainloop.dB.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.2240"
+        },
+        {
+          "allocation": "epilogue.dC.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.2960"
+        },
+        {
+          "allocation": "epilogue.dD.array",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.2976"
+        },
+        {
+          "allocation": "mainloop.layout_SFA.array",
+          "byte_offset": 0,
+          "bytes": 80,
+          "resource": "input.arg0.2256"
+        },
+        {
+          "allocation": "mainloop.layout_SFB.array",
+          "byte_offset": 0,
+          "bytes": 80,
+          "resource": "input.arg0.2272"
         }
       ],
       "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
     },
     "trap_only_equality_assertions_hold": true
   },
-  "frontend_value_validation": {
-    "required_orders": 27312,
-    "status": "pending"
-  },
-  "hb_queries": {
-    "memory": {
-      "algorithm": "event-family-relations",
-      "batches": 1,
-      "cache_hits": 0,
-      "dfs_queries": 0,
-      "edge_visits": 2244419,
-      "filtered_queries": 5089,
-      "queries": 65536,
-      "shared_peak_index_bytes": 3868608
-    },
-    "required_orders": {
-      "algorithm": "member-relations",
-      "batches": 19,
-      "edge_visits": 59387643,
-      "member_enumerations": 0,
-      "request_construction": {
-        "concrete_pair_materializations": 0,
-        "endpoint_reads": 82984,
-        "family_requests": 31944,
-        "logical_orders": 632752,
-        "owner_bindings": 84072,
-        "stored_orders": 39992
-      }
-    }
-  },
-  "implementation": "cpp",
-  "memory_analysis": {
-    "address_candidates": 65536,
+  "internal": {
     "address_model": {
-      "cache_hits": 0,
-      "ground_disjoint": 0,
-      "ground_overlap": 0,
-      "layer0_disjoint": 0,
-      "refined_pairs": 1,
-      "solver_queries": 0,
-      "solver_sat": 0,
-      "solver_unknown": 0,
-      "solver_unsat": 0
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
     },
-    "candidate_generation_fallback": false,
-    "exhaustive": false,
-    "hb_algorithm": "event-family-relations",
-    "hb_batches": 1,
-    "hb_cache_hits": 0,
-    "hb_dfs_queries": 0,
-    "hb_edge_visits": 2244419,
-    "hb_filtered_queries": 5089,
-    "hb_peak_index_bytes": 3868608,
-    "hb_queries": 65536,
-    "hb_query_seconds": 0.232552445,
-    "overlap_queries": 1,
-    "strategy": "conflict-first",
-    "unordered_candidates_examined": 1
+    "counts": {
+      "edges": 5830902,
+      "events": 1917068,
+      "instructions": 479445,
+      "memory_accesses": 1077134,
+      "threads": 768
+    },
+    "equivalence": {
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 18,
+      "blocked_stage": "left_import_s",
+      "comparison_elapsed_seconds": 0.210763337,
+      "context_declaration": {
+        "assumptions": [],
+        "fixed_inputs": [
+          {
+            "coordinates": [
+              "0",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "1",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "2",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "1",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "2",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "0",
+              "0"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "0",
+              "1"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "0",
+              "2"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "0",
+              "3"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "0",
+              "4"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "1",
+              "0"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "2"
+          },
+          {
+            "coordinates": [
+              "1",
+              "1"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "1",
+              "2"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "1",
+              "3"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "1",
+              "4"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1024"
+          },
+          {
+            "coordinates": [
+              "2",
+              "0"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "2",
+              "1"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "2"
+          },
+          {
+            "coordinates": [
+              "2",
+              "2"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "2",
+              "3"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1024"
+          },
+          {
+            "coordinates": [
+              "2",
+              "4"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1024"
+          },
+          {
+            "coordinates": [
+              "3",
+              "0"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "2"
+          },
+          {
+            "coordinates": [
+              "3",
+              "1"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "3",
+              "2"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "3",
+              "3"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "3",
+              "4"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1024"
+          },
+          {
+            "coordinates": [
+              "0",
+              "0"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "0",
+              "1"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "0",
+              "2"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "0",
+              "3"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "0",
+              "4"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "1",
+              "0"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "1",
+              "1"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "1",
+              "2"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "1",
+              "3"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "1",
+              "4"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "2",
+              "0"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "2"
+          },
+          {
+            "coordinates": [
+              "2",
+              "1"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "2"
+          },
+          {
+            "coordinates": [
+              "2",
+              "2"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "2",
+              "3"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1024"
+          },
+          {
+            "coordinates": [
+              "2",
+              "4"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "2048"
+          },
+          {
+            "coordinates": [
+              "3",
+              "0"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "2"
+          },
+          {
+            "coordinates": [
+              "3",
+              "1"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "3",
+              "2"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "3",
+              "3"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "3",
+              "4"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1024"
+          }
+        ],
+        "inputs": [],
+        "predicate_nodes": []
+      },
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 4,
+        "affine_state_banks": 1,
+        "finite_bilinear_banks": 1,
+        "finite_state_reuse_banks": 1,
+        "fp4_reference_boundary_templates": 4,
+        "fp_idiom_power_constructions": 0,
+        "fp_idiom_rm_producers": 0,
+        "ideal_additive_compiler_exp_sequences": 0,
+        "ideal_compiler_exp_sequences": 0,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_single_constant_exp_sequences": 0,
+        "imported_context_nodes": 70,
+        "importer_scope_banks": 1,
+        "importer_scope_binders_created": 1,
+        "importer_scope_leaf_lookups": 1,
+        "intern_requests": 77,
+        "known_bits_edges": 0,
+        "known_bits_nodes": 1,
+        "proved_select_arms_imported": 1,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_temporary_nodes": 0,
+        "symbolic_byte_reads_without_extent_proof": 0
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 0,
+        "status": "not_proven"
+      },
+      "diagnostics": [
+        {
+          "code": "expression_form_unsupported",
+          "details": {},
+          "message": "constant nan type f32",
+          "stage": "left_import_s"
+        }
+      ],
+      "elapsed_s": 0.04084034,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "query_count": 0,
+        "reset_s": 0.0,
+        "reuse_cache": false,
+        "shared_evictions": 0
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 0,
+        "fixed_input_elements": 80,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 0,
+      "finished_families": 0,
+      "fixed_input_context": {
+        "applied": [],
+        "applied_elements": 0,
+        "configured": [
+          {
+            "coordinates": [
+              "0",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "1",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "2",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "0"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "1"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "2"
+            ],
+            "input": "problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "1",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "2",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "0"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "1"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3",
+              "2"
+            ],
+            "input": "scheduler.problem_shapes",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "mainloop.dA.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "mainloop.dB.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "epilogue.dC.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "epilogue.dD.array",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "0",
+              "0"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "0",
+              "1"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "0",
+              "2"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "0",
+              "3"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "0",
+              "4"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "1",
+              "0"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "2"
+          },
+          {
+            "coordinates": [
+              "1",
+              "1"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "1",
+              "2"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "1",
+              "3"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "1",
+              "4"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1024"
+          },
+          {
+            "coordinates": [
+              "2",
+              "0"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "2",
+              "1"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "2"
+          },
+          {
+            "coordinates": [
+              "2",
+              "2"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "2",
+              "3"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1024"
+          },
+          {
+            "coordinates": [
+              "2",
+              "4"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1024"
+          },
+          {
+            "coordinates": [
+              "3",
+              "0"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "2"
+          },
+          {
+            "coordinates": [
+              "3",
+              "1"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "3",
+              "2"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "3",
+              "3"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "3",
+              "4"
+            ],
+            "input": "mainloop.layout_SFA.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1024"
+          },
+          {
+            "coordinates": [
+              "0",
+              "0"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "0",
+              "1"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "0",
+              "2"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "0",
+              "3"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "0",
+              "4"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "1",
+              "0"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "1",
+              "1"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "1",
+              "2"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "1",
+              "3"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "1",
+              "4"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "2",
+              "0"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "2"
+          },
+          {
+            "coordinates": [
+              "2",
+              "1"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "2"
+          },
+          {
+            "coordinates": [
+              "2",
+              "2"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "2",
+              "3"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1024"
+          },
+          {
+            "coordinates": [
+              "2",
+              "4"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "2048"
+          },
+          {
+            "coordinates": [
+              "3",
+              "0"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "2"
+          },
+          {
+            "coordinates": [
+              "3",
+              "1"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "3",
+              "2"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "3",
+              "3"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "512"
+          },
+          {
+            "coordinates": [
+              "3",
+              "4"
+            ],
+            "input": "mainloop.layout_SFB.array",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c; provenance sha256=0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d",
+            "value": "1024"
+          }
+        ],
+        "configured_elements": 80
+      },
+      "idealizations_applied": [],
+      "input_contract_applied_reads": [],
+      "legacy_scalar_fallback": false,
+      "mapping_input_memory_constraints": {},
+      "native_context": {
+        "elements": 80,
+        "input_sha256": "789dca97298ceda637c0cfa7bb11187164c7f914f6c728882996a7a37ee59e3c",
+        "kind": "verified_current_fixed_input",
+        "provenance_sha256": "0c2175e175129d25c123ed276084eae2ae46b2a4df18d56c2ffc07880024a45d"
+      },
+      "normalized_reachable_nodes": 0,
+      "numerical_result": "unsupported",
+      "pattern_nodes": 2,
+      "peak_rss_kib": 5033268,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 0,
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        970,
+        39599
+      ],
+      "reference_term_patterns": 0,
+      "row_groups": [
+        {
+          "count": 1,
+          "families": [
+            [
+              0,
+              0
+            ]
+          ],
+          "record": {},
+          "timing_s": {}
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 0.0,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.0,
+        "left_normalize_s": 0.0,
+        "parametric_state_s": 0.0,
+        "piece_union_record_s": 0.0,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 0.0,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 0.0,
+        "right_normalize_s": 0.0,
+        "state_pattern_s": 0.0
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.01002662
+      },
+      "total_output_families": 4608,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 1,
+      "cta_count": 2,
+      "dependency_compression": {
+        "bulk_read_wait": {
+          "consumers": 80,
+          "emitted_references": 46,
+          "original_references": 552,
+          "prefix_effects": 0
+        },
+        "tcgen_commit": {
+          "consumers": 28,
+          "emitted_references": 179,
+          "original_references": 2880,
+          "prefix_effects": 28
+        },
+        "tcgen_load_wait": {
+          "consumers": 3072,
+          "emitted_references": 6144,
+          "original_references": 39936,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "tcgen_cp_memory_effect_refinement",
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 1599948,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 9216,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 12160,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_array_contract": {
+          "kind": "fixed_read_only",
+          "origin": "pointer_arrays",
+          "regions": [
+            {
+              "allocation": "mainloop.ptr_A.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.2216"
+            },
+            {
+              "allocation": "mainloop.ptr_B.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.2232"
+            },
+            {
+              "allocation": "epilogue.ptr_C.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.2952"
+            },
+            {
+              "allocation": "epilogue.ptr_D.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.2968"
+            },
+            {
+              "allocation": "mainloop.ptr_SFA.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.2248"
+            },
+            {
+              "allocation": "mainloop.ptr_SFB.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.2264"
+            }
+          ],
+          "text": "Configured pointer-table entries retain their supplied objects and are not written during the analyzed execution."
+        },
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "shape_input_contract": {
+          "kind": "fixed_read_only",
+          "origin": "shape_arrays",
+          "regions": [
+            {
+              "allocation": "problem_shapes",
+              "byte_offset": 0,
+              "bytes": 48,
+              "resource": "input.arg0.16"
+            },
+            {
+              "allocation": "scheduler.problem_shapes",
+              "byte_offset": 0,
+              "bytes": 48,
+              "resource": "input.arg0.3184"
+            },
+            {
+              "allocation": "mainloop.dA.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.2224"
+            },
+            {
+              "allocation": "mainloop.dB.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.2240"
+            },
+            {
+              "allocation": "epilogue.dC.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.2960"
+            },
+            {
+              "allocation": "epilogue.dD.array",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.2976"
+            },
+            {
+              "allocation": "mainloop.layout_SFA.array",
+              "byte_offset": 0,
+              "bytes": 80,
+              "resource": "input.arg0.2256"
+            },
+            {
+              "allocation": "mainloop.layout_SFB.array",
+              "byte_offset": 0,
+              "bytes": 80,
+              "resource": "input.arg0.2272"
+            }
+          ],
+          "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+        },
+        "trap_only_equality_assertions_hold": true
+      },
+      "group2_progress": {
+        "blocked": [],
+        "checked_pairs": 3,
+        "premises": [
+          "Baseline synchronization and asynchronous work must independently make progress.",
+          "Resident peer CTAs must be scheduled fairly and have admitted TMEM capacity.",
+          "Allocation placement and retirement RequiredOrders are separate obligations.",
+          "Source references, actor ordering, and collective participation must be validated."
+        ]
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "problem_shapes",
+          "offset": 16,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.tensormaps",
+          "offset": 2208,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.ptr_A.array",
+          "offset": 2216,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.dA.array",
+          "offset": 2224,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.ptr_B.array",
+          "offset": 2232,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.dB.array",
+          "offset": 2240,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.ptr_SFA.array",
+          "offset": 2248,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.layout_SFA.array",
+          "offset": 2256,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.ptr_SFB.array",
+          "offset": 2264,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "mainloop.layout_SFB.array",
+          "offset": 2272,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "epilogue.tensormaps",
+          "offset": 2944,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "epilogue.ptr_C.array",
+          "offset": 2952,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "epilogue.dC.array",
+          "offset": 2960,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "epilogue.ptr_D.array",
+          "offset": 2968,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "epilogue.dD.array",
+          "offset": 2976,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "scheduler.problem_shapes",
+          "offset": 3184,
+          "parameter": "_ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalINS1_17GroupProblemShapeIN4cute5tupleIJiiiEEEEENS1_10collective13CollectiveMmaINS1_51MainloopSm100ArrayTmaUmmaWarpSpecializedBlockScaledILi9ELi8ELi2ENS6_IJNS5_1CILi2EEENSC_ILi1EEESE_EEENS_4arch5Sm100EEENS6_IJNSC_ILi256EEENSC_ILi64EEENSC_ILi128EEEEEENS6_IJNS_12float_e4m3_tENS_13float_ue8m0_tEEEENS6_IJPNS6_IJlSE_NSC_ILi0EEEEEEPNS5_6LayoutINS6_IJNS6_IJNS6_IJNSC_ILi32EEENSC_ILi4EEEEEEiEEESX_NS6_IJSE_iEEEEEENS6_IJNS6_IJNS6_IJNSC_ILi16EEESV_EEEiEEENS6_IJNS6_IJSQ_SE_EEENSC_ILi512EEEEEENS6_IJSQ_iEEEEEEEEEEENS6_IJNS_12float_e2m1_tESO_EEES1A_NS5_8TiledMMAINS5_8MMA_AtomIJNS5_27SM100_MMA_MXF8F6F4_2x1SM_SSISN_NS_6detail23float_e2m1_unpacksmem_tEfSO_Li256ELi64ELNS5_4UMMA5MajorE0ELS1J_0ELNS1I_7ScaleInE0ELS1K_0EEEEEENST_INS6_IJSE_SE_SE_EEENS6_IJSQ_SQ_SQ_EEEEENS6_IJNS5_10UnderscoreES1Q_S1Q_EEEEENS6_IJNS5_18SM100_TMA_2SM_LOADES1T_EEENS6_IJNS5_14ComposedLayoutINS5_7SwizzleILi3ELi4ELi3EEENS5_18smem_ptr_flag_bitsILi8EEENST_INS6_IJNSC_ILi8EEESL_EEENS6_IJSL_SE_EEEEEEENST_INS6_IJNS6_IJNS6_IJSW_SE_EEENS6_IJSU_SE_EEEEEESE_NS6_IJSV_SE_EEEEEENS6_IJNS6_IJNS6_IJS11_S14_EEES13_EEESQ_NS6_IJSE_S14_EEEEEEEEEEEvNS5_8identityENS6_IJS1T_NS5_28SM100_TMA_2SM_LOAD_MULTICASTEEEES2F_vS2G_EENS_8epilogue10collective18CollectiveEpilogueINS2K_31Sm100PtrArrayTmaWarpSpecializedILi2ELi2ELi32ELb0ELb0EEEJNS6_IJSL_SK_SL_EEENS6_IJNST_ISL_SE_EENST_ISU_SE_EEEEEvSS_NS_10bfloat16_tESS_NS2K_6fusion15FusionCallbacksIS2O_NS2U_17LinearCombinationIS2T_fvfLNS_15FloatRoundStyleE2EEES2P_S2S_JEEENS5_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b32xENS5_13SM90_TMA_LOADENS1V_INS1W_ILi2ELi4ELi3EEENS1Y_ILi16EEENST_INS6_IJS20_SU_EEES26_EEEENS5_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS5_14SM90_TMA_STOREES39_S3B_S3B_EEEvvEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 479445,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 64
+      },
+      "reached_opcodes": {
+        "add.s16": 1024,
+        "add.s32": 110680,
+        "add.s64": 22106,
+        "and.b16": 1792,
+        "and.b32": 19808,
+        "and.b64": 1528,
+        "and.pred": 4968,
+        "bar.arrive": 64,
+        "bar.sync": 12544,
+        "bar.warp.sync": 2752,
+        "barrier.cluster.arrive.relaxed.aligned": 768,
+        "barrier.cluster.wait.aligned": 768,
+        "bfind.shiftamt.u32": 256,
+        "bra": 84834,
+        "bra.uni": 6696,
+        "brev.b32": 256,
+        "cp.async.bulk.commit_group": 80,
+        "cp.async.bulk.tensor.2d.cta_group::2.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 64,
+        "cp.async.bulk.tensor.2d.global.shared::cta.bulk_group": 48,
+        "cp.async.bulk.tensor.4d.cta_group::2.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 32,
+        "cp.async.bulk.tensor.4d.cta_group::2.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 32,
+        "cp.async.bulk.wait_group.read": 80,
+        "cvt.rn.bf16x2.f32": 98304,
+        "cvt.s64.s32": 828,
+        "cvt.u16.u32": 1856,
+        "cvt.u32.u16": 3840,
+        "cvt.u32.u64": 21016,
+        "cvt.u64.u16": 384,
+        "cvt.u64.u32": 11304,
+        "cvta.to.global.u64": 1616,
+        "cvta.to.shared.u64": 256,
+        "div.u32": 1472,
+        "elect.sync": 12160,
+        "fence.mbarrier_init.release.cluster": 4608,
+        "fence.proxy.async.shared::cta": 18686,
+        "fence.proxy.tensormap::generic.acquire.gpu": 1280,
+        "griddepcontrol.launch_dependents": 64,
+        "griddepcontrol.wait": 1152,
+        "ld.global.b32": 4904,
+        "ld.global.b64": 64,
+        "ld.global.s32": 1576,
+        "ld.param.b32": 6912,
+        "ld.param.b64": 12240,
+        "ld.param.b8": 768,
+        "ld.param.v2.b32": 1536,
+        "ld.param.v2.b64": 1168,
+        "ld.param.v4.b32": 768,
+        "ld.shared.b16": 3840,
+        "ld.shared.b32": 23552,
+        "mad.lo.s32": 10366,
+        "mapa.shared::cluster.u32": 14080,
+        "mbarrier.arrive.expect_tx.shared::cta.b64": 16,
+        "mbarrier.arrive.shared::cluster.b64": 17152,
+        "mbarrier.arrive.shared::cta.b64": 1056,
+        "mbarrier.init.shared::cta.b64": 122,
+        "mbarrier.try_wait.parity.shared::cta.b64": 34176,
+        "min.s32": 1960,
+        "min.u32": 768,
+        "mov.b16": 2016,
+        "mov.b32": 359258,
+        "mov.b64": 8568,
+        "mov.pred": 11328,
+        "mov.s32": 12540,
+        "mov.u32": 10752,
+        "mul.f32": 196608,
+        "mul.hi.u16": 4224,
+        "mul.hi.u64": 1576,
+        "mul.lo.s16": 4224,
+        "mul.lo.s32": 2112,
+        "mul.lo.s64": 768,
+        "mul.wide.s32": 5446,
+        "mul.wide.u32": 5600,
+        "neg.s32": 1280,
+        "not.b32": 1472,
+        "not.pred": 9088,
+        "or.b16": 1856,
+        "or.b32": 3840,
+        "or.b64": 1728,
+        "or.pred": 11904,
+        "rem.s32": 1576,
+        "ret": 768,
+        "selp.b16": 1712,
+        "selp.b32": 50792,
+        "selp.b64": 2856,
+        "setmaxnreg.dec.sync.aligned.u32": 512,
+        "setmaxnreg.inc.sync.aligned.u32": 256,
+        "setp.eq.b16": 960,
+        "setp.eq.b32": 54036,
+        "setp.eq.b64": 7728,
+        "setp.ge.s32": 3328,
+        "setp.ge.u64": 1792,
+        "setp.gt.s32": 5412,
+        "setp.gt.u32": 1920,
+        "setp.le.s32": 768,
+        "setp.lt.s32": 14592,
+        "setp.lt.u32": 1856,
+        "setp.lt.u64": 2048,
+        "setp.ne.b16": 1792,
+        "setp.ne.b32": 48896,
+        "setp.ne.b64": 1472,
+        "shfl.sync.idx.b32": 9472,
+        "shfl.sync.up.b32": 2560,
+        "shl.b32": 35160,
+        "shl.b64": 1864,
+        "shr.s32": 3840,
+        "shr.u16": 4224,
+        "shr.u32": 12736,
+        "shr.u64": 7472,
+        "st.shared.b32": 278,
+        "st.shared.v2.b16": 32,
+        "st.shared.v2.b64": 400,
+        "st.shared.v4.b32": 24576,
+        "sub.s16": 4224,
+        "sub.s32": 4072,
+        "sub.s64": 1728,
+        "tcgen05.alloc.cta_group::2.sync.aligned.shared::cta.b32": 64,
+        "tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 28,
+        "tcgen05.cp.cta_group::2.32x128b.warpx4": 32,
+        "tcgen05.dealloc.cta_group::2.sync.aligned.b32": 64,
+        "tcgen05.ld.sync.aligned.32x32b.x32.b32": 6144,
+        "tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale": 64,
+        "tcgen05.relinquish_alloc_permit.cta_group::2.sync.aligned": 64,
+        "tcgen05.wait::ld.sync.aligned": 3072,
+        "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned": 1280,
+        "tensormap.replace.tile.global_address.shared::cta.b1024.b64": 40,
+        "tensormap.replace.tile.global_dim.shared::cta.b1024.b32": 200,
+        "tensormap.replace.tile.global_stride.shared::cta.b1024.b64": 160,
+        "vote.sync.ballot.b32": 256,
+        "xor.b32": 27552
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 27312,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 72,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 479445,
+        "stored_bindings": 61341
+      },
+      "source_edge_storage": {
+        "binding_templates": 1221,
+        "logical_edges": 478677,
+        "stored_bindings": 1222
+      },
+      "tcgen_copy_refinement": {
+        "blocked": [],
+        "discharged": 32
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 28,
+        "operations": 96
+      },
+      "thread_count": 768,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "frontend_value_validation": {
+      "required_orders": 27312,
+      "status": "validated"
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      },
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 18,
+        "edge_visits": 44199879,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 82984,
+          "family_requests": 31656,
+          "logical_orders": 632752,
+          "owner_bindings": 84072,
+          "stored_orders": 39992
+        }
+      },
+      "shared_constant_interference": {
+        "algorithm": "event-family-relations",
+        "batches": 2,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 12906,
+        "filtered_queries": 31616,
+        "queries": 47168,
+        "shared_peak_index_bytes": 995328
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 1219884,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 420522,
+        "affine_member_rows": 0,
+        "candidate_relations": 771420,
+        "hb_frontier_pieces": 701850,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 1077134
+      },
+      "hb_algorithm": "member-relations",
+      "hb_batches": 2009,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 38690478,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 1219884,
+      "hb_query_seconds": 6.449935953000004,
+      "overlap_queries": 0,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 0
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 4827.72265625,
+    "required_order_domains": 39992,
+    "required_orders": 632752,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 138,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 562126,
+      "memory_binding_templates": 4127,
+      "memory_bindings": 593566,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 36118,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 235,
+      "thread_prefix_groups": 538186,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 2,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 1651262,
+      "path_entries": 137360,
+      "record_bindings": 192963,
+      "record_nodes": 125590,
+      "splits": 68,
+      "template_steps": 128942,
+      "thread_memberships": 768,
+      "value_nodes": 35804
+    },
+    "thread_record_compression": {
+      "completed_ctas": 2,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 1599948,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [],
+      "duplicate_write_value_checks": 0,
+      "equivalence_check": "translation_or_supported_fragment_blocked",
+      "initial_memory_regions": 13123,
+      "initial_read_families": 24138,
+      "memory_action_storage": {
+        "logical_actions": 593566,
+        "stored_runs": 562126
+      },
+      "output_region_families": 0,
+      "output_regions": 12672,
+      "passes": [
+        {
+          "name": "packing",
+          "rewritten_instances": 200464,
+          "rewritten_nodes": 14872,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 1218858,
+          "name": "type_edges",
+          "removed_nodes": 95452
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 2534,
+          "layouts": 16616,
+          "mapping_blocks": 35966,
+          "name": "view_normalization",
+          "original_pieces": 448148,
+          "reused_initial_reads": 24226,
+          "reused_views": 74,
+          "segmented": 496,
+          "slices": 7476,
+          "stored_mapping_blocks": 35884,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
+        }
+      ],
+      "processed_memory_actions": 593566,
+      "processed_memory_families": 0,
+      "read_substitutions": 82186,
+      "scalar_fold": {
+        "construction_collections": 0,
+        "diagnostics": [],
+        "output_count": 147456,
+        "output_families_merged": 0,
+        "output_family_count": 4608,
+        "output_root_count": 4608,
+        "peak_construction_nodes": 176554,
+        "shared_view_projection_hits": 342912,
+        "source_outputs": 12672,
+        "spatial_families_projected": 2304,
+        "spatial_outputs_projected": 147456,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 776,
+          "edges": 74886,
+          "folds": 11264,
+          "indices": 3,
+          "initial_cells": 2752,
+          "logical_iterations": 112640,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 2,
+          "nodes": 39598,
+          "nodes_before_final_collection": 176554,
+          "nodes_reclaimed": 136956,
+          "operations": 24803,
+          "parameters": 0,
+          "range_descriptions": 11264,
+          "storage_nodes": 39598,
+          "unique_fold_bodies": 11264
+        }
+      },
+      "serialization": {
+        "action_patterns": 562126,
+        "binding_patterns": 562126,
+        "domain_refinements": 1628570,
+        "elapsed_seconds": 5.558693461,
+        "event_families": 883433,
+        "expanded_event_records": 0,
+        "largest_batch_members": 56,
+        "logical_actions": 593566,
+        "logical_events": 4636299,
+        "peak_rss_mib_at_completion": 4915.30078125,
+        "reachability_queries": 0,
+        "relations": 4554682,
+        "rss_mib_at_completion": 3289.60546875,
+        "scheduled_batches": 883433,
+        "singleton_batches": 639139,
+        "value_families": 357573
+      },
+      "shared_read_families": 1946,
+      "shared_read_instances": 30838,
+      "stored_read_substitutions": 51348
+    },
+    "value_ir_instance_count": 1675358,
+    "value_ir_node_count": 305456,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 45.655027454,
+    "verification_result": "race_free"
   },
-  "memory_analysis_complete": false,
-  "mma_operand_ordering": {},
-  "mode": "verify",
-  "peak_footprint_mib": 2693.67578125,
-  "peak_rss_mib": 2834.3359375,
-  "pipeline_elapsed_seconds": 47.082778419,
-  "race_count": 0,
-  "race_samples_truncated": false,
-  "races": [],
-  "required_order_domains": 39992,
-  "required_orders": 632752,
+  "peak_rss_mib": 4915.30078125,
+  "pipeline_elapsed_seconds": 59.100111124,
   "result": "unsupported",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "search_complete": false,
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 1,
-    "binding_diagnostics": [
-      {
-        "code": "incomplete_value_semantics",
-        "message": "unsupported_operation: No value-IR model for 'tensormap' (including its memory effects/results)"
-      }
-    ],
-    "execution_cohorts": 138,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 36118,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 235,
-    "thread_prefix_groups": 38581,
-    "value_diagnostic_count": 1,
-    "value_diagnostics": [
-      {
-        "code": "unsupported_operation",
-        "line": 2811,
-        "message": "No value-IR model for 'tensormap' (including its memory effects/results)"
-      }
-    ]
-  },
-  "source_violations": [],
-  "stage": "memory_check",
-  "synchronization_input": {
-    "compute_access_binding": "after_happens_before",
-    "kind": "ordering_endpoints",
-    "memory_address_payloads": false
-  },
-  "template_execution": {
-    "completed_ctas": 2,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 1651262,
-    "path_entries": 228890,
-    "record_bindings": 332680,
-    "record_nodes": 190120,
-    "splits": 122,
-    "template_steps": 196442,
-    "thread_memberships": 768,
-    "value_nodes": 84814
-  },
-  "thread_record_compression": {
-    "completed_ctas": 2,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 1599948,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "unresolved_count": 1,
-  "unsupported_memory_pair": {
-    "first": {
-      "access_index": 0,
-      "actor": 64,
-      "bytes": 64,
-      "effect_index": 0,
-      "endpoint": {
-        "address": 23253,
-        "address_space": "global",
-        "allocation": "unresolved",
-        "expression": {
-          "bytes": 64,
-          "coordinates": [
-            0,
-            0
-          ],
-          "descriptor": {
-            "allocation_location": [
-              "input.arg0.2208",
-              0
-            ],
-            "base_byte_offset": null,
-            "box_shape": [
-              128,
-              128
-            ],
-            "coordinate_strides_bytes": [
-              1,
-              null
-            ],
-            "element_bytes": 1,
-            "element_strides": [
-              1,
-              1
-            ],
-            "global_shape": [
-              128,
-              128
-            ],
-            "interleave": "none",
-            "oob_fill": "zero",
-            "resource": "unresolved",
-            "swizzle": "128B",
-            "symbolic_global": true
-          },
-          "logical_offset": 0,
-          "occurrence": [
-            [
-              0,
-              0,
-              0
-            ],
-            2,
-            0,
-            913,
-            0
-          ],
-          "operator": "tma_region"
-        },
-        "kind": "memory"
-      },
-      "event": 288554,
-      "instruction": 41777,
-      "location": {
-        "column": 2,
-        "file": "corpus/flashinfer__gemm_sm100_module__group_gemm_mxfp4_groupwise_e4m3_bf16_mma2_swapfalse_sm100__sm_100a.ptx",
-        "line": 1765
-      },
-      "mode": "read"
-    },
-    "reason": "allocation identity is unresolved between global tensor_map_target(input.arg0.2208+0) and global allocation epilogue.tensormaps",
-    "second": {
-      "access_index": 0,
-      "actor": 128,
-      "bytes": 4,
-      "effect_index": 1,
-      "endpoint": {
-        "address": 41218,
-        "address_space": "global",
-        "allocation": "epilogue.tensormaps",
-        "kind": "memory"
-      },
-      "event": 363370,
-      "instruction": 60023,
-      "location": {
-        "column": 2,
-        "file": "corpus/flashinfer__gemm_sm100_module__group_gemm_mxfp4_groupwise_e4m3_bf16_mma2_swapfalse_sm100__sm_100a.ptx",
-        "line": 4416
-      },
-      "mode": "write"
-    }
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "incomplete",
-            "synchronization": "passed"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "allocation_alias_relation_unknown",
-              "details": {
-                "witness_path": "unsupported_memory_pair"
-              },
-              "message": "allocation identity is unresolved between global tensor_map_target(input.arg0.2208+0) and global allocation epilogue.tensormaps",
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "unsupported",
-          "prerequisite_status": "memory_analysis_inconclusive"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "memory_analysis_inconclusive",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    }
-  },
-  "value_ir_instance_count": 98671,
-  "value_ir_node_count": 18373,
-  "value_view_complete": false,
   "verification_limitations": [],
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.126
 }

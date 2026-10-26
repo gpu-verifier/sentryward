@@ -1,291 +1,836 @@
 {
-  "active_stage": "verification.memory",
-  "checks": {
-    "equivalence": "not_run",
-    "memory": "not_run",
-    "synchronization": "not_run"
-  },
-  "diagnostics": [
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
     {
-      "code": "timeout",
-      "details": {
-        "resource": {
-          "kind": "time",
-          "limit": 500.0,
-          "origin": "configured_budget",
-          "unit": "seconds"
-        }
-      },
-      "stage": "memory_check"
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
-  "elapsed_seconds": 500.009478938,
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "timeout",
-              "details": {
-                "resource": {
-                  "kind": "time",
-                  "limit": 500.0,
-                  "origin": "configured_budget",
-                  "unit": "seconds"
-                }
-              },
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "timeout",
-          "prerequisite_status": "timeout"
-        },
-        "stage": "memory_check"
-      }
-    ],
-    "prerequisite_status": "timeout",
-    "result": "timeout",
-    "scope": {
-      "operation": "equivalence"
-    },
-    "stage": "verification.memory"
+  "checks": {
+    "equivalence": "passed",
+    "synchronization": "passed"
   },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [
+  "diagnostics": [],
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 0,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "shape_input_contract": {
+      "kind": "fixed_read_only",
+      "origin": "shape_arrays",
+      "regions": [
         {
-          "code": "unsupported_operation",
-          "details": {
-            "cta": 0,
-            "instruction": "vote.sync.ballot.b32 \t%r104, %p23, %r103;",
-            "instruction_index": 136,
-            "location": {
-              "file": "corpus/flashinfer__fused_moe_cutlass_static__moe_gemm_kernels_bf16_bf16__sm_100a.ptx",
-              "line": 382
-            },
-            "occurrence": 0,
-            "thread": 25
-          },
-          "message": "No exact per-thread value model for compute operation 'vote'",
-          "stage": "value_lowering"
+          "allocation": "last_row_for_problem",
+          "byte_offset": 0,
+          "bytes": 32,
+          "resource": "input.arg0.0"
         }
       ],
-      "first_unavailable_reason": "",
-      "queries": 0,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": false
+      "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
     },
-    "cluster_completion_joins": 0,
-    "cta_count": 1,
-    "dependency_compression": {
-      "cp_async_wait": {
-        "consumers": 32768,
-        "emitted_references": 147456,
-        "original_references": 19095552,
-        "prefix_effects": 0
-      }
-    },
-    "diagnostic_sample_count": 0,
-    "executed_records": 5255584,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
+    "trap_only_equality_assertions_hold": true
+  },
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
       ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 0,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "shape_input_contract": {
-        "kind": "fixed_read_only",
-        "origin": "shape_arrays",
-        "regions": [
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "counts": {
+      "edges": 11343928,
+      "events": 4466948,
+      "instructions": 965276,
+      "memory_accesses": 2264732,
+      "threads": 128
+    },
+    "equivalence": {
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 4522376,
+      "comparison_elapsed_seconds": 25.938759451,
+      "context_declaration": {
+        "assumptions": [],
+        "fixed_inputs": [
           {
-            "allocation": "last_row_for_problem",
-            "byte_offset": 0,
-            "bytes": 32,
-            "resource": "input.arg0.0"
+            "coordinates": [
+              "0"
+            ],
+            "input": "last_row_for_problem",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=7da5910ae108e54765e3711dfafffdbed51a0186ff06224987d330e44bb74180; provenance sha256=ebd8073741b63bd8a97afd2b188adba7bd2fe4b78a84864ea483fcbc5e4ce713",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "last_row_for_problem",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=7da5910ae108e54765e3711dfafffdbed51a0186ff06224987d330e44bb74180; provenance sha256=ebd8073741b63bd8a97afd2b188adba7bd2fe4b78a84864ea483fcbc5e4ce713",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "last_row_for_problem",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=7da5910ae108e54765e3711dfafffdbed51a0186ff06224987d330e44bb74180; provenance sha256=ebd8073741b63bd8a97afd2b188adba7bd2fe4b78a84864ea483fcbc5e4ce713",
+            "value": "384"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "last_row_for_problem",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=7da5910ae108e54765e3711dfafffdbed51a0186ff06224987d330e44bb74180; provenance sha256=ebd8073741b63bd8a97afd2b188adba7bd2fe4b78a84864ea483fcbc5e4ce713",
+            "value": "512"
           }
         ],
-        "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+        "inputs": [],
+        "predicate_nodes": []
       },
-      "trap_only_equality_assertions_hold": true
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 9953521,
+        "affine_state_banks": 1,
+        "call_definition_node_visits": 1309697,
+        "canonical_factor_visits": 1048576,
+        "canonical_node_visits": 1966592,
+        "certified_state_pattern_cache_hits": 131067,
+        "certified_state_pattern_decline_no_certified_state": 5,
+        "certified_state_pattern_work": 65,
+        "coefficient_normalizations": 1,
+        "completed_reductions": 131072,
+        "constant_binary32_bitcasts": 262144,
+        "coordinate_digit_node_visits": 393089,
+        "coverage_polynomial_peak": 4,
+        "coverage_polynomial_visits": 786432,
+        "coverage_stored_piece_visits": 131072,
+        "ep_body_anchor_edges": 262154,
+        "ep_body_anchor_nodes": 393231,
+        "ep_body_instance_cache_entries": 131072,
+        "ep_body_obligations": 131072,
+        "ep_body_pattern_anchor_cache_hits": 131067,
+        "ep_body_proofs": 131072,
+        "ep_body_read_anchor_rejections": 131072,
+        "ep_identity_proofs": 262144,
+        "ep_scalar_attempts": 262144,
+        "ep_scalar_proofs": 262144,
+        "finite_bilinear_banks": 1,
+        "finite_state_reuse_banks": 1,
+        "fp_idiom_power_constructions": 0,
+        "fp_idiom_rm_producers": 0,
+        "ideal_additive_compiler_exp_sequences": 0,
+        "ideal_compiler_exp_sequences": 0,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_single_constant_exp_sequences": 0,
+        "imported_context_nodes": 3350932,
+        "importer_scope_banks": 2,
+        "importer_scope_binder_hits": 8192,
+        "importer_scope_binders_created": 8192,
+        "importer_scope_budget_fallbacks": 507904,
+        "importer_scope_leaf_lookups": 524288,
+        "importer_scope_nested_body_fallbacks": 262144,
+        "intern_requests": 39101361,
+        "local_pattern_candidates": 262144,
+        "masked_sum_prefix_queries": 393216,
+        "maximum_dominated_operands": 0,
+        "normalization_cache_context_changes": 1533,
+        "normalization_node_visits": 2590457,
+        "parametric_state_attempts": 0,
+        "pattern_build_peak_nodes": 3,
+        "pattern_build_unique_nodes": 393216,
+        "pattern_node_visits": 1179648,
+        "proved_select_arms_imported": 294912,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_temporary_nodes": 0,
+        "summary_bind_nodes": 262144,
+        "symbolic_byte_reads_without_extent_proof": 0
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 131072,
+        "status": "proved"
+      },
+      "diagnostics": [],
+      "elapsed_s": 18.196927462,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "query_count": 262144,
+        "reset_s": 0.0,
+        "reuse_cache": false,
+        "shared_evictions": 0
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 0,
+        "fixed_input_elements": 4,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 131072,
+      "finished_families": 131072,
+      "fixed_input_context": {
+        "applied": [],
+        "applied_elements": 0,
+        "configured": [
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "last_row_for_problem",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=7da5910ae108e54765e3711dfafffdbed51a0186ff06224987d330e44bb74180; provenance sha256=ebd8073741b63bd8a97afd2b188adba7bd2fe4b78a84864ea483fcbc5e4ce713",
+            "value": "128"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "last_row_for_problem",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=7da5910ae108e54765e3711dfafffdbed51a0186ff06224987d330e44bb74180; provenance sha256=ebd8073741b63bd8a97afd2b188adba7bd2fe4b78a84864ea483fcbc5e4ce713",
+            "value": "256"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "last_row_for_problem",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=7da5910ae108e54765e3711dfafffdbed51a0186ff06224987d330e44bb74180; provenance sha256=ebd8073741b63bd8a97afd2b188adba7bd2fe4b78a84864ea483fcbc5e4ce713",
+            "value": "384"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "last_row_for_problem",
+            "interpretation": "s64",
+            "reason": "current verified fixed-read-only input; input sha256=7da5910ae108e54765e3711dfafffdbed51a0186ff06224987d330e44bb74180; provenance sha256=ebd8073741b63bd8a97afd2b188adba7bd2fe4b78a84864ea483fcbc5e4ce713",
+            "value": "512"
+          }
+        ],
+        "configured_elements": 4
+      },
+      "idealizations_applied": [],
+      "input_contract_applied_reads": [],
+      "legacy_scalar_fallback": false,
+      "mapping_input_memory_constraints": {},
+      "native_context": {
+        "elements": 4,
+        "input_sha256": "7da5910ae108e54765e3711dfafffdbed51a0186ff06224987d330e44bb74180",
+        "kind": "verified_current_fixed_input",
+        "provenance_sha256": "ebd8073741b63bd8a97afd2b188adba7bd2fe4b78a84864ea483fcbc5e4ce713"
+      },
+      "normalized_reachable_nodes": 262656,
+      "numerical_result": "verified",
+      "pattern_nodes": 133136,
+      "peak_rss_kib": 15253312,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 393216,
+      "piece_union": {
+        "abstract_optimized_replacements": 0,
+        "abstract_reference_replacements": 0,
+        "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+        "collected_pieces": 0,
+        "late_certificates": "accepted_until_each_schema_is_complete",
+        "method": "complete_output_equalities_with_finite_piece_union",
+        "replacements": 0,
+        "schemas": [],
+        "stored_dag_work": 0,
+        "work_limit": 2000000
+      },
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        1094,
+        856589
+      ],
+      "reference_term_patterns": 5,
+      "row_groups": [
+        {
+          "count": 131072,
+          "families": [
+            [
+              0,
+              131071
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 0.08757090999978928,
+            "cumulative_elapsed_s": 17.052735129,
+            "left_import_s": 4.717867126999717,
+            "left_normalize_s": 1.5375972420002817,
+            "parametric_state_s": 0.010146950999946724,
+            "piece_union_record_s": 0.003197280999749752,
+            "piece_union_seal_s": 0.0030473120000373277,
+            "right_import_s": 6.908044699000077,
+            "right_normalize_s": 2.468385924999991
+          }
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 0.08757090999978928,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 4.717867126999717,
+        "left_normalize_s": 1.5375972420002817,
+        "parametric_state_s": 0.010146950999946724,
+        "piece_union_record_s": 0.003197280999749752,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 0.0030473120000373277,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 6.908044699000077,
+        "right_normalize_s": 2.468385924999991,
+        "state_pattern_s": 0.0
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.190303513
+      },
+      "total_output_families": 131072,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 1,
+      "dependency_compression": {
+        "cp_async_wait": {
+          "consumers": 32768,
+          "emitted_references": 147456,
+          "original_references": 19095552,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "executed_records": 5255584,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 0,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "shape_input_contract": {
+          "kind": "fixed_read_only",
+          "origin": "shape_arrays",
+          "regions": [
+            {
+              "allocation": "last_row_for_problem",
+              "byte_offset": 0,
+              "bytes": 32,
+              "resource": "input.arg0.0"
+            }
+          ],
+          "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+        },
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "last_row_for_problem",
+          "offset": 0,
+          "parameter": "_ZN7cutlass6KernelINS_4gemm6kernel9MoeFCGemmINS1_11threadblock13MmaMultistageINS1_9GemmShapeILi16ELi128ELi64EEENS_9transform11threadblock28PredicatedTileAccessIteratorINS_11MatrixShapeILi16ELi64EEENS_10bfloat16_tENS_6layout8RowMajorELi1ENS8_29PitchLinearWarpRakedThreadMapINS_16PitchLinearShapeILi64ELi16EEELi128ENSH_ILi8ELi4EEELi8EEENS_5ArrayISD_Li8ELb0EEELb0ENSE_9NoPermuteEEENS9_25RegularTileAccessIteratorISC_SD_NSE_37RowMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi0ESK_Li16EEELNS_4arch14CacheOperation4KindE1ENSA_INSB_ILi64ELi128EEESD_NSE_11ColumnMajorELi0ENSG_INSH_ILi64ELi128EEELi128ESJ_Li8EEESM_Lb0ESN_EENSP_ISW_SD_NSE_40ColumnMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi1ESZ_Li16EEELSV_1EfSF_NS4_9MmaPolicyINS1_4warp11MmaTensorOpINS6_ILi16ELi32ELi64EEESD_SR_SD_S12_fSF_NS15_17MmaTensorOpPolicyINST_3MmaINS6_ILi16ELi8ELi16EEELi32ESD_SF_SD_SX_fSF_NST_13OpMultiplyAddEEENSB_ILi1ELi1EEEEELi1ELb0EbEENSB_ILi0ELi0EEES1G_Li1EEELi2ELNS1_23SharedMemoryClearOptionE0EbEENS_8epilogue11threadblock8EpilogueIS7_S1F_Li1ENS1L_22PredicatedTileIteratorINS1L_26OutputTileOptimalThreadMapINS1L_15OutputTileShapeILi128ELi8ELi1ELi1ELi1EEENS1P_ILi1ELi2ELi1ELi1ELi2EEELi128ELi8ELi16EEESD_Lb0ESN_Lb0EEENS1K_4warp24FragmentIteratorTensorOpIS17_S1A_fNSL_IfLi4ELb1EEESF_EENS1U_20TileIteratorTensorOpIS17_S1A_fSF_EENS1L_18SharedLoadIteratorINS1S_18CompactedThreadMapEfLi32EEENS1K_6thread21LinearCombinationReluISD_Li8EffLNS23_9ScaleType4KindE0ELNS_15FloatRoundStyleE2EEENSB_ILi0ELi8EEELi1ELi1EEENS4_37GemmBatchedIdentityThreadblockSwizzleENST_4Sm80ELNS2_17GroupScheduleModeE0EEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "activations",
+          "offset": 96,
+          "parameter": "_ZN7cutlass6KernelINS_4gemm6kernel9MoeFCGemmINS1_11threadblock13MmaMultistageINS1_9GemmShapeILi16ELi128ELi64EEENS_9transform11threadblock28PredicatedTileAccessIteratorINS_11MatrixShapeILi16ELi64EEENS_10bfloat16_tENS_6layout8RowMajorELi1ENS8_29PitchLinearWarpRakedThreadMapINS_16PitchLinearShapeILi64ELi16EEELi128ENSH_ILi8ELi4EEELi8EEENS_5ArrayISD_Li8ELb0EEELb0ENSE_9NoPermuteEEENS9_25RegularTileAccessIteratorISC_SD_NSE_37RowMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi0ESK_Li16EEELNS_4arch14CacheOperation4KindE1ENSA_INSB_ILi64ELi128EEESD_NSE_11ColumnMajorELi0ENSG_INSH_ILi64ELi128EEELi128ESJ_Li8EEESM_Lb0ESN_EENSP_ISW_SD_NSE_40ColumnMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi1ESZ_Li16EEELSV_1EfSF_NS4_9MmaPolicyINS1_4warp11MmaTensorOpINS6_ILi16ELi32ELi64EEESD_SR_SD_S12_fSF_NS15_17MmaTensorOpPolicyINST_3MmaINS6_ILi16ELi8ELi16EEELi32ESD_SF_SD_SX_fSF_NST_13OpMultiplyAddEEENSB_ILi1ELi1EEEEELi1ELb0EbEENSB_ILi0ELi0EEES1G_Li1EEELi2ELNS1_23SharedMemoryClearOptionE0EbEENS_8epilogue11threadblock8EpilogueIS7_S1F_Li1ENS1L_22PredicatedTileIteratorINS1L_26OutputTileOptimalThreadMapINS1L_15OutputTileShapeILi128ELi8ELi1ELi1ELi1EEENS1P_ILi1ELi2ELi1ELi1ELi2EEELi128ELi8ELi16EEESD_Lb0ESN_Lb0EEENS1K_4warp24FragmentIteratorTensorOpIS17_S1A_fNSL_IfLi4ELb1EEESF_EENS1U_20TileIteratorTensorOpIS17_S1A_fSF_EENS1L_18SharedLoadIteratorINS1S_18CompactedThreadMapEfLi32EEENS1K_6thread21LinearCombinationReluISD_Li8EffLNS23_9ScaleType4KindE0ELNS_15FloatRoundStyleE2EEENSB_ILi0ELi8EEELi1ELi1EEENS4_37GemmBatchedIdentityThreadblockSwizzleENST_4Sm80ELNS2_17GroupScheduleModeE0EEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "expert_weights",
+          "offset": 104,
+          "parameter": "_ZN7cutlass6KernelINS_4gemm6kernel9MoeFCGemmINS1_11threadblock13MmaMultistageINS1_9GemmShapeILi16ELi128ELi64EEENS_9transform11threadblock28PredicatedTileAccessIteratorINS_11MatrixShapeILi16ELi64EEENS_10bfloat16_tENS_6layout8RowMajorELi1ENS8_29PitchLinearWarpRakedThreadMapINS_16PitchLinearShapeILi64ELi16EEELi128ENSH_ILi8ELi4EEELi8EEENS_5ArrayISD_Li8ELb0EEELb0ENSE_9NoPermuteEEENS9_25RegularTileAccessIteratorISC_SD_NSE_37RowMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi0ESK_Li16EEELNS_4arch14CacheOperation4KindE1ENSA_INSB_ILi64ELi128EEESD_NSE_11ColumnMajorELi0ENSG_INSH_ILi64ELi128EEELi128ESJ_Li8EEESM_Lb0ESN_EENSP_ISW_SD_NSE_40ColumnMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi1ESZ_Li16EEELSV_1EfSF_NS4_9MmaPolicyINS1_4warp11MmaTensorOpINS6_ILi16ELi32ELi64EEESD_SR_SD_S12_fSF_NS15_17MmaTensorOpPolicyINST_3MmaINS6_ILi16ELi8ELi16EEELi32ESD_SF_SD_SX_fSF_NST_13OpMultiplyAddEEENSB_ILi1ELi1EEEEELi1ELb0EbEENSB_ILi0ELi0EEES1G_Li1EEELi2ELNS1_23SharedMemoryClearOptionE0EbEENS_8epilogue11threadblock8EpilogueIS7_S1F_Li1ENS1L_22PredicatedTileIteratorINS1L_26OutputTileOptimalThreadMapINS1L_15OutputTileShapeILi128ELi8ELi1ELi1ELi1EEENS1P_ILi1ELi2ELi1ELi1ELi2EEELi128ELi8ELi16EEESD_Lb0ESN_Lb0EEENS1K_4warp24FragmentIteratorTensorOpIS17_S1A_fNSL_IfLi4ELb1EEESF_EENS1U_20TileIteratorTensorOpIS17_S1A_fSF_EENS1L_18SharedLoadIteratorINS1S_18CompactedThreadMapEfLi32EEENS1K_6thread21LinearCombinationReluISD_Li8EffLNS23_9ScaleType4KindE0ELNS_15FloatRoundStyleE2EEENSB_ILi0ELi8EEELi1ELi1EEENS4_37GemmBatchedIdentityThreadblockSwizzleENST_4Sm80ELNS2_17GroupScheduleModeE0EEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "output",
+          "offset": 136,
+          "parameter": "_ZN7cutlass6KernelINS_4gemm6kernel9MoeFCGemmINS1_11threadblock13MmaMultistageINS1_9GemmShapeILi16ELi128ELi64EEENS_9transform11threadblock28PredicatedTileAccessIteratorINS_11MatrixShapeILi16ELi64EEENS_10bfloat16_tENS_6layout8RowMajorELi1ENS8_29PitchLinearWarpRakedThreadMapINS_16PitchLinearShapeILi64ELi16EEELi128ENSH_ILi8ELi4EEELi8EEENS_5ArrayISD_Li8ELb0EEELb0ENSE_9NoPermuteEEENS9_25RegularTileAccessIteratorISC_SD_NSE_37RowMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi0ESK_Li16EEELNS_4arch14CacheOperation4KindE1ENSA_INSB_ILi64ELi128EEESD_NSE_11ColumnMajorELi0ENSG_INSH_ILi64ELi128EEELi128ESJ_Li8EEESM_Lb0ESN_EENSP_ISW_SD_NSE_40ColumnMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi1ESZ_Li16EEELSV_1EfSF_NS4_9MmaPolicyINS1_4warp11MmaTensorOpINS6_ILi16ELi32ELi64EEESD_SR_SD_S12_fSF_NS15_17MmaTensorOpPolicyINST_3MmaINS6_ILi16ELi8ELi16EEELi32ESD_SF_SD_SX_fSF_NST_13OpMultiplyAddEEENSB_ILi1ELi1EEEEELi1ELb0EbEENSB_ILi0ELi0EEES1G_Li1EEELi2ELNS1_23SharedMemoryClearOptionE0EbEENS_8epilogue11threadblock8EpilogueIS7_S1F_Li1ENS1L_22PredicatedTileIteratorINS1L_26OutputTileOptimalThreadMapINS1L_15OutputTileShapeILi128ELi8ELi1ELi1ELi1EEENS1P_ILi1ELi2ELi1ELi1ELi2EEELi128ELi8ELi16EEESD_Lb0ESN_Lb0EEENS1K_4warp24FragmentIteratorTensorOpIS17_S1A_fNSL_IfLi4ELb1EEESF_EENS1U_20TileIteratorTensorOpIS17_S1A_fSF_EENS1L_18SharedLoadIteratorINS1S_18CompactedThreadMapEfLi32EEENS1K_6thread21LinearCombinationReluISD_Li8EffLNS23_9ScaleType4KindE0ELNS_15FloatRoundStyleE2EEENSB_ILi0ELi8EEELi1ELi1EEENS4_37GemmBatchedIdentityThreadblockSwizzleENST_4Sm80ELNS2_17GroupScheduleModeE0EEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 965276,
+      "reached_opcodes": {
+        "add.s32": 855200,
+        "add.s64": 303280,
+        "and.b32": 304896,
+        "and.b64": 8320,
+        "and.pred": 49152,
+        "bar.sync": 73728,
+        "bra": 53492,
+        "bra.uni": 8192,
+        "cp.async.cg.shared.global.L2::128B": 147456,
+        "cp.async.commit_group": 32768,
+        "cp.async.wait_all": 32768,
+        "cvt.rn.bf16x2.f32": 65536,
+        "cvt.s64.s32": 32784,
+        "cvt.u32.u64": 49440,
+        "cvt.u64.u32": 8208,
+        "div.s32": 8192,
+        "ld.b64": 20508,
+        "ld.param.b32": 24832,
+        "ld.param.b64": 82432,
+        "ld.param.b8": 8192,
+        "ld.shared.v4.b32": 32768,
+        "ldmatrix.sync.aligned.x4.m8n8.shared.b16": 221184,
+        "mad.lo.s32": 16384,
+        "mad.lo.s64": 49152,
+        "max.NaN.f32": 131072,
+        "min.s32": 8192,
+        "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32": 262144,
+        "mov.b32": 214656,
+        "mov.b64": 24720,
+        "mov.pred": 16384,
+        "mov.u32": 41216,
+        "mul.f32": 131072,
+        "mul.lo.s32": 16400,
+        "mul.lo.s64": 32896,
+        "mul.wide.s32": 24576,
+        "not.b32": 128,
+        "not.pred": 32768,
+        "or.b32": 198016,
+        "popc.b32": 512,
+        "ret": 128,
+        "selp.b32": 311936,
+        "selp.b64": 24576,
+        "setp.eq.b16": 8192,
+        "setp.eq.b32": 41616,
+        "setp.eq.b64": 24576,
+        "setp.eq.f32": 8192,
+        "setp.ge.s32": 128,
+        "setp.gt.s32": 17280,
+        "setp.le.s32": 640,
+        "setp.lt.s32": 123008,
+        "setp.lt.u32": 8704,
+        "setp.ne.b32": 172032,
+        "setp.ne.b64": 16384,
+        "shfl.sync.idx.b32": 17664,
+        "shfl.sync.up.b32": 640,
+        "shl.b32": 181504,
+        "shl.b64": 90256,
+        "shr.s32": 66208,
+        "shr.s64": 128,
+        "shr.u32": 238480,
+        "shr.u64": 128,
+        "st.global.v4.u32": 16384,
+        "st.shared.v2.b32": 65536,
+        "sub.s32": 49296,
+        "vote.sync.ballot.b32": 512,
+        "xor.b32": 147840
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 4,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 965276,
+        "stored_bindings": 240789
+      },
+      "source_edge_storage": {
+        "binding_templates": 9600,
+        "logical_edges": 965148,
+        "stored_bindings": 9600
+      },
+      "thread_count": 128,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      }
     },
     "implementation": "cpp",
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "last_row_for_problem",
-        "offset": 0,
-        "parameter": "_ZN7cutlass6KernelINS_4gemm6kernel9MoeFCGemmINS1_11threadblock13MmaMultistageINS1_9GemmShapeILi16ELi128ELi64EEENS_9transform11threadblock28PredicatedTileAccessIteratorINS_11MatrixShapeILi16ELi64EEENS_10bfloat16_tENS_6layout8RowMajorELi1ENS8_29PitchLinearWarpRakedThreadMapINS_16PitchLinearShapeILi64ELi16EEELi128ENSH_ILi8ELi4EEELi8EEENS_5ArrayISD_Li8ELb0EEELb0ENSE_9NoPermuteEEENS9_25RegularTileAccessIteratorISC_SD_NSE_37RowMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi0ESK_Li16EEELNS_4arch14CacheOperation4KindE1ENSA_INSB_ILi64ELi128EEESD_NSE_11ColumnMajorELi0ENSG_INSH_ILi64ELi128EEELi128ESJ_Li8EEESM_Lb0ESN_EENSP_ISW_SD_NSE_40ColumnMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi1ESZ_Li16EEELSV_1EfSF_NS4_9MmaPolicyINS1_4warp11MmaTensorOpINS6_ILi16ELi32ELi64EEESD_SR_SD_S12_fSF_NS15_17MmaTensorOpPolicyINST_3MmaINS6_ILi16ELi8ELi16EEELi32ESD_SF_SD_SX_fSF_NST_13OpMultiplyAddEEENSB_ILi1ELi1EEEEELi1ELb0EbEENSB_ILi0ELi0EEES1G_Li1EEELi2ELNS1_23SharedMemoryClearOptionE0EbEENS_8epilogue11threadblock8EpilogueIS7_S1F_Li1ENS1L_22PredicatedTileIteratorINS1L_26OutputTileOptimalThreadMapINS1L_15OutputTileShapeILi128ELi8ELi1ELi1ELi1EEENS1P_ILi1ELi2ELi1ELi1ELi2EEELi128ELi8ELi16EEESD_Lb0ESN_Lb0EEENS1K_4warp24FragmentIteratorTensorOpIS17_S1A_fNSL_IfLi4ELb1EEESF_EENS1U_20TileIteratorTensorOpIS17_S1A_fSF_EENS1L_18SharedLoadIteratorINS1S_18CompactedThreadMapEfLi32EEENS1K_6thread21LinearCombinationReluISD_Li8EffLNS23_9ScaleType4KindE0ELNS_15FloatRoundStyleE2EEENSB_ILi0ELi8EEELi1ELi1EEENS4_37GemmBatchedIdentityThreadblockSwizzleENST_4Sm80ELNS2_17GroupScheduleModeE0EEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
+    "memory_analysis": {
+      "address_candidates": 3021469,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
       },
-      {
-        "bytes": 8,
-        "object": "activations",
-        "offset": 96,
-        "parameter": "_ZN7cutlass6KernelINS_4gemm6kernel9MoeFCGemmINS1_11threadblock13MmaMultistageINS1_9GemmShapeILi16ELi128ELi64EEENS_9transform11threadblock28PredicatedTileAccessIteratorINS_11MatrixShapeILi16ELi64EEENS_10bfloat16_tENS_6layout8RowMajorELi1ENS8_29PitchLinearWarpRakedThreadMapINS_16PitchLinearShapeILi64ELi16EEELi128ENSH_ILi8ELi4EEELi8EEENS_5ArrayISD_Li8ELb0EEELb0ENSE_9NoPermuteEEENS9_25RegularTileAccessIteratorISC_SD_NSE_37RowMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi0ESK_Li16EEELNS_4arch14CacheOperation4KindE1ENSA_INSB_ILi64ELi128EEESD_NSE_11ColumnMajorELi0ENSG_INSH_ILi64ELi128EEELi128ESJ_Li8EEESM_Lb0ESN_EENSP_ISW_SD_NSE_40ColumnMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi1ESZ_Li16EEELSV_1EfSF_NS4_9MmaPolicyINS1_4warp11MmaTensorOpINS6_ILi16ELi32ELi64EEESD_SR_SD_S12_fSF_NS15_17MmaTensorOpPolicyINST_3MmaINS6_ILi16ELi8ELi16EEELi32ESD_SF_SD_SX_fSF_NST_13OpMultiplyAddEEENSB_ILi1ELi1EEEEELi1ELb0EbEENSB_ILi0ELi0EEES1G_Li1EEELi2ELNS1_23SharedMemoryClearOptionE0EbEENS_8epilogue11threadblock8EpilogueIS7_S1F_Li1ENS1L_22PredicatedTileIteratorINS1L_26OutputTileOptimalThreadMapINS1L_15OutputTileShapeILi128ELi8ELi1ELi1ELi1EEENS1P_ILi1ELi2ELi1ELi1ELi2EEELi128ELi8ELi16EEESD_Lb0ESN_Lb0EEENS1K_4warp24FragmentIteratorTensorOpIS17_S1A_fNSL_IfLi4ELb1EEESF_EENS1U_20TileIteratorTensorOpIS17_S1A_fSF_EENS1L_18SharedLoadIteratorINS1S_18CompactedThreadMapEfLi32EEENS1K_6thread21LinearCombinationReluISD_Li8EffLNS23_9ScaleType4KindE0ELNS_15FloatRoundStyleE2EEENSB_ILi0ELi8EEELi1ELi1EEENS4_37GemmBatchedIdentityThreadblockSwizzleENST_4Sm80ELNS2_17GroupScheduleModeE0EEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 610818,
+        "affine_member_rows": 1747105,
+        "candidate_relations": 1085707,
+        "hb_frontier_pieces": 5862062,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 2264732
       },
-      {
-        "bytes": 8,
-        "object": "expert_weights",
-        "offset": 104,
-        "parameter": "_ZN7cutlass6KernelINS_4gemm6kernel9MoeFCGemmINS1_11threadblock13MmaMultistageINS1_9GemmShapeILi16ELi128ELi64EEENS_9transform11threadblock28PredicatedTileAccessIteratorINS_11MatrixShapeILi16ELi64EEENS_10bfloat16_tENS_6layout8RowMajorELi1ENS8_29PitchLinearWarpRakedThreadMapINS_16PitchLinearShapeILi64ELi16EEELi128ENSH_ILi8ELi4EEELi8EEENS_5ArrayISD_Li8ELb0EEELb0ENSE_9NoPermuteEEENS9_25RegularTileAccessIteratorISC_SD_NSE_37RowMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi0ESK_Li16EEELNS_4arch14CacheOperation4KindE1ENSA_INSB_ILi64ELi128EEESD_NSE_11ColumnMajorELi0ENSG_INSH_ILi64ELi128EEELi128ESJ_Li8EEESM_Lb0ESN_EENSP_ISW_SD_NSE_40ColumnMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi1ESZ_Li16EEELSV_1EfSF_NS4_9MmaPolicyINS1_4warp11MmaTensorOpINS6_ILi16ELi32ELi64EEESD_SR_SD_S12_fSF_NS15_17MmaTensorOpPolicyINST_3MmaINS6_ILi16ELi8ELi16EEELi32ESD_SF_SD_SX_fSF_NST_13OpMultiplyAddEEENSB_ILi1ELi1EEEEELi1ELb0EbEENSB_ILi0ELi0EEES1G_Li1EEELi2ELNS1_23SharedMemoryClearOptionE0EbEENS_8epilogue11threadblock8EpilogueIS7_S1F_Li1ENS1L_22PredicatedTileIteratorINS1L_26OutputTileOptimalThreadMapINS1L_15OutputTileShapeILi128ELi8ELi1ELi1ELi1EEENS1P_ILi1ELi2ELi1ELi1ELi2EEELi128ELi8ELi16EEESD_Lb0ESN_Lb0EEENS1K_4warp24FragmentIteratorTensorOpIS17_S1A_fNSL_IfLi4ELb1EEESF_EENS1U_20TileIteratorTensorOpIS17_S1A_fSF_EENS1L_18SharedLoadIteratorINS1S_18CompactedThreadMapEfLi32EEENS1K_6thread21LinearCombinationReluISD_Li8EffLNS23_9ScaleType4KindE0ELNS_15FloatRoundStyleE2EEENSB_ILi0ELi8EEELi1ELi1EEENS4_37GemmBatchedIdentityThreadblockSwizzleENST_4Sm80ELNS2_17GroupScheduleModeE0EEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
+      "hb_algorithm": "member-relations",
+      "hb_batches": 2068,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 67878793,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 3021469,
+      "hb_query_seconds": 17.386037499999986,
+      "overlap_queries": 0,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 0
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 14887.28125,
+    "required_order_domains": 0,
+    "required_orders": 0,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 5,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 989458,
+      "memory_binding_templates": 381927,
+      "memory_bindings": 1527836,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 22444,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 6912,
+      "thread_prefix_groups": 4074021,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 1,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 5359548,
+      "path_entries": 123207,
+      "record_bindings": 368146,
+      "record_nodes": 123033,
+      "splits": 2,
+      "template_steps": 125465,
+      "thread_memberships": 128,
+      "value_nodes": 123021
+    },
+    "thread_record_compression": {
+      "completed_ctas": 1,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 5255584,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [],
+      "duplicate_write_value_checks": 0,
+      "equivalence_check": "equivalent",
+      "initial_memory_regions": 24580,
+      "initial_read_families": 252065,
+      "memory_action_storage": {
+        "logical_actions": 1527836,
+        "stored_runs": 989970
       },
-      {
-        "bytes": 8,
-        "object": "output",
-        "offset": 136,
-        "parameter": "_ZN7cutlass6KernelINS_4gemm6kernel9MoeFCGemmINS1_11threadblock13MmaMultistageINS1_9GemmShapeILi16ELi128ELi64EEENS_9transform11threadblock28PredicatedTileAccessIteratorINS_11MatrixShapeILi16ELi64EEENS_10bfloat16_tENS_6layout8RowMajorELi1ENS8_29PitchLinearWarpRakedThreadMapINS_16PitchLinearShapeILi64ELi16EEELi128ENSH_ILi8ELi4EEELi8EEENS_5ArrayISD_Li8ELb0EEELb0ENSE_9NoPermuteEEENS9_25RegularTileAccessIteratorISC_SD_NSE_37RowMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi0ESK_Li16EEELNS_4arch14CacheOperation4KindE1ENSA_INSB_ILi64ELi128EEESD_NSE_11ColumnMajorELi0ENSG_INSH_ILi64ELi128EEELi128ESJ_Li8EEESM_Lb0ESN_EENSP_ISW_SD_NSE_40ColumnMajorTensorOpMultiplicandCrosswiseILi16ELi64EEELi1ESZ_Li16EEELSV_1EfSF_NS4_9MmaPolicyINS1_4warp11MmaTensorOpINS6_ILi16ELi32ELi64EEESD_SR_SD_S12_fSF_NS15_17MmaTensorOpPolicyINST_3MmaINS6_ILi16ELi8ELi16EEELi32ESD_SF_SD_SX_fSF_NST_13OpMultiplyAddEEENSB_ILi1ELi1EEEEELi1ELb0EbEENSB_ILi0ELi0EEES1G_Li1EEELi2ELNS1_23SharedMemoryClearOptionE0EbEENS_8epilogue11threadblock8EpilogueIS7_S1F_Li1ENS1L_22PredicatedTileIteratorINS1L_26OutputTileOptimalThreadMapINS1L_15OutputTileShapeILi128ELi8ELi1ELi1ELi1EEENS1P_ILi1ELi2ELi1ELi1ELi2EEELi128ELi8ELi16EEESD_Lb0ESN_Lb0EEENS1K_4warp24FragmentIteratorTensorOpIS17_S1A_fNSL_IfLi4ELb1EEESF_EENS1U_20TileIteratorTensorOpIS17_S1A_fSF_EENS1L_18SharedLoadIteratorINS1S_18CompactedThreadMapEfLi32EEENS1K_6thread21LinearCombinationReluISD_Li8EffLNS23_9ScaleType4KindE0ELNS_15FloatRoundStyleE2EEENSB_ILi0ELi8EEELi1ELi1EEENS4_37GemmBatchedIdentityThreadblockSwizzleENST_4Sm80ELNS2_17GroupScheduleModeE0EEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      }
-    ],
-    "lowered_instruction_count": 965276,
-    "reached_opcodes": {
-      "add.s32": 855200,
-      "add.s64": 303280,
-      "and.b32": 304896,
-      "and.b64": 8320,
-      "and.pred": 49152,
-      "bar.sync": 73728,
-      "bra": 53492,
-      "bra.uni": 8192,
-      "cp.async.cg.shared.global.L2::128B": 147456,
-      "cp.async.commit_group": 32768,
-      "cp.async.wait_all": 32768,
-      "cvt.rn.bf16x2.f32": 65536,
-      "cvt.s64.s32": 32784,
-      "cvt.u32.u64": 49440,
-      "cvt.u64.u32": 8208,
-      "div.s32": 8192,
-      "ld.b64": 20508,
-      "ld.param.b32": 24832,
-      "ld.param.b64": 82432,
-      "ld.param.b8": 8192,
-      "ld.shared.v4.b32": 32768,
-      "ldmatrix.sync.aligned.x4.m8n8.shared.b16": 221184,
-      "mad.lo.s32": 16384,
-      "mad.lo.s64": 49152,
-      "max.NaN.f32": 131072,
-      "min.s32": 8192,
-      "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32": 262144,
-      "mov.b32": 214656,
-      "mov.b64": 24720,
-      "mov.pred": 16384,
-      "mov.u32": 41216,
-      "mul.f32": 131072,
-      "mul.lo.s32": 16400,
-      "mul.lo.s64": 32896,
-      "mul.wide.s32": 24576,
-      "not.b32": 128,
-      "not.pred": 32768,
-      "or.b32": 198016,
-      "popc.b32": 512,
-      "ret": 128,
-      "selp.b32": 311936,
-      "selp.b64": 24576,
-      "setp.eq.b16": 8192,
-      "setp.eq.b32": 41616,
-      "setp.eq.b64": 24576,
-      "setp.eq.f32": 8192,
-      "setp.ge.s32": 128,
-      "setp.gt.s32": 17280,
-      "setp.le.s32": 640,
-      "setp.lt.s32": 123008,
-      "setp.lt.u32": 8704,
-      "setp.ne.b32": 172032,
-      "setp.ne.b64": 16384,
-      "shfl.sync.idx.b32": 17664,
-      "shfl.sync.up.b32": 640,
-      "shl.b32": 181504,
-      "shl.b64": 90256,
-      "shr.s32": 66208,
-      "shr.s64": 128,
-      "shr.u32": 238480,
-      "shr.u64": 128,
-      "st.global.v4.u32": 16384,
-      "st.shared.v2.b32": 65536,
-      "sub.s32": 49296,
-      "vote.sync.ballot.b32": 512,
-      "xor.b32": 147840
+      "output_region_families": 0,
+      "output_regions": 65536,
+      "passes": [
+        {
+          "name": "packing",
+          "rewritten_instances": 131072,
+          "rewritten_nodes": 16384,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 2721872,
+          "name": "type_edges",
+          "removed_nodes": 338128
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 131072,
+          "layouts": 0,
+          "mapping_blocks": 884736,
+          "name": "view_normalization",
+          "original_pieces": 0,
+          "reused_initial_reads": 150028,
+          "reused_views": 786432,
+          "segmented": 0,
+          "slices": 884736,
+          "stored_mapping_blocks": 98304,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
+        }
+      ],
+      "processed_memory_actions": 1527836,
+      "processed_memory_families": 0,
+      "read_substitutions": 1183772,
+      "scalar_fold": {
+        "construction_collections": 8,
+        "diagnostics": [],
+        "output_count": 65536,
+        "output_families_merged": 0,
+        "output_family_count": 65536,
+        "output_root_count": 65536,
+        "peak_construction_nodes": 1500348,
+        "shared_view_projection_hits": 0,
+        "source_outputs": 65536,
+        "spatial_families_projected": 1024,
+        "spatial_outputs_projected": 65536,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 1030,
+          "edges": 1578500,
+          "folds": 262144,
+          "indices": 2,
+          "initial_cells": 1536,
+          "logical_iterations": 3145728,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 2,
+          "nodes": 791050,
+          "nodes_before_final_collection": 980077,
+          "nodes_reclaimed": 3320094,
+          "operations": 526338,
+          "parameters": 0,
+          "range_descriptions": 262144,
+          "storage_nodes": 791050,
+          "unique_fold_bodies": 262144
+        }
+      },
+      "serialization": {
+        "action_patterns": 989970,
+        "binding_patterns": 989458,
+        "domain_refinements": 4916100,
+        "elapsed_seconds": 26.712519159,
+        "event_families": 3945716,
+        "expanded_event_records": 0,
+        "largest_batch_members": 128,
+        "logical_actions": 1527836,
+        "logical_events": 31928576,
+        "peak_rss_mib_at_completion": 14895.8125,
+        "reachability_queries": 0,
+        "relations": 14421393,
+        "rss_mib_at_completion": 9544.35546875,
+        "scheduled_batches": 3945716,
+        "singleton_batches": 1110576,
+        "value_families": 3452794
+      },
+      "shared_read_families": 1912,
+      "shared_read_instances": 17936,
+      "stored_read_substitutions": 1165836
     },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 0,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 69,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 965276,
-      "stored_bindings": 572740
-    },
-    "source_edge_storage": {
-      "binding_templates": 9600,
-      "logical_edges": 965148,
-      "stored_bindings": 9600
-    },
-    "thread_count": 128,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": []
+    "value_ir_instance_count": 25358625,
+    "value_ir_node_count": 3451681,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 56.573849823,
+    "verification_result": "race_free"
   },
-  "frontend_source_violations": [],
-  "implementation": "cpp",
-  "memory_analysis": {
-    "candidate_generation_fallback": false,
-    "strategy": "conflict-family"
-  },
-  "memory_analysis_complete": false,
-  "memory_analysis_entered": true,
-  "peak_footprint_mib": 6754.28515625,
-  "peak_rss_mib": 6754.26953125,
-  "resource": {
-    "kind": "time",
-    "limit": 500.0,
-    "origin": "configured_budget",
-    "unit": "seconds"
-  },
-  "result": "timeout",
+  "peak_rss_mib": 14895.8125,
+  "pipeline_elapsed_seconds": 191.471355471,
+  "result": "verified",
   "rss_limit_mib": null,
-  "schema": "spverify.native-ptx-run/v1",
+  "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "timeout_scope": "whole_pipeline",
   "verification_limitations": [],
-  "warnings_complete": false
+  "warning_count": 0,
+  "warning_samples_truncated": false,
+  "warnings": [],
+  "wellsync_timeout_seconds": 500.0,
+  "whole_pipeline_timeout_seconds": 498.509
 }

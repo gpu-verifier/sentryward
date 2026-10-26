@@ -2,7 +2,9 @@
 
 Read the exact top-level `result`, with `checks`, `diagnostics` and `scope`. Older artifacts use `status`. A present null/unknown `result` does not fall back to `status`; missing checks are unknown. The renderer preserves unfamiliar results instead of treating them as success.
 
-Integrated `equivalence` and `value_analysis` have their own outcomes. A numerical stop must not hide passed memory checks or memory warnings; nested success does not override the top-level result. `verified` applies to the saved operation and scope, which may be a sub-operation.
+Public outputs keep witnesses under `evidence` and analysis details under `internal`; older outputs keep every field at the top level. The scripts read both layouts and cite fields at their saved location. Public outputs have two checks: `synchronization`, which includes the memory analysis, and `equivalence`. Older outputs also have a separate `memory` check.
+
+In older outputs, integrated `equivalence` and `value_analysis` have their own outcomes. Public outputs keep these sections under `internal` without an outcome; `checks.equivalence` is the equivalence outcome. A numerical stop must not hide passed memory checks or memory warnings; nested success does not override the top-level result. `verified` applies to the saved operation and scope, which may be a sub-operation.
 
 | Result | Explain | Preserve |
 | --- | --- | --- |
@@ -17,11 +19,11 @@ Integrated `equivalence` and `value_analysis` have their own outcomes. A numeric
 
 Historical stop categories remain distinct: `frontend_unsupported`, `native_frontend_error`, `memory_model_unsupported`, `invalid_source`, `unresolved_translation`, `native_resource_limit`, `native_timeout`. A frontend stop is not a failure of a completed memory analysis. Empty records do not imply no races.
 
-Recovery is recorded by `analysis_target: recovered_program` and `recovery_policy`, with original violations retained. Keep that qualification visible. Do not strip an unfamiliar `recovered_*` label into a recognized success.
+Recovery is recorded by `analysis_target: recovered_program` and `recovery_policy`, under `internal` in public outputs, with original violations retained. Keep that qualification visible. Do not strip an unfamiliar `recovered_*` label into a recognized success.
 
 ## Coverage and finding selection
 
-`memory_analysis_complete`, `search_complete` and `exhaustive` are separate properties. Total counts, retained counts and list truncation are also separate. State their saved meaning rather than inferring it from a similarly named input flag.
+`memory_analysis_complete`, `search_complete` and `memory_analysis.exhaustive` are separate properties; public outputs keep them under `internal`. Total counts, retained counts and list truncation are also separate. State their saved meaning rather than inferring it from a similarly named input flag.
 
 Diagnostic stage/code groups aid navigation; they do not prove common causes. Read both `failed_required_orders` and `diagnostics[].details`: a sampled order list may cover only one category. A lifecycle diagnostic without a saved order list does not justify inventing a completion/deallocation pair.
 

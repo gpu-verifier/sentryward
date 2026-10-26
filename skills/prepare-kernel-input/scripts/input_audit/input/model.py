@@ -93,3 +93,7 @@ class KernelInput:
     address_invariants: tuple[Mapping[str, Any], ...] = ()
     # Representative control flow loop bound; None leaves the frontend default.
     data_branch_loop_iterations: int | None = None
+    # Pointer tables and element properties of input objects (docs/input-json.md);
+    # passed through, the native verifier validates them.
+    pointer_arrays: tuple[Mapping[str, Any], ...] = ()
+    tensor_properties: tuple[Mapping[str, Any], ...] = ()

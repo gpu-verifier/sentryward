@@ -4,6 +4,7 @@
 #include "sentryward/value_ir/native_matrix.h"
 #include "sentryward/value_ir/type_conversion.h"
 #include "sentryward/equivalence/constant_values.h"
+#include "sentryward/value_analysis/unit_lifting.h"
 #include <map>
 #include <sstream>
 #include <tuple>
@@ -17,7 +18,10 @@ class ScalarSpecialization final {
  public:
   using Value=value_ir::Value;
   using Constant=equivalence::ConstantValue;
-  explicit ScalarSpecialization(const value_ir::Graph& graph):g_(graph) {}
+  // `lift_block_index`: the scalar-fold lowering's instance in lifting mode
+  // (unit_lifting.h) knows no BlockIndex literal; every other instance does.
+  explicit ScalarSpecialization(const value_ir::Graph& graph,bool lift_block_index=false)
+      :g_(graph),lift_block_index_(lift_block_index) {}
   std::optional<Constant> known(Value value,unsigned depth=0) {
     if(depth>=128){++truncated_evaluations_;return {};}
     value=g_.canonicalInterpretation(value);
@@ -67,10 +71,14 @@ class ScalarSpecialization final {
           value=result;continue;
         }
         const auto& node=g_.definingNode(value);
-        auto at=node.instanceThreads().indexOf(member);
-        if(node.instanceThreads().empty() && node.origin().thread==member)at=0;
+        const auto at=node.memberIndex(member);
         if(!at)break;
         auto result=node.result(value.resultIndex(),*at);
+        // A ThreadForward instance is that source thread's own value.
+        if(dynamic_cast<const value_ir::ThreadForwardOp*>(&node.operation())) {
+          if(!value.indices().empty() || value.pointer())break;
+          value=g_.forwarded(result);continue;
+        }
         if(!value.indices().empty())result=g_.component(result,{value.indices().begin(),value.indices().end()});
         if(value.pointer())result=g_.asPointer(result,*value.pointer());
         value=result;continue;
@@ -84,7 +92,7 @@ class ScalarSpecialization final {
         auto [entry,added]=collective_.try_emplace(node.id(),false);
         if(added && node.hasUniformThreadTemplate()) {
           node.forEachInstancePattern([&,entry=entry](const auto&,std::size_t begin,std::size_t count,bool rebind) {
-            entry->second=!begin && count==node.instances().size() && !rebind;
+            entry->second=!begin && count==node.instanceCount() && !rebind;
           });
         }
         if(entry->second) {
@@ -95,7 +103,7 @@ class ScalarSpecialization final {
       }
       if(preserve_data_select || value.conversion() || value.pointer() || !value.indices().empty() ||
          !dynamic_cast<const value_ir::SelectOp*>(&g_.definingNode(value).operation()))break;
-      const auto operands=g_.instance(value).operands;
+      const auto operands=g_.instanceOperands(value);
       auto condition=known(operands[0],depth+1);
       if(!condition || condition->type!="pred" || (condition->literal!="0" && condition->literal!="1"))break;
       value=operands[condition->literal=="1"?1:2];
@@ -114,6 +122,7 @@ class ScalarSpecialization final {
   using Key=std::tuple<std::size_t,std::size_t,std::size_t,const value_ir::TypeConversion*>;
   struct Entry {Value retained;std::optional<Constant> constant;};
   const value_ir::Graph& g_;
+  bool lift_block_index_=false;
   std::map<Key,Entry> cache_;
   std::size_t truncated_evaluations_=0;
   std::map<std::size_t,bool> collective_;
@@ -137,8 +146,11 @@ class ScalarSpecialization final {
     std::optional<std::string> literal;
     if(const auto* parameter=dynamic_cast<const value_ir::InputParameterOp*>(&op))literal=parameter->specializedLiteral();
     else if(const auto* constant=dynamic_cast<const value_ir::ConstantOp*>(&op))literal=constant->literal();
-    else if(dynamic_cast<const value_ir::CoordinateOp*>(&op)) {
-      if(auto coordinate=g_.instance(value).origin.coordinate_value)literal=std::to_string(*coordinate);
+    else if(const auto* coordinate_op=dynamic_cast<const value_ir::CoordinateOp*>(&op)) {
+      const bool block=coordinate_op->kind()==value_ir::CoordinateKind::BlockIndex;
+      if(block)NoteUnitSite(lift_block_index_?UnitSite::FoldSpecialization:UnitSite::ValueSpecialization);
+      if(block && lift_block_index_)return {};
+      if(auto coordinate=g_.instanceOrigin(value).coordinate_value)literal=std::to_string(*coordinate);
     }
     if(literal) {
       if(type=="pred") {
@@ -154,7 +166,7 @@ class ScalarSpecialization final {
     }
     if(!dynamic_cast<const value_ir::BinaryOp*>(&op) && !dynamic_cast<const value_ir::CompareOp*>(&op))return {};
     std::vector<Constant> operands;
-    for(auto operand:g_.instance(value).operands) {
+    for(auto operand:g_.instanceOperands(value)) {
       auto constant=known(operand,depth+1);if(!constant)return {};
       operands.push_back(std::move(*constant));
     }

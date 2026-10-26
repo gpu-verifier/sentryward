@@ -42,8 +42,41 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
          {"semantics", "ideal_real numerical contract; exact word/index "
                        "import; no added assumptions"},
          {"context_policy",
-          "sidecar contexts not consumed; mapping premises retained"},
-         {"rows", J::array()}};
+          "sidecar contexts not consumed; mapping premises retained"}};
+  // Families with the same record (every field but the family id and stage
+  // timings) form one group with family ranges, a count and summed timings.
+  // A family is merged as soon as its record is complete; per-family rows are
+  // never retained. `row` lives outside the try so an interrupted family is kept.
+  J row;
+  bool row_open = false;
+  std::vector<J> groups;
+  std::unordered_map<std::string, size_t> group_index;
+  const auto merge_row = [&] {
+    if (!row_open) return;
+    row_open = false;
+    const auto family = row.at("family").get<size_t>();
+    row.erase("family");
+    J timing = J::object();
+    for (auto it = row.begin(); it != row.end();) {
+      if (it.key().ends_with("_s")) { timing[it.key()] = *it; it = row.erase(it); }
+      else ++it;
+    }
+    auto [found, inserted] = group_index.try_emplace(row.dump(), groups.size());
+    if (inserted)
+      groups.push_back({{"count", 0}, {"families", J::array()}, {"record", std::move(row)}, {"timing_s", J::object()}});
+    auto &group = groups[found->second];
+    group["count"] = group["count"].get<size_t>() + 1;
+    auto &ranges = group["families"];
+    if (!ranges.empty() && ranges.back()[1].get<size_t>() + 1 == family) ranges.back()[1] = family;
+    else ranges.push_back({family, family});
+    auto &sums = group["timing_s"];
+    for (const auto &[key, value] : timing.items()) {
+      const double seconds = value.get<double>();
+      // cumulative_elapsed_s is a timestamp: keep the group's latest one.
+      if (key == "cumulative_elapsed_s") sums[key] = std::max(sums.value(key, 0.0), seconds);
+      else sums[key] = sums.value(key, 0.0) + seconds;
+    }
+  };
   std::string phase = "load";
   size_t passed = 0, finished = 0;
   std::vector<Id> roots;
@@ -117,8 +150,8 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
             f["element_bytes"] != out["element_bytes"])
           throw Unsupported("nonidentity output family mapping");
       }
-      r["rows"].push_back({{"family", j}});
-      auto &row = r["rows"].back();
+      row = J{{"family", j}};
+      row_open = true;
       auto stage = [&](const char *name, auto fn) {
         phase = name;
         double start = elapsed();
@@ -373,6 +406,7 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
         ++passed;
       roots.push_back(ln);
       roots.push_back(rn);
+      merge_row();
     }
     r["piece_union"] = piece_equalities.report();
     if (passed == outputs.size())
@@ -423,10 +457,12 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
     r["scoped_predicate_context"] = prepared->scoped_predicates.report();
   if (prepared && !context.fixed_inputs.empty())
     r["fixed_input_context"] = fixed_input_context_report(*prepared);
+  merge_row();
   size_t defined_families = 0, partial_families = 0;
-  for (const auto &row : r["rows"]) {
-    defined_families += row.value("total_definedness", "not_proven") == "proved";
-    partial_families += row.contains("partial_function_proof");
+  for (const auto &group : groups) {
+    const auto members = group["count"].get<size_t>();
+    if (group["record"].value("total_definedness", "not_proven") == "proved") defined_families += members;
+    if (group["record"].contains("partial_function_proof")) partial_families += members;
   }
   r["definedness"] = {{"status", finished && finished == r.value("total_output_families", size_t(0)) && defined_families == finished ? "proved" : "not_proven"},
       {"proved_families", defined_families}, {"partial_equivalence_families", partial_families}};
@@ -455,10 +491,11 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
                             "right_import_s", "right_normalize_s", "state_pattern_s", "proof_reuse_s",
                             "piece_union_record_s", "piece_union_reuse_s", "piece_union_seal_s", "parametric_state_s", "affine_state_pattern_s", "exponential_polynomial_s"}) {
     double sum = 0;
-    for (auto &row : r["rows"])
-      sum += row.value(stage, 0.0);
+    for (const auto &group : groups)
+      sum += group["timing_s"].value(stage, 0.0);
     r["stages_s"][stage] = sum;
   }
+  r["row_groups"] = std::move(groups);
   std::unordered_set<Id> reachable;
   while (!roots.empty()) {
     Id n = roots.back();

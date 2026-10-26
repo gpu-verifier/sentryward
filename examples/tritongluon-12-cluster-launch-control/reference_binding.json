@@ -6,14 +6,86 @@
       "6:global1:A": "6:global1:A",
       "6:global1:B": "6:global1:B"
     },
-    "parameters": {}
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1000,
+          1000
+        ],
+        "source_strides_bytes": [
+          2000,
+          2
+        ],
+        "target_strides_bytes": [
+          2000,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1000,
+          1000
+        ],
+        "source_strides_bytes": [
+          2000,
+          2
+        ],
+        "target_strides_bytes": [
+          2000,
+          2
+        ]
+      }
+    }
   },
   "right_inputs": {
     "allocations": {
       "6:global1:A": "6:global1:A",
       "6:global1:B": "6:global1:B"
     },
-    "parameters": {}
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1000,
+          1000
+        ],
+        "source_strides_bytes": [
+          2000,
+          2
+        ],
+        "target_strides_bytes": [
+          2000,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1000,
+          1000
+        ],
+        "source_strides_bytes": [
+          2000,
+          2
+        ],
+        "target_strides_bytes": [
+          2000,
+          2
+        ]
+      }
+    }
   },
   "outputs": {
     "kind": "dense_tensor",
@@ -65,7 +137,7 @@
     "upstream": [
       "https://github.com/triton-lang/triton/blob/c01b6774b1865984607d89d89d3a10833de92037/python/tutorials/gluon/12-cluster-launch-control.py"
     ],
-    "scope": "Existing configured M=1000,N=1000,K=1000; original launch and assumptions retained. Reference specifies the FULL MxN output, not just visited tiles; incomplete kernel coverage must not be treated as equivalence.",
+    "scope": "Configured M=1000,N=1000,K=1000; launch and assumptions as in input.json. Reference specifies the FULL MxN output, not just visited tiles; incomplete kernel coverage must not be treated as equivalence.",
     "scope_branch_choices": [],
     "scope_shape_arrays": []
   }

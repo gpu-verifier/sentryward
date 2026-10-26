@@ -6,14 +6,86 @@
       "6:global1:A": "6:global1:A",
       "6:global1:B": "6:global1:B"
     },
-    "parameters": {}
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1000,
+          2000
+        ],
+        "source_strides_bytes": [
+          8000,
+          4
+        ],
+        "target_strides_bytes": [
+          8000,
+          4
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1000,
+          2000
+        ],
+        "source_strides_bytes": [
+          8000,
+          4
+        ],
+        "target_strides_bytes": [
+          8000,
+          4
+        ]
+      }
+    }
   },
   "right_inputs": {
     "allocations": {
       "6:global1:A": "6:global1:A",
       "6:global1:B": "6:global1:B"
     },
-    "parameters": {}
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1000,
+          2000
+        ],
+        "source_strides_bytes": [
+          8000,
+          4
+        ],
+        "target_strides_bytes": [
+          8000,
+          4
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1000,
+          2000
+        ],
+        "source_strides_bytes": [
+          8000,
+          4
+        ],
+        "target_strides_bytes": [
+          8000,
+          4
+        ]
+      }
+    }
   },
   "outputs": {
     "kind": "dense_tensor",
@@ -64,10 +136,10 @@
       "https://github.com/triton-lang/triton/blob/c01b6774b1865984607d89d89d3a10833de92037/python/tutorials/gluon/03-async-copy.py"
     ],
     "scope": "Upstream test xnumel=1000,ynumel=2000; XBLOCK=32,YBLOCK=64; dense row strides 2000 and column strides 1; grid=32, 128 threads.",
-    "evidence": "PTX parameters3/4 are rows/columns and5/6/7 row strides. Unit column strides are specialized out. Retain the compiled pipeline depth; no PTX changes.",
+    "evidence": "PTX parameters3/4 are rows/columns and5/6/7 row strides. Unit column strides are specialized out. The compiled pipeline depth is analyzed as is; the PTX is unmodified.",
     "scope_branch_choices": [],
     "scope_shape_arrays": [],
     "dynamic_shared_allocation": "49152 bytes: two tensors x three buffers x 32 rows x 64 columns x 4 bytes. PTX wait_group sequence 2,1,0 confirms three buffers.",
-    "historical_source_status": "Pinned tutorial inspected; PTX instruction semantics and specialized constants cross-checked."
+    "historical_source_status": "Pinned upstream tutorial; PTX instruction semantics and specialized constants match it."
   }
 }

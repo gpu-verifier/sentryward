@@ -23,12 +23,12 @@
     {
       "parameter": 6,
       "type": "u64",
-      "value": 1
+      "value": 2
     },
     {
       "parameter": 7,
       "type": "u64",
-      "value": 1
+      "value": 8
     },
     {
       "parameter": 8,
@@ -38,12 +38,12 @@
     {
       "parameter": 9,
       "type": "u64",
-      "value": 3072
+      "value": 24576
     },
     {
       "parameter": 10,
       "type": "f32",
-      "value": 0.08838834764831843
+      "value": 1.0
     }
   ],
   "declarations": [
@@ -81,6 +81,85 @@
   "assumptions": {
     "duplicate_tma_store_benign": true,
     "representative_election": true,
-    "clc_always_fails": true
-  }
+    "clc_always_fails": true,
+    "order_independent_atomics": true
+  },
+  "tensor_properties": [
+    {
+      "object": "sorted_token_ids",
+      "element_type": "s64",
+      "property": "lower_bound",
+      "value": 0
+    },
+    {
+      "object": "sorted_token_ids",
+      "element_type": "s64",
+      "property": "upper_bound",
+      "value": 0
+    },
+    {
+      "object": "lora_indices",
+      "element_type": "s64",
+      "property": "lower_bound",
+      "value": 0
+    },
+    {
+      "object": "expert_ids",
+      "element_type": "s64",
+      "property": "lower_bound",
+      "value": 0
+    },
+    {
+      "object": "expert_ids",
+      "element_type": "s64",
+      "property": "upper_bound",
+      "value": 7
+    },
+    {
+      "object": "lora_indices",
+      "element_type": "s64",
+      "property": "upper_bound",
+      "value": 3
+    }
+  ],
+  "pointer_arrays": [
+    {
+      "parameter": 2,
+      "offset": 0,
+      "entries": [
+        {
+          "object": "lora_a",
+          "byte_offset": 0
+        },
+        {
+          "object": "lora_a",
+          "byte_offset": 6144
+        },
+        {
+          "object": "lora_a",
+          "byte_offset": 12288
+        },
+        {
+          "object": "lora_a",
+          "byte_offset": 18432
+        },
+        {
+          "object": "lora_a",
+          "byte_offset": 24576
+        },
+        {
+          "object": "lora_a",
+          "byte_offset": 30720
+        },
+        {
+          "object": "lora_a",
+          "byte_offset": 36864
+        },
+        {
+          "object": "lora_a",
+          "byte_offset": 43008
+        }
+      ]
+    }
+  ]
 }

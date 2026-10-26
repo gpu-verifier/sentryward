@@ -93,7 +93,7 @@
       "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Bf16Bf16Gemm.cu",
       "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Utils.cuh"
     ],
-    "derived_from": "references/tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f/reference.cu",
+    "derived_from": "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Bf16Bf16Gemm.cu",
     "scope_branch_choices": [],
     "semantics": "ideal_real; fixed saved configuration; all declared output tensors",
     "ptx_sha256": "e699b29b942bfcbc8f53b98d0363e5e9e6d1191c01b83a13277e0d7aff226b29",
@@ -101,8 +101,8 @@
     "source_interface": {
       "name": "tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f",
       "family": "dense",
-      "source": "references/tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f/reference.cu",
-      "ptx": "references/tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f/reference.ptx",
+      "source": "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Bf16Bf16Gemm.cu",
+      "ptx": "",
       "entry": "reference",
       "upstream": [
         "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Bf16Bf16Gemm.cu",
@@ -194,10 +194,10 @@
       "equivalence_status": "not_checked"
     },
     "historical_paths": {
-      "interface": "references/tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f/interface.json",
-      "mapping": "references/tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f/mapping.md"
+      "interface": "examples/tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f/reference_binding.json#/provenance/source_interface",
+      "mapping": "examples/tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f/reference_binding.json#/provenance/mapping_notes"
     },
-    "mapping_notes": "# tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in interface.json.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| A | bf16 | 1 x 5120 | input | logical activation A |\n| B | bf16 | 128 x 5120 | input | logical weight B; reference rows are output channels |\n| D | bf16 | 1 x 128 | output | D |\n\n## Computation and mapping\n\nThe reference uses A[m,k], B[n,k], and D[m,n]; B is stored with output-channel first.\nD[m,n] = sum_k A[m,k]*B[n,k].\nOptimized A element offset: m*K + k.\nOptimized B element offset: n*K + k.\nOptimized D element offset: m*N + n.\nReferences always store D at m*N+n; compare logical elements after this reindexing.\nThe saved epilogue uses alpha=1 and beta=0; C is not read.\n\n## Validation boundary\n\nCompiled to PTX and numerically checked on CPU. Not compared against an optimized\nGPU execution or proven equivalent. Precision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Bf16Bf16Gemm.cu\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Utils.cuh\n"
+    "mapping_notes": "# tensorrt_llm__llama4Bf16Bf16Gemm__sm_100f\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in source_interface.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| A | bf16 | 1 x 5120 | input | logical activation A |\n| B | bf16 | 128 x 5120 | input | logical weight B; reference rows are output channels |\n| D | bf16 | 1 x 128 | output | D |\n\n## Computation and mapping\n\nThe reference uses A[m,k], B[n,k], and D[m,n]; B is stored with output-channel first.\nD[m,n] = sum_k A[m,k]*B[n,k].\nOptimized A element offset: m*K + k.\nOptimized B element offset: n*K + k.\nOptimized D element offset: m*N + n.\nReferences always store D at m*N+n; compare logical elements after this reindexing.\nThe saved epilogue uses alpha=1 and beta=0; C is not read.\n\n## Validation boundary\n\nNot compared against an optimized GPU execution.\nPrecision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Bf16Bf16Gemm.cu\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Utils.cuh\n"
   },
   "outputs": {
     "kind": "dense_tensor",

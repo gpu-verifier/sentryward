@@ -1,0 +1,295 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global2:dS": "dS",
+      "6:global1:K": "K",
+      "6:global1:V": "V",
+      "6:global1:I": "I"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global2:dS": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          1,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          32768,
+          32768,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          32768,
+          32768,
+          256,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          64
+        ],
+        "source_strides_bytes": [
+          32768,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          32768,
+          128,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          512
+        ],
+        "source_strides_bytes": [
+          262144,
+          1024,
+          2
+        ],
+        "target_strides_bytes": [
+          262144,
+          1024,
+          2
+        ]
+      },
+      "6:global1:I": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          512,
+          512,
+          4
+        ],
+        "target_strides_bytes": [
+          512,
+          512,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global2:dS": "dS",
+      "6:global1:K": "K",
+      "6:global1:V": "V",
+      "6:global1:I": "I"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global2:dS": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          1,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          32768,
+          32768,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          32768,
+          32768,
+          256,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          64
+        ],
+        "source_strides_bytes": [
+          32768,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          32768,
+          128,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          512
+        ],
+        "source_strides_bytes": [
+          262144,
+          1024,
+          2
+        ],
+        "target_strides_bytes": [
+          262144,
+          1024,
+          2
+        ]
+      },
+      "6:global1:I": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          512,
+          512,
+          4
+        ],
+        "target_strides_bytes": [
+          512,
+          512,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global2:dQ",
+        "right_allocation": "6:global2:dQ",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          1,
+          128,
+          64
+        ],
+        "left_strides_bytes": [
+          16384,
+          16384,
+          128,
+          2
+        ],
+        "right_strides_bytes": [
+          16384,
+          16384,
+          128,
+          2
+        ]
+      },
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global3:dQv",
+        "right_allocation": "6:global3:dQv",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          1,
+          128,
+          512
+        ],
+        "left_strides_bytes": [
+          131072,
+          131072,
+          1024,
+          2
+        ],
+        "right_strides_bytes": [
+          131072,
+          131072,
+          1024,
+          2
+        ]
+      }
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "dS",
+        "dtype": "bfloat16",
+        "allocation": "6:global2:dS"
+      },
+      {
+        "name": "K",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:K"
+      },
+      {
+        "name": "V",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:V"
+      },
+      {
+        "name": "I",
+        "dtype": "int32",
+        "allocation": "6:global1:I"
+      },
+      {
+        "name": "seqlen_k",
+        "value": {
+          "input": "/arguments/22/value"
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "evidence": "flash_bwd_mla_dq_dqv_sm100.py docstring: dQ = dS @ K[I], dQv = dS @ V[I]; K/V rows gathered by CpasyncGatherKVManager.load_X with pred row_valid = 0 <= I < seqlen_k (topk_gather_kv.py); PTX cp.async.cg uses the src-size operand, so invalid rows are zero-filled. No scaling in the epilogue; outputs cast to bf16.",
+    "ptx": "corpus/flash_attention__bwd_mla_sparse_bf16__dq_dqv__sm_100a.ptx",
+    "optimized_input": "examples/flash_attention__bwd_mla_sparse_bf16__dq_dqv__sm_100a/input.json",
+    "semantics": "ideal_real; fixed saved configuration (b=1, s_q=1, heads=128, topk=128, d=64, dv=512, seqlen_k=256); outputs dQ and dQv.",
+    "optimized_input_sha256": "b1f9d4c4f3b273d7284b8a8ce37361cbfeeba97bef772baccf8196d97f4c60c5",
+    "ptx_sha256": "6e35ac8efeaaa0778141be841ad5e34cd80a10e1af35b516fff2f2236e8837d9",
+    "upstream": [
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_bwd_mla_dq_dqv_sm100.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/topk_gather_kv.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/interface.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/tile_scheduler.py"
+    ],
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

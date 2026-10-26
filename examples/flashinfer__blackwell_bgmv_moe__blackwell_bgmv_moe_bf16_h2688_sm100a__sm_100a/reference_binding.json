@@ -1,0 +1,295 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global5:x_raw": "x_raw",
+      "6:global10:lora_a_raw": "lora_a_raw",
+      "6:global16:sorted_token_ids": "sorted_token_ids",
+      "6:global10:expert_ids": "expert_ids",
+      "6:global12:lora_indices": "lora_indices"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:x_raw": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2688
+        ],
+        "source_strides_bytes": [
+          5376,
+          2
+        ],
+        "target_strides_bytes": [
+          5376,
+          2
+        ]
+      },
+      "6:global10:lora_a_raw": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          128,
+          32,
+          2688
+        ],
+        "source_strides_bytes": [
+          22020096,
+          172032,
+          5376,
+          2
+        ],
+        "target_strides_bytes": [
+          22020096,
+          172032,
+          5376,
+          2
+        ]
+      },
+      "6:global16:sorted_token_ids": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          2
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global10:expert_ids": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          2
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global12:lora_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global5:x_raw": "x_raw",
+      "6:global10:lora_a_raw": "lora_a_raw",
+      "6:global16:sorted_token_ids": "sorted_token_ids",
+      "6:global10:expert_ids": "expert_ids",
+      "6:global12:lora_indices": "lora_indices"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:x_raw": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2688
+        ],
+        "source_strides_bytes": [
+          5376,
+          2
+        ],
+        "target_strides_bytes": [
+          5376,
+          2
+        ]
+      },
+      "6:global10:lora_a_raw": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          128,
+          32,
+          2688
+        ],
+        "source_strides_bytes": [
+          22020096,
+          172032,
+          5376,
+          2
+        ],
+        "target_strides_bytes": [
+          22020096,
+          172032,
+          5376,
+          2
+        ]
+      },
+      "6:global16:sorted_token_ids": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          2
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global10:expert_ids": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          2
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global12:lora_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global14:shrink_out_raw",
+    "right_allocation": "6:global14:shrink_out_raw",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      2,
+      32
+    ],
+    "left_strides_bytes": [
+      64,
+      2
+    ],
+    "right_strides_bytes": [
+      64,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "x",
+        "dtype": "bfloat16",
+        "allocation": "6:global5:x_raw"
+      },
+      {
+        "name": "lora_a",
+        "dtype": "bfloat16",
+        "allocation": "6:global10:lora_a_raw"
+      },
+      {
+        "name": "sorted_token_ids",
+        "dtype": "int64",
+        "allocation": "6:global16:sorted_token_ids"
+      },
+      {
+        "name": "expert_ids",
+        "dtype": "int64",
+        "allocation": "6:global10:expert_ids"
+      },
+      {
+        "name": "lora_indices",
+        "dtype": "int64",
+        "allocation": "6:global12:lora_indices"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/flashinfer__blackwell_bgmv_moe__blackwell_bgmv_moe_bf16_h2688_sm100a__sm_100a.ptx",
+    "optimized_input": "examples/flashinfer__blackwell_bgmv_moe__blackwell_bgmv_moe_bf16_h2688_sm100a__sm_100a/input.json",
+    "optimized_input_sha256": "e635a0bb94d72292f87951b68110ba4648577e0507bdc65e9cabb524dd819540",
+    "ptx_sha256": "81a65a622df70d4653af83e7874935bd28754d8aa23ea53f2f2130a7895a417b",
+    "evidence": "kernel_flashinfer_bgmv_moe_shrink_bf16_h2688_r32_p4_s3(shrink_out_raw, x_raw, lora_a_raw, sorted_token_ids, expert_ids, lora_indices, num_pairs=2, num_experts=128, num_tokens=1); grid (1,4,1).",
+    "semantics": "Two pairs of token 0, 128 experts, 2 LoRAs; out = bf16(dot) for valid pairs, 0 otherwise; ideal real.",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/blackwell_bgmv_moe/sm100a/blackwell_bgmv_moe_bf16_h2688_sm100a.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/blackwell_bgmv_moe/sm100a/blackwell_bgmv_moe_binding.cuh",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/moe/test_blackwell_bgmv_moe.py"
+    ],
+    "scope": "Input: num_pairs 2, num_experts 128, num_tokens 1, num_loras 2 (lora_indices in [0, 1]), expert_ids in [0, 127], sorted_token_ids in [0, 0]; lora_a [L, E, 32, 2688].",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [],
+    "scope_tensor_properties": [
+      {
+        "object": "sorted_token_ids",
+        "element_type": "s64",
+        "property": "lower_bound",
+        "value": 0
+      },
+      {
+        "object": "sorted_token_ids",
+        "element_type": "s64",
+        "property": "upper_bound",
+        "value": 0
+      },
+      {
+        "object": "lora_indices",
+        "element_type": "s64",
+        "property": "lower_bound",
+        "value": 0
+      },
+      {
+        "object": "expert_ids",
+        "element_type": "s64",
+        "property": "lower_bound",
+        "value": 0
+      },
+      {
+        "object": "expert_ids",
+        "element_type": "s64",
+        "property": "upper_bound",
+        "value": 127
+      },
+      {
+        "object": "lora_indices",
+        "element_type": "s64",
+        "property": "upper_bound",
+        "value": 1
+      }
+    ]
+  }
+}

@@ -6,14 +6,86 @@
       "6:global1:A": "6:global1:A",
       "6:global1:B": "6:global1:B"
     },
-    "parameters": {}
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          208,
+          304
+        ],
+        "source_strides_bytes": [
+          608,
+          2
+        ],
+        "target_strides_bytes": [
+          608,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          304,
+          416
+        ],
+        "source_strides_bytes": [
+          832,
+          2
+        ],
+        "target_strides_bytes": [
+          832,
+          2
+        ]
+      }
+    }
   },
   "right_inputs": {
     "allocations": {
       "6:global1:A": "6:global1:A",
       "6:global1:B": "6:global1:B"
     },
-    "parameters": {}
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          208,
+          304
+        ],
+        "source_strides_bytes": [
+          608,
+          2
+        ],
+        "target_strides_bytes": [
+          608,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          304,
+          416
+        ],
+        "source_strides_bytes": [
+          832,
+          2
+        ],
+        "target_strides_bytes": [
+          832,
+          2
+        ]
+      }
+    }
   },
   "outputs": {
     "kind": "dense_tensor",
@@ -65,7 +137,7 @@
     "upstream": [
       "https://github.com/triton-lang/triton/blob/c01b6774b1865984607d89d89d3a10833de92037/python/tutorials/gluon/07-persistence.py"
     ],
-    "scope": "Existing configured M=208,N=416,K=304; original launch and assumptions retained. Reference specifies the FULL MxN output, not just visited tiles; incomplete kernel coverage must not be treated as equivalence.",
+    "scope": "Configured M=208,N=416,K=304; launch and assumptions as in input.json. Reference specifies the FULL MxN output, not just visited tiles; incomplete kernel coverage must not be treated as equivalence.",
     "scope_branch_choices": [],
     "scope_shape_arrays": []
   }

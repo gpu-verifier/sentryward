@@ -3,10 +3,12 @@
 
 #include <algorithm>
 #include <charconv>
+#include <iterator>
 #include <unordered_set>
 #include <limits>
 #include <optional>
 #include <stdexcept>
+#include <type_traits>
 
 namespace sentryward::scalar_fold {
 namespace {
@@ -158,7 +160,8 @@ struct Match {
     result.pointer_provenance=source.pointer_provenance;
     return result;
   }
-  Ref lift(Ref value) {
+  // value must not refer into graph storage: interning below may move it.
+  Ref lift(const Ref& value) {
     // Subtrees without binders at or above this level are unchanged by lifting.
     if(bound(value.node)<=level)return value;
     if(const auto found=lifted.find(value.node);found!=lifted.end())return use(found->second,value);
@@ -201,7 +204,9 @@ struct Match {
     return use(lifted.at(value.node),value);
   }
 
-  bool check(Ref a, Ref b, Ref actual, std::uint64_t k,
+  // Read-only: interns nothing, so references into node operands and matcher
+  // tables stay valid for the whole walk.
+  bool check(const Ref& a, const Ref& b, const Ref& actual, std::uint64_t k,
              bool address = false, unsigned depth = 0) {
     // The overwhelmingly common fixed factor needs no cache entry or walk.
     if(a==b) {
@@ -215,7 +220,7 @@ struct Match {
     if(accepted)checked.insert(key);
     return accepted;
   }
-  bool checkImpl(Ref a, Ref b, Ref actual, std::uint64_t k,
+  bool checkImpl(const Ref& a, const Ref& b, const Ref& actual, std::uint64_t k,
                 bool address, unsigned depth) {
     SENTRYWARD_AUDIT(audit->add(AuditCounter::fold_match_visits));
     if (!remaining || depth > 128) {
@@ -294,17 +299,24 @@ struct Match {
                  address || x.kind == Kind::InitialCell,depth+1)) return false;
     return true;
   }
-  Ref body(Ref a, Ref b, bool address = false) {
+  // a and b must not refer into graph storage (e.g. graph.node(x).operands):
+  // interning below may reallocate it while they are still read. Callers
+  // pass local copies or matcher-table fields, which interning never moves.
+  Ref body(const Ref& a, const Ref& b, bool address = false) {
     if(a==b)return lift(a);
     const Pair key{a,b,address};
     if(const auto found=bodies.find(key);found!=bodies.end())return found->second;
     const auto result=bodyImpl(a,b,address);
     bodies.emplace(key,result);return result;
   }
-  Ref bodyImpl(Ref a, Ref b, bool address) {
-    const auto x=graph.node(a), y=graph.node(b);
+  Ref bodyImpl(const Ref& a, const Ref& b, bool address) {
+    // One stable copy of x; of y only its operands, read before any interning.
+    auto x=graph.node(a);
+    const auto& yn=graph.node(b);
+    const auto q=offset(yn);
+    const auto y_operands=yn.operands;
     Ref result;
-    const auto p=offset(x), q=offset(y);
+    const auto p=offset(x);
     if (address && p && q && a.conversion.empty()) {
       const bool ascending=*q >= *p;
       const auto step=ascending ? *q-*p : *p-*q;
@@ -316,19 +328,20 @@ struct Match {
       result=graph.operation(ascending ? "Add" : "Subtract","u64",{base,delta});
       if(x.type=="s64")result=graph.convert(result,"s64","Convert");
     } else {
-      std::vector<Ref> args;
+      std::vector<Ref> args;args.reserve(x.operands.size());
       for (std::size_t i=0;i<x.operands.size();++i)
-        args.push_back(body(x.operands[i],y.operands[i],address || x.kind == Kind::InitialCell));
+        args.push_back(body(x.operands[i],y_operands[i],address || x.kind == Kind::InitialCell));
+      // x is not read after this construction: its strings move into it.
       if(x.kind==Kind::Fold) {
         auto binder=x.fold->binder_level;
         if(binder>=level) {
           if(binder==UINT32_MAX)throw std::overflow_error("fold binder overflow");
           ++binder;
         }
-        result=graph.fold(x.fold->reducer,args.at(0),args.at(1),binder,x.fold->count,x.type);
+        result=graph.fold(x.fold->reducer,args.at(0),args.at(1),binder,x.fold->count,std::move(x.type));
       } else {
-        result=x.kind == Kind::InitialCell ? graph.initialCell(x.name,args.at(0),x.type)
-            : graph.operation(x.name,x.type,std::move(args),x.attributes);
+        result=x.kind == Kind::InitialCell ? graph.initialCell(std::move(x.name),args.at(0),std::move(x.type))
+            : graph.operation(std::move(x.name),std::move(x.type),std::move(args),std::move(x.attributes));
       }
     }
     if(!a.conversion.empty() || result.conversion.empty()) {
@@ -349,33 +362,64 @@ std::size_t ReductionBuilder::collect(std::span<Ref> live_roots,
                                       std::span<const Ref> extendable_roots,
                                       std::span<std::optional<Id>> weak_nodes,
                                       const Graph::RemapObserver& observer) {
-  std::unordered_set<Id> live;
-  std::vector<Id> work;
+  // Dense marks over this epoch's IDs: the membership answers of a node set,
+  // without a heap node and rehash per live node.
+  std::vector<char> live(graph_.size());
+  const auto isLive=[&](Id id){return id<live.size() && live[id];};
+  std::vector<Id> work;work.reserve(extendable_roots.size());
   for(const auto& root:extendable_roots){graph_.node(root);work.push_back(root.node);}
   while(!work.empty()) {
-    auto id=work.back();work.pop_back();
-    if(!live.insert(id).second)continue;
-    for(const auto& child:graph_.node(id).operands)work.push_back(child.node);
+    const auto id=work.back();work.pop_back();
+    if(isLive(id))continue;
+    const auto& node=graph_.node(id);live[id]=1;  // an invalid ID throws here
+    for(const auto& child:node.operands)work.push_back(child.node);
   }
-  std::vector<std::pair<Ref,Run>> runs;
-  std::vector<std::pair<Ref,Pending>> pending;
-  std::vector<std::pair<Ref,Block>> blocks;
-  std::vector<Ref> roots(live_roots.begin(),live_roots.end());
-  for(const auto& entry:runs_)if(live.contains(entry.first.node)) {
-    runs.push_back(entry);
-    roots.insert(roots.end(),{entry.first,entry.second.initial,entry.second.first,entry.second.second,entry.second.body});
-  }
-  for(const auto& entry:pending_)if(live.contains(entry.first.node)) {
-    pending.push_back(entry);
-    roots.insert(roots.end(),{entry.first,entry.second.initial,entry.second.first});
-  }
-  for(const auto& entry:blocks_)if(live.contains(entry.first.node)) {
-    blocks.push_back(entry);const auto& b=entry.second;
-    roots.push_back(entry.first);roots.push_back(b.initial);
-    if(b.count)roots.push_back(b.body);
-    for(const auto* values:{&b.terms,&b.prefixes,&b.first,&b.second})
-      roots.insert(roots.end(),values->begin(),values->end());
-  }
+  // Live matcher entries leave their tables as node handles, in iteration
+  // order; their Refs travel through the collector by move and return to the
+  // same handles. No Run/Pending/Block copy and no node reallocation for a
+  // survivor. extendable_roots (possibly aliasing live_roots) is not read
+  // after marking. RealExpressionBuilder::collect already polled in refresh(),
+  // so only terminal exceptions (allocation, invariant violations) can leave
+  // after the first move. No poll may be added inside ReductionBuilder::collect,
+  // Graph::collect or the remap observer it runs (RealExpressionBuilder::Impl::
+  // remap): a recoverable Failure would lose the moved entries.
+  const auto extractLive=[&](auto& table,auto& out) {
+    for(auto it=table.begin();it!=table.end();) {
+      const auto next=std::next(it);
+      if(isLive(it->first.node))out.push_back(table.extract(it));
+      it=next;
+    }
+  };
+  std::vector<decltype(runs_)::node_type> runs;
+  std::vector<decltype(pending_)::node_type> pending;
+  std::vector<decltype(blocks_)::node_type> blocks;
+  extractLive(runs_,runs);extractLive(pending_,pending);extractLive(blocks_,blocks);
+  // Every Ref of an extracted entry, in one fixed order per table kind.
+  // Counting, flattening into roots and restoring all walk this order, so
+  // each Ref returns from its own root position.
+  const auto forEachRef=[](auto& e,auto&& f) {
+    auto& v=e.mapped();
+    using Value=std::remove_reference_t<decltype(v)>;
+    f(e.key());f(v.initial);
+    if constexpr(std::is_same_v<Value,Run>){f(v.first);f(v.second);f(v.body);}
+    else if constexpr(std::is_same_v<Value,Pending>)f(v.first);
+    else {
+      static_assert(std::is_same_v<Value,Block>);
+      if(v.count)f(v.body);
+      for(auto* values:{&v.terms,&v.prefixes,&v.first,&v.second})
+        for(auto& value:*values)f(value);
+    }
+  };
+  const auto forEachEntryRef=[&](auto&& f) {
+    for(auto& e:runs)forEachRef(e,f);
+    for(auto& e:pending)forEachRef(e,f);
+    for(auto& e:blocks)forEachRef(e,f);
+  };
+  auto count=live_roots.size();
+  forEachEntryRef([&](Ref&){++count;});
+  std::vector<Ref> roots;roots.reserve(count);
+  for(auto& r:live_roots)roots.push_back(std::move(r));
+  forEachEntryRef([&](Ref& x){roots.push_back(std::move(x));});
   const auto removed=graph_.collect(roots,weak_nodes,
       [&](std::span<const Id> remap,std::uint64_t owner) {
         // These caches describe immutable nodes, not a scheduling epoch.
@@ -405,25 +449,16 @@ std::size_t ReductionBuilder::collect(std::span<Ref> live_roots,
   bounds_owner_=graph_.size()?graph_.ref(0).owner:0;
   template_ids_.clear();template_keys_.clear();parameter_differences_.clear();difference_keys_.clear();blocks_.clear();
   parameter_roots_.clear();parameter_keys_.clear();parameter_trees_={{std::nullopt,{}}};
-  std::copy_n(roots.begin(),live_roots.size(),live_roots.begin());
-  auto position=live_roots.size();
+  std::size_t position=0;
+  for(auto& r:live_roots)r=std::move(roots[position++]);
+  // The same keys go back in the same order into tables whose bucket count
+  // clear() keeps, so each table's layout matches emplacing those entries;
+  // the survivors' nodes are reused.
   runs_.clear();pending_.clear();
-  for(auto& [key,run]:runs) {
-    key=roots[position++];run.initial=roots[position++];run.first=roots[position++];
-    run.second=roots[position++];run.body=roots[position++];
-    runs_.emplace(std::move(key),std::move(run));
-  }
-  for(auto& [key,item]:pending) {
-    key=roots[position++];item.initial=roots[position++];item.first=roots[position++];
-    pending_.emplace(std::move(key),std::move(item));
-  }
-  for(auto& [key,b]:blocks) {
-    key=roots[position++];b.initial=roots[position++];
-    if(b.count)b.body=roots[position++];
-    for(auto* values:{&b.terms,&b.prefixes,&b.first,&b.second})
-      for(auto& value:*values)value=roots[position++];
-    blocks_.emplace(std::move(key),std::move(b));
-  }
+  const auto restore=[&](Ref& x){x=std::move(roots[position++]);};
+  for(auto& e:runs){forEachRef(e,restore);runs_.insert(std::move(e));}
+  for(auto& e:pending){forEachRef(e,restore);pending_.insert(std::move(e));}
+  for(auto& e:blocks){forEachRef(e,restore);blocks_.insert(std::move(e));}
   stats_.reclaimed+=removed;
   return removed;
 }
@@ -662,7 +697,8 @@ Ref ReductionBuilder::append(Reducer reducer, Ref accumulator, Ref term,
   if (real) {
     refreshBounds();
     if (const auto it=runs_.find(accumulator);it!=runs_.end()) {
-      const auto run=it->second;
+      // check() and fold() do not touch runs_; the one inserted copy is below.
+      const auto& run=it->second;
       if (run.reducer==reducer && run.type==type && run.level==level &&
           run.count<std::numeric_limits<std::uint64_t>::max()) {
         Match match{graph_,level,binder_bounds_,lifted_by_level_[level]};
@@ -677,13 +713,15 @@ Ref ReductionBuilder::append(Reducer reducer, Ref accumulator, Ref term,
       }
     }
     if (const auto it=pending_.find(accumulator);it!=pending_.end()) {
-      const auto second=it->second;
+      // Matching and graph interning never modify pending_; both references
+      // are read before the insertion below, which targets runs_.
+      const auto& second=it->second;
       const auto first=pending_.find(second.initial);
       const auto compatible=[&](const Pending& p) {
         return p.reducer==reducer && p.type==type && p.level==level;
       };
       if (compatible(second) && first!=pending_.end() && compatible(first->second)) {
-        const auto prefix=first->second;
+        const auto& prefix=first->second;
         Match match{graph_,level,binder_bounds_,lifted_by_level_[level]};
         if (match.check(prefix.first,second.first,term,2)) {
           auto body=match.body(prefix.first,second.first);

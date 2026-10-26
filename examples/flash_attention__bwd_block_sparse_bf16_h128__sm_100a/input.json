@@ -19,61 +19,718 @@
     ],
     "dynamic_shared_bytes": 232448
   },
-  "arguments": [],
+  "arguments": [
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "s32",
+      "value": 256
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "type": "s32",
+      "value": 256
+    },
+    {
+      "parameter": 5,
+      "offset": 24,
+      "type": "s64",
+      "value": 256
+    },
+    {
+      "parameter": 5,
+      "offset": 32,
+      "type": "s64",
+      "value": 2048
+    },
+    {
+      "parameter": 6,
+      "offset": 24,
+      "type": "s64",
+      "value": 256
+    },
+    {
+      "parameter": 6,
+      "offset": 32,
+      "type": "s64",
+      "value": 2048
+    },
+    {
+      "parameter": 9,
+      "offset": 24,
+      "type": "s64",
+      "value": 1024
+    },
+    {
+      "parameter": 9,
+      "offset": 32,
+      "type": "s64",
+      "value": 128
+    },
+    {
+      "parameter": 9,
+      "offset": 40,
+      "type": "s64",
+      "value": 262144
+    },
+    {
+      "parameter": 10,
+      "offset": 24,
+      "type": "s64",
+      "value": 1024
+    },
+    {
+      "parameter": 10,
+      "offset": 32,
+      "type": "s64",
+      "value": 128
+    },
+    {
+      "parameter": 10,
+      "offset": 40,
+      "type": "s64",
+      "value": 262144
+    },
+    {
+      "parameter": 11,
+      "offset": 24,
+      "type": "s64",
+      "value": 32768
+    },
+    {
+      "parameter": 11,
+      "offset": 32,
+      "type": "s64",
+      "value": 262144
+    },
+    {
+      "parameter": 28,
+      "offset": 0,
+      "type": "f32",
+      "value": 0.08838834764831843
+    },
+    {
+      "parameter": 29,
+      "offset": 0,
+      "type": "f32",
+      "value": 0.12751743082459868
+    },
+    {
+      "parameter": 34,
+      "offset": 24,
+      "type": "s64",
+      "value": 8
+    },
+    {
+      "parameter": 34,
+      "offset": 32,
+      "type": "s64",
+      "value": 1
+    },
+    {
+      "parameter": 35,
+      "offset": 24,
+      "type": "s64",
+      "value": 8
+    },
+    {
+      "parameter": 35,
+      "offset": 32,
+      "type": "s64",
+      "value": 1
+    },
+    {
+      "parameter": 35,
+      "offset": 40,
+      "type": "s64",
+      "value": 1
+    },
+    {
+      "parameter": 36,
+      "offset": 24,
+      "type": "s64",
+      "value": 8
+    },
+    {
+      "parameter": 36,
+      "offset": 32,
+      "type": "s64",
+      "value": 1
+    },
+    {
+      "parameter": 37,
+      "offset": 24,
+      "type": "s64",
+      "value": 8
+    },
+    {
+      "parameter": 37,
+      "offset": 32,
+      "type": "s64",
+      "value": 1
+    },
+    {
+      "parameter": 37,
+      "offset": 40,
+      "type": "s64",
+      "value": 1
+    }
+  ],
   "declarations": [
     {
       "parameter": 14,
       "offset": 0,
       "type": "tensor_map",
-      "object": "tensor_map_parameter_14"
+      "object": "Q"
     },
     {
       "parameter": 15,
       "offset": 0,
       "type": "tensor_map",
-      "object": "tensor_map_parameter_15"
+      "object": "Q"
     },
     {
       "parameter": 16,
       "offset": 0,
       "type": "tensor_map",
-      "object": "tensor_map_parameter_16"
+      "object": "K"
     },
     {
       "parameter": 17,
       "offset": 0,
       "type": "tensor_map",
-      "object": "tensor_map_parameter_17"
+      "object": "K"
     },
     {
       "parameter": 18,
       "offset": 0,
       "type": "tensor_map",
-      "object": "tensor_map_parameter_18"
+      "object": "V"
     },
     {
       "parameter": 19,
       "offset": 0,
       "type": "tensor_map",
-      "object": "tensor_map_parameter_19"
+      "object": "dO"
     },
     {
       "parameter": 20,
       "offset": 0,
       "type": "tensor_map",
-      "object": "tensor_map_parameter_20"
+      "object": "dO"
     },
     {
       "parameter": 21,
       "offset": 0,
       "type": "tensor_map",
-      "object": "tensor_map_parameter_21"
+      "object": "dV"
     },
     {
       "parameter": 22,
       "offset": 0,
       "type": "tensor_map",
-      "object": "tensor_map_parameter_22"
+      "object": "dK"
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "type": "pointer",
+      "space": "global",
+      "object": "LSE"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "type": "pointer",
+      "space": "global",
+      "object": "dPsum"
+    },
+    {
+      "parameter": 9,
+      "offset": 0,
+      "type": "pointer",
+      "space": "global",
+      "object": "dV"
+    },
+    {
+      "parameter": 10,
+      "offset": 0,
+      "type": "pointer",
+      "space": "global",
+      "object": "dK"
+    },
+    {
+      "parameter": 11,
+      "offset": 0,
+      "type": "pointer",
+      "space": "global",
+      "object": "dQaccum"
+    },
+    {
+      "parameter": 34,
+      "offset": 0,
+      "type": "pointer",
+      "space": "global",
+      "object": "mask_block_cnt"
+    },
+    {
+      "parameter": 35,
+      "offset": 0,
+      "type": "pointer",
+      "space": "global",
+      "object": "mask_block_idx"
+    },
+    {
+      "parameter": 36,
+      "offset": 0,
+      "type": "pointer",
+      "space": "global",
+      "object": "full_block_cnt"
+    },
+    {
+      "parameter": 37,
+      "offset": 0,
+      "type": "pointer",
+      "space": "global",
+      "object": "full_block_idx"
+    }
+  ],
+  "shape_arrays": [
+    {
+      "parameter": 34,
+      "offset": 0,
+      "element_type": "s32",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ]
+      ]
+    },
+    {
+      "parameter": 36,
+      "offset": 0,
+      "element_type": "s32",
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ]
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 14,
+      "offset": 0,
+      "object": "Q",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256,
+        524288
+      ],
+      "box_shape": [
+        64,
+        64,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 15,
+      "offset": 0,
+      "object": "Q",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256,
+        524288
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 16,
+      "offset": 0,
+      "object": "K",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256,
+        524288
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 17,
+      "offset": 0,
+      "object": "K",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256,
+        524288
+      ],
+      "box_shape": [
+        64,
+        256,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 18,
+      "offset": 0,
+      "object": "V",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256,
+        524288
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 19,
+      "offset": 0,
+      "object": "dO",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256,
+        524288
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 20,
+      "offset": 0,
+      "object": "dO",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256,
+        524288
+      ],
+      "box_shape": [
+        64,
+        64,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 21,
+      "offset": 0,
+      "object": "dV",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256,
+        524288
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 22,
+      "offset": 0,
+      "object": "dK",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256,
+        8,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256,
+        524288
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "tensor_properties": [
+    {
+      "object": "mask_block_idx",
+      "element_type": "s32",
+      "property": "lower_bound",
+      "value": 0
+    },
+    {
+      "object": "mask_block_idx",
+      "element_type": "s32",
+      "property": "upper_bound",
+      "value": 0
+    },
+    {
+      "object": "full_block_idx",
+      "element_type": "s32",
+      "property": "lower_bound",
+      "value": 0
+    },
+    {
+      "object": "full_block_idx",
+      "element_type": "s32",
+      "property": "upper_bound",
+      "value": 0
     }
   ],
   "assumptions": {

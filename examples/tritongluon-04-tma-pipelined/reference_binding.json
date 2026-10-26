@@ -1,0 +1,146 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A",
+      "6:global1:B": "6:global1:B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1000,
+          2000
+        ],
+        "source_strides_bytes": [
+          8000,
+          4
+        ],
+        "target_strides_bytes": [
+          8000,
+          4
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1000,
+          2000
+        ],
+        "source_strides_bytes": [
+          8000,
+          4
+        ],
+        "target_strides_bytes": [
+          8000,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A",
+      "6:global1:B": "6:global1:B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1000,
+          2000
+        ],
+        "source_strides_bytes": [
+          8000,
+          4
+        ],
+        "target_strides_bytes": [
+          8000,
+          4
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1000,
+          2000
+        ],
+        "source_strides_bytes": [
+          8000,
+          4
+        ],
+        "target_strides_bytes": [
+          8000,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:C",
+    "right_allocation": "6:global1:C",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+      1000,
+      2000
+    ],
+    "left_strides_bytes": [
+      8000,
+      4
+    ],
+    "right_strides_bytes": [
+      8000,
+      4
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "allocation": "6:global1:A",
+        "dtype": "float32",
+        "shape": [
+          1000,
+          2000
+        ]
+      },
+      {
+        "name": "B",
+        "allocation": "6:global1:B",
+        "dtype": "float32",
+        "shape": [
+          1000,
+          2000
+        ]
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tritongluon-04-tma-pipelined.ptx",
+    "optimized_input": "examples/tritongluon-04-tma-pipelined/input.json",
+    "optimized_input_sha256": "7fcc790465bb70029b50a5f4a445a7e0e7b3250b6557bc903971334649b43ee9",
+    "ptx_sha256": "0a79b8ec3693e7358746d3ccff47c60e3135757be367bc900d3698b6da1a39f8",
+    "upstream": [
+      "https://github.com/triton-lang/triton/blob/c01b6774b1865984607d89d89d3a10833de92037/python/tutorials/gluon/04-tma.py#L266-L363"
+    ],
+    "scope": "Upstream test xnumel=1000, ynumel=2000, XBLOCK=32, YBLOCK=64, num_buffers=3; grid cdiv(1000, 32)=32, 128 threads; full 1000x2000 output.",
+    "evidence": "Descriptors fastest-first [2000, 1000], stride 8000 B, box [32, 32] (two 32-column messages per 32x64 block). PTX: ctaid<<5, expect_tx 16384, three mbarriers.",
+    "dynamic_shared_allocation": "57376 bytes: A/B 3x32x64x4 each (49152) + C 8192 + three mbarriers at 57344..57367, rounded to 16 B.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

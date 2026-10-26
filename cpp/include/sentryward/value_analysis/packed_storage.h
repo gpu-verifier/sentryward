@@ -37,7 +37,7 @@ std::optional<Bf16PromotionField> bf16PromotionField(
   const auto& attr=op->attributes();
   if(attr.rounding!=v::RoundingMode::None || attr.multiply_mode!=v::IntegerMultiplyMode::Low ||
      attr.saturate || attr.flush_to_zero || attr.propagate_nan)return {};
-  const auto args=graph.instance(value).operands;
+  const auto args=graph.instanceOperands(value);
   if(op->opcode()==v::BinaryOpcode::ShiftLeft && known(args[1])==16)
     return Bf16PromotionField{args[0],0};
   if(op->opcode()==v::BinaryOpcode::BitAnd) {
@@ -190,7 +190,7 @@ class PackedStorageDecoder final {
        binary->attributes().multiply_mode!=value_ir::IntegerMultiplyMode::Low ||
        binary->attributes().saturate || binary->attributes().flush_to_zero || binary->attributes().propagate_nan)
       return Fields{{value,0,width}};
-    const auto args=graph_.instance(value).operands;
+    const auto args=graph_.instanceOperands(value);
     if(binary->opcode()==value_ir::BinaryOpcode::Add || binary->opcode()==value_ir::BinaryOpcode::BitOr) {
       auto a=decode(args[0],depth+1),b=decode(args[1],depth+1);
       if(!a || !b)return {};

@@ -1,0 +1,257 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global3:v_a": "v_a",
+      "6:global3:s_a": "s_a",
+      "6:global3:v_b": "v_b",
+      "6:global3:s_b": "s_b"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global3:v_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          4,
+          128
+        ],
+        "source_strides_bytes": [
+          1024,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          256,
+          2
+        ]
+      },
+      "6:global3:s_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          4,
+          4
+        ],
+        "source_strides_bytes": [
+          16,
+          4
+        ],
+        "target_strides_bytes": [
+          16,
+          4
+        ]
+      },
+      "6:global3:v_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          4,
+          128
+        ],
+        "source_strides_bytes": [
+          1024,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          256,
+          2
+        ]
+      },
+      "6:global3:s_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          4,
+          4
+        ],
+        "source_strides_bytes": [
+          16,
+          4
+        ],
+        "target_strides_bytes": [
+          16,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global3:v_a": "v_a",
+      "6:global3:s_a": "s_a",
+      "6:global3:v_b": "v_b",
+      "6:global3:s_b": "s_b"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global3:v_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          4,
+          128
+        ],
+        "source_strides_bytes": [
+          1024,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          256,
+          2
+        ]
+      },
+      "6:global3:s_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          4,
+          4
+        ],
+        "source_strides_bytes": [
+          16,
+          4
+        ],
+        "target_strides_bytes": [
+          16,
+          4
+        ]
+      },
+      "6:global3:v_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          4,
+          128
+        ],
+        "source_strides_bytes": [
+          1024,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          256,
+          2
+        ]
+      },
+      "6:global3:s_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          4,
+          4
+        ],
+        "source_strides_bytes": [
+          16,
+          4
+        ],
+        "target_strides_bytes": [
+          16,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "left_allocation": "6:global8:v_merged",
+        "right_allocation": "6:global8:v_merged",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          4,
+          128
+        ],
+        "left_strides_bytes": [
+          1024,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          1024,
+          256,
+          2
+        ]
+      },
+      {
+        "left_allocation": "6:global8:s_merged",
+        "right_allocation": "6:global8:s_merged",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          4,
+          4
+        ],
+        "left_strides_bytes": [
+          16,
+          4
+        ],
+        "right_strides_bytes": [
+          16,
+          4
+        ]
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "v_a",
+        "allocation": "6:global3:v_a",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "s_a",
+        "allocation": "6:global3:s_a",
+        "dtype": "float32"
+      },
+      {
+        "name": "v_b",
+        "allocation": "6:global3:v_b",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "s_b",
+        "allocation": "6:global3:s_b",
+        "dtype": "float32"
+      }
+    ]
+  },
+  "provenance": {
+    "source": "Python reference written from the pinned upstream source",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/attention/cascade.cuh",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/csrc/cascade.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/vec_dtypes.cuh",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/math.cuh"
+    ],
+    "scope": "MergeStateKernel<8,bf16,bf16>; seq_len=4 (grid.x), num_heads=4 (block.y, param 6), head_dim=128 (param 7); s_merged non-null; all of v_merged and s_merged written",
+    "optimized_input_sha256": "7d1ba8cc18404b24a1a43ee6cabd0ea8e13f90ed3742d9d382946e17d2e03271",
+    "ptx_sha256": "cbd5f5ee1e963912473d11cee085470ff3e7bd66e61b8d55dec6f959013ae925",
+    "scope_shape_arrays": []
+  }
+}
