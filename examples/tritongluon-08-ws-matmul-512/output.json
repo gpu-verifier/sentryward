@@ -106,7 +106,7 @@
             "address": 1,
             "kind": "memory"
           },
-          "event": 6511,
+          "event": 6512,
           "instruction": 200,
           "location": {
             "column": 1,
@@ -158,12 +158,21 @@
       "solver_timeout_ms": 100
     },
     "counts": {
-      "edges": 481978,
-      "events": 175055,
+      "edges": 481979,
+      "events": 175056,
       "instructions": 25115,
       "memory_accesses": 128457,
       "threads": 256
     },
+    "eliminated_synchronization": [
+      {
+        "barrier": 11,
+        "barrier_kind": "mbarrier",
+        "count": 8,
+        "file": "/raid/user_data/ziweizho/wasp-cand-20260927/worktrees/triton-c01b6774/python/tutorials/gluon/08-warp-specialization.py",
+        "line": 533
+      }
+    ],
     "equivalence": {
       "diagnostics": [
         {
@@ -379,11 +388,11 @@
         "member_enumerations": 0,
         "request_construction": {
           "concrete_pair_materializations": 0,
-          "endpoint_reads": 3027,
-          "family_requests": 381,
-          "logical_orders": 14208,
-          "owner_bindings": 1141,
-          "stored_orders": 723
+          "endpoint_reads": 3029,
+          "family_requests": 382,
+          "logical_orders": 14209,
+          "owner_bindings": 1142,
+          "stored_orders": 724
         }
       }
     },
@@ -413,7 +422,7 @@
         "hb_member_enumerations": 0,
         "logical_accesses": 128457
       },
-      "first_race_seconds": 0.085479853,
+      "first_race_seconds": 0.085848881,
       "hb_algorithm": "member-relations",
       "hb_batches": 1,
       "hb_cache_hits": 0,
@@ -422,7 +431,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 836,
-      "hb_query_seconds": 0.008740501,
+      "hb_query_seconds": 0.009187614,
       "overlap_queries": 1,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 1
@@ -430,9 +439,9 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 467.78515625,
-    "required_order_domains": 723,
-    "required_orders": 14208,
+    "peak_footprint_mib": 453.3203125,
+    "required_order_domains": 724,
+    "required_orders": 14209,
     "search_complete": false,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
@@ -530,8 +539,8 @@
     "value_ir_node_count": 85368,
     "value_view_complete": true
   },
-  "peak_rss_mib": 467.78515625,
-  "pipeline_elapsed_seconds": 1.642764599,
+  "peak_rss_mib": 455.23046875,
+  "pipeline_elapsed_seconds": 1.682204981,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",

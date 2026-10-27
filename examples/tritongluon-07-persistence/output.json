@@ -52,19 +52,10 @@
     }
   ],
   "checks": {
-    "equivalence": "incomplete",
+    "equivalence": "passed",
     "synchronization": "passed"
   },
-  "diagnostics": [
-    {
-      "code": "scalar_fold_cross_element",
-      "details": {
-        "internal_stage": "value_analysis.scalar_fold"
-      },
-      "message": "scalar projection crosses producer element boundaries",
-      "stage": "equivalence"
-    }
-  ],
+  "diagnostics": [],
   "evidence": {
     "race_count": 0,
     "race_samples_truncated": false,
@@ -117,43 +108,239 @@
       "threads": 512
     },
     "equivalence": {
-      "diagnostics": [
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 80800,
+      "comparison_elapsed_seconds": 0.305295545,
+      "context_declaration": {
+        "assumptions": [],
+        "fixed_inputs": [],
+        "inputs": [],
+        "predicate_nodes": []
+      },
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 172950,
+        "affine_output_decline_singleton_projection_ambiguous": 2048,
+        "affine_state_banks": 1,
+        "call_definition_node_visits": 18432,
+        "canonical_factor_visits": 16384,
+        "canonical_node_visits": 28646,
+        "certified_state_pattern_cache_hits": 2047,
+        "certified_state_pattern_decline_no_certified_state": 1,
+        "certified_state_pattern_work": 12,
+        "coefficient_normalizations": 1,
+        "completed_reductions": 2048,
+        "coverage_polynomial_peak": 4,
+        "coverage_polynomial_visits": 12288,
+        "coverage_stored_piece_visits": 2048,
+        "ep_body_anchor_edges": 4170,
+        "ep_body_anchor_nodes": 6256,
+        "ep_body_call_rebuilds": 19,
+        "ep_body_deferred_call_anchors": 55,
+        "ep_body_deferred_unmatched_anchors": 55,
+        "ep_body_instance_cache_entries": 2048,
+        "ep_body_obligations": 2067,
+        "ep_body_pattern_anchor_cache_hits": 2119,
+        "ep_body_proofs": 2067,
+        "ep_body_read_anchor_rejections": 2066,
+        "ep_body_target_anchor_cache_hits": 37,
+        "ep_identity_proofs": 4115,
+        "ep_scalar_attempts": 4115,
+        "ep_scalar_proofs": 4115,
+        "finite_bilinear_banks": 1,
+        "finite_bilinear_fusions": 0,
+        "finite_bilinear_masks": 0,
+        "finite_bilinear_singleton_sums": 0,
+        "finite_bilinear_swaps": 0,
+        "finite_bilinear_work": 116736,
+        "finite_state_reuse_banks": 1,
+        "fp_idiom_power_constructions": 0,
+        "fp_idiom_rm_producers": 0,
+        "ideal_additive_compiler_exp_sequences": 0,
+        "ideal_compiler_exp_sequences": 0,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_single_constant_exp_sequences": 0,
+        "imported_context_nodes": 65412,
+        "importer_scope_banks": 2,
+        "importer_scope_binder_hits": 4096,
+        "importer_scope_binders_created": 4096,
+        "importer_scope_leaf_lookups": 8192,
+        "importer_scope_nested_body_fallbacks": 4096,
+        "intern_requests": 566221,
+        "local_pattern_candidates": 4248,
+        "masked_sum_prefix_queries": 6144,
+        "normalization_cache_context_changes": 33,
+        "normalization_node_visits": 39111,
+        "parametric_state_attempts": 0,
+        "pattern_build_peak_nodes": 3,
+        "pattern_build_unique_nodes": 6144,
+        "pattern_node_visits": 16514,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_temporary_nodes": 0,
+        "summary_bind_nodes": 4096,
+        "symbolic_byte_reads_without_extent_proof": 0
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 2048,
+        "status": "proved"
+      },
+      "diagnostics": [],
+      "elapsed_s": 0.222374575,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "query_count": 4115,
+        "reset_s": 0.0,
+        "reuse_cache": false,
+        "shared_evictions": 0
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 0,
+        "fixed_input_elements": 0,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 2048,
+      "finished_families": 2048,
+      "idealizations_applied": [],
+      "input_contract_applied_reads": [],
+      "legacy_scalar_fallback": false,
+      "mapping_input_memory_constraints": {},
+      "native_context": null,
+      "normalized_reachable_nodes": 4070,
+      "numerical_result": "verified",
+      "pattern_nodes": 6096,
+      "peak_rss_kib": 7697540,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 6163,
+      "piece_union": {
+        "abstract_optimized_replacements": 0,
+        "abstract_reference_replacements": 0,
+        "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+        "collected_pieces": 0,
+        "late_certificates": "accepted_until_each_schema_is_complete",
+        "method": "complete_output_equalities_with_finite_piece_union",
+        "replacements": 0,
+        "schemas": [],
+        "stored_dag_work": 0,
+        "work_limit": 2000000
+      },
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        4056,
+        14246
+      ],
+      "reference_term_patterns": 3,
+      "row_groups": [
         {
-          "code": "scalar_fold_cross_element",
-          "message": "scalar projection crosses producer element boundaries",
-          "stage": "value_analysis.scalar_fold"
+          "count": 2048,
+          "families": [
+            [
+              0,
+              2047
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 33,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 24,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 0.013149241999999728,
+            "cumulative_elapsed_s": 0.211854737,
+            "left_import_s": 0.05886733199999995,
+            "left_normalize_s": 0.015508097000000089,
+            "parametric_state_s": 0.00016746999999881027,
+            "piece_union_record_s": 4.930000000050866e-05,
+            "piece_union_seal_s": 4.850100000055712e-05,
+            "right_import_s": 0.07964595500000063,
+            "right_normalize_s": 0.025135657000000106
+          }
         }
       ],
-      "expression_diagnostic": {
-        "construction_collections": 0,
-        "diagnostic": {
-          "code": "scalar_fold_cross_element",
-          "instance": 0,
-          "instruction": "@%p27 cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes [%r120], [%rd4, {%r851, %r79}], [%r119];",
-          "line": 1692,
-          "message": "scalar projection crosses producer element boundaries",
-          "value_node": 284163
-        },
-        "diagnostics": [
-          {
-            "code": "scalar_fold_cross_element",
-            "details": {
-              "instance": 0,
-              "instruction": "@%p27 cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes [%r120], [%rd4, {%r851, %r79}], [%r119];",
-              "line": 1692,
-              "value_node": 284163
-            },
-            "message": "scalar projection crosses producer element boundaries",
-            "stage": "pipeline"
-          }
-        ],
-        "partial_node_count": 1144,
-        "partial_output_count": 0,
-        "peak_construction_nodes": 1144,
-        "shared_view_projection_hits": 95,
-        "source_outputs": 8580
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 0.013149241999999728,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.05886733199999995,
+        "left_normalize_s": 0.015508097000000089,
+        "parametric_state_s": 0.00016746999999881027,
+        "piece_union_record_s": 4.930000000050866e-05,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 4.850100000055712e-05,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 0.07964595500000063,
+        "right_normalize_s": 0.025135657000000106,
+        "state_pattern_s": 0.0
       },
-      "stage": "value_analysis.scalar_fold"
+      "timings": {
+        "load_and_scope_analysis": 0.002452169
+      },
+      "total_output_families": 2048,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
     },
     "frontend": {
       "address_value_bridge": {
@@ -387,7 +574,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 1189155,
-      "hb_query_seconds": 6.958961344,
+      "hb_query_seconds": 6.955728144000008,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -395,7 +582,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 7386.76171875,
+    "peak_footprint_mib": 7374.37890625,
     "required_order_domains": 2108,
     "required_orders": 67456,
     "search_complete": true,
@@ -455,7 +642,7 @@
     "value_analysis": {
       "diagnostics": [],
       "duplicate_write_value_checks": 0,
-      "equivalence_check": "unsupported",
+      "equivalence_check": "equivalent",
       "initial_memory_regions": 117470,
       "initial_read_families": 234940,
       "memory_action_storage": {
@@ -507,47 +694,50 @@
       "read_substitutions": 250144,
       "scalar_fold": {
         "construction_collections": 0,
-        "diagnostic": {
-          "code": "scalar_fold_cross_element",
-          "instance": 0,
-          "instruction": "@%p27 cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes [%r120], [%rd4, {%r851, %r79}], [%r119];",
-          "line": 1692,
-          "message": "scalar projection crosses producer element boundaries",
-          "value_node": 284163
-        },
-        "diagnostics": [
-          {
-            "code": "scalar_fold_cross_element",
-            "details": {
-              "instance": 0,
-              "instruction": "@%p27 cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes [%r120], [%rd4, {%r851, %r79}], [%r119];",
-              "line": 1692,
-              "value_node": 284163
-            },
-            "message": "scalar projection crosses producer element boundaries",
-            "stage": "pipeline"
-          }
-        ],
-        "partial_node_count": 1144,
-        "partial_output_count": 0,
-        "peak_construction_nodes": 1144,
-        "shared_view_projection_hits": 95,
-        "source_outputs": 8580
+        "diagnostics": [],
+        "output_count": 2000000,
+        "output_families_merged": 0,
+        "output_family_count": 2048,
+        "output_root_count": 2048,
+        "peak_construction_nodes": 159741,
+        "shared_view_projection_hits": 50025,
+        "source_outputs": 8580,
+        "spatial_families_projected": 210,
+        "spatial_outputs_projected": 101504,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 2007,
+          "edges": 22450,
+          "folds": 4096,
+          "indices": 4,
+          "initial_cells": 2020,
+          "logical_iterations": 288768,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 2,
+          "nodes": 14246,
+          "nodes_before_final_collection": 172378,
+          "nodes_reclaimed": 158132,
+          "operations": 6119,
+          "parameters": 0,
+          "range_descriptions": 4096,
+          "storage_nodes": 14246,
+          "unique_fold_bodies": 4096
+        }
       },
       "serialization": {
         "action_patterns": 1208580,
         "binding_patterns": 1208580,
         "domain_refinements": 1388372,
-        "elapsed_seconds": 8.848380414,
+        "elapsed_seconds": 8.949554328,
         "event_families": 2233592,
         "expanded_event_records": 0,
         "largest_batch_members": 93,
         "logical_actions": 3044068,
         "logical_events": 4560248,
-        "peak_rss_mib_at_completion": 7515.05078125,
+        "peak_rss_mib_at_completion": 7517.12890625,
         "reachability_queries": 0,
         "relations": 5411014,
-        "rss_mib_at_completion": 4927.7578125,
+        "rss_mib_at_completion": 4929.3671875,
         "scheduled_batches": 2233592,
         "singleton_batches": 2035444,
         "value_families": 1139616
@@ -559,12 +749,12 @@
     "value_ir_instance_count": 1649973,
     "value_ir_node_count": 1119693,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 29.331299626,
+    "verification_elapsed_seconds": 29.736241138,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 7515.05078125,
-  "pipeline_elapsed_seconds": 47.542878102,
-  "result": "unsupported",
+  "peak_rss_mib": 7517.12890625,
+  "pipeline_elapsed_seconds": 50.562994393,
+  "result": "verified",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
@@ -575,5 +765,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.57
+  "whole_pipeline_timeout_seconds": 498.561
 }

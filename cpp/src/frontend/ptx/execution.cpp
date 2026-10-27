@@ -1,6 +1,7 @@
 #include "sentryward/frontend/ptx/execution.h"
 #include "template_execution.h"
 #include "sentryward/frontend/ptx/shared_execution.h"
+#include "sentryward/frontend/ptx/layouts.h"
 #include "sentryward/frontend/ptx/resources.h"
 #include "sentryward/algorithm/diagnostics/performance_profile.h"
 
@@ -63,6 +64,14 @@ std::string_view TrimView(std::string_view x) {
 }
 bool In(std::string_view x, std::initializer_list<std::string_view> xs) {
   return std::find(xs.begin(), xs.end(), x) != xs.end();
+}
+// An instruction an opaque compute region may skip: register computation or a private read.
+// Warp-level operations depend on which lanes reach them, so a region never holds one.
+bool OpaqueRegionInstruction(const Instruction &i) {
+  const auto &s = i.semantics;
+  const bool private_read = s.category == "memory" && s.memory_mode == "read" && s.memory_space &&
+                            In(*s.memory_space, {"param", "local", "const"});
+  return i.control == "none" && (private_read || (s.category == "compute" && !WarpLevelOpcode(i.opcode)));
 }
 bool Unknown(const Scalar &s) {
   return std::holds_alternative<std::monostate>(s);
@@ -422,6 +431,38 @@ std::optional<Scalar> BoundedPointerArithmetic(std::string_view op, const Scalar
   return MakeBoundedPointer(std::move(resource), extent, AffineSum(base, *form, sign), std::move(lower),
                             std::move(upper), BoundedSources({&a, &b}));
 }
+// The 8-byte pointer-table slot read through a bounded pointer whose offset plus `shift` is slot
+// aligned for every element value: exact when the slots of its range hold pointers into one object
+// at offsets affine in the slot index (offset = first entry + stride x index); otherwise unknown.
+Scalar BoundedTableEntry(const std::map<std::uint64_t, Scalar> &table, const BoundedPointerValue &pointer,
+                         const Integer &shift) {
+  const auto &form = pointer.offset;
+  const Integer first = pointer.lower + shift, last = pointer.upper + shift;
+  if (!pointer.offset_identity.empty() || (form.constant + shift) % 8 != 0 || first < 0 || first % 8 != 0 ||
+      last - first >= Integer(8 * kBoundedTableLimit))
+    return {};
+  for (const auto &[atom, coefficient] : form.terms)
+    if (coefficient % 8 != 0) return {};
+  std::optional<AllocationPointer> base;
+  Integer stride = 0;
+  for (Integer slot = first; slot <= last; slot += 8) {
+    const auto found = table.find(slot.convert_to<std::uint64_t>());
+    const auto *entry = found == table.end() ? nullptr : std::get_if<AllocationPointer>(&found->second);
+    if (!entry || (base && (entry->resource != base->resource || entry->extent_bytes != base->extent_bytes)))
+      return {};
+    if (!base) base = *entry;
+    else if (slot == first + 8) stride = entry->offset - base->offset;
+    else if (entry->offset - base->offset != stride * ((slot - first) / 8)) return {};
+  }
+  if (!base) return {};
+  if (stride == 0) return *base;
+  AffineForm offset{base->offset + stride * ((form.constant + shift - first) / 8), {}};
+  for (const auto &[atom, coefficient] : form.terms) offset.terms.emplace_back(atom, coefficient / 8 * stride);
+  const Integer end = base->offset + stride * ((last - first) / 8);
+  const auto [low, high] = std::minmax(base->offset, end);
+  if (low < 0 || high >= (Integer(1) << 63)) return {};
+  return MakeBoundedPointer(base->resource, base->extent_bytes, std::move(offset), low, high, pointer.sources);
+}
 std::optional<Scalar> PointerArithmetic(std::string_view op, const Scalar &a,
                                         const Scalar &b, const FrontendConfig &c) {
   if (auto bounded = BoundedPointerArithmetic(op, a, b)) return bounded;
@@ -755,11 +796,94 @@ struct Decoded {
   std::optional<std::pair<std::string, std::uint32_t>> wait_loop;
   bool replay_wait_result = false;
 };
+// A thread's .local memory as its own exact stores left it: (allocation, byte offset) ->
+// one stored element. Slots of one allocation never overlap.
+using LocalAddress = std::pair<std::string, std::int64_t>;
+template <class V> struct LocalSlot {
+  unsigned bytes{};
+  V value{};
+};
+template <class V> using LocalSlots = std::map<LocalAddress, LocalSlot<V>>;
+// The most distinct slots one template-mode load selects between.
+constexpr std::size_t kLocalSelectTargets = 64;
+// Forgets every slot that overlaps `bytes` bytes at `at`.
+template <class V>
+void ForgetLocal(LocalSlots<V> &slots, const LocalAddress &at, std::uint64_t bytes) {
+  auto it = slots.lower_bound(at);
+  if (it != slots.begin())
+    if (const auto previous = std::prev(it);
+        previous->first.first == at.first && previous->first.second + std::int64_t(previous->second.bytes) > at.second)
+      it = previous;
+  while (it != slots.end() && it->first.first == at.first && it->first.second < at.second + std::int64_t(bytes))
+    it = slots.erase(it);
+}
+// The target of an ld/st through a .local or generic address: `exact` when the address is a
+// whole access inside a .local allocation; `may_alias` when the access may reach .local memory.
+struct LocalTarget {
+  std::optional<LocalAddress> exact;
+  bool may_alias = false;
+};
+bool LocalSpace(const Instruction &i) {
+  return i.semantics.memory_space && In(*i.semantics.memory_space, {"local", "generic"});
+}
+// Whether executing an instruction may write .local memory: a write or atomic in the .local or
+// generic space, or an unclassified memory or asynchronous form. Calls are handled by the executors.
+bool MayWriteLocal(const Instruction &i) {
+  const auto &s = i.semantics;
+  if (!s.memory_space) return s.operation == "unsupported" && (s.memory_effect || s.asynchronous);
+  return In(*s.memory_space, {"local", "generic"}) && s.memory_mode && *s.memory_mode != "read";
+}
+const Operand *AddressOperand(const Decoded &d) {
+  for (const auto &o : d.operands)
+    if (o.address) return &o;
+  return nullptr;
+}
+LocalTarget LocalTargetOf(const Instruction &i, const Scalar &pointer, const Integer &displacement,
+                          std::uint64_t bytes) {
+  if (const auto *p = std::get_if<AllocationPointer>(&pointer); p && p->resource.starts_with("local:")) {
+    const Integer offset = p->offset + displacement;
+    if (offset >= 0 && p->extent_bytes && offset + bytes <= *p->extent_bytes)
+      return {LocalAddress{p->resource, offset.convert_to<std::int64_t>()}, true};
+    return {{}, true};
+  }
+  if (*i.semantics.memory_space == "local") return {{}, true};
+  const auto *bounded = std::get_if<BoundedAllocationPointer>(&pointer);
+  const bool elsewhere = std::holds_alternative<AllocationPointer>(pointer) ||
+      std::holds_alternative<ParameterPointer>(pointer) || std::holds_alternative<ClusterSharedPointer>(pointer) ||
+      (bounded && !(*bounded)->resource.starts_with("local:"));
+  return {{}, !elsewhere};
+}
+// The elements of a vector operand ({a, b}), or the operand itself.
+std::vector<std::string_view> VectorElements(std::string_view text) {
+  text = TrimView(text);
+  if (text.starts_with('{') && text.ends_with('}')) text = text.substr(1, text.size() - 2);
+  std::vector<std::string_view> parts;
+  for (;;) {
+    const auto comma = text.find(',');
+    parts.push_back(TrimView(text.substr(0, comma)));
+    if (comma == text.npos) break;
+    text.remove_prefix(comma + 1);
+  }
+  return parts;
+}
+// What a load of `bytes` reads back from a slot of the same width holding `stored`: an integer
+// truncates to the slot and extends as the load's type does; a pointer survives only a whole
+// 8-byte round trip, and a bounded value only when its range fits the loaded type.
+Scalar LocalLoaded(const Scalar &stored, unsigned bytes, bool sign) {
+  if (const auto n = ScalarInteger(stored)) return Reduce(*n, bytes * 8, sign);
+  if (bytes == 8 && (std::holds_alternative<AllocationPointer>(stored) ||
+                     std::holds_alternative<ParameterPointer>(stored) ||
+                     std::holds_alternative<BoundedAllocationPointer>(stored)))
+    return stored;
+  if (const auto *b = std::get_if<BoundedInteger>(&stored); b && FitsType(*b, bytes * 8, sign)) return stored;
+  return {};
+}
 struct State {
   std::vector<Scalar> registers;
   std::vector<std::optional<DynamicKey>> origins;
   std::vector<std::uint64_t> occurrences, branch_visits;
   std::map<std::string, std::uint64_t> backedges;
+  LocalSlots<Scalar> local;
 };
 struct Deferred {
   std::uint32_t lane, instruction;
@@ -807,6 +931,30 @@ struct WarpContext {
       vote_masks;
   SharedExecution *shared = nullptr;
   ExecutorResources *resources = nullptr;
+  // activemask (only in functions that contain it): the conditional control decisions (pc, next pc)
+  // of the warp's common path, recorded by the first lane to make each; a lane that makes another
+  // decision, merges a region or finishes has left it. `queries` are the activemask instances.
+  struct LaneControl {
+    std::uint64_t decisions = 0;
+    bool diverged = false;
+  };
+  std::vector<std::pair<std::uint32_t, std::uint32_t>> decisions;
+  std::map<std::uint32_t, LaneControl> control;
+  std::set<std::pair<std::uint32_t, std::uint64_t>> queries;
+  void Diverge(std::uint32_t lane) {
+    auto &own = control[lane];
+    if (own.diverged) return;
+    own.diverged = true;
+    for (const auto &[instruction, occurrence] : queries)
+      shuffle.try_emplace(std::tuple{instruction, occurrence, lane}, Scalar{});
+  }
+  void Decide(std::uint32_t lane, std::uint32_t from, std::uint32_t to) {
+    auto &own = control[lane];
+    if (own.diverged) return;
+    if (own.decisions == decisions.size()) decisions.emplace_back(from, to);
+    else if (decisions[own.decisions] != std::pair{from, to}) return Diverge(lane);
+    ++own.decisions;
+  }
 };
 // A producer Resources with the ExecutorFacts and UnitFrame it reads and names
 // through, in one allocation (facts and frame first: they outlive the
@@ -919,6 +1067,27 @@ private:
   mutable std::map<std::uint32_t, std::optional<MergedArm>> merged_arms_;
   mutable std::vector<std::pair<std::uint32_t, std::uint32_t>> reference_ranges_;
   const MergedArm *MergedArmAt(std::uint32_t pc) const;
+  // Whether `reg`, named by `at` inside a lexical scope nested in `outer` (an inline-asm
+  // block), is a temporary declared there, which `outer` cannot name: an opaque region record
+  // of `outer` omits it. `shadows`: `outer` names another register of that name.
+  mutable std::unique_ptr<RegisterTable> scoped_registers_;
+  bool ScopeLocal(const Instruction &at, std::uint32_t reg, const std::vector<std::uint32_t> &outer,
+                  bool *shadows = nullptr) const {
+    if (at.scope.size() <= outer.size()) return false;
+    if (!scoped_registers_) scoped_registers_ = std::make_unique<RegisterTable>(m_, f_);
+    const auto visible = scoped_registers_->Resolve(outer, names_[reg]);
+    if (scoped_registers_->Resolve(at.scope, names_[reg]) == visible) return false;
+    if (shadows) *shadows = scoped_registers_->DeclaredWidth(visible).has_value();
+    return true;
+  }
+  // The join of the opaque compute region of the forward branch at `pc`: its instructions up
+  // to the target are OpaqueRegionInstructions. With `arms` (the exact last-resort pass),
+  // forward branches inside extend it to their furthest target (if-else, nested ifs), and a
+  // nested lexical scope must close inside it and declare only ScopeLocal temporaries.
+  std::optional<std::uint32_t> OpaqueRegionJoin(std::uint32_t pc, bool arms) const;
+  // The registers the region [pc+1, join) reads and writes, by name, without ScopeLocal ones.
+  void OpaqueRegionNames(std::uint32_t pc, std::uint32_t join, std::vector<std::string> &reads,
+                         std::vector<std::string> &writes) const;
   bool StaticWarpUniform(std::uint32_t use, std::uint32_t reg, unsigned depth) const;
   mutable ThreadRecordPool record_pool_;
   std::vector<std::string> names_;
@@ -929,6 +1098,10 @@ private:
            const PointerParameter *>
       pointers_;
   std::map<std::string, ParameterRegion> constant_inputs_;
+  // Whether the function declares .local memory: only then can a .local slot be filled.
+  bool local_memory_ = false;
+  // Whether the function contains activemask: only then do lanes record their control decisions.
+  bool convergence_ = false;
   // Pointer tables (input pointer_arrays): table resource -> slot byte offset -> entry
   // (an AllocationPointer, or Integer 0 for a null entry).
   std::map<std::string, std::map<std::uint64_t, Scalar>> pointer_tables_;
@@ -1006,6 +1179,12 @@ private:
   void Origins(const Decoded &, State &, std::uint64_t) const;
   ExecutedInstruction Record(const Decoded &, const State &, std::uint64_t,
                              std::optional<bool>) const;
+  LocalTarget Local(const Decoded &d, const State &s) const {
+    const auto *o = AddressOperand(d);
+    if (!o || !d.instruction->memory_width) return {{}, true};
+    return LocalTargetOf(*d.instruction, ValueText(o->address->first, s), o->address->second,
+                         *d.instruction->memory_width);
+  }
   void Data(const Decoded &, State &, std::uint32_t, std::uint32_t,
             std::uint64_t, const Json &, WarpContext &,
             bool probe = false) const;
@@ -1100,6 +1279,7 @@ Executor::Assertion(const Instruction &branch, std::uint32_t target) const {
 }
 void Executor::Prepare() {
   const auto local_declarations = LocalMemoryDeclarations(m_, f_);
+  local_memory_ = !local_declarations.empty();
   ProfileScope prepare("frontend.execute.prepare");
   for (const auto &entry : c_.fixed_input.value("global_memory_inputs", Json::array())) {
     const auto name = entry.at("resource").get<std::string>();
@@ -1139,6 +1319,7 @@ void Executor::Prepare() {
   for (const auto &i : f_.instructions) {
     if (i.id >= f_.instructions.size())
       throw std::runtime_error("non-dense PTX instruction ids");
+    convergence_ |= i.opcode == "activemask";
     for (const auto &r : i.registers)
       Intern(r);
     for (const auto &r : i.destinations)
@@ -1880,6 +2061,43 @@ void Executor::Data(const Decoded &d, State &s, std::uint32_t warp,
       Invalidate(d, s);
     return;
   }
+  // .local memory is private to the thread: an exact store fills slots that a load of the same
+  // bytes reads back in program order; any other write that may reach .local memory forgets
+  // every slot. A load without a filled slot keeps the behaviour below.
+  if (local_memory_ && (LocalSpace(i) || MayWriteLocal(i))) {
+    const auto target = LocalSpace(i) ? Local(d, s) : LocalTarget{{}, true};
+    const auto width = i.memory_width.value_or(0);
+    if (op == "ld" && target.exact && !contract.contains("register_results")) {
+      const auto count = d.destination_slots.size();
+      if (count && width % count == 0) {
+        const auto bytes = static_cast<unsigned>(width / count);
+        const bool sign = Has(i, "s" + std::to_string(bytes * 8));
+        std::vector<Scalar> values;
+        bool known = false;
+        for (std::size_t k = 0; k < count; ++k) {
+          const auto slot = s.local.find(LocalAddress{target.exact->first, target.exact->second + std::int64_t(k * bytes)});
+          values.push_back(slot != s.local.end() && slot->second.bytes == bytes
+                               ? LocalLoaded(slot->second.value, bytes, sign) : Scalar{});
+          known |= !Unknown(values.back());
+        }
+        if (known) {
+          Set(d, s, std::move(values));
+          return;
+        }
+      }
+    } else if (MayWriteLocal(i) && target.may_alias) {
+      const auto parts = op == "st" && n >= 2 ? VectorElements(d.operands[1].text) : std::vector<std::string_view>{};
+      if (target.exact && width && !parts.empty() && width % parts.size() == 0) {
+        const auto bytes = static_cast<unsigned>(width / parts.size());
+        ForgetLocal(s.local, *target.exact, width);
+        for (std::size_t k = 0; k < parts.size(); ++k)
+          if (auto value = ValueText(parts[k], s); !Unknown(value))
+            s.local.insert_or_assign(LocalAddress{target.exact->first, target.exact->second + std::int64_t(k * bytes)},
+                                     LocalSlot<Scalar>{bytes, std::move(value)});
+      } else
+        s.local.clear();
+    }
+  }
   if (op == "ld" && Has(i, "param")) {
     if (n < 2)
       Error(i, warp, lane, "malformed ld.param");
@@ -1976,6 +2194,20 @@ void Executor::Data(const Decoded &d, State &s, std::uint32_t warp,
       }
       Set(d, s, std::move(values));
       return;
+    }
+    if (auto bounded = std::get_if<BoundedAllocationPointer>(&pointer_value);
+        bounded && pointer_tables_.contains((*bounded)->resource) && *i.memory_width == 8 * d.destination_slots.size()) {
+      std::vector<Scalar> values;
+      bool known = false;
+      for (std::size_t index = 0; index < d.destination_slots.size(); ++index) {
+        values.push_back(BoundedTableEntry(pointer_tables_.at((*bounded)->resource), *bounded->value,
+                                           displacement + Integer(index * 8)));
+        known |= !Unknown(values.back());
+      }
+      if (known) {
+        Set(d, s, std::move(values));
+        return;
+      }
     }
     // A pointer with a non-affine offset reads every candidate: a constant input gives
     // the loaded values over the offset's key; an object with tensor_properties gives its
@@ -2182,6 +2414,11 @@ void Executor::Data(const Decoded &d, State &s, std::uint32_t warp,
       else result = Has(i, "shiftamt") ? int(*width) - 1 - top : top;
     }
     Set(d, s, {result}); return;
+  }
+  if (op == "isspacep" && n == 2 && i.modifiers.size() == 1) {
+    const auto inside = GenericAddressInSpace(i.modifiers[0], val(1), c_.resources);
+    Set(d, s, {inside ? Scalar(*inside) : Scalar{}});
+    return;
   }
   if (op == "bfe" && n == 4) {
     auto value = ScalarInteger(val(1)), position = ScalarInteger(val(2)), length = ScalarInteger(val(3));
@@ -2412,6 +2649,55 @@ void Executor::Data(const Decoded &d, State &s, std::uint32_t warp,
     if (mode == "ballot") Set(d, s, {Integer(bits)});
     else Set(d, s, {mode == "all" ? bits == members :
                    mode == "any" ? bits != 0 : bits == 0 || bits == members});
+    return;
+  }
+  // match.{any,all}.sync: the participants whose value equals this lane's (Compare's equality).
+  if (op == "match" && i.modifiers.size() == 3 && In(i.modifiers[0], {"any", "all"}) && i.modifiers[1] == "sync" &&
+      n == 3) {
+    auto mask = ScalarInteger(val(2));
+    if (!mask) { Invalidate(d, s); return; }
+    const auto members = (*mask & 0xffffffff).convert_to<std::uint32_t>();
+    if (!(members & (1u << lane)))
+      Error(i, warp, lane, "executing lane absent from match membermask");
+    const auto own = val(1);
+    context.shuffle[{i.id, occurrence, lane}] = own;
+    context.vote_masks[{i.id, occurrence, lane}] = members;
+    std::uint32_t bits = 0;
+    bool unknown = false, unequal = false;
+    for (unsigned peer = 0; peer < 32; ++peer) {
+      if (!(members & (1u << peer))) continue;
+      auto it = context.shuffle.find({i.id, occurrence, peer});
+      if (it == context.shuffle.end()) throw Deferred{peer, i.id, occurrence};
+      if (context.vote_masks.at({i.id, occurrence, peer}) != members)
+        Error(i, warp, lane, "match participants have different membermasks");
+      const auto equal = Truth(Compare(i, "eq", own, it->second, c_));
+      if (!equal) unknown = true;
+      else if (*equal) bits |= 1u << peer;
+      else unequal = true;
+    }
+    if (i.modifiers[0] == "any") Set(d, s, {unknown ? Scalar{} : Scalar(Integer(bits))});
+    else if (unequal) Set(d, s, {Integer(0), false});
+    else if (unknown) Invalidate(d, s);
+    else Set(d, s, {Integer(members), true});
+    return;
+  }
+  // activemask: lanes that follow the warp's common control path since launch execute convergently
+  // (see WarpContext::Decide), so the active set is the whole warp when every lane is on it here.
+  if (op == "activemask" && n == 1) {
+    const auto &own = context.control[lane];
+    const Scalar position = own.diverged ? Scalar{} : Scalar(Integer(own.decisions));
+    context.shuffle[{i.id, occurrence, lane}] = position;
+    context.queries.emplace(i.id, occurrence);
+    const auto first = warp * c_.warp_size;
+    bool known = convergence_ && !Unknown(position) && (!c_.analysis_thread_range ||
+        (c_.analysis_thread_range->first <= first && first + c_.warp_size <= c_.analysis_thread_range->second));
+    for (std::uint32_t peer = 0; known && peer < c_.warp_size; ++peer) {
+      const auto found = context.shuffle.find({i.id, occurrence, peer});
+      if (found != context.shuffle.end()) known = found->second == position;
+      else if (context.control[peer].diverged) known = false;
+      else throw Deferred{peer, i.id, occurrence};
+    }
+    Set(d, s, {known ? Scalar(Integer(0xffffffffu)) : Scalar{}});
     return;
   }
   if (contract.contains("register_results") &&
@@ -2939,55 +3225,17 @@ LaneTask Executor::Lane(const WarpContract &warp, std::uint32_t lane,
           }
         }
       }
-      bool diamond = d.predicate != kMissing &&
-                     Unknown(state.registers[d.predicate]) &&
-                     !c_.BranchOutcome(i.line, warp.warp_id, lane,
-                                       state.branch_visits[pc]) &&
-                     target > pc + 1;
-      for (std::uint32_t index = pc + 1; diamond && index < target; ++index) {
-        if (index >= decoded_.size()) {
-          diamond = false;
-          break;
-        }
-        const auto &candidate = *decoded_[index].instruction;
-        bool pure = candidate.semantics.category == "compute",
-             private_read = candidate.semantics.category == "memory" &&
-                            candidate.semantics.memory_mode == "read" &&
-                            candidate.semantics.memory_space &&
-                            In(*candidate.semantics.memory_space,
-                               {"param", "local", "const"});
-        if (candidate.control != "none" || (!pure && !private_read))
-          diamond = false;
-      }
-      // In the exact last-resort pass, the same treatment extends to a forward region with
-      // several arms (if-else, nested ifs): every path from the branch reaches one join
-      // without memory, synchronization or control effects beyond forward branches inside it.
-      std::uint32_t join = target;
-      if (!diamond && exact_control_pass && d.predicate != kMissing &&
-          Unknown(state.registers[d.predicate]) && target > pc &&
-          !c_.BranchOutcome(i.line, warp.warp_id, lane, state.branch_visits[pc])) {
-        diamond = true;
-        for (std::uint32_t index = pc + 1; diamond && index < join; ++index) {
-          if (index >= decoded_.size()) { diamond = false; break; }
-          const auto &candidate = *decoded_[index].instruction;
-          // Registers declared in a nested scope (inline asm blocks) cannot be named in
-          // the region's record outside that scope.
-          if (candidate.scope != i.scope) { diamond = false; break; }
-          if (candidate.control == "direct_branch") {
-            if (!candidate.branch_target || *candidate.branch_target <= index) diamond = false;
-            else join = std::max(join, *candidate.branch_target);
-            continue;
-          }
-          bool pure = candidate.semantics.category == "compute",
-               private_read = candidate.semantics.category == "memory" &&
-                              candidate.semantics.memory_mode == "read" &&
-                              candidate.semantics.memory_space &&
-                              In(*candidate.semantics.memory_space, {"param", "local", "const"});
-          if (candidate.control != "none" || (!pure && !private_read)) diamond = false;
-        }
-        diamond = diamond && join < decoded_.size();
-        if (diamond) ++trace.opaque_regions[i.line];
-      }
+      // An unresolved forward branch over pure computation is skipped as an opaque region. In the
+      // exact last-resort pass, the region may have several arms (if-else, nested ifs): every
+      // path from the branch reaches one join without memory, synchronization or control
+      // effects beyond forward branches inside it.
+      const bool unresolved = d.predicate != kMissing && Unknown(state.registers[d.predicate]) &&
+                              !c_.BranchOutcome(i.line, warp.warp_id, lane, state.branch_visits[pc]);
+      auto region = unresolved && target > pc + 1 ? OpaqueRegionJoin(pc, false) : std::nullopt;
+      if (unresolved && !region && exact_control_pass && (region = OpaqueRegionJoin(pc, true)))
+        ++trace.opaque_regions[i.line];
+      const bool diamond = region.has_value();
+      const std::uint32_t join = region.value_or(target);
       if (diamond) {
         auto occurrence = state.occurrences[pc]++;
         ++state.branch_visits[pc];
@@ -2998,31 +3246,14 @@ LaneTask Executor::Lane(const WarpContract &warp, std::uint32_t lane,
             probe_values.erase(reg);
           }
         auto record = Record(d, state, occurrence, {});
-        std::set<std::string> reads, writes;
-        for (auto index = pc + 1; index < join; ++index) {
-          const auto &skipped = decoded_[index];
-          for (auto reg : skipped.destinations) writes.insert(names_[reg]);
-          if (skipped.instruction->control == "direct_branch") {
-            // A branch inside a multi-arm region reads only its guard; the target is a label.
-            if (skipped.predicate != kMissing) reads.insert(names_[skipped.predicate]);
-            continue;
-          }
-          for (auto reg : skipped.uses) {
-            bool source = skipped.predicate == reg;
-            for (std::size_t operand = skipped.destinations.empty() ? 0 : 1;
-                 operand < skipped.operands.size(); ++operand)
-              source |= std::find(skipped.operands[operand].registers.begin(),
-                  skipped.operands[operand].registers.end(), reg) != skipped.operands[operand].registers.end();
-            if (source) reads.insert(names_[reg]);
-          }
-        }
-        record.mutableMetadata().opaque_compute_register_reads.assign(reads.begin(), reads.end());
-        record.mutableMetadata().opaque_compute_register_writes.assign(writes.begin(), writes.end());
+        OpaqueRegionNames(pc, join, record.mutableMetadata().opaque_compute_register_reads,
+                          record.mutableMetadata().opaque_compute_register_writes);
         for (auto index = pc + 1; index < join; ++index)
           record.mutableMetadata().opaque_compute_diamond_indices.push_back(index);
         record.mutableMetadata().opaque_compute_join_label =
             join == target ? i.branch_label : "pc:" + std::to_string(join);
         append(std::move(record));
+        if (convergence_) context.Diverge(lane);
         pc = join;
         continue;
       }
@@ -3059,6 +3290,7 @@ LaneTask Executor::Lane(const WarpContract &warp, std::uint32_t lane,
           auto record = Record(d, state, state.occurrences[pc]++, {});
           record.mutableMetadata().merged_arm_join = target;
           append(std::move(record));
+          if (convergence_) context.Diverge(lane);
           ++pc;
           continue;
         }
@@ -3082,6 +3314,7 @@ LaneTask Executor::Lane(const WarpContract &warp, std::uint32_t lane,
         record.mutableMetadata().assumed_equality = std::move(assumed_equality);
         append(std::move(record));
       }
+      if (convergence_ && d.predicate != kMissing) context.Decide(lane, pc, *taken ? target : pc + 1);
       pc = *taken ? target : pc + 1;
       continue;
     }
@@ -3194,6 +3427,7 @@ LaneTask Executor::Lane(const WarpContract &warp, std::uint32_t lane,
       if (!index) UnresolvedControl(i,state,trace,d.operands.front().reg);
       if (*index<0 || *index>=i.indirect_targets.size())
         Error(i,warp.warp_id,lane,"indirect branch index is outside its target table");
+      if (convergence_) context.Decide(lane, pc, i.indirect_targets[index->convert_to<std::size_t>()]);
       pc=i.indirect_targets[index->convert_to<std::size_t>()];
       continue;
     }
@@ -3203,6 +3437,7 @@ LaneTask Executor::Lane(const WarpContract &warp, std::uint32_t lane,
         Error(i, warp.warp_id, lane,
               "call lacks explicit no-sync/no-memory summary");
       Invalidate(d, state);
+      state.local.clear();
       Origins(d, state, occurrence);
       ++pc;
       continue;
@@ -3266,9 +3501,65 @@ LaneTask Executor::Lane(const WarpContract &warp, std::uint32_t lane,
     if (state.branch_visits[index])
       trace.branch_visits[index] = state.branch_visits[index];
   trace.loop_backedges = std::move(state.backedges);
+  if (convergence_) context.Diverge(lane);
   co_return trace;
 }
 
+std::optional<std::uint32_t> Executor::OpaqueRegionJoin(std::uint32_t pc, bool arms) const {
+  const auto &branch = *decoded_[pc].instruction;
+  if (!branch.branch_target || *branch.branch_target <= pc + (arms ? 0 : 1)) return {};
+  auto join = *branch.branch_target;
+  const auto depth = branch.scope.size();
+  for (auto index = pc + 1; index < join; ++index) {
+    if (index >= decoded_.size()) return {};
+    const auto &candidate = *decoded_[index].instruction;
+    if (arms) {
+      if (candidate.scope.size() < depth || !std::equal(branch.scope.begin(), branch.scope.end(), candidate.scope.begin()))
+        return {};
+      bool shadows = false;
+      for (const auto *list : {&decoded_[index].uses, &decoded_[index].destinations})
+        for (auto reg : *list)
+          if (ScopeLocal(candidate, reg, branch.scope, &shadows) && shadows) return {};
+      if (candidate.control == "direct_branch") {
+        if (!candidate.branch_target || *candidate.branch_target <= index) return {};
+        join = std::max(join, *candidate.branch_target);
+        continue;
+      }
+    }
+    if (!OpaqueRegionInstruction(candidate)) return {};
+  }
+  if (!arms) return join;
+  if (join >= decoded_.size()) return {};
+  const auto &last = decoded_[join - 1].instruction->scope, &after = decoded_[join].instruction->scope;
+  if (last.size() > depth && after.size() > depth && last[depth] == after[depth]) return {};
+  return join;
+}
+void Executor::OpaqueRegionNames(std::uint32_t pc, std::uint32_t join, std::vector<std::string> &reads,
+                                 std::vector<std::string> &writes) const {
+  const auto &scope = decoded_[pc].instruction->scope;
+  std::set<std::string> read, written;
+  for (auto index = pc + 1; index < join; ++index) {
+    const auto &skipped = decoded_[index];
+    for (auto reg : skipped.destinations)
+      if (!ScopeLocal(*skipped.instruction, reg, scope)) written.insert(names_[reg]);
+    if (skipped.instruction->control == "direct_branch") {
+      // A branch inside a multi-arm region reads only its guard; the target is a label.
+      if (skipped.predicate != kMissing && !ScopeLocal(*skipped.instruction, skipped.predicate, scope))
+        read.insert(names_[skipped.predicate]);
+      continue;
+    }
+    for (auto reg : skipped.uses) {
+      if (ScopeLocal(*skipped.instruction, reg, scope)) continue;
+      bool source = skipped.predicate == reg;
+      for (std::size_t operand = skipped.destinations.empty() ? 0 : 1; operand < skipped.operands.size(); ++operand)
+        source |= std::find(skipped.operands[operand].registers.begin(), skipped.operands[operand].registers.end(), reg) !=
+                  skipped.operands[operand].registers.end();
+      if (source) read.insert(names_[reg]);
+    }
+  }
+  reads.assign(read.begin(), read.end());
+  writes.assign(written.begin(), written.end());
+}
 const Executor::MergedArm *Executor::MergedArmAt(std::uint32_t pc) const {
   auto [entry, inserted] = merged_arms_.try_emplace(pc);
   if (!inserted) return entry->second ? &*entry->second : nullptr;
@@ -3372,6 +3663,8 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
         !In(i.modifiers[1],{"ballot","all","any","uni"}) || d.operands.size()!=3))return false;
     if(i.opcode=="shfl" && (i.modifiers.size()<2 || i.modifiers[0]!="sync" ||
         !In(i.modifiers[1],{"idx","up","down","bfly"}) || d.operands.size()!=5))return false;
+    if(i.opcode=="match" && (i.modifiers.size()!=3 || !In(i.modifiers[0],{"any","all"}) || i.modifiers[1]!="sync" ||
+        d.operands.size()!=3))return false;
     return true;
   };
 
@@ -3405,6 +3698,7 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
     std::uint32_t pc{};
     std::uint64_t steps{};
     std::uint64_t assumed_assertions{};
+    std::map<std::uint64_t,std::uint64_t> opaque_regions; // as LaneTrace::opaque_regions, per member
     std::map<std::uint32_t,ProbeValue> probe_values;
     std::map<DynamicKey,std::size_t> probes;
     std::map<std::uint32_t,std::map<std::uint32_t,ProbeValue>> probe_joins;
@@ -3418,6 +3712,10 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
     // Join pc of the merged one-armed diamond being executed and the registers its arm
     // writes; they become unknown at the join (straight-line arms never nest).
     std::optional<std::pair<std::uint32_t,std::vector<std::uint32_t>>> merged_join;
+    // Every member's .local slots (template values), filled by stores whose address all members share.
+    LocalSlots<std::size_t> local;
+    // Whether the path executed an opaque region or merged arm, inside which members may diverge.
+    bool approximate_control=false;
   };
   auto arena=std::make_shared<TemplateArena>(); arena->poll=poll_;
   arena->Constant(Scalar{});
@@ -3523,35 +3821,25 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
   struct ComputeDiamond {
     std::vector<std::uint32_t> writes,indices;
     std::vector<std::string> read_names,write_names;
+    std::uint32_t join{};
+    bool arms=false; // several arms (exact last-resort pass)
   };
   std::map<std::uint32_t,std::optional<ComputeDiamond>> diamonds;
   const auto compute_diamond=[&](std::uint32_t pc)->const ComputeDiamond* {
     auto [entry,inserted]=diamonds.try_emplace(pc);
     if(!inserted)return entry->second?&*entry->second:nullptr;
-    const auto& branch=*decoded_[pc].instruction;
-    if(!branch.branch_target || *branch.branch_target<=pc+1)return nullptr;
+    auto join=OpaqueRegionJoin(pc,false);
+    const bool arms=!join && exact_control_pass && (join=OpaqueRegionJoin(pc,true));
+    if(!join)return nullptr;
     ComputeDiamond diamond;
+    diamond.join=*join;diamond.arms=arms;
     std::set<std::uint32_t> writes;
-    std::set<std::string> read_names,write_names;
-    for(auto index=pc+1;index<*branch.branch_target;++index) {
-      if(index>=decoded_.size())return nullptr;
-      const auto& decoded=decoded_[index];const auto& candidate=*decoded.instruction;
-      const bool pure=candidate.semantics.category=="compute";
-      const bool private_read=candidate.semantics.category=="memory" && candidate.semantics.memory_mode=="read" &&
-        candidate.semantics.memory_space && In(*candidate.semantics.memory_space,{"param","local","const"});
-      if(candidate.control!="none" || (!pure && !private_read))return nullptr;
+    for(auto index=pc+1;index<*join;++index) {
       diamond.indices.push_back(index);
-      for(auto reg:decoded.destinations){writes.insert(reg);write_names.insert(names_[reg]);}
-      for(auto reg:decoded.uses) {
-        bool source=decoded.predicate==reg;
-        for(std::size_t operand=decoded.destinations.empty()?0:1;operand<decoded.operands.size();++operand)
-          source|=std::find(decoded.operands[operand].registers.begin(),decoded.operands[operand].registers.end(),reg)!=decoded.operands[operand].registers.end();
-        if(source)read_names.insert(names_[reg]);
-      }
+      writes.insert(decoded_[index].destinations.begin(),decoded_[index].destinations.end());
     }
     diamond.writes.assign(writes.begin(),writes.end());
-    diamond.read_names.assign(read_names.begin(),read_names.end());
-    diamond.write_names.assign(write_names.begin(),write_names.end());
+    OpaqueRegionNames(pc,*join,diamond.read_names,diamond.write_names);
     entry->second=std::move(diamond);return &*entry->second;
   };
   // Every warp with a member in the domain has all its CTA members in it: a warp split
@@ -3577,7 +3865,8 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
       const auto& node=arena->values[id];
       if(node.uniform){if(Unknown(*node.uniform))return false;continue;}
       if(node.vote) {
-        if(node.operands.size()<2)return false;
+        // Each lane's match.any result names its own value class.
+        if(node.operands.size()<2 || node.vote->mode=="match.any")return false;
         const auto mask=node.operands[1];
         if(const auto& uniform=arena->values[mask].uniform){if(!FullWarpMask(*uniform))return false;}
         else for(auto member:domain)if(!FullWarpMask(arena->Value(mask,member)))return false;
@@ -3587,6 +3876,45 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
       stack.insert(stack.end(),node.operands.begin(),node.operands.end());
     }
     return true;
+  };
+  // A group's .local target: exact only when every member addresses the same slot; may_alias
+  // when some member's address may reach .local memory. Evaluates before the step mutates the group.
+  const auto local_target=[&](const Decoded& d,const Group& group)->LocalTarget {
+    const auto& i=*d.instruction;
+    const auto* o=AddressOperand(d);
+    if(!LocalSpace(i) || !o || !i.memory_width)return {{},true};
+    const auto& [base,displacement]=*o->address;
+    const auto found=ids_.find(base);
+    if(found==ids_.end())return LocalTargetOf(i,ValueText(base,group.state),displacement,*i.memory_width);
+    const auto id=group.registers[found->second];
+    if(const auto& uniform=arena->values[id].uniform)return LocalTargetOf(i,*uniform,displacement,*i.memory_width);
+    std::optional<LocalTarget> agreed;
+    for(auto member:group.members) {
+      const auto target=LocalTargetOf(i,arena->Value(id,member),displacement,*i.memory_width);
+      if(!agreed)agreed=target;
+      else {
+        if(agreed->exact!=target.exact)agreed->exact.reset();
+        agreed->may_alias|=target.may_alias;
+      }
+      if(!agreed->exact && agreed->may_alias)break;
+    }
+    return agreed.value_or(LocalTarget{{},true});
+  };
+  // The distinct exact .local targets of a load's members (sorted), when every member's address is
+  // an exact whole access through a register and at most kLocalSelectTargets differ.
+  const auto local_targets=[&](const Decoded& d,const Group& group)->std::optional<std::vector<LocalAddress>> {
+    const auto& i=*d.instruction;
+    const auto* o=AddressOperand(d);
+    if(!o || !i.memory_width || !ids_.contains(o->address->first))return {};
+    const auto id=group.registers[ids_.at(o->address->first)];
+    std::set<LocalAddress> targets;
+    for(auto member:group.members) {
+      const auto target=LocalTargetOf(i,arena->Value(id,member),o->address->second,*i.memory_width);
+      if(!target.exact)return {};
+      targets.insert(*target.exact);
+      if(targets.size()>kLocalSelectTargets)return {};
+    }
+    return std::vector<LocalAddress>(targets.begin(),targets.end());
   };
   try {
     while (!pending.empty() || !waiting.empty()) {
@@ -3838,6 +4166,10 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
           if(!work.pending.empty())throw TemplatePending{};
           shared_handled=work.handled;
         }
+        // With no slot filled, only an explicit .local access can change the slots.
+        std::optional<LocalTarget> local_access;
+        if(active && local_memory_ && (LocalSpace(i) || MayWriteLocal(i)) &&
+            (!group.local.empty() || i.semantics.memory_space=="local"))local_access=local_target(d,group);
         ++group.steps; ++result.template_execution.steps;
         result.template_execution.logical_steps+=group.members.size();
         auto occurrence=group.state.occurrences[group.pc]++;
@@ -3873,7 +4205,8 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
           metadata.opaque_compute_register_reads=opaque->read_names;
           metadata.opaque_compute_register_writes=opaque->write_names;
           metadata.opaque_compute_diamond_indices=opaque->indices;
-          metadata.opaque_compute_join_label=i.branch_label;
+          metadata.opaque_compute_join_label=opaque->join==*i.branch_target?i.branch_label:"pc:"+std::to_string(opaque->join);
+          if(opaque->arms)++group.opaque_regions[i.line];
         }
         if (std::all_of(record.bindings.begin(),record.bindings.end(),[&](auto binding){return arena->values[binding.second].uniform.has_value();})) {
           auto &bindings=record.record.mutableKnownRegisters();
@@ -3897,8 +4230,8 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
         // False decisions are control observations only, never executed data
         // effects. This record exists solely in BranchScopeCapture mode.
         if (!active) { ++group.pc; continue; }
-        if(opaque){group.pc=*i.branch_target;continue;}
-        if(merged){group.merged_join={*i.branch_target,merged->writes};++group.pc;continue;}
+        if(opaque){group.approximate_control=true;group.pc=opaque->join;continue;}
+        if(merged){group.approximate_control=true;group.merged_join={*i.branch_target,merged->writes};++group.pc;continue;}
         if(group.shared) {
           if(shared_handled)for(std::size_t j=0;j<d.destinations.size();++j) {
             const auto reg=d.destinations[j];const auto& outputs=group.shared->outputs[j];
@@ -3937,6 +4270,7 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
           for (auto t:group.members) {
             auto &trace=result.lane_traces[t]; trace.warp_id=members[t].warp; trace.lane_id=members[t].lane;
             trace.assumed_assertions=group.assumed_assertions;
+            trace.opaque_regions=group.opaque_regions;
             trace.instructions=arena->Expand(arena,path,t,group.path_id);
             for (std::uint32_t b=0;b<group.state.branch_visits.size();++b)
               if (group.state.branch_visits[b]) trace.branch_visits[b]=group.state.branch_visits[b];
@@ -3966,12 +4300,16 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
           group.pc=targets.begin()->first;group.members=std::move(targets.begin()->second);
           continue;
         }
-        if(i.opcode=="vote") {
+        if(i.opcode=="vote" || i.opcode=="match") {
           auto& vote=votes[{group.pc,occurrence}];
           if(!vote) {
-            vote=std::make_shared<TemplateVote>();vote->members=member_indices;vote->mode=i.modifiers[1];
+            vote=std::make_shared<TemplateVote>();vote->members=member_indices;
+            vote->mode=i.opcode=="vote"?i.modifiers[1]:"match."+i.modifiers[0];
             vote->error=[owner,pc=group.pc](std::uint32_t actor,const std::string& message) {
               owner->Error(*owner->decoded_[pc].instruction,actor/owner->c_.warp_size,actor%owner->c_.warp_size,message);
+            };
+            if(i.opcode=="match")vote->equal=[owner,pc=group.pc](const Scalar& a,const Scalar& b) {
+              return Truth(Compare(*owner->decoded_[pc].instruction,"eq",a,b,owner->c_));
             };
           }
           const auto reads=source_registers[group.pc];
@@ -3998,12 +4336,33 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
           const auto predicate=operand(1),mask=operand(2);
           vote->predicates->producers.push_back({group.members,predicate});
           vote->masks->producers.push_back({group.members,mask});++exchange_revision;
-          TemplateValue node;node.operands={coordinate_value,mask};node.vote=vote;
-          const auto id=arena->values.size();arena->values.push_back(std::move(node));
-          vote_uses.emplace_back(id,group.members);
-          group.collective_results.push_back(id);
-          for(auto reg:d.destinations){group.registers[reg]=id;group.state.registers[reg]=Scalar{};}
+          for(std::size_t slot=0;slot<d.destination_slots.size();++slot) {
+            // match.all's second destination is its predicate.
+            auto result=vote;
+            if(slot==1 && vote->mode=="match.all"){result=std::make_shared<TemplateVote>(*vote);result->mode="match.all.pred";}
+            TemplateValue node;node.operands={coordinate_value,mask};node.vote=std::move(result);
+            const auto id=arena->values.size();arena->values.push_back(std::move(node));
+            vote_uses.emplace_back(id,group.members);
+            group.collective_results.push_back(id);
+            if(const auto reg=d.destination_slots[slot];reg!=kMissing){group.registers[reg]=id;group.state.registers[reg]=Scalar{};}
+          }
           Origins(d,group.state,occurrence);++group.pc;continue;
+        }
+        // activemask: as in Data(), a warp whose lanes all share this group's path, which merged no
+        // divergent region, executes convergently; other members stay unknown.
+        if(i.opcode=="activemask") {
+          std::map<std::uint32_t,std::size_t> present;
+          for(auto member:group.members)++present[members[member].warp];
+          std::vector<Scalar> outputs;outputs.reserve(group.members.size());
+          for(auto member:group.members)
+            outputs.push_back(!group.approximate_control && present[members[member].warp]==c_.warp_size
+                ?Scalar(Integer(0xffffffffu)):Scalar{});
+          const auto value=arena->SharedResult({group.members.data(),group.members.size()},outputs,
+              *member_coordinates,coordinate_value,c_.warp_size,c_.block_dim);
+          for(auto reg:d.destinations){group.registers[reg]=value;group.state.registers[reg]=arena->values[value].uniform.value_or(Scalar{});}
+          Origins(d,group.state,occurrence);
+          for(auto reg:d.destinations)group.probe_values.erase(reg);
+          ++group.pc;continue;
         }
         if(i.opcode=="shfl") {
           const DynamicKey key{group.pc,occurrence};
@@ -4052,6 +4411,83 @@ TemplateTask Executor::RunTemplateTask(SharedExecution* runtime) {
             group.state.registers[reg]=Scalar{};
           }
           Origins(d,group.state,occurrence);++group.pc;continue;
+        }
+        // .local slots as in Data(): a load at an exact address (shared, or each member's own) reads
+        // each member's stored value; other loads stay on the generic path (unknown for .local memory).
+        if(local_access) {
+          const auto width=i.memory_width.value_or(0);
+          const auto count=d.destination_slots.size();
+          if(i.opcode=="ld" && count && width%count==0 && (local_access->exact || LocalSpace(i))) {
+            std::vector<std::size_t> loaded;
+            bool known=false;
+            const auto bytes=static_cast<unsigned>(width/count);
+            const bool sign=Has(i,"s"+std::to_string(bytes*8));
+            const auto add=[&](TemplateValue node) {
+              arena->FoldCoordinates(node);
+              if(node.uniform)loaded.push_back(arena->Constant(*node.uniform));
+              else {loaded.push_back(arena->values.size());arena->values.push_back(std::move(node));}
+            };
+            if(local_access->exact) {
+              for(std::size_t k=0;k<count;++k) {
+                const auto slot=group.local.find(LocalAddress{local_access->exact->first,local_access->exact->second+std::int64_t(k*bytes)});
+                if(slot==group.local.end() || slot->second.bytes!=bytes) {loaded.push_back(arena->Constant(Scalar{}));continue;}
+                const auto stored=slot->second.value;
+                if(const auto& uniform=arena->values[stored].uniform)loaded.push_back(arena->Constant(LocalLoaded(*uniform,bytes,sign)));
+                else {
+                  TemplateValue node;node.operands={stored};
+                  node.evaluate=[bytes,sign](const std::vector<Scalar>& args){return LocalLoaded(args.at(0),bytes,sign);};
+                  add(std::move(node));
+                }
+                known=true;
+              }
+            } else if(const auto targets=local_targets(d,group)) {
+              // Exact addresses that differ between members: a per-member selection over the slots
+              // the members address (operand 0 is the address, then one stored value per target).
+              const auto* o=AddressOperand(d);
+              const auto address=group.registers[ids_.at(o->address->first)];
+              for(std::size_t k=0;k<count;++k) {
+                TemplateValue node;node.operands={address};
+                bool filled=false;
+                for(const auto& [resource,offset]:*targets) {
+                  const auto slot=group.local.find(LocalAddress{resource,offset+std::int64_t(k*bytes)});
+                  const bool exact=slot!=group.local.end() && slot->second.bytes==bytes;
+                  node.operands.push_back(exact?slot->second.value:arena->Constant(Scalar{}));
+                  filled|=exact;
+                }
+                if(!filled) {loaded.push_back(arena->Constant(Scalar{}));continue;}
+                node.evaluate=[instruction=&i,keys=*targets,displacement=o->address->second,width,bytes,sign](const std::vector<Scalar>& args)->Scalar {
+                  const auto target=LocalTargetOf(*instruction,args.at(0),displacement,width);
+                  const auto at=target.exact?std::lower_bound(keys.begin(),keys.end(),*target.exact):keys.end();
+                  if(at==keys.end() || *at!=*target.exact)return {};
+                  return LocalLoaded(args.at(1+(at-keys.begin())),bytes,sign);
+                };
+                add(std::move(node));
+                known=true;
+              }
+            }
+            if(known) {
+              for(std::size_t k=0;k<count;++k)if(const auto reg=d.destination_slots[k];reg!=kMissing) {
+                group.registers[reg]=loaded[k];
+                group.state.registers[reg]=arena->values[loaded[k]].uniform.value_or(Scalar{});
+              }
+              Origins(d,group.state,occurrence);
+              for(auto reg:d.destinations)group.probe_values.erase(reg);
+              ++group.pc;continue;
+            }
+          } else if(MayWriteLocal(i) && local_access->may_alias) {
+            const auto parts=i.opcode=="st" && d.operands.size()>=2?VectorElements(d.operands[1].text):std::vector<std::string_view>{};
+            if(local_access->exact && width && !parts.empty() && width%parts.size()==0) {
+              const auto bytes=static_cast<unsigned>(width/parts.size());
+              ForgetLocal(group.local,*local_access->exact,width);
+              for(std::size_t k=0;k<parts.size();++k) {
+                const auto reg=ids_.find(std::string(parts[k]));
+                const auto value=reg!=ids_.end()?group.registers[reg->second]:arena->Constant(ValueText(parts[k],group.state));
+                if(const auto& uniform=arena->values[value].uniform;uniform && Unknown(*uniform))continue;
+                group.local.insert_or_assign(LocalAddress{local_access->exact->first,local_access->exact->second+std::int64_t(k*bytes)},
+                    LocalSlot<std::size_t>{bytes,value});
+              }
+            } else group.local.clear();
+          }
         }
         if(shared_handled)Origins(d,group.state,occurrence);
         if (!shared_handled && !d.destinations.empty()) {
@@ -4314,6 +4750,30 @@ Scalar RestorePointer(const PointerBits &bits) {
   if (bits.source_bit==0 && bits.width==64 && bits.destination_bit==0)
     return std::visit([](const auto &pointer)->Scalar{return pointer;},*bits.pointer);
   return bits;
+}
+bool WarpLevelOpcode(std::string_view opcode) {
+  return In(opcode, {"elect", "shfl", "vote", "match", "activemask", "redux", "mma", "wmma"});
+}
+// PTX generic addressing: an address maps to global memory unless it falls in the const, local or
+// shared window; the .param window lies inside the global window (left unknown here).
+std::optional<bool> GenericAddressInSpace(std::string_view space, const Scalar &address,
+                                          const nlohmann::json &resources) {
+  std::string resource;
+  Integer lower, upper;
+  std::optional<std::uint64_t> extent;
+  if (const auto *p = std::get_if<AllocationPointer>(&address)) {
+    resource = p->resource; lower = upper = p->offset; extent = p->extent_bytes;
+  } else if (const auto *q = std::get_if<BoundedAllocationPointer>(&address)) {
+    resource = (*q)->resource; lower = (*q)->lower; upper = (*q)->upper; extent = (*q)->extent_bytes;
+  } else return std::nullopt;
+  if (lower < 0 || (extent && upper > Integer(*extent))) return std::nullopt;
+  const auto record = std::find_if(resources.begin(), resources.end(),
+                                   [&](const auto &r) { return r.value("id", "") == resource; });
+  if (record == resources.end() || record->value("kind", "") != "memory" || record->value("space", "") != "global")
+    return std::nullopt;
+  if (space == "global") return true;
+  if (In(space, {"shared", "shared::cta", "shared::cluster", "local", "const"})) return false;
+  return std::nullopt;
 }
 std::optional<Integer> ParseInteger(std::string_view text) {
   text = TrimView(text);

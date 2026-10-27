@@ -408,11 +408,22 @@ const Json &SlotResolver::TensorMap(const RecordView &e,
   const Json *match = nullptr;
   std::string matched;
   auto explicit_name = contract.value("descriptor", "");
-  // The executor's runtime maps follow the program's own; other consumers have none.
+  // A runtime map (published from a tensormap.cp_fenceproxy) has an allocation location and no
+  // parameter location. Its versions share the location; the read's recorded copy selects one
+  // (RecoverTensorMaps).
+  const auto &reads = facts.TensorMapReads();
+  const auto thread = core_.ActiveThread();
+  const TensorMapRead *read = nullptr;
+  if (reads && thread)
+    if (const auto found = reads->find({*thread, e.Key()}); found != reads->end()) read = &found->second;
+  bool runtime = false;
+  // The executor's runtime maps follow the program's own; other consumers have none. Its lookups
+  // see each location's current version only.
   for (const auto *maps : {&facts.TensorMaps(), dynamic_tensor_maps}) {
   if (!maps) continue;
   for (auto it = maps->begin(); it != maps->end(); ++it) {
     const auto &d = it.value();
+    if (maps == dynamic_tensor_maps && d.value("superseded", false)) continue;
     bool yes = false;
     if (auto p = std::get_if<ParameterPointer>(&value)) {
       if (d.contains("parameter_location")) {
@@ -430,6 +441,10 @@ const Json &SlotResolver::TensorMap(const RecordView &e,
     } else if (auto n = std::get_if<Integer>(&value))
       yes = d.contains("address") &&
             JsonInteger(d["address"]) == *n + displacement;
+    if (yes && maps == &facts.TensorMaps() && d.contains("allocation_location") && !d.contains("parameter_location")) {
+      runtime = true;
+      if (read && read->version != it.key()) continue;
+    }
     if (yes) {
       if (match)
         throw SemanticError("missing_tma_descriptor",
@@ -439,6 +454,9 @@ const Json &SlotResolver::TensorMap(const RecordView &e,
     }
   }
   }
+  if (runtime && reads && !read)
+    throw SemanticError("nonconstant_tma_descriptor",
+                        "a runtime tensor map is read without a recorded tensor map copy");
   if (match) {
     if (!explicit_name.empty() && explicit_name != matched)
       throw SemanticError("missing_tma_descriptor",
@@ -474,6 +492,7 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
                                              "4d",
                                              "5d",
                                              "tile",
+                                             "tile::gather4",
                                              "shared::cta",
                                              "shared::cluster",
                                              "global",
@@ -502,11 +521,14 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
       store ? spaces == std::vector<std::string>{"global", "shared::cta"}
             : (spaces == std::vector<std::string>{"shared::cta", "global"} ||
                spaces == std::vector<std::string>{"shared::cluster", "global"});
+  // tile::gather4: a 2D load of four rows, coordinates {column, row0..row3}.
+  const bool gather = Has(i, "tile::gather4");
   if (!space_ok || ranks != 1 || !Has(i, completion) || Has(i, other) ||
       !Has(i, "async") || !Has(i, "bulk") || !Has(i, "tensor") ||
       (Has(i, "cta_group::1") && Has(i, "cta_group::2")) ||
       (Has(i, "multicast::cluster") &&
-       (store || spaces[0] != "shared::cluster")))
+       (store || spaces[0] != "shared::cluster")) ||
+      (gather && (store || rank != 2 || Has(i, "tile") || Has(i, "multicast::cluster"))))
     throw SemanticError("tma_opcode_variant",
                         "unsupported TMA tiled copy variant");
   const std::size_t n = store ? 2 : 3;
@@ -568,12 +590,21 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
         {"operator","opaque"}, {"provenance",Json::array({"tma_coordinate",frame.Json(frame.self()),
           facts.Warp(*core_.active_lane_),facts.LaneId(*core_.active_lane_),e.instruction_id(),e.occurrence(),token})}});
   }
-  if (origins.size() != rank)
+  if (origins.size() != (gather ? 5u : rank))
     throw SemanticError("tma_opcode_rank",
                         "opcode rank disagrees with coordinates");
   auto dims = frame.cluster_dim();
   TmaTransferOptions options;
   options.symbolic_coordinates = symbolic_coordinates;
+  // A gather decodes as the box origin {column, 0} plus its four row coordinates.
+  std::vector<std::int64_t> gather_origins;
+  if (gather) {
+    gather_origins = {origins[0], 0};
+    options.symbolic_coordinates = {symbolic_coordinates[0], false};
+    options.gather_rows = std::array{origins[1], origins[2], origins[3], origins[4]};
+    options.symbolic_rows = {symbolic_coordinates[1], symbolic_coordinates[2],
+                             symbolic_coordinates[3], symbolic_coordinates[4]};
+  }
   options.shared_base = shared->second;
   options.destination_rank = shared->first.value;
   options.cluster_size = dims[0] * dims[1] * dims[2];
@@ -625,14 +656,15 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
   if (contract.contains("transfer_bytes"))
     options.transfer_bytes =
         Unsigned(JsonInteger(contract["transfer_bytes"]), "transfer bytes");
-  auto mapping = DecodeTmaTransfer(descriptor, origins, options);
+  auto mapping = DecodeTmaTransfer(descriptor, gather ? gather_origins : origins, options);
   auto resource = descriptor.at("resource").get<std::string>();
   ResolvedTma result;
   result.store = store;
   result.descriptor = std::move(descriptor_key);
   // Every symbolic coordinate affine: the region's first byte, base + sum of coordinate x
   // stride, as one affine form in element lookups (the class log's δ form, query_log.cpp).
-  if (!opaque_coordinate && std::any_of(affine_coordinates.begin(), affine_coordinates.end(),
+  // A gather has four independent row origins, so no single region form.
+  if (!gather && !opaque_coordinate && std::any_of(affine_coordinates.begin(), affine_coordinates.end(),
                                         [](const auto &c) { return c.has_value(); })) {
     const auto strides = descriptor.value("coordinate_strides_bytes", Json());
     const auto base = descriptor.value("base_byte_offset", Json(0));
@@ -667,8 +699,12 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
   for (const auto &s : mapping.segments) {
     std::optional<std::size_t> global;
     if (s.abstract_global) {
+      // A gather row is the map's one-row box at {column, row}: the region covers that row.
       Json expression={{"operator","tma_region"},{"descriptor",descriptor},
-          {"coordinates",coordinate_expressions},{"logical_offset",s.logical_offset},{"bytes",s.bytes},
+          {"coordinates",gather ? Json::array({coordinate_expressions.at(0),
+                                               coordinate_expressions.at(1 + s.gather_row)})
+                                : coordinate_expressions},
+          {"logical_offset",s.logical_offset},{"bytes",s.bytes},
           {"occurrence",Json::array({frame.Json(frame.self()),facts.Warp(*core_.active_lane_),facts.LaneId(*core_.active_lane_),e.instruction_id(),e.occurrence()})}};
       auto serialized=expression.dump();
       const auto address=steps.size();

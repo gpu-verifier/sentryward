@@ -69,6 +69,13 @@ Read the conclusion only from `result`, and the progress of each check from
 `checks`. See [configuration formats](../README.md#documentation) for the input
 files.
 
+Arrivals on a barrier that no operation of the launch waits on order nothing.
+The synchronization check removes them first and lists them in
+`internal.eliminated_synchronization` by PTX line and barrier, with their count.
+Checks that do not depend on barrier phases still cover them: an eliminated
+mbarrier arrival must follow the barrier's initialization
+(`barrier_initialization_before_use_not_proven`) and precede its invalidation.
+
 ## Categories
 
 | result | Meaning |

@@ -197,6 +197,11 @@ struct ModelLowerer::Impl {
   std::map<SharedValueSite,MilestoneRef> shared_value_reads;
   std::set<SharedValueSite> shared_value_sites;
   std::vector<bool> shared_value_instructions;
+  // Reads of runtime-written tensor maps (RecoverTensorMaps): each TMA's descriptor read and the
+  // tensormap.cp_fenceproxy it reads from (write site: lane 0 of the copying warp). Their endpoints
+  // are kept in shared_value_writes (the copy's 32 lane writes) and shared_value_reads.
+  std::vector<SharedValueDependency> tensor_map_dependencies;
+  std::set<SharedValueSite> tensor_map_copies;
   Coordinates current_coordinates{};
   std::map<std::string, std::string> limitations;
   // Every consumed CTA's tensormap.cp_fenceproxy destinations (object, region base), checked
@@ -725,12 +730,19 @@ void ModelLowerer::Impl::Mma(Thread &t, const RecordView &e,
   const bool nvfp4 = scaled && Has(i, "kind::mxf4nvf4");
   const bool mxf4 = scaled && Has(i, "kind::mxf4");
   const bool packed_fp4 = nvfp4 || mxf4;
-  if ((sparse ? (ops.size() != 7 && ops.size() != 8) : (ops.size() < 5 || ops.size() > 7)) || Has(i, "ws") ||
+  // PTX 9.2 .ws form: [d], a, b, idesc, enable-input-d {, zero-column-mask-desc}.
+  const bool ws = Has(i, "ws");
+  if ((ws ? (ops.size() != 5 && ops.size() != 6) || sparse || scaled || Has(i, "cta_group::2") ||
+                ops[4].starts_with('{')
+          : sparse ? (ops.size() != 7 && ops.size() != 8) : (ops.size() < 5 || ops.size() > 7)) ||
       Has(i, "ashift") ||
       std::any_of(i.modifiers.begin(), i.modifiers.end(),
                   [](const auto &m) { return m.starts_with("collector::"); }))
     throw SemanticError("tcgen_mma_variant",
                         "MMA variant has additional operand semantics");
+  // A zero descriptor clears Non-Zero Mask and Column Shift: every B column is used.
+  if (ws && ops.size() == 6 && Descriptor(e, ops[5], "MMA zero-column mask") != 0)
+    throw SemanticError("tcgen_mma_variant", "nonzero zero-column mask masks or shifts B columns");
   unsigned group = Has(i, "cta_group::2") ? 2 : 1;
   std::vector<std::string> kinds;
   for (const auto &m : i.modifiers)
@@ -766,6 +778,8 @@ void ModelLowerer::Impl::Mma(Thread &t, const RecordView &e,
   auto desc = scaled ? DecodeBlockScaledDescriptor(idesc, kinds[0]) : DecodeMmaDescriptor(kinds[0], idesc);
   if (desc.sparse != sparse)
     throw SemanticError("tcgen_mma_descriptor", "MMA sparsity bit disagrees with opcode");
+  if (ws && !WsMmaShape(desc.m, desc.n))
+    throw SemanticError("tcgen_mma_variant", ".ws MMA shape is outside the PTX shape list");
   auto footprint_instruction = i;
   auto footprint_idesc = idesc;
   if (scaled) {
@@ -951,6 +965,7 @@ void ModelLowerer::Impl::Mma(Thread &t, const RecordView &e,
   auto id = Next();
   MmaValueLayout value_layout{id,idesc,a ? a->address : shared_a,shared_b,d.address,a.has_value(),group,{}};
   if (scaled) value_layout.scale_bases={scale_addresses[0].address,scale_addresses[1].address};
+  value_layout.ws = ws;
   plan.writes.resize(writes.size());
   std::set<std::size_t> paired;
   for (std::size_t k = 0; k < reads.size(); ++k) {
@@ -986,6 +1001,8 @@ void ModelLowerer::Impl::Mma(Thread &t, const RecordView &e,
                          std::to_string(desc.m) + ":" + std::to_string(desc.n) +
                          ":" + d.resource + ":" +
                          std::to_string(d.address);
+  // .ws and non-.ws MMAs use different D layouts; they never share a pipeline.
+  if (ws) pipeline += ":ws";
   const auto previous_mma = t.pipeline.find(pipeline);
   // Operand reads before a D fragment's watermark already precede it: they precede
   // the previous MMA's write of the same fragment on this pipeline (directly, or
@@ -1604,6 +1621,9 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
                                                          binding.offset+t.actor.lane*4}),4};
       };
       const auto head=Copy(t,e,{fragment(ops.at(1),"shared")},{fragment(ops.at(0),"global")});
+      // A copy a runtime tensor map read reads from: its write effect (after the one read).
+      if (const SharedValueSite site{current_coordinates,t.actor.warp.value()*32,e.Key()}; tensor_map_copies.contains(site))
+        shared_value_writes[site].push_back(Ref(head,Milestone::kEffect,1));
       const auto tail=Emit(t,e,Await{{Ref(head)}});
       auto &entry=aligned[Key(t.actor.warp.value(),e)]; entry.calls[t.actor.lane]={head,tail}; entry.completions=true;
     }
@@ -1829,6 +1849,16 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
   if (operation == "tma_load_complete_tx" || operation == "tma_bulk_tensor") {
     ProfileScope profile("frontend.model.tma");
     auto transfer = resources->Tma(e, TmaRequest(contract, operation == "tma_bulk_tensor"));
+    // A runtime-written tensor map is read (tensormap proxy) between the TMA's issue and its
+    // completion: an access of its own, issued with the TMA, that completes before the TMA's
+    // complete_tx (load) or its bulk-group completion (store; not its reads, so not wait_group.read).
+    std::optional<InstId> descriptor;
+    if (transfer.descriptor) {
+      AsyncEffect read{{MemoryEffect{AccessMode::kRead, transfer.descriptor->first, transfer.descriptor->second}}};
+      descriptor = Async(t, e, {std::move(read)});
+      shared_value_reads.emplace(SharedValueSite{current_coordinates, t.actor.warp.value() * 32 + t.actor.lane, e.Key()},
+                                 Ref(*descriptor, Milestone::kEffect, 0));
+    }
     auto id = Next();
     std::vector<AsyncEffect> effects;
     std::map<std::tuple<AddressId, std::optional<std::uint64_t>, std::uint64_t>, std::uint32_t>
@@ -1860,10 +1890,13 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
       throw SemanticError("tma_completion", "completion routing mismatch");
     for (std::size_t k = 0; k < transfer.completions.size(); ++k) {
       auto [barrier, size] = transfer.completions[k];
-      effects.push_back(
-          {{}, CompleteTxEffect{barrier, size}, destinations.at(ranks[k])});
+      auto refs = destinations.at(ranks[k]);
+      if (descriptor) refs.push_back(Ref(*descriptor, Milestone::kEffect, 0));
+      effects.push_back({{}, CompleteTxEffect{barrier, size}, std::move(refs)});
     }
-    Async(t, e, std::move(effects));
+    std::vector<MilestoneRef> completion;
+    if (descriptor && transfer.completions.empty()) completion.push_back(Ref(*descriptor));
+    Emit(t, e, AsyncOp{AsyncOpId(id.value()), std::move(effects), std::move(completion)});
     if (transfer.completions.empty())
       t.bulk.Issue(id);
     return;
@@ -2295,6 +2328,12 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_add
   for(const auto &dependency:shared_dependencies)shared_value_sites.insert(dependency.read);
   for(const auto &site:shared_value_sites)shared_value_instructions.at(site.instruction.instruction)=true;
   shared_value_dependencies.insert(shared_value_dependencies.end(),shared_dependencies.begin(),shared_dependencies.end());
+  tensor_map_copies.clear();
+  if(const auto &reads=cta_facts.TensorMapReads())
+    for(const auto &[read,write]:*reads) {
+      tensor_map_dependencies.push_back({{coordinates,write.writer_warp*32,write.write},{coordinates,read.first,read.second}});
+      tensor_map_copies.insert(tensor_map_dependencies.back().write);
+    }
   Resources r(cta_facts, cta_facts.frame(), addresses, barriers,
               SlotConfig{Consumer::Lowering, std::move(value_addresses)});
   resources = &r;
@@ -2862,6 +2901,30 @@ LoweringResult ModelLowerer::Impl::Finish() {
     for(auto from:write->second)orders.push_back({"shared_constant_read_from",from,read->second,
         "The write supplying a frontend shared-memory constant must happen before its read; interfering writes are checked by memory analysis."});
   }
+  // Each copy's lane writes happen before every descriptor read selected from it: one order per
+  // lane write, its reads one shared target domain.
+  std::map<SharedValueSite,std::vector<MilestoneRef>> tensor_map_targets;
+  for(const auto &dependency:tensor_map_dependencies) {
+    const auto read=shared_value_reads.find(dependency.read);
+    if(read==shared_value_reads.end()) {
+      Diagnostic("tensor_map_read_unmodeled","A runtime tensor map read has no modeled descriptor access.",
+                 nullptr, nullptr, Json::object(), units ? units->Weight(units->Linear(dependency.read.cta)) : 1);
+      continue;
+    }
+    tensor_map_targets[dependency.write].push_back(read->second);
+  }
+  for(auto &[site,targets]:tensor_map_targets) {
+    const auto write=shared_value_writes.find(site);
+    if(write==shared_value_writes.end() || write->second.size()!=32) {
+      Diagnostic("tensor_map_source_unmodeled","A runtime tensor map's copy has no modeled write for every lane.",
+                 nullptr, nullptr, Json::object(), units ? units->Weight(units->Linear(site.cta)) : 1);
+      continue;
+    }
+    const SharedOptional<std::vector<MilestoneRef>> domain(std::move(targets));
+    for(auto from:write->second)orders.push_back({"tensor_map_read_from",from,domain->front(),
+        "A runtime tensor map's selected copy must happen before the TMA reads it; interfering writes are checked by memory analysis.",
+        std::nullopt,domain});
+  }
   ProfileCall("frontend.model.seal_families",[&]{source.program.instructions.sealThreadFamilies();});
   LoweringResult result;
   result.mma_layouts = std::move(mma_layouts);
@@ -2902,6 +2965,9 @@ LoweringResult ModelLowerer::Impl::Finish() {
       {"implementation", "cpp"}};
   result.metadata["shared_constant_propagation"]={{"read_from_dependencies",shared_value_dependencies.size()},
       {"validation","pending_backend"},{"representation","sparse_known_bytes"}};
+  if(!tensor_map_dependencies.empty())
+    result.metadata["runtime_tensor_maps"]={{"read_from_dependencies",tensor_map_dependencies.size()},
+        {"copies",tensor_map_targets.size()},{"locations",tensormap_destinations.size()}};
   result.metadata["source_binding_storage"] = {
       {"logical_instructions", source.program.instructions.size()},
       {"stored_bindings", source.program.instructions.storedBindingCount()},

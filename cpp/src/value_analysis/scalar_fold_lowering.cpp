@@ -32,6 +32,7 @@
 #include <map>
 #include <memory>
 #include <numeric>
+#include <ranges>
 #include <set>
 #include <sstream>
 #include <string_view>
@@ -1436,17 +1437,14 @@ class Lower {
     output_cta.value=input.instanceOrigin(output.value).cta_coordinates;
     output_cta.writer=input.node(output.writer.node).instanceOrigin(output.writer.instance).cta_coordinates;
   }
-  // Class mode: an output built from the records [begin, end) of
-  // memory.outputs (those flagged in `members`, when given) belongs to one
-  // unit only if every record's store does; otherwise its unit is unknown
-  // and lifting refuses at instantiation. Callers bound `end` by
-  // memory.outputs.size(), and `members` has one flag per record.
-  // O(end - begin), class mode only.
-  void includeRecordUnits(std::size_t begin,std::size_t end,const std::vector<bool>* members=nullptr) {
+  // Class mode: an output built from `records` of memory.outputs belongs to
+  // one unit only if every record's store does; otherwise its unit is
+  // unknown and lifting refuses at instantiation. Callers bound the records
+  // by memory.outputs.size(). O(records), class mode only.
+  void includeRecordUnits(std::ranges::input_range auto&& records) {
     if(!options.unit_lifting || !output_cta.writer)return;
     const auto unit=unitOrigin(*output_cta.writer);
-    for(auto k=begin;k<end;++k) {
-      if(members && !(*members)[k])continue;
+    for(const std::size_t k:records) {
       const auto& writer=memory.outputs[k].writer;
       const auto cta=input.node(writer.node).instanceOrigin(writer.instance).cta_coordinates;
       if(!cta || unitOrigin(*cta)!=unit){output_cta.writer.reset();return;}
@@ -1819,6 +1817,70 @@ class Lower {
     auto target=type.toString();if(result.graph.type(x)==target && step=="Bitcast")return x;
     return result.graph.convert(std::move(x),target,std::move(step));
   }
+  // A whole-byte matrix constant whose bits are all zero (the frontend's TMA
+  // out-of-bounds zero fill): every byte of it reads as zero.
+  bool zeroMatrixLiteral(const v::Value& value) const {
+    if(value.conversion() || !value.indices().empty() || value.threadSelector() || value.pointer())return false;
+    const auto& type=input.type(value);
+    if(!type.isMatrix() || !type.hasStaticShape() || type.element().isParameterized() || type.bitSize()%8)return false;
+    const auto* constant=dynamic_cast<const v::ConstantOp*>(&input.definingNode(value).operation());
+    return constant && !constant->pointer() && constant->literal()=="0";
+  }
+  // Whether every byte of a Load is backed by zero matrix literals, through its
+  // normalized read only (the substitution read() projects). Any other source,
+  // initial memory or an uncertain view is not zero. Memoized per operand read
+  // instance; nested source reads are not, so the bounded answer is order-free.
+  struct MemoryInstanceHash {
+    std::size_t operator()(const MemoryInstance& x)const noexcept {
+      const auto h=std::hash<std::size_t>{}(x.node);
+      return h^(std::hash<std::size_t>{}(x.instance)+0x9e3779b97f4a7c15ULL+(h<<6)+(h>>2));
+    }
+  };
+  std::unordered_map<MemoryInstance,bool,MemoryInstanceHash> zero_reads;
+  bool zeroRead(v::Value value,unsigned depth=0) {
+    value=input.canonicalInterpretation(value);
+    if(zeroMatrixLiteral(value))return true;
+    if(depth>=8 || value.conversion() || !value.indices().empty() || value.threadSelector() || value.pointer() ||
+       !dynamic_cast<const v::LoadOp*>(&input.definingNode(value).operation()))return false;
+    const MemoryInstance key{value.nodeId(),value.instanceIndex()};
+    if(const auto found=zero_reads.find(key);!depth && found!=zero_reads.end())return found->second;
+    // An indexed region projects its use's prototype; only an Exact use keeps
+    // that prototype for every member (CoordinateMap only remaps coordinates).
+    const auto zeroView=[&](const MemoryView& view) {
+      if(const auto& source=view.indexed_source) {
+        auto use=source->root;
+        while(use && use->kind==IndexedSourceUse::Kind::CoordinateMap && use->children.size()==1)use=use->children[0];
+        return !source->zero_mask && use && use->kind==IndexedSourceUse::Kind::Exact && zeroMatrixLiteral(use->prototype);
+      }
+      return !view.blocks.empty() && std::all_of(view.blocks.begin(),view.blocks.end(),[&](const ViewBlock& block) {
+        const auto* source=block.source<view.sources.size()?std::get_if<v::Value>(&view.sources[block.source]):nullptr;
+        return source && zeroRead(*source,depth+1);
+      });
+    };
+    bool zero=false;
+    if(!memory.symbolic_initial_reads.contains(key) && !memory.initialRead(key))
+      if(const auto found=memory.normalizedRead(key)) {
+        if(const auto* r=std::get_if<const v::Value*>(&*found))zero=zeroRead(**r,depth+1);
+        else if(const auto* r=std::get_if<const MemoryView*>(&*found))zero=zeroView(**r);
+        else if(const auto* r=std::get_if<const PartitionedRead*>(&*found))
+          zero=!(*r)->regions.empty() && std::all_of((*r)->regions.begin(),(*r)->regions.end(),
+              [&](const ReadRegion& region){return zeroView(region.view);});
+      }
+    if(!depth)zero_reads.emplace(key,zero);
+    return zero;
+  }
+  // D_in of a tcgen05 MMA whose product terms are all +0: the accumulator when
+  // enable-input-d is a known nonzero (an unguarded D load), +0 when it is a
+  // known zero. A guarded D load (unknown predicate) keeps the reduction path.
+  // `cell` is the byte stride of D_in elements, as in each caller's reduction.
+  std::optional<s::Ref> zeroProductMma(const v::OperandsRef& args,bool accumulate,std::size_t accumulator,
+      const Offset& index,std::int64_t cell,const v::ElementType& dtype,const v::ElementType& element) {
+    if(spatial_count || !(zeroRead(args.at(0)) || zeroRead(args.at(1))))return std::nullopt;
+    if(!accumulate)return cast(result.graph.constant(dtype.toString(),"0"),element);
+    const auto* load=dynamic_cast<const v::LoadOp*>(&input.definingNode(args.at(accumulator)).operation());
+    if(!load || load->attributes().guarded)return std::nullopt;
+    return cast(project(args.at(accumulator),times(index,cell),dtype),element);
+  }
   v::Value selected(v::Value value){
     if(!value.threadSelector())return value;
     const auto thread=known(selected(*value.threadSelector()));
@@ -1960,6 +2022,8 @@ class Lower {
         dynamic_cast<const v::MatMulOp*>(&operation) ||
         dynamic_cast<const v::TcgenMmaOp*>(&operation)))
       return fit(value_type.bitSize()/8,std::uint64_t(hi));
+    // An all-zero matrix constant is one span: its pieces project to zero (projectImpl).
+    if(zeroMatrixLiteral(value))return fit(value_type.bitSize()/8,std::uint64_t(hi));
     if(value.conversion() || !dynamic_cast<const v::LoadOp*>(&operation))return single("read_span_not_matrix_or_load");
     if(auto initial=memory.initialRead({value.nodeId(),value.instanceIndex()}))
       return fit(initial->region.bytes,std::uint64_t(hi));
@@ -2195,6 +2259,119 @@ class Lower {
     }
     return cast(packed,type);
   }
+  // The region of `split` holding every byte the query can read, if any.
+  const ReadRegion* coveringRegion(const PartitionedRead& split,const Offset& offset,const v::ElementType& type) {
+    const auto [lo,hi]=bounds(offset);
+    if(lo>=0 && hi>=lo)for(const auto& region:split.regions)
+      if(std::uint64_t(lo)>=region.begin && std::uint64_t(hi)<=region.begin+region.bytes &&
+         type.width()/8<=region.begin+region.bytes-std::uint64_t(hi) &&
+         (!split.template_domains || viewOffset(region.view.blocks.at(0),offset,type)))return &region;
+    return nullptr;
+  }
+  // A partition whose regions repeat with one period P (TMA zero fill of a
+  // partial tile: per matrix row, initial bytes then zero bytes) re-encoded as
+  // one strided region per phase: phase j of n periods gets the outer axis
+  // (n, source step, P). Exact: every byte keeps its source byte; a zero-literal
+  // phase reads its first period's literal, whose bytes are zero too. Only
+  // maximal runs of at least two whole periods are re-encoded, with the next
+  // region of the same shape as the one candidate period. Built once per
+  // partition in O(R log R + checked phases), R = stored regions; consulted
+  // only when the stored partition has no region for a query.
+  std::map<const PartitionedRead*,std::optional<PartitionedRead>> periodic_partitions;
+  const PartitionedRead* periodicPartition(const PartitionedRead& split) {
+    auto [entry,inserted]=periodic_partitions.try_emplace(&split);
+    if(!inserted)return entry->second?&*entry->second:nullptr;
+    const auto& regions=split.regions;
+    struct Phase {const InitialMemorySymbol* initial;std::uint64_t address;};
+    const auto phase=[&](const ReadRegion& r)->std::optional<Phase> {
+      const auto& view=r.view;
+      if(view.indexed_source || view.sources.size()!=1 || view.blocks.size()!=1)return {};
+      const auto& b=view.blocks[0];
+      if(b.source || b.result_offset!=r.begin || !r.bytes)return {};
+      if(const auto* initial=std::get_if<InitialMemorySymbol>(&view.sources[0])) {
+        const auto address=static_cast<unsigned __int128>(initial->region.offset)+b.source_offset;
+        if(address>std::uint64_t(INT64_MAX))return {};
+        return Phase{initial,static_cast<std::uint64_t>(address)};
+      }
+      if(zeroMatrixLiteral(std::get<v::Value>(view.sources[0])))return Phase{nullptr,0};
+      return {};
+    };
+    const auto shape=[&](const ReadRegion& a,const ReadRegion& b) {
+      const auto pa=phase(a),pb=phase(b);
+      return pa && pb && a.bytes==b.bytes && a.view.blocks[0].bytes==b.view.blocks[0].bytes &&
+          a.view.blocks[0].axes==b.view.blocks[0].axes && !pa->initial==!pb->initial &&
+          (!pa->initial || pa->initial->region.allocation==pb->initial->region.allocation);
+    };
+    // Next region of the same shape: keyed by shape, scanned from the back.
+    std::vector<std::size_t> next(regions.size(),regions.size());
+    {
+      std::map<std::tuple<std::uint64_t,std::uint64_t,std::vector<std::uint64_t>,std::string>,std::size_t> later;
+      for(auto i=regions.size();i-->0;) {
+        const auto p=phase(regions[i]);
+        if(!p)continue;
+        const auto& b=regions[i].view.blocks[0];
+        std::vector<std::uint64_t> axes;
+        for(const auto& axis:b.axes){axes.push_back(axis.count);axes.push_back(axis.source_stride);axes.push_back(axis.result_stride);}
+        auto [found,fresh]=later.try_emplace({regions[i].bytes,b.bytes,std::move(axes),
+            p->initial?p->initial->region.allocation:std::string()},i);
+        if(!fresh){next[i]=found->second;found->second=i;}
+      }
+    }
+    PartitionedRead result{split.type,{},true};
+    bool changed=false;
+    for(std::size_t i=0;i<regions.size();) {
+      const auto q=next[i]-i;
+      std::size_t periods=0;
+      std::vector<std::uint64_t> steps;
+      if(next[i]<regions.size() && regions[next[i]].begin>regions[i].begin) {
+        const auto period=regions[next[i]].begin-regions[i].begin;
+        const auto matches=[&](std::size_t p) {
+          if(i+(p+1)*q>regions.size())return false;
+          for(std::size_t j=0;j<q;++j) {
+            const auto& first=regions[i+j];const auto& later=regions[i+p*q+j];
+            if(!shape(first,later) || __int128(later.begin)!=__int128(first.begin)+__int128(p)*period)return false;
+            const auto a=phase(first),b=phase(later);
+            if(!a->initial)continue;
+            if(p==1){if(b->address<a->address)return false;steps[j]=b->address-a->address;}
+            else if(__int128(b->address)!=__int128(a->address)+__int128(p)*steps[j])return false;
+          }
+          return true;
+        };
+        steps.assign(q,0);
+        periods=1;
+        while(matches(periods))++periods;
+      }
+      const auto period=periods<2?0:regions[next[i]].begin-regions[i].begin;
+      std::vector<ReadRegion> merged;
+      for(std::size_t j=0;j<q && periods>=2;++j) {
+        auto region=regions[i+j];
+        // The period must enclose the phase, so that it is the outermost radix.
+        if(region.bytes>period)break;
+        auto& b=region.view.blocks[0];
+        if(auto* s=std::get_if<InitialMemorySymbol>(&region.view.sources[0])) {
+          const auto origin=phase(region)->address;
+          auto end=static_cast<unsigned __int128>(s->region.offset)+s->region.bytes;
+          for(std::size_t p=1;p<periods;++p) {
+            const auto& later=std::get<InitialMemorySymbol>(regions[i+p*q+j].view.sources[0]);
+            end=std::max(end,static_cast<unsigned __int128>(later.region.offset)+later.region.bytes);
+          }
+          s->region.offset=origin;s->region.bytes=static_cast<std::uint64_t>(end-origin);
+          s->type=v::ValueType::matrix(v::ElementType::bit(8),{s->region.bytes});
+          b.source_offset=0;
+        }
+        const auto bytes=static_cast<unsigned __int128>(periods-1)*period+region.bytes;
+        if(bytes>std::uint64_t(INT64_MAX) || static_cast<unsigned __int128>(region.begin)+bytes>std::uint64_t(INT64_MAX))break;
+        b.axes.push_back({periods,steps[j],period});
+        region.bytes=static_cast<std::uint64_t>(bytes);region.view.kind=MemoryViewKind::Layout;
+        merged.push_back(std::move(region));
+      }
+      if(merged.size()!=q || periods<2){result.regions.push_back(regions[i++]);continue;}
+      for(auto& region:merged)result.regions.push_back(std::move(region));
+      i+=periods*q;changed=true;
+    }
+    if(changed)entry->second=std::move(result);
+    return entry->second?&*entry->second:nullptr;
+  }
   struct PartitionLattice {const MemoryView* view;Offset offset;};
   const MemoryView* partitionGrid(const PartitionedRead& split,v::Value reader,
                                   const v::ElementType& type) {
@@ -2367,13 +2544,7 @@ class Lower {
   }
   s::Ref partition(const PartitionedRead& split,v::Value reader,const Offset& offset,const v::ElementType& type) {
     SENTRYWARD_LEDGER(ledger->add("partition_queries");ledger->add("partition_regions_available",split.regions.size()));
-    const auto [lo,hi]=bounds(offset);
-    if(lo>=0 && hi>=lo)for(const auto& region:split.regions)
-      if(std::uint64_t(lo)>=region.begin && std::uint64_t(hi)<=region.begin+region.bytes &&
-         type.width()/8<=region.begin+region.bytes-std::uint64_t(hi) &&
-         (!split.template_domains || viewOffset(region.view.blocks.at(0),offset,type))) {
-        return view(region.view,offset,type);
-      }
+    if(const auto* region=coveringRegion(split,offset,type))return view(region->view,offset,type);
     // A template-domain partition is not necessarily a complete rectangular
     // formula: independent row/column operands and causal zero masks can span
     // many such regions. Reuse the cached grid proof over retained raw pieces
@@ -2382,6 +2553,8 @@ class Lower {
     if(const auto* grid=partitionGrid(split,reader,type))return view(*grid,offset,type);
     if(!split.template_domains)
       if(auto lattice=partitionLattice(split,reader,offset,type))return view(*lattice->view,lattice->offset,type);
+    if(const auto* periodic=periodicPartition(split))
+      if(const auto* region=coveringRegion(*periodic,offset,type))return view(region->view,offset,type);
     refinePartitionDomain(split,offset,type);
     SENTRYWARD_AUDIT({
       (void)audit;
@@ -2838,31 +3011,15 @@ class Lower {
     if(const auto* p=dynamic_cast<const v::PtxScalarOp*>(&op))attr+=" source_type="+p->sourceType().toString();
     return emitOperation(std::string(op.name()),type.toString(),std::move(operands),attr);
   }
-  // Pull a reduction's index progression through stored read domains. This
-  // never asks whether the source expressions have a common mathematical form.
-  std::optional<std::vector<algorithm::AffineDomain>> reductionDomains(
-      v::Value value,const Offset& offset,std::uint64_t stride,
-      const v::ElementType& type,std::uint64_t count) {
-    SENTRYWARD_LEDGER(ledger->add("reduction_domain_queries"));
+  // The K domains of a template-domain partition: one interval or AP per
+  // stored region the contraction crosses; none unless they cover K.
+  std::optional<std::vector<algorithm::AffineDomain>> regionDomains(const PartitionedRead& split,
+      const Offset& offset,std::uint64_t stride,const v::ElementType& type,std::uint64_t count) {
     const auto [lo,hi]=bounds(offset);
-    if(lo<0 || hi<lo || !stride || !count || !type.width() || type.width()%8)return {};
-    const auto read=memory.normalizedRead({value.nodeId(),value.instanceIndex()});
-    const auto* split=read?std::get_if<const PartitionedRead*>(&*read):nullptr;
-    if(split)if(const auto* grid=partitionGrid(**split,value,type)) {
-      const auto end=static_cast<unsigned __int128>(hi)+
-          static_cast<unsigned __int128>(count-1)*stride+type.width()/8;
-      if(end<=grid->type.bitSize()/8)
-        return std::vector<algorithm::AffineDomain>{{0,1,count}};
-    }
-    if(!split || !(*split)->template_domains) {
-      if(readSpan(value,offset,stride,type,count)==count)
-        return std::vector<algorithm::AffineDomain>{{0,1,count}};
-      return {};
-    }
     std::vector<algorithm::AffineDomain> result;
     std::uint64_t covered=0;
     const auto width=type.width()/8;
-    for(const auto& region:(*split)->regions) {
+    for(const auto& region:split.regions) {
       // Filter whole stored row groups before interpreting their local axes.
       // Different source templates may own disjoint row intervals.
       const auto query_end=static_cast<unsigned __int128>(hi)+
@@ -2954,6 +3111,32 @@ class Lower {
     }
     if(covered!=count)return {};
     return result;
+  }
+  // Pull a reduction's index progression through stored read domains. This
+  // never asks whether the source expressions have a common mathematical form.
+  std::optional<std::vector<algorithm::AffineDomain>> reductionDomains(
+      v::Value value,const Offset& offset,std::uint64_t stride,
+      const v::ElementType& type,std::uint64_t count) {
+    SENTRYWARD_LEDGER(ledger->add("reduction_domain_queries"));
+    const auto [lo,hi]=bounds(offset);
+    if(lo<0 || hi<lo || !stride || !count || !type.width() || type.width()%8)return {};
+    const auto read=memory.normalizedRead({value.nodeId(),value.instanceIndex()});
+    const auto* split=read?std::get_if<const PartitionedRead*>(&*read):nullptr;
+    if(split)if(const auto* grid=partitionGrid(**split,value,type)) {
+      const auto end=static_cast<unsigned __int128>(hi)+
+          static_cast<unsigned __int128>(count-1)*stride+type.width()/8;
+      if(end<=grid->type.bitSize()/8)
+        return std::vector<algorithm::AffineDomain>{{0,1,count}};
+    }
+    if(!split || !(*split)->template_domains) {
+      if(readSpan(value,offset,stride,type,count)==count)
+        return std::vector<algorithm::AffineDomain>{{0,1,count}};
+      if(split)if(const auto* periodic=periodicPartition(**split))return regionDomains(*periodic,offset,stride,type,count);
+      return {};
+    }
+    if(auto planned=regionDomains(**split,offset,stride,type,count))return planned;
+    if(const auto* periodic=periodicPartition(**split))return regionDomains(*periodic,offset,stride,type,count);
+    return {};
   }
   s::Ref warpMma(v::Value value,const Offset& index){
     auto [lo,hi]=bounds(index);
@@ -3085,6 +3268,8 @@ class Lower {
       fail("scalar_fold_mma_shape","FP4 output shape disagrees with descriptor");
     const auto row=quotient(index,d.n),col=remainder(index,d.n);
     const auto dtype=v::ElementType::floating(32);
+    // A zero-fill A or B makes every scaled product +0, whatever the scales.
+    if(auto zero=zeroProductMma(args,attr.accumulate,3,index,4,dtype,dst.element()))return *zero;
     auto& progress=resumeReduction([&]{return attr.accumulate?
         project(args.at(3),times(index,4),dtype):result.graph.constant("f32","0");});
     ReductionRequests requests(requested,progress);
@@ -3214,6 +3399,9 @@ class Lower {
     const auto k=a.shape()[1];
     if(a.shape()[0]!=rows || (native?(b.shape()[0]!=cols || b.shape()[1]!=k):(b.shape()[0]!=k || b.shape()[1]!=cols)))
       fail("scalar_fold_mma_shape","MMA operand shapes disagree with scalar contraction");
+    // A zero-fill A or B makes every product term +0: no plan, pieces or cuts.
+    if(native)if(auto zero=zeroProductMma(args,accumulate,accumulator,index,
+        integer(dst.element().width()/8),dtype,dst.element()))return *zero;
     const auto level=static_cast<unsigned>(domains.size());
     // Publish only a complete plan. Domain refinement may throw; leaving an
     // empty cache entry then would silently disable planning on the retry.
@@ -3930,6 +4118,9 @@ class Lower {
     auto [lo,hi]=bounds(offset);
     if(lo<0 || hi<0 || std::uint64_t(hi)>type.bitSize()/8 || desired.width()/8>type.bitSize()/8-std::uint64_t(hi))
       fail("scalar_fold_invalid_index","scalar projection exceeds producer value");
+    // Inside an all-zero matrix every requested byte is zero, whatever the element boundaries.
+    if(desired.width()%8==0 && desired.width()<=64 && zeroMatrixLiteral(value))
+      return cast(result.graph.constant("b"+std::to_string(desired.width()),"0"),desired);
     auto index=quotient(offset,width),inner=remainder(offset,width);
     auto [il,ih]=bounds(inner);
     if(il<0 || ih<0 || std::uint64_t(ih)+desired.width()/8>width)
@@ -4935,9 +5126,10 @@ class Lower {
              found!=memory.normalized_output_groups.end()) {
             const auto& group=found->second;
             beginItem(output_index);
-            if(group.end<=output_index || group.end>memory.outputs.size())
+            if(group.records.empty() || group.records.front()!=output_index ||
+               group.records.back()>=memory.outputs.size())
               fail("scalar_fold_prerequisite","invalid normalized output record range");
-            includeRecordUnits(output_index,group.end,&memory.normalized_output_members);
+            includeRecordUnits(group.records);
             for(const auto& output:group.domains) {
               const auto width=output.element_type.width()/8;
               if(!width || !output.region.bytes || output.region.bytes%width)
@@ -4994,7 +5186,7 @@ class Lower {
           // output domain. Plan/validate that domain before constructing any
           // scalar expressions; do not build N outputs and recover it later.
           if(end-output_index>1) {
-            includeRecordUnits(output_index,end);
+            includeRecordUnits(std::views::iota(output_index,end));
             if(spatialOutput(std::span(memory.outputs).subspan(output_index,end-output_index))) {
               output_index=end-1;continue;
             }

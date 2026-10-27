@@ -519,7 +519,20 @@ Fragment Resources::Memory(const RecordView &e, const MemoryRequest &request) {
   return interner_.Commit(slots_->Memory(e, request));
 }
 TmaAccesses Resources::Tma(const RecordView &e, const TmaRequest &request) {
-  return interner_.Commit(slots_->Tma(e, request));
+  auto result = interner_.Commit(slots_->Tma(e, request));
+  const auto &reads = facts.TensorMapReads();
+  if (const auto thread = ActiveThread(); reads && thread && reads->contains({*thread, e.Key()})) {
+    auto tensor = Trim(OperandTexts(facts.module(), facts.function().instructions[e.instruction_id()])
+                           .at(request.store ? 0 : 1));
+    tensor = "[" + Trim(std::string_view(tensor).substr(1, tensor.find(',') - 1)) + "]";
+    const auto &binding = Binding(Memory(e, MemoryRequest(tensor, Json::object(), 128, "global")).first);
+    if (!binding.expression.empty())
+      throw SemanticError("tensor_map_fragment", "a runtime tensor map read requires a constant region");
+    // The stored alias is not carried.
+    result.descriptor = Fragment{interner_.Apply(ConstantStep{
+        AllocationKey::Opaque(binding.address_space, binding.allocation, {}), binding.offset}), 128};
+  }
+  return result;
 }
 SlotOutcome<ResolvedFootprint> Resources::ReplayMemory(const RecordView &e, const MemoryRequest &request) {
   return slots_->Memory(e, request);

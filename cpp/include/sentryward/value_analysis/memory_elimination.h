@@ -200,7 +200,8 @@ struct OutputViewDomain final {
   std::uint64_t source_byte_offset = 0;
 };
 struct OutputViewGroup final {
-  std::size_t end;  // Upper bound on member records, not a contiguous range.
+  // Member records, ascending; records of other groups may lie between them.
+  std::vector<std::size_t> records;
   std::vector<OutputViewDomain> domains;
 };
 

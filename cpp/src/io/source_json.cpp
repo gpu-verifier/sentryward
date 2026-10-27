@@ -15,6 +15,7 @@
 #include <optional>
 #include <set>
 #include <stdexcept>
+#include <tuple>
 #include <utility>
 #include <unordered_map>
 #include <unordered_set>
@@ -30,6 +31,7 @@
 #include "sentryward/algorithm/memory/access.h"
 #include "sentryward/algorithm/source_ir/validator.h"
 #include "sentryward/algorithm/source_ir/initialization_recovery.h"
+#include "sentryward/algorithm/source_ir/unobserved_synchronization.h"
 
 namespace sentryward::algorithm {
 namespace {
@@ -1026,13 +1028,24 @@ std::vector<LifecycleAnswer> CheckRequiredOrders(
   return answers;
 }
 
-std::optional<std::string> ValidateSharedConstantWrites(const SourceArtifact& input,
+// A frontend value's read-from orders (required_orders of `kind`) in one address space: a
+// shared-memory constant, or a runtime tensor map in global memory.
+struct ReadFromValues {
+  std::string_view kind, space, subject, chosen, memory, validation;
+};
+constexpr ReadFromValues kSharedConstants{"shared_constant_read_from","shared","A shared constant",
+    "constant source","shared-memory","Shared constant validation"};
+constexpr ReadFromValues kRuntimeTensorMaps{"tensor_map_read_from","global","A runtime tensor map",
+    "tensor map copy","global-memory","Tensor map validation"};
+
+std::optional<std::string> ValidateReadFromWrites(const SourceArtifact& input,
     const PassCertificate& certificate,const OriginMap& lowered,
-    HbReachability& hb) {
+    HbReachability& hb,const ReadFromValues& values) {
   ProfileScope profile("frontend_values.interference");
+  const auto text=[](auto... parts){std::string result;((result+=parts),...);return result;};
   std::unordered_set<std::uint32_t> wanted;
   for(std::size_t i=0;i<input.required_orders.size();++i)
-    if(input.required_orders[i].kind.view()=="shared_constant_read_from") {
+    if(input.required_orders[i].kind.view()==values.kind) {
       const auto& order=input.required_orders[i];
       wanted.insert(Resolve(lowered,order.from).value());
       for(auto target:order.targets())wanted.insert(Resolve(lowered,target).value());
@@ -1045,7 +1058,7 @@ std::optional<std::string> ValidateSharedConstantWrites(const SourceArtifact& in
     const auto* id=std::get_if<AddressId>(&access.address);
     if(!id || !access.bytes || !*access.bytes)return {};
     const auto found=bindings.find(id->value());
-    if(found==bindings.end() || found->second->address_space!="shared" ||
+    if(found==bindings.end() || found->second->address_space!=values.space ||
         !found->second->expression.empty() || *access.bytes>UINT64_MAX-found->second->offset)return {};
     return Span{found->second->allocation,found->second->offset,found->second->offset+*access.bytes};
   };
@@ -1060,7 +1073,7 @@ std::optional<std::string> ValidateSharedConstantWrites(const SourceArtifact& in
   struct Index { std::map<std::uint64_t,std::vector<Query>> starts; std::uint64_t max_width=0; };
   std::map<std::string,Index> queries;
   for(std::size_t i=0;i<input.required_orders.size();++i) {
-    if(input.required_orders[i].kind.view()!="shared_constant_read_from")continue;
+    if(input.required_orders[i].kind.view()!=values.kind)continue;
     const auto& order=input.required_orders[i];
     const auto write=Resolve(lowered,order.from);
     for(auto target:order.targets()) {
@@ -1073,17 +1086,17 @@ std::optional<std::string> ValidateSharedConstantWrites(const SourceArtifact& in
         auto& index=queries[x.allocation]; index.max_width=std::max(index.max_width,end-begin);
         index.starts[begin].push_back({begin,end,write,read}); found=true;
       }
-    if(!found)return "A shared constant's supplying write and read lack resolved overlapping shared-memory footprints.";
+    if(!found)return text(values.subject,"'s supplying write and read lack resolved overlapping ",values.memory," footprints.");
     }
   }
   std::map<std::string,std::set<std::string>> queried_aliases;
   for(const auto& binding:input.addresses)
-    if(binding.address_space=="shared" && !binding.alias_scope.empty() && queries.contains(binding.allocation))
+    if(binding.address_space==values.space && !binding.alias_scope.empty() && queries.contains(binding.allocation))
       queried_aliases[binding.alias_scope].insert(binding.allocation);
   // Each candidate write must be ordered before the chosen source or after its read. The checks are
   // batched (reachesBatch answers up to 64 sources per traversal) and flushed in visit order, so the
   // reported failure is the one the first failing check, or an earlier structural error, gives.
-  static const std::string intervene="Another shared-memory write may intervene between the chosen constant source and its read.";
+  const auto intervene=text("Another ",values.memory," write may intervene between the chosen ",values.chosen," and its read.");
   struct Pending { EventId access,write,read; };
   std::vector<Pending> pending;
   const auto flush=[&]()->bool {
@@ -1098,8 +1111,8 @@ std::optional<std::string> ValidateSharedConstantWrites(const SourceArtifact& in
     const auto answers=hb.reachesBatch(after);
     return std::all_of(answers.begin(),answers.end(),[](auto answer){return answer!=0;});
   };
-  const auto fail=[&](const MemoryAccess& access,const char* message)->MemoryAnalysisError {
-    return {flush()?std::string(message):intervene,access.event,access.address};
+  const auto fail=[&](const MemoryAccess& access,const std::string& message)->MemoryAnalysisError {
+    return {flush()?message:intervene,access.event,access.address};
   };
   scan=VisitMemoryAccesses(certificate.happensBeforeGraph.events(),input.program,
       [&](const MemoryAccess& access)->std::optional<MemoryAnalysisError> {
@@ -1107,16 +1120,16 @@ std::optional<std::string> ValidateSharedConstantWrites(const SourceArtifact& in
         const auto* id=std::get_if<AddressId>(&access.address);
         if(!id)return {};
         const auto binding=bindings.find(id->value());
-        if(binding==bindings.end())return fail(access,"Shared constant validation found an unbound write.");
-        if(binding->second->address_space!="shared")return {};
+        if(binding==bindings.end())return fail(access,text(values.validation," found an unbound write."));
+        if(binding->second->address_space!=values.space)return {};
         const auto aliases=queried_aliases.find(binding->second->alias_scope);
         if(binding->second->allocation=="unresolved" || (aliases!=queried_aliases.end() &&
             (aliases->second.size()>1 || !aliases->second.contains(binding->second->allocation))))
-          return fail(access,"Shared constant validation does not support writes with unresolved shared-memory aliasing.");
+          return fail(access,text(values.validation," does not support writes with unresolved ",values.memory," aliasing."));
         const auto index=queries.find(binding->second->allocation);
         if(index==queries.end())return {};
         const auto region=span(access);
-        if(!region)return fail(access,"Shared constant validation requires a constant footprint for a potentially interfering write.");
+        if(!region)return fail(access,text(values.validation," requires a constant footprint for a potentially interfering write."));
         auto it=index->second.starts.lower_bound(region->begin>=index->second.max_width?
             region->begin-index->second.max_width+1:0);
         for(;it!=index->second.starts.end() && it->first<region->end;++it)
@@ -1506,6 +1519,29 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
       entries.Render(report["diagnostics"]);
       return RenderReport(report);
     }
+    auto unobserved = ProfileCall("input.eliminate_unobserved_synchronization",
+                                  [&] { return EliminateUnobservedSynchronization(input.program); });
+    if (!unobserved.eliminated.empty()) {
+      // Per site and barrier; class-mode counts include every unit of the class.
+      std::map<std::tuple<std::string, std::uint32_t, bool, std::uint32_t>, std::uint64_t> sites;
+      for (const auto& arrivals : unobserved.eliminated)
+        sites[{arrivals.location.file.str(), arrivals.location.line,
+               arrivals.kind == EliminatedBarrierKind::kNamed, arrivals.barrier.value()}] +=
+            arrivals.count * (units ? units->Weight(units->Cta(arrivals.first)) : 1);
+      auto& eliminated = report["eliminated_synchronization"] = Json::array();
+      for (const auto& [site, count] : sites) {
+        const auto& [file, line, named, barrier] = site;
+        eliminated.push_back({{"file", file}, {"line", line}, {"barrier_kind", named ? "named" : "mbarrier"},
+                              {"barrier", barrier}, {"count", count}});
+      }
+      for (auto& order : unobserved.initialization_orders) {
+        const auto first = order.uses.front();
+        input.required_orders.push_back({"barrier_initialization_before_use",
+            {order.initializer, Milestone::kComplete}, first,
+            "Every operation on the mbarrier must start after its initialization.", std::nullopt,
+            std::move(order.uses)});
+      }
+    }
     ProfileCall("input.compact_source", [&] { CompactSourceStorage(input); });
     ReportRecordGraphSize("source.after_recovery", input.program.instructions, input.program.edges);
     ReportSourceMemory(input, "input.after_recovery");
@@ -1566,8 +1602,11 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
     report["synchronization_input"] = {{"kind", "ordering_endpoints"},
         {"memory_address_payloads", false}, {"compute_access_binding", "after_happens_before"}};
     const auto shared_value_orders=std::count_if(input.required_orders.begin(),input.required_orders.end(),
-        [](const auto& order){return order.kind.view()=="shared_constant_read_from";});
+        [](const auto& order){return order.kind.view()==kSharedConstants.kind;});
     if(shared_value_orders)report["frontend_value_validation"]={{"status","pending"},{"required_orders",shared_value_orders}};
+    const auto tensor_map_orders=std::count_if(input.required_orders.begin(),input.required_orders.end(),
+        [](const auto& order){return order.kind.view()==kRuntimeTensorMaps.kind;});
+    if(tensor_map_orders)report["tensor_map_validation"]={{"status","pending"},{"required_orders",tensor_map_orders}};
     ReportRecordGraphSize("event.ready", prepared->graph().events(), prepared->graph().edges());
     ReportGraphMemory(*prepared, "input.graph_ready");
     report["verification_limitations"] = Json::array();
@@ -1632,14 +1671,15 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
       constexpr std::size_t failure_sample_limit = 32;
       constexpr std::size_t effect_sample_limit = 32;
       std::size_t failure_count = 0;
-      bool shared_value_unproven=false;
+      bool shared_value_unproven=false,tensor_map_unproven=false;
       std::map<std::string,Json> lifecycle_diagnostics;
       const auto code_of=[](const std::string& kind) -> std::string {
         return kind=="access_completion_before_dealloc"?"access_completion_before_deallocation_not_proven":
             kind=="mbarrier_final_invalidation"?"barrier_completion_before_invalidation_not_proven":
             kind=="allocation_before_dealloc"?"allocation_before_deallocation_not_proven":
             kind=="tmem_group2_access_before_dealloc"?"paired_access_completion_before_deallocation_not_proven":
-            kind=="shared_constant_read_from"?"shared_constant_dependency_unproven":kind+"_not_proven";
+            kind==kSharedConstants.kind?"shared_constant_dependency_unproven":
+            kind==kRuntimeTensorMaps.kind?"tensor_map_version_unproven":kind+"_not_proven";
       };
       // The witness of failed required order `index`: its first failed target.
       const auto failed_order_witness=[&](std::size_t index) {
@@ -1674,7 +1714,8 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
           if(diagnostic.is_null())diagnostic={{"code",code},{"stage","lifecycle_check"},{"message",order.message.str()},
              {"details",{{"constraint",kind},{"count",0},{"witnesses",Json::array()}}}};
           auto& evidence=diagnostic["details"];
-          shared_value_unproven|=order.kind.view()=="shared_constant_read_from";
+          shared_value_unproven|=order.kind.view()==kSharedConstants.kind;
+          tensor_map_unproven|=order.kind.view()==kRuntimeTensorMaps.kind;
           if(units) {
             const auto cta=units->Cta(order.from.instruction);
             const auto weight=units->Weight(cta);
@@ -1735,18 +1776,22 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
         report["failed_required_orders_count"] = failure_count;
         report["failed_required_orders_sample_limit"] = failure_sample_limit;
         report["failed_required_orders_truncated"] = failure_count > unresolved.size();
-        report["status"] = shared_value_unproven?"shared_memory_value_unproven":"unsafe_lifecycle";
+        report["status"] = shared_value_unproven || tensor_map_unproven?"shared_memory_value_unproven":"unsafe_lifecycle";
         report["error"] = {{"code",report["diagnostics"].front()["code"]},
                            {"message",report["diagnostics"].front()["message"]}};
         if(shared_value_unproven) {
           report["reason"]="shared_constant_dependency_unproven";
           report["frontend_value_validation"]["status"]="unproven";
         }
+        if(tensor_map_unproven) {
+          if(!shared_value_unproven)report["reason"]="tensor_map_version_unproven";
+          report["tensor_map_validation"]["status"]="unproven";
+        }
         report["failed_required_orders"] = std::move(unresolved);
         return RenderReport(report);
       }
     }
-    if(!shared_value_orders)lifecycle_origins=OriginMap{};
+    if(!shared_value_orders && !tensor_map_orders)lifecycle_origins=OriginMap{};
     if (result.synchronization.passed()) {
       auto& memory_model = prepare_memory(result.synchronization.certificate()->happensBeforeGraph.events());
       const auto before = static_hb->stats();
@@ -1887,20 +1932,26 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
         report["memory_analysis"]["violated_order_constraints"] = result.memory->violated_order_constraints;
       }
     }
-    if(shared_value_orders && result.status()==VerificationStatus::kRaceFree &&
+    if((shared_value_orders || tensor_map_orders) && result.status()==VerificationStatus::kRaceFree &&
         result.memory && result.memory->search_complete) {
-      const auto before = static_hb->stats();
-      const auto error = ValidateSharedConstantWrites(input,*result.synchronization.certificate(),lifecycle_origins,static_hb->get());
-      lifecycle_origins=OriginMap{};
-      record_hb("shared_constant_interference", before);
-      if(error) {
-        report["status"]="shared_memory_value_unproven";
-        report["reason"]="shared_constant_interference_unproven";
-        report["error"]={{"code","shared_constant_interference_unproven"},{"message",*error}};
-        report["frontend_value_validation"]["status"]="unproven";
-        return RenderReport(report);
+      for(const auto& [values,count,field,code]:{
+          std::tuple{&kSharedConstants,shared_value_orders,"frontend_value_validation","shared_constant_interference_unproven"},
+          std::tuple{&kRuntimeTensorMaps,tensor_map_orders,"tensor_map_validation","tensor_map_interference_unproven"}}) {
+        if(!count)continue;
+        const auto before = static_hb->stats();
+        const auto error = ValidateReadFromWrites(input,*result.synchronization.certificate(),lifecycle_origins,
+                                                  static_hb->get(),*values);
+        record_hb(values==&kSharedConstants?"shared_constant_interference":"tensor_map_interference", before);
+        if(error) {
+          report["status"]="shared_memory_value_unproven";
+          report["reason"]=code;
+          report["error"]={{"code",code},{"message",*error}};
+          report[field]["status"]="unproven";
+          return RenderReport(report);
+        }
+        report[field]["status"]="validated";
       }
-      report["frontend_value_validation"]["status"]="validated";
+      lifecycle_origins=OriginMap{};
     }
     if (on_verified && result.status() == VerificationStatus::kRaceFree &&
         result.memory && result.memory->search_complete) {

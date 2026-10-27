@@ -64,6 +64,7 @@ add_library(sentryward_algorithm STATIC
   cpp/src/source_ir/builder.cpp
   cpp/src/source_ir/initialization_recovery.cpp
   cpp/src/source_ir/ptx_assumptions.cpp
+  cpp/src/source_ir/unobserved_synchronization.cpp
   cpp/src/source_ir/validator.cpp
   cpp/src/event_ir/dag.cpp
   cpp/src/event_ir/lowering.cpp

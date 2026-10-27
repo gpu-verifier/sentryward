@@ -21,6 +21,8 @@ struct MmaValueLayout {
   std::uint32_t cta_group;
   std::vector<MmaValueAccess> accesses;
   std::array<std::uint64_t,2> scale_bases{};
+  // Weight-stationary (.ws): D uses the 128/M lane-group layouts D, E and G.
+  bool ws = false;
 };
 struct LoweringResult {
   algorithm::SourceArtifact artifact;

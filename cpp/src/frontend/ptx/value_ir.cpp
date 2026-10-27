@@ -54,7 +54,7 @@ struct Type {
 std::optional<Type> PtxType(std::string_view spelling) {
   const std::string text(spelling);
   if (text == "pred") return Type{v::ValueType::scalar(v::ElementType::predicate()), text, 1};
-  for (const std::string format : {"e2m1", "e4m3", "e5m2"}) {
+  for (const std::string format : {"e2m1", "e4m3", "e5m2", "ue8m0"}) {
     const std::uint32_t width = format == "e2m1" ? 4 : 8;
     if (text == format) return Type{v::ValueType::scalar(v::ElementType::floating(width, format)), text, width};
     if (text == format + "x2") return Type{v::ValueType::matrix(v::ElementType::floating(width, format), {2}), text, width, 2};
@@ -107,6 +107,89 @@ std::uint64_t SetThread(v::SourceOrigin& origin, const FactSource& facts, LaneRe
   return thread;
 }
 
+// Path predicates of an if-converted forward region in disjunctive normal form: a literal is
+// (guarding instruction, value of its guard), a term a sorted conjunction, a path a
+// disjunction of terms ({} on no path, {{}} on every path through the region).
+using GuardLiteral = std::pair<std::uint32_t, bool>;
+using GuardTerm = std::vector<GuardLiteral>;
+using GuardPath = std::vector<GuardTerm>;
+bool Weaker(const GuardTerm& term, const GuardTerm& stronger) {
+  return std::includes(stronger.begin(), stronger.end(), term.begin(), term.end());
+}
+// Absorption (t | t&x = t) and resolution (t&l | t&!l = t) until neither applies.
+GuardPath Simplify(GuardPath path) {
+  for (bool changed = true; changed;) {
+    changed = false;
+    for (std::size_t a = 0; a < path.size() && !changed; ++a)
+      for (std::size_t b = 0; b < path.size() && !changed; ++b) {
+        if (a == b) continue;
+        if (Weaker(path[a], path[b])) { path.erase(path.begin() + b); changed = true; continue; }
+        if (path[a].size() != path[b].size()) continue;
+        std::size_t differ = path[a].size();
+        bool single = true;
+        for (std::size_t n = 0; n < path[a].size() && single; ++n)
+          if (path[a][n] != path[b][n]) {
+            single = differ == path[a].size() && path[a][n].first == path[b][n].first;
+            differ = n;
+          }
+        if (!single || differ == path[a].size()) continue;
+        path[a].erase(path[a].begin() + differ);
+        path.erase(path.begin() + b);
+        changed = true;
+      }
+  }
+  std::sort(path.begin(), path.end());
+  return path;
+}
+GuardPath Conjoin(const GuardPath& path, GuardLiteral literal) {
+  GuardPath result;
+  for (auto term : path) {
+    if (std::binary_search(term.begin(), term.end(), GuardLiteral{literal.first, !literal.second})) continue;
+    const auto at = std::lower_bound(term.begin(), term.end(), literal);
+    if (at == term.end() || *at != literal) term.insert(at, literal);
+    result.push_back(std::move(term));
+  }
+  return Simplify(std::move(result));
+}
+GuardPath Disjoin(GuardPath path, const GuardPath& other) {
+  path.insert(path.end(), other.begin(), other.end());
+  return Simplify(std::move(path));
+}
+// Sufficient conditions only: every term of `path` strengthens a term of `other`; every pair
+// of terms holds complementary literals.
+bool Implies(const GuardPath& path, const GuardPath& other) {
+  return std::all_of(path.begin(), path.end(), [&](const auto& term) {
+    return std::any_of(other.begin(), other.end(), [&](const auto& weaker) { return Weaker(weaker, term); });
+  });
+}
+bool Disjoint(const GuardPath& path, const GuardPath& other) {
+  return std::all_of(path.begin(), path.end(), [&](const auto& term) {
+    return std::all_of(other.begin(), other.end(), [&](const auto& second) {
+      return std::any_of(term.begin(), term.end(), [&](const auto& literal) {
+        return std::binary_search(second.begin(), second.end(), GuardLiteral{literal.first, !literal.second});
+      });
+    });
+  });
+}
+// The first guard among the literals of `path` and `other` whose value `path` leaves open.
+std::optional<std::uint32_t> Open(const GuardPath& path, const GuardPath& other) {
+  std::set<std::uint32_t> guards;
+  for (const auto* terms : {&path, &other})
+    for (const auto& term : *terms)
+      for (const auto& literal : term) guards.insert(literal.first);
+  for (const auto guard : guards) {
+    std::optional<bool> fixed;
+    bool open = false;
+    for (const auto& term : path) {
+      const auto at = std::lower_bound(term.begin(), term.end(), GuardLiteral{guard, false});
+      if (at == term.end() || at->first != guard || (fixed && *fixed != at->second)) { open = true; break; }
+      fixed = at->second;
+    }
+    if (open) return guard;
+  }
+  return {};
+}
+
 class ValueTemplateExtractor {
 public:
   ValueTemplateExtractor(v::Graph &graph, std::vector<ValueIrDiagnostic> &diagnostics,
@@ -134,6 +217,20 @@ public:
       if (branch_capture_ && record.branch_scope_decision() && instruction.predicate) {
         needed[Resolve(*instruction.predicate, instruction.scope)] |= 2;
         (*live_)[cursor] = 2;
+        continue;
+      }
+      if (!record.opaque_compute_diamond_indices().empty()) {
+        // A lifted region assigns its writes on some paths only: they stay needed, and its
+        // reads and guard are needed once any write is.
+        std::uint8_t used = 0;
+        for (const auto& name : record.opaque_compute_register_writes())
+          if (auto found = needed.find(Resolve(name, instruction.scope)); found != needed.end()) used |= found->second;
+        (*live_)[cursor] = used;
+        if (!used) continue;
+        auto reads = record.opaque_compute_register_reads();
+        if (instruction.predicate) reads.push_back(*instruction.predicate);
+        for (const auto& name : reads)
+          if (const auto key = Resolve(name, instruction.scope); declarations_.contains(key)) needed[key] |= used;
         continue;
       }
       if (instruction.control != "none" && instruction.control != "call") continue;
@@ -262,6 +359,8 @@ private:
                            const std::vector<Expression> &operands,
                            std::vector<std::string> labels = {});
   void InstructionValue();
+  // The opaque compute region of record_ (instruction_ is its branch), if-converted.
+  bool LiftRegion();
   void Compute();
   void Memory();
   void AsyncCopy();
@@ -317,6 +416,8 @@ private:
   bool matrix_pending_ = false;
   bool warp_mma_pending_ = false;
   bool vote_pending_ = false;
+  // Inside LiftRegion: record_ is the region's branch, whose known registers predate the region.
+  bool lifting_ = false;
 public:
   using ShuffleKey = std::tuple<std::uint32_t, std::uint32_t, std::uint64_t, std::uint32_t,
       std::vector<std::pair<std::uint64_t, std::uint64_t>>>;
@@ -585,6 +686,7 @@ std::optional<Integer> ValueTemplateExtractor::Known(std::string text, bool unif
   if (auto literal = ParseInteger(text)) return literal;
   if (text == "true") return Integer(1);
   if (text == "false") return Integer(0);
+  if (lifting_) return {};
   if (!uniform_only) {
     if (const auto* value = facts_.Value(*record_, text)) return ScalarInteger(*value);
     return {};
@@ -1335,7 +1437,14 @@ bool ValueTemplateExtractor::Step() {
       Fail("two_arm_merge_values", "Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); "
            "values after its join are not exported");
     if (!record.opaque_compute_diamond_indices().empty()) {
-      Fail("opaque_compute_diamond", "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported");
+      const auto branch = instruction_;
+      const auto origin = origin_;
+      bool lifted = false;
+      lifting_ = true;
+      try { lifted = LiftRegion(); }
+      catch (const std::invalid_argument& error) { Fail("invalid_value_operation", error.what()); }
+      lifting_ = false; instruction_ = branch; origin_ = origin;
+      if (lifted) { ++cursor_; return true; }
       for (const auto &name : record.opaque_compute_register_writes()) {
         const auto key = Resolve(name, instruction_->scope);
         registers_.erase(key);
@@ -1404,6 +1513,187 @@ bool ValueTemplateExtractor::Step() {
     }
   }
   ++cursor_; return true;
+}
+// Execution skipped the region from a forward branch to its join on an unresolved predicate;
+// every edge inside is forward. One program-order pass gives each instruction its path: the
+// fall-through enters on the negated branch guard, a conditional edge adds its guard, a join
+// takes the disjunction and a guarded instruction adds its own guard. Each instruction is
+// lowered as usual on the values its sources have on its path. A register the region assigns
+// has, on a path, its last assignment's value where that assignment covers the path, else
+// select(assignment path, value, the earlier value on the rest of the path). A register
+// without a value before the region is read only where its assignments cover the path, and
+// keeps a value after the join only if they cover every path.
+// Size limits of a lifted region: guard terms of one instruction's path, and path splits of
+// all its register values.
+constexpr std::size_t kLiftedPathTerms = 64;
+constexpr std::size_t kLiftedValueSplits = 4096;
+bool ValueTemplateExtractor::LiftRegion() {
+  const auto& branch = *instruction_;
+  const auto& indices = record_->opaque_compute_diamond_indices();
+  const auto join = indices.back() + 1;
+  const auto refuse = [&](const char* code, const std::string& message) { Fail(code, message); return false; };
+  if (!branch.predicate || !branch.branch_target || indices.front() != branch.id + 1 ||
+      indices.size() != join - indices.front() || *branch.branch_target > join || join > function_.instructions.size())
+    return refuse("lifted_region_shape", "Opaque compute region is not the contiguous forward region of its branch");
+  struct Assignment { GuardPath path; Expression value; };
+  struct Lifted { std::optional<Expression> prior; std::vector<Assignment> assignments; };
+  std::map<Key, Lifted> lifted;
+  std::map<std::uint32_t, Expression> guards;
+  std::map<std::tuple<Key, std::size_t, GuardPath>, std::optional<Expression>> values;
+  std::size_t splits = 0;
+  bool limited = false;
+  const auto choose = [&](const Expression& condition, const Expression& value, const Expression& other) -> std::optional<Expression> {
+    const bool scalar = value.components.empty() && other.components.empty() && !value.missing_definition &&
+        !other.missing_definition;
+    if (scalar && value.value == other.value) return value;
+    auto updated = scalar ? std::optional<Expression>(value) : Bits(value);
+    auto previous = scalar ? std::optional<Expression>(other) : Bits(other);
+    // The alternatives meet in the typed one of the two (b32 and f32 meet in f32).
+    if (updated && previous && previous->type.value != updated->type.value) {
+      if (updated->type.value.element().kind() == v::ElementKind::Bit) updated = Reinterpret(*updated, previous->type);
+      else previous = Reinterpret(*previous, updated->type);
+    }
+    if (!updated || !previous) return {};
+    auto selected = Add(std::make_unique<v::SelectOp>(updated->type.value),
+        {condition.value, updated->value, previous->value}, origin_).result();
+    if (const auto& pointer = updated->value.pointer(); pointer && previous->value.pointer() && *pointer == *previous->value.pointer())
+      selected = graph_.asPointer(selected, *pointer);
+    return Expression{selected, updated->type};
+  };
+  // `key` on a nonempty `path` after its first `count` assignments: the last assignment that
+  // covers the path, the earlier value where it is disjoint, else a select on the first guard
+  // the path leaves open (the region's own branch structure, gated-SSA form).
+  const auto value = [&](auto&& self, const Key& key, const Lifted& entry, std::size_t count,
+                         const GuardPath& path) -> std::optional<Expression> {
+    if (!count) return entry.prior;
+    const auto& last = entry.assignments[count - 1];
+    if (Implies(path, last.path)) return last.value;
+    if (Disjoint(path, last.path)) return self(self, key, entry, count - 1, path);
+    const auto cached = std::tuple{key, count, path};
+    if (const auto found = values.find(cached); found != values.end()) return found->second;
+    const auto open = Open(path, last.path);
+    if (!open || ++splits > kLiftedValueSplits) { limited = true; return {}; }
+    const auto taken = self(self, key, entry, count, Conjoin(path, {*open, true}));
+    const auto other = taken ? self(self, key, entry, count, Conjoin(path, {*open, false})) : std::nullopt;
+    const auto result = other ? choose(guards.at(*open), *taken, *other) : std::nullopt;
+    return values.emplace(cached, result).first->second;
+  };
+  // A nonempty path's value of `key` (lifted), or a refusal.
+  const auto read = [&](const Key& key, const GuardPath& path, const std::string& name) -> std::optional<Expression> {
+    const auto diagnostics = diagnostics_.size();
+    auto result = value(value, key, lifted.at(key), lifted.at(key).assignments.size(), path);
+    if (!result && diagnostics_.size() == diagnostics)
+      refuse(limited ? "lifted_region_path_limit" : "lifted_region_unassigned_register",
+             limited ? "A path or value of the lifted region exceeds its size limit"
+                     : "Register '" + name + "' may be unassigned on a path of the lifted region that reads it");
+    return result;
+  };
+  // The guard of `instruction` (instruction_) on `path`: the value of literal (instruction, true).
+  const auto guard = [&](const Instruction& instruction, const GuardPath& path) {
+    const auto key = Resolve(*instruction.predicate, instruction.scope);
+    auto truth = lifted.contains(key) ? read(key, path, *instruction.predicate) : Operand(*instruction.predicate, Pred());
+    if (truth) truth = Reinterpret(*truth, Pred());
+    if (!truth) return false;
+    guards.insert_or_assign(instruction.id, *truth);
+    return true;
+  };
+  std::map<std::uint32_t, GuardPath> reach;
+  const auto flow = [&](std::uint32_t target, const GuardPath& path) {
+    if (path.empty() || target >= join) return true;
+    auto& entry = reach[target];
+    entry = Disjoin(std::move(entry), path);
+    return entry.size() <= kLiftedPathTerms ||
+           refuse("lifted_region_path_limit", "A path of the lifted region exceeds " + std::to_string(kLiftedPathTerms) +
+                  " guard terms");
+  };
+  if (!guard(branch, GuardPath{GuardTerm{}}) ||
+      !flow(*branch.branch_target, GuardPath{GuardTerm{GuardLiteral{branch.id, !branch.predicate_negated}}}) ||
+      !flow(branch.id + 1, GuardPath{GuardTerm{GuardLiteral{branch.id, branch.predicate_negated}}}))
+    return false;
+  for (auto index = branch.id + 1; index < join; ++index) {
+    const auto at = reach.find(index);
+    if (at == reach.end()) continue;
+    const auto path = std::move(at->second);
+    reach.erase(at);
+    const auto& instruction = function_.instructions[index];
+    instruction_ = &instruction;
+    origin_.source_line = instruction.line;
+    origin_.source_text = instruction_origins_[index].source_text;
+    origin_.predicate = instruction_origins_[index].predicate;
+    if (instruction.control == "direct_branch") {
+      const auto target = instruction.branch_target;
+      if (!target || *target <= index || *target > join)
+        return refuse("lifted_region_control", "A branch inside the lifted region is not forward to at most its join");
+      if (!instruction.predicate) { if (!flow(*target, path)) return false; continue; }
+      if (!guard(instruction, path) || !flow(*target, Conjoin(path, {index, !instruction.predicate_negated})) ||
+          !flow(index + 1, Conjoin(path, {index, instruction.predicate_negated})))
+        return false;
+      continue;
+    }
+    if (instruction.control != "none")
+      return refuse("lifted_region_control", "Control instruction '" + instruction.opcode + "' inside the lifted region");
+    const auto& semantics = instruction.semantics;
+    const bool parameter = semantics.category == "memory" && In(instruction.opcode, {"ld", "ldu"}) &&
+        semantics.memory_space == "param";
+    if (semantics.category == "memory" && !parameter)
+      return refuse("lifted_region_memory_access", "'" + instruction.opcode + "' inside the lifted region has no recorded "
+                    "memory access; only parameter reads are lowered");
+    // Warp-level operations read other lanes or the active mask, which the region's paths do not determine.
+    if (!parameter && (semantics.category != "compute" || semantics.memory_effect || WarpLevelOpcode(instruction.opcode)))
+      return refuse("lifted_region_unsupported_instruction", "'" + instruction.opcode + "' inside the lifted region is not "
+                    "per-thread register computation");
+    if (Has(instruction, "cc") || In(instruction.opcode, {"addc", "subc", "madc"}))
+      return refuse("lifted_region_carry", "Carry-flag arithmetic inside the lifted region");
+    auto executed = path;
+    if (instruction.predicate) {
+      if (!guard(instruction, path)) return false;
+      executed = Conjoin(path, {index, !instruction.predicate_negated});
+    }
+    if (!flow(index + 1, path)) return false;
+    if (executed.empty()) continue;
+    // Region-assigned registers are absent from registers_ (and invalidated) between
+    // instructions; the sources take their value on this path while the instruction lowers.
+    std::vector<Key> present;
+    for (std::size_t operand = instruction.destinations.empty() ? 0 : 1; operand < instruction.operands.size(); ++operand)
+      for (const auto& name : Registers(module_.view(instruction.operands[operand]))) {
+        const auto key = Resolve(name, instruction.scope);
+        if (!lifted.contains(key) || registers_.contains(key)) continue;
+        auto source = read(key, executed, name);
+        if (!source) return false;
+        registers_.insert_or_assign(key, *source);
+        present.push_back(key);
+      }
+    std::vector<Key> written;
+    for (const auto& name : instruction.destinations)
+      if (name != "_") {
+        const auto key = Resolve(name, instruction.scope);
+        if (!lifted.contains(key)) {
+          const auto prior = registers_.find(key);
+          lifted[key].prior = prior == registers_.end() ? std::nullopt : std::optional<Expression>(prior->second);
+        }
+        written.push_back(key);
+      }
+    const auto diagnostics = diagnostics_.size();
+    InstructionValue();
+    std::vector<std::optional<Expression>> results;
+    for (const auto& key : written) {
+      const auto found = registers_.find(key);
+      results.push_back(found == registers_.end() ? std::nullopt : std::optional<Expression>(found->second));
+    }
+    for (const auto* keys : {&present, &written})
+      for (const auto& key : *keys) { registers_.erase(key); invalidated_.insert(key); }
+    if (diagnostics_.size() != diagnostics) return false;
+    for (std::size_t n = 0; n < written.size(); ++n) {
+      if (!results[n]) return refuse("lifted_region_value", "Lowering defined no value for '" + written[n].second + "'");
+      lifted.at(written[n]).assignments.push_back({executed, *results[n]});
+    }
+  }
+  for (const auto& [key, entry] : lifted) {
+    const auto result = value(value, key, entry, entry.assignments.size(), GuardPath{GuardTerm{}});
+    if (limited) return refuse("lifted_region_path_limit", "A path or value of the lifted region exceeds its size limit");
+    if (result) { registers_.insert_or_assign(key, *result); invalidated_.erase(key); }
+  }
+  return true;
 }
 void ValueTemplateExtractor::InstructionValue() {
   const auto &i = *instruction_;
@@ -1529,6 +1819,15 @@ void ValueTemplateExtractor::Compute() {
     }
     if (destinations[0] != "_") Bind(destinations[0], Constant(U32(), std::to_string(*chosen)));
     Bind(destinations[1], Constant(Pred(), facts_.LaneId(lane_) == *chosen ? "true" : "false"));
+    return;
+  }
+  if (i.opcode == "isspacep") {
+    // The answer follows from the address's provenance, as the executor decided it.
+    const auto *address = i.operands.size() == 2 && i.modifiers.size() == 1
+        ? facts_.Value(*record_, Trim(module_.view(i.operands[1]))) : nullptr;
+    const auto inside = address ? GenericAddressInSpace(i.modifiers[0], *address, facts_.launch().resources()) : std::nullopt;
+    if (!inside) { Fail("unsupported_isspacep", "isspacep needs an address of known state space"); Invalidate(); return; }
+    Bind(Trim(module_.view(i.operands[0])), Constant(Pred(), *inside ? "true" : "false"));
     return;
   }
   static const std::map<std::string, std::pair<unsigned, unsigned>> arities{
@@ -1657,6 +1956,48 @@ void ValueTemplateExtractor::Compute() {
     else { operands.push_back(*carry_); labels.push_back("CC.CF"); }
   }
   if (!valid) { Invalidate(); return; }
+  if (i.opcode == "cvt" && result_type.spelling == "ue8m0x2") {
+    // The reference conversion (cuda_fp8.hpp, __nv_cvt_float_to_e8m0 and __nv_cvt_bfloat16raw_to_e8m0):
+    // .rz keeps the biased exponent field and ignores the sign, so zero and subnormals give 0 (2^-127)
+    // and NaN or infinity give 0xFF (NaN); .satfinite turns an infinity into 0xFE. Source a fills the
+    // upper byte. .rp (round the magnitude up to a power of two) has no model here.
+    const bool f32 = source_type.spelling == "f32" && operands.size() == 2;
+    if (!Has(i, "rz") || Has(i, "relu") || !(f32 || (source_type.spelling == "bf16x2" && operands.size() == 1))) {
+      Fail("unsupported_ue8m0_conversion", "Only cvt.rz{.satfinite}.ue8m0x2 from .f32 or .bf16x2 has an exact value model");
+      Invalidate(); return;
+    }
+    std::vector<Expression> sources;
+    if (f32) sources = {operands[1], operands[0]};
+    else for (std::uint32_t n = 0; n < 2; ++n) {
+      auto half = Part(operands[0], *PtxType("bf16"), 16 * n);
+      if (!half) { Invalidate(); return; }
+      sources.push_back(*half);
+    }
+    const Type element{v::ValueType::scalar(result_type.value.element()), "ue8m0", 8};
+    Expression packed{{}, result_type};
+    for (const auto &source : sources) {
+      auto bits = Bits(source);
+      if (!bits) { Invalidate(); return; }
+      const auto type = bits->type;
+      const auto binary = [&](v::BinaryOpcode opcode, const Expression &a, const Expression &b) {
+        return Expression{Add(std::make_unique<v::BinaryOp>(opcode, type.value), {a.value, b.value}, origin_).result(), type};
+      };
+      const bool wide = type.bits == 32;
+      auto exponent = binary(v::BinaryOpcode::BitAnd, binary(v::BinaryOpcode::ShiftRight, *bits, Constant(U32(), wide ? "23" : "7")),
+                             Constant(type, "255"));
+      if (Has(i, "satfinite")) {
+        const auto infinity = Expression{Add(std::make_unique<v::CompareOp>(v::ComparePredicate::Equal, Pred().value),
+            {binary(v::BinaryOpcode::BitAnd, *bits, Constant(type, wide ? "2147483647" : "32767")).value,
+             Constant(type, wide ? "2139095040" : "32640").value}, origin_).result(), Pred()};
+        exponent = Expression{Add(std::make_unique<v::SelectOp>(type.value),
+            {infinity.value, Constant(type, "254").value, exponent.value}, origin_).result(), type};
+      }
+      auto byte = Part(exponent, element, 0);
+      if (!byte) { Invalidate(); return; }
+      packed.components.push_back(*byte);
+    }
+    Bind(destinations[0], packed); return;
+  }
   if (i.opcode == "mov" && (destination_vector ||
       Trim(module_.view(i.operands[1])).starts_with('{'))) {
     std::uint64_t result_bits = 0, source_bits = 0;
@@ -2108,6 +2449,13 @@ v::Value ValueTemplateExtractor::SlotAddressValue(const algorithm::ConstantAddre
 void ValueTemplateExtractor::Tma() {
   if (ResolvedTma()) return;
   const auto& i = *instruction_;
+  // Only constant byte copies model a gather; the descriptor-shaped native load
+  // below would describe one map box, not the four gathered rows.
+  if (Has(i, "tile::gather4")) {
+    Fail("tma_gather4_dynamic_rows", "TMA tile::gather4 coordinates are not statically known "
+         "(data-dependent rows); the gathered values are not modeled");
+    Invalidate(); return;
+  }
   const bool load = Has(i, "mbarrier::complete_tx::bytes");
   const bool multicast = Has(i, "multicast::cluster");
   unsigned rank = 0;
@@ -2212,6 +2560,12 @@ bool ValueTemplateExtractor::ResolvedTma() {
         facts_.Warp(lane_), record_->occurrence());
     transfer = resources->Tma(*record_, TmaRequest(contract, Has(*instruction_, "bulk_group")));
   } catch (const SemanticError&) { return false; }
+  catch (const LayoutError& error) {
+    // An unsupported gather layout stays a value diagnostic; the event view
+    // reports the same layout error for the instruction.
+    if (!Has(*instruction_, "tile::gather4")) throw;
+    Fail(error.code, error.what()); Invalidate(); return true;
+  }
   for (const auto& pair : transfer.pairs)
     for (const auto* endpoint : {&pair.source, &pair.destination})
       if (*endpoint) {
@@ -2222,6 +2576,10 @@ bool ValueTemplateExtractor::ResolvedTma() {
   const auto address = [&](const Fragment& fragment) {
     return SlotAddressValue(resources->Binding(fragment.first));
   };
+  // The read of a runtime-written tensor map (the descriptor itself comes from its resolution).
+  if (transfer.descriptor)
+    Add(std::make_unique<v::LoadOp>(v::ValueType::matrix(v::ElementType::bit(8), {*transfer.descriptor->second})),
+        {address(*transfer.descriptor)}, origin_);
   std::map<std::tuple<algorithm::AddressId, std::optional<std::uint64_t>, std::uint64_t>, v::Value> reads;
   for (const auto& pair : transfer.pairs) {
     std::optional<v::Value> data;
@@ -2253,6 +2611,9 @@ void ValueTemplateExtractor::TcgenMma() {
         "kind::f8f6f4", "kind::mxf8f6f4", "kind::mxf4", "kind::mxf4nvf4", "block_scale", "block16", "block32",
         "scale_vec::1X", "scale_vec::2X", "scale_vec::4X"}))
       throw std::invalid_argument("Unsupported MMA value modifier: " + mod);
+  const bool ws = Has(i, "ws");
+  if (ws && (sparse || scaled || Has(i, "cta_group::2")))
+    throw std::invalid_argument("Unsupported .ws MMA value variant");
   const auto text = [&](unsigned n) { return Trim(module_.view(i.operands.at(n))); };
   auto d = Address(text(0)), a = text(1).starts_with('[') ? Address(text(1)) : Operand(text(1), U64());
   auto b = Operand(text(2), U64()), descriptor = Operand(text(descriptor_index), U32());
@@ -2270,6 +2631,7 @@ void ValueTemplateExtractor::TcgenMma() {
   std::vector<v::Value> masks;
   bool masks_are_zero = true;
   if (text(next).starts_with('{')) {
+    if (ws) throw std::invalid_argument(".ws MMA has no output lane mask operand");
     const auto mask_text = text(next++);
     if (mask_text.back() != '}') throw std::invalid_argument("MMA output mask is malformed");
     for (const auto& item : Split(std::string_view(mask_text).substr(1, mask_text.size()-2), ',')) {
@@ -2285,7 +2647,13 @@ void ValueTemplateExtractor::TcgenMma() {
   auto enabled = Operand(enabled_text, Pred()); if (!enabled) return;
   if (enabled->type.value.element().kind() != v::ElementKind::Predicate) throw std::invalid_argument("MMA enable-input-d must be a predicate");
   std::optional<Expression> exponent;
-  if (next < i.operands.size()) { exponent = Operand(text(next++), U32()); if (!exponent) return; }
+  if (ws && next < i.operands.size()) {
+    // The .ws trailing operand is the zero-column mask descriptor, not scale-input-d.
+    // Only a known zero (no masked or shifted B columns) keeps D = A*B(+D).
+    const auto zero_column_mask = Known(text(next++));
+    if (!zero_column_mask || *zero_column_mask != 0)
+      throw std::invalid_argument("Unsupported .ws zero-column mask");
+  } else if (next < i.operands.size()) { exponent = Operand(text(next++), U32()); if (!exponent) return; }
   if (next != i.operands.size()) throw std::invalid_argument("Unexpected MMA operands");
   const auto issuer = ClusterRank();
   std::string mode = "tcgen05";

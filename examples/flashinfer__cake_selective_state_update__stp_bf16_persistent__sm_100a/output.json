@@ -193,30 +193,13 @@
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "opaque_compute_diamond",
-            "details": {
-              "cta": 0,
-              "instruction": "@%p12 bra \t$L__BB0_20;",
-              "instruction_index": 187,
-              "location": {
-                "file": "corpus/flashinfer__cake_selective_state_update__stp_bf16_persistent__sm_100a.ptx",
-                "line": 280
-              },
-              "occurrence": 0,
-              "thread": 64
-            },
-            "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
-            "stage": "value_lowering"
-          }
-        ],
+        "diagnostics": [],
         "first_unavailable_reason": "",
         "queries": 0,
         "resolved": 0,
         "source": "value_lowering",
         "unavailable": 0,
-        "value_view_complete": false
+        "value_view_complete": true
       },
       "cluster_completion_joins": 0,
       "cta_count": 1,
@@ -485,7 +468,7 @@
       },
       "candidate_generation_fallback": false,
       "exhaustive": false,
-      "first_race_seconds": 0.516919582,
+      "first_race_seconds": 0.522438617,
       "hb_algorithm": "persistent-chain",
       "hb_batches": 0,
       "hb_cache_hits": 0,
@@ -494,7 +477,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 49809184,
       "hb_queries": 65536,
-      "hb_query_seconds": 0.001111728,
+      "hb_query_seconds": 0.0010893,
       "overlap_queries": 241,
       "strategy": "conflict-first",
       "unordered_candidates_examined": 241
@@ -502,7 +485,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 250.2578125,
+    "peak_footprint_mib": 388.92578125,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": false,
@@ -518,28 +501,22 @@
       "binding_diagnostic_count": 1,
       "binding_diagnostics": [
         {
-          "code": "incomplete_value_semantics",
-          "message": "opaque_compute_diamond: Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
+          "code": "unsupported_memory_binding_domain",
+          "message": "No exact native matrix payload mapping"
         }
       ],
       "execution_cohorts": 29,
       "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
+      "memory_binding_stored_rows": 103722,
+      "memory_binding_templates": 33701,
+      "memory_bindings": 135774,
       "memory_linking_templates_used": false,
       "synchronization_groups": 8609,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 0,
-      "thread_prefix_groups": 5001,
-      "value_diagnostic_count": 1,
-      "value_diagnostics": [
-        {
-          "code": "opaque_compute_diamond",
-          "line": 280,
-          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
-        }
-      ]
+      "thread_prefix_groups": 137088,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
     "source_violations": [],
     "stage": "memory_check",
@@ -609,12 +586,12 @@
         ]
       }
     },
-    "value_ir_instance_count": 59444,
-    "value_ir_node_count": 3173,
-    "value_view_complete": false
+    "value_ir_instance_count": 1848788,
+    "value_ir_node_count": 94806,
+    "value_view_complete": true
   },
-  "peak_rss_mib": 250.2578125,
-  "pipeline_elapsed_seconds": 1.53948069,
+  "peak_rss_mib": 388.92578125,
+  "pipeline_elapsed_seconds": 2.148192205,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -626,5 +603,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.456
+  "whole_pipeline_timeout_seconds": 498.442
 }

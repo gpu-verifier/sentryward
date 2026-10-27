@@ -61,10 +61,13 @@ MmaDescriptor StandardMma(const Instruction &instruction, std::uint64_t idesc,
     Fail("instruction is not tcgen05.mma");
   if (Has(instruction, "cta_group::2") && (!part || *part > 1))
     Fail("cta_group::2 MMA requires local group part 0 or 1");
+  const bool ws = Has(instruction, "ws");
+  if (ws && Has(instruction, "cta_group::2"))
+    Fail(".ws MMA supports only cta_group::1");
   std::string_view kind;
   unsigned kinds = 0;
   for (const auto &modifier : instruction.modifiers) {
-    if (modifier == "ws" || modifier == "block_scale" || (modifier == "sp" && !output) ||
+    if (modifier == "block_scale" || (modifier == "sp" && (!output || ws)) ||
         modifier == "ashift" || modifier.starts_with("collector::"))
       Fail("MMA variant requires a different exact layout");
     if (modifier.starts_with("kind::")) {
@@ -75,8 +78,10 @@ MmaDescriptor StandardMma(const Instruction &instruction, std::uint64_t idesc,
   if (kinds != 1)
     Fail("tcgen05.mma requires exactly one kind qualifier");
   auto descriptor = DecodeMmaDescriptor(kind, idesc);
-  if (descriptor.sparse && !output)
+  if (descriptor.sparse && (!output || ws))
     Fail("sparse MMA requires additional metadata layout");
+  if (ws && !WsMmaShape(descriptor.m, descriptor.n))
+    Fail(".ws MMA shape is outside the PTX shape list");
   return descriptor;
 }
 std::uint64_t Integer(const nlohmann::json &value, std::string_view name,
@@ -111,7 +116,9 @@ void AppendSegment(std::vector<TmaTransferSegment> &segments,
          *previous.global_offset <=
              std::numeric_limits<std::uint64_t>::max() - previous.bytes &&
          *previous.global_offset + previous.bytes == *segment.global_offset);
+    // Gather rows never merge: each abstract row carries its own coordinate.
     if (previous.abstract_global == segment.abstract_global &&
+        previous.gather_row == segment.gather_row &&
         previous.target_rank == segment.target_rank &&
         previous.logical_offset + previous.bytes == segment.logical_offset &&
         previous.shared_offset + previous.bytes == segment.shared_offset &&
@@ -609,7 +616,13 @@ ExactTmemFootprint DecodeMmaDFootprint(
   const auto [base_lane, base_column] = DecodeTmemAddress(taddr);
   auto width = d.n;
   bool layout_f = false;
-  if (group2) {
+  if (Has(instruction, "ws")) {
+    // PTX 9.2 layouts D/E/G: 128/M lane groups of M lanes each hold N*M/128
+    // columns at the same base column; M=128 is layout D.
+    if (base_lane != 0)
+      Fail(".ws MMA requires lane alignment zero");
+    width = d.n * d.m / 128;
+  } else if (group2) {
     if ((d.m != 128 && d.m != 256) || base_lane != 0)
       Fail("group2 MMA requires M=128/256 and lane alignment zero");
     if (d.n % 2)
@@ -656,10 +669,12 @@ ExactTmemFootprint DecodeMmaATmemFootprint(
   const auto d = StandardMma(instruction, idesc, part);
   const bool group2 = Has(instruction, "cta_group::2");
   const auto [lane, column] = DecodeTmemAddress(taddr);
-  const bool layout_f = !group2 && d.m == 64 && allow_layout_f;
+  // .ws lane groups each read A rows from their own lanes: all 128 lanes.
+  const bool ws = Has(instruction, "ws");
+  const bool layout_f = !ws && !group2 && d.m == 64 && allow_layout_f;
   if (resource.empty())
     Fail("TMEM resource identity cannot be empty");
-  if ((!layout_f && ((d.m != 128 && !(group2 && d.m == 256)) || lane)) ||
+  if ((!layout_f && ((d.m != 128 && !(group2 && d.m == 256) && !ws) || lane)) ||
       (layout_f && lane != 0 && lane != 16))
     Fail("unsupported MMA A layout or alignment");
   if (d.a_element_bits != 8 && d.a_element_bits != 16 && d.a_element_bits != 32)
@@ -720,6 +735,17 @@ TmaTransferMapping DecodeTmaTransfer(const nlohmann::json &descriptor,
   const bool packed = descriptor.contains("packed_element_bits") &&
                       !descriptor["packed_element_bits"].is_null();
   const auto packed_alignment = descriptor.value("packed_shared_alignment", 8U);
+  // tile::gather4 (PTX ISA 8.6+): four rows of a 2D map, each box_shape[0]
+  // elements from the column origin, land as the dense {box_shape[0], 4} box.
+  const bool gather = o.gather_rows.has_value();
+  if (gather && (rank != 2 || shape[1] != 1 || origins[1] != 0 || o.store ||
+                 packed || o.multicast_mask))
+    Fail("TMA gather4 requires an unpacked rank-2 load map with a one-row box and no multicast");
+  if (gather)
+    for (const auto row : *o.gather_rows)
+      if (row < std::numeric_limits<std::int32_t>::min() ||
+          row > std::numeric_limits<std::int32_t>::max())
+        Fail("TMA coordinates must fit signed 32 bits");
   if (packed) {
     if (symbolic(0))
       throw LayoutError("Packed TMA requires proven inner-coordinate alignment", "tma_packed_coordinate_alignment_not_proven");
@@ -753,8 +779,11 @@ TmaTransferMapping DecodeTmaTransfer(const nlohmann::json &descriptor,
        element != 16) ||
       strides[0] != element)
     Fail("TMA dimension zero must have contiguous byte elements");
+  // The enumerated destination box; a gather has four rows of the one-row map box.
+  auto box = shape;
+  if (gather) box[1] = 4;
   std::uint64_t count = 1;
-  for (const auto extent : shape) {
+  for (const auto extent : box) {
     if (!o.max_elements || extent > o.max_elements / count)
       Fail("TMA enumeration exceeds explicit bound");
     count *= extent;
@@ -762,10 +791,12 @@ TmaTransferMapping DecodeTmaTransfer(const nlohmann::json &descriptor,
   if (count > std::numeric_limits<std::uint64_t>::max() / element)
     Fail("TMA tile byte count overflows u64");
   const auto size = count * element;
+  // A map's own payload is one box: one gather row.
+  const auto box_bytes = gather ? size / 4 : size;
   if ((o.transfer_bytes && *o.transfer_bytes != size) ||
       (descriptor.contains("transfer_bytes") &&
        !descriptor["transfer_bytes"].is_null() &&
-       Integer(descriptor["transfer_bytes"], "transfer_bytes") != size))
+       Integer(descriptor["transfer_bytes"], "transfer_bytes") != box_bytes))
     Fail("TMA transfer count disagrees with logical tile");
   const auto padding = packed ? packed_alignment / 8 : 1U;
   if (size > (1ULL << 32) / padding)
@@ -828,24 +859,28 @@ TmaTransferMapping DecodeTmaTransfer(const nlohmann::json &descriptor,
     bool unknown_bounds=false;
     std::array<std::uint64_t, 5> coordinate{};
     for (std::size_t dim = 0; dim < rank; ++dim) {
-      if (symbolic(dim)) { unknown_bounds = true; continue; }
+      // A gather row's tensor row is its own coordinate (no box offset).
+      const bool row = gather && dim == 1;
+      if (row ? o.symbolic_rows[delta[1]] : symbolic(dim)) { unknown_bounds = true; continue; }
+      const auto origin_value = row ? (*o.gather_rows)[delta[1]] : coordinates[dim];
+      const auto step = row ? std::uint64_t{0} : delta[dim];
       // Compute signed origin + unsigned delta without overflow. An
       // unrepresentable coordinate is out of bounds for every representable
       // global shape.
-      if (coordinates[dim] < 0) {
-        const auto magnitude = static_cast<std::uint64_t>(-coordinates[dim]);
-        if (delta[dim] < magnitude) {
+      if (origin_value < 0) {
+        const auto magnitude = static_cast<std::uint64_t>(-origin_value);
+        if (step < magnitude) {
           oob = true;
           continue;
         }
-        coordinate[dim] = delta[dim] - magnitude;
+        coordinate[dim] = step - magnitude;
       } else {
-        const auto origin = static_cast<std::uint64_t>(coordinates[dim]);
-        if (delta[dim] > std::numeric_limits<std::uint64_t>::max() - origin) {
+        const auto origin = static_cast<std::uint64_t>(origin_value);
+        if (step > std::numeric_limits<std::uint64_t>::max() - origin) {
           oob = true;
           continue;
         }
-        coordinate[dim] = delta[dim] + origin;
+        coordinate[dim] = step + origin;
       }
       if (!bounds[dim]) unknown_bounds=true;
       else if (coordinate[dim] >= *bounds[dim])
@@ -875,9 +910,10 @@ TmaTransferMapping DecodeTmaTransfer(const nlohmann::json &descriptor,
                                  : logical;
     AppendSegment(payload,
                   {global, SwizzleByteAddress(o.shared_base + physical, bits),
-                   element, logical, destinations.front(), !oob && (abstract_address || unknown_bounds)});
+                   element, logical, destinations.front(), !oob && (abstract_address || unknown_bounds),
+                   static_cast<std::uint32_t>(gather ? delta[1] : 0U)});
     for (std::size_t dim = 0; dim < rank; ++dim) {
-      if (++delta[dim] != shape[dim])
+      if (++delta[dim] != box[dim])
         break;
       delta[dim] = 0;
     }

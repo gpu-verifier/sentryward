@@ -640,19 +640,19 @@
       "address_value_bridge": {
         "diagnostics": [
           {
-            "code": "opaque_compute_diamond",
+            "code": "unresolved_parameter_field",
             "details": {
               "cta": 0,
-              "instruction": "@%p89 bra $L__BB37_206;",
+              "instruction": "ld.param.b32 %r464, [%rd1+900];",
               "instruction_index": 3060,
               "location": {
                 "file": "corpus/cutlass77_blackwell_fmha_fp16.compute_100a.ptx",
-                "line": 313193
+                "line": 313194
               },
               "occurrence": 0,
               "thread": 257
             },
-            "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
+            "message": "Parameter field address has no statically resolved kernel-parameter identity",
             "stage": "value_lowering"
           }
         ],
@@ -926,7 +926,7 @@
     "memory_analysis_complete": false,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 839.34765625,
+    "peak_footprint_mib": 839.375,
     "required_order_domains": 7706,
     "required_orders": 246592,
     "semantic_assumptions": {
@@ -942,7 +942,7 @@
       "binding_diagnostics": [
         {
           "code": "incomplete_value_semantics",
-          "message": "opaque_compute_diamond: Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
+          "message": "unresolved_parameter_field: Parameter field address has no statically resolved kernel-parameter identity"
         }
       ],
       "execution_cohorts": 31,
@@ -954,13 +954,13 @@
       "synchronization_groups": 8230,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 233,
-      "thread_prefix_groups": 7193,
+      "thread_prefix_groups": 7199,
       "value_diagnostic_count": 1,
       "value_diagnostics": [
         {
-          "code": "opaque_compute_diamond",
-          "line": 313193,
-          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
+          "code": "unresolved_parameter_field",
+          "line": 313194,
+          "message": "Parameter field address has no statically resolved kernel-parameter identity"
         }
       ]
     },
@@ -1041,12 +1041,12 @@
         ]
       }
     },
-    "value_ir_instance_count": 70590,
-    "value_ir_node_count": 4678,
+    "value_ir_instance_count": 70974,
+    "value_ir_node_count": 4684,
     "value_view_complete": false
   },
-  "peak_rss_mib": 839.34765625,
-  "pipeline_elapsed_seconds": 6.094752346,
+  "peak_rss_mib": 839.375,
+  "pipeline_elapsed_seconds": 6.07598457,
   "result": "not_wellsynced",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -1056,5 +1056,5 @@
   "verification_limitations": [],
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.54
+  "whole_pipeline_timeout_seconds": 498.537
 }

@@ -57,11 +57,11 @@
   },
   "diagnostics": [
     {
-      "code": "opaque_compute_diamond",
+      "code": "unsupported_memory_binding_domain",
       "details": {
-        "internal_stage": "value_lowering"
+        "internal_stage": "memory_effect_binding"
       },
-      "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
+      "message": "No exact native matrix payload mapping",
       "stage": "equivalence"
     }
   ],
@@ -124,68 +124,50 @@
     "equivalence": {
       "diagnostics": [
         {
-          "code": "opaque_compute_diamond",
-          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
-          "stage": "value_lowering"
+          "code": "unsupported_memory_binding_domain",
+          "message": "No exact native matrix payload mapping",
+          "stage": "memory_effect_binding"
         }
       ],
       "expression_diagnostic": {
         "diagnostics": [
           {
-            "code": "opaque_compute_diamond",
-            "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
-            "stage": "value_lowering"
+            "code": "unsupported_memory_binding_domain",
+            "message": "No exact native matrix payload mapping",
+            "stage": "memory_effect_binding"
           }
         ],
-        "line": 204,
         "serialization": {
           "action_patterns": 0,
           "binding_patterns": 0,
           "domain_refinements": 0,
-          "elapsed_seconds": 3.662e-05,
+          "elapsed_seconds": 4.46e-06,
           "event_families": 0,
           "expanded_event_records": 0,
           "largest_batch_members": 0,
           "logical_actions": 0,
           "logical_events": 0,
-          "peak_rss_mib_at_completion": 454.078125,
+          "peak_rss_mib_at_completion": 425.46875,
           "reachability_queries": 0,
           "relations": 0,
-          "rss_mib_at_completion": 368.44140625,
+          "rss_mib_at_completion": 378.30078125,
           "scheduled_batches": 0,
           "singleton_batches": 0,
           "value_families": 0
         },
-        "stage": "value_lowering"
+        "stage": "memory_effect_binding"
       },
-      "stage": "value_lowering"
+      "stage": "memory_effect_binding"
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "opaque_compute_diamond",
-            "details": {
-              "cta": 0,
-              "instruction": "@%p15 bra \t$L__BB0_13;",
-              "instruction_index": 110,
-              "location": {
-                "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
-                "line": 204
-              },
-              "occurrence": 0,
-              "thread": 128
-            },
-            "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
-            "stage": "value_lowering"
-          }
-        ],
+        "diagnostics": [],
         "first_unavailable_reason": "",
         "queries": 0,
         "resolved": 0,
         "source": "value_lowering",
         "unavailable": 0,
-        "value_view_complete": false
+        "value_view_complete": true
       },
       "cluster_completion_joins": 0,
       "cta_count": 1,
@@ -390,12 +372,12 @@
         "validation": "pending_backend"
       },
       "source_binding_storage": {
-        "binding_templates": 1,
+        "binding_templates": 14,
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 146079,
-        "stored_bindings": 146079
+        "stored_bindings": 21888
       },
       "source_edge_storage": {
         "binding_templates": 288,
@@ -408,14 +390,14 @@
     },
     "hb_queries": {
       "memory": {
-        "algorithm": "batched-bitset",
-        "batches": 39,
+        "algorithm": "event-family-relations",
+        "batches": 8,
         "cache_hits": 0,
         "dfs_queries": 0,
-        "edge_visits": 3691926,
-        "filtered_queries": 0,
+        "edge_visits": 5146742,
+        "filtered_queries": 16,
         "queries": 469248,
-        "shared_peak_index_bytes": 49160192
+        "shared_peak_index_bytes": 16777216
       }
     },
     "implementation": "cpp",
@@ -436,15 +418,15 @@
       },
       "candidate_generation_fallback": false,
       "exhaustive": false,
-      "hb_algorithm": "batched-bitset",
-      "hb_batches": 39,
+      "hb_algorithm": "event-family-relations",
+      "hb_batches": 8,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 3691926,
-      "hb_filtered_queries": 0,
-      "hb_peak_index_bytes": 49160192,
+      "hb_edge_visits": 5146742,
+      "hb_filtered_queries": 16,
+      "hb_peak_index_bytes": 16777216,
       "hb_queries": 469248,
-      "hb_query_seconds": 0.08227387,
+      "hb_query_seconds": 2.133800092,
       "overlap_queries": 0,
       "strategy": "conflict-first",
       "unordered_candidates_examined": 0
@@ -452,7 +434,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 433.9609375,
+    "peak_footprint_mib": 378.19140625,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -468,28 +450,22 @@
       "binding_diagnostic_count": 1,
       "binding_diagnostics": [
         {
-          "code": "incomplete_value_semantics",
-          "message": "opaque_compute_diamond: Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
+          "code": "unsupported_memory_binding_domain",
+          "message": "No exact native matrix payload mapping"
         }
       ],
       "execution_cohorts": 27,
       "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
+      "memory_binding_stored_rows": 42157,
+      "memory_binding_templates": 31411,
+      "memory_bindings": 125891,
       "memory_linking_templates_used": false,
       "synchronization_groups": 6288,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 0,
-      "thread_prefix_groups": 32897,
-      "value_diagnostic_count": 1,
-      "value_diagnostics": [
-        {
-          "code": "opaque_compute_diamond",
-          "line": 204,
-          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
-        }
-      ]
+      "thread_prefix_groups": 148593,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
     "source_violations": [],
     "synchronization_input": {
@@ -498,38 +474,37 @@
       "memory_address_payloads": false
     },
     "template_execution": {
-      "completed_ctas": 0,
+      "completed_ctas": 1,
       "coordinate_bindings": 0,
-      "logical_thread_steps": 0,
-      "path_entries": 0,
-      "record_bindings": 0,
-      "record_nodes": 0,
-      "splits": 0,
-      "template_steps": 0,
-      "thread_memberships": 0,
-      "value_nodes": 0
+      "logical_thread_steps": 912368,
+      "path_entries": 43514,
+      "record_bindings": 18350,
+      "record_nodes": 38945,
+      "splits": 13,
+      "template_steps": 39200,
+      "thread_memberships": 288,
+      "value_nodes": 7341
     },
     "thread_record_compression": {
       "completed_ctas": 1,
       "enabled": true,
-      "estimated_pool_bytes_sum": 38764976,
-      "intern_calls": 908117,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
       "logical_records": 908117,
       "record_handle_bytes": 32,
-      "templates": 38945,
-      "unique_bindings": 37580
+      "templates": 0,
+      "unique_bindings": 0
     },
     "unresolved_count": 0,
     "value_analysis": {
       "diagnostics": [
         {
-          "code": "opaque_compute_diamond",
-          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
-          "stage": "value_lowering"
+          "code": "unsupported_memory_binding_domain",
+          "message": "No exact native matrix payload mapping",
+          "stage": "memory_effect_binding"
         }
       ],
       "equivalence_check": "unsupported",
-      "line": 204,
       "scalar_fold": {
         "diagnostics": [
           {
@@ -542,30 +517,30 @@
         "action_patterns": 0,
         "binding_patterns": 0,
         "domain_refinements": 0,
-        "elapsed_seconds": 3.662e-05,
+        "elapsed_seconds": 4.46e-06,
         "event_families": 0,
         "expanded_event_records": 0,
         "largest_batch_members": 0,
         "logical_actions": 0,
         "logical_events": 0,
-        "peak_rss_mib_at_completion": 454.078125,
+        "peak_rss_mib_at_completion": 425.46875,
         "reachability_queries": 0,
         "relations": 0,
-        "rss_mib_at_completion": 368.44140625,
+        "rss_mib_at_completion": 378.30078125,
         "scheduled_batches": 0,
         "singleton_batches": 0,
         "value_families": 0
       },
-      "stage": "value_lowering"
+      "stage": "memory_effect_binding"
     },
-    "value_ir_instance_count": 16214,
-    "value_ir_node_count": 16214,
-    "value_view_complete": false,
-    "verification_elapsed_seconds": 3.52431351,
+    "value_ir_instance_count": 2312985,
+    "value_ir_node_count": 105209,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 3.947784893,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 454.078125,
-  "pipeline_elapsed_seconds": 3.575695168,
+  "peak_rss_mib": 425.46875,
+  "pipeline_elapsed_seconds": 3.97794779,
   "result": "unsupported",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -577,5 +552,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.302
+  "whole_pipeline_timeout_seconds": 498.294
 }

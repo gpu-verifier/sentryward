@@ -345,6 +345,15 @@ void LinkMmaMemory(SemanticProgram& result, const MmaValueLayout& layout,
     const bool two_by_two=layout.cta_group==2 && descriptor.m==128;
     if (two_by_two && (scaled || layout.a_in_tmem))
       throw LayoutError("Two-CTA M=128 MMA duplicated TMEM operand layout is not decoded");
+    // .ws D uses 128/M lane groups (PTX 9.2 layouts D, E and G): group g keeps
+    // columns [g*N*M/128,(g+1)*N*M/128) of row r in lane g*M+r. Each group reads
+    // TMEM-A rows from its own lanes, which one M x K operand does not express.
+    if (layout.ws && (scaled || layout.cta_group!=1 ||
+        (descriptor.m!=32 && descriptor.m!=64 && descriptor.m!=128)))
+      throw LayoutError(".ws MMA value layout requires dense cta_group::1 M=32/64/128");
+    if (layout.ws && layout.a_in_tmem && descriptor.m<128)
+      throw LayoutError(".ws MMA per-lane-group TMEM-A operand layout is not decoded");
+    const unsigned ws_groups=layout.ws ? 128/descriptor.m : 1;
     std::map<std::pair<std::uint32_t,std::uint32_t>,const MmaValueAccess*> tags;
     for (const auto& tag : layout.accesses) tags.emplace(std::pair{tag.effect,tag.access},&tag);
     using PartKey=std::tuple<MmaOperandRole,a::AccessMode,std::uint32_t>;
@@ -441,10 +450,11 @@ void LinkMmaMemory(SemanticProgram& result, const MmaValueLayout& layout,
       else {
         if(packed)throw LayoutError("FP4 TMEM-A logical packing is not implemented");
         const auto [lane,column]=DecodeTmemAddress(role==MmaOperandRole::A ? layout.a_base : layout.d_base);
-        const unsigned halves=two_by_two ? 2 : 1, width=columns/halves;
+        const unsigned halves=layout.ws ? ws_groups : two_by_two ? 2 : 1, width=columns/halves;
         for (unsigned row=0;row<rows;++row)
           for (unsigned half=0;half<halves;++half) {
-            const auto physical_row=descriptor.m==64 ? lane+32*(row/16)+row%16 : lane+row+64*half;
+            const auto physical_row=layout.ws ? lane+row+descriptor.m*half :
+                descriptor.m==64 ? lane+32*(row/16)+row%16 : lane+row+64*half;
             const auto physical=EncodeCellByteOffset(physical_row,column);
             const auto logical=((std::uint64_t{part}*rows+row)*columns+std::uint64_t{half}*width)*bits/8;
             if(role==MmaOperandRole::D && bits!=32) {

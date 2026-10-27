@@ -42,7 +42,19 @@ the path that skips it.
   kernel that passes the synchronization check is reported as `unsupported`
   (diagnostic `two_arm_merge_values`).
 
-A data-dependent branch that is not merged is unsupported unless a branch
+A forward region of register computation and parameter, local or constant
+reads is skipped when the input does not determine its branch. If ordinary
+execution stops at such a branch, the region may also have several arms
+(if-else, nested ifs) up to one join, and inline-asm blocks inside it that
+declare only their own temporaries. Warp-level operations (`shfl`, `vote`,
+`elect`, `match`, `activemask`, `redux`, `mma`) are never skipped. The value
+analysis if-converts the region exactly: each register it writes becomes a
+selection of its per-path values. It reports `unsupported` for local or
+constant reads in the region, carry arithmetic, and a register without an
+earlier value that is read on a path where the region does not assign it
+(diagnostics `lifted_region_*`, or `missing_definition` after the join).
+
+A data-dependent branch that is neither merged nor skipped is unsupported unless a branch
 choice or a representative-control assumption, such as
 [Representative branches](#representative-branches), decides it.
 

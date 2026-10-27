@@ -1,4 +1,18 @@
 {
+  "assumption_hints": [
+    {
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
+      "suggested_value": true
+    },
+    {
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
+      "suggested_value": true
+    }
+  ],
   "assumptions": [
     {
       "enabled": true,
@@ -49,17 +63,17 @@
   },
   "diagnostics": [
     {
-      "code": "shared_control_operand",
+      "code": "control_predicate_not_static",
       "details": {
         "internal_stage": "ptx_execution",
         "location": {
           "column": 0,
           "file": "corpus/flashinfer__xqa_standard__input_bf16_kv_bf16_page32_head128_group8_sliding0__sm_100a.ptx",
-          "line": 5734
+          "line": 7643
         },
         "required_parameters": []
       },
-      "message": "unknown shared-control operand: %r787",
+      "message": "control predicate is not statically determined",
       "stage": "synchronization"
     }
   ],
@@ -79,16 +93,16 @@
             },
             "prerequisite_diagnostics": [
               {
-                "code": "shared_control_operand",
+                "code": "control_predicate_not_static",
                 "details": {
                   "location": {
                     "column": 0,
                     "file": "corpus/flashinfer__xqa_standard__input_bf16_kv_bf16_page32_head128_group8_sliding0__sm_100a.ptx",
-                    "line": 5734
+                    "line": 7643
                   },
                   "required_parameters": []
                 },
-                "message": "unknown shared-control operand: %r787",
+                "message": "control predicate is not statically determined",
                 "stage": "ptx_execution"
               }
             ],
@@ -240,10 +254,10 @@
     "location": {
       "column": 0,
       "file": "corpus/flashinfer__xqa_standard__input_bf16_kv_bf16_page32_head128_group8_sliding0__sm_100a.ptx",
-      "line": 5734
+      "line": 7643
     },
     "memory_analysis_complete": false,
-    "peak_footprint_mib": 102.09375,
+    "peak_footprint_mib": 366.87109375,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
@@ -299,16 +313,16 @@
             },
             "prerequisite_diagnostics": [
               {
-                "code": "shared_control_operand",
+                "code": "control_predicate_not_static",
                 "details": {
                   "location": {
                     "column": 0,
                     "file": "corpus/flashinfer__xqa_standard__input_bf16_kv_bf16_page32_head128_group8_sliding0__sm_100a.ptx",
-                    "line": 5734
+                    "line": 7643
                   },
                   "required_parameters": []
                 },
-                "message": "unknown shared-control operand: %r787",
+                "message": "control predicate is not statically determined",
                 "stage": "ptx_execution"
               }
             ],
@@ -333,8 +347,8 @@
     "value_ir_node_count": 0,
     "value_view_complete": false
   },
-  "peak_rss_mib": 126.5625,
-  "pipeline_elapsed_seconds": 0.523070112,
+  "peak_rss_mib": 366.87109375,
+  "pipeline_elapsed_seconds": 2.005707689,
   "result": "unsupported",
   "rss_limit_mib": null,
   "scope": {
@@ -342,5 +356,5 @@
   },
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.511
+  "whole_pipeline_timeout_seconds": 498.503
 }

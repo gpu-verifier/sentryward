@@ -276,6 +276,13 @@ std::vector<SharedSiteRef> CtaFacts::SharedSitesRelative() const {
     add(dependency.write);
     add(dependency.read);
   }
+  if (program_->tensor_map_reads) {
+    const auto cta = program_->config.fixed_input.value("cta_coordinate", Coordinates{0, 0, 0});
+    for (const auto &[read, write] : *program_->tensor_map_reads) {
+      add({cta, write.writer_warp * 32, write.write});
+      add({cta, read.first, read.second});
+    }
+  }
   return sites;
 }
 

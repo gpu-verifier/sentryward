@@ -27,6 +27,9 @@ struct TemplateVote {
   std::shared_ptr<const std::map<std::uint32_t,std::size_t>> members;
   std::string mode;
   std::function<void(std::uint32_t,const std::string&)> error;
+  // match.sync: `predicates` hold the compared values; a participant's bit is set when its value
+  // equals the actor's (unknown when the comparison is). Modes match.any, match.all, match.all.pred.
+  std::function<std::optional<bool>(const Scalar&,const Scalar&)> equal{};
 };
 struct TemplateValue {
   std::optional<Scalar> uniform;
@@ -128,30 +131,46 @@ struct TemplateArena {
             const auto mask=(*raw_mask&0xffffffff).convert_to<std::uint32_t>();
             if(!(mask&(1u<<(actor%32))))node.vote->error(actor,"executing lane absent from vote membermask");
             std::uint32_t bits=0;
-            bool complete=true,unknown=false;
+            bool complete=true,unknown=false,unequal=false;
+            const auto lookup=[&](std::size_t value,std::size_t peer)->const Scalar* {
+              if(values[value].uniform)return &*values[value].uniform;
+              auto entry=caches[peer].find(value);
+              if(entry!=caches[peer].end())return &entry->second;
+              pending.emplace_back(value,peer);complete=false;return nullptr;
+            };
+            const Scalar* own=nullptr;
+            if(node.vote->equal) {
+              const auto source=node.vote->predicates->Source(member);
+              if(!source)throw TemplatePending{};
+              own=lookup(*source,member);
+            }
             for(unsigned lane=0;lane<32;++lane)if(mask&(1u<<lane)) {
               const auto found=node.vote->members->find(actor-actor%32+lane);
               if(found==node.vote->members->end())throw TemplateFallback{};
               const auto peer=found->second;
               auto predicate=node.vote->predicates->Source(peer), peer_mask=node.vote->masks->Source(peer);
               if(!predicate || !peer_mask)throw TemplatePending{};
-              const auto lookup=[&](std::size_t value)->const Scalar* {
-                if(values[value].uniform)return &*values[value].uniform;
-                auto entry=caches[peer].find(value);
-                if(entry!=caches[peer].end())return &entry->second;
-                pending.emplace_back(value,peer);complete=false;return nullptr;
-              };
-              const auto mask_value=lookup(*peer_mask),predicate_value=lookup(*predicate);
-              if(!mask_value || !predicate_value)continue;
+              const auto mask_value=lookup(*peer_mask,peer),predicate_value=lookup(*predicate,peer);
+              if(!mask_value || !predicate_value || (node.vote->equal && !own))continue;
               const auto other=integer(*mask_value);
               if(!other || ((*other&0xffffffff).convert_to<std::uint32_t>()!=mask))
                 node.vote->error(actor,"vote participants have different membermasks");
-              const auto truth=integer(*predicate_value);
+              std::optional<bool> truth;
+              if(node.vote->equal)truth=node.vote->equal(*own,*predicate_value);
+              else if(const auto n=integer(*predicate_value))truth=*n!=0;
               if(!truth)unknown=true;
-              else if(*truth!=0)bits|=1u<<lane;
+              else if(*truth)bits|=1u<<lane;
+              else unequal=true;
             }
             if(!complete)continue;
-            if(unknown)cache[current]=Scalar{};
+            if(node.vote->mode=="match.all" || node.vote->mode=="match.all.pred") {
+              const bool pred=node.vote->mode=="match.all.pred";
+              if(unequal)cache[current]=pred?Scalar(false):Scalar(Integer(0));
+              else if(unknown)cache[current]=Scalar{};
+              else cache[current]=pred?Scalar(true):Scalar(Integer(mask));
+            }
+            else if(unknown)cache[current]=Scalar{};
+            else if(node.vote->mode=="match.any")cache[current]=Integer(bits);
             else if(node.vote->mode=="ballot")cache[current]=Integer(bits);
             else cache[current]=node.vote->mode=="all"?bits==mask:
               node.vote->mode=="any"?bits!=0:bits==0 || bits==mask;

@@ -126,6 +126,9 @@ struct TmaPair {
 struct TmaAccesses {
   std::vector<TmaPair> pairs;
   std::vector<std::pair<BarrierLifetimeId, std::uint64_t>> completions;
+  // A read of a runtime-written tensor map (RecoverTensorMaps): its 128 bytes, keyed as the
+  // tensormap.cp_fenceproxy lane writes are.
+  std::optional<Fragment> descriptor;
 };
 // ---- the slot interface -----------------------------------------------------
 // The address bridge: (active lane, record, operand text) -> address JSON.

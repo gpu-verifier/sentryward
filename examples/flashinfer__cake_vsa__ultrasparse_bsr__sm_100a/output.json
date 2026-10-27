@@ -196,19 +196,35 @@
       "address_value_bridge": {
         "diagnostics": [
           {
-            "code": "opaque_compute_diamond",
+            "code": "two_arm_merge_values",
             "details": {
               "cta": 0,
-              "instruction": "@%p11 bra \t$L__BB0_15;",
-              "instruction_index": 159,
+              "instruction": "@%p38 bra \t$L__BB0_58;",
+              "instruction_index": 2779,
               "location": {
                 "file": "corpus/flashinfer__cake_vsa__ultrasparse_bsr__sm_100a.ptx",
-                "line": 306
+                "line": 6054
               },
               "occurrence": 0,
-              "thread": 32
+              "thread": 256
             },
-            "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
+            "message": "Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); values after its join are not exported",
+            "stage": "value_lowering"
+          },
+          {
+            "code": "unknown_execution_predicate",
+            "details": {
+              "cta": 0,
+              "instruction": "@%p38 bra \t$L__BB0_58;",
+              "instruction_index": 2779,
+              "location": {
+                "file": "corpus/flashinfer__cake_vsa__ultrasparse_bsr__sm_100a.ptx",
+                "line": 6054
+              },
+              "occurrence": 0,
+              "thread": 256
+            },
+            "message": "The active instruction path is not fixed",
             "stage": "value_lowering"
           }
         ],
@@ -414,12 +430,12 @@
         "validation": "pending_backend"
       },
       "source_binding_storage": {
-        "binding_templates": 1,
+        "binding_templates": 12,
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 172756,
-        "stored_bindings": 172756
+        "stored_bindings": 3307
       },
       "source_edge_storage": {
         "binding_templates": 1058,
@@ -446,26 +462,26 @@
     },
     "hb_queries": {
       "memory": {
-        "algorithm": "batched-bitset",
-        "batches": 648,
-        "cache_hits": 8,
+        "algorithm": "event-family-relations",
+        "batches": 172,
+        "cache_hits": 5,
         "dfs_queries": 0,
-        "edge_visits": 1393849773,
-        "filtered_queries": 0,
+        "edge_visits": 1087212898,
+        "filtered_queries": 414567,
         "queries": 11272192,
-        "shared_peak_index_bytes": 67061760
+        "shared_peak_index_bytes": 16777216
       },
       "required_orders": {
         "algorithm": "member-relations",
-        "batches": 1826,
-        "edge_visits": 204369927,
+        "batches": 29,
+        "edge_visits": 3256945,
         "member_enumerations": 0,
         "request_construction": {
           "concrete_pair_materializations": 0,
           "endpoint_reads": 157305,
-          "family_requests": 3756928,
+          "family_requests": 4318,
           "logical_orders": 611200,
-          "owner_bindings": 3756928,
+          "owner_bindings": 234334,
           "stored_orders": 19193
         }
       }
@@ -488,16 +504,16 @@
       },
       "candidate_generation_fallback": false,
       "exhaustive": false,
-      "first_race_seconds": 15.54015947,
-      "hb_algorithm": "batched-bitset",
-      "hb_batches": 648,
-      "hb_cache_hits": 8,
+      "first_race_seconds": 108.201666342,
+      "hb_algorithm": "event-family-relations",
+      "hb_batches": 172,
+      "hb_cache_hits": 5,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 1393849773,
-      "hb_filtered_queries": 0,
-      "hb_peak_index_bytes": 67061760,
+      "hb_edge_visits": 1087212898,
+      "hb_filtered_queries": 414567,
+      "hb_peak_index_bytes": 16777216,
       "hb_queries": 11272192,
-      "hb_query_seconds": 12.344873694999995,
+      "hb_query_seconds": 105.27234988000001,
       "overlap_queries": 1,
       "strategy": "conflict-first",
       "unordered_candidates_examined": 1
@@ -505,7 +521,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 3912.7734375,
+    "peak_footprint_mib": 766.20703125,
     "required_order_domains": 19193,
     "required_orders": 611200,
     "search_complete": false,
@@ -522,7 +538,7 @@
       "binding_diagnostics": [
         {
           "code": "incomplete_value_semantics",
-          "message": "opaque_compute_diamond: Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
+          "message": "two_arm_merge_values: Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); values after its join are not exported"
         }
       ],
       "execution_cohorts": 21,
@@ -534,13 +550,18 @@
       "synchronization_groups": 2311,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 321,
-      "thread_prefix_groups": 125453,
-      "value_diagnostic_count": 1,
+      "thread_prefix_groups": 8147,
+      "value_diagnostic_count": 2,
       "value_diagnostics": [
         {
-          "code": "opaque_compute_diamond",
-          "line": 306,
-          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
+          "code": "two_arm_merge_values",
+          "line": 6054,
+          "message": "Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); values after its join are not exported"
+        },
+        {
+          "code": "unknown_execution_predicate",
+          "line": 6054,
+          "message": "The active instruction path is not fixed"
         }
       ]
     },
@@ -552,26 +573,26 @@
       "memory_address_payloads": false
     },
     "template_execution": {
-      "completed_ctas": 0,
+      "completed_ctas": 1,
       "coordinate_bindings": 0,
-      "logical_thread_steps": 0,
-      "path_entries": 0,
-      "record_bindings": 0,
-      "record_nodes": 0,
-      "splits": 0,
-      "template_steps": 0,
-      "thread_memberships": 0,
-      "value_nodes": 0
+      "logical_thread_steps": 833919,
+      "path_entries": 12684,
+      "record_bindings": 6695,
+      "record_nodes": 12271,
+      "splits": 10,
+      "template_steps": 12479,
+      "thread_memberships": 512,
+      "value_nodes": 5532
     },
     "thread_record_compression": {
       "completed_ctas": 1,
       "enabled": true,
-      "estimated_pool_bytes_sum": 11982100,
-      "intern_calls": 826477,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
       "logical_records": 826477,
       "record_handle_bytes": 32,
-      "templates": 12271,
-      "unique_bindings": 10501
+      "templates": 0,
+      "unique_bindings": 0
     },
     "unresolved_count": 0,
     "value_analysis": {
@@ -612,12 +633,12 @@
         ]
       }
     },
-    "value_ir_instance_count": 83892,
-    "value_ir_node_count": 83892,
+    "value_ir_instance_count": 133933,
+    "value_ir_node_count": 7217,
     "value_view_complete": false
   },
-  "peak_rss_mib": 4005.56640625,
-  "pipeline_elapsed_seconds": 112.992226685,
+  "peak_rss_mib": 766.20703125,
+  "pipeline_elapsed_seconds": 116.710007797,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -629,5 +650,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.47
+  "whole_pipeline_timeout_seconds": 498.474
 }

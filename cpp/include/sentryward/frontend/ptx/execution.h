@@ -9,6 +9,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -144,6 +145,13 @@ struct SharedValueSite {
 struct SharedValueDependency {
   SharedValueSite write, read;
   auto operator<=>(const SharedValueDependency &) const = default;
+};
+// A TMA read of a tensor map that a tensormap.cp_fenceproxy writes: the copy it reads from
+// (a warp occurrence) and that copy's version, a key of config.tma_descriptors.
+struct TensorMapRead {
+  std::uint32_t writer_warp{};
+  DynamicKey write;
+  std::string version;
 };
 // An observation, not a proved predicate. Present only during explicitly
 // requested, expression-only capture of the unchanged input's user choice.
@@ -367,6 +375,9 @@ struct ExecutionProgram {
   std::vector<std::uint64_t> static_execution_counts;
   std::vector<SharedValueSite> shared_constant_writes;
   std::vector<SharedValueDependency> shared_value_dependencies;
+  // RecoverTensorMaps (verification only): every TMA read of a runtime-written tensor map,
+  // by (warp * 32 + lane, instruction occurrence). Absent when the maps were not recovered.
+  std::optional<std::map<std::pair<std::uint32_t, DynamicKey>, TensorMapRead>> tensor_map_reads;
   ThreadRecordStatistics record_compression;
   TemplateExecutionStatistics template_execution;
   // Indices into lane_traces; groups belong to this CTA and never rejoin.
@@ -413,6 +424,13 @@ SpecializeCluster(const Module &, const Function &, const std::vector<FrontendCo
                   std::function<void()> poll = {},
                   SpecializationPurpose purpose = SpecializationPurpose::Verification);
 [[nodiscard]] std::optional<Integer> ScalarInteger(const Scalar &value);
+// isspacep.<space> of a generic address from its provenance: a pointer into a global object
+// lies in the global window, outside the shared, local and const windows. Otherwise unknown.
+[[nodiscard]] std::optional<bool> GenericAddressInSpace(std::string_view space, const Scalar &address,
+                                                        const nlohmann::json &resources);
+// Warp-level operations: their results depend on other lanes or on which lanes execute them,
+// so an opaque compute region never holds one.
+[[nodiscard]] bool WarpLevelOpcode(std::string_view opcode);
 [[nodiscard]] std::optional<std::pair<std::string, Integer>>
 SplitAddress(std::string_view text);
 [[nodiscard]] std::vector<std::string> RegistersIn(std::string_view text);

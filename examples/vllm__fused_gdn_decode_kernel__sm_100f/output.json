@@ -57,11 +57,11 @@
   },
   "diagnostics": [
     {
-      "code": "opaque_compute_diamond",
+      "code": "dynamic_address_unsupported",
       "details": {
-        "internal_stage": "value_lowering"
+        "internal_stage": "value_analysis.memory_elimination"
       },
-      "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
+      "message": "Memory address remains symbolic",
       "stage": "equivalence"
     }
   ],
@@ -182,68 +182,106 @@
     "equivalence": {
       "diagnostics": [
         {
-          "code": "opaque_compute_diamond",
-          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
-          "stage": "value_lowering"
+          "code": "dynamic_address_unsupported",
+          "message": "Memory address remains symbolic",
+          "stage": "value_analysis.memory_elimination"
         }
       ],
       "expression_diagnostic": {
         "diagnostics": [
           {
-            "code": "opaque_compute_diamond",
-            "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
-            "stage": "value_lowering"
+            "code": "dynamic_address_unsupported",
+            "message": "Memory address remains symbolic",
+            "stage": "pipeline"
           }
         ],
-        "line": 642,
-        "serialization": {
-          "action_patterns": 0,
-          "binding_patterns": 0,
-          "domain_refinements": 0,
-          "elapsed_seconds": 3.491e-05,
-          "event_families": 0,
-          "expanded_event_records": 0,
-          "largest_batch_members": 0,
-          "logical_actions": 0,
-          "logical_events": 0,
-          "peak_rss_mib_at_completion": 1214.4375,
-          "reachability_queries": 0,
-          "relations": 0,
-          "rss_mib_at_completion": 1119.71875,
-          "scheduled_batches": 0,
-          "singleton_batches": 0,
-          "value_families": 0
+        "duplicate_write_value_checks": 0,
+        "equivalence_check": "not_run",
+        "equivalence_reason": "reference_expression_not_supplied",
+        "initial_memory_regions": 4,
+        "initial_read_families": 4,
+        "instruction": "cp.async.cg.shared.global [%r891], [%rd164], 16;",
+        "line": 439,
+        "memory_action_storage": {
+          "logical_actions": 58758,
+          "stored_runs": 36052
         },
-        "stage": "value_lowering"
+        "output_region_families": 0,
+        "output_regions": 0,
+        "passes": [
+          {
+            "name": "packing",
+            "rewritten_instances": 0,
+            "rewritten_nodes": 0,
+            "semantics": "exact_fixed_width"
+          },
+          {
+            "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+            "name": "software_exp2",
+            "rewritten_instances": 0,
+            "rewritten_nodes": 0,
+            "semantics": "ideal_exp2"
+          },
+          {
+            "converted_instances": 225809,
+            "name": "type_edges",
+            "removed_nodes": 3899
+          },
+          {
+            "name": "memory_elimination"
+          },
+          {
+            "elements": 0,
+            "identities": 0,
+            "layouts": 0,
+            "mapping_blocks": 0,
+            "name": "view_normalization",
+            "original_pieces": 0,
+            "reused_initial_reads": 0,
+            "reused_views": 0,
+            "segmented": 0,
+            "slices": 0,
+            "stored_mapping_blocks": 0,
+            "typed_output_pieces": 0,
+            "typed_output_regions": 0
+          }
+        ],
+        "processed_memory_actions": 868,
+        "processed_memory_families": 0,
+        "read_substitutions": 868,
+        "serialization": {
+          "action_patterns": 36052,
+          "binding_patterns": 36052,
+          "domain_refinements": 727448,
+          "elapsed_seconds": 0.43880465,
+          "event_families": 43091,
+          "expanded_event_records": 0,
+          "largest_batch_members": 217,
+          "logical_actions": 58758,
+          "logical_events": 1425671,
+          "peak_rss_mib_at_completion": 439.2734375,
+          "reachability_queries": 0,
+          "relations": 425664,
+          "rss_mib_at_completion": 338.93359375,
+          "scheduled_batches": 43091,
+          "singleton_batches": 10051,
+          "value_families": 11588
+        },
+        "shared_read_families": 4,
+        "shared_read_instances": 864,
+        "stored_read_substitutions": 4
       },
-      "stage": "value_lowering"
+      "stage": "value_analysis.memory_elimination"
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "opaque_compute_diamond",
-            "details": {
-              "cta": 0,
-              "instruction": "@%p27 bra \t$L__BB1_28;",
-              "instruction_index": 333,
-              "location": {
-                "file": "corpus/vllm__fused_gdn_decode_kernel__sm_100f.ptx",
-                "line": 642
-              },
-              "occurrence": 0,
-              "thread": 0
-            },
-            "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
-            "stage": "value_lowering"
-          }
-        ],
+        "diagnostics": [],
         "first_unavailable_reason": "",
         "queries": 0,
         "resolved": 0,
         "source": "value_lowering",
         "unavailable": 0,
-        "value_view_complete": false
+        "value_view_complete": true
       },
       "cluster_completion_joins": 0,
       "cta_count": 1,
@@ -504,12 +542,12 @@
         "validation": "pending_backend"
       },
       "source_binding_storage": {
-        "binding_templates": 1,
+        "binding_templates": 4,
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 235046,
-        "stored_bindings": 235046
+        "stored_bindings": 11994
       },
       "source_edge_storage": {
         "binding_templates": 256,
@@ -534,7 +572,7 @@
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 30848,
+      "address_candidates": 51720,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -551,22 +589,22 @@
       "candidate_generation_fallback": false,
       "exhaustive": false,
       "family_analysis": {
-        "access_families": 152550,
-        "affine_member_rows": 0,
-        "candidate_relations": 30848,
-        "hb_frontier_pieces": 10833,
+        "access_families": 7926,
+        "affine_member_rows": 12320,
+        "candidate_relations": 10556,
+        "hb_frontier_pieces": 492,
         "hb_member_enumerations": 0,
         "logical_accesses": 152550
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 273,
+      "hb_batches": 31,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 9838345,
+      "hb_edge_visits": 214389,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
-      "hb_queries": 30848,
-      "hb_query_seconds": 2.476028687000001,
+      "hb_queries": 51720,
+      "hb_query_seconds": 0.055840607,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -574,7 +612,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 1214.87109375,
+    "peak_footprint_mib": 439.59765625,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -587,31 +625,20 @@
       "representative_election": true
     },
     "semantic_program": {
-      "binding_diagnostic_count": 1,
-      "binding_diagnostics": [
-        {
-          "code": "incomplete_value_semantics",
-          "message": "opaque_compute_diamond: Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
-        }
-      ],
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
       "execution_cohorts": 7,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
-      "memory_linking_templates_used": false,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 36052,
+      "memory_binding_templates": 2226,
+      "memory_bindings": 58758,
+      "memory_linking_templates_used": true,
       "synchronization_groups": 3583,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 0,
-      "thread_prefix_groups": 177978,
-      "value_diagnostic_count": 1,
-      "value_diagnostics": [
-        {
-          "code": "opaque_compute_diamond",
-          "line": 642,
-          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported"
-        }
-      ]
+      "thread_prefix_groups": 16934,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
     "source_violations": [],
     "synchronization_input": {
@@ -620,38 +647,89 @@
       "memory_address_payloads": false
     },
     "template_execution": {
-      "completed_ctas": 0,
+      "completed_ctas": 1,
       "coordinate_bindings": 0,
-      "logical_thread_steps": 0,
-      "path_entries": 0,
-      "record_bindings": 0,
-      "record_nodes": 0,
-      "splits": 0,
-      "template_steps": 0,
-      "thread_memberships": 0,
-      "value_nodes": 0
+      "logical_thread_steps": 277166,
+      "path_entries": 4668,
+      "record_bindings": 6398,
+      "record_nodes": 4054,
+      "splits": 3,
+      "template_steps": 4117,
+      "thread_memberships": 256,
+      "value_nodes": 4758
     },
     "thread_record_compression": {
       "completed_ctas": 1,
       "enabled": true,
-      "estimated_pool_bytes_sum": 25587368,
-      "intern_calls": 273450,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
       "logical_records": 273450,
       "record_handle_bytes": 32,
-      "templates": 4054,
-      "unique_bindings": 48485
+      "templates": 0,
+      "unique_bindings": 0
     },
     "unresolved_count": 0,
     "value_analysis": {
       "diagnostics": [
         {
-          "code": "opaque_compute_diamond",
-          "message": "Execution skipped an unresolved compute diamond; its values and any private-memory reads are not exported",
-          "stage": "value_lowering"
+          "code": "dynamic_address_unsupported",
+          "message": "Memory address remains symbolic",
+          "stage": "pipeline"
         }
       ],
+      "duplicate_write_value_checks": 0,
       "equivalence_check": "unsupported",
-      "line": 642,
+      "initial_memory_regions": 4,
+      "initial_read_families": 4,
+      "instruction": "cp.async.cg.shared.global [%r891], [%rd164], 16;",
+      "line": 439,
+      "memory_action_storage": {
+        "logical_actions": 58758,
+        "stored_runs": 36052
+      },
+      "output_region_families": 0,
+      "output_regions": 0,
+      "passes": [
+        {
+          "name": "packing",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 225809,
+          "name": "type_edges",
+          "removed_nodes": 3899
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 0,
+          "layouts": 0,
+          "mapping_blocks": 0,
+          "name": "view_normalization",
+          "original_pieces": 0,
+          "reused_initial_reads": 0,
+          "reused_views": 0,
+          "segmented": 0,
+          "slices": 0,
+          "stored_mapping_blocks": 0,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
+        }
+      ],
+      "processed_memory_actions": 868,
+      "processed_memory_families": 0,
+      "read_substitutions": 868,
       "scalar_fold": {
         "diagnostics": [
           {
@@ -661,33 +739,35 @@
         ]
       },
       "serialization": {
-        "action_patterns": 0,
-        "binding_patterns": 0,
-        "domain_refinements": 0,
-        "elapsed_seconds": 3.491e-05,
-        "event_families": 0,
+        "action_patterns": 36052,
+        "binding_patterns": 36052,
+        "domain_refinements": 727448,
+        "elapsed_seconds": 0.43880465,
+        "event_families": 43091,
         "expanded_event_records": 0,
-        "largest_batch_members": 0,
-        "logical_actions": 0,
-        "logical_events": 0,
-        "peak_rss_mib_at_completion": 1214.4375,
+        "largest_batch_members": 217,
+        "logical_actions": 58758,
+        "logical_events": 1425671,
+        "peak_rss_mib_at_completion": 439.2734375,
         "reachability_queries": 0,
-        "relations": 0,
-        "rss_mib_at_completion": 1119.71875,
-        "scheduled_batches": 0,
-        "singleton_batches": 0,
-        "value_families": 0
+        "relations": 425664,
+        "rss_mib_at_completion": 338.93359375,
+        "scheduled_batches": 43091,
+        "singleton_batches": 10051,
+        "value_families": 11588
       },
-      "stage": "value_lowering"
+      "shared_read_families": 4,
+      "shared_read_instances": 864,
+      "stored_read_substitutions": 4
     },
-    "value_ir_instance_count": 117879,
-    "value_ir_node_count": 117879,
-    "value_view_complete": false,
-    "verification_elapsed_seconds": 7.965307923,
+    "value_ir_instance_count": 531742,
+    "value_ir_node_count": 8698,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 1.953541927,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 1214.87109375,
-  "pipeline_elapsed_seconds": 8.162989931,
+  "peak_rss_mib": 439.59765625,
+  "pipeline_elapsed_seconds": 2.457505491,
   "result": "unsupported",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -699,5 +779,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.394
+  "whole_pipeline_timeout_seconds": 498.405
 }

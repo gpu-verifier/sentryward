@@ -466,6 +466,8 @@ public:
   // Stored as one sorted array (binary search), not one node per register, so
   // the table lives in a single allocation of 24 bytes per register.
   [[nodiscard]] std::optional<RegId> Reg(std::string_view exact_name) const;
+  // RecoverTensorMaps' reads of runtime-written tensor maps (structure; never an event).
+  [[nodiscard]] const auto &TensorMapReads() const noexcept { return program_->tensor_map_reads; }
 
   // lanes (structure; never an event). Always read live.
   [[nodiscard]] std::vector<LaneRef> ProgramLanes() const;
@@ -733,7 +735,8 @@ public:
     return program_->shared_value_dependencies;
   }
   // Structure-key input only. Every SharedConstantWrites() site, then each
-  // SharedValueDependencies() entry's write and read site, in order.
+  // SharedValueDependencies() entry's write and read site, then each TensorMapReads()
+  // entry's write (lane 0 of its warp) and read site, in order.
   [[nodiscard]] std::vector<SharedSiteRef> SharedSitesRelative() const;
 
   // driver accounting (references: no copies)
