@@ -1,127 +1,154 @@
 # Continuous verification
 
-The workflow selects kernels that need verification, runs the existing SentryWard
-CLI, and publishes their results, evidence and checked reports as immutable
-snapshots on the `results` branch. Each kernel has one record for its version,
-input hashes, budgets, execution status and report references. Generated files stay
-out of `main`; the website follows `latest.json` to the current snapshot.
+Keep results for committed kernels up to date. Actions runs the existing verifier
+and report scripts; S3 stores evidence; the `results` branch serves the catalog
+and reports to the website. Source and policy changes go through PRs.
+Verification and publication are implemented. AI below is a proposed extension.
 
-Reports use the existing skill's deterministic composer and checker. AI
-explanations, cost accounting and server execution are separate follow-up work.
+## When work starts
 
-## What runs
+The workflow is [continuous-verification.yml](../.github/workflows/continuous-verification.yml).
 
-The planner discovers committed `examples/<name>/input.json` files paired with
-`corpus/<name>.ptx`, plus each case's reference and binding when present.
-
-| Change | Work |
+| Trigger | Execution and publication |
 | --- | --- |
-| PTX, input, reference or binding | Verify the affected kernel. |
-| Verifier, shared reference helpers, dependencies or verification options | Verify all affected task identities. |
-| Report skill or publication code | Reuse matching verification evidence and regenerate reports. |
-| Ordinary documentation | Preserve cached verification. |
+| Contributor opens, updates or reopens a PR | Contract tests, then verification and report previews; no publication credentials. |
+| Maintainer pushes or merges to `main` | Contract tests; when automation is enabled, run and publish. |
+| GitHub daily schedule, 04:17 UTC | When enabled, compare current inputs with published results and fill gaps. This is a scheduled time, not a start-time guarantee. |
+| Maintainer runs the workflow manually | One kernel or the whole catalog; `force` requests verification. Preview by default; publication also requires enabled `main` and `publish: true`. |
 
-The identity includes input hashes, verifier sources, the actual native binary,
-Python and system packages, and resource limits; shard count is excluded. Reports
-are always recomposed and checked against their frozen input and result files.
-Exit code zero does not mean verification passed; the verifier's result and
-diagnostics remain intact.
+PR/push events ignore changes confined to `docs/**`, `README.md`, `LICENSE` or
+`assets/**`. `results` commits do not trigger verification. Once the snapshot
+loader is deployed, page loads read `latest.json` and that snapshot without a redeploy.
 
-PRs produce credential-free checks and previews. Enabled `main` pushes publish
-results; a daily run reconciles unfinished work against the latest snapshot.
-Manual dispatch selects one kernel or the full catalog, can force verification,
-and defaults to preview only.
+## How a run works
 
-Four hosted runners execute kernels serially within each shard. Each kernel gets
-500 seconds and an 8 GiB verifier budget. Its container has no network, a read-only
-filesystem, a 10 GiB total memory limit, two CPUs and at most 256 processes.
-Reference Python runs only inside that container. After the container stops,
-the host rejects symlinks and special files before exporting artifacts.
+After contracts pass, `prepare` builds the pinned runtime, fixes the checkout SHA
+and compares each kernel with the published snapshot. It discovers
+`examples/<name>/input.json` paired with `corpus/<name>.ptx`; adding a kernel
+does not require editing the workflow.
 
-Execution status is separate from the verifier's conclusion:
-
-| State | Meaning |
+| Change or saved state | Planner decision |
 | --- | --- |
-| `current` | This task produced a verifier result, including inconclusive outcomes. |
-| `reused` | Matching saved evidence was retrieved and checked. |
-| `pending` | Outside the manual selection; no current verdict. |
-| `deferred_resource` | Recorded memory demand exceeds the runner budget; no current verdict. |
-| `failed` | Execution or evidence collection failed. |
+| PTX, input, reference or binding changed | Verify that kernel. |
+| Verifier, shared reference helpers, runtime or verification limits changed | Verify affected identities, normally the full catalog. |
+| Only report skill or publication code changed | Reuse matching verifier output; recompose and check reports. |
+| Missing output or tool failure | Try verification again. |
+| Matching output, including findings, timeout or unsupported results | Reuse it unless forced; a daily run does not repeat an unchanged timeout. |
+| Known memory demand exceeds the budget | Record `deferred_resource`; `force` does not raise the budget. |
 
-Historical timeout cases are scheduled. High-memory cases remain explicitly
-accounted for rather than receiving an automatically enlarged budget. Historical
-verification, synchronization-removal experiments and B200 measurements retain
-their original source and input identities.
+Identity covers input hashes, verifier code, the built native binary, Python and
+system packages, and verification limits. Shard count does not affect it.
+Tasks outside a manual selection stay `pending` unless matching output is reusable.
 
-## Enable publication
+Four hosted shards run kernels serially, with 500 seconds and 8 GiB per verifier.
+The process group has a separate deadline. Each networkless container limits the
+whole process tree to 10 GiB, two CPUs and 256 processes. Reference Python runs
+inside it; export rejects symlinks and special files after the container stops.
 
-Configure these repository variables:
+`report` collects records after the shards finish, including partial failures.
+The existing composer/checker produces reports. Failed reports are withheld;
+verifier output remains available.
+
+Job success, kernel verdict and report status are separate. `current`/`reused`
+mean output is available, including inconclusive results. `pending`/`deferred_resource`
+have no current verdict; `failed` means execution or collection failed. Earlier
+conclusions stay under `historical`; existing performance studies keep their inputs.
+
+## Publication and recovery
+
+S3 stores immutable evidence under content hashes. The `results` branch stores
+`runs/<run_id>/<snapshot_id>/` with `results.json`, `manifest.json` and reports;
+`latest.json` points to one snapshot. Each kernel record binds its inputs,
+runtime, budgets, execution state and report/evidence references.
+
+The publisher rechecks records/reports and uploads/checks evidence before committing
+the snapshot and pointer together. Publishers run serially, check current `main`
+and the baseline, and refuse to discard completed results. Git updates are never forced.
+
+| Interruption | Recovery |
+| --- | --- |
+| Worker or report fails | Keep other records; the next plan retries missing/failed verification and recomposes reports. |
+| Upload or Git update fails | The old pointer stays usable. Retry with retained artifacts; already uploaded objects are reusable. |
+| Publication repeats | An already published snapshot is a no-op. A successful retry can produce a new snapshot under the same run. |
+| Source or baseline changed while work ran | Stop the stale publication; a new dispatch plans against current state. |
+| Unpublished artifacts expire | Rerun the missing work. The daily planner reads published results, not old Actions artifacts. |
+
+Intermediate artifacts last 14 days; the worker image lasts two. After image
+expiry, start a new dispatch. Published evidence has no automatic expiry.
+For rollback, disable publication, stop active publishers and restore a validated
+`latest.json`. We save results, not a durable queue of unfinished jobs.
+
+## Adding AI later
+
+Publish base results first. Trial AI manually on one kernel in a published
+snapshot before enabling automatic runs. Skip clean results unless requested.
+
+1. Prepare matching inputs, output, source and the existing report skill. Pin the
+   CLI/model/skill versions; defer if the material exceeds the context budget.
+2. Claude returns JSON in the skill's `draft.json` format. Treat source/comments
+   as data. Give the model no execution/edit tools or GitHub/storage write credentials.
+   [`--bare`](https://code.claude.com/docs/en/cli-reference) skips configuration
+   discovery; tool restrictions and process isolation must be set separately.
+3. Run composer/checker, then a separate Claude session reviewing guards,
+   participants, source reasoning and completion relationships against the same
+   evidence. Allow at most one revision and another review.
+4. Trusted code publishes only checked, reviewed explanations, with the draft,
+   review and usage record as evidence. Create a new snapshot only if the original
+   is still current; otherwise leave the current snapshot alone and replan.
+
+Reuse an explanation only when evidence hashes, skill/composer rules, model
+configuration and review policy match; recompose facts and rerun the checker.
+AI cannot change the raw verdict or inputs. Suggested fixes need a separate PR.
+Reviewer approval is not another verifier result. Later, failure diagnosis or new
+kernel proposals can produce ordinary PRs; merging them uses the same pipeline.
+
+Before paid runs, trusted code must reserve calls in a persistent ledger using
+conditional object-store writes: $10 per dispatch and $20 per UTC day, including
+revisions. Recheck at day boundaries; retries keep their spending and unresolved
+calls retain reservations. Bound turns/time and set the provider's spending limit:
+CLI estimates are not a hard billing cap. None of these budget controls exists yet.
+Failure or insufficient budget leaves the published base result available.
+
+Before automatic use, test wrong citations, unsupported claims, reviewer rejection,
+budget exhaustion, duplicate attempts and a newer snapshot arriving during review.
+
+## Why these choices
+
+| Public implementation | What applies here |
+| --- | --- |
+| [vLLM job definitions](https://github.com/vllm-project/vllm/blob/0beab6c251e8046c0c6cf2fef114cd23b58cda74/.buildkite/test_areas/kernels.yaml) and [selection rules](https://github.com/vllm-project/ci-infra/blob/5fa07cf6cbc6e90cb72abdebc43cb6288f343932/buildkite/pipeline_generator/README.md) declare dependencies, hardware and time limits. | Keep task selection explicit. Our kernel inputs are already enumerable, so content identities suffice; no per-kernel workflow or Buildkite generator is needed. |
+| [gh-aw's CI coach](https://github.com/github/gh-aw/blob/a74a1e171d5a52aec4dbd3a3f09e7d1dafda783c/.github/workflows/ci-coach.lock.yml) separates the agent job from jobs that write to GitHub. | Keep AI output as data for the existing publisher to check. We need this permission boundary, not its workflow compiler. |
+| [Temporal](https://github.com/temporalio/documentation/blob/main/docs/encyclopedia/activities/activity-definition.mdx#idempotency) records completed activity results and requires retry-safe side effects. | Keep the recovery limit above explicit. Reconsider a durable scheduler when jobs need checkpoints or several executors must claim work across failures. |
+
+A server can use the same task/record format, but needs a plan for its actual
+runtime and budgets. Add it when deferred kernels need execution. Upstream imports
+and dependency/model upgrades remain reviewed source changes.
+
+## Enable and check
+
+Set repository variables:
 
 | Variable | Value |
 | --- | --- |
 | `SENTRYWARD_AUTOMATION_ENABLED` | `true` enables automatic runs and manual publication from `main`. |
-| `SENTRYWARD_S3_ENDPOINT` | HTTPS S3 API endpoint, without the bucket or query parameters. |
+| `SENTRYWARD_S3_ENDPOINT` | HTTPS S3 API endpoint, without bucket or query parameters. |
 | `SENTRYWARD_S3_BUCKET` | Evidence bucket. |
-| `SENTRYWARD_EVIDENCE_URL` | Public HTTPS prefix serving that bucket's `objects/` keys. |
-| `AWS_REGION` | Storage signing region; defaults to `us-east-1`. |
+| `SENTRYWARD_EVIDENCE_URL` | Public HTTPS prefix serving the bucket's `objects/` keys. |
+| `AWS_REGION` | Storage signing region; default `us-east-1`. |
 
-Create an `automation-publish` GitHub environment restricted to `main`. Add
-`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and, for temporary credentials,
-`AWS_SESSION_TOKEN`. Grant this identity read and conditional-write access to
-`objects/`. The job's `GITHUB_TOKEN` needs permission to update `results`.
-Verification and reporting jobs receive no publication credentials.
+Restrict the `automation-publish` environment to `main`. Supply
+`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and optional `AWS_SESSION_TOKEN`
+with read/conditional-write access to `objects/`. Only the publisher gets these
+credentials and a GitHub token that can update `results`.
 
-Storage must support `If-None-Match: *` and serve permanent public object URLs.
-For a base such as `https://evidence.example.org/sentryward`, the stored key
-`objects/<sha256>/output.json` must be readable beneath that exact prefix.
-Uploads are checked through both the authenticated and public endpoints.
-Disable automatic expiration for published evidence and allow browser `GET`
-requests from `https://sentryward.io` through CORS.
+Storage must support `If-None-Match: *`, permanent public object URLs and browser
+GETs from `https://sentryward.io` through CORS. Uploads are checked through both
+authenticated and public endpoints. Start with a small manual preview, then
+publish from enabled `main` with `publish: true`. Deploy the website snapshot
+loader only after the first valid snapshot exists; it has no floating-main fallback.
 
-Start with a small manual preview while the enable flag is unset. After checking
-its results, enable publication and dispatch from `main` with `publish: true`.
-Deploy the website's snapshot loader after the first valid snapshot exists;
-it reports a missing or invalid pointer rather than falling back to `main`.
-
-## Snapshots and recovery
-
-`run_id` identifies a dispatch. `snapshot_id` hashes its plan, records and evidence,
-so a successful retry can publish a new snapshot without changing the earlier one:
-
-```text
-latest.json
-runs/<run_id>/<snapshot_id>/results.json
-runs/<run_id>/<snapshot_id>/manifest.json
-runs/<run_id>/<snapshot_id>/reports/<kernel>/report.md
-```
-
-The publisher validates records and reports, uploads and checks all evidence,
-then commits the snapshot and pointer together. Repeating the same publication is
-idempotent. A late run cannot replace a newer source revision or discard a matching
-completed result. If another dispatch changes the baseline during execution,
-publication stops; a new manual or scheduled dispatch replans from that baseline.
-Git updates are serialized and never forced. Publication does not create releases.
-
-Actions artifacts retain intermediate work for 14 days; the worker image is kept
-for two days. After it expires, start a new dispatch instead of retrying a verifier
-job. Durable evidence lives in object storage. To roll back, disable automation,
-stop in-flight publishers and commit a previously validated `latest.json` to
-`results`, retaining all snapshots and objects.
-
-## Development
-
-`python -m tools.automation --help` exposes `plan`, `verify`, `report`, and `publish`,
-plus runtime and baseline inspection. Stages share a plan and case-directory
-layout. Plan from a clean committed checkout; source links pin that commit.
-The container build fixes Ubuntu, system packages and CPU PyTorch dependencies.
-
-Run the public contracts without credentials or third-party Python packages:
-
-```sh
-python3 -m unittest discover -s tests/automation
-```
-
-These tests use small Git fixtures and fake verifier/storage clients. Before
-production enablement, also run a Linux container preview and check the configured
-storage and publication identity. macOS address-space limits do not substitute
-for the Linux resource-limit check.
+`python -m tools.automation --help` exposes `plan`, `verify`, `report` and
+`publish`, plus runtime/baseline inspection. Plan from a clean committed checkout.
+Run public contracts with `python3 -m unittest discover -s tests/automation`;
+they use small Git fixtures and fake verifier/storage clients. Production also
+needs a Linux container preview and a check of the configured storage/publisher.
