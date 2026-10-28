@@ -133,6 +133,9 @@ and dependency/model upgrades remain reviewed source changes.
 
 ## Enable and check
 
+Require PR review on protected `main` before enabling publication. The environment's
+branch restriction only checks the ref; it does not enforce review of workflow code.
+
 Set repository variables:
 
 | Variable | Value |
