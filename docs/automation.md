@@ -19,6 +19,8 @@ The workflow is [continuous-verification.yml](../.github/workflows/continuous-ve
 PR/push events ignore changes confined to `docs/**`, `README.md`, `LICENSE` or
 `assets/**`. `results` commits do not trigger verification. Once the snapshot
 loader is deployed, page loads read `latest.json` and that snapshot without a redeploy.
+New PR runs cancel older runs for that PR. Main, scheduled and manual runs do not
+cancel each other; only their publication jobs share a concurrency group.
 
 ## How a run works
 
@@ -40,7 +42,8 @@ Identity covers input hashes, verifier code, the built native binary, Python and
 system packages, and verification limits. Shard count does not affect it.
 Tasks outside a manual selection stay `pending` unless matching output is reusable.
 
-Four hosted shards run kernels serially, with 500 seconds and 8 GiB per verifier.
+The plan supplies the shard matrix, with at most four hosted runners at once.
+Shards run kernels serially, with 500 seconds and 8 GiB per verifier.
 The process group has a separate deadline. Each networkless container limits the
 whole process tree to 10 GiB, two CPUs and 256 processes. Reference Python runs
 inside it; export rejects symlinks and special files after the container stops.
@@ -64,6 +67,8 @@ runtime, budgets, execution state and report/evidence references.
 The publisher rechecks records/reports and uploads/checks evidence before committing
 the snapshot and pointer together. Publishers run serially, check current `main`
 and the baseline, and refuse to discard completed results. Git updates are never forced.
+GitHub can replace a waiting publisher with a newer one; the group is not a queue
+that guarantees every run will publish. The next dispatch compares saved results again.
 
 | Interruption | Recovery |
 | --- | --- |
@@ -75,6 +80,8 @@ and the baseline, and refuse to discard completed results. Git updates are never
 
 Intermediate artifacts last 14 days; the worker image lasts two. After image
 expiry, start a new dispatch. Published evidence has no automatic expiry.
+Jobs pass the plan, image and reports by artifact ID; missing uploads fail explicitly.
+Raw shards retain stable names so a failed-shard retry can use the other shards' output.
 For rollback, disable publication, stop active publishers and restore a validated
 `latest.json`. We save results, not a durable queue of unfinished jobs.
 

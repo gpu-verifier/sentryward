@@ -27,6 +27,11 @@ on:
 permissions:
   contents: read
 
+# Replace obsolete PR previews without interrupting main/manual publication.
+concurrency:
+  group: sentryward-verification-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   contracts:
     runs-on: ubuntu-24.04
@@ -46,6 +51,9 @@ jobs:
     outputs:
       source: ${{ steps.plan.outputs.source }}
       publish: ${{ steps.plan.outputs.publish }}
+      shards: ${{ steps.plan.outputs.shards }}
+      plan_artifact: ${{ steps.upload_plan.outputs.artifact-id }}
+      image_artifact: ${{ steps.upload_image.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -68,20 +76,30 @@ jobs:
           if [ -n "$SELECTED_KERNEL" ]; then arguments+=(--name "$SELECTED_KERNEL"); fi
           if [ "$FORCE" = true ]; then arguments+=(--force); fi
           python3 -m tools.automation plan --runtime "$RUNNER_TEMP/automation/runtime.json" --baseline "$RUNNER_TEMP/automation/baseline.json" --run-id "gh-$GITHUB_RUN_ID" --repository "$GITHUB_REPOSITORY" --evidence-url "${EVIDENCE_URL:-https://evidence.invalid/sentryward}" --out "$RUNNER_TEMP/automation/plan.json" "${arguments[@]}"
-          echo "source=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          python3 - "$RUNNER_TEMP/automation/plan.json" >> "$GITHUB_OUTPUT" <<'PY'
+          import json, sys
+          with open(sys.argv[1]) as source:
+              plan = json.load(source)
+          print("source=" + plan["source_revision"])
+          print("shards=" + json.dumps(list(range(plan["config"]["verification"]["shards"]))))
+          PY
           echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
       - name: Save the exact worker image
         run: docker save sentryward-worker | gzip -1 > "$RUNNER_TEMP/automation/worker.tar.gz"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        id: upload_plan
         with:
           name: verification-plan
           path: ${{ runner.temp }}/automation/*.json
+          if-no-files-found: error
           overwrite: true
           retention-days: 14
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        id: upload_image
         with:
           name: verification-image
           path: ${{ runner.temp }}/automation/worker.tar.gz
+          if-no-files-found: error
           compression-level: 0
           overwrite: true
           retention-days: 2
@@ -94,7 +112,7 @@ jobs:
       fail-fast: false
       max-parallel: 4
       matrix:
-        shard: [0, 1, 2, 3]
+        shard: ${{ fromJSON(needs.prepare.outputs.shards) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -102,7 +120,7 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          pattern: verification-*
+          artifact-ids: ${{ needs.prepare.outputs.plan_artifact }},${{ needs.prepare.outputs.image_artifact }}
           path: ${{ runner.temp }}/automation
           merge-multiple: true
       - run: gunzip -c "$RUNNER_TEMP/automation/worker.tar.gz" | docker load
@@ -115,6 +133,7 @@ jobs:
         with:
           name: raw-shard-${{ matrix.shard }}
           path: ${{ runner.temp }}/artifacts/
+          if-no-files-found: error
           overwrite: true
           retention-days: 14
 
@@ -132,8 +151,9 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: verification-plan
+          artifact-ids: ${{ needs.prepare.outputs.plan_artifact }}
           path: ${{ runner.temp }}/automation
+          merge-multiple: true
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: raw-shard-*
@@ -147,6 +167,7 @@ jobs:
         with:
           name: reports-${{ github.run_attempt }}
           path: ${{ runner.temp }}/work/
+          if-no-files-found: error
           retention-days: 14
 
   publish:
@@ -167,8 +188,9 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: verification-plan
+          artifact-ids: ${{ needs.prepare.outputs.plan_artifact }}
           path: ${{ runner.temp }}/automation
+          merge-multiple: true
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           artifact-ids: ${{ needs.report.outputs.artifact }}
