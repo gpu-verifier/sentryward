@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 
 from parameter_analysis import parameter_bindings
+from report_layout import load_saved_result
 
 # Limits bound displayed evidence, not the source range that is indexed.
 MAX_CHARS = 48000
@@ -714,7 +715,7 @@ def main():
     try:
         at = tuple(int(v) for v in args.at.split(',')) if args.at else ()
         run_input = json.loads(args.input.read_text())
-        result = json.loads(args.result.read_text())
+        result = load_saved_result(args.result)
         print(render(run_input, result, args.ptx.read_text(), str(args.ptx), at), end='')
     except (ValueError, OSError) as error:
         parser.error(str(error))

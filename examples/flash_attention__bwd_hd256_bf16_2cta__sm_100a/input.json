@@ -71,6 +71,58 @@
     {
       "field": "dQ.stride_batch",
       "value": 262144
+    },
+    {
+      "field": "mma.0.accumulate",
+      "value": 0
+    },
+    {
+      "field": "mma.0.negate_a",
+      "value": 0
+    },
+    {
+      "field": "mma.0.negate_b",
+      "value": 0
+    },
+    {
+      "field": "mma.1.accumulate",
+      "value": 0
+    },
+    {
+      "field": "mma.1.negate_a",
+      "value": 0
+    },
+    {
+      "field": "mma.1.negate_b",
+      "value": 0
+    },
+    {
+      "field": "mma.2.accumulate",
+      "value": 0
+    },
+    {
+      "field": "mma.2.negate_a",
+      "value": 0
+    },
+    {
+      "field": "mma.2.negate_b",
+      "value": 0
+    },
+    {
+      "field": "shape.D",
+      "value": 256
+    },
+    {
+      "field": "shape.kv_heads",
+      "value": 8
+    },
+    {
+      "field": "LSE.sequence",
+      "value": 128
+    },
+    {
+      "field": "scale_softmax",
+      "value": 0.0625
     }
   ],
   "declarations": [
@@ -259,6 +311,120 @@
       "offset": 0,
       "type": "pointer",
       "object": "dQ"
+    },
+    {
+      "name": "mma.0.accumulate",
+      "parameter": 0,
+      "offset": 0,
+      "type": "u8"
+    },
+    {
+      "name": "mma.0.negate_a",
+      "parameter": 0,
+      "offset": 1,
+      "type": "u8"
+    },
+    {
+      "name": "mma.0.negate_b",
+      "parameter": 0,
+      "offset": 2,
+      "type": "u8"
+    },
+    {
+      "name": "mma.1.accumulate",
+      "parameter": 1,
+      "offset": 0,
+      "type": "u8"
+    },
+    {
+      "name": "mma.1.negate_a",
+      "parameter": 1,
+      "offset": 1,
+      "type": "u8"
+    },
+    {
+      "name": "mma.1.negate_b",
+      "parameter": 1,
+      "offset": 2,
+      "type": "u8"
+    },
+    {
+      "name": "mma.2.accumulate",
+      "parameter": 2,
+      "offset": 0,
+      "type": "u8"
+    },
+    {
+      "name": "mma.2.negate_a",
+      "parameter": 2,
+      "offset": 1,
+      "type": "u8"
+    },
+    {
+      "name": "mma.2.negate_b",
+      "parameter": 2,
+      "offset": 2,
+      "type": "u8"
+    },
+    {
+      "name": "shape.D",
+      "parameter": 4,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.D",
+      "parameter": 6,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.D",
+      "parameter": 8,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.D",
+      "parameter": 10,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.D",
+      "parameter": 14,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.D",
+      "parameter": 17,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "shape.kv_heads",
+      "parameter": 12,
+      "offset": 20,
+      "type": "s32"
+    },
+    {
+      "name": "shape.kv_heads",
+      "parameter": 16,
+      "offset": 20,
+      "type": "s32"
+    },
+    {
+      "name": "LSE.sequence",
+      "parameter": 15,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "scale_softmax",
+      "parameter": 18,
+      "offset": 0,
+      "type": "f32"
     }
   ],
   "tma_descriptors": [

@@ -90,12 +90,12 @@
     {
       "line": 52,
       "taken": false,
-      "note": "vectorize_read_with_alignment<16>: the token's input row pointer is 32-byte aligned (PyTorch allocations are 256-byte aligned and the 2048-byte row stride keeps every row aligned), so the vectorized path is taken instead of the scalar fallback. User-authorized scenario; the frontend cannot decide alignment of a symbolic pointer."
+      "note": "vectorize_read_with_alignment<16>: the token's input row pointer is 32-byte aligned (PyTorch allocations are 256-byte aligned and the 2048-byte row stride keeps every row aligned), so the vectorized path is taken instead of the scalar fallback. Analysis scope: conclusions are conditional on this branch choice; the frontend cannot decide alignment of a symbolic pointer."
     },
     {
       "line": 1116,
       "taken": false,
-      "note": "vectorize_with_alignment<16>: the token's input row (32-byte aligned) and fp8 output row (16-byte aligned) allow the vectorized quantization path; the scalar fallback is not taken. User-authorized scenario; the frontend cannot decide alignment of symbolic pointers."
+      "note": "vectorize_with_alignment<16>: the token's input row (32-byte aligned) and fp8 output row (16-byte aligned) allow the vectorized quantization path; the scalar fallback is not taken. Analysis scope: conclusions are conditional on this branch choice; the frontend cannot decide alignment of symbolic pointers."
     }
   ]
 }

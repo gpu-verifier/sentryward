@@ -152,8 +152,8 @@
     "source_interface": {
       "name": "tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f",
       "family": "swiglu",
-      "source": "references/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/reference.cu",
-      "ptx": "references/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/reference.ptx",
+      "source": "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Fp8Fp8GemmSwiGLU.cu",
+      "ptx": "",
       "entry": "reference",
       "upstream": [
         "https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Fp8Fp8GemmSwiGLU.cu",
@@ -278,10 +278,10 @@
       "equivalence_status": "not_checked"
     },
     "historical_paths": {
-      "interface": "references/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/interface.json",
-      "mapping": "references/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/mapping.md"
+      "interface": "examples/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/reference_binding.json#/provenance/source_interface",
+      "mapping": "examples/tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f/reference_binding.json#/provenance/mapping_notes"
     },
-    "mapping_notes": "# tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in interface.json.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| A | e4m3 | 1 x 5120 | input | logical activation A |\n| B | e4m3 | 4 x 5120 | input | logical weight B; reference rows are output channels |\n| D | e4m3 | 1 x 2 | output | D |\n| in_scale | float | 1 | input | in_scale |\n| out_scale_inv | float | 1 | input | out_scale_inv |\n\n## Computation and mapping\n\nThe reference uses A[m,k], B[n,k], and D[m,n]; B is stored with output-channel first.\nB[0:N,:] are gate weights; B[N:2*N,:] are linear weights.\ngate = (A*B_gate^T)*in_scale[0]; linear = (A*B_linear^T)*in_scale[0].\nD = FP8(SiLU(gate)*linear*out_scale_inv[0]).\n\n## Validation boundary\n\nCompiled to PTX and numerically checked on CPU. Not compared against an optimized\nGPU execution or proven equivalent. Precision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Fp8Fp8GemmSwiGLU.cu\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Utils.cuh\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Fp8Fp8GemmSwiGLUPerBlockTemplate.cuh\n"
+    "mapping_notes": "# tensorrt_llm__llama4Fp8Fp8GemmSwiGLU__sm_100f\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in source_interface.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| A | e4m3 | 1 x 5120 | input | logical activation A |\n| B | e4m3 | 4 x 5120 | input | logical weight B; reference rows are output channels |\n| D | e4m3 | 1 x 2 | output | D |\n| in_scale | float | 1 | input | in_scale |\n| out_scale_inv | float | 1 | input | out_scale_inv |\n\n## Computation and mapping\n\nThe reference uses A[m,k], B[n,k], and D[m,n]; B is stored with output-channel first.\nB[0:N,:] are gate weights; B[N:2*N,:] are linear weights.\ngate = (A*B_gate^T)*in_scale[0]; linear = (A*B_linear^T)*in_scale[0].\nD = FP8(SiLU(gate)*linear*out_scale_inv[0]).\n\n## Validation boundary\n\nNot compared against an optimized GPU execution.\nPrecision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Fp8Fp8GemmSwiGLU.cu\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Utils.cuh\n- https://github.com/NVIDIA/TensorRT-LLM/blob/ef567dd9b8919f6ee8b2da1f6f6d0c90206a78f8/cpp/tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Fp8Fp8GemmSwiGLUPerBlockTemplate.cuh\n"
   },
   "outputs": {
     "kind": "dense_tensor",

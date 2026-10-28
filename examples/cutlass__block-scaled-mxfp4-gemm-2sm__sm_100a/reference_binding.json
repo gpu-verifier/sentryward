@@ -174,14 +174,14 @@
         "element_type": "e8m0",
         "region": "whole_object",
         "finite": true,
-        "source": "Decoded UE8M0 finite-scale premise explicitly authorized for this 2SM case by user 2026-10-10; not generic uint8 finiteness."
+        "source": "Decoded UE8M0 finite-scale premise for this 2SM case (analysis scope); not generic uint8 finiteness."
       },
       {
         "object": "scale_b",
         "element_type": "e8m0",
         "region": "whole_object",
         "finite": true,
-        "source": "Decoded UE8M0 finite-scale premise explicitly authorized for this 2SM case by user 2026-10-10; not generic uint8 finiteness."
+        "source": "Decoded UE8M0 finite-scale premise for this 2SM case (analysis scope); not generic uint8 finiteness."
       }
     ]
   },
@@ -213,7 +213,7 @@
     "ptx": "corpus/cutlass__block-scaled-mxfp4-gemm-2sm__sm_100a.ptx",
     "optimized_input": "examples/cutlass__block-scaled-mxfp4-gemm-2sm__sm_100a/input.json",
     "layout_source": "https://github.com/NVIDIA/cutlass/blob/0efeafbafc16d5b8b17fd74bbac79674325b38a2/include/cutlass/detail/sm100_blockscaled_layout.hpp",
-    "evidence": "Original packed A/B and physical scale storage; 32-element scale blocks; UE8M0 scale encoding. Output is row major (N is the fast coordinate). The upstream collective get_tma_store_d builds the D tensor from problem_shape_mnl and args.dD. For M=256,N=128 and packed row-major f32 D, the TMA dimensions are [128,256,1], with coordinate strides [4,512,131072] bytes. User authorized correcting the previous transposed descriptor; output remains the full 256x128 tensor.",
+    "evidence": "Original packed A/B and physical scale storage; 32-element scale blocks; UE8M0 scale encoding. Output is row major (N is the fast coordinate). The upstream collective get_tma_store_d builds the D tensor from problem_shape_mnl and args.dD. For M=256,N=128 and packed row-major f32 D, the TMA dimensions are [128,256,1], with coordinate strides [4,512,131072] bytes. The D descriptor in input.json uses these dimensions, so the output is the full 256x128 tensor.",
     "semantics": "ideal_real tensor arithmetic; FP4 nibble decoding and scale indexing retained",
     "optimized_input_sha256": "2ac1e2316c637d73a1d5e1c4dadc1d01b880dd1d973c91d984de78a4fe90dc75",
     "ptx_sha256": "257ec70b0c6b32b9037edbe6753c436ab7ea74414c103fd1e92901c8c3432b57",
@@ -224,6 +224,6 @@
     ],
     "scope_branch_choices": [],
     "scope_shape_arrays": [],
-    "binding_warning": "Historical input used D dimensions [256,128,1] and row pitch 1024, clipping the actual 256-row output. Corrected on 2026-10-10 with user authorization; reference shape and branch scope unchanged."
+    "binding_warning": "The D descriptor uses dimensions [128,256,1] with row pitch 512 B; the transposed form [256,128,1] with row pitch 1024 B would clip the 256-row output."
   }
 }

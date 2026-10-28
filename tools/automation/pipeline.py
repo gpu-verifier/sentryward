@@ -29,6 +29,18 @@ SUMMARY_FIELDS = ("result", "checks", "diagnostics", "scope", "analysis_scope",
                   "elapsed_seconds", "verification_elapsed_seconds")
 
 
+def result_summary(raw):
+    summary = {key: raw[key] for key in SUMMARY_FIELDS if key in raw}
+    # Current output nests analysis details; older saved output keeps them at root.
+    internal = raw.get("internal", {})
+    for key in ("analysis_scope", "memory_analysis_complete", "search_complete",
+                "verification_elapsed_seconds"):
+        if key in internal:
+            summary.setdefault(key, internal[key])
+    summary["analysis_time_seconds"] = summary.get("verification_elapsed_seconds", summary.get("elapsed_seconds"))
+    return summary
+
+
 def now():
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -220,13 +232,12 @@ def verify_task(root, plan_data, task, output, *, process_runner=run_process):
         for filename, sha in task["hashes"].items():
             if file_hash(case / filename) != sha:
                 raise ValueError("Frozen input changed during verification: " + filename)
-        record.update({k: raw[k] for k in SUMMARY_FIELDS if k in raw})
+        record.update(result_summary(raw))
         if raw.get("result") == "tool_failure":
             auto["state"] = "failed"
             if history:
                 record["historical"] = {k: v for k, v in history.items()
                                         if k not in {"historical", "bundle_files"}}
-        record["analysis_time_seconds"] = raw.get("verification_elapsed_seconds", raw.get("elapsed_seconds"))
         record["worker_elapsed_seconds"] = time.monotonic() - started
         record["files"], record["bundle_files"] = artifact_descriptors(plan_data, task, case)
     write_json(case / "record.json", record)
@@ -282,8 +293,9 @@ def collect_records(plan_data, output):
                     raise ValueError("Worker input identity mismatch")
             if row["automation"]["state"] in {"current", "reused", "failed"}:
                 raw = read_json(case / "output.json")
-                for key in SUMMARY_FIELDS:
-                    if (key in raw) != (key in row) or key in raw and raw[key] != row[key]:
+                summary = result_summary(raw)
+                for key in (*SUMMARY_FIELDS, "analysis_time_seconds"):
+                    if (key in summary) != (key in row) or key in summary and summary[key] != row[key]:
                         raise ValueError("Worker summary differs from raw result: " + key)
             files, bundle = artifact_descriptors(plan_data, task, case)
             if row.get("files", {}) != files:

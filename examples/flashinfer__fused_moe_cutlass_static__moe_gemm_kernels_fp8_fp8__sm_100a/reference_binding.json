@@ -1,0 +1,237 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global20:last_row_for_problem": "last_row_for_problem"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          512,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4,
+          256,
+          128
+        ],
+        "source_strides_bytes": [
+          32768,
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          32768,
+          128,
+          1
+        ]
+      },
+      "6:global20:last_row_for_problem": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          4
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global20:last_row_for_problem": "last_row_for_problem"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          512,
+          128
+        ],
+        "source_strides_bytes": [
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          128,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4,
+          256,
+          128
+        ],
+        "source_strides_bytes": [
+          32768,
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          32768,
+          128,
+          1
+        ]
+      },
+      "6:global20:last_row_for_problem": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          4
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      512,
+      256
+    ],
+    "left_strides_bytes": [
+      512,
+      2
+    ],
+    "right_strides_bytes": [
+      512,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "activations",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "expert_weights",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:B"
+      },
+      {
+        "name": "alpha",
+        "parameter": 0,
+        "parameter_offset": 64
+      },
+      {
+        "name": "threshold",
+        "parameter": 0,
+        "parameter_offset": 72
+      },
+      {
+        "name": "row_end_0",
+        "value": {
+          "input": "/shape_arrays/0/shapes/0/0"
+        }
+      },
+      {
+        "name": "row_end_1",
+        "value": {
+          "input": "/shape_arrays/0/shapes/1/0"
+        }
+      },
+      {
+        "name": "row_end_2",
+        "value": {
+          "input": "/shape_arrays/0/shapes/2/0"
+        }
+      },
+      {
+        "name": "row_end_3",
+        "value": {
+          "input": "/shape_arrays/0/shapes/3/0"
+        }
+      },
+      {
+        "name": "table_last_row_for_problem",
+        "dtype": "int64",
+        "allocation": "6:global20:last_row_for_problem"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/flashinfer__fused_moe_cutlass_static__moe_gemm_kernels_fp8_fp8__sm_100a.ptx",
+    "optimized_input": "examples/flashinfer__fused_moe_cutlass_static__moe_gemm_kernels_fp8_fp8__sm_100a/input.json",
+    "optimized_input_sha256": "feabd594719ee6dcbe2e7b5812023d362979c55311fecb2009c46cc8b43ae748",
+    "ptx_sha256": "8b44149bc9a7cbe2bcaeb7bde97989becec80c835fd0a6c5b990504ce42e837a",
+    "evidence": "MoeFCGemm<MmaPipelined 16x256x128, e4m3 RowMajor A, e4m3 ColumnMajor B, Sm89, LinearCombinationRelu<half,8,float,float,Default>>; Params: last_row_for_problem +0, gemm_n +8, gemm_k +16, problem_count +24, output_op {alpha +64, beta +68, threshold +72, alpha_ptr +80, beta_ptr +88}, ptr_A +96, ptr_B +104, ptr_C +128, ptr_D +136.",
+    "semantics": "Fixed configuration (4 experts of 128 rows, N = 256, K = 128); D = max(alpha * A_e @ W_e^T, threshold) per expert row range; ideal real; all written outputs.",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/nv_internal/tensorrt_llm/kernels/cutlass_kernels/moe_gemm/moe_gemm_kernels_fp8_fp8.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/nv_internal/tensorrt_llm/kernels/cutlass_kernels/moe_gemm/moe_gemm_template_dispatch.h",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/nv_internal/tensorrt_llm/cutlass_extensions/include/cutlass_extensions/gemm/kernel/moe_cutlass_kernel.h",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/nv_internal/tensorrt_llm/cutlass_extensions/include/cutlass_extensions/epilogue_helpers.h",
+      "https://github.com/NVIDIA/cutlass/blob/b46b16d003484063bca4ed365e44095c4c6ed633/include/cutlass/epilogue/thread/linear_combination_relu.h"
+    ],
+    "scope": "Input: alpha 1, beta 0, threshold 0, null alpha/beta pointers and ptr_C.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [
+      {
+        "parameter": 0,
+        "offset": 0,
+        "element_type": "s64",
+        "shapes": [
+          [
+            128
+          ],
+          [
+            256
+          ],
+          [
+            384
+          ],
+          [
+            512
+          ]
+        ]
+      }
+    ]
+  }
+}

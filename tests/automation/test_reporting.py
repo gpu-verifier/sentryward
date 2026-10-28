@@ -75,6 +75,32 @@ class ReportTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "Report differs"):
                     self.check()
 
+    def test_public_output_sections_keep_saved_locations_and_immutable_links(self):
+        self.result = {"result": "potential_race", "checks": {
+            "synchronization": "failed", "equivalence": "not_run"},
+            "evidence": {"source_events": [{"event": 7, "instruction": 3,
+                "file": "kernel.ptx", "line": 5}]},
+            "internal": {"frontend": {"status": "translated"},
+                         "verification_elapsed_seconds": 0.125}}
+        self.save_result()
+        original = (self.case / "output.json").read_bytes()
+        draft = self.case / "draft.json"
+        draft.write_text(json.dumps({"version": 2, "title": "Saved finding", "sections": [{
+            "title": "Source association", "answer": "The saved event is event 7.",
+            "evidence": [{"kind": "result", "pointer": "/source_events/0/event", "equals": 7},
+                         {"kind": "result", "pointer": "/frontend/status", "equals": "translated"}],
+        }]}))
+        arguments = report_arguments(self.case, self.identity) + ["--draft", str(draft)]
+        for script in ("report_facts.py", "check_report.py"):
+            run_report_script(ROOT, script, arguments)
+        report = (self.case / "report/report.md").read_text()
+        uri = json.loads(self.identity.read_text())["files"]["output.json"]["uri"]
+        self.assertIn(uri + "#L1", report)
+        self.assertIn("/evidence/source_events/0/event", report)
+        self.assertIn("/internal/frontend/status", report)
+        self.assertNotIn("· Memory <code>", report)
+        self.assertEqual((self.case / "output.json").read_bytes(), original)
+
     def test_changed_input_is_rejected_without_replacing_existing_report(self):
         report = generate_report(ROOT, self.case, self.identity)
         original = report.read_bytes()

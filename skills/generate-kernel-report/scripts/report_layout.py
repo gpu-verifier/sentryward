@@ -5,6 +5,7 @@ bounded comparison/branch relations come directly from the supplied artifacts.
 """
 import html
 import json
+from pathlib import Path
 import re
 from code_excerpt import excerpt, select_lines, instruction_opcodes, mask_noncode, occurrences, literal_token
 
@@ -392,6 +393,91 @@ def json_pointer(document, pointer):
     return value
 
 
+# Sections of a public (two-stage) verifier output. The report reads their
+# fields as root fields. On a name collision the root field wins, then
+# `evidence`, then `internal`.
+SAVED_SECTIONS = ('evidence', 'internal')
+
+
+class SavedResult(dict):
+    """Flat view of a public verifier output, built by saved_result.
+
+    `origins` maps each field read from a section to that section's name.
+    `saved` is the original document; citations refer to its locations.
+    """
+
+    def __init__(self, fields, origins, saved):
+        super().__init__(fields)
+        self.origins = origins
+        self.saved = saved
+
+
+def saved_result(result):
+    """Read a saved verifier output in the flat layout the report expects.
+
+    A public output keeps analysis details under `internal` and witnesses
+    under `evidence`. The view reads their fields as root fields under the
+    SAVED_SECTIONS precedence rule, in saved order, and omits the section
+    objects themselves. saved_pointer translates a pointer into this view to
+    the saved location. Older flat outputs are returned unchanged.
+    """
+    if isinstance(result, SavedResult) or not isinstance(result, dict):
+        return result
+    sections = {name: result[name] for name in SAVED_SECTIONS if isinstance(result.get(name), dict)}
+    if not sections:
+        return result
+    owner = {key: None for key in result if key not in sections}
+    for name, fields in sections.items():
+        for key in fields:
+            owner.setdefault(key, name)
+    view = {}
+    for key, value in result.items():
+        if key in sections:
+            view.update((field, item) for field, item in value.items() if owner[field] == key)
+        else:
+            view[key] = value
+    return SavedResult(view, {key: name for key, name in owner.items() if name}, result)
+
+
+def load_saved_result(path):
+    """Read one saved verifier output file through saved_result."""
+    return saved_result(json.loads(Path(path).read_text()))
+
+
+def _pointer_key(token):
+    return token.replace('~1', '/').replace('~0', '~')
+
+
+def saved_pointer(result, pointer):
+    """Locate a pointer into the saved_result view in the original saved file.
+
+    A pointer to a field read from a section gains that section's prefix.
+    Pointers that already name a saved location, and every pointer into an
+    older flat output, are returned unchanged.
+    """
+    origins = getattr(result, 'origins', None)
+    if not origins or not isinstance(pointer, str) or not pointer.startswith('/'):
+        return pointer
+    section = origins.get(_pointer_key(pointer[1:].split('/', 1)[0]))
+    return '/' + section + pointer if section else pointer
+
+
+def view_pointer(result, pointer):
+    """Inverse of saved_pointer: the view pointer of a saved location."""
+    origins = getattr(result, 'origins', None)
+    if origins and isinstance(pointer, str) and pointer.startswith('/'):
+        section, _, rest = pointer[1:].partition('/')
+        if section in SAVED_SECTIONS and origins.get(_pointer_key(rest.split('/', 1)[0])) == section:
+            return '/' + rest
+    return pointer
+
+
+def saved_value(result, pointer):
+    """Resolve a view or saved pointer; return its saved location and value."""
+    location = saved_pointer(result, pointer)
+    return location, json_pointer(getattr(result, 'saved', result), location)
+
+
 def validate_inputs(run_input, result, ptx):
     if not isinstance(run_input, dict) or not isinstance(result, dict):
         raise ValueError('Input and result must be JSON objects.')
@@ -418,14 +504,18 @@ def evidence_view(refs, run_input, result, ptx, sources=None):
         kind = ref.get('kind')
         if kind in ('input', 'result'):
             fields(ref, ('kind', 'pointer'), ('equals',))
-            value = json_pointer(run_input if kind == 'input' else result, ref['pointer'])
+            if kind == 'input':
+                pointer, value = ref['pointer'], json_pointer(run_input, ref['pointer'])
+            else:
+                # Cite the saved location, also for a pointer into the flat view.
+                pointer, value = saved_value(result, ref['pointer'])
             if 'equals' in ref and (type(value) != type(ref['equals']) or value != ref['equals']):
                 raise ValueError('Evidence value mismatch: ' + kind + ref['pointer'])
             shown = json.dumps(value, ensure_ascii=False, separators=(',', ':'))
             # The pointer remains exact even when the referenced object is large.
             detail = shown if len(shown) <= 180 else f'{type(value).__name__}, {len(value)} entries; see original artifact'
             artifact = 'input.json' if kind == 'input' else 'output.json'
-            items.append(f'- `{artifact}#{ref["pointer"]}`: <code>{html.escape(detail)}</code>')
+            items.append(f'- `{artifact}#{pointer}`: <code>{html.escape(detail)}</code>')
         elif kind in ('ptx', 'source'):
             fields(ref, ('kind', 'lines', 'contains') if kind == 'ptx' else ('kind', 'file', 'lines', 'contains'))
             body = ptx if kind == 'ptx' else (sources or {}).get(ref['file'])
@@ -468,10 +558,13 @@ def timeline_view(diagram, run_input, result, ptx, sources=None, code=''):
         support.append(evidence_view(condition['evidence'], run_input, result, ptx, sources))
     sequence = None
     if basis == 'verifier witness':
-        pointer = diagram.get('sequence')
-        if not isinstance(pointer, str) or not pointer.startswith('/counterexample/') or not pointer.endswith('/events'):
+        # Public outputs save the witness at /evidence/counterexample/...;
+        # both that location and the older /counterexample/... are accepted.
+        pointer = saved_pointer(result, diagram.get('sequence'))
+        if (not isinstance(pointer, str) or not view_pointer(result, pointer).startswith('/counterexample/')
+                or not pointer.endswith('/events')):
             raise ValueError('Verifier witness requires an exact /counterexample/.../events pointer.')
-        sequence = json_pointer(result, pointer)
+        pointer, sequence = saved_value(result, pointer)
         if not isinstance(sequence, list):
             raise ValueError('Witness sequence must be a saved list.')
     rows, last = [], -1
@@ -495,7 +588,7 @@ def timeline_view(diagram, run_input, result, ptx, sources=None, code=''):
         row[1 + ids.index(step['participant'])] = text(step['action'], 'Timeline action')
         rows.append(row)
     if sequence is not None:
-        parent = json_pointer(result, diagram['sequence'].rsplit('/', 1)[0])
+        _, parent = saved_value(result, pointer.rsplit('/', 1)[0])
         if not isinstance(parent, dict):
             raise ValueError('Witness sequence must belong to a saved sequence object.')
         if last < len(sequence) - 1 or parent.get('truncated') is True:
@@ -618,6 +711,7 @@ def explanation(draft, run_input, result, ptx, sources=None, *, source_url=None)
 def compose(draft, run_input, result, ptx, artifacts, sources=None, *, report_path=None, source_paths=(), equivalence_path=None, artifact_base=None, result_panel=False, identity=None):
     from result_view import render_result, render_evidence, artifact_url, link_references
     from artifact_links import verify_identity
+    result = saved_result(result)
     validate_inputs(run_input, result, ptx)
     artifact_links = verify_identity(identity, artifacts)
     # Validate the entire authored layer before rendering or replacing an artifact.

@@ -1,0 +1,339 @@
+{
+  "checker_context": {
+    "input_contract": [
+      {
+        "object": "scale_a",
+        "element_type": "e8m0",
+        "region": "whole_object",
+        "finite": true,
+        "source": "Additional decoded finite-scale premise (analysis scope); exact e8m0 interpretation, not generic uint8 finiteness."
+      },
+      {
+        "object": "scale_b",
+        "element_type": "e8m0",
+        "region": "whole_object",
+        "finite": true,
+        "source": "Additional decoded finite-scale premise (analysis scope); exact e8m0 interpretation, not generic uint8 finiteness."
+      }
+    ]
+  },
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:scale_a": "scale_a",
+      "6:global7:scale_b": "scale_b",
+      "6:global31:tokens_per_expert.problem_shape": "tokens_per_expert.problem_shape",
+      "6:global17:tokens_per_expert": "tokens_per_expert"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4,
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          8192,
+          64,
+          1
+        ],
+        "target_strides_bytes": [
+          8192,
+          64,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4,
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          8192,
+          64,
+          1
+        ],
+        "target_strides_bytes": [
+          8192,
+          64,
+          1
+        ]
+      },
+      "6:global7:scale_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4,
+          512
+        ],
+        "source_strides_bytes": [
+          512,
+          1
+        ],
+        "target_strides_bytes": [
+          512,
+          1
+        ]
+      },
+      "6:global7:scale_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4,
+          512
+        ],
+        "source_strides_bytes": [
+          512,
+          1
+        ],
+        "target_strides_bytes": [
+          512,
+          1
+        ]
+      },
+      "6:global31:tokens_per_expert.problem_shape": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          4
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global17:tokens_per_expert": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          4
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global7:scale_a": "scale_a",
+      "6:global7:scale_b": "scale_b",
+      "6:global31:tokens_per_expert.problem_shape": "tokens_per_expert.problem_shape",
+      "6:global17:tokens_per_expert": "tokens_per_expert"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4,
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          8192,
+          64,
+          1
+        ],
+        "target_strides_bytes": [
+          8192,
+          64,
+          1
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4,
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          8192,
+          64,
+          1
+        ],
+        "target_strides_bytes": [
+          8192,
+          64,
+          1
+        ]
+      },
+      "6:global7:scale_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4,
+          512
+        ],
+        "source_strides_bytes": [
+          512,
+          1
+        ],
+        "target_strides_bytes": [
+          512,
+          1
+        ]
+      },
+      "6:global7:scale_b": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          4,
+          512
+        ],
+        "source_strides_bytes": [
+          512,
+          1
+        ],
+        "target_strides_bytes": [
+          512,
+          1
+        ]
+      },
+      "6:global31:tokens_per_expert.problem_shape": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          4
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global17:tokens_per_expert": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          4
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:D",
+    "right_allocation": "6:global1:D",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      4,
+      128,
+      128
+    ],
+    "left_strides_bytes": [
+      32768,
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      32768,
+      2,
+      256
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "uint8",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "uint8",
+        "allocation": "6:global1:B"
+      },
+      {
+        "name": "scale_a",
+        "dtype": "uint8",
+        "allocation": "6:global7:scale_a"
+      },
+      {
+        "name": "scale_b",
+        "dtype": "uint8",
+        "allocation": "6:global7:scale_b"
+      },
+      {
+        "name": "fixed_tokens_per_expert_problem_shape",
+        "dtype": "int32",
+        "allocation": "6:global31:tokens_per_expert.problem_shape"
+      },
+      {
+        "name": "fixed_tokens_per_expert",
+        "dtype": "int32",
+        "allocation": "6:global17:tokens_per_expert"
+      },
+      {
+        "name": "alpha",
+        "value": {
+          "input": "/arguments/15/value"
+        }
+      },
+      {
+        "name": "tokens_0",
+        "value": {
+          "input": "/shape_arrays/0/shapes/0/0"
+        }
+      },
+      {
+        "name": "tokens_1",
+        "value": {
+          "input": "/shape_arrays/0/shapes/1/0"
+        }
+      },
+      {
+        "name": "tokens_2",
+        "value": {
+          "input": "/shape_arrays/0/shapes/2/0"
+        }
+      },
+      {
+        "name": "tokens_3",
+        "value": {
+          "input": "/shape_arrays/0/shapes/3/0"
+        }
+      }
+    ]
+  }
+}

@@ -3,11 +3,11 @@
 #include <sstream>
 
 namespace sentryward::frontend::ptx {
-Resources::KnownBits Resources::FixedBits(const ExecutedInstruction &execution,
+Resources::KnownBits Resources::FixedBits(const RecordView &execution,
     std::string_view operand, unsigned width, const BitsResolver &resolver) const {
   std::set<DynamicKey> visiting;
-  std::function<KnownBits(const ExecutedInstruction &, std::string_view, unsigned)> query;
-  query = [&](const ExecutedInstruction &e, std::string_view text, unsigned bits) -> KnownBits {
+  std::function<KnownBits(const RecordView &, std::string_view, unsigned)> query;
+  query = [&](const RecordView &e, std::string_view text, unsigned bits) -> KnownBits {
     if (!bits || bits > 64) return {};
     const auto full = UINT64_MAX >> (64 - bits);
     const auto token = Trim(text);
@@ -16,13 +16,13 @@ Resources::KnownBits Resources::FixedBits(const ExecutedInstruction &execution,
     if (resolver)
       if (auto answer = resolver(e, token, bits))
         return {answer->first & answer->second & full, answer->second & full};
-    const auto *origin = program.RegisterOrigin(e, token);
+    const auto *origin = facts.Origin(e, token);
     if (!origin || !active_index_ || visiting.contains(*origin)) return {};
     const auto found = Definition(*origin);
     if (!found || found->predicate_value() != true) return {};
     const auto &definition = *found;
-    const auto &i = program.function->instructions.at(definition.instruction_id());
-    const auto args = OperandTexts(*program.module, i);
+    const auto &i = facts.function().instructions.at(definition.instruction_id());
+    const auto args = OperandTexts(facts.module(), i);
     if (args.empty() || args[0] != token) return {};
     visiting.insert(*origin);
     struct Erase {

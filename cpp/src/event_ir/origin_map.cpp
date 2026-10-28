@@ -1,6 +1,8 @@
 #include "sentryward/algorithm/event_ir/origin_map.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <iterator>
 #include <utility>
 
 namespace sentryward::algorithm {
@@ -10,19 +12,35 @@ void OriginMap::reserveEvents(std::size_t count) {
 }
 
 bool OriginMap::record(InstId instruction, Milestones milestones) {
-  if (findMilestones(instruction)) return false;
-  if (origin(milestones.issue) || origin(milestones.done) ||
-      (milestones.reads_complete && origin(*milestones.reads_complete))) return false;
-  for (const auto event : milestones.effects) if (origin(event)) return false;
+  auto low = std::min(milestones.issue.value(), milestones.done.value());
+  auto high = std::max(milestones.issue.value(), milestones.done.value());
+  const auto widen = [&](EventId event) {
+    low = std::min(low, event.value());
+    high = std::max(high, event.value());
+  };
+  if (milestones.reads_complete) widen(*milestones.reads_complete);
+  for (const auto event : milestones.effects) widen(event);
+  // Beyond every recorded instruction and event, the duplicate searches are empty and every
+  // key precedes the new ones, so the end-hinted emplaces build the same maps.
+  const bool append = instruction.value() >= instruction_end_ && low >= event_end_;
+  if (!append) {
+    if (findMilestones(instruction)) return false;
+    if (origin(milestones.issue) || origin(milestones.done) ||
+        (milestones.reads_complete && origin(*milestones.reads_complete))) return false;
+    for (const auto event : milestones.effects) if (origin(event)) return false;
+  }
+  instruction_end_ = std::max(instruction_end_, std::uint64_t(instruction.value()) + 1);
+  event_end_ = std::max(event_end_, std::uint64_t(high) + 1);
 
   const auto first = std::uint64_t(milestones.issue.value());
   const auto last = std::uint64_t(milestones.done.value());
   if (!milestones.reads_complete && milestones.effects.empty() &&
       last >= first && last - first <= 1) {
     const auto width = static_cast<std::uint32_t>(last - first + 1);
-    auto before = runs_.upper_bound(instruction);
-    if (before != runs_.begin()) {
-      --before;
+    // The insertion point; an append follows every run.
+    const auto next = append ? runs_.end() : runs_.upper_bound(instruction);
+    if (next != runs_.begin()) {
+      const auto before = std::prev(next);
       auto& run = before->second;
       if (std::uint64_t(before->first.value()) + run.count == instruction.value() &&
           std::uint64_t(run.first.value()) + run.count * run.width == first &&
@@ -31,12 +49,15 @@ bool OriginMap::record(InstId instruction, Milestones milestones) {
         return true;
       }
     }
-    runs_.emplace(instruction, Run{milestones.issue, 1, width});
-    event_runs_.emplace(milestones.issue, instruction);
+    runs_.emplace_hint(next, instruction, Run{milestones.issue, 1, width});
+    if (append) event_runs_.emplace_hint(event_runs_.end(), milestones.issue, instruction);
+    else event_runs_.emplace(milestones.issue, instruction);
     return true;
   }
 
-  const auto entry = by_instruction_.emplace(instruction, std::move(milestones)).first;
+  const auto entry = append
+      ? by_instruction_.emplace_hint(by_instruction_.end(), instruction, std::move(milestones))
+      : by_instruction_.emplace(instruction, std::move(milestones)).first;
   const auto& recorded = entry->second;
   by_event_.emplace(recorded.issue, instruction);
   by_event_.emplace(recorded.done, instruction);

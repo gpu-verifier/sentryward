@@ -27,6 +27,9 @@ struct TemplateVote {
   std::shared_ptr<const std::map<std::uint32_t,std::size_t>> members;
   std::string mode;
   std::function<void(std::uint32_t,const std::string&)> error;
+  // match.sync: `predicates` hold the compared values; a participant's bit is set when its value
+  // equals the actor's (unknown when the comparison is). Modes match.any, match.all, match.all.pred.
+  std::function<std::optional<bool>(const Scalar&,const Scalar&)> equal{};
 };
 struct TemplateValue {
   std::optional<Scalar> uniform;
@@ -128,30 +131,46 @@ struct TemplateArena {
             const auto mask=(*raw_mask&0xffffffff).convert_to<std::uint32_t>();
             if(!(mask&(1u<<(actor%32))))node.vote->error(actor,"executing lane absent from vote membermask");
             std::uint32_t bits=0;
-            bool complete=true,unknown=false;
+            bool complete=true,unknown=false,unequal=false;
+            const auto lookup=[&](std::size_t value,std::size_t peer)->const Scalar* {
+              if(values[value].uniform)return &*values[value].uniform;
+              auto entry=caches[peer].find(value);
+              if(entry!=caches[peer].end())return &entry->second;
+              pending.emplace_back(value,peer);complete=false;return nullptr;
+            };
+            const Scalar* own=nullptr;
+            if(node.vote->equal) {
+              const auto source=node.vote->predicates->Source(member);
+              if(!source)throw TemplatePending{};
+              own=lookup(*source,member);
+            }
             for(unsigned lane=0;lane<32;++lane)if(mask&(1u<<lane)) {
               const auto found=node.vote->members->find(actor-actor%32+lane);
               if(found==node.vote->members->end())throw TemplateFallback{};
               const auto peer=found->second;
               auto predicate=node.vote->predicates->Source(peer), peer_mask=node.vote->masks->Source(peer);
               if(!predicate || !peer_mask)throw TemplatePending{};
-              const auto lookup=[&](std::size_t value)->const Scalar* {
-                if(values[value].uniform)return &*values[value].uniform;
-                auto entry=caches[peer].find(value);
-                if(entry!=caches[peer].end())return &entry->second;
-                pending.emplace_back(value,peer);complete=false;return nullptr;
-              };
-              const auto mask_value=lookup(*peer_mask),predicate_value=lookup(*predicate);
-              if(!mask_value || !predicate_value)continue;
+              const auto mask_value=lookup(*peer_mask,peer),predicate_value=lookup(*predicate,peer);
+              if(!mask_value || !predicate_value || (node.vote->equal && !own))continue;
               const auto other=integer(*mask_value);
               if(!other || ((*other&0xffffffff).convert_to<std::uint32_t>()!=mask))
                 node.vote->error(actor,"vote participants have different membermasks");
-              const auto truth=integer(*predicate_value);
+              std::optional<bool> truth;
+              if(node.vote->equal)truth=node.vote->equal(*own,*predicate_value);
+              else if(const auto n=integer(*predicate_value))truth=*n!=0;
               if(!truth)unknown=true;
-              else if(*truth!=0)bits|=1u<<lane;
+              else if(*truth)bits|=1u<<lane;
+              else unequal=true;
             }
             if(!complete)continue;
-            if(unknown)cache[current]=Scalar{};
+            if(node.vote->mode=="match.all" || node.vote->mode=="match.all.pred") {
+              const bool pred=node.vote->mode=="match.all.pred";
+              if(unequal)cache[current]=pred?Scalar(false):Scalar(Integer(0));
+              else if(unknown)cache[current]=Scalar{};
+              else cache[current]=pred?Scalar(true):Scalar(Integer(mask));
+            }
+            else if(unknown)cache[current]=Scalar{};
+            else if(node.vote->mode=="match.any")cache[current]=Integer(bits);
             else if(node.vote->mode=="ballot")cache[current]=Integer(bits);
             else cache[current]=node.vote->mode=="all"?bits==mask:
               node.vote->mode=="any"?bits!=0:bits==0 || bits==mask;
@@ -250,8 +269,14 @@ struct TemplateArena {
       std::optional<std::span<const std::uint32_t>> registers = {}) {
     if (poll) poll();
     // Recomputable concrete values are bounded independently of trace length.
+    // Eviction keeps the 4096 newest non-reused values plus the reused ones
+    // (at most 4096), so it can leave up to 8192 entries; it runs only above
+    // 8192 + 2048, so at least 2048 insertions separate two scans (amortized
+    // O(1) per insertion instead of a full scan on every Read once a cache
+    // holds its reused values). The cache is a memo of pure values, so
+    // the policy changes no result.
     auto& cache=caches.at(thread);
-    if (cache.size() > 8192) {
+    if (cache.size() > 8192 + 2048) {
       std::vector<std::size_t> ids;
       ids.reserve(cache.size());
       for(const auto& [id,value]:cache) { (void)value; if(!reused_values.contains(id))ids.push_back(id); }
@@ -279,8 +304,9 @@ struct TemplateArena {
     }
     return record;
   }
+  // `path_id`: the executor's PathId of `path`, the sequence's path identity.
   InstructionSequence Expand(std::shared_ptr<TemplateArena> owner,
-      std::shared_ptr<const std::vector<std::size_t>> path,std::size_t thread) {
+      std::shared_ptr<const std::vector<std::size_t>> path,std::size_t thread,PathId path_id) {
     return InstructionSequence(path->size(),[owner,path,thread] {
       InstructionSequence::Storage result; result.reserve(path->size());
       for (auto id:*path) {
@@ -302,7 +328,7 @@ struct TemplateArena {
       return owner->records.at(path->at(index)).record;
     }, [owner,path,thread](std::size_t index) {
       return owner->Read(path->at(index), thread);
-    }, path.get(), [owner,path,thread](std::size_t index,std::span<const std::uint32_t> registers) {
+    }, path_id, [owner,path,thread](std::size_t index,std::span<const std::uint32_t> registers) {
       return owner->Read(path->at(index),thread,registers);
     }, [owner,path](std::size_t index,std::uint32_t reg)->std::optional<std::size_t> {
       for(const auto& [candidate,id]:owner->records.at(path->at(index)).bindings)

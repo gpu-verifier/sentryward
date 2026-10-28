@@ -312,6 +312,26 @@ class TemplateRecords final {
     }
     return prototypes_.at(row.prototype&~concrete);
   }
+  // Rewrites every logical record without expanding templates. The rewrite may read and
+  // change only fields outside the codec binding (stored prototypes hold cleared bindings),
+  // so rows and families stay valid. O(prototypes); generated blocks rewrite what they produce.
+  void rewriteRecords(std::function<void(T&)> rewrite) {
+    for(auto& prototype:prototypes_)rewrite(prototype);
+    std::unordered_map<std::size_t,std::vector<std::uint32_t>> index;
+    for(const auto& bucket:index_)for(const auto id:bucket.second)index[Codec::hash(prototypes_[id])].push_back(id);
+    index_=std::move(index);
+    for(auto& segment:segments_) {
+      if(segment.generate)segment.generate=[generate=std::move(segment.generate),rewrite](std::size_t i) {
+        auto value=generate(i);rewrite(value);return value;
+      };
+      if(segment.generated_columns)segment.generated_columns=[columns=std::move(segment.generated_columns),rewrite](
+          const GeneratedColumnVisitor& visit) {
+        columns([&](const T& value,const Delta& delta,std::size_t first,std::size_t stride,std::size_t count) {
+          auto rewritten=value;rewrite(rewritten);visit(rewritten,delta,first,stride,count);
+        });
+      };
+    }
+  }
   // The generator owns immutable template bindings and returns independent instances.
   void appendGenerated(std::size_t count,std::function<T(std::size_t)> generate,
       std::optional<std::pair<std::uint64_t,std::uintptr_t>> cohort={},

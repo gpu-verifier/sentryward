@@ -127,6 +127,7 @@ class PublicationTests(unittest.TestCase):
             "provenance": {"source_revision": self.source, "source_repository": self.plan["source_repository"],
                            "runtime": self.plan["runtime"], "run_id": "run-1"},
             "budgets": self.plan["config"]["verification"],
+            "analysis_time_seconds": None,
             "files": {}, "bundle_files": {},
         }
         for filename, kind in (("input.json", "input"), ("kernel.ptx", "ptx"), ("output.json", "result")):

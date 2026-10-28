@@ -1,0 +1,222 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global5:input": "input",
+      "6:global8:residual": "residual",
+      "6:global6:weight": "weight"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      "6:global8:residual": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      "6:global6:weight": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1024
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global5:input": "input",
+      "6:global8:residual": "residual",
+      "6:global6:weight": "weight"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      "6:global8:residual": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "source_strides_bytes": [
+          2048,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      "6:global6:weight": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1024
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN10flashinfer4norm21FusedAddRMSNormKernelILj8E13__nv_bfloat16EEvPT0_S4_S4_jjjff_param_3+0": {
+        "type": "u32",
+        "literal": "1024"
+      },
+      "_ZN10flashinfer4norm21FusedAddRMSNormKernelILj8E13__nv_bfloat16EEvPT0_S4_S4_jjjff_param_6+0": {
+        "type": "f32",
+        "literal": "0.0"
+      },
+      "_ZN10flashinfer4norm21FusedAddRMSNormKernelILj8E13__nv_bfloat16EEvPT0_S4_S4_jjjff_param_7+0": {
+        "type": "f32",
+        "literal": "1e-06"
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global5:input",
+        "right_allocation": "6:global5:input",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "left_strides_bytes": [
+          2048,
+          2
+        ],
+        "right_strides_bytes": [
+          2048,
+          2
+        ]
+      },
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global8:residual",
+        "right_allocation": "6:global8:residual",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          1024
+        ],
+        "left_strides_bytes": [
+          2048,
+          2
+        ],
+        "right_strides_bytes": [
+          2048,
+          2
+        ]
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "input",
+        "allocation": "6:global5:input",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "residual",
+        "allocation": "6:global8:residual",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "weight",
+        "allocation": "6:global6:weight",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "weight_bias",
+        "parameter": 6
+      },
+      {
+        "name": "eps",
+        "parameter": 7
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/flashinfer__norm__fused_add_rmsnorm_bf16__sm_100a.ptx",
+    "optimized_input": "examples/flashinfer__norm__fused_add_rmsnorm_bf16__sm_100a/input.json",
+    "optimized_input_sha256": "ea5a3cd77a3e6f623918480293d36bb29e1af6ecd231702905cce8fb8d5ad2df",
+    "ptx_sha256": "7172040a36ab9249be61a279160d3dbcab4247cd16c67ff4c372d33738c09ed5",
+    "source": "// Source: https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/norm.cuh ; https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/csrc/norm.cu ; https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/vec_dtypes.cuh ; https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/math.cuh",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/norm.cuh#L413-L504",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/norm.cuh#L506-L541",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/csrc/norm.cu#L120-L149"
+    ],
+    "scope": "Fixed launch and input JSON: batch_size=grid.x=2, d=1024, stride_input=stride_residual=1024, weight_bias=0, eps=1e-6, block (32,4), smem (4+1024)*4=4112. Both in-place outputs retained.",
+    "notes": "input is overwritten with x*rsqrt(mean(x^2)+eps)*(weight_bias+weight), residual with bf16(x), where x=float(input)+float(residual) is kept in float for the normalization.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

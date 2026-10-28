@@ -1,111 +1,267 @@
 {
-  "schema": "spverify.kernel-input/v1",
-  "entry": "kernel_flashinfer_vsa_blk64_persistent_per_head_m64n256_ws_sm100",
-  "launch": {
-    "grid_dim": [
-      1,
-      1,
-      1
+    "schema": "spverify.kernel-input/v1",
+    "entry": "kernel_flashinfer_vsa_blk64_persistent_per_head_m64n256_ws_sm100",
+    "launch": {
+        "grid_dim": [
+            1,
+            1,
+            1
+        ],
+        "cluster_dim": [
+            1,
+            1,
+            1
+        ],
+        "block_dim": [
+            512,
+            1,
+            1
+        ],
+        "dynamic_shared_bytes": 232448
+    },
+    "arguments": [
+        {
+            "parameter": 8,
+            "type": "u32",
+            "value": 32
+        },
+        {
+            "parameter": 9,
+            "type": "u32",
+            "value": 64
+        },
+        {
+            "parameter": 10,
+            "type": "u32",
+            "value": 1
+        },
+        {
+            "parameter": 11,
+            "type": "u32",
+            "value": 1
+        },
+        {
+            "parameter": 12,
+            "type": "u32",
+            "value": 1
+        },
+        {
+            "parameter": 13,
+            "type": "u32",
+            "value": 1
+        },
+        {
+            "parameter": 14,
+            "type": "f32",
+            "value": 0.12751743082459868
+        },
+        {
+            "parameter": 15,
+            "type": "u32",
+            "value": 0
+        }
     ],
-    "cluster_dim": [
-      1,
-      1,
-      1
+    "declarations": [
+        {
+            "parameter": 0,
+            "type": "tensor_map",
+            "object": "q"
+        },
+        {
+            "parameter": 1,
+            "type": "tensor_map",
+            "object": "k"
+        },
+        {
+            "parameter": 2,
+            "type": "tensor_map",
+            "object": "v"
+        },
+        {
+            "parameter": 3,
+            "type": "tensor_map",
+            "object": "out"
+        },
+        {
+            "parameter": 4,
+            "type": "pointer",
+            "object": "lse"
+        },
+        {
+            "parameter": 5,
+            "type": "pointer",
+            "object": "q2k_indices"
+        },
+        {
+            "parameter": 6,
+            "type": "pointer",
+            "object": "q2k_num"
+        },
+        {
+            "parameter": 7,
+            "type": "pointer",
+            "object": "kv_block_lens"
+        }
     ],
-    "block_dim": [
-      512,
-      1,
-      1
+    "assumptions": {
+        "duplicate_tma_store_benign": true,
+        "representative_election": true,
+        "clc_always_fails": true
+    },
+    "shape_arrays": [
+        {
+            "parameter": 6,
+            "offset": 0,
+            "element_type": "s32",
+            "shapes": [
+                [
+                    28
+                ]
+            ]
+        }
     ],
-    "dynamic_shared_bytes": 232448
-  },
-  "arguments": [
-    {
-      "parameter": 8,
-      "type": "u32",
-      "value": 8
-    },
-    {
-      "parameter": 9,
-      "type": "u32",
-      "value": 64
-    },
-    {
-      "parameter": 10,
-      "type": "u32",
-      "value": 1
-    },
-    {
-      "parameter": 11,
-      "type": "u32",
-      "value": 1
-    },
-    {
-      "parameter": 12,
-      "type": "u32",
-      "value": 1
-    },
-    {
-      "parameter": 13,
-      "type": "u32",
-      "value": 1
-    },
-    {
-      "parameter": 14,
-      "type": "f32",
-      "value": 0.12751743082459868
-    },
-    {
-      "parameter": 15,
-      "type": "u32",
-      "value": 0
-    }
-  ],
-  "declarations": [
-    {
-      "parameter": 0,
-      "type": "tensor_map",
-      "object": "q"
-    },
-    {
-      "parameter": 1,
-      "type": "tensor_map",
-      "object": "k"
-    },
-    {
-      "parameter": 2,
-      "type": "tensor_map",
-      "object": "v"
-    },
-    {
-      "parameter": 3,
-      "type": "tensor_map",
-      "object": "out"
-    },
-    {
-      "parameter": 4,
-      "type": "pointer",
-      "object": "lse"
-    },
-    {
-      "parameter": 5,
-      "type": "pointer",
-      "object": "q2k_indices"
-    },
-    {
-      "parameter": 6,
-      "type": "pointer",
-      "object": "q2k_num"
-    },
-    {
-      "parameter": 7,
-      "type": "pointer",
-      "object": "kv_block_lens"
-    }
-  ],
-  "assumptions": {
-    "duplicate_tma_store_benign": true,
-    "representative_election": true,
-    "clc_always_fails": true
-  }
+    "tensor_properties": [
+        {
+            "object": "q2k_indices",
+            "element_type": "s32",
+            "property": "lower_bound",
+            "value": 0
+        },
+        {
+            "object": "q2k_indices",
+            "element_type": "s32",
+            "property": "upper_bound",
+            "value": 31
+        }
+    ],
+    "tma_descriptors": [
+        {
+            "parameter": 0,
+            "object": "q",
+            "global_shape": [
+                64,
+                1,
+                64,
+                2
+            ],
+            "coordinate_strides_bytes": [
+                2,
+                256,
+                256,
+                128
+            ],
+            "box_shape": [
+                64,
+                1,
+                64,
+                2
+            ],
+            "element_strides": [
+                1,
+                1,
+                1,
+                1
+            ],
+            "offset": 0,
+            "element_type": "bf16",
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+        },
+        {
+            "parameter": 1,
+            "object": "k",
+            "global_shape": [
+                64,
+                2048,
+                2,
+                1
+            ],
+            "coordinate_strides_bytes": [
+                2,
+                256,
+                128,
+                256
+            ],
+            "box_shape": [
+                64,
+                64,
+                1,
+                1
+            ],
+            "element_strides": [
+                1,
+                1,
+                1,
+                1
+            ],
+            "offset": 0,
+            "element_type": "bf16",
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+        },
+        {
+            "parameter": 2,
+            "object": "v",
+            "global_shape": [
+                64,
+                2048,
+                2,
+                1
+            ],
+            "coordinate_strides_bytes": [
+                2,
+                256,
+                128,
+                256
+            ],
+            "box_shape": [
+                64,
+                64,
+                1,
+                1
+            ],
+            "element_strides": [
+                1,
+                1,
+                1,
+                1
+            ],
+            "offset": 0,
+            "element_type": "bf16",
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+        },
+        {
+            "parameter": 3,
+            "object": "out",
+            "global_shape": [
+                128,
+                64,
+                1
+            ],
+            "coordinate_strides_bytes": [
+                2,
+                256,
+                256
+            ],
+            "box_shape": [
+                32,
+                64,
+                1
+            ],
+            "element_strides": [
+                1,
+                1,
+                1
+            ],
+            "offset": 0,
+            "element_type": "bf16",
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+        }
+    ]
 }

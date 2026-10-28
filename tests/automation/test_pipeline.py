@@ -242,6 +242,7 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(row["checks"]["memory"], "failed")
         self.assertEqual(row["automation"]["exit_code"], 0)
         self.assertEqual(row["automation"]["state"], "current")
+        self.assertEqual(row["analysis_time_seconds"], 0.5)
         saved = read_json(self.output / "cases/alpha/output.json")
         self.assertEqual(saved, self.raw)
         command, case, timeout = self.calls[0]
@@ -253,6 +254,24 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(row["provenance"]["source_repository"], planned["source_repository"])
         self.assertEqual(row["budgets"], self.config["verification"])
         self.assertFalse((case / "run.json").exists())
+
+    def test_public_sections_keep_summary_fields_and_raw_output(self):
+        from sentryward.results import publish
+        self.raw["verification_elapsed_seconds"] = 0.125
+        self.raw = publish(self.raw)
+        planned = self.plan()
+        row = self.verify(planned)
+        self.assertEqual(row["checks"], {"synchronization": "failed", "equivalence": "not_run"})
+        self.assertEqual(row["analysis_time_seconds"], 0.125)
+        self.assertTrue(row["memory_analysis_complete"])
+        self.assertTrue(row["search_complete"])
+        self.assertEqual(read_json(self.output / "cases/alpha/output.json"), self.raw)
+        self.assertEqual(pipeline.collect_records(planned, self.output)[0], row)
+        for key, value in (("analysis_time_seconds", 9), ("search_complete", False)):
+            changed = {**row, key: value}
+            write_json(self.output / "cases/alpha/record.json", changed)
+            with self.assertRaisesRegex(ValueError, "summary differs"):
+                pipeline.collect_records(planned, self.output)
 
     def test_unknown_result_category_is_not_rewritten(self):
         self.raw["result"] = "future_verifier_category"

@@ -1,0 +1,293 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global2:Qv": "Qv",
+      "6:global1:K": "K",
+      "6:global1:V": "V"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          128,
+          1,
+          64
+        ],
+        "source_strides_bytes": [
+          16384,
+          128,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          16384,
+          128,
+          128,
+          2
+        ]
+      },
+      "6:global2:Qv": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          128,
+          1,
+          512
+        ],
+        "source_strides_bytes": [
+          131072,
+          1024,
+          1024,
+          2
+        ],
+        "target_strides_bytes": [
+          131072,
+          1024,
+          1024,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          64
+        ],
+        "source_strides_bytes": [
+          32768,
+          128,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          32768,
+          128,
+          128,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          512
+        ],
+        "source_strides_bytes": [
+          262144,
+          1024,
+          1024,
+          2
+        ],
+        "target_strides_bytes": [
+          262144,
+          1024,
+          1024,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global2:Qv": "Qv",
+      "6:global1:K": "K",
+      "6:global1:V": "V"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          128,
+          1,
+          64
+        ],
+        "source_strides_bytes": [
+          16384,
+          128,
+          16384,
+          2
+        ],
+        "target_strides_bytes": [
+          16384,
+          128,
+          128,
+          2
+        ]
+      },
+      "6:global2:Qv": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          128,
+          1,
+          512
+        ],
+        "source_strides_bytes": [
+          131072,
+          1024,
+          131072,
+          2
+        ],
+        "target_strides_bytes": [
+          131072,
+          1024,
+          1024,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          64
+        ],
+        "source_strides_bytes": [
+          32768,
+          128,
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          32768,
+          128,
+          128,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          256,
+          1,
+          512
+        ],
+        "source_strides_bytes": [
+          262144,
+          1024,
+          1024,
+          2
+        ],
+        "target_strides_bytes": [
+          262144,
+          1024,
+          1024,
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:O",
+    "right_allocation": "6:global1:O",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      1,
+      128,
+      1,
+      512
+    ],
+    "left_strides_bytes": [
+      131072,
+      1024,
+      1024,
+      2
+    ],
+    "right_strides_bytes": [
+      131072,
+      1024,
+      131072,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "Q",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:Q"
+      },
+      {
+        "name": "Qv",
+        "dtype": "bfloat16",
+        "allocation": "6:global2:Qv"
+      },
+      {
+        "name": "K",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:K"
+      },
+      {
+        "name": "V",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:V"
+      },
+      {
+        "name": "scale_log2",
+        "value": {
+          "input": "/arguments/2/value"
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "evidence": "interface.py docstring: O = softmax(scale*(Q K^T + Qv V^T)) V; flash_fwd_mla_sm100.py mma(): S = Q@K^T then S += Qv_i@V_i^T, O_i += P@V_i; softmax uses exp2 with softmax_scale_log2; epilogue divides by row_sum. Non-causal: PTX applies only the seqlen_k column limit (no row-dependent causal limit).",
+    "ptx": "corpus/flash_attention__fwd_mla_dense_bf16__sm_100a.ptx",
+    "optimized_input": "examples/flash_attention__fwd_mla_dense_bf16__sm_100a/input.json",
+    "semantics": "ideal_real; fixed saved configuration (b=1, s_q=128, s_k=256, h=h_k=1, d=64, dv=512, non-causal, dense KV); output O only (no LSE/P/RowMax parameters).",
+    "optimized_input_sha256": "070b8b863bf10e4df5a98526d6dbdc67c78bc9897fc03dfcb9d5e256475fc462",
+    "ptx_sha256": "e529ffa80239bdb21f0c0462d7bee5b2d3965af592e7e00bba653ba584ec67bc",
+    "upstream": [
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_fwd_mla_sm100.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/interface.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/tile_scheduler.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/mask.py"
+    ],
+    "scope_branch_choices": [
+      {
+        "line": 6522,
+        "taken": false,
+        "note": "Analysis scope: always execute softmax correction; do not take the branch that skips correction. Conclusions are conditional on this branch choice."
+      },
+      {
+        "line": 6744,
+        "taken": false,
+        "note": "Analysis scope: execute the second correction path controlled by the same ballot result as line 6522. Conclusions are conditional on this branch choice."
+      }
+    ],
+    "scope_shape_arrays": []
+  }
+}

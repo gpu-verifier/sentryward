@@ -5,11 +5,8 @@ construction, and verification all execute inside ``sentryward-ptx``.
 """
 from __future__ import annotations
 
-from sentryward.results import ResultArgumentParser, failure
+from sentryward.results import failure, normalize, publish
 
-from sentryward.results import normalize, failure, RESULTS
-
-import argparse
 from contextlib import ExitStack
 import json
 import math
@@ -146,12 +143,12 @@ def _run_ptx(ptx: str | Path, config: str | Path, *,
                                        'limit': wellsync_timeout_seconds, 'unit': 'seconds'},
                           'message': f'WellSync exceeded its {wellsync_timeout_seconds:g}-second budget'}
             else:
-                result = {'result': 'tool_failure' if returncode else 'tool_failure',
+                result = {'result': 'tool_failure',
                           'message': error_output[-8192:] or 'Native process produced no valid JSON report'}
             result.update(schema='spverify.native-ptx-run/v1', implementation='cpp',
                           memory_analysis_complete=False, warnings_complete=False)
         if returncode and result.get('result', '').removeprefix('recovered_') in {'race_free', 'potential_race',
-                                                  'verified', 'verified'}:
+                                                  'verified'}:
             result = {'schema': 'spverify.native-ptx-run/v1', 'implementation': 'cpp',
                       'result': 'tool_failure', 'message': 'Process failed after emitting a successful report',
                       'partial_report': result, 'memory_analysis_complete': False, 'warnings_complete': False}
@@ -175,15 +172,15 @@ def run_ptx(ptx, config, *, executable=None, report_path=None,
     """Verify PTX and return the common result/diagnostics contract."""
     arguments=locals()
     try:
-        return _run_ptx(**arguments)
+        return publish(_run_ptx(**arguments))
     except FileNotFoundError as error:
-        return failure("tool_failure", "executable_missing", error)
+        return publish(failure("tool_failure", "executable_missing", error))
     except ValueError as error:
-        return failure("invalid_input", "invalid_configuration", error)
+        return publish(failure("invalid_input", "invalid_configuration", error))
     except MemoryError as error:
-        return failure("allocation_failed", "memory_allocation_failed", error)
+        return publish(failure("allocation_failed", "memory_allocation_failed", error))
     except OSError as error:
-        return failure("tool_failure", "process_or_io_failure", error)
+        return publish(failure("tool_failure", "process_or_io_failure", error))
 
 
 def _exit_code(result):

@@ -4,17 +4,22 @@
 namespace sentryward::value_ir {
 
 // Lane-major register fragments: A[32][4] b32, B[32][2] b32, C[32][4] f32.
+// f16/bf16 are m16n8k16; e4m3/e5m2 are m16n8k32 with four elements per b32.
 // https://docs.nvidia.com/cuda/parallel-thread-execution/#warp-level-matrix-fragment-mma-16816-float
+// https://docs.nvidia.com/cuda/parallel-thread-execution/#warp-level-matrix-fragment-mma-16832
 class WarpMmaOp final : public TypedOperation {
  public:
-  explicit WarpMmaOp(bool bfloat);
+  // element: "f16", "bf16", "e4m3" or "e5m2" (A and B).
+  explicit WarpMmaOp(std::string element);
   std::string_view name() const noexcept override { return "WarpMatMul"; }
   void validateOperands(std::span<const ValueType>) const override;
   void printAttributes(std::ostream&) const override;
   std::string operandLabel(std::size_t) const override;
-  bool bfloat() const noexcept { return bfloat_; }
+  const std::string& element() const noexcept { return element_; }
+  unsigned elementBytes() const noexcept { return element_ == "f16" || element_ == "bf16" ? 2 : 1; }
+  unsigned k() const noexcept { return 32 / elementBytes(); }
  private:
-  bool bfloat_;
+  std::string element_;
 };
 
 enum class NativeMatrixOpcode {

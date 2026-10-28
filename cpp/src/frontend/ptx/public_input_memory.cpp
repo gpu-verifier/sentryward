@@ -11,12 +11,16 @@ void ValidateConstantInputs(const FrontendConfig &config,
     std::string resource, allocation;
     Integer begin, end;
     bool fixed_read_only;
+    std::string path = "$.shape_arrays";
   };
   std::vector<Region> regions;
-  const auto contract = config.fixed_input.value("shape_input_contract", Json::object());
-  const auto contracted_regions = contract.value("kind", "") == "fixed_read_only" &&
-          contract.value("origin", "") == "shape_arrays"
-      ? contract.value("regions", Json::array()) : Json::array();
+  // The regions of a fixed read-only caller contract of `origin`; none otherwise.
+  const auto contract_regions = [&](const char *key, const char *origin) {
+    const auto contract = config.fixed_input.value(key, Json::object());
+    return contract.value("kind", "") == "fixed_read_only" && contract.value("origin", "") == origin
+        ? contract.value("regions", Json::array()) : Json::array();
+  };
+  const auto contracted_regions = contract_regions("shape_input_contract", "shape_arrays");
   for (const auto &entry : config.fixed_input.value("global_memory_inputs", nlohmann::json::array())) {
     const auto name = entry.at("resource").get<std::string>();
     const auto resource = std::find_if(config.resources.begin(), config.resources.end(),
@@ -37,6 +41,16 @@ void ValidateConstantInputs(const FrontendConfig &config,
         });
     regions.push_back({name, object, begin, begin + bytes, fixed_read_only});
   }
+  // Pointer tables are read-only input memory under their own caller contract.
+  for (const auto &region : contract_regions("pointer_array_contract", "pointer_arrays")) {
+    const Integer begin = JsonInteger(region.at("byte_offset"));
+    regions.push_back({region.at("resource").get<std::string>(), region.at("allocation").get<std::string>(),
+                       begin, begin + JsonInteger(region.at("bytes")), true, "$.pointer_arrays"});
+  }
+  // Objects with tensor properties are read-only input memory as a whole.
+  for (const auto &region : contract_regions("tensor_property_contract", "tensor_properties"))
+    regions.push_back({region.at("resource").get<std::string>(), region.at("allocation").get<std::string>(),
+                       0, Integer(1) << 63, true, "$.tensor_properties"});
   if (regions.empty()) return;
   std::map<AddressId,const ConstantAddressBinding *> addresses;
   for (const auto &binding : artifact.addresses) addresses[binding.address] = &binding;
@@ -57,7 +71,14 @@ void ValidateConstantInputs(const FrontendConfig &config,
       for (const auto &region : regions)
         if (binding.allocation == region.allocation && Integer(binding.offset) < region.end &&
             region.begin < Integer(binding.offset) + *bytes)
-          throw InputError("constant_input_modified", "$.shape_arrays", "kernel writes fixed input bytes of " + region.resource);
+          throw InputError("constant_input_modified", region.path, "kernel writes fixed input bytes of " + region.resource);
+    // An abstract write into an object with tensor_properties would void its element premise.
+    if (identity &&
+        std::any_of(regions.begin(), regions.end(), [&](const auto &region) {
+          return region.path == "$.tensor_properties" && region.allocation == *identity;
+        }))
+      throw InputError("constant_input_modified", "$.tensor_properties",
+                       "kernel may write object " + *identity + ", which has tensor_properties");
     if (!binding.expression.empty() || !bytes || binding.address_space == "generic") {
       // Public shape regions are a caller contract, not a derived non-aliasing fact.
       if (std::any_of(regions.begin(), regions.end(), [&](const auto &region) {

@@ -1,0 +1,140 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          8192
+        ],
+        "source_strides_bytes": [
+          16384,
+          2
+        ],
+        "target_strides_bytes": [
+          16384,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          8192
+        ],
+        "source_strides_bytes": [
+          16384,
+          2
+        ],
+        "target_strides_bytes": [
+          16384,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          8192
+        ],
+        "source_strides_bytes": [
+          16384,
+          2
+        ],
+        "target_strides_bytes": [
+          16384,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          8192
+        ],
+        "source_strides_bytes": [
+          16384,
+          2
+        ],
+        "target_strides_bytes": [
+          16384,
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:C",
+    "right_allocation": "6:global1:C",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      128,
+      128
+    ],
+    "left_strides_bytes": [
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      16384,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:B"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tilelang-gemm-sm100-tcgen5mma.ptx",
+    "optimized_input": "examples/tilelang-gemm-sm100-tcgen5mma/input.json",
+    "upstream": [
+      "https://github.com/tile-ai/tilelang/blob/cd37ed5fc35ae7a60a1277c8eb49028174ac51e6/examples/gemm_sm100/gemm_tcgen5mma.py#L7-L73"
+    ],
+    "scope": "One CTA (bx=by=0) of the compiled GEMM: C[0:128,0:128] = A[0:128,:] @ B[0:128,:]^T with K=8192, trans_A=False, trans_B=True, bf16 in/out, f32 TMEM accumulation, block 128x128x128, 2 pipeline stages, 256 threads.",
+    "evidence": "PTX entry matmul_kernel(A, B, C), cp.async loads (TMA lowering disabled). A address = by<<20 | row*8192 | col: row pitch 8192 elements; B address = bx<<20 | row*8192 | col: B is [N,K] with pitch 8192; 64 K tiles of 128 (2 prologue + loop counter to 62, +256 B per tile). tcgen05 idesc 136316048: A/B bf16, C f32, both K-major, M=N=128. C stores (cvt.rn.bf16x2.f32 then st.global.v4) use row pitch 8192 elements and column offset bx*128. Input layouts cover only the rows this CTA reads; M is not fixed by the PTX or input.",
+    "semantics": "ideal_real",
+    "ptx_sha256": "7fe7fbb2e01887577320c2028919750847411d01ab0cf1dcbf13d4bbe79982a2",
+    "optimized_input_sha256": "fa8f231747634d1862994a2fe1b24ea2e4d04f976fad4a2d641653939b649786",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [],
+    "coverage": "Only the launch's 128x128 C tile; other C elements are not written by the analyzed grid [1,1,1].",
+    "source_shape_discrepancy": "Pinned source module constants are M,N,K=4096,4096,8192; the PTX C/B address arithmetic shows N=K=8192 (C row pitch 8192). Same at commits f58bcd43, d6eb5d3d, b5bd6424, 3ee0988c. The tile reference is shape-independent except for these strides."
+  }
+}

@@ -98,11 +98,20 @@ class Graph {
                       const RemapObserver& observer = {});
 
  private:
+  // Hash-consing index: open addressing over {node hash, id}, a power-of-two
+  // capacity at load <= 1/2, linear probing. No allocation per node.
+  struct IndexSlot {
+    std::size_t hash;
+    Id id;
+  };
   Ref intern(Node);
   void validateRef(const Ref&) const;
+  Id findNode(std::size_t hash, const Node&) const;
+  void reserveIndex(std::size_t nodes);
+  void indexNode(IndexSlot) noexcept;
   std::uint64_t owner_;
   std::vector<Node> nodes_;
-  std::unordered_map<std::size_t, std::vector<Id>> buckets_;
+  std::vector<IndexSlot> index_;
 };
 
 struct Statistics {

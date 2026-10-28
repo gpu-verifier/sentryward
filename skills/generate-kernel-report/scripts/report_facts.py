@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import tempfile
 
-from report_layout import MARKER, compose, validate_inputs
+from report_layout import MARKER, compose, load_saved_result, validate_inputs
 from artifact_links import verify_identity
 
 
@@ -57,7 +57,7 @@ def main():
         artifacts = [args.input, args.result, args.ptx]
         run_input, result = (
             json.loads(args.input.read_text()),
-            json.loads(args.result.read_text()),
+            load_saved_result(args.result),
         )
         ptx = args.ptx.read_text()
         if args.bindings:

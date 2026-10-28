@@ -22,6 +22,8 @@ struct Cell final {
   v::Value value;
   MemoryInstance writer;
   std::uint64_t value_byte_offset = 0;
+  // Written as a tensor map (tensormap.cp_fenceproxy): descriptor bytes, not tensor data.
+  bool tensor_map = false;
 };
 
 using Cells = std::map<std::uint64_t, Cell>;
@@ -214,50 +216,143 @@ std::optional<std::string> footprintError(const v::ValueType& type,
   return {};
 }
 
-bool dependenciesAvailable(const v::Graph& graph, std::span<const v::Value> roots,
-                           const MemoryInstanceSet& reads,
-                           MemoryInstanceSet& available,
-                           const std::map<MemoryInstance,std::map<std::uint64_t,std::uint64_t>>& fragments,
-                           std::optional<std::pair<std::uint64_t,std::uint64_t>> slice = {},
-                           std::string* missing = nullptr) {
-  using Slice=std::optional<std::pair<std::uint64_t,std::uint64_t>>;
-  std::vector<std::pair<v::Value,Slice>> pending;
-  for (const auto& root : roots) pending.emplace_back(root,slice);
-  std::set<MemoryInstance> visited;
-  while (!pending.empty()) {
-    auto [value,required] = pending.back();
-    pending.pop_back();
-    if (!graph.contains(value)) return false;
-    value = graph.resolve(value);
-    for (const auto& index : value.indices()) pending.emplace_back(index,std::nullopt);
-    if (value.threadSelector()) pending.emplace_back(*value.threadSelector(),std::nullopt);
-    if (value.conversion()) {
-      const auto& conversion=*value.conversion();
-      const auto slice=conversion.spec->kind==v::TypeConversionKind::Bitcast && value.indices().empty()
+using Slice=std::optional<std::pair<std::uint64_t,std::uint64_t>>;
+
+// The one owner of dependency-walk membership in one eliminateMemory call. A
+// touched node has 2 bits per logical instance (available: proved by a
+// committed walk; visiting: reached by the current walk) and a flag for its
+// shared collective operand list (pushed by this walk or proved). The current
+// walk's marks are logged: commit equals inserting the walk's visited set into
+// the available set, and rollback leaves the available set untouched.
+class DependencyMarks final {
+ public:
+  explicit DependencyMarks(const v::Graph& graph):graph_(graph) {}
+  [[nodiscard]] bool available(MemoryInstance id) const noexcept {
+    if(id.node>=nodes_.size() || !nodes_[id.node].block)return false;
+    return word(id)[0]>>(id.instance%64)&1;
+  }
+  // Requires !available(id). False iff this walk already visited id.
+  bool visit(MemoryInstance id) {
+    if(id.node>=nodes_.size())nodes_.resize(id.node+1);
+    if(!nodes_[id.node].block) {
+      // Once per node: a valid handle's instance is below the node's count.
+      const auto count=graph_.node(id.node).instanceCount();
+      const auto first=words_.size(),size=2*(count/64+(count%64!=0));
+      if(first>=std::numeric_limits<std::uint32_t>::max())
+        throw std::length_error("dependency mark storage overflow");
+      words_.resize(first+size);
+      nodes_[id.node].block=static_cast<std::uint32_t>(first+1);
+    }
+    auto* bits=word(id);
+    const auto bit=std::uint64_t{1}<<(id.instance%64);
+    if(bits[1]&bit)return false;
+    visited_.push_back(id);
+    bits[1]|=bit;
+    return true;
+  }
+  [[nodiscard]] bool sharedSeen(std::size_t node) const noexcept {
+    return node<nodes_.size() && nodes_[node].shared;
+  }
+  void markShared(std::size_t node) {
+    if(node>=nodes_.size())nodes_.resize(node+1);
+    if(nodes_[node].shared)return;
+    shared_.push_back(node);
+    nodes_[node].shared=true;
+  }
+  void commit() noexcept {finish(true);}
+  void rollback() noexcept {finish(false);}
+ private:
+  struct NodeMarks {std::uint32_t block=0;bool shared=false;};  // block: 1 + first word, 0 if none
+  std::uint64_t* word(MemoryInstance id) noexcept {
+    return words_.data()+(nodes_[id.node].block-1)+2*(id.instance/64);
+  }
+  const std::uint64_t* word(MemoryInstance id) const noexcept {
+    return words_.data()+(nodes_[id.node].block-1)+2*(id.instance/64);
+  }
+  void finish(bool proved) noexcept {
+    for(const auto id:visited_) {
+      auto* bits=word(id);
+      const auto bit=std::uint64_t{1}<<(id.instance%64);
+      if(proved)bits[0]|=bit;
+      bits[1]&=~bit;
+    }
+    if(!proved)for(const auto node:shared_)nodes_[node].shared=false;
+    visited_.clear();shared_.clear();
+  }
+  const v::Graph& graph_;
+  std::vector<NodeMarks> nodes_;
+  std::vector<std::uint64_t> words_;  // per 64 instances: available word, visiting word
+  std::vector<MemoryInstance> visited_;
+  std::vector<std::size_t> shared_;
+};
+
+// The text reported for an unread Load, a pure function of the const graph.
+std::string missingRead(const v::Graph& graph,const v::Value& value,const Slice& required) {
+  const auto origin=graph.instanceOrigin(value);
+  auto missing=" Missing read at PTX line " + std::to_string(origin.source_line.value_or(0)) +
+      ", node " + std::to_string(value.nodeId()) + ", instance " + std::to_string(value.instanceIndex()) +
+      (required ? ", logical bytes [" + std::to_string(required->first) + ", " +
+          std::to_string(required->first+required->second) + ")." : ", complete value required.");
+  if (const auto operands=graph.instanceOperands(value); !operands.empty()) {
+    const auto& address=graph.definingNode(operands.front()).operation();
+    std::ostringstream detail; address.printAttributes(detail);
+    missing += " Address operation: " + std::string(address.name()) + " " + detail.str();
+  }
+  return missing;
+}
+
+// Read-dependency walk of one eliminateMemory call over the live read and
+// fragment records. Its stack and marks are reused by every call. Per pop: one
+// move, contains/resolve and an O(1) mark test; per new visit, one operand
+// fetch (borrowed unless a rebound template member) and one push per edge.
+class DependencyWalk final {
+ public:
+  DependencyWalk(const v::Graph& graph,const MemoryInstanceSet& reads,
+                 const std::map<MemoryInstance,std::map<std::uint64_t,std::uint64_t>>& fragments)
+      :graph_(graph),reads_(reads),fragments_(fragments),marks_(graph) {}
+  bool ready(std::span<const v::Value> roots,Slice slice={},std::string* missing=nullptr);
+ private:
+  const v::Graph& graph_;
+  const MemoryInstanceSet& reads_;
+  const std::map<MemoryInstance,std::map<std::uint64_t,std::uint64_t>>& fragments_;
+  DependencyMarks marks_;
+  std::vector<std::pair<v::Value,Slice>> pending_;
+};
+
+bool DependencyWalk::ready(std::span<const v::Value> roots,Slice slice,std::string* missing) {
+  for (const auto& root : roots) pending_.emplace_back(root,slice);
+  // The last fragment-covered unread Load of this call; it is reported when
+  // the walk later fails on an invalid handle.
+  std::optional<std::pair<v::Value,Slice>> covered;
+  const auto reject=[&](const v::Value* unread,const Slice& required) {
+    pending_.clear();marks_.rollback();
+    if (missing && unread) *missing=missingRead(graph_,*unread,required);
+    else if (missing && covered) *missing=missingRead(graph_,covered->first,covered->second);
+    return false;
+  };
+  while (!pending_.empty()) {
+    auto item = std::move(pending_.back());
+    pending_.pop_back();
+    const auto& required = item.second;
+    if (!graph_.contains(item.first)) return reject(nullptr,{});
+    const auto value = graph_.resolve(std::move(item.first));
+    for (const auto& index : value.indices()) pending_.emplace_back(index,std::nullopt);
+    if (const auto* selector=value.threadSelector()) pending_.emplace_back(*selector,std::nullopt);
+    if (const auto& conversion=value.conversion()) {
+      const auto slice=conversion->spec->kind==v::TypeConversionKind::Bitcast && value.indices().empty()
           ? required : Slice{};
-      pending.emplace_back(conversion.source,slice);
+      pending_.emplace_back(conversion->source,slice);
       continue;
     }
     const MemoryInstance id{value.nodeId(), value.instanceIndex()};
-    if (available.contains(id) || (!required && !visited.insert(id).second)) continue;
-    const auto& node = graph.definingNode(value);
+    if (marks_.available(id) || (!required && !marks_.visit(id))) continue;
+    // A resolved handle without a conversion has a live slot: definingNode.
+    const auto& node = graph_.node(id.node);
     if (dynamic_cast<const v::LoadOp*>(&node.operation())) {
-      if (!reads.contains(id)) {
-        if (missing) {
-          const auto& origin=graph.instance(value).origin;
-          *missing=" Missing read at PTX line " + std::to_string(origin.source_line.value_or(0)) +
-              ", node " + std::to_string(id.node) + ", instance " + std::to_string(id.instance) +
-              (required ? ", logical bytes [" + std::to_string(required->first) + ", " +
-                  std::to_string(required->first+required->second) + ")." : ", complete value required.");
-          if (!graph.instance(value).operands.empty()) {
-            const auto& address=graph.definingNode(graph.instance(value).operands.front()).operation();
-            std::ostringstream detail; address.printAttributes(detail);
-            *missing += " Address operation: " + std::string(address.name()) + " " + detail.str();
-          }
-        }
-        if (!required || !value.indices().empty()) return false;
-        const auto found=fragments.find(id);
-        if (found==fragments.end()) return false;
+      if (!reads_.contains(id)) {
+        if (!required || !value.indices().empty()) return reject(&value,required);
+        const auto found=fragments_.find(id);
+        if (found==fragments_.end()) return reject(&value,required);
         auto cursor=required->first;
         const auto end=cursor+required->second;
         auto piece=found->second.upper_bound(cursor);
@@ -267,25 +362,40 @@ bool dependenciesAvailable(const v::Graph& graph, std::span<const v::Value> root
           if (cursor>=end) break;
           ++piece;
         }
-        if (cursor<end) return false;
+        if (cursor<end) return reject(&value,required);
+        if (missing) covered.emplace(value,required);
       }
       continue;
     }
-    const auto& instance = graph.instance(value);
+    auto operands = node.instanceOperands(id.instance);
     const auto* mma=dynamic_cast<const v::TcgenMmaOp*>(&node.operation());
     const auto* native=dynamic_cast<const v::NativeMatrixOp*>(&node.operation());
     const bool copy=native && native->opcode()==v::NativeMatrixOpcode::TcgenCopyValue &&
-        instance.operands.size()==1 && graph.type(value).hasStaticShape() &&
-        graph.type(value)==graph.type(instance.operands[0]);
-    for (std::size_t index=0;index<instance.operands.size();++index) {
-      // D contributes pointwise to D'=A*B+D; A and B still require all reads.
-      const auto needed=required && value.indices().empty() &&
-          (copy || (mma && mma->attributes().accumulate && index==3))
-          ? required : Slice{};
-      pending.emplace_back(instance.operands[index],needed);
+        operands.size()==1 && graph_.type(value).hasStaticShape() &&
+        graph_.type(value)==graph_.type(operands[0]);
+    const bool accumulate=mma && mma->attributes().accumulate;
+    // D contributes pointwise to D'=A*B+D; A and B still require all reads.
+    const bool sliced=required && value.indices().empty() && (copy || (accumulate && operands.size()>3));
+    // All collective members borrow the one prototype list; the identity test
+    // falls back to pushing. An unsliced push of it changes nothing once this
+    // walk pushed it (LIFO on an acyclic graph: fully processed before another
+    // member pops) or a committed walk proved it: re-pops stop at marked ids.
+    const bool shared=!sliced && node.isCollectiveOccurrence() && operands.borrowed() &&
+        operands.span().data()==node.operands().data();
+    if (shared && marks_.sharedSeen(id.node)) continue;
+    const auto push=[&](auto&& operand,std::size_t index) {
+      pending_.emplace_back(std::forward<decltype(operand)>(operand),
+          sliced && (copy || index==3) ? required : Slice{});
+    };
+    if (operands.borrowed()) for (std::size_t index=0;index<operands.size();++index) push(operands[index],index);
+    else {
+      // A rebound template member owns its list; move it onto the stack.
+      auto rebound=std::move(operands).toVector();
+      for (std::size_t index=0;index<rebound.size();++index) push(std::move(rebound[index]),index);
     }
+    if (shared) marks_.markShared(id.node);
   }
-  available.insert(visited.begin(), visited.end());
+  marks_.commit();
   return true;
 }
 
@@ -312,7 +422,7 @@ std::optional<MemoryEliminationResult> eliminateIndependentFamilies(
        (count>1 && delta[0]!=1) || action.operation.instance>SIZE_MAX-count) {valid=false;return;}
     if(!nodes.contains(action.operation.node)){valid=false;return;}
     const auto& node=graph.node(action.operation.node);
-    if(node.storedInstanceCount()!=1 || action.operation.instance+count>node.instances().size()) {valid=false;return;}
+    if(node.storedInstanceCount()!=1 || action.operation.instance+count>node.instanceCount()) {valid=false;return;}
     const auto* load=dynamic_cast<const v::LoadOp*>(&node.operation());
     const auto* store=dynamic_cast<const v::StoreOp*>(&node.operation());
     if(!load && !store){valid=false;return;}
@@ -353,13 +463,13 @@ std::optional<MemoryEliminationResult> eliminateIndependentFamilies(
     auto& intervals=found->second;std::sort(intervals.begin(),intervals.end());
     std::size_t end=0;
     for(auto [begin,next]:intervals){if(begin!=end)return {};end=next;}
-    if(end!=node.instances().size())return {};
+    if(end!=node.instanceCount())return {};
   }
   for(const auto& column:columns) {
     const auto& node=graph.node(column.base.operation.node);
     if(!dynamic_cast<const v::StoreOp*>(&node.operation()))continue;
     if(column.count>1 && node.hasUniformThreadTemplate()) {
-      const auto value=node.instances().at(column.base.operation.instance).operands.at(1);
+      const auto value=node.instanceOperands(column.base.operation.instance).at(1);
       if(!graph.type(value).isScalar() || footprintError(graph.type(value),*column.base.region))return {};
       if(allocations.at(column.base.region->allocation).output)
         result.output_families.push_back({column.base.operation,column.count,*column.base.region,column.delta[1]});
@@ -368,8 +478,7 @@ std::optional<MemoryEliminationResult> eliminateIndependentFamilies(
     for(std::size_t i=0;i<column.count;++i) {
       auto action=column.base;
       MemoryActionCodec::bind(action,*MemoryActionCodec::translate(MemoryActionCodec::fields(action),column.delta,i));
-      const auto instance=node.instances().at(action.operation.instance);
-      const auto value=instance.operands.at(1);
+      const auto value=node.instanceOperands(action.operation.instance).at(1);
       if(!graph.type(value).isScalar() || footprintError(graph.type(value),*action.region))return {};
       if(allocations.at(action.region->allocation).output)
         result.outputs.push_back({*action.region,value,action.operation,0});
@@ -412,7 +521,7 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
   for (const auto& node : graph.nodes()) {
     if (dynamic_cast<const v::LoadOp*>(&node.operation()) ||
         dynamic_cast<const v::StoreOp*>(&node.operation())) {
-      const auto count=node.instances().size();
+      const auto count=node.instanceCount();
       if(count>std::numeric_limits<std::size_t>::max()-expected_count)
         return fail("memory_instance_count_overflow", "The logical memory instance count cannot be represented.");
       expected.emplace(node.id(),count);
@@ -464,7 +573,7 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
     }
     const auto& node = graph.node(operation.node);
     const auto value = dynamic_cast<const v::LoadOp*>(&node.operation()) ? node.result(0,operation.instance)
-        : node.instances().at(operation.instance).operands.at(1);
+        : node.instanceOperands(operation.instance).at(1);
     if (const auto error = footprintError(graph.type(value), {"logical value",0,end}))
       return fail("memory_type_unsupported", *error, operation);
   }
@@ -476,8 +585,8 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
   std::map<std::size_t,ReadMapping> read_mappings;
   std::map<ConstantRegion, std::size_t> initial_symbols;
   MemoryInstanceSet completed_reads;
-  MemoryInstanceSet available_values;
   std::map<MemoryInstance,std::map<std::uint64_t,std::uint64_t>> read_fragments;
+  DependencyWalk dependencies(graph,completed_reads,read_fragments);
   std::map<MemoryInstance,std::map<std::uint64_t,ReadReplacement>> pending_reads;
   std::map<std::tuple<std::size_t,std::string,std::uint64_t,std::uint64_t>,std::vector<ValuePiece>> duplicate_values;
   SENTRYWARD_AUDIT(if(const auto* compact=actions.compact())
@@ -486,7 +595,7 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
   for (const auto& action : actions) {
     SENTRYWARD_AUDIT(audit->add(AuditCounter::logical_actions_processed));
     const auto& node = graph.node(action.operation.node);
-    const auto& instance = node.instances().at(action.operation.instance);
+    const auto operands = node.instanceOperands(action.operation.instance);
     const auto* load = dynamic_cast<const v::LoadOp*>(&node.operation());
     const auto* store = dynamic_cast<const v::StoreOp*>(&node.operation());
     const auto& attributes = load ? load->attributes() : store->attributes();
@@ -505,7 +614,7 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
           if(const auto error=footprintError(graph.type(value),region))
             return fail("memory_type_unsupported",*error,action.operation);
           std::string missing;
-          if(!dependenciesAvailable(graph,instance.operands,completed_reads,available_values,read_fragments,{},&missing))
+          if(!dependencies.ready(operands.span(),{},&missing))
             return fail("invalid_value_order","An initial-memory address depends on an unexecuted read."+missing,action.operation);
           result.symbolic_initial_reads.emplace(action.operation,region);
           result.reads.emplace(action.operation,value);
@@ -527,22 +636,22 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
     if (allocation == allocations.end()) {
       return fail("unknown_allocation", "The region has no allocation contract.", action.operation);
     }
-    if (attributes.interpretation != v::MemoryAttributes::Interpretation::Ordinary ||
+    const bool tensor_map = store && attributes.interpretation == v::MemoryAttributes::Interpretation::TensorMap;
+    if ((attributes.interpretation != v::MemoryAttributes::Interpretation::Ordinary && !tensor_map) ||
         attributes.layout || attributes.descriptor) {
       return fail("memory_layout_unsupported", "Memory elimination requires a resolved ordinary contiguous layout.", action.operation);
     }
     bool operands_ready;
     std::string missing;
     if (store && action.value_byte_offset) {
-      operands_ready=dependenciesAvailable(graph,std::span(instance.operands).first(1),completed_reads,available_values,read_fragments,{},&missing) &&
-          dependenciesAvailable(graph,std::span(instance.operands).subspan(1,1),completed_reads,available_values,read_fragments,
-              std::pair{*action.value_byte_offset,region.bytes},&missing);
-    } else operands_ready=dependenciesAvailable(graph,instance.operands,completed_reads,available_values,read_fragments,{},&missing);
+      operands_ready=dependencies.ready(operands.span().first(1),{},&missing) &&
+          dependencies.ready(operands.span().subspan(1,1),std::pair{*action.value_byte_offset,region.bytes},&missing);
+    } else operands_ready=dependencies.ready(operands.span(),{},&missing);
     if (!operands_ready) {
       return fail("invalid_value_order", "A "+std::string(node.operation().name())+
           " operand depends on a read that has not executed."+missing, action.operation);
     }
-    const auto value = load ? node.result(0, action.operation.instance) : instance.operands.at(1);
+    const auto value = load ? node.result(0, action.operation.instance) : operands.at(1);
     const auto value_type = action.value_byte_offset
         ? v::ValueType::matrix(v::ElementType::bit(8),{region.bytes}) : graph.type(value);
     if (const auto error = footprintError(value_type, region)) {
@@ -552,7 +661,7 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
       if(!action.value_byte_offset)
         if(const auto* initial=std::get_if<InitialMemorySymbol>(&replacement))
           result.recordInitialRead(action.operation,*initial);
-      if(node.instances().size()>1) {
+      if(node.instanceCount()>1) {
         if(const auto* source=std::get_if<v::Value>(&replacement))
           recordReadSlice(result,graph,read_indices,action.operation,ReinterpretedRead{*source,
               v::ValueType::matrix(v::ElementType::bit(8),{region.bytes}),0},action.value_byte_offset.value_or(0));
@@ -560,7 +669,7 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
       }
       if (!action.value_byte_offset) {
         result.reads.emplace(action.operation,std::move(replacement));
-        if(node.instances().size()>1)
+        if(node.instanceCount()>1)
           read_mappings.insert_or_assign(action.operation.node,
               ReadMapping{epochs[region.allocation],versions[region.allocation].read(region),
                   action.operation,value_type,region});
@@ -652,7 +761,8 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
         existing = cells.erase(existing);
       }
       for (auto& cell : retained) cells.emplace(cell.region.offset, std::move(cell));
-      cells.insert_or_assign(region.offset, Cell{region, value, action.operation, action.value_byte_offset.value_or(0)});
+      cells.insert_or_assign(region.offset,
+          Cell{region, value, action.operation, action.value_byte_offset.value_or(0), tensor_map});
       ++result.processed_actions;
       continue;
     }
@@ -717,6 +827,9 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
     if (!allocations.at(allocation).output) continue;
     for (const auto& [offset, cell] : cells) {
       static_cast<void>(offset);
+      // Tensor maps configure TMA; the reference compares tensor data. A tensor
+      // map left where the reference expects data fails output coverage.
+      if (cell.tensor_map) continue;
       result.outputs.push_back({cell.region, cell.value, cell.writer, cell.value_byte_offset});
     }
   }

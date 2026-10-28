@@ -3,7 +3,7 @@
   "entry": "elementwise_add_warp_specialized_kernel",
   "launch": {
     "grid_dim": [
-      1,
+      32,
       1,
       1
     ],
@@ -17,7 +17,7 @@
       1,
       1
     ],
-    "dynamic_shared_bytes": 0
+    "dynamic_shared_bytes": 49392
   },
   "declarations": [
     {
@@ -109,20 +109,95 @@
       "parameter": 17,
       "offset": 0,
       "type": "pointer",
-      "object": "A"
+      "name": "global_scratch"
     },
     {
       "parameter": 18,
       "offset": 0,
       "type": "pointer",
-      "object": "B"
+      "name": "profile_scratch"
     }
   ],
   "arguments": [
     {
+      "parameter": 1,
+      "type": "u32",
+      "value": 1000
+    },
+    {
+      "parameter": 2,
+      "type": "u32",
+      "value": 2000
+    },
+    {
+      "parameter": 3,
+      "type": "u64",
+      "value": 2000
+    },
+    {
+      "parameter": 4,
+      "type": "u64",
+      "value": 1
+    },
+    {
+      "parameter": 6,
+      "type": "u32",
+      "value": 1000
+    },
+    {
+      "parameter": 7,
+      "type": "u32",
+      "value": 2000
+    },
+    {
+      "parameter": 8,
+      "type": "u64",
+      "value": 2000
+    },
+    {
+      "parameter": 9,
+      "type": "u64",
+      "value": 1
+    },
+    {
+      "parameter": 11,
+      "type": "u32",
+      "value": 1000
+    },
+    {
+      "parameter": 12,
+      "type": "u32",
+      "value": 2000
+    },
+    {
+      "parameter": 13,
+      "type": "u64",
+      "value": 2000
+    },
+    {
+      "parameter": 14,
+      "type": "u64",
+      "value": 1
+    },
+    {
+      "parameter": 15,
+      "type": "u32",
+      "value": 1000
+    },
+    {
       "parameter": 16,
       "type": "u32",
-      "value": 0
+      "value": 2000
+    },
+    {
+      "parameter": 17,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 18,
+      "type": "pointer",
+      "value": null
     }
   ],
   "tma_descriptors": [
@@ -136,14 +211,14 @@
         32
       ],
       "global_shape": [
-        1000,
-        2000
+        2000,
+        1000
       ],
       "global_strides_bytes": [
         8000
       ],
       "element_strides": [
-        2000,
+        1,
         1
       ],
       "swizzle": "128B",
@@ -160,14 +235,14 @@
         32
       ],
       "global_shape": [
-        1000,
-        2000
+        2000,
+        1000
       ],
       "global_strides_bytes": [
         8000
       ],
       "element_strides": [
-        2000,
+        1,
         1
       ],
       "swizzle": "128B",
@@ -184,14 +259,14 @@
         32
       ],
       "global_shape": [
-        1000,
-        2000
+        2000,
+        1000
       ],
       "global_strides_bytes": [
         8000
       ],
       "element_strides": [
-        2000,
+        1,
         1
       ],
       "swizzle": "128B",

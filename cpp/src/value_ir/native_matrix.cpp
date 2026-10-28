@@ -10,8 +10,11 @@ void modifiers(std::ostream& out, const std::vector<std::string>& values) {
   for (const auto& value : values) out << '.' << value;
 }
 }
-WarpMmaOp::WarpMmaOp(bool bfloat)
-    : TypedOperation({ValueType::matrix(ElementType::floating(32),{16,8})}), bfloat_(bfloat) {}
+WarpMmaOp::WarpMmaOp(std::string element)
+    : TypedOperation({ValueType::matrix(ElementType::floating(32),{16,8})}), element_(std::move(element)) {
+  require(element_=="f16" || element_=="bf16" || element_=="e4m3" || element_=="e5m2",
+      "Warp MMA element type must be f16, bf16, e4m3 or e5m2");
+}
 void WarpMmaOp::validateOperands(std::span<const ValueType> operands) const {
   require(operands.size()==320,"Warp MMA requires all 32 lane register fragments");
   const auto packed=ValueType::scalar(ElementType::bit(32));
@@ -20,7 +23,7 @@ void WarpMmaOp::validateOperands(std::span<const ValueType> operands) const {
     require(operands[i]==(i<192 ? packed : accumulator),"Warp MMA fragment type mismatch");
 }
 void WarpMmaOp::printAttributes(std::ostream& output) const {
-  output << "m16n8k16 row.col f32." << (bfloat_ ? "bf16.bf16" : "f16.f16") << ".f32";
+  output << "m16n8k" << k() << " row.col f32." << element_ << '.' << element_ << ".f32";
 }
 std::string WarpMmaOp::operandLabel(std::size_t index) const {
   const auto base=index<128 ? 0u : index<192 ? 128u : 192u;

@@ -1,41 +1,33 @@
 {
-  "assumption_hints": [
-    {
-      "key": "representative_branches",
-      "label": "Representative branches",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    },
-    {
-      "key": "bounded_computation_loops",
-      "label": "Bounded computation loops",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    }
-  ],
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "duplicate_tma_store_benign",
       "label": "Duplicate TMA stores",
       "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "representative_election",
       "label": "Representative election",
       "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "clc_always_fails",
       "label": "Failed launch cancellation",
       "text": "Every cluster launch cancellation request fails.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "representative_branches",
       "label": "Representative branches",
@@ -43,272 +35,757 @@
       "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "bounded_computation_loops",
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "not_run",
-    "memory": "not_run",
-    "synchronization": "not_run"
-  },
-  "details": {
-    "required_parameters": []
+    "equivalence": "incomplete",
+    "synchronization": "passed"
   },
   "diagnostics": [
     {
-      "code": "control_predicate_not_static",
+      "code": "uninitialized_memory_read",
       "details": {
-        "location": {
-          "column": 0,
-          "file": "corpus/flashinfer__bgmv_moe__moe_bgmv_bf16_bf16_bf16__sm_100a.ptx",
-          "line": 73
-        },
-        "required_parameters": []
+        "internal_stage": "value_analysis.memory_elimination"
       },
-      "message": "control predicate is not statically determined",
-      "stage": "ptx_execution"
+      "message": "The intermediate allocation is read before a covering store.",
+      "stage": "equivalence"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/flashinfer__bgmv_moe__moe_bgmv_bf16_bf16_bf16__sm_100a.ptx",
-                  "line": 73
-                },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
   },
-  "frontend": {
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 0,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_array_contract": {
+      "kind": "fixed_read_only",
+      "origin": "pointer_arrays",
+      "regions": [
+        {
+          "allocation": "w_ptr",
+          "byte_offset": 0,
+          "bytes": 64,
+          "resource": "input.arg2.0"
+        }
       ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 0,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
+      "text": "Configured pointer-table entries retain their supplied objects and are not written during the analyzed execution."
     },
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "Y",
-        "offset": 0,
-        "parameter": "_Z29moe_bgmv_shrink_sliced_kernelILi384ELi8ELi8ELi4ELi3ELm4ELm8ELm8ELi32ELi4E13__nv_bfloat16S0_S0_Lb0EEvPT10_PKT9_PPT11_PKlSA_SA_llllf_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "X",
-        "offset": 0,
-        "parameter": "_Z29moe_bgmv_shrink_sliced_kernelILi384ELi8ELi8ELi4ELi3ELm4ELm8ELm8ELi32ELi4E13__nv_bfloat16S0_S0_Lb0EEvPT10_PKT9_PPT11_PKlSA_SA_llllf_param_1",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "w_ptr",
-        "offset": 0,
-        "parameter": "_Z29moe_bgmv_shrink_sliced_kernelILi384ELi8ELi8ELi4ELi3ELm4ELm8ELm8ELi32ELi4E13__nv_bfloat16S0_S0_Lb0EEvPT10_PKT9_PPT11_PKlSA_SA_llllf_param_2",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "sorted_token_ids",
-        "offset": 0,
-        "parameter": "_Z29moe_bgmv_shrink_sliced_kernelILi384ELi8ELi8ELi4ELi3ELm4ELm8ELm8ELi32ELi4E13__nv_bfloat16S0_S0_Lb0EEvPT10_PKT9_PPT11_PKlSA_SA_llllf_param_3",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "expert_ids",
-        "offset": 0,
-        "parameter": "_Z29moe_bgmv_shrink_sliced_kernelILi384ELi8ELi8ELi4ELi3ELm4ELm8ELm8ELi32ELi4E13__nv_bfloat16S0_S0_Lb0EEvPT10_PKT9_PPT11_PKlSA_SA_llllf_param_4",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "lora_indices",
-        "offset": 0,
-        "parameter": "_Z29moe_bgmv_shrink_sliced_kernelILi384ELi8ELi8ELi4ELi3ELm4ELm8ELm8ELi32ELi4E13__nv_bfloat16S0_S0_Lb0EEvPT10_PKT9_PPT11_PKlSA_SA_llllf_param_5",
-        "source": "declaration"
-      }
-    ],
-    "required_parameters": [],
-    "user_branch_decisions": []
-  },
-  "implementation": "cpp",
-  "location": {
-    "column": 0,
-    "file": "corpus/flashinfer__bgmv_moe__moe_bgmv_bf16_bf16_bf16__sm_100a.ptx",
-    "line": 73
-  },
-  "memory_analysis_complete": false,
-  "peak_footprint_mib": 1304.23828125,
-  "peak_rss_mib": 1320.8359375,
-  "pipeline_elapsed_seconds": 1.433708955,
-  "result": "unsupported",
-  "rss_limit_mib": null,
-  "scope": {
-    "operation": "kernel_verification"
-  },
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "execution_cohorts": 0,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 0,
-    "synchronization_groups_materialized": false,
-    "synthetic_synchronization_nodes": 0,
-    "thread_prefix_groups": 0
-  },
-  "stage": "ptx_execution",
-  "template_execution": {
-    "completed_ctas": 0,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 0,
-    "path_entries": 0,
-    "record_bindings": 0,
-    "record_nodes": 0,
-    "splits": 0,
-    "template_steps": 0,
-    "thread_memberships": 0,
-    "value_nodes": 0
-  },
-  "thread_record_compression": {
-    "completed_ctas": 0,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 0,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
     },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/flashinfer__bgmv_moe__moe_bgmv_bf16_bf16_bf16__sm_100a.ptx",
-                  "line": 73
-                },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported",
-          "prerequisite_status": "ptx_execution_unsupported"
+    "representative_branch_uses": 0,
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "s64",
+          "object": "sorted_token_ids",
+          "property": "lower_bound",
+          "value": 0
         },
-        "stage": "pipeline"
+        {
+          "element_type": "s64",
+          "object": "sorted_token_ids",
+          "property": "upper_bound",
+          "value": 0
+        },
+        {
+          "element_type": "s64",
+          "object": "lora_indices",
+          "property": "lower_bound",
+          "value": 0
+        },
+        {
+          "element_type": "s64",
+          "object": "expert_ids",
+          "property": "lower_bound",
+          "value": 0
+        },
+        {
+          "element_type": "s64",
+          "object": "expert_ids",
+          "property": "upper_bound",
+          "value": 7
+        },
+        {
+          "element_type": "s64",
+          "object": "lora_indices",
+          "property": "upper_bound",
+          "value": 3
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "expert_ids",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg4.0"
+        },
+        {
+          "allocation": "lora_indices",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg5.0"
+        },
+        {
+          "allocation": "sorted_token_ids",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg3.0"
+        }
+      ],
+      "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [
+      {
+        "lines": [
+          77,
+          113
+        ],
+        "object": "lora_indices"
+      },
+      {
+        "lines": [
+          69,
+          105
+        ],
+        "object": "sorted_token_ids"
       }
     ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "ptx_execution_unsupported",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
+    "trap_only_equality_assertions_hold": true
+  },
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "counts": {
+      "edges": 264896,
+      "events": 174784,
+      "instructions": 59040,
+      "memory_accesses": 39648,
+      "threads": 128
+    },
+    "equivalence": {
       "diagnostics": [
         {
-          "code": "memory_elimination_not_completed",
+          "code": "uninitialized_memory_read",
+          "message": "The intermediate allocation is read before a covering store.",
+          "stage": "value_analysis.memory_elimination"
+        }
+      ],
+      "expression_diagnostic": {
+        "diagnostics": [
+          {
+            "code": "uninitialized_memory_read",
+            "message": "The intermediate allocation is read before a covering store.",
+            "stage": "pipeline"
+          }
+        ],
+        "duplicate_write_value_checks": 0,
+        "equivalence_check": "not_run",
+        "equivalence_reason": "reference_expression_not_supplied",
+        "initial_memory_regions": 101,
+        "initial_read_families": 52,
+        "instruction": "ld.shared.v2.b32 \t{%r160, %r161}, [%r52];",
+        "line": 722,
+        "memory_action_storage": {
+          "logical_actions": 17376,
+          "stored_runs": 4212
+        },
+        "output_region_families": 0,
+        "output_regions": 0,
+        "passes": [
+          {
+            "name": "packing",
+            "rewritten_instances": 0,
+            "rewritten_nodes": 0,
+            "semantics": "exact_fixed_width"
+          },
+          {
+            "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+            "name": "software_exp2",
+            "rewritten_instances": 0,
+            "rewritten_nodes": 0,
+            "semantics": "ideal_exp2"
+          },
+          {
+            "converted_instances": 85523,
+            "name": "type_edges",
+            "removed_nodes": 3501
+          },
+          {
+            "name": "memory_elimination"
+          },
+          {
+            "elements": 0,
+            "identities": 0,
+            "layouts": 0,
+            "mapping_blocks": 0,
+            "name": "view_normalization",
+            "original_pieces": 0,
+            "reused_initial_reads": 0,
+            "reused_views": 0,
+            "segmented": 0,
+            "slices": 0,
+            "stored_mapping_blocks": 0,
+            "typed_output_pieces": 0,
+            "typed_output_regions": 0
+          }
+        ],
+        "processed_memory_actions": 7828,
+        "processed_memory_families": 0,
+        "read_substitutions": 6100,
+        "serialization": {
+          "action_patterns": 4212,
+          "binding_patterns": 4212,
+          "domain_refinements": 134386,
+          "elapsed_seconds": 0.0935988,
+          "event_families": 22418,
+          "expanded_event_records": 0,
+          "largest_batch_members": 93,
+          "logical_actions": 17376,
+          "logical_events": 514906,
+          "peak_rss_mib_at_completion": 1385.71875,
+          "reachability_queries": 0,
+          "relations": 97056,
+          "rss_mib_at_completion": 1386.15625,
+          "scheduled_batches": 22418,
+          "singleton_batches": 8177,
+          "value_families": 11503
+        },
+        "shared_read_families": 18,
+        "shared_read_instances": 738,
+        "stored_read_substitutions": 5362
+      },
+      "stage": "value_analysis.memory_elimination"
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 1,
+      "dependency_compression": {
+        "cp_async_wait": {
+          "consumers": 128,
+          "emitted_references": 1728,
+          "original_references": 1728,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "executed_records": 106512,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 0,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_array_contract": {
+          "kind": "fixed_read_only",
+          "origin": "pointer_arrays",
+          "regions": [
+            {
+              "allocation": "w_ptr",
+              "byte_offset": 0,
+              "bytes": 64,
+              "resource": "input.arg2.0"
+            }
+          ],
+          "text": "Configured pointer-table entries retain their supplied objects and are not written during the analyzed execution."
+        },
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "s64",
+              "object": "sorted_token_ids",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s64",
+              "object": "sorted_token_ids",
+              "property": "upper_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s64",
+              "object": "lora_indices",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s64",
+              "object": "expert_ids",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s64",
+              "object": "expert_ids",
+              "property": "upper_bound",
+              "value": 7
+            },
+            {
+              "element_type": "s64",
+              "object": "lora_indices",
+              "property": "upper_bound",
+              "value": 3
+            }
+          ],
+          "regions": [
+            {
+              "allocation": "expert_ids",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg4.0"
+            },
+            {
+              "allocation": "lora_indices",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg5.0"
+            },
+            {
+              "allocation": "sorted_token_ids",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg3.0"
+            }
+          ],
+          "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+        },
+        "tensor_property_decisions": [
+          {
+            "lines": [
+              77,
+              113
+            ],
+            "object": "lora_indices"
+          },
+          {
+            "lines": [
+              69,
+              105
+            ],
+            "object": "sorted_token_ids"
+          }
+        ],
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "Y",
+          "offset": 0,
+          "parameter": "_Z29moe_bgmv_shrink_sliced_kernelILi384ELi8ELi8ELi4ELi3ELm4ELm8ELm8ELi32ELi4E13__nv_bfloat16S0_S0_Lb0EEvPT10_PKT9_PPT11_PKlSA_SA_llllf_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "X",
+          "offset": 0,
+          "parameter": "_Z29moe_bgmv_shrink_sliced_kernelILi384ELi8ELi8ELi4ELi3ELm4ELm8ELm8ELi32ELi4E13__nv_bfloat16S0_S0_Lb0EEvPT10_PKT9_PPT11_PKlSA_SA_llllf_param_1",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "w_ptr",
+          "offset": 0,
+          "parameter": "_Z29moe_bgmv_shrink_sliced_kernelILi384ELi8ELi8ELi4ELi3ELm4ELm8ELm8ELi32ELi4E13__nv_bfloat16S0_S0_Lb0EEvPT10_PKT9_PPT11_PKlSA_SA_llllf_param_2",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "sorted_token_ids",
+          "offset": 0,
+          "parameter": "_Z29moe_bgmv_shrink_sliced_kernelILi384ELi8ELi8ELi4ELi3ELm4ELm8ELm8ELi32ELi4E13__nv_bfloat16S0_S0_Lb0EEvPT10_PKT9_PPT11_PKlSA_SA_llllf_param_3",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "expert_ids",
+          "offset": 0,
+          "parameter": "_Z29moe_bgmv_shrink_sliced_kernelILi384ELi8ELi8ELi4ELi3ELm4ELm8ELm8ELi32ELi4E13__nv_bfloat16S0_S0_Lb0EEvPT10_PKT9_PPT11_PKlSA_SA_llllf_param_4",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "lora_indices",
+          "offset": 0,
+          "parameter": "_Z29moe_bgmv_shrink_sliced_kernelILi384ELi8ELi8ELi4ELi3ELm4ELm8ELm8ELi32ELi4E13__nv_bfloat16S0_S0_Lb0EEvPT10_PKT9_PPT11_PKlSA_SA_llllf_param_5",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 59040,
+      "reached_opcodes": {
+        "add.bf16": 16,
+        "add.f32": 20480,
+        "add.s32": 2528,
+        "add.s64": 4546,
+        "barrier.sync": 384,
+        "bra": 4641,
+        "bra.uni": 96,
+        "cp.async.ca.shared.global": 1728,
+        "cp.async.commit_group": 128,
+        "cp.async.wait_group": 128,
+        "cvt.f32.bf16": 9216,
+        "cvt.rn.bf16.f32": 16,
+        "cvt.u64.u32": 641,
+        "cvta.to.global.u64": 2241,
+        "fma.rn.f32": 8192,
+        "isspacep.global": 192,
+        "ld.global.b16": 16,
+        "ld.global.nc.b64": 1024,
+        "ld.param.b32": 128,
+        "ld.param.b64": 1666,
+        "ld.shared.v2.b32": 2304,
+        "ld.shared.v4.b32": 2048,
+        "mad.lo.s32": 128,
+        "mad.lo.s64": 513,
+        "mov.b16": 512,
+        "mov.b32": 9088,
+        "mov.b64": 1280,
+        "mov.pred": 1536,
+        "mov.u32": 1026,
+        "mul.f32": 8192,
+        "mul.lo.s32": 128,
+        "mul.lo.s64": 128,
+        "mul.wide.u32": 2306,
+        "not.pred": 736,
+        "or.b16": 384,
+        "or.b32": 128,
+        "or.pred": 1024,
+        "ret": 128,
+        "selp.b16": 128,
+        "selp.f32": 64,
+        "setp.eq.b16": 128,
+        "setp.ge.s64": 256,
+        "setp.gt.u32": 512,
+        "setp.le.s64": 512,
+        "setp.lt.s64": 512,
+        "setp.lt.u32": 64,
+        "setp.ne.b32": 2882,
+        "shfl.sync.down.b32": 10240,
+        "shl.b32": 769,
+        "shl.b64": 769,
+        "st.global.b16": 16,
+        "st.shared.b32": 64
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 5,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 59040,
+        "stored_bindings": 3379
+      },
+      "source_edge_storage": {
+        "binding_templates": 128,
+        "logical_edges": 58912,
+        "stored_bindings": 128
+      },
+      "thread_count": 128,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 25136,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 2234,
+        "affine_member_rows": 0,
+        "candidate_relations": 1242,
+        "hb_frontier_pieces": 2,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 39648
+      },
+      "hb_algorithm": "member-relations",
+      "hb_batches": 9,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 35441,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 25136,
+      "hb_query_seconds": 0.005944483,
+      "overlap_queries": 0,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 0
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 1379.48828125,
+    "required_order_domains": 0,
+    "required_orders": 0,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": true,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 9,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 4212,
+      "memory_binding_templates": 595,
+      "memory_bindings": 17376,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 1786,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 0,
+      "thread_prefix_groups": 18125,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 1,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 108725,
+      "path_entries": 4234,
+      "record_bindings": 2254,
+      "record_nodes": 2754,
+      "splits": 4,
+      "template_steps": 2825,
+      "thread_memberships": 128,
+      "value_nodes": 2050
+    },
+    "thread_record_compression": {
+      "completed_ctas": 1,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 106512,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "uninitialized_memory_read",
+          "message": "The intermediate allocation is read before a covering store.",
           "stage": "pipeline"
         }
       ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
+      "duplicate_write_value_checks": 0,
+      "equivalence_check": "unsupported",
+      "initial_memory_regions": 101,
+      "initial_read_families": 52,
+      "instruction": "ld.shared.v2.b32 \t{%r160, %r161}, [%r52];",
+      "line": 722,
+      "memory_action_storage": {
+        "logical_actions": 17376,
+        "stored_runs": 4212
+      },
+      "output_region_families": 0,
+      "output_regions": 0,
+      "passes": [
+        {
+          "name": "packing",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 85523,
+          "name": "type_edges",
+          "removed_nodes": 3501
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 0,
+          "layouts": 0,
+          "mapping_blocks": 0,
+          "name": "view_normalization",
+          "original_pieces": 0,
+          "reused_initial_reads": 0,
+          "reused_views": 0,
+          "segmented": 0,
+          "slices": 0,
+          "stored_mapping_blocks": 0,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
+        }
+      ],
+      "processed_memory_actions": 7828,
+      "processed_memory_families": 0,
+      "read_substitutions": 6100,
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      },
+      "serialization": {
+        "action_patterns": 4212,
+        "binding_patterns": 4212,
+        "domain_refinements": 134386,
+        "elapsed_seconds": 0.0935988,
+        "event_families": 22418,
+        "expanded_event_records": 0,
+        "largest_batch_members": 93,
+        "logical_actions": 17376,
+        "logical_events": 514906,
+        "peak_rss_mib_at_completion": 1385.71875,
+        "reachability_queries": 0,
+        "relations": 97056,
+        "rss_mib_at_completion": 1386.15625,
+        "scheduled_batches": 22418,
+        "singleton_batches": 8177,
+        "value_families": 11503
+      },
+      "shared_read_families": 18,
+      "shared_read_instances": 738,
+      "stored_read_substitutions": 5362
     },
-    "scope": {
-      "operation": "value_analysis"
-    }
+    "value_ir_instance_count": 352869,
+    "value_ir_node_count": 10385,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 1.7470038,
+    "verification_result": "race_free"
   },
-  "value_ir_instance_count": 0,
-  "value_ir_node_count": 0,
-  "value_view_complete": false,
+  "peak_rss_mib": 1386.09375,
+  "pipeline_elapsed_seconds": 1.955276405,
+  "result": "unsupported",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "verification_limitations": [],
+  "warning_count": 0,
+  "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.512
 }

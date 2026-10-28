@@ -1,0 +1,198 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:q": "q",
+      "6:global1:k": "k",
+      "6:global1:v": "v"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      },
+      "6:global1:k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          64,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          64,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:q": "q",
+      "6:global1:k": "k",
+      "6:global1:v": "v"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      },
+      "6:global1:k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          64,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      },
+      "6:global1:v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          64,
+          8,
+          128
+        ],
+        "source_strides_bytes": [
+          2048,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          2048,
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:o",
+    "right_allocation": "6:global1:o",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      8,
+      128
+    ],
+    "left_strides_bytes": [
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      256,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "q",
+        "allocation": "6:global1:q",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "k",
+        "allocation": "6:global1:k",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "v",
+        "allocation": "6:global1:v",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "sm_scale",
+        "parameter": 0,
+        "parameter_offset": 56
+      }
+    ]
+  },
+  "provenance": {
+    "source": "Python reference written from the pinned upstream source",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/attention/decode.cuh",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/csrc/single_decode.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/csrc/single_decode_customize_config.jinja",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/csrc/single_decode_kernel_inst.jinja",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/attention/variants.cuh",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/attention/variant_helper.cuh",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/attention/state.cuh"
+    ],
+    "scope": "SingleDecodeWithKVCacheKernel<kNone,2,8,8,16,1,8,DefaultAttention<0,0,0,0>>; kv_len=64, 8 qo / 8 kv heads, NHD, kv_chunk_size=kv_len (grid (1,8)); lse null; o [8,128] fully written",
+    "optimized_input_sha256": "a3264aa89add2aa158f2b3ee0068df7eafe092eed5fcc57627fc157ae944f98c",
+    "ptx_sha256": "554af7e6df505226bc21819e7627fbbea93e84ee4c316f72996b85924db48607",
+    "scope_shape_arrays": []
+  }
+}

@@ -10,6 +10,11 @@ namespace v=value_ir;namespace a=algorithm;
 using Piece=SelectorPatterns::Piece;using Pieces=std::vector<Piece>;using I=__int128;
 void Check(bool yes){if(!yes)throw std::invalid_argument("thread selector has no supported exact index pattern");}
 I Last(const Piece& p){return p.first+p.step*I(p.threads.count-1);}
+// Pieces hold unsigned representatives: a piece of a signed `element` operand
+// must stay below its sign bit. Always true for other elements.
+bool BelowSignBit(const Piece& p,const v::ElementType& element) {
+  return element.kind()!=v::ElementKind::SignedInteger || std::max(p.first,Last(p))<(I(1)<<(element.width()-1));
+}
 Pieces Coalesce(Pieces pieces) {
   for(auto& piece:pieces)if(piece.threads.count==1)piece.threads.step=1;
   std::sort(pieces.begin(),pieces.end(),[](const Piece& x,const Piece& y) {
@@ -60,6 +65,35 @@ Pieces Residues(Piece p,std::uint64_t modulus,bool quotient) {
     auto part=Restrict(p,r,period,1+(p.threads.count-1-r)/period);
     part.first=quotient?part.first/modulus:part.first%modulus;
     part.step=quotient?part.step/modulus:0;result.push_back(part);
+  }
+  return result;
+}
+I FloorDiv(I a,I b){I q=a/b;if((a%b!=0) && ((a<0)!=(b<0)))--q;return q;}
+// An affine difference d over one progression changes sign at most once, so
+// each integer comparison of it is constant between its root neighbours.
+Pieces Compare(Piece d,v::ComparePredicate predicate) {
+  const auto holds=[&](I value) {
+    switch(predicate) {
+      case v::ComparePredicate::Equal:return value==0;
+      case v::ComparePredicate::NotEqual:return value!=0;
+      case v::ComparePredicate::Less:return value<0;
+      case v::ComparePredicate::LessEqual:return value<=0;
+      case v::ComparePredicate::Greater:return value>0;
+      case v::ComparePredicate::GreaterEqual:return value>=0;
+      default:Check(false);return false;
+    }
+  };
+  const auto n=d.threads.count;
+  std::vector<std::uint64_t> cuts{0,n};
+  if(d.step) {
+    const I root=FloorDiv(-d.first,d.step);
+    for(I cut:{root,root+1,root+2})if(cut>0 && cut<I(n))cuts.push_back(std::uint64_t(cut));
+  }
+  std::sort(cuts.begin(),cuts.end());cuts.erase(std::unique(cuts.begin(),cuts.end()),cuts.end());
+  Pieces result;
+  for(std::size_t i=0;i+1<cuts.size();++i) {
+    auto part=Restrict(d,cuts[i],1,cuts[i+1]-cuts[i]);
+    part.first=holds(part.first)?1:0;part.step=0;result.push_back(part);
   }
   return result;
 }
@@ -147,8 +181,11 @@ std::vector<SelectorPatterns::Piece> SelectorPatterns::evaluateImpl(v::Value val
     std::uint64_t base,a::AffineDomain threads,bool rebind,unsigned depth,Cache& cache) const {
   Check(depth<128 && value.indices().empty());
   value=graph_.resolve(value);
-  const auto& type=value.type(graph_);Check(type.isScalar() && type.element().isInteger());
-  const auto width=type.element().width();Check(width && width<=64);
+  const auto& type=value.type(graph_);
+  // Predicates are 0/1 (shuffle validity, lane tests); compare and select them exactly.
+  const bool predicate=type.isScalar() && type.element().kind()==v::ElementKind::Predicate;
+  Check(type.isScalar() && (type.element().isInteger() || predicate));
+  const auto width=predicate?1u:type.element().width();Check(width && width<=64);
   const auto mask=width==64?UINT64_MAX:(std::uint64_t(1)<<width)-1;
   const auto normalize=[&](Pieces parts) {
     Pieces result;
@@ -232,8 +269,14 @@ std::vector<SelectorPatterns::Piece> SelectorPatterns::evaluateImpl(v::Value val
     }
     return Coalesce(std::move(result));
   }
-  if(auto* constant=dynamic_cast<const v::ConstantOp*>(&node.operation()))
+  if(auto* constant=dynamic_cast<const v::ConstantOp*>(&node.operation())) {
+    if(predicate) {
+      const auto& literal=constant->literal();
+      Check(literal=="true" || literal=="false" || literal=="1" || literal=="0");
+      return {{threads,I(literal=="true" || literal=="1"),0}};
+    }
     return normalize({{threads,I(std::stoll(constant->literal(),nullptr,0)),0}});
+  }
   const auto instance=graph_.instance(value);
   bool variable=rebind && instance.origin.cta==cta && instance.origin.thread==base;
   if(auto* coordinate=dynamic_cast<const v::CoordinateOp*>(&node.operation())) {
@@ -250,6 +293,33 @@ std::vector<SelectorPatterns::Piece> SelectorPatterns::evaluateImpl(v::Value val
       Check(bool(instance.origin.cta_coordinates));return {{threads,instance.origin.cta_coordinates->at(axis),0}};
     }
   }
+  if(dynamic_cast<const v::SelectOp*>(&node.operation())) {
+    Check(instance.operands.size()==3);
+    Pieces result;
+    for(const auto& condition:evaluate(instance.operands[0],cta,base,threads,variable,depth+1,cache))
+      for(std::uint64_t member=0;member<condition.threads.count;) {
+        // A 0/1 progression is constant unless it has two members.
+        const auto count=condition.step?1:condition.threads.count;
+        const auto part=Restrict(condition,member,1,count);
+        auto chosen=evaluate(instance.operands[part.first?1:2],cta,base,part.threads,variable,depth+1,cache);
+        result.insert(result.end(),chosen.begin(),chosen.end());member+=count;
+      }
+    return Coalesce(std::move(result));
+  }
+  if(auto* compare=dynamic_cast<const v::CompareOp*>(&node.operation())) {
+    Check(instance.operands.size()==2);
+    const auto& element=instance.operands[0].type(graph_).element();
+    Check(element.isInteger() && instance.operands[1].type(graph_).element()==element);
+    auto left=evaluate(instance.operands[0],cta,base,threads,variable,depth+1,cache);
+    auto right=evaluate(instance.operands[1],cta,base,threads,variable,depth+1,cache);Pieces result;
+    for(auto l:left)for(auto r:right)if(auto m=a::IntersectAffine(l.threads,r.threads);m.count) {
+      auto x=Restrict(l,m.left,m.left_step,m.count),y=Restrict(r,m.right,m.right_step,m.count);
+      Check(BelowSignBit(x,element) && BelowSignBit(y,element));
+      x.first-=y.first;x.step-=y.step;
+      auto parts=Compare(x,compare->predicate());result.insert(result.end(),parts.begin(),parts.end());
+    }
+    return Coalesce(std::move(result));
+  }
   const auto* binary=dynamic_cast<const v::BinaryOp*>(&node.operation());Check(binary && instance.operands.size()==2);
   Check(!binary->attributes().saturate && binary->attributes().multiply_mode!=v::IntegerMultiplyMode::High);
   auto left=evaluate(instance.operands[0],cta,base,threads,variable,depth+1,cache);
@@ -258,9 +328,7 @@ std::vector<SelectorPatterns::Piece> SelectorPatterns::evaluateImpl(v::Value val
     auto x=Restrict(l,m.left,m.left_step,m.count),y=Restrict(r,m.right,m.right_step,m.count);
     Piece out=x;Pieces parts;
     const auto nonnegative_signed=[&](const Piece& part,v::Value operand) {
-      const auto& element=operand.type(graph_).element();
-      return element.kind()!=v::ElementKind::SignedInteger ||
-          std::max(part.first,Last(part))<(I(1)<<(element.width()-1));
+      return BelowSignBit(part,operand.type(graph_).element());
     };
     switch(binary->opcode()) {
       case v::BinaryOpcode::Add:out.first+=y.first;out.step+=y.step;break;

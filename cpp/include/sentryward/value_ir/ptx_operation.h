@@ -15,6 +15,20 @@ public:
   void printAttributes(std::ostream&) const override;
 };
 
+// A value whose bits this IR does not determine: the content PTX leaves
+// unspecified to the model, such as a tensor map after a field edit (the
+// CUtensorMap byte layout is opaque). It names its producer. No evaluator gives
+// it a value, so anything computed from it stays unresolved.
+class OpaqueValueOp final : public TypedOperation {
+public:
+  OpaqueValueOp(ValueType type, std::string provenance);
+  std::string_view name() const noexcept override { return "OpaqueValue"; }
+  void validateOperands(std::span<const ValueType>) const override;
+  void printAttributes(std::ostream&) const override;
+private:
+  std::string provenance_;
+};
+
 // PTX-specific scalar operations whose semantics cannot be expressed by the
 // portable arithmetic primitives without losing instruction information.
 // An evaluator can dispatch on this public enum and inspect typed attributes;
