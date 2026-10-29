@@ -5,6 +5,14 @@ the verifier. The pool is defined in [config/assumption-pool.json](../config/ass
 defaults are maintained in [config/default-assumptions.json](../config/default-assumptions.json).
 Some premises of the model are fixed; they are described first.
 
+## Invocation overrides
+
+Persisted choices belong in the kernel input `assumptions` object. For one run,
+`--assume KEY` / `--no-assume KEY` and Python `verify(..., assumptions={...})`
+override those keys. Defaults apply first, then the input file, then these
+overrides. `sentryward --list-assumptions` prints the accepted keys and the
+repository defaults as JSON and does not require a PTX file.
+
 ## Fixed premises
 
 These premises are not configurable.

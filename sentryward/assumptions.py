@@ -32,11 +32,30 @@ def resolve_assumptions(config=None, overrides=None):
 
 
 def add_assumption_arguments(parser):
-    parser.add_argument("--assume", action="append", choices=ASSUMPTIONS, default=[])
-    parser.add_argument("--no-assume", action="append", choices=ASSUMPTIONS, default=[])
+    parser.add_argument("--assume", action="append", choices=ASSUMPTIONS, default=[],
+                        help="enable a named analysis assumption for this invocation")
+    parser.add_argument("--no-assume", action="append", choices=ASSUMPTIONS, default=[],
+                        help="disable a named analysis assumption for this invocation")
 
 
 def assumption_arguments(parser, args):
     if len(set(args.assume + args.no_assume)) != len(args.assume + args.no_assume):
         parser.error("each semantic assumption may be specified only once")
     return {**dict.fromkeys(args.assume, True), **dict.fromkeys(args.no_assume, False)}
+
+
+def assumption_listing():
+    """Accepted keys and repository defaults, independent of a kernel input."""
+    defaults = resolve_assumptions()
+    return {
+        "defaults": defaults,
+        "assumptions": [
+            {
+                "label": item["label"],
+                "key": item["key"],
+                "text": item["text"],
+                "enabled": defaults[item["key"]],
+            }
+            for item in ASSUMPTION_POOL
+        ],
+    }
