@@ -168,14 +168,17 @@ def _fold(label, body):
     return '<details>\n<summary><strong>' + html.escape(label) + '</strong></summary>\n\n' + body.strip() + '\n\n</details>\n\n'
 
 
-def artifact_url(path, report_path=None, artifact_base=None, line=None):
+def artifact_url(path, report_path=None, artifact_base=None, line=None, *, artifact_links=None, raw=False):
     """Resolve from the report, not the command's working directory."""
     if path is None or not Path(path).is_file():
         return None
     path = Path(path)
     base = Path(report_path).resolve().parent if report_path else Path.cwd().resolve()
-    target = quote(os.path.relpath(path.resolve(), base), safe='/.-_')
-    if artifact_base is not None:
+    descriptor = (artifact_links or {}).get(path.resolve(), {})
+    target = descriptor.get('raw_uri' if raw else 'uri') or descriptor.get('uri')
+    if target is None:
+        target = quote(os.path.relpath(path.resolve(), base), safe='/.-_')
+    if not descriptor.get('uri') and artifact_base is not None:
         url = urlsplit(artifact_base)
         if url.scheme != 'https' or not url.hostname or url.username or url.password or url.query or url.fragment or any(c.isspace() or c in '<>\\' for c in artifact_base):
             raise ValueError('Artifact base must be an HTTPS URL without credentials, query or fragment.')
@@ -188,10 +191,10 @@ def artifact_url(path, report_path=None, artifact_base=None, line=None):
     return target
 
 
-def _file_link(label, path, report_path=None, artifact_base=None, line=None):
+def _file_link(label, path, report_path=None, artifact_base=None, line=None, *, artifact_links=None):
     if path is None:
         return label + ' (not provided)'
-    target = artifact_url(path, report_path, artifact_base, line)
+    target = artifact_url(path, report_path, artifact_base, line, artifact_links=artifact_links)
     if target is None:
         return label + ' (file unavailable: ' + _inline(str(path)) + ')'
     label = re.sub(r'([\\\[\]])', r'\\\1', html.escape(label))
@@ -273,7 +276,7 @@ def _json_pointer_lines(path, pointers):
     return lines
 
 
-def link_references(document, ptx, artifacts, report_path=None, artifact_base=None):
+def link_references(document, ptx, artifacts, report_path=None, artifact_base=None, *, artifact_links=None):
     """Link displayed citations after composition; never alter quoted evidence."""
     parts = re.split(r'(<pre\b[^>]*>.*?</pre>|<a\b[^>]*>.*?</a>|^```[^\n]*\n.*?^```[ \t]*$)',
                      document, flags=re.S | re.M)
@@ -285,7 +288,7 @@ def link_references(document, ptx, artifacts, report_path=None, artifact_base=No
                     for part in parts[::2] for match in references.finditer(part)
                     if html.unescape(match[1] or match[2]).startswith(name + '#')}
         for pointer, line in _json_pointer_lines(path, pointers).items():
-            targets[name + '#' + pointer] = artifact_url(path, report_path, artifact_base, line)
+            targets[name + '#' + pointer] = artifact_url(path, report_path, artifact_base, line, artifact_links=artifact_links)
 
     def anchor(label, target):
         return '<a href="' + html.escape(target, quote=True) + '">' + label + '</a>'
@@ -297,14 +300,14 @@ def link_references(document, ptx, artifacts, report_path=None, artifact_base=No
 
     def location(match):
         line = _matching_line({'file': html.unescape(match[1]), 'line': int(match[2])}, ptx, artifacts)
-        target = artifact_url(artifacts[2], report_path, artifact_base, line) if line else None
+        target = artifact_url(artifacts[2], report_path, artifact_base, line, artifact_links=artifact_links) if line else None
         return anchor(match[0], target) if target else match[0]
 
     def caption(match):
         line = int(match[2])
         if not 1 <= line <= len(ptx.splitlines()) or len(artifacts) < 3:
             return match[0]
-        target = artifact_url(artifacts[2], report_path, artifact_base, line)
+        target = artifact_url(artifacts[2], report_path, artifact_base, line, artifact_links=artifact_links)
         return match[1] + anchor('physical PTX ' + match[2], target) + (match[3] or '') + '</p>' if target else match[0]
 
     for index in range(0, len(parts), 2):
@@ -314,21 +317,24 @@ def link_references(document, ptx, artifacts, report_path=None, artifact_base=No
     return ''.join(parts)
 
 
-def artifact_entry(result, artifacts, report_path=None, source_paths=(), equivalence_path=None, artifact_base=None):
+def artifact_entry(result, artifacts, report_path=None, source_paths=(), equivalence_path=None, artifact_base=None, *, artifact_links=None):
     if not artifacts:
         return ''
     inp, out, ptx = (list(artifacts) + [None] * 3)[:3]
-    ptx_link = _file_link('PTX', ptx, report_path, artifact_base)
-    target = artifact_url(ptx, report_path, artifact_base)
-    if target:
+    ptx_link = _file_link('PTX', ptx, report_path, artifact_base, artifact_links=artifact_links)
+    target = artifact_url(ptx, report_path, artifact_base, artifact_links=artifact_links)
+    raw_target = artifact_url(ptx, report_path, artifact_base, artifact_links=artifact_links, raw=True)
+    if raw_target and raw_target != target:
+        ptx_link += ' ([raw](' + raw_target + '))'
+    elif target:
         url = urlsplit(target)
         pieces = url.path.split('/')
         if url.hostname == 'github.com' and len(pieces) > 5 and pieces[3] == 'blob':
             pieces[3] = 'raw'
             ptx_link += ' ([raw](https://github.com' + '/'.join(pieces) + '))'
     body = '**Inputs:** ' + ptx_link + ' · analyzed code; '
-    body += _file_link('input.json', inp, report_path, artifact_base) + ' · launch, arguments and assumptions.\n\n'
-    body += '**Result:** ' + _file_link('output.json', out, report_path, artifact_base) + ' · saved verifier findings.\n\n'
+    body += _file_link('input.json', inp, report_path, artifact_base, artifact_links=artifact_links) + ' · launch, arguments and assumptions.\n\n'
+    body += '**Result:** ' + _file_link('output.json', out, report_path, artifact_base, artifact_links=artifact_links) + ' · saved verifier findings.\n\n'
     directory = (
         ('Check the finding', (
             ('diagnostics', 'Diagnostic messages and details'),
@@ -354,16 +360,16 @@ def artifact_entry(result, artifacts, report_path=None, source_paths=(), equival
             if key not in result:
                 continue
             if locations[key] in field_lines:
-                records.append('- ' + _file_link(purpose + ' · `' + key + '`', out, report_path, artifact_base, field_lines[locations[key]]))
+                records.append('- ' + _file_link(purpose + ' · `' + key + '`', out, report_path, artifact_base, field_lines[locations[key]], artifact_links=artifact_links))
             else:
                 records.append('- ' + purpose + ': ' + _ref(locations[key]) + ' (source line unavailable)')
         if records:
             groups.append('**' + heading + '**\n\n' + '\n'.join(records))
     extra = []
     for path in source_paths:
-        extra.append('- Source: ' + _file_link(Path(path).name, path, report_path, artifact_base))
+        extra.append('- Source: ' + _file_link(Path(path).name, path, report_path, artifact_base, artifact_links=artifact_links))
     if equivalence_path is not None:
-        extra.append('- Separate numerical-check artifact: ' + _file_link('equivalence.json', equivalence_path, report_path, artifact_base) + '. It does not replace the memory/synchronization verdict above.')
+        extra.append('- Separate numerical-check artifact: ' + _file_link('equivalence.json', equivalence_path, report_path, artifact_base, artifact_links=artifact_links) + '. It does not replace the memory/synchronization verdict above.')
     if groups or extra:
         detail = 'Each record link opens its field in the original `output.json`. Model summaries are not full execution traces.\n\n'
         detail += '\n\n'.join(groups)
@@ -798,7 +804,7 @@ def _primary_diagnostic(result, ptx, artifacts):
     return body
 
 
-def render_result(run_input, result, ptx, artifacts, title=None, *, report_path=None, source_paths=(), equivalence_path=None, artifact_base=None):
+def render_result(run_input, result, ptx, artifacts, title=None, *, report_path=None, source_paths=(), equivalence_path=None, artifact_base=None, artifact_links=None):
     """Render only saved outcomes and relationships; source explanation is separate."""
     saved = _outcome(result)
     status = _view_kind(result)
@@ -827,7 +833,7 @@ def render_result(run_input, result, ptx, artifacts, title=None, *, report_path=
     else:
         finding_title = 'Recorded outcome'
     body = FACTS_START + '\n<p align="center">' + html.escape(kernel) + '</p>\n<h1 align="center">' + headline + '</h1>\n\n'
-    body += artifact_entry(result, artifacts, report_path, source_paths, equivalence_path, artifact_base)
+    body += artifact_entry(result, artifacts, report_path, source_paths, equivalence_path, artifact_base, artifact_links=artifact_links)
     body += '## 1. Verifier result\n\nSaved findings and analysis scope, formatted directly from the verifier output.\n\n'
     body += '### 1.1 ' + finding_title + '\n\n'
     body += description + (' Saved status: ' + _inline(saved) + '.' if 'result' not in result and (not isinstance(saved, str) or saved not in STATUSES) else '') + '\n\n'
@@ -1225,7 +1231,7 @@ def _numerical(result):
     return _fold('Value analysis — independent status', 'Memory safety and numerical equivalence are separate results.\n\n' + body + (_fold('Exact value-analysis fields and large-data references', exact) if exact else ''))
 
 
-def render_evidence(run_input, result, ptx, artifacts, *, report_path=None, source_paths=(), equivalence_path=None, artifact_base=None):
+def render_evidence(run_input, result, ptx, artifacts, *, report_path=None, source_paths=(), equivalence_path=None, artifact_base=None, artifact_links=None):
     """Group exact diagnostics, assumptions, configuration and artifact references."""
     body = EVIDENCE_START + '\n## Evidence appendix\n\nUse these records to check the verifier result and source explanation above. JSON pointers refer to the original saved files. Identical prerequisite copies use `same_records_as` to refer to the diagnostic evidence shown once; their original locations and content hashes remain recorded.\n\n'
     diagnostics = ('rejection', 'rejection_kind', 'counterexample', 'witness_event_lists_truncated', 'witness_event_list_limit', 'source_event_scope', 'source_events', 'unmapped_witness_events', 'synthetic_events', 'races', 'warnings', 'unsupported_memory_pair', 'diagnostics', 'error', 'failed_required_orders', 'failed_required_orders_count', 'failed_required_orders_sample_limit', 'failed_required_orders_truncated', 'source_violations', 'frontend_source_violations', 'verification_limitations', 'recovered_source_violations')
@@ -1268,7 +1274,9 @@ def render_evidence(run_input, result, ptx, artifacts, *, report_path=None, sour
             provenance += '- **' + role + ':** not provided.\n'
             continue
         path = Path(path)
-        provenance += '- **' + role + ':** ' + _file_link(path.name, path, report_path, artifact_base) + ' · ' + _inline(str(path))
+        descriptor = (artifact_links or {}).get(path.resolve(), {})
+        shown_path = descriptor['name'] if descriptor.get('uri') else str(path)
+        provenance += '- **' + role + ':** ' + _file_link(path.name, path, report_path, artifact_base, artifact_links=artifact_links) + ' · ' + _inline(shown_path)
         if path.is_file():
             provenance += ' · SHA-256 ' + _inline(hashlib.sha256(path.read_bytes()).hexdigest())
         else:
