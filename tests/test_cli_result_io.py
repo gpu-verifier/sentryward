@@ -14,6 +14,8 @@ from sentryward.results import (
     apply_fail_on,
     encode_result,
     expand_fail_on,
+    normalize,
+    publish,
     write_result,
 )
 
@@ -144,6 +146,15 @@ class SummarizeTests(unittest.TestCase):
     def test_incomplete_warnings(self):
         text = summarize({"result": "timeout", "warnings": [], "warnings_complete": False})
         self.assertIn("warnings: 0 (incomplete)\n", text)
+
+    def test_semantic_assumptions_of_published_report(self):
+        report = publish(normalize({
+            "status": "race_free",
+            "memory_analysis_complete": True,
+            "semantic_assumptions": {"clc_always_fails": True},
+        }))
+        self.assertNotIn("semantic_assumptions", report)
+        self.assertIn("semantic_assumptions: clc_always_fails=true\n", summarize(report))
 
 
 class WriteResultTests(unittest.TestCase):

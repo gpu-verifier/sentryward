@@ -1,9 +1,12 @@
 #pragma once
 #include "sentryward/algorithm/io/source_json.h"
 #include "sentryward/frontend/ptx/execution.h"
+#include "sentryward/frontend/ptx/unit_classes.h"
+#include "sentryward/frontend/ptx/unit_facts.h"
 #include <functional>
 #include <array>
 #include <memory>
+namespace sentryward::algorithm { struct UnitQuotient; }
 namespace sentryward::frontend::ptx {
 enum class MmaOperandRole { A, B, D, ScaleA, ScaleB, SparseMetadata };
 struct MmaValueAccess {
@@ -18,12 +21,17 @@ struct MmaValueLayout {
   std::uint32_t cta_group;
   std::vector<MmaValueAccess> accesses;
   std::array<std::uint64_t,2> scale_bases{};
+  // Weight-stationary (.ws): D uses the 128/M lane-group layouts D, E and G.
+  bool ws = false;
 };
 struct LoweringResult {
   algorithm::SourceArtifact artifact;
   nlohmann::json metadata;
   nlohmann::json diagnostics = nlohmann::json::array();
   std::vector<MmaValueLayout> mma_layouts;
+  // The consumed CTAs' tensormap.cp_fenceproxy destinations, checked against
+  // input tensor maps in run.cpp.
+  std::vector<TensormapRegion> tensormap_destinations;
 };
 // One CTA's execution/provenance is consumed at a time; model storage is
 // native.
@@ -33,10 +41,18 @@ public:
                         std::function<void()> poll = {}, bool retain_matrix_layout = false,
                         bool atomics = false);
   ~ModelLowerer();
+  // The address bridge: (lane of the CTA's facts, record, operand text).
   using ValueAddresses = std::function<std::optional<nlohmann::json>(
-      const LaneTrace&, const ExecutedInstruction&, std::string_view)>;
-  void AddCta(std::uint32_t, Coordinates, const ExecutionProgram &, ValueAddresses = {});
+      LaneRef, const RecordView&, std::string_view)>;
+  // The CTA id is facts.Linear(); the coordinates are facts.frame().SelfCoordinates().
+  void AddCta(const CtaFacts &, ValueAddresses = {});
   [[nodiscard]] const algorithm::SourceProgram &currentProgram() const noexcept;
+  // Cross-CTA class mode, before the first AddCta: only representative CTAs are added, and
+  // `quotient` (complete by Finish) says how many units each stands for. Lowering keeps per-CTA
+  // occurrence counts and weights them at Finish (cta_count, thread_count, reached_opcodes), weights
+  // the Finish-time diagnostics by their unit, re-renders per-CTA violation texts for every member,
+  // checks unit closure and records the required orders' Add/Finish boundary.
+  void TrackUnits(algorithm::UnitQuotient *quotient) noexcept;
   [[nodiscard]] LoweringResult Finish();
 
 private:

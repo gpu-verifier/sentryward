@@ -1,0 +1,146 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A",
+      "6:global1:B": "6:global1:B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1000,
+          2000
+        ],
+        "source_strides_bytes": [
+          8000,
+          4
+        ],
+        "target_strides_bytes": [
+          8000,
+          4
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1000,
+          2000
+        ],
+        "source_strides_bytes": [
+          8000,
+          4
+        ],
+        "target_strides_bytes": [
+          8000,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "6:global1:A",
+      "6:global1:B": "6:global1:B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1000,
+          2000
+        ],
+        "source_strides_bytes": [
+          8000,
+          4
+        ],
+        "target_strides_bytes": [
+          8000,
+          4
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1000,
+          2000
+        ],
+        "source_strides_bytes": [
+          8000,
+          4
+        ],
+        "target_strides_bytes": [
+          8000,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:C",
+    "right_allocation": "6:global1:C",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+      1000,
+      2000
+    ],
+    "left_strides_bytes": [
+      8000,
+      4
+    ],
+    "right_strides_bytes": [
+      8000,
+      4
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "allocation": "6:global1:A",
+        "dtype": "float32",
+        "shape": [
+          1000,
+          2000
+        ]
+      },
+      {
+        "name": "B",
+        "allocation": "6:global1:B",
+        "dtype": "float32",
+        "shape": [
+          1000,
+          2000
+        ]
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tritongluon-08-ws-elementwise.ptx",
+    "optimized_input": "examples/tritongluon-08-ws-elementwise/input.json",
+    "optimized_input_sha256": "6a44529cc08b6c2b93041429729a7d2ac3f57953c4d52e31499865da2aa8a9b1",
+    "ptx_sha256": "9a7aef47305ce43f3aad844354f0601ae2ad4a9a36f32ec1d15d37954d5e38f0",
+    "upstream": [
+      "https://github.com/triton-lang/triton/blob/c01b6774b1865984607d89d89d3a10833de92037/python/tutorials/gluon/08-warp-specialization.py#L123-L320"
+    ],
+    "scope": "Upstream test xnumel=1000, ynumel=2000, XBLOCK=32, YBLOCK=64, num_load_buffers=num_store_buffers=2, num_warps=4 (+2 worker warps, 256 threads); grid cdiv(1000, 32)=32; full output.",
+    "evidence": "Descriptors fastest-first [2000, 1000], stride 8000 B, box [32, 32]; PTX issues two 32-column messages per operand per stage (expect_tx 16384) and two 32-column TMA stores per C block.",
+    "dynamic_shared_allocation": "49392 bytes: buffers 0..49151, mbarriers, warp-specialize state word at 49376..49379, rounded to 16 B.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

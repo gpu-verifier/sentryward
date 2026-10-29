@@ -8,7 +8,7 @@ import re
 import sys
 
 from report_facts import verify_identity
-from report_layout import MARKER, compose, validate_inputs
+from report_layout import MARKER, compose, load_saved_result, validate_inputs
 
 
 def check_current(
@@ -33,7 +33,7 @@ def check_current(
     expected = compose(
         draft,
         json.loads(input_path.read_text()),
-        json.loads(result_path.read_text()),
+        load_saved_result(result_path),
         ptx_path.read_text(),
         artifacts,
         {p.name: p.read_text() for p in source_paths},
@@ -78,7 +78,7 @@ def main():
                 args.identity,
                 [p for p in (args.input, args.result, args.ptx) if p is not None],
             )
-            raw = json.loads(args.result.read_text())
+            raw = load_saved_result(args.result)
             if args.input:
                 validate_inputs(
                     json.loads(args.input.read_text()), raw, args.ptx.read_text()

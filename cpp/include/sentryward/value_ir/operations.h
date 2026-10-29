@@ -180,6 +180,18 @@ class SelectOp final : public TypedOperation {
   [[nodiscard]] std::string operandLabel(std::size_t index) const override;
 };
 
+// Each source thread's value of a cross-thread exchange (shfl, vote) whose
+// sources span several producer templates: instance k forwards its one operand,
+// that thread's own value. Its instances are stored one per thread, never a
+// template; readers select one by thread (Graph::fromThread). Pure and exact.
+class ThreadForwardOp final : public TypedOperation {
+ public:
+  explicit ThreadForwardOp(ValueType type);
+  [[nodiscard]] std::string_view name() const noexcept override { return "ThreadForward"; }
+  void validateOperands(std::span<const ValueType>) const override;
+  void printAttributes(std::ostream&) const override {}
+};
+
 // Layout and descriptor fields describe address-to-element interpretation;
 // they neither replace address operands nor introduce memory/order edges.
 struct MatrixLayout final {

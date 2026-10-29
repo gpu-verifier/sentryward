@@ -1,0 +1,138 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global6:weight": "weight",
+      "6:global10:activation": "activation"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global6:weight": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1536,
+          7168
+        ],
+        "source_strides_bytes": [
+          14336,
+          2
+        ],
+        "target_strides_bytes": [
+          14336,
+          2
+        ]
+      },
+      "6:global10:activation": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          7168
+        ],
+        "source_strides_bytes": [
+          14336,
+          2
+        ],
+        "target_strides_bytes": [
+          14336,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global6:weight": "weight",
+      "6:global10:activation": "activation"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global6:weight": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1536,
+          7168
+        ],
+        "source_strides_bytes": [
+          14336,
+          2
+        ],
+        "target_strides_bytes": [
+          14336,
+          2
+        ]
+      },
+      "6:global10:activation": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          7168
+        ],
+        "source_strides_bytes": [
+          14336,
+          2
+        ],
+        "target_strides_bytes": [
+          14336,
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global6:output",
+    "right_allocation": "6:global6:output",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      4,
+      1536
+    ],
+    "left_strides_bytes": [
+      3072,
+      2
+    ],
+    "right_strides_bytes": [
+      3072,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "weight",
+        "dtype": "bfloat16",
+        "allocation": "6:global6:weight"
+      },
+      {
+        "name": "activation",
+        "dtype": "bfloat16",
+        "allocation": "6:global10:activation"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/vllm__dsv3_fused_a_gemm__sm_100f.ptx",
+    "optimized_input": "examples/vllm__dsv3_fused_a_gemm__sm_100f/input.json",
+    "optimized_input_sha256": "5578f2052107b6fed0df4c98520eb217b546b06b96942aec6508bd5ee10a378a",
+    "ptx_sha256": "1bd809cf8067bd9ce0fb1cae5dbf30a4900c2766783c78cf13c38d670ae23641",
+    "evidence": "fused_a_gemm_kernel<1, 1536, 7168, 16, 8, 256, 16>(output p0, mat_a = weight p1, mat_b = activation p2, gemm_n = num_tokens p3 = 4 (/arguments/0)); grid (96, 1, 1) = (1536/16, ceil(4/8)).",
+    "semantics": "Fixed num_tokens = 4, hd_in = 7168, hd_out = 1536; bf16 GEMM in ideal real arithmetic, rounded to bf16; all written outputs (rows t < num_tokens).",
+    "upstream": [
+      "https://github.com/vllm-project/vllm/blob/605c3ddcbaaee06a2687a961ae7be51aec5dddc0/csrc/libtorch_stable/dsv3_fused_a_gemm.cu"
+    ],
+    "scope": "input.json as given; no additional input premises.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

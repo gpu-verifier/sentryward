@@ -389,6 +389,11 @@ void CompareOp::printAttributes(std::ostream& output) const {
     case ComparePredicate::Unordered: output << "unordered"; break;
   }
 }
+ThreadForwardOp::ThreadForwardOp(ValueType type) : TypedOperation({std::move(type)}) {}
+void ThreadForwardOp::validateOperands(std::span<const ValueType> operands) const {
+  arity(operands, 1);
+  require(operands[0] == resultType(), "ThreadForward operand must have its result type");
+}
 SelectOp::SelectOp(ValueType type) : TypedOperation({std::move(type)}) {}
 void SelectOp::validateOperands(std::span<const ValueType> operands) const {
   arity(operands, 3);

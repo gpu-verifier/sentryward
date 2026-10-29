@@ -13,6 +13,7 @@ import re
 from urllib.parse import quote, urlsplit
 
 from code_excerpt import excerpt, instruction_opcodes, mask_noncode
+from report_layout import saved_pointer
 
 FACTS_START = '<!-- verifier-result:start -->'
 FACTS_END = '<!-- verifier-result:end -->'
@@ -103,12 +104,16 @@ def _check_summary(result):
     if not isinstance(checks, dict):
         return '**Checks:** ' + _inline(checks) + '. No check outcomes are inferred.\n\n'
     labels = {'synchronization': 'Synchronization', 'memory': 'Memory', 'equivalence': 'Equivalence'}
-    fields = [(label, checks.get(key, MISSING)) for key, label in labels.items()]
+    # Two-check outputs include the memory analysis in the synchronization check.
+    fields = [(label, checks.get(key, MISSING)) for key, label in labels.items()
+              if key != 'memory' or key in checks]
     fields.extend((key, value) for key, value in checks.items() if key not in labels)
     body = '**Checks:** ' + ' · '.join(html.escape(label) + ' ' + _inline(value) for label, value in fields) + '.\n\n'
-    if (_view_kind(result) == 'race_candidate' and checks.get('synchronization') == 'passed'
-            and checks.get('memory') == 'failed'):
-        body += 'The synchronization check passed; the separate memory check still found a conflict. Passing one check does not clear the other.\n\n'
+    if _view_kind(result) == 'race_candidate':
+        if checks.get('synchronization') == 'passed' and checks.get('memory') == 'failed':
+            body += 'The synchronization check passed; the separate memory check still found a conflict. Passing one check does not clear the other.\n\n'
+        elif 'memory' not in checks and checks.get('synchronization') == 'failed':
+            body += 'This output has no separate memory check: the synchronization check includes the memory analysis, which reported the potential race.\n\n'
     return body
 
 
@@ -121,18 +126,21 @@ def _result_consistency(result):
     if _outcome(result) == 'verified':
         for key, value in checks.items():
             if value not in ('passed', 'not_requested'):
-                conflicts.append(_ref('/checks/' + key) + ' is ' + _inline(value))
+                conflicts.append(_cite(result, '/checks/' + key) + ' is ' + _inline(value))
     equivalence = _mapping(result.get('equivalence'))
     if equivalence:
         nested = _mapping(equivalence.get('checks')).get('equivalence', MISSING)
         top = checks.get('equivalence', MISSING)
         if nested is not MISSING and top is not MISSING and nested != top:
-            conflicts.append('equivalence check is ' + _inline(top) + ' at ' + _ref('/checks/equivalence') + ' but ' + _inline(nested) + ' at ' + _ref('/equivalence/checks/equivalence'))
-        eq_result = _outcome(equivalence)
-        if top == 'passed' and eq_result not in ('verified', 'equivalent'):
-            conflicts.append(_ref('/equivalence/result' if 'result' in equivalence else '/equivalence/status') + ' is ' + _inline(eq_result) + ' despite the passed equivalence check')
+            conflicts.append('equivalence check is ' + _inline(top) + ' at ' + _cite(result, '/checks/equivalence') + ' but ' + _inline(nested) + ' at ' + _cite(result, '/equivalence/checks/equivalence'))
+        # Public outputs keep the conclusion at the top level only; a section
+        # without an outcome of its own cannot contradict it.
+        if top == 'passed' and ('result' in equivalence or 'status' in equivalence):
+            eq_result = _outcome(equivalence)
+            if eq_result not in ('verified', 'equivalent'):
+                conflicts.append(_cite(result, '/equivalence/result' if 'result' in equivalence else '/equivalence/status') + ' is ' + _inline(eq_result) + ' despite the passed equivalence check')
     if 'status' in result and _view_kind({'status': result['status']}) != _view_kind({'result': result['result']}):
-        conflicts.append('legacy ' + _ref('/status') + ' is ' + _inline(result['status']))
+        conflicts.append('legacy ' + _cite(result, '/status') + ' is ' + _inline(result['status']))
     if not conflicts:
         return ''
     return '**Saved fields disagree:** ' + '; '.join(conflicts) + '. The report preserves these fields; it does not resolve the disagreement into a successful verdict.\n\n'
@@ -144,6 +152,16 @@ def _ptr(base, key):
 
 def _ref(pointer, artifact='output.json'):
     return _inline(artifact + '#' + pointer)
+
+
+def _cite(result, pointer):
+    """Cite a pointer into the result view at its saved output.json location."""
+    return _ref(saved_pointer(result, pointer))
+
+
+def _section(result, key):
+    """Saved section (`internal` or `evidence`) holding a public output's field."""
+    return getattr(result, 'origins', {}).get(key)
 
 
 def _fold(label, body):
@@ -178,43 +196,6 @@ def _file_link(label, path, report_path=None, artifact_base=None, line=None):
         return label + ' (file unavailable: ' + _inline(str(path)) + ')'
     label = re.sub(r'([\\\[\]])', r'\\\1', html.escape(label))
     return '[' + label + '](' + target + ')'
-
-
-def _json_field_lines(path):
-    """Locate top-level keys in original JSON bytes, including compact JSON.
-
-    Decode values to skip nested keys and quoted braces. Do not pretty-print:
-    generated line numbers would not point into the original artifact.
-    """
-    if path is None or not Path(path).is_file():
-        return {}
-    source = Path(path).read_text(encoding='utf-8')
-    decoder = json.JSONDecoder()
-    skip = lambda pos: json.decoder.WHITESPACE.match(source, pos).end()
-    pos = skip(0)
-    if source[pos:pos + 1] != '{':
-        raise ValueError('Verifier output must be a JSON object.')
-    pos = skip(pos + 1)
-    lines, previous, line = {}, 0, 1
-    while source[pos:pos + 1] != '}':
-        start = pos
-        key, pos = decoder.raw_decode(source, pos)
-        pos = skip(pos)
-        if not isinstance(key, str) or source[pos:pos + 1] != ':':
-            raise ValueError('Invalid JSON object member in verifier output.')
-        _, pos = decoder.raw_decode(source, skip(pos + 1))
-        line += source.count('\n', previous, start)
-        previous = start
-        lines[key] = line
-        pos = skip(pos)
-        if source[pos:pos + 1] == '}':
-            break
-        if source[pos:pos + 1] != ',':
-            raise ValueError('Invalid JSON object separator in verifier output.')
-        pos = skip(pos + 1)
-    if skip(pos + 1) != len(source):
-        raise ValueError('Unexpected content after verifier output.')
-    return lines
 
 
 def _json_pointer_lines(path, pointers):
@@ -348,9 +329,7 @@ def artifact_entry(result, artifacts, report_path=None, source_paths=(), equival
     body = '**Inputs:** ' + ptx_link + ' · analyzed code; '
     body += _file_link('input.json', inp, report_path, artifact_base) + ' · launch, arguments and assumptions.\n\n'
     body += '**Result:** ' + _file_link('output.json', out, report_path, artifact_base) + ' · saved verifier findings.\n\n'
-    field_lines = _json_field_lines(out)
-    groups = []
-    for heading, fields in (
+    directory = (
         ('Check the finding', (
             ('diagnostics', 'Diagnostic messages and details'),
             ('checks', 'Individual check outcomes'),
@@ -364,15 +343,20 @@ def artifact_entry(result, artifacts, report_path=None, source_paths=(), equival
             ('synchronization_input', 'Synchronization-check setup'))),
         ('Check values separately', (
             ('value_analysis', 'Value-analysis status'),
-            ('equivalence', 'Numerical comparison')))):
+            ('equivalence', 'Numerical comparison'))))
+    # Public outputs save some fields under `internal` or `evidence`.
+    locations = {key: saved_pointer(result, '/' + key) for _, fields in directory for key, _ in fields if key in result}
+    field_lines = _json_pointer_lines(out, set(locations.values()))
+    groups = []
+    for heading, fields in directory:
         records = []
         for key, purpose in fields:
             if key not in result:
                 continue
-            if key in field_lines:
-                records.append('- ' + _file_link(purpose + ' · `' + key + '`', out, report_path, artifact_base, field_lines[key]))
+            if locations[key] in field_lines:
+                records.append('- ' + _file_link(purpose + ' · `' + key + '`', out, report_path, artifact_base, field_lines[locations[key]]))
             else:
-                records.append('- ' + purpose + ': ' + _ref('/' + key) + ' (source line unavailable)')
+                records.append('- ' + purpose + ': ' + _ref(locations[key]) + ' (source line unavailable)')
         if records:
             groups.append('**' + heading + '**\n\n' + '\n'.join(records))
     extra = []
@@ -533,7 +517,8 @@ def _pair(result):
     return None, None
 
 
-def _access_view(pair, pointer, ptx, artifacts):
+def _access_view(pair, location, ptx, artifacts):
+    """`location` is the pair's saved output.json pointer."""
     first, second, region = (_mapping(pair.get(key)) for key in ('first', 'second', 'region'))
     body = ''
     if region:
@@ -562,7 +547,7 @@ def _access_view(pair, pointer, ptx, artifacts):
         detail += '| ' + label + ' | ' + _operation(access.get('location'), operations, ptx, artifacts) + ' | ' + _inline(access.get('event', MISSING)) + ' / ' + _inline(access.get('instruction', MISSING)) + ' | ' + _inline(access.get('actor', MISSING)) + ' |\n'
     detail += '\nActor IDs name verifier participants; this record does not itself establish CUDA thread coordinates. Event and instruction IDs identify model records, not source-line numbers.\n\n'
     detail += _snippets(locations, ptx, artifacts)
-    detail += '**Saved record:** ' + _ref('/' + pointer) + '. '
+    detail += '**Saved record:** ' + _ref(location) + '. '
     if 'overlap' in pair:
         detail += '**Overlap check:** ' + _text(pair['overlap']) + '. '
     if region:
@@ -612,7 +597,7 @@ def _sync_view(result, ptx, artifacts):
         body += '**Source attribution:** some model events have no confirmed physical PTX mapping.\n\n'
     primary = _mapping((_records(result.get('diagnostics')) or [{}])[0])
     check_label = 'requirement details' if 'result' in result and primary.get('code') == check else _inline(check)
-    detail = '**Saved check:** ' + check_label + ' · ' + _ref('/rejection') + '.\n\n'
+    detail = '**Saved check:** ' + check_label + ' · ' + _cite(result, '/rejection') + '.\n\n'
     if check == 'issue_not_ordered_before_next_phase':
         detail += 'The listed required events are next-phase completion effects, not predecessors that the wait must follow.\n\n'
     detail += '| Role | Source operation | Model event / instruction |\n| --- | --- | --- |\n'
@@ -663,7 +648,7 @@ def _multiple_lifecycle_view(result):
                          'Dashed arrow: required ordering, not established by this run.', focus='T', direction='LR')
         retained = str(len(witnesses)) if isinstance(saved.get('witnesses'), list) else _inline(saved.get('witnesses', MISSING))
         body += '**This category:** ' + _number(saved.get('count', MISSING)) + ' failures reported; ' + retained + ' witnesses retained; truncated: ' + _inline(saved.get('witnesses_truncated', MISSING)) + '.\n\n'
-        detail += '#### ' + _text(heading) + '\n\n**Requirement:** ' + _inline(kind) + ' · ' + _ref('/diagnostics/' + str(index) + '/details') + '.\n\n'
+        detail += '#### ' + _text(heading) + '\n\n**Requirement:** ' + _inline(kind) + ' · ' + _cite(result, '/diagnostics/' + str(index) + '/details') + '.\n\n'
         if first:
             detail += 'First saved witness: model instruction ' + _inline(first.get('from_instruction', MISSING)) + ' → ' + _inline(first.get('to_instruction', MISSING)) + '. The arrow denotes the required order.\n\n'
         else:
@@ -697,7 +682,7 @@ def _lifecycle_view(result):
     body += '**Failed orders:** ' + _number(result.get('failed_required_orders_count', MISSING)) + ' reported; ' + str(len(records)) + ' records retained; truncated: ' + _inline(result.get('failed_required_orders_truncated', MISSING)) + '.\n\n'
     body += '**Source attribution:** the retained orders do not map these model instructions to physical PTX sites or CUDA issuers.\n\n'
     if first:
-        detail = '**Requirement:** ' + _inline(first.get('kind', MISSING)) + ' · ' + _ref('/failed_required_orders/0') + '.\n\n'
+        detail = '**Requirement:** ' + _inline(first.get('kind', MISSING)) + ' · ' + _cite(result, '/failed_required_orders/0') + '.\n\n'
         detail += '| Required role | Model instruction |\n| --- | --- |\n| ' + source + ' | ' + _inline(first.get('from_instruction', MISSING)) + ' |\n| ' + target + ' | ' + _inline(first.get('to_instruction', MISSING)) + ' |\n\n'
         detail += 'Instruction IDs refer to model instructions, not physical PTX lines. The operation roles above come from the saved requirement and message. All retained orders and effect lists are in Evidence appendix → Diagnostic records.\n'
         body += _fold('Check the required order and retained instruction IDs', detail)
@@ -799,7 +784,7 @@ def _primary_diagnostic(result, ptx, artifacts):
     explained = code == _mapping(result.get('rejection')).get('code') or message == _mapping((_records(result.get('failed_required_orders')) or [{}])[0]).get('message')
     if message is not MISSING and not explained:
         body += ' — ' + _text(message)
-    body += ' · ' + _ref('/diagnostics/0') + '.\n\n'
+    body += ' · ' + _cite(result, '/diagnostics/0') + '.\n\n'
     details = _mapping(first.get('details'))
     location = first.get('location', details.get('location', MISSING))
     if location is not MISSING and 'location' not in result:
@@ -847,7 +832,7 @@ def render_result(run_input, result, ptx, artifacts, title=None, *, report_path=
     body += '### 1.1 ' + finding_title + '\n\n'
     body += description + (' Saved status: ' + _inline(saved) + '.' if 'result' not in result and (not isinstance(saved, str) or saved not in STATUSES) else '') + '\n\n'
     if 'result' in result:
-        body += '**Saved result:** ' + _inline(saved) + ' · ' + _ref('/result') + '.\n\n' + _check_summary(result)
+        body += '**Saved result:** ' + _inline(saved) + ' · ' + _cite(result, '/result') + '.\n\n' + _check_summary(result)
         operation = _mapping(result.get('scope')).get('operation', MISSING)
         if operation is not MISSING:
             body += '**Operation:** ' + _inline(operation) + '.\n\n'
@@ -889,19 +874,24 @@ def render_result(run_input, result, ptx, artifacts, title=None, *, report_path=
     elif status == 'unsafe_lifecycle':
         body += _lifecycle_view(result)
     elif pair:
-        body += _access_view(pair, pointer, ptx, artifacts)
+        body += _access_view(pair, saved_pointer(result, '/' + pointer), ptx, artifacts)
     elif status not in ('race_free', 'race_candidate'):
         body += _stopped_view(result, ptx, artifacts)
     elif status == 'race_candidate':
         body += '**Access records:** no usable retained pair is saved; the candidate status is preserved.\n\n'
-    if not pair and warnings and _mapping(result.get('checks')).get('memory') == 'passed':
+    checks = _mapping(result.get('checks'))
+    # Two-check outputs include the memory analysis in the synchronization check.
+    memory_check = 'memory' if 'memory' in checks else 'synchronization'
+    if not pair and warnings and checks.get(memory_check) == 'passed':
         retained = [(index, record) for index, record in enumerate(warnings) if isinstance(record, dict) and ('first' in record or 'second' in record)]
         if retained:
             index, warning = retained[0]
             body += '#### Memory warning alongside the stopped check\n\n'
-            body += 'The memory check passed with warnings; the overall result above also includes other checks. This warning does not replace or explain the separate analysis stop.\n\n'
+            body += ('The memory check passed with warnings' if memory_check == 'memory' else
+                     'The synchronization check, which includes the memory analysis, passed with warnings')
+            body += '; the overall result above also includes other checks. This warning does not replace or explain the separate analysis stop.\n\n'
             body += 'First of ' + str(len(warnings)) + ' retained warnings, in file order. All retained warnings remain in Evidence.\n\n'
-            body += _access_view(warning, 'warnings/' + str(index), ptx, artifacts)
+            body += _access_view(warning, saved_pointer(result, '/warnings/' + str(index)), ptx, artifacts)
     body += '### 1.2 Analysis scope\n\n' + _coverage(result)
     for key in ('source_violations', 'frontend_source_violations', 'verification_limitations'):
         if result.get(key):
@@ -916,7 +906,10 @@ def _summary(value, pointer, artifact):
     return {'stored_at': artifact + '#' + pointer, 'size': count, 'canonical_json_bytes': len(raw), 'canonical_json_sha256': hashlib.sha256(raw).hexdigest()}
 
 
-def _bounded(value, pointer, artifact, limit=20000):
+BOUND = 20000
+
+
+def _bounded(value, pointer, artifact, limit=BOUND):
     """Keep diagnostics exact where small; huge collections remain addressable."""
     raw = _encoded(value)
     if len(raw) <= limit:
@@ -924,6 +917,14 @@ def _bounded(value, pointer, artifact, limit=20000):
     if isinstance(value, dict):
         return {key: _bounded(item, _ptr(pointer, key), artifact, limit) for key, item in value.items()}
     return {'artifact_reference': _summary(value, pointer, artifact)}
+
+
+def _bounded_fields(result, keys):
+    """Bound several saved fields together; cite large ones at their saved location."""
+    present = {key: result[key] for key in keys if key in result}
+    if len(_encoded(present)) <= BOUND:
+        return present
+    return {key: _bounded(value, saved_pointer(result, _ptr('', key)), 'output.json') for key, value in present.items()}
 
 
 def _json_block(value):
@@ -1024,13 +1025,13 @@ def _diagnostic_summary(result):
     if isinstance(result.get('unsupported_memory_pair'), dict):
         pair = result['unsupported_memory_pair']
         body += '#### Unresolved access relation\n\n' + _text(pair.get('reason', MISSING)) + '\n\n'
-        body += 'First event ' + _inline(_mapping(pair.get('first')).get('event', MISSING)) + ' · second event ' + _inline(_mapping(pair.get('second')).get('event', MISSING)) + ' · ' + _ref('/unsupported_memory_pair') + '.\n\n'
+        body += 'First event ' + _inline(_mapping(pair.get('first')).get('event', MISSING)) + ' · second event ' + _inline(_mapping(pair.get('second')).get('event', MISSING)) + ' · ' + _cite(result, '/unsupported_memory_pair') + '.\n\n'
     if isinstance(result.get('error'), dict):
         body += '**Saved error:** ' + _text(result['error'].get('message', result['error'])) + '\n\n'
     rejection = _mapping(result.get('rejection'))
     if rejection:
         body += '#### Rejected check\n\n' + _text(rejection.get('message', MISSING)) + '\n\n'
-        body += '**Issue event:** ' + _inline(rejection.get('issue', MISSING)) + ' · **Barrier phase:** ' + _inline(rejection.get('phase', MISSING)) + ' · ' + _ref('/rejection') + '\n\n'
+        body += '**Issue event:** ' + _inline(rejection.get('issue', MISSING)) + ' · **Barrier phase:** ' + _inline(rejection.get('phase', MISSING)) + ' · ' + _cite(result, '/rejection') + '\n\n'
     witness = _mapping(result.get('counterexample'))
     if witness:
         body += '#### Model replay coverage\n\nEach row describes one saved sequence. Truncation means events are missing from the original result; the sequences cannot be joined into an uninterrupted timeline.\n\n'
@@ -1039,7 +1040,7 @@ def _diagnostic_summary(result):
             if not isinstance(sequence, dict) or 'events' not in sequence:
                 continue
             body += '| ' + _inline(key) + ' | ' + str(len(_records(sequence['events']))) + ' / ' + _inline(sequence.get('total', MISSING)) + ' | ' + _inline(sequence.get('truncated', MISSING)) + ' |\n'
-        body += '\n**Replay stop:** first unexecuted event ' + _inline(witness.get('first_unexecuted', MISSING)) + '. Exact arrays and flags: ' + _ref('/counterexample') + '.\n\n'
+        body += '\n**Replay stop:** first unexecuted event ' + _inline(witness.get('first_unexecuted', MISSING)) + '. Exact arrays and flags: ' + _cite(result, '/counterexample') + '.\n\n'
     sources = [record for record in _records(result.get('source_events')) if isinstance(record, dict)]
     if sources:
         files = list(dict.fromkeys(_plain(record.get('file', MISSING)) for record in sources))
@@ -1053,7 +1054,7 @@ def _diagnostic_summary(result):
         body += '\n| File · source line / column | Event IDs | Instruction IDs |\n| --- | --- | --- |\n'
         for (file, line, column), records in grouped.items():
             body += '| ' + str(files.index(file) + 1) + ' · ' + _inline(line) + ' / ' + _inline(column) + ' | ' + _id_set([r.get('event', MISSING) for r in records]) + ' | ' + _id_set([r.get('instruction', MISSING) for r in records]) + ' |\n'
-        body += '\nExact per-event associations: ' + _ref('/source_events') + '.\n\n'
+        body += '\nExact per-event associations: ' + _cite(result, '/source_events') + '.\n\n'
     failed = _records(result.get('failed_required_orders'))
     if failed:
         body += '#### Lifecycle requirements\n\n' + _number(result.get('failed_required_orders_count', MISSING)) + ' failures reported; ' + str(len(failed)) + ' retained; truncated: ' + _inline(result.get('failed_required_orders_truncated', MISSING)) + '.\n\n'
@@ -1069,7 +1070,7 @@ def _diagnostic_summary(result):
                 targets += '; ' + str(len(records) - 4) + ' more in exact records'
             body += '| ' + _inline(kind) + '<br/>from ' + _inline(source) + ' | ' + targets + ' | ' + _id_set([index for index, _ in records]) + ' |\n'
         messages = list(dict.fromkeys(key[2] for key in grouped))
-        body += '\n' + '\n\n'.join(_text(message) for message in messages) + '\n\nEffect lists and per-record flags: ' + _ref('/failed_required_orders') + '.\n\n'
+        body += '\n' + '\n\n'.join(_text(message) for message in messages) + '\n\nEffect lists and per-record flags: ' + _cite(result, '/failed_required_orders') + '.\n\n'
     for key in ('races', 'warnings'):
         records = _records(result.get(key))
         if records:
@@ -1080,7 +1081,7 @@ def _diagnostic_summary(result):
                 first, second = _mapping(record.get('first')), _mapping(record.get('second'))
                 body += '| ' + str(index) + ' | ' + _inline(first.get('event', MISSING)) + ' / ' + _inline(second.get('event', MISSING)) + ' | ' + _inline(first.get('mode', MISSING)) + ' / ' + _inline(second.get('mode', MISSING)) + ' | ' + _inline(record.get('code', MISSING)) + ' |\n'
             messages = list(dict.fromkeys(_plain(r['message']) for r in records if isinstance(r, dict) and 'message' in r))
-            body += '\n' + '\n\n'.join(_text(message) for message in messages) + '\n\nByte regions, endpoints and exact locations: ' + _ref('/' + key) + '.\n\n'
+            body += '\n' + '\n\n'.join(_text(message) for message in messages) + '\n\nByte regions, endpoints and exact locations: ' + _cite(result, '/' + key) + '.\n\n'
     for key in ('diagnostics', 'source_violations', 'frontend_source_violations', 'verification_limitations'):
         records = _records(result.get(key))
         if records:
@@ -1118,14 +1119,17 @@ def _group_records(result, keys, title, explanation):
         return ''
     body = explanation + '\n\n' + _diagnostic_summary(result)
     metadata = {key: value for key, value in present.items() if not isinstance(value, (dict, list)) or not value}
-    exact = ('##### Flags and empty collections\n\nThese retain their original top-level keys in `output.json`.\n\n' + _json_block(metadata) + '\n') if metadata else ''
+    where = ('keys in `output.json`, at the top level or in its `evidence` or `internal` section'
+             if any(_section(result, key) for key in metadata) else 'top-level keys in `output.json`')
+    exact = ('##### Flags and empty collections\n\nThese retain their original ' + where + '.\n\n' + _json_block(metadata) + '\n') if metadata else ''
     for key, value in present.items():
         if key in metadata:
             continue
-        exact += '##### ' + key.replace('_', ' ').capitalize() + '\n\n' + _ref('/' + key) + '\n\n'
+        location = saved_pointer(result, '/' + key)
+        exact += '##### ' + key.replace('_', ' ').capitalize() + '\n\n' + _ref(location) + '\n\n'
         if isinstance(value, list):
             exact += '**Retained records:** ' + str(len(value)) + '.\n\n'
-            packed = _lossless_groups(value, '/' + key)
+            packed = _lossless_groups(value, location)
             if packed:
                 exact += '**Lossless grouped records:** ' + str(len(packed['groups'])) + ' groups. Shared fields apply to every record; range triples are `[start, step, count]`, verified against every member. Original array indices preserve ordering.\n\n'
                 exact += _grouped_json_block(packed) + '\n'
@@ -1134,15 +1138,18 @@ def _group_records(result, keys, title, explanation):
             # replacement for diagnostic evidence in the report.
             shown = value
         else:
-            shown = _bounded(value, '/' + key, 'output.json')
+            shown = _bounded(value, location, 'output.json')
         if key != 'diagnostics':
-            shown = _reference_repeated_diagnostics(shown, '/' + key, result)
+            shown = _reference_repeated_diagnostics(shown, location, result)
         exact += _json_block(shown) + '\n'
     return _fold(title, body + _fold('Exact diagnostic records and metadata', exact))
 
 
 def _reference_repeated_diagnostics(value, pointer, result):
-    """Keep the primary diagnostics exact; link identical prerequisite copies."""
+    """Keep the primary diagnostics exact; link identical prerequisite copies.
+
+    `pointer` is the saved location of `value`.
+    """
     originals = {}
 
     def index(item, path):
@@ -1154,7 +1161,7 @@ def _reference_repeated_diagnostics(value, pointer, result):
         for key, child in (item.items() if isinstance(item, dict) else enumerate(item)):
             index(child, _ptr(path, key))
 
-    index(result.get('diagnostics'), '/diagnostics')
+    index(result.get('diagnostics'), saved_pointer(result, '/diagnostics'))
 
     def replace(item, path):
         if not isinstance(item, (dict, list)):
@@ -1177,7 +1184,17 @@ def _numerical(result):
         if key not in result:
             continue
         value = result[key]
-        body += '**' + key.replace('_', ' ').capitalize() + ':** ' + _inline(_outcome(value) if isinstance(value, dict) else value) + ' · ' + _ref('/' + key) + '\n\n'
+        location = saved_pointer(result, '/' + key)
+        label = '**' + key.replace('_', ' ').capitalize() + ':** '
+        if isinstance(value, dict) and _section(result, key) and 'result' not in value and 'status' not in value:
+            # A public output keeps conclusions in its top-level checks; this
+            # section saves details without an outcome of its own.
+            if key == 'equivalence':
+                body += label + 'check ' + _inline(_mapping(result.get('checks')).get('equivalence', MISSING)) + ' · ' + _cite(result, '/checks/equivalence') + '; details without a separate outcome · ' + _ref(location) + '\n\n'
+            else:
+                body += label + 'details without a separate outcome; the top-level checks hold the conclusions · ' + _ref(location) + '\n\n'
+        else:
+            body += label + _inline(_outcome(value) if isinstance(value, dict) else value) + ' · ' + _ref(location) + '\n\n'
         if isinstance(value, dict):
             if 'checks' in value or 'result' in value:
                 body += _check_summary(value)
@@ -1189,7 +1206,7 @@ def _numerical(result):
                 body += '- **Diagnostic:** ' + _inline(diagnostic.get('code', MISSING)) + ' · ' + _inline(diagnostic.get('stage', MISSING))
                 if 'message' in diagnostic:
                     body += ' — ' + _text(diagnostic['message'])
-                body += ' · ' + _ref('/' + key + '/diagnostics/' + str(index)) + '\n'
+                body += ' · ' + _ref(location + '/diagnostics/' + str(index)) + '\n'
             if isinstance(value.get('definedness'), dict):
                 body += '- **Definedness:** ' + _inline(value['definedness'].get('status', MISSING)) + '\n'
             body += '\n'
@@ -1198,10 +1215,10 @@ def _numerical(result):
             for name, item in value.items():
                 if isinstance(item, (dict, list)):
                     if len(_encoded(item)) <= 4000 or any(word in name for word in ('diagnostic', 'error', 'reason', 'limitation', 'scalar_fold', 'definedness', 'contract', 'context', 'assumption', 'idealization')):
-                        summary[name] = _bounded(item, '/' + key + '/' + name, 'output.json')
+                        summary[name] = _bounded(item, location + '/' + name, 'output.json')
                     else:
-                        summary[name] = _summary(item, '/' + key + '/' + name, 'output.json')
-            summary = _reference_repeated_diagnostics(summary, '/' + key, result)
+                        summary[name] = _summary(item, location + '/' + name, 'output.json')
+            summary = _reference_repeated_diagnostics(summary, location, result)
             exact += '##### ' + key.replace('_', ' ').capitalize() + '\n\n' + _json_block(summary) + '\n'
     if not body:
         body = 'No independent value-analysis or equivalence status is saved.\n'
@@ -1226,7 +1243,7 @@ def render_evidence(run_input, result, ptx, artifacts, *, report_path=None, sour
                 rules += '**Key:** ' + _inline(item['key']) + '\n\n'
             rules += '**Enabled:** ' + _inline(item.get('enabled', MISSING)) + ' · **Triggered:** ' + _inline(item.get('triggered', MISSING)) + '\n\n'
             rules += _text(item.get('text', MISSING)) + '\n\n'
-    rules += _fold('Exact assumption settings', _json_block(_bounded({key: result[key] for key in assumption_keys if key in result}, '', 'output.json')))
+    rules += _fold('Exact assumption settings', _json_block(_bounded_fields(result, assumption_keys)))
     body += _fold('Assumptions — what qualifies the result', rules)
     body += _numerical(result)
     scope = '**Launch and arguments define this run.** Tuple coordinates use `(x, y, z)`; grid and cluster dimensions count blocks, while block dimensions count threads.\n\n'
@@ -1239,7 +1256,7 @@ def render_evidence(run_input, result, ptx, artifacts, *, report_path=None, sour
     scope += _fold('Exact input configuration', _json_block(_bounded(run_input, '', 'input.json')))
     body += _fold('Input configuration — reproduce this run', scope)
     handled = set(diagnostics + assumption_keys + ('value_analysis', 'equivalence', 'verification_status', 'verification_result'))
-    remaining = {key: _bounded(value, '/' + key, 'output.json') for key, value in result.items() if key not in handled}
+    remaining = {key: _bounded(value, saved_pointer(result, '/' + key), 'output.json') for key, value in result.items() if key not in handled}
     provenance = 'Use the original-file hashes to identify the run. Coverage flags describe what this result establishes; implementation statistics remain separate below.\n\n' + _coverage(result)
     provenance += '\n#### Original artifacts\n\n'
     originals = list(zip(('Input configuration', 'Verifier output', 'PTX'), artifacts))

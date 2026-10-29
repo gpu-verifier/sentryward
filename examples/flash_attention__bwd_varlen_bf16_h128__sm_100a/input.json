@@ -55,6 +55,34 @@
     {
       "field": "softmax_scale_log2",
       "value": 0.12751743082459868
+    },
+    {
+      "field": "LSE.head_stride",
+      "value": 512
+    },
+    {
+      "field": "dPsum.head_stride",
+      "value": 512
+    },
+    {
+      "field": "dV.sequence_stride",
+      "value": 1024
+    },
+    {
+      "field": "dV.head_stride",
+      "value": 128
+    },
+    {
+      "field": "dK.sequence_stride",
+      "value": 1024
+    },
+    {
+      "field": "dK.head_stride",
+      "value": 128
+    },
+    {
+      "field": "dQaccum.head_stride",
+      "value": 65536
     }
   ],
   "declarations": [
@@ -145,11 +173,350 @@
       "offset": 0,
       "type": "pointer",
       "object": "scheduler_cu_seqlens_k"
+    },
+    {
+      "parameter": 14,
+      "offset": 0,
+      "type": "pointer",
+      "object": "cu_seqlens_q"
+    },
+    {
+      "parameter": 15,
+      "offset": 0,
+      "type": "pointer",
+      "object": "cu_seqlens_k"
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "type": "pointer",
+      "object": "LSE"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dPsum"
+    },
+    {
+      "parameter": 9,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dV"
+    },
+    {
+      "parameter": 10,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dK"
+    },
+    {
+      "parameter": 11,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dQaccum"
+    },
+    {
+      "name": "LSE.head_stride",
+      "parameter": 5,
+      "offset": 16,
+      "type": "s64"
+    },
+    {
+      "name": "dPsum.head_stride",
+      "parameter": 6,
+      "offset": 16,
+      "type": "s64"
+    },
+    {
+      "name": "dV.sequence_stride",
+      "parameter": 9,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "dV.head_stride",
+      "parameter": 9,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "dK.sequence_stride",
+      "parameter": 10,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "dK.head_stride",
+      "parameter": 10,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "dQaccum.head_stride",
+      "parameter": 11,
+      "offset": 16,
+      "type": "s64"
     }
   ],
   "assumptions": {
     "duplicate_tma_store_benign": true,
     "representative_election": true,
     "clc_always_fails": true
-  }
+  },
+  "shape_arrays": [
+    {
+      "parameter": 14,
+      "offset": 0,
+      "element_type": "s32",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          128
+        ],
+        [
+          256
+        ]
+      ]
+    },
+    {
+      "parameter": 15,
+      "offset": 0,
+      "element_type": "s32",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          160
+        ],
+        [
+          320
+        ]
+      ]
+    },
+    {
+      "parameter": 34,
+      "offset": 0,
+      "element_type": "s32",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          160
+        ],
+        [
+          320
+        ]
+      ]
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 16,
+      "offset": 0,
+      "object": "Q",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256,
+        8
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256
+      ],
+      "box_shape": [
+        64,
+        64,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 17,
+      "offset": 0,
+      "object": "Q",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256,
+        8
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256
+      ],
+      "box_shape": [
+        64,
+        128,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 18,
+      "offset": 0,
+      "object": "K",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        320,
+        8
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256
+      ],
+      "box_shape": [
+        64,
+        128,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 19,
+      "offset": 0,
+      "object": "K",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        320,
+        8
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256
+      ],
+      "box_shape": [
+        64,
+        256,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 20,
+      "offset": 0,
+      "object": "V",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        320,
+        8
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256
+      ],
+      "box_shape": [
+        64,
+        128,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 21,
+      "offset": 0,
+      "object": "dO",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256,
+        8
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256
+      ],
+      "box_shape": [
+        64,
+        128,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 22,
+      "offset": 0,
+      "object": "dO",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        256,
+        8
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        2048,
+        256
+      ],
+      "box_shape": [
+        64,
+        64,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ]
 }

@@ -1,0 +1,206 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:q": "q",
+      "6:global1:k": "k",
+      "6:global1:v": "v"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global1:k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global1:v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:q": "q",
+      "6:global1:k": "k",
+      "6:global1:v": "v"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global1:k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      },
+      "6:global1:v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          1,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:o",
+    "right_allocation": "6:global1:o",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      128,
+      1,
+      128
+    ],
+    "left_strides_bytes": [
+      256,
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      256,
+      256,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "q",
+        "allocation": "6:global1:q",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "k",
+        "allocation": "6:global1:k",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "v",
+        "allocation": "6:global1:v",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "sm_scale",
+        "parameter": 0,
+        "parameter_offset": 104
+      }
+    ]
+  },
+  "provenance": {
+    "source": "Python reference written from the pinned upstream source",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/attention/prefill.cuh",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/csrc/single_prefill.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/csrc/single_prefill_customize_config.jinja",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/csrc/single_prefill_kernel_inst.jinja",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/attention/variants.cuh",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/attention/variant_helper.cuh"
+    ],
+    "scope": "SinglePrefillWithKVCacheKernel<KernelTraits<kCausal,128,2,4,8,8,4,1,kNone,bf16,bf16,bf16,float,int,DefaultAttention<0,0,0,0>,true>>; qo_len=kv_len=128, 1 qo / 1 kv head, NHD, partition_kv=false; lse null; o [128,1,128] fully written",
+    "optimized_input_sha256": "302196b5da99229fae0aee8e001f0f4612cfb961e029bb804387907cadf35d6e",
+    "ptx_sha256": "a61e24a03290daadf81b95b127148648be0f47b60f19f2632c084af8fd45fd00",
+    "scope_shape_arrays": []
+  }
+}

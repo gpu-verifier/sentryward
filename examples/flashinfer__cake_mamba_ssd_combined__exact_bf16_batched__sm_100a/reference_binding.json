@@ -262,7 +262,7 @@
     "upstream": [
       "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_mamba_ssd_combined/generated/device/sm_100a/mamba_ssd_q_tmem_alias_bf16_batched_152ad01e4f.cu"
     ],
-    "derived_from": "references/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/reference.cu",
+    "derived_from": "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_mamba_ssd_combined/generated/device/sm_100a/mamba_ssd_q_tmem_alias_bf16_batched_152ad01e4f.cu",
     "scope_branch_choices": [],
     "semantics": "ideal_real; fixed saved configuration; all declared output tensors",
     "ptx_sha256": "4a4f5711c4a9c1eb832a447d292b6fc2cf22effd23370ec25f9100214723e7dd",
@@ -270,8 +270,8 @@
     "source_interface": {
       "name": "flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a",
       "family": "mamba",
-      "source": "references/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/reference.cu",
-      "ptx": "references/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/reference.ptx",
+      "source": "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_mamba_ssd_combined/generated/device/sm_100a/mamba_ssd_q_tmem_alias_bf16_batched_152ad01e4f.cu",
+      "ptx": "",
       "entry": "reference",
       "upstream": [
         "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_mamba_ssd_combined/generated/device/sm_100a/mamba_ssd_q_tmem_alias_bf16_batched_152ad01e4f.cu"
@@ -680,10 +680,10 @@
       "equivalence_status": "not_checked"
     },
     "historical_paths": {
-      "interface": "references/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/interface.json",
-      "mapping": "references/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/mapping.md"
+      "interface": "examples/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/reference_binding.json#/provenance/source_interface",
+      "mapping": "examples/flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a/reference_binding.json#/provenance/mapping_notes"
     },
-    "mapping_notes": "# flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in interface.json.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| X | bf16 | 1 x 256 x 1 x 64 | input | x |\n| B | bf16 | 1 x 256 x 1 x 128 | input | B |\n| C | bf16 | 1 x 256 x 1 x 128 | input | C |\n| delta | bf16 | 1 x 2 x 1 x 128 | input | delta_precomputed |\n| cumsum | float | 1 x 2 x 1 x 128 | input | cumsum_precomputed |\n| O | bf16 | 1 x 256 x 1 x 64 | output | out_map / out_native |\n| final_state | bf16 | 1 x 1 x 64 x 128 | output | final_states |\n\n## Computation and mapping\n\nX, B, C, delta, and cumsum map to x, B_tensor, C, delta_precomputed, and cumsum_precomputed.\nFor each value dimension d, initialize state[s] = 0.\nFor token t, a = exp(cumsum[t] - cumsum[t-1]); at each 128-token\nchunk boundary the previous local cumsum is zero.\nstate[s] = a*state[s] + delta[t]*X[t,d]*B[t,s]; O[t,d] = sum_s state[s]*C[t,s].\nAfter token 255, write final_states[d,s]. O is the out_map/out_native logical output.\nThe saved case has no initial state, D residual, z gate, or checkpoints.\nThe device entry consumes precomputed factors; dt, A, and dt_bias are not\nrecomputed by this reference. Their preprocessing is a different kernel.\nIntermediate BF16 state/tile rounding in the optimized chunk algorithm is abstracted.\n\n## Validation boundary\n\nCompiled to PTX and numerically checked on CPU. Not compared against an optimized\nGPU execution or proven equivalent. Precision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_mamba_ssd_combined/generated/device/sm_100a/mamba_ssd_q_tmem_alias_bf16_batched_152ad01e4f.cu\n"
+    "mapping_notes": "# flashinfer__cake_mamba_ssd_combined__exact_bf16_batched__sm_100a\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in source_interface.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| X | bf16 | 1 x 256 x 1 x 64 | input | x |\n| B | bf16 | 1 x 256 x 1 x 128 | input | B |\n| C | bf16 | 1 x 256 x 1 x 128 | input | C |\n| delta | bf16 | 1 x 2 x 1 x 128 | input | delta_precomputed |\n| cumsum | float | 1 x 2 x 1 x 128 | input | cumsum_precomputed |\n| O | bf16 | 1 x 256 x 1 x 64 | output | out_map / out_native |\n| final_state | bf16 | 1 x 1 x 64 x 128 | output | final_states |\n\n## Computation and mapping\n\nX, B, C, delta, and cumsum map to x, B_tensor, C, delta_precomputed, and cumsum_precomputed.\nFor each value dimension d, initialize state[s] = 0.\nFor token t, a = exp(cumsum[t] - cumsum[t-1]); at each 128-token\nchunk boundary the previous local cumsum is zero.\nstate[s] = a*state[s] + delta[t]*X[t,d]*B[t,s]; O[t,d] = sum_s state[s]*C[t,s].\nAfter token 255, write final_states[d,s]. O is the out_map/out_native logical output.\nThe saved case has no initial state, D residual, z gate, or checkpoints.\nThe device entry consumes precomputed factors; dt, A, and dt_bias are not\nrecomputed by this reference. Their preprocessing is a different kernel.\nIntermediate BF16 state/tile rounding in the optimized chunk algorithm is abstracted.\n\n## Validation boundary\n\nNot compared against an optimized GPU execution.\nPrecision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_mamba_ssd_combined/generated/device/sm_100a/mamba_ssd_q_tmem_alias_bf16_batched_152ad01e4f.cu\n"
   },
   "outputs": {
     "kind": "dense_tensors",

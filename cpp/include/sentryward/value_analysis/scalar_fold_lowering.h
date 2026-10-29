@@ -7,6 +7,7 @@
 #include "sentryward/scalar_fold/graph.h"
 #include "sentryward/scalar_fold/output_family.h"
 #include "sentryward/value_analysis/memory_elimination.h"
+#include "sentryward/value_analysis/unit_lifting.h"
 
 namespace sentryward::value_analysis {
 struct ScalarFoldOptions {
@@ -22,6 +23,10 @@ struct ScalarFoldOptions {
   // projections every few thousand temporary nodes. Explicit small values
   // remain useful for moving-GC stress tests; zero disables construction GC.
   std::size_t construction_collection_interval = std::numeric_limits<std::size_t>::max();
+  // Cross-CTA value lifting mode (unit_lifting.h): BlockIndex stays a unit
+  // parameter and every body is instantiated for its unit before the output
+  // tail. Null: no lifting (BlockIndex values are literals).
+  const UnitLifting* unit_lifting = nullptr;
 };
 struct ScalarFoldOutput {
   ConstantRegion region;
@@ -47,6 +52,26 @@ struct ScalarFoldResult {
   std::size_t spatial_families_projected = 0;
   std::size_t spatial_outputs_projected = 0;
   std::size_t spatial_template_operations = 0;
+  // Lifting mode only (ScalarFoldOptions::unit_lifting).
+  struct Lifting {
+    std::size_t parameters = 0; // unit coordinate leaves emitted
+    std::size_t declined = 0;   // BlockIndex reads answered "unknown"
+    // Set when lifting cannot finish exactly: the driver restarts per unit.
+    bool refused = false;
+  } lifting;
+  // Where the lowering stopped when `diagnostic` is set (for class mode's
+  // first-item rule, run.cpp). Phases 'a'..'f':
+  // prerequisites, normalized reads, budgets, output families, output records
+  // (items in record order: a normalized output group, a contiguous scalar run
+  // or one record), final instantiation and consolidation.
+  struct FailureSite {
+    char phase = 0;
+    std::size_t items = 0;             // phase 'e' items started, the failing one included
+    std::optional<std::size_t> record; // the last started item's first record (index of memory.outputs)
+    bool output_families = false;      // memory.output_families was non-empty
+    std::size_t completed_outputs = 0; // outputs completed when it failed
+    bool literal_message = false;      // the message is a literal at its fail() site
+  } failure_site;
 };
 // Pure, ideal-arithmetic projection after checked memory elimination.
 // Preserves allocation identities and ordered numerical conversion attributes.

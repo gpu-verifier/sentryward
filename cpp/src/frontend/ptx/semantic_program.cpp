@@ -108,8 +108,10 @@ std::optional<ValueAccess> Access(const v::Graph& graph, const v::Node& node, st
   if (type && type->hasStaticShape() && !type->element().isParameterized()) {
     const auto bits = type->bitSize();
     if (bits && bits % 8 == 0) result.bytes = bits / 8;
+    // A tensor-map store (tensormap.cp_fenceproxy) writes plain descriptor bytes.
     result.ordinary_scalar = !attributes.guarded && !attributes.layout && !attributes.descriptor &&
-        attributes.interpretation == v::MemoryAttributes::Interpretation::Ordinary;
+        (attributes.interpretation == v::MemoryAttributes::Interpretation::Ordinary ||
+         (store && attributes.interpretation == v::MemoryAttributes::Interpretation::TensorMap));
   }
   return result;
 }
@@ -120,18 +122,21 @@ void Diagnostic(SemanticProgram& result, std::string code, std::string message,
   result.diagnostics.push_back({std::move(code), std::move(message), occurrence, instruction, value});
 }
 
-auto RecordIdentity(const ExecutedInstruction& record) {
+auto RecordIdentity(const RecordView& record) {
   return std::tie(record.instruction_id(), record.occurrence(), record.predicate_value(),
       record.branch_scope_decision(),
       record.collapsed_wait_loop(), record.normalized_wait_result(), record.normalized_clc_result(),
       record.canonical_wait_probe(), record.wait_exit_label(),
       record.schedule_seed_outcome(), record.probe_fallback_key(), record.opaque_compute_diamond_indices(),
       record.collapsed_wait_indices(), record.opaque_compute_join_label(), record.assumed_equality(),
-      record.opaque_compute_register_reads(), record.opaque_compute_register_writes());
+      record.opaque_compute_register_reads(), record.opaque_compute_register_writes(),
+      record.merged_arm_join());
 }
 
+// A lane's record at a cohort position, or none past its end.
+using CohortRecord = std::optional<RecordView>;
 struct RecordLess {
-  bool operator()(const ExecutedInstruction* first, const ExecutedInstruction* second) const {
+  bool operator()(const CohortRecord& first, const CohortRecord& second) const {
     if (!first || !second) return !first && second;
     return RecordIdentity(*first) < RecordIdentity(*second);
   }
@@ -143,23 +148,24 @@ struct DynamicKeyHash {
   }
 };
 
-void BuildCohorts(std::uint32_t cta, const ExecutionProgram& execution,
+void BuildCohorts(std::uint32_t cta, const CtaFacts& facts,
     const a::SourceProgram& source, std::size_t instruction_begin, std::vector<ExecutionCohort>& cohorts,
     std::vector<std::optional<ExecutionCohortId>>& bindings, const std::function<void()>& poll) {
-  const auto count = execution.lane_traces.size();
+  const auto count = facts.LaneCount();
   if (!count) return;
   std::map<std::pair<std::uint32_t, std::uint32_t>, std::size_t> lanes;
   for (std::size_t lane = 0; lane < count; ++lane)
-    lanes.emplace(std::pair{execution.lane_traces[lane].warp_id, execution.lane_traces[lane].lane_id}, lane);
-  if (execution.template_execution.used && execution.thread_template_groups.size()==1 &&
-      execution.thread_template_groups.front().size()==count) {
+    lanes.emplace(std::pair{facts.Warp(facts.Lane(lane)), facts.LaneId(facts.Lane(lane))}, lane);
+  const auto template_groups = facts.TemplateGroups();
+  if (facts.TemplateExecution() && template_groups.size()==1 &&
+      template_groups.front().size()==count) {
     const auto root=cohorts.size();
     cohorts.push_back({root,{},cta,count});
     std::unordered_set<DynamicKey,DynamicKeyHash> occurrences;
-    const auto& records=execution.lane_traces.front().instructions;
-    for(std::size_t i=0;i<records.size();++i) {
+    const auto first_lane=facts.Lane(0);
+    for(std::size_t i=0;i<facts.Size(first_lane);++i) {
       if((i&1023)==0&&poll)poll();
-      occurrences.insert(records.metadata(i).Key());
+      occurrences.insert(facts.Meta({first_lane,i}).Key());
     }
     bindings.resize(source.instructions.size());
     for(std::size_t i=instruction_begin;i<source.instructions.size();++i) {
@@ -199,17 +205,21 @@ void BuildCohorts(std::uint32_t cta, const ExecutionProgram& execution,
     auto work = std::move(pending.back());
     pending.pop_back();
     for (;;) {
-      const auto record = [&](std::size_t lane) -> const ExecutedInstruction* {
-        const auto& instructions = execution.lane_traces[lane].instructions;
-        return work.position < instructions.size() ? &instructions.metadata(work.position) : nullptr;
+      const auto record = [&](std::size_t lane) -> CohortRecord {
+        const auto ref = facts.Lane(lane);
+        return work.position < facts.Size(ref) ? CohortRecord(facts.Meta({ref, work.position})) : std::nullopt;
       };
-      const auto* first = record(work.lanes.front());
+      const auto first = record(work.lanes.front());
       const bool identical = std::all_of(work.lanes.begin() + 1, work.lanes.end(), [&](auto lane) {
-        const auto* other = record(lane);
-        return (!first || !other) ? first == other : RecordIdentity(*first) == RecordIdentity(*other);
+        const auto other = record(lane);
+        // Absent records compare by presence; present ones by their metadata,
+        // which is trivially equal when both lanes share one metadata object.
+        return (!first || !other) ? first.has_value() == other.has_value()
+                                  : FactSource::SameMetadata(*first, *other) ||
+                                        RecordIdentity(*first) == RecordIdentity(*other);
       });
       if (!identical) {
-        std::map<const ExecutedInstruction*, std::vector<std::size_t>, RecordLess> partitions;
+        std::map<CohortRecord, std::vector<std::size_t>, RecordLess> partitions;
         for (auto lane : work.lanes) partitions[record(lane)].push_back(lane);
         for (auto& [_, partition] : partitions) {
           const auto child = cohorts.size();
@@ -329,8 +339,21 @@ void LinkMmaMemory(SemanticProgram& result, const MmaValueLayout& layout,
     }
     const bool scaled=operands.contains({MmaOperandRole::ScaleA,a::AccessMode::kRead});
     const auto descriptor=scaled ? DecodeBlockScaledDescriptor(layout.descriptor,kind) : DecodeMmaDescriptor(kind,layout.descriptor);
-    if (layout.cta_group==2 && descriptor.m==128)
-      throw LayoutError("Two-CTA M=128 MMA logical output placement is not decoded");
+    // Two-CTA M=128 D uses the 2x2 datapath: each CTA's row r keeps columns
+    // [0,N/2) in lane r and [N/2,N) in lane r+64 (CUTLASS tmem_frg_2sm,
+    // M_MMA=64). TMEM-A and scale factors use duplicated layouts not decoded here.
+    const bool two_by_two=layout.cta_group==2 && descriptor.m==128;
+    if (two_by_two && (scaled || layout.a_in_tmem))
+      throw LayoutError("Two-CTA M=128 MMA duplicated TMEM operand layout is not decoded");
+    // .ws D uses 128/M lane groups (PTX 9.2 layouts D, E and G): group g keeps
+    // columns [g*N*M/128,(g+1)*N*M/128) of row r in lane g*M+r. Each group reads
+    // TMEM-A rows from its own lanes, which one M x K operand does not express.
+    if (layout.ws && (scaled || layout.cta_group!=1 ||
+        (descriptor.m!=32 && descriptor.m!=64 && descriptor.m!=128)))
+      throw LayoutError(".ws MMA value layout requires dense cta_group::1 M=32/64/128");
+    if (layout.ws && layout.a_in_tmem && descriptor.m<128)
+      throw LayoutError(".ws MMA per-lane-group TMEM-A operand layout is not decoded");
+    const unsigned ws_groups=layout.ws ? 128/descriptor.m : 1;
     std::map<std::pair<std::uint32_t,std::uint32_t>,const MmaValueAccess*> tags;
     for (const auto& tag : layout.accesses) tags.emplace(std::pair{tag.effect,tag.access},&tag);
     using PartKey=std::tuple<MmaOperandRole,a::AccessMode,std::uint32_t>;
@@ -427,17 +450,20 @@ void LinkMmaMemory(SemanticProgram& result, const MmaValueLayout& layout,
       else {
         if(packed)throw LayoutError("FP4 TMEM-A logical packing is not implemented");
         const auto [lane,column]=DecodeTmemAddress(role==MmaOperandRole::A ? layout.a_base : layout.d_base);
-        for (unsigned row=0;row<rows;++row) {
-          const auto physical_row=descriptor.m==64 ? lane+32*(row/16)+row%16 : lane+row;
-          const auto physical=EncodeCellByteOffset(physical_row,column);
-          const auto logical=(std::uint64_t{part}*rows+row)*columns*bits/8;
-          if(role==MmaOperandRole::D && bits!=32) {
-            // The existing D16 footprint has a two-byte hole between cells;
-            // these are distinct physical fragments, not contiguous bytes.
-            for(unsigned k=0;k<columns;++k)emit({physical+std::uint64_t{k}*4,
-                logical+std::uint64_t{k}*bits/8,bits/8,1,bits/8});
-          } else emit({physical,logical,bits/8,columns,bits/8});
-        }
+        const unsigned halves=layout.ws ? ws_groups : two_by_two ? 2 : 1, width=columns/halves;
+        for (unsigned row=0;row<rows;++row)
+          for (unsigned half=0;half<halves;++half) {
+            const auto physical_row=layout.ws ? lane+row+descriptor.m*half :
+                descriptor.m==64 ? lane+32*(row/16)+row%16 : lane+row+64*half;
+            const auto physical=EncodeCellByteOffset(physical_row,column);
+            const auto logical=((std::uint64_t{part}*rows+row)*columns+std::uint64_t{half}*width)*bits/8;
+            if(role==MmaOperandRole::D && bits!=32) {
+              // The existing D16 footprint has a two-byte hole between cells;
+              // these are distinct physical fragments, not contiguous bytes.
+              for(unsigned k=0;k<width;++k)emit({physical+std::uint64_t{k}*4,
+                  logical+std::uint64_t{k}*bits/8,bits/8,1,bits/8});
+            } else emit({physical,logical,bits/8,width,bits/8});
+          }
       }
     }
     flush_binding();
@@ -569,10 +595,10 @@ void LinkMemory(SemanticProgram& result, bool compact,
   for (const auto& node : result.values.nodes()) {
     if (!dynamic_cast<const v::LoadOp*>(&node.operation()) &&
         !dynamic_cast<const v::StoreOp*>(&node.operation())) continue;
-    for (std::size_t instance = 0; instance < node.instances().size(); ++instance) {
+    for (std::size_t instance = 0; instance < node.instanceCount(); ++instance) {
       const auto access = Access(result.values, node, instance);
       if (!access) continue;
-      const auto occurrence = Occurrence(node.instances()[instance].origin);
+      const auto occurrence = Occurrence(node.instanceOrigin(instance));
       if (!occurrence) {
         Diagnostic(result, "missing_value_occurrence", "Memory expression has no complete thread/PTX occurrence identity", {}, {}, access->reference);
         continue;
@@ -591,8 +617,8 @@ void LinkMemory(SemanticProgram& result, bool compact,
     const auto& source = source_accesses[occurrence];
     auto& values = value_accesses[occurrence];
     std::stable_sort(values.begin(), values.end(), [&](const auto& left, const auto& right) {
-      return result.values.node(left.reference.node).instances()[left.reference.instance].origin.lowering_index <
-          result.values.node(right.reference.node).instances()[right.reference.instance].origin.lowering_index;
+      return result.values.node(left.reference.node).instanceOrigin(left.reference.instance).lowering_index <
+          result.values.node(right.reference.node).instanceOrigin(right.reference.instance).lowering_index;
     });
     if (source.empty() && values.empty()) continue;
     if(values.size()==1 && values.front().ordered_payload) {
@@ -689,20 +715,23 @@ const BranchScopeCapture& SemanticProgramBuilder::BranchScopeForExport() const {
     throw std::invalid_argument("branch scope unavailable: "+impl_->branch_capture->failure());
   return *impl_->branch_capture;
 }
-void SemanticProgramBuilder::AddCta(std::uint32_t cta, Coordinates coordinates, const ExecutionProgram& execution) {
+void SemanticProgramBuilder::AddCta(const CtaFacts& facts) {
+  const auto cta = facts.Linear();
   if (impl_->finished) throw std::logic_error("SemanticProgramBuilder is finished");
-  if (execution.module != &impl_->module || execution.function != &impl_->function)
+  if (!facts.Specialized() || &facts.module() != &impl_->module || &facts.function() != &impl_->function)
     throw std::invalid_argument("SemanticProgramBuilder requires its own module/function execution");
   if (impl_->ctas.contains(cta)) throw std::invalid_argument("Duplicate CTA in SemanticProgramBuilder");
-  std::set<const void *> validated_paths;
-  for (const auto& lane : execution.lane_traces)
-    if (validated_paths.insert(lane.instructions.metadataIdentity()).second)
-      for (std::size_t index = 0; index < lane.instructions.size(); ++index)
-        if (lane.instructions.metadata(index).occurrence() > UINT32_MAX) throw std::invalid_argument("Source occurrence ID exceeds the source language range");
+  std::set<PathKey> validated_paths;
+  for (std::size_t lane_index = 0; lane_index < facts.LaneCount(); ++lane_index) {
+    const auto lane = facts.Lane(lane_index);
+    if (validated_paths.insert(facts.Path(lane)).second)
+      for (std::size_t index = 0; index < facts.Size(lane); ++index)
+        if (facts.Meta({lane, index}).occurrence() > UINT32_MAX) throw std::invalid_argument("Source occurrence ID exceeds the source language range");
+  }
   impl_->ctas.insert(cta);
   const auto first_value_node = impl_->graph.size();
-  impl_->values.AddCta(cta, coordinates, execution);
-  ValueAddressIndex address_values(impl_->graph, execution, cta, first_value_node,
+  impl_->values.AddCta(facts);
+  ValueAddressIndex address_values(impl_->graph, facts, first_value_node,
                                   impl_->options.defer_address_serialization);
   if (a::MemoryProfileEnabled()) {
     a::MemoryReport report("frontend.values", "value_graph", &impl_->graph);
@@ -716,7 +745,7 @@ void SemanticProgramBuilder::AddCta(std::uint32_t cta, Coordinates coordinates, 
     std::set<const v::ValueType*> type_storage;
     for (const auto& node : impl_->graph.nodes()) {
       report.Metric("stored_instances", node.storedInstanceCount());
-      report.Add("instances", node.instances().size()*sizeof(v::Instance), node.instances().size()*sizeof(v::Instance), node.instances().size(), 0, true);
+      report.Add("instances", node.instanceCount()*sizeof(v::Instance), node.instanceCount()*sizeof(v::Instance), node.instanceCount(), 0, true);
       for (const auto& instance : node.instances()) {
         report.Vector("operands", instance.operands);
         if (!instance.result_types.empty() && type_storage.insert(instance.result_types.data()).second)
@@ -733,18 +762,21 @@ void SemanticProgramBuilder::AddCta(std::uint32_t cta, Coordinates coordinates, 
     report.Emit();
   }
   const auto instruction_begin = impl_->model.currentProgram().instructions.size();
-  impl_->model.AddCta(cta, coordinates, execution,
-      [&](const LaneTrace& lane, const ExecutedInstruction& record, std::string_view text) {
+  impl_->model.AddCta(facts,
+      [&](LaneRef lane, const RecordView& record, std::string_view text) {
         return address_values.Extract(lane, record, text);
       });
   impl_->address_queries += address_values.queries();
   impl_->address_resolved += address_values.resolved();
   if (impl_->address_unavailable.empty())
     impl_->address_unavailable = address_values.firstUnavailableReason();
-  if (impl_->options.collect_synchronization_groups)
-    BuildCohorts(cta, execution, impl_->model.currentProgram(), instruction_begin,
+  if (impl_->options.collect_synchronization_groups) {
+    const FactSource::ConsumerScope consumer(facts, {Consumer::Cohorts, 0});
+    BuildCohorts(cta, facts, impl_->model.currentProgram(), instruction_begin,
       impl_->cohorts, impl_->source_cohorts, impl_->poll);
+  }
 }
+void SemanticProgramBuilder::TrackUnits(a::UnitQuotient* quotient) noexcept { impl_->model.TrackUnits(quotient); }
 const v::Graph& SemanticProgramBuilder::graph() const noexcept { return impl_->graph; }
 const std::vector<ValueIrDiagnostic>& SemanticProgramBuilder::valueDiagnostics() const noexcept { return impl_->values.diagnostics(); }
 SemanticProgram SemanticProgramBuilder::Finish(std::function<void(std::string_view)> stage) {

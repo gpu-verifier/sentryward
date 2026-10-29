@@ -100,8 +100,8 @@ The capture derivation is implemented in
 
 ## Equivalence contract
 
-With a Python reference, Sentryward checks synchronization and memory safety
-before establishing numerical equivalence. The reference defines a partial
+With a Python reference, Sentryward runs the synchronization check, including
+race freedom, before establishing numerical equivalence. The reference defines a partial
 function: a proof requires the PTX and reference to have the same domain and
 equal outputs on that domain. Total definedness on every possible tensor input
 is a separate property. An informational `total_definedness_not_proven`

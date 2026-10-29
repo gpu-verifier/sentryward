@@ -3,16 +3,60 @@
 These assumptions can be enabled or disabled to select the behavior analyzed by
 the verifier. The pool is defined in [config/assumption-pool.json](../config/assumption-pool.json);
 defaults are maintained in [config/default-assumptions.json](../config/default-assumptions.json).
+Some premises of the model are fixed; they are described first.
 
+## Fixed premises
 
-Immediate visibility remains a fixed premise of the current model; removing its
-configuration switch did not add weak-memory analysis. Do not put
-`immediate_visibility` in the `assumptions` object. Existing
-`immediate_visibility: true` configurations can omit the field without changing
-this premise; configurations requesting `false` are not supported.
-The removed `warp_tmem_load_completion: false` override can also be omitted.
-A former `true` override must not be silently dropped: its TMEM completion
-semantics require review.
+These premises are not configurable.
+
+Immediate visibility is a fixed premise of the model. Weak-memory behavior is
+not analyzed.
+
+TMEM completion follows our reading of the PTX documentation (tcgen05 memory
+consistency). A `tcgen05.ld` delivers its registers to true register
+dependencies, but its TMEM read completes only at `tcgen05.wait::ld`; using the
+loaded registers does not order the read before later memory operations,
+releases or deallocation. From the same warp, `tcgen05.ld`/`tcgen05.st` pairs
+(ld then st, st then ld, st then st) access TMEM in issue order.
+
+### Merged forward branches
+
+A conditional forward branch whose predicate the input does not determine, for
+example because it depends on tensor data, is merged when it skips a
+straight-line block with these properties:
+
+- The block contains only register computation, reads of parameter, local or
+  constant memory, and `tcgen05.ld`, `tcgen05.st` and `tcgen05.wait`.
+- No register that the block writes appears outside the block.
+
+The block is then analyzed as executed on both paths. This over-approximates
+the path that skips it.
+
+- When the block contains tcgen05 operations, the predicate must also be
+  provably warp-uniform, for example computed in the branch's basic block from
+  constants and a full-warp `vote.sync`. A block without tcgen05 operations
+  needs no warp-uniform predicate.
+- If a tcgen05 operation that the block could order is pending at the branch,
+  the result is `unsupported` (diagnostic `two_arm_merge_pending_tcgen05`).
+- The value analysis does not follow merged branches. With a reference, a
+  kernel that passes the synchronization check is reported as `unsupported`
+  (diagnostic `two_arm_merge_values`).
+
+A forward region of register computation and parameter, local or constant
+reads is skipped when the input does not determine its branch. If ordinary
+execution stops at such a branch, the region may also have several arms
+(if-else, nested ifs) up to one join, and inline-asm blocks inside it that
+declare only their own temporaries. Warp-level operations (`shfl`, `vote`,
+`elect`, `match`, `activemask`, `redux`, `mma`) are never skipped. The value
+analysis if-converts the region exactly: each register it writes becomes a
+selection of its per-path values. It reports `unsupported` for local or
+constant reads in the region, carry arithmetic, and a register without an
+earlier value that is read on a path where the region does not assign it
+(diagnostics `lifted_region_*`, or `missing_definition` after the join).
+
+A data-dependent branch that is neither merged nor skipped is unsupported unless a branch
+choice or a representative-control assumption, such as
+[Representative branches](#representative-branches), decides it.
 
 ## Duplicate TMA stores
 
@@ -61,7 +105,7 @@ When exact execution cannot determine an ordinary structured if/else, select the
 PTX branch's fallthrough edge every time. This is not necessarily the source
 language's else arm. Unknown guards on ordinary non-control instructions execute
 the instruction. Predicated ret, exit and trap use the same CFG classification
-as conditional branches, including polling protection and loop bounds. Known predicates and explicit user choices take precedence.
+as conditional branches, including polling protection and loop bounds. Known predicates, explicit user choices and [merged forward branches](#merged-forward-branches) take precedence.
 Assertion-failing paths are not silently avoided.
 
 The CFG must identify a reconverging branch, separate from loop continuation,
@@ -95,9 +139,6 @@ of pure computation regions remains independent. Results record the assumption
 key, PTX line, decision rule and taken/not-taken counts, with separate usage
 counters. A result covers the selected execution paths; these assumptions do not
 establish all-path correctness.
-
-The former combined `representative_data_branches` key is retired. Choose either
-or both new keys explicitly; the old visit-count branch heuristic is not retained.
 
 ## Order-independent atomics
 
@@ -134,8 +175,9 @@ Unlike the switches above, address invariants are not on/off flags. They are tru
 facts about runtime address values that the symbolic address model may use to
 prove two memory accesses disjoint. The verifier does not check them. If an
 invariant is false for the analyzed execution, a real race may be reported as
-safe. Any nonempty set sets the output flag `assumption_dependent` to true, and results
-repeat the set under `address_model.address_invariants`.
+safe. Any nonempty set sets the output flag `assumption_dependent` to true. Results
+repeat the set under `internal.address_model.address_invariants`, which is not a
+stable interface.
 
 ### How the address model uses them
 
@@ -166,7 +208,6 @@ Each array entry is an object of one of these forms:
 | Form | Meaning |
 | --- | --- |
 | `{"term": T, "lower_bound": L, "upper_bound": U, "multiple_of": M}` | `L <= T <= U` and `T` is divisible by `M` (a positive integer). At least one of the three fields is required; bounds are inclusive. |
-| `{"gather": "g", "injective": true, "lower_bound": L, "upper_bound": U}` | Every lookup in table `g` lies in `[L, U]`. If injective, different ground arguments give different results. |
 | `{"joint_injective": ["r", "s", ...]}` | For different ground arguments, at least one of the named tables gives different results. |
 | `{"distinct_allocations": ["A", "B", ...]}` | The named allocations are pairwise distinct storage. |
 
@@ -192,16 +233,33 @@ where the tensor map is stored. Unresolved-pair diagnostics print these names.
 Two tensor-map targets are never assumed equal or distinct without an
 invariant.
 
-Example: page table `pages` maps logical blocks to distinct physical pages, and
-the tensor read through one tensor map does not alias a workspace:
+Example: the tensor read through one tensor map does not alias a workspace:
 
 ```json
 "address_invariants": [
-  {"gather": "pages", "injective": true, "lower_bound": 0},
   {"distinct_allocations": ["tensor_map_target(input.arg0.1184+0)", "epilogue.tensormaps"]}
 ]
 ```
 
-The PTX frontend does not yet emit `param` or `gather` atoms. Today the SMT
-layer applies to operand-derived offsets and to source JSON produced by other
-tools, while `distinct_allocations` applies directly to frontend output.
+Bounds and injectivity of the elements of an input object, such as a page table,
+are stated as [tensor properties](input-json.md#tensor-properties). An entry of
+any other form, such as the earlier `{"gather": ...}` bound, is rejected.
+
+The PTX frontend emits `gather` atoms for elements loaded from an input object
+with tensor properties. When an address or TMA coordinate is affine in such
+elements, each element appears as the atom
+`{"operator": "gather", "symbol": "tensor_property:<object>:<element_type>", "args": [B]}`,
+where `B` is the element's byte offset in the object. Term and
+`joint_injective` invariants can name these symbols, for example to bound one
+element or to state that two index tables are jointly injective:
+
+```json
+"address_invariants": [
+  {"term": {"operator": "gather", "symbol": "tensor_property:kv_indices:s32", "args": [0]}, "upper_bound": 15},
+  {"joint_injective": ["tensor_property:row_idx:s32", "tensor_property:col_idx:s32"]}
+]
+```
+
+The frontend does not emit `param` atoms. The SMT layer also applies to
+operand-derived offsets and to source JSON produced by other tools, while
+`distinct_allocations` applies directly to frontend output.

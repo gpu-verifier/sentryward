@@ -1,14 +1,4 @@
 {
-  "address_model": {
-    "address_invariants": [],
-    "kind": "symbolic",
-    "layers": [
-      0,
-      2
-    ],
-    "solver": "z3",
-    "solver_timeout_ms": 100
-  },
   "assumption_dependent": true,
   "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
@@ -18,7 +8,7 @@
       "key": "duplicate_tma_store_benign",
       "label": "Duplicate TMA stores",
       "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
-      "triggered": false
+      "triggered": true
     },
     {
       "category": "analysis assumption",
@@ -51,260 +41,34 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "not_run",
-    "memory": "failed",
+    "equivalence": "incomplete",
     "synchronization": "passed"
-  },
-  "counts": {
-    "edges": 9901336,
-    "events": 3921112,
-    "instructions": 675730,
-    "memory_accesses": 2621360,
-    "threads": 4096
   },
   "diagnostics": [
     {
-      "code": "conflicting_accesses_unordered",
+      "code": "unsupported_mma_value_mapping",
       "details": {
-        "count": 1,
-        "witnesses_path": "races"
+        "internal_stage": "memory_effect_binding"
       },
-      "message": "Conflicting accesses have no proven required ordering",
-      "stage": "memory_check"
+      "message": "MMA value needs a fixed shape and a native matrix address",
+      "stage": "equivalence"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "failed",
-            "synchronization": "passed"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "conflicting_accesses_unordered",
-              "details": {
-                "count": 1,
-                "witnesses_path": "races"
-              },
-              "message": "Conflicting accesses have no proven required ordering",
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "potential_race"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
-  },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [],
-      "first_unavailable_reason": "",
-      "queries": 0,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": true
-    },
-    "cluster_completion_joins": 1,
-    "cta_count": 16,
-    "dependency_compression": {
-      "bulk_read_wait": {
-        "consumers": 1024,
-        "emitted_references": 512,
-        "original_references": 512,
-        "prefix_effects": 0
-      },
-      "tcgen_commit": {
-        "consumers": 48,
-        "emitted_references": 352,
-        "original_references": 976,
-        "prefix_effects": 48
-      },
-      "tcgen_load_wait": {
-        "consumers": 2048,
-        "emitted_references": 4096,
-        "original_references": 4096,
-        "prefix_effects": 0
-      }
-    },
-    "diagnostic_sample_count": 0,
-    "discharged_codes": [
-      "tcgen_cp_memory_effect_refinement",
-      "mma_memory_effect_refinement",
-      "tcgen_pipeline_effect_refinement",
-      "tcgen_commit_notification_order_refinement"
-    ],
-    "executed_records": 1506163,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 6144,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 3105,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 21024,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
-    },
-    "implementation": "cpp",
-    "input_objects": [],
-    "lowered_instruction_count": 675730,
-    "mma_refinement": {
-      "blocked": [],
-      "discharged": 64
-    },
-    "reached_opcodes": {
-      "add.s32": 104402,
-      "add.s64": 3664,
-      "and.b16": 1568,
-      "and.b32": 37952,
-      "and.pred": 512,
-      "bar.arrive": 512,
-      "bar.sync": 10240,
-      "bar.warp.sync": 1024,
-      "barrier.cluster.arrive.relaxed.aligned": 4096,
-      "barrier.cluster.wait.aligned": 4096,
-      "bra": 80975,
-      "bra.uni": 1056,
-      "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128": 3104,
-      "clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128": 1,
-      "cp.async.bulk.commit_group": 1024,
-      "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group": 1024,
-      "cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 64,
-      "cp.async.bulk.tensor.4d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 16,
-      "cp.async.bulk.wait_group.read": 1024,
-      "cvt.rn.f16x2.f32": 131072,
-      "cvt.u16.u32": 1568,
-      "cvt.u32.u64": 2048,
-      "cvt.u64.u32": 1536,
-      "cvta.param.u64": 2592,
-      "cvta.to.shared.u64": 2048,
-      "elect.sync": 21024,
-      "fence.mbarrier_init.release.cluster": 24576,
-      "fence.proxy.async.shared::cta": 7200,
-      "ld.param.b32": 29696,
-      "ld.param.b64": 8192,
-      "ld.param.v4.b32": 6656,
-      "ld.shared.b128": 3104,
-      "ld.shared.b32": 2560,
-      "mad.lo.s32": 13312,
-      "mapa.shared::cluster.u32": 5200,
-      "max.s32": 1024,
-      "mbarrier.arrive.expect_tx.shared::cluster.b64": 16,
-      "mbarrier.arrive.expect_tx.shared::cta.b64": 32,
-      "mbarrier.arrive.shared::cluster.b64": 5184,
-      "mbarrier.arrive.shared::cta.b64": 32,
-      "mbarrier.init.shared::cta.b64": 512,
-      "mbarrier.test_wait.parity.shared::cta.b64": 64,
-      "mbarrier.try_wait.parity.shared::cta.b64": 17088,
-      "mov.b16": 9248,
-      "mov.b32": 137360,
-      "mov.b64": 8016,
-      "mov.s32": 21681,
-      "mov.u32": 50176,
-      "mul.f32": 262144,
-      "mul.hi.u32": 13312,
-      "neg.s32": 512,
-      "not.pred": 1536,
-      "or.b16": 8224,
-      "or.b32": 4688,
-      "or.b64": 1536,
-      "or.pred": 15872,
-      "prefetch.tensormap": 80,
-      "ret": 4096,
-      "selp.b16": 15872,
-      "selp.b32": 48064,
-      "selp.u32": 3104,
-      "setp.eq.b16": 32,
-      "setp.eq.b32": 62176,
-      "setp.eq.b64": 6144,
-      "setp.eq.u32": 96,
-      "setp.lt.s32": 11232,
-      "setp.lt.u32": 32,
-      "setp.ne.b16": 1024,
-      "setp.ne.b32": 81504,
-      "setp.ne.b64": 4096,
-      "shfl.sync.idx.b32": 36864,
-      "shl.b16": 4608,
-      "shl.b32": 44384,
-      "shr.s32": 8192,
-      "shr.u32": 27136,
-      "st.shared.v4.b32": 32768,
-      "sub.s32": 13312,
-      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 512,
-      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 16,
-      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 32,
-      "tcgen05.cp.cta_group::1.128x128b": 16,
-      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 512,
-      "tcgen05.ld.sync.aligned.32x32b.x64.b32": 4096,
-      "tcgen05.mma.sp.cta_group::1.kind::f16": 64,
-      "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 512,
-      "tcgen05.wait::ld.sync.aligned": 2048,
-      "xor.b32": 16544
-    },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 0,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 273,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 675730,
-      "stored_bindings": 60505
-    },
-    "source_edge_storage": {
-      "binding_templates": 4385,
-      "logical_edges": 671634,
-      "stored_bindings": 4386
-    },
-    "tcgen_copy_refinement": {
-      "blocked": [],
-      "discharged": 16
-    },
-    "tcgen_history_refinement": {
-      "blocked": [],
-      "notifications": 48,
-      "operations": 80
-    },
-    "thread_count": 4096,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": []
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -312,6 +76,7 @@
       "__assertfail"
     ],
     "assertion_uses": 6144,
+    "atomic_uses": 0,
     "bounded_loop_uses": 0,
     "clc_failure": true,
     "clc_uses": 3105,
@@ -333,507 +98,1453 @@
     "representative_branch_uses": 0,
     "trap_only_equality_assertions_hold": true
   },
-  "hb_queries": {
-    "memory": {
-      "algorithm": "not-built",
-      "batches": 0,
-      "cache_hits": 0,
-      "dfs_queries": 0,
-      "edge_visits": 0,
-      "filtered_queries": 0,
-      "queries": 0,
-      "shared_peak_index_bytes": 0
-    },
-    "required_orders": {
-      "algorithm": "member-relations",
-      "batches": 6,
-      "edge_visits": 374164,
-      "member_enumerations": 0,
-      "request_construction": {
-        "concrete_pair_materializations": 0,
-        "endpoint_reads": 17168,
-        "family_requests": 1056,
-        "logical_orders": 139776,
-        "owner_bindings": 8736,
-        "stored_orders": 4368
-      }
-    }
-  },
-  "implementation": "cpp",
-  "memory_analysis": {
-    "address_candidates": 369,
+  "internal": {
     "address_model": {
-      "cache_hits": 0,
-      "ground_disjoint": 0,
-      "ground_overlap": 0,
-      "layer0_disjoint": 0,
-      "refined_pairs": 0,
-      "solver_queries": 0,
-      "solver_sat": 0,
-      "solver_unknown": 0,
-      "solver_unsat": 0
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
     },
-    "candidate_generation_fallback": false,
-    "exhaustive": false,
-    "family_analysis": {
-      "access_families": 380943,
-      "affine_member_rows": 0,
-      "candidate_relations": 219,
-      "hb_frontier_pieces": 0,
-      "hb_member_enumerations": 0,
-      "logical_accesses": 2621360
+    "counts": {
+      "edges": 9643288,
+      "events": 3921112,
+      "instructions": 675730,
+      "memory_accesses": 2621360,
+      "threads": 4096
     },
-    "first_race_seconds": 0.517102702,
-    "hb_algorithm": "member-relations",
-    "hb_batches": 1,
-    "hb_cache_hits": 0,
-    "hb_dfs_queries": 0,
-    "hb_edge_visits": 49,
-    "hb_filtered_queries": 0,
-    "hb_peak_index_bytes": 0,
-    "hb_queries": 369,
-    "hb_query_seconds": 0.002465008,
-    "overlap_queries": 1,
-    "strategy": "conflict-family",
-    "unordered_candidates_examined": 1
-  },
-  "memory_analysis_complete": true,
-  "mma_operand_ordering": {},
-  "mode": "verify",
-  "peak_footprint_mib": 2348.546875,
-  "peak_rss_mib": 2348.546875,
-  "pipeline_elapsed_seconds": 27.229989333,
-  "race_count": 1,
-  "race_samples_truncated": false,
-  "races": [
-    {
-      "first": {
-        "access_index": 0,
-        "actor": 0,
-        "bytes": 16,
-        "effect_index": 1,
-        "endpoint": {
-          "address": 3,
-          "kind": "memory"
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address",
+          "stage": "memory_effect_binding"
+        }
+      ],
+      "expression_diagnostic": {
+        "diagnostics": [
+          {
+            "code": "unsupported_mma_value_mapping",
+            "message": "MMA value needs a fixed shape and a native matrix address",
+            "stage": "memory_effect_binding"
+          }
+        ],
+        "instruction": "tcgen05.mma.sp.cta_group::1.kind::f16 [%r943], %rd60, %rd61, [%r937], %r935, {%r936, %r936, %r936, %r936}, p;",
+        "instruction_index": 940,
+        "line": 6404,
+        "serialization": {
+          "action_patterns": 0,
+          "binding_patterns": 0,
+          "domain_refinements": 0,
+          "elapsed_seconds": 6.44e-06,
+          "event_families": 0,
+          "expanded_event_records": 0,
+          "largest_batch_members": 0,
+          "logical_actions": 0,
+          "logical_events": 0,
+          "peak_rss_mib_at_completion": 2408.7890625,
+          "reachability_queries": 0,
+          "relations": 0,
+          "rss_mib_at_completion": 2177.2265625,
+          "scheduled_batches": 0,
+          "singleton_batches": 0,
+          "value_families": 0
         },
-        "event": 266,
-        "instruction": 103,
-        "location": {
-          "column": 2,
-          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
-          "line": 6370
-        },
-        "mode": "write"
+        "stage": "memory_effect_binding"
       },
-      "overlap": "constant byte ranges intersect",
-      "region": {
-        "address_space": "tensor",
-        "allocation": "cta:(0, 0, 0):tensor:physical.tmem.cta.0",
-        "bytes": 4,
-        "offset": 1032
+      "stage": "memory_effect_binding"
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
       },
-      "second": {
-        "access_index": 0,
-        "actor": 0,
-        "bytes": 4,
-        "effect_index": 226,
-        "endpoint": {
-          "address": 1190,
-          "kind": "memory"
+      "cluster_completion_joins": 1,
+      "cta_count": 16,
+      "dependency_compression": {
+        "bulk_read_wait": {
+          "consumers": 1024,
+          "emitted_references": 512,
+          "original_references": 512,
+          "prefix_effects": 0
         },
-        "event": 1919,
-        "instruction": 128,
-        "location": {
-          "column": 2,
-          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
-          "line": 6404
+        "tcgen_commit": {
+          "consumers": 48,
+          "emitted_references": 352,
+          "original_references": 976,
+          "prefix_effects": 48
         },
-        "mode": "read"
+        "tcgen_load_wait": {
+          "consumers": 2048,
+          "emitted_references": 4096,
+          "original_references": 4096,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "tcgen_cp_memory_effect_refinement",
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 1506163,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 6144,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 3105,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 21024,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [],
+      "lowered_instruction_count": 675730,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 64
+      },
+      "reached_opcodes": {
+        "add.s32": 104402,
+        "add.s64": 3664,
+        "and.b16": 1568,
+        "and.b32": 37952,
+        "and.pred": 512,
+        "bar.arrive": 512,
+        "bar.sync": 10240,
+        "bar.warp.sync": 1024,
+        "barrier.cluster.arrive.relaxed.aligned": 4096,
+        "barrier.cluster.wait.aligned": 4096,
+        "bra": 80975,
+        "bra.uni": 1056,
+        "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128": 3104,
+        "clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128": 1,
+        "cp.async.bulk.commit_group": 1024,
+        "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group": 1024,
+        "cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 64,
+        "cp.async.bulk.tensor.4d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 16,
+        "cp.async.bulk.wait_group.read": 1024,
+        "cvt.rn.f16x2.f32": 131072,
+        "cvt.u16.u32": 1568,
+        "cvt.u32.u64": 2048,
+        "cvt.u64.u32": 1536,
+        "cvta.param.u64": 2592,
+        "cvta.to.shared.u64": 2048,
+        "elect.sync": 21024,
+        "fence.mbarrier_init.release.cluster": 24576,
+        "fence.proxy.async.shared::cta": 7200,
+        "ld.param.b32": 29696,
+        "ld.param.b64": 8192,
+        "ld.param.v4.b32": 6656,
+        "ld.shared.b128": 3104,
+        "ld.shared.b32": 2560,
+        "mad.lo.s32": 13312,
+        "mapa.shared::cluster.u32": 5200,
+        "max.s32": 1024,
+        "mbarrier.arrive.expect_tx.shared::cluster.b64": 16,
+        "mbarrier.arrive.expect_tx.shared::cta.b64": 32,
+        "mbarrier.arrive.shared::cluster.b64": 5184,
+        "mbarrier.arrive.shared::cta.b64": 32,
+        "mbarrier.init.shared::cta.b64": 512,
+        "mbarrier.test_wait.parity.shared::cta.b64": 64,
+        "mbarrier.try_wait.parity.shared::cta.b64": 17088,
+        "mov.b16": 9248,
+        "mov.b32": 137360,
+        "mov.b64": 8016,
+        "mov.s32": 21681,
+        "mov.u32": 50176,
+        "mul.f32": 262144,
+        "mul.hi.u32": 13312,
+        "neg.s32": 512,
+        "not.pred": 1536,
+        "or.b16": 8224,
+        "or.b32": 4688,
+        "or.b64": 1536,
+        "or.pred": 15872,
+        "prefetch.tensormap": 80,
+        "ret": 4096,
+        "selp.b16": 15872,
+        "selp.b32": 48064,
+        "selp.u32": 3104,
+        "setp.eq.b16": 32,
+        "setp.eq.b32": 62176,
+        "setp.eq.b64": 6144,
+        "setp.eq.u32": 96,
+        "setp.lt.s32": 11232,
+        "setp.lt.u32": 32,
+        "setp.ne.b16": 1024,
+        "setp.ne.b32": 81504,
+        "setp.ne.b64": 4096,
+        "shfl.sync.idx.b32": 36864,
+        "shl.b16": 4608,
+        "shl.b32": 44384,
+        "shr.s32": 8192,
+        "shr.u32": 27136,
+        "st.shared.v4.b32": 32768,
+        "sub.s32": 13312,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 512,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 16,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 32,
+        "tcgen05.cp.cta_group::1.128x128b": 16,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 512,
+        "tcgen05.ld.sync.aligned.32x32b.x64.b32": 4096,
+        "tcgen05.mma.sp.cta_group::1.kind::f16": 64,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 512,
+        "tcgen05.wait::ld.sync.aligned": 2048,
+        "xor.b32": 16544
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 241,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 675730,
+        "stored_bindings": 56761
+      },
+      "source_edge_storage": {
+        "binding_templates": 4385,
+        "logical_edges": 671634,
+        "stored_bindings": 4386
+      },
+      "tcgen_copy_refinement": {
+        "blocked": [],
+        "discharged": 16
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 48,
+        "operations": 80
+      },
+      "thread_count": 4096,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      },
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 5,
+        "edge_visits": 355886,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 17168,
+          "family_requests": 992,
+          "logical_orders": 139776,
+          "owner_bindings": 8736,
+          "stored_orders": 4368
+        }
       }
-    }
-  ],
-  "required_order_domains": 4368,
-  "required_orders": 139776,
-  "result": "potential_race",
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 12724448,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 370799,
+        "affine_member_rows": 0,
+        "candidate_relations": 1098731,
+        "hb_frontier_pieces": 642,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 2621360
+      },
+      "hb_algorithm": "member-relations",
+      "hb_batches": 876,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 1365989,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 12724448,
+      "hb_query_seconds": 0.36077729600000036,
+      "overlap_queries": 682496,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 682496
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 2409.08203125,
+    "required_order_domains": 4368,
+    "required_orders": 139776,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 64,
+      "binding_diagnostics": [
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address"
+        }
+      ],
+      "execution_cohorts": 434,
+      "mapping_complete": false,
+      "memory_binding_stored_rows": 527443,
+      "memory_binding_templates": 44387,
+      "memory_bindings": 1853712,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 27102,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 145,
+      "thread_prefix_groups": 521481,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 16,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 1559859,
+      "path_entries": 82173,
+      "record_bindings": 70876,
+      "record_nodes": 71283,
+      "splits": 209,
+      "template_steps": 73346,
+      "thread_memberships": 4096,
+      "value_nodes": 17176
+    },
+    "thread_record_compression": {
+      "completed_ctas": 16,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 1506163,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": "MMA value needs a fixed shape and a native matrix address",
+          "stage": "memory_effect_binding"
+        }
+      ],
+      "equivalence_check": "unsupported",
+      "instruction": "tcgen05.mma.sp.cta_group::1.kind::f16 [%r943], %rd60, %rd61, [%r937], %r935, {%r936, %r936, %r936, %r936}, p;",
+      "instruction_index": 940,
+      "line": 6404,
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      },
+      "serialization": {
+        "action_patterns": 0,
+        "binding_patterns": 0,
+        "domain_refinements": 0,
+        "elapsed_seconds": 6.44e-06,
+        "event_families": 0,
+        "expanded_event_records": 0,
+        "largest_batch_members": 0,
+        "logical_actions": 0,
+        "logical_events": 0,
+        "peak_rss_mib_at_completion": 2408.7890625,
+        "reachability_queries": 0,
+        "relations": 0,
+        "rss_mib_at_completion": 2177.2265625,
+        "scheduled_batches": 0,
+        "singleton_batches": 0,
+        "value_families": 0
+      },
+      "stage": "memory_effect_binding"
+    },
+    "value_ir_instance_count": 6439160,
+    "value_ir_node_count": 439083,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 20.217401194,
+    "verification_result": "race_free"
+  },
+  "peak_rss_mib": 2409.08203125,
+  "pipeline_elapsed_seconds": 20.50563051,
+  "result": "unsupported",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "search_complete": false,
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 64,
-    "binding_diagnostics": [
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "MMA value needs a fixed shape and a native matrix address"
-      }
-    ],
-    "execution_cohorts": 434,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 527443,
-    "memory_binding_templates": 44419,
-    "memory_bindings": 1853712,
-    "memory_linking_templates_used": true,
-    "synchronization_groups": 27102,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 145,
-    "thread_prefix_groups": 521481,
-    "value_diagnostic_count": 0,
-    "value_diagnostics": []
-  },
-  "source_violations": [],
-  "stage": "memory_check",
-  "synchronization_input": {
-    "compute_access_binding": "after_happens_before",
-    "kind": "ordering_endpoints",
-    "memory_address_payloads": false
-  },
-  "template_execution": {
-    "completed_ctas": 16,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 1559859,
-    "path_entries": 82173,
-    "record_bindings": 71196,
-    "record_nodes": 71635,
-    "splits": 209,
-    "template_steps": 73730,
-    "thread_memberships": 4096,
-    "value_nodes": 17480
-  },
-  "thread_record_compression": {
-    "completed_ctas": 16,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 1506163,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "unresolved_count": 0,
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "failed",
-            "synchronization": "passed"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "conflicting_accesses_unordered",
-              "details": {
-                "count": 1,
-                "witnesses_path": "races"
-              },
-              "message": "Conflicting accesses have no proven required ordering",
-              "stage": "memory_check"
-            }
-          ],
-          "prerequisite_result": "potential_race",
-          "prerequisite_status": "potential_race"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "potential_race",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    }
-  },
-  "value_ir_instance_count": 6439160,
-  "value_ir_node_count": 439083,
-  "value_view_complete": true,
   "verification_limitations": [],
-  "warning_count": 0,
-  "warning_samples_truncated": false,
-  "warnings": [],
+  "warning_count": 10919936,
+  "warning_samples_truncated": true,
+  "warnings": [
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 129,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 45148,
+        "instruction": 13102,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 130,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 48835,
+        "instruction": 13344,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 131,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 52522,
+        "instruction": 13586,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 132,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 56209,
+        "instruction": 13828,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 133,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 59896,
+        "instruction": 14070,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 134,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 63583,
+        "instruction": 14312,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 135,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 67270,
+        "instruction": 14554,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 136,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 70957,
+        "instruction": 14796,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 137,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 74644,
+        "instruction": 15038,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 138,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 78331,
+        "instruction": 15280,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 139,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 82018,
+        "instruction": 15522,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 140,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 85705,
+        "instruction": 15764,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 141,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 89392,
+        "instruction": 16006,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 142,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 93079,
+        "instruction": 16248,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 143,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 96766,
+        "instruction": 16490,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    },
+    {
+      "code": "duplicate-tma-store",
+      "first": {
+        "access_index": 0,
+        "actor": 128,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 41461,
+        "instruction": 12860,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      },
+      "message": "Unordered same-warp TMA writes have matching copy footprints and PTX site-visit indices. Value equality is not proven; analysis continues with all accesses retained.",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "D",
+        "bytes": 128,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 144,
+        "bytes": 128,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 4220,
+          "kind": "memory"
+        },
+        "event": 100453,
+        "instruction": 16732,
+        "location": {
+          "column": 2,
+          "file": "corpus/cutlass__sparse-gemm-f16__sm_100a.ptx",
+          "line": 7296
+        },
+        "mode": "write"
+      }
+    }
+  ],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.458
 }

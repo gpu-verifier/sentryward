@@ -371,6 +371,18 @@
       "offset": 1184,
       "type": "pointer",
       "object": "mainloop.tensormaps"
+    },
+    {
+      "parameter": 0,
+      "offset": 16,
+      "type": "pointer",
+      "object": "problem_shapes"
+    },
+    {
+      "parameter": 0,
+      "offset": 1464,
+      "type": "pointer",
+      "object": "scheduler.problem_shapes"
     }
   ],
   "shape_arrays": [
@@ -425,6 +437,82 @@
           256,
           256,
           128
+        ]
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1200,
+      "element_type": "s64",
+      "shapes": [
+        [
+          128
+        ],
+        [
+          128
+        ],
+        [
+          256
+        ],
+        [
+          128
+        ]
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1216,
+      "element_type": "s64",
+      "shapes": [
+        [
+          128
+        ],
+        [
+          128
+        ],
+        [
+          256
+        ],
+        [
+          128
+        ]
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1328,
+      "element_type": "s64",
+      "shapes": [
+        [
+          128
+        ],
+        [
+          256
+        ],
+        [
+          128
+        ],
+        [
+          256
+        ]
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1344,
+      "element_type": "s64",
+      "shapes": [
+        [
+          128
+        ],
+        [
+          256
+        ],
+        [
+          128
+        ],
+        [
+          256
         ]
       ]
     }
@@ -525,6 +613,80 @@
       "oob_fill": "zero",
       "global_strides_bytes": [
         0
+      ]
+    }
+  ],
+  "pointer_arrays": [
+    {
+      "parameter": 0,
+      "offset": 1192,
+      "entries": [
+        {
+          "object": "mainloop.ptr_A.g0"
+        },
+        {
+          "object": "mainloop.ptr_A.g1"
+        },
+        {
+          "object": "mainloop.ptr_A.g2"
+        },
+        {
+          "object": "mainloop.ptr_A.g3"
+        }
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1208,
+      "entries": [
+        {
+          "object": "mainloop.ptr_B.g0"
+        },
+        {
+          "object": "mainloop.ptr_B.g1"
+        },
+        {
+          "object": "mainloop.ptr_B.g2"
+        },
+        {
+          "object": "mainloop.ptr_B.g3"
+        }
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1320,
+      "entries": [
+        {
+          "object": "epilogue.ptr_C.g0"
+        },
+        {
+          "object": "epilogue.ptr_C.g1"
+        },
+        {
+          "object": "epilogue.ptr_C.g2"
+        },
+        {
+          "object": "epilogue.ptr_C.g3"
+        }
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1336,
+      "entries": [
+        {
+          "object": "epilogue.ptr_D.g0"
+        },
+        {
+          "object": "epilogue.ptr_D.g1"
+        },
+        {
+          "object": "epilogue.ptr_D.g2"
+        },
+        {
+          "object": "epilogue.ptr_D.g3"
+        }
       ]
     }
   ]

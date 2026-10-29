@@ -3,7 +3,7 @@
   "entry": "flash_attention4_kernel",
   "launch": {
     "grid_dim": [
-      1,
+      128,
       1,
       1
     ],
@@ -17,7 +17,7 @@
       1,
       1
     ],
-    "dynamic_shared_bytes": 0
+    "dynamic_shared_bytes": 231744
   },
   "declarations": [
     {
@@ -88,7 +88,7 @@
     },
     {
       "parameter": 1,
-      "object": "V",
+      "object": "K",
       "element_type": "f16",
       "rank": 3,
       "box_shape": [
@@ -212,7 +212,7 @@
     },
     {
       "parameter": 5,
-      "object": "K",
+      "object": "V",
       "element_type": "f16",
       "rank": 3,
       "box_shape": [

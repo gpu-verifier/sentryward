@@ -1,0 +1,229 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global5:input": "input",
+      "6:global7:indices": "indices",
+      "6:global6:output": "output"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1,
+          4,
+          4
+        ],
+        "source_strides_bytes": [
+          64,
+          64,
+          16,
+          4
+        ],
+        "target_strides_bytes": [
+          64,
+          64,
+          16,
+          4
+        ]
+      },
+      "6:global7:indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          1,
+          1,
+          4,
+          4
+        ],
+        "source_strides_bytes": [
+          128,
+          128,
+          32,
+          8
+        ],
+        "target_strides_bytes": [
+          128,
+          128,
+          32,
+          8
+        ]
+      },
+      "6:global6:output": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1,
+          8,
+          8
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          32,
+          4
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          32,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global5:input": "input",
+      "6:global7:indices": "indices",
+      "6:global6:output": "output"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1,
+          4,
+          4
+        ],
+        "source_strides_bytes": [
+          64,
+          64,
+          16,
+          4
+        ],
+        "target_strides_bytes": [
+          64,
+          64,
+          16,
+          4
+        ]
+      },
+      "6:global7:indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          1,
+          1,
+          4,
+          4
+        ],
+        "source_strides_bytes": [
+          128,
+          128,
+          32,
+          8
+        ],
+        "target_strides_bytes": [
+          128,
+          128,
+          32,
+          8
+        ]
+      },
+      "6:global6:output": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1,
+          8,
+          8
+        ],
+        "source_strides_bytes": [
+          256,
+          256,
+          32,
+          4
+        ],
+        "target_strides_bytes": [
+          256,
+          256,
+          32,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global6:output",
+    "right_allocation": "6:global6:output",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+      1,
+      1,
+      8,
+      8
+    ],
+    "left_strides_bytes": [
+      256,
+      256,
+      32,
+      4
+    ],
+    "right_strides_bytes": [
+      256,
+      256,
+      32,
+      4
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "input",
+        "allocation": "6:global5:input",
+        "dtype": "float32"
+      },
+      {
+        "name": "indices",
+        "allocation": "6:global7:indices",
+        "dtype": "int64"
+      },
+      {
+        "name": "output",
+        "allocation": "6:global6:output",
+        "dtype": "float32"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/pytorch__aten_MaxUnpooling__sm_100a.ptx",
+    "optimized_input": "examples/pytorch__aten_MaxUnpooling__sm_100a/input.json",
+    "optimized_input_sha256": "941e5b5e4c49239931f70c2cbac9f68664caebb16cbe30fb4e8ca287cffa993d",
+    "ptx_sha256": "75f012f0134b6209a7e4dda2ea8a9931348f4c6b69fad516155d011df32af926",
+    "source": "// Source: https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/MaxUnpooling.cu ; https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/cuda/detail/KernelUtils.h",
+    "upstream": [
+      "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/MaxUnpooling.cu#L30-L50",
+      "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/MaxUnpooling.cu#L116-L213",
+      "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/cuda/detail/KernelUtils.h#L15-L19"
+    ],
+    "scope": "numInputElements=16, C=1, iH=iW=4, oH=oW=8 (N=1; max_pool2d kernel 2 stride 2 provenance). indices: tensor_properties s64 in [0, 63] and injective. output is read-modify-write.",
+    "notes": "Low-32-bit truncation follows `int maxind = indices[i]`; equal to indices under the bounds.",
+    "scope_branch_choices": [
+      {
+        "line": 148,
+        "taken": true,
+        "note": "CUDA_KERNEL_ASSERT(maxind >= 0 && maxind < outputImageSize) holds: the loaded max-pool index is in range, so the __assertfail path is not executed. Analysis scope: conclusions are conditional on this branch choice; the index values themselves remain symbolic."
+      }
+    ],
+    "scope_shape_arrays": []
+  }
+}

@@ -2,9 +2,8 @@
 from __future__ import annotations
 
 
-from sentryward.results import ResultArgumentParser, normalize, failure, RESULTS, diagnostic_code, run_cli, REPORT_FIELDS
+from sentryward.results import ResultArgumentParser, normalize, failure, publish, is_public, diagnostic_code, run_cli, REPORT_FIELDS
 
-import argparse
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import gzip
@@ -43,18 +42,60 @@ NESTED_SUMMARY_FIELDS = {
     "rejection": {"code"},
     "error": {"code"},
 }
+# run_case reports only these fields of the equivalence section.
+EQUIVALENCE_SUMMARY_FIELDS = ("definedness", "numerical_result")
+# Sections of a public report. Their fields read as root fields; on a name
+# collision the root field wins, then evidence, then internal. The report skill
+# applies the same rule (skills/generate-kernel-report/scripts/report_layout.py,
+# saved_result); it is standalone and cannot import this tool.
+SECTIONS = ("evidence", "internal")
+
+
+def _rank(section):
+    return 0 if section is None else 1 + SECTIONS.index(section)
+
+
+def _saved_prefix(section, field):
+    """ijson prefix of a field saved at the root or in a section."""
+    return field if section is None else section + "." + field
+
+
+def _summary_path(owner, prefix):
+    """Summary path of a saved ijson prefix; None if another field takes precedence."""
+    parts = prefix.split(".")
+    if parts[0] in SECTIONS and len(parts) > 1:
+        if owner.get(parts[1]) != parts[0]:
+            return None
+        parts = parts[1:]
+    return parts
+
+
+def _flat_view(report: dict) -> dict:
+    """Read a public report's sections as root fields under the SECTIONS rule."""
+    view = {}
+    for section in reversed(SECTIONS):
+        if isinstance(report.get(section), dict):
+            view.update(report[section])
+    view.update((key, value) for key, value in report.items()
+                if not (key in SECTIONS and isinstance(value, dict)))
+    return view
 
 
 def read_report_summary(path: Path) -> dict:
     """Validate a complete report without retaining its potentially huge arrays.
 
     ijson owns JSON parsing, including truncation/trailing-data checks. Only root
-    summary fields, compact value-analysis fields, memory-analysis presence, and
-    a warning sample count survive the event stream.
+    summary fields, compact value-analysis fields, memory-analysis presence, a
+    warning sample count, diagnostics and the equivalence fields in
+    EQUIVALENCE_SUMMARY_FIELDS survive the event stream. Fields of a public
+    report's sections are summarized as root fields under the SECTIONS rule.
+    A summary of an unpublished report is normalized.
     """
     opener = gzip.open if path.suffix == ".gz" else open
-    result, keys = {}, set()
-    depth, key, warning_samples = 0, None, 0
+    # owner: summarized field -> section holding it (None: the root).
+    result, owner = {}, {}
+    seen = {None: set(), **{name: set() for name in SECTIONS}}
+    depth, key, root, section, warning_samples = 0, None, None, None, 0
     nested_key = None
     started = finished = False
     with opener(path, "rb") as stream:
@@ -64,32 +105,47 @@ def read_report_summary(path: Path) -> dict:
                     started, depth = True, 1
                     continue
                 raise ValueError("native report is not one status object")
-            if depth == 1 and event == "map_key":
-                if value in keys:
-                    raise ValueError("duplicate top-level report field: " + value)
-                keys.add(value)
-                key = value
+            level = depth if section is None else depth - 1
+            if level == 1 and event == "map_key":
+                if value in seen[section]:
+                    raise ValueError("duplicate top-level report field: " + value if section is None
+                                     else "duplicate report field: " + section + "." + value)
+                seen[section].add(value)
+                if section is None:
+                    root = value
+                if value not in owner or _rank(section) < _rank(owner[value]):
+                    owner[value] = section
+                    result.pop(value, None)  # A lower-precedence summary, if any.
+                    if value == "warnings":
+                        warning_samples = 0
+                    key = value
+                else:
+                    key = None
                 nested_key = None
-            elif depth == 1 and event not in {"start_map", "start_array", "end_map"}:
+            elif level == 1 and event not in {"start_map", "start_array", "end_map"}:
                 if key in SUMMARY_FIELDS:
                     result[key] = float(value) if key in {"peak_rss_mib", "verification_elapsed_seconds"} and event == "number" else value
-            if depth == 1 and key == "memory_analysis" and event == "start_map":
+            if level == 1 and key == "memory_analysis" and event == "start_map":
                 result["memory_analysis"] = {}  # Presence only, not the object.
             if key in NESTED_SUMMARY_FIELDS:
-                if depth == 1 and event == "start_map":
+                if level == 1 and event == "start_map":
                     result[key] = {}
-                elif depth == 2 and event == "map_key":
+                elif level == 2 and event == "map_key":
                     nested_key = value
-                elif depth == 2 and event in {"string", "number", "boolean", "null"}:
+                elif level == 2 and event in {"string", "number", "boolean", "null"}:
                     if nested_key in NESTED_SUMMARY_FIELDS[key]:
                         result[key][nested_key] = value
-            if depth == 2 and key == "warnings" and event in {
+            if level == 2 and key == "warnings" and event in {
                     "start_map", "start_array", "string", "number", "boolean", "null"}:
                 warning_samples += 1
             if event in {"start_map", "start_array"}:
+                if depth == 1 and event == "start_map" and root in SECTIONS:
+                    section = root
                 depth += 1
             elif event in {"end_map", "end_array"}:
                 depth -= 1
+                if depth == 1:
+                    section = None
                 finished = depth == 0
     if not finished or not isinstance(result.get("result", result.get("status")), str):
         raise ValueError("native report is not a status object")
@@ -99,23 +155,27 @@ def read_report_summary(path: Path) -> dict:
     for field in ("warnings_complete", "search_complete", "memory_analysis_complete", "completed_memory_check", "value_view_complete"):
         if field in result and type(result[field]) is not bool:
             raise ValueError(field + " must be Boolean")
-    if "warnings" in keys:
+    if "warnings" in owner:
         result["warning_sample_count"] = warning_samples
-    if "equivalence" in keys:
-        with opener(path, "rb") as stream:
-            result["equivalence"] = next(ijson.items(stream, "equivalence", use_float=True))
     for field in ("checks","scope","resource","error","rejection","diagnostic"):
-        if field in keys:
+        if field in owner:
             with opener(path, "rb") as stream:
-                result[field] = next(ijson.items(stream, field, use_float=True))
+                result[field] = next(ijson.items(stream, _saved_prefix(owner[field], field), use_float=True))
     # Retain complete diagnostics at every report depth, including arbitrary
-    # nested evidence. Do not retain unrelated expression/warning arrays.
+    # nested evidence, and the compact equivalence fields. Do not retain
+    # unrelated expression/warning arrays or equivalence receipts.
+    targets = set()
+    if "equivalence" in owner:
+        base = _saved_prefix(owner["equivalence"], "equivalence")
+        targets = {base + "." + field for field in EQUIVALENCE_SUMMARY_FIELDS}
     with opener(path, "rb") as stream:
         builder = None
         capture_prefix = None
         balance = 0
         for prefix, event, value in ijson.parse(stream, use_float=True):
-            if builder is None and (prefix == "diagnostics" or prefix.endswith(".diagnostics") or prefix.endswith("_diagnostics")) and event == "start_array" and ".item." not in prefix:
+            if builder is None and event != "map_key" and (prefix in targets or (
+                    (prefix == "diagnostics" or prefix.endswith(".diagnostics") or prefix.endswith("_diagnostics"))
+                    and event == "start_array" and ".item." not in prefix)):
                 builder = ijson.common.ObjectBuilder()
                 capture_prefix = prefix
                 balance = 0
@@ -124,13 +184,18 @@ def read_report_summary(path: Path) -> dict:
                 if event in {"start_map","start_array"}: balance += 1
                 elif event in {"end_map","end_array"}: balance -= 1
                 if balance == 0:
-                    target = result
-                    parts = capture_prefix.split(".")
-                    for part in parts[:-1]: target = target.setdefault(part, {})
-                    target[parts[-1]] = builder.value
+                    parts = _summary_path(owner, capture_prefix)
+                    if parts is not None:
+                        target = result
+                        for part in parts[:-1]: target = target.setdefault(part, {})
+                        target[parts[-1]] = builder.value
                     builder = None
     result.setdefault("diagnostics", [])
-    return normalize(result)
+    # A published report is already normalized; decide from its own root.
+    saved_root = dict.fromkeys(seen[None])
+    if "checks" in seen[None]:
+        saved_root["checks"] = result["checks"]
+    return result if is_public(saved_root) else normalize(result)
 
 
 def verification_status(report: dict) -> str:
@@ -138,9 +203,11 @@ def verification_status(report: dict) -> str:
 
     Only a native checkpoint with completed memory analysis can separate these
     outcomes. Transport failures must never inherit a successful partial report.
+    Public reports fold the memory check into synchronization; older reports
+    keep a separate memory check.
     """
     checks = report.get("checks", {})
-    if checks.get("synchronization") == "passed" and checks.get("memory") == "passed":
+    if checks.get("synchronization") == "passed" and checks.get("memory", "passed") == "passed":
         return "race_free"
     return report.get("verification_result", report["result"])
 
@@ -248,11 +315,11 @@ def _execute_native(command, case, destination, reference, wellsync_timeout):
         elif report_error is not None:
             failure, message = "tool_failure", report_error
         else:
-            failure = "tool_failure" if returncode else "tool_failure"
+            failure = "tool_failure"
             message = error_output or "Native process produced no JSON report"
     elif returncode:
         # These exits are part of the native status protocol, not transport errors.
-        expected = {1: {"invalid_input", "invalid_input", "missing_input", "tool_failure"}, 2: {"tool_failure", "allocation_failed", "unsupported"},
+        expected = {1: {"invalid_input", "missing_input", "tool_failure"}, 2: {"tool_failure", "allocation_failed", "unsupported"},
                     124: TIMEOUTS, 137: {"memory_budget_exceeded"}}
         if result["result"] not in expected.get(returncode, set()):
             failure, message = "tool_failure", "Process failed after emitting a report"
@@ -264,13 +331,14 @@ def _execute_native(command, case, destination, reference, wellsync_timeout):
             wrapper["raw_native_report"] = os.path.relpath(raw, case)
         if result is not None:
             wrapper["native_status"] = result["result"]
-            wrapper["native_result"] = result
         if failure == "timeout":
             wrapper["timeout_scope"] = "wellsync"
-        published = destination / "new-output.json"
-        wrapper = normalize(wrapper)
-        published.write_text(json.dumps(wrapper, indent=2) + "\n")
-        return wrapper, process, published
+        wrapper = normalize(wrapper, operation="kernel_verification")
+        if result is not None:
+            # read_report_summary already normalized the summary, if needed.
+            wrapper["native_result"] = result
+        # run_case completes the wrapper's equivalence section, then publishes it.
+        return wrapper, process, None
     return result, process, raw
 
 
@@ -351,6 +419,25 @@ def run_case(case: Path, corpus: Path, archive: Path, *, include_timeouts=False,
                                         equivalence_timeout=equivalence_timeout,
                                         require_equivalence=check_equivalence, reference_failure=reference_failure)
     assert (case / "input.json").read_bytes() == original_input, "Input changed during run"
+    supplied_choices = json.loads(original_input).get("branch_decisions", [])
+    if report is None:
+        # A transport wrapper has no native equivalence section: record why the
+        # check did not run, then publish the wrapper like a native report.
+        if check_equivalence:
+            # A wrapper never carries a passed verification, so the check did
+            # not run because its prerequisite failed.
+            correctness = normalize(dict(
+                result="timeout" if result["result"] in TIMEOUTS else
+                       result["result"] if result["result"] in {"memory_budget_exceeded","analysis_budget_exceeded","allocation_failed","tool_failure","invalid_input","missing_input"} else "unsupported",
+                reason="prerequisite_" + result["result"]), operation="equivalence")
+            correctness["checks"]["equivalence"] = "not_run"
+            result["equivalence"] = correctness
+            result["checks"]["equivalence"] = "not_run"
+        published = publish(result)
+        report = destination / "new-output.json"
+        report.write_text(json.dumps(published, indent=2) + "\n")
+        # The same view as read_report_summary.
+        result = _flat_view(published)
     temporary = case / "output.json.tmp"
     publish_report(report, temporary, ROOT)
     temporary.replace(case / "output.json")
@@ -377,7 +464,6 @@ def run_case(case: Path, corpus: Path, archive: Path, *, include_timeouts=False,
               "exit_code": process.get("returncode")}
     if "verification_elapsed_seconds" in result:
         record["verification_elapsed_seconds"] = result["verification_elapsed_seconds"]
-    supplied_choices = json.loads(original_input).get("branch_decisions", [])
     if supplied_choices:
         record["analysis_scope"] = {"kind": "configured_branch_scenario",
                                     "branch_decisions": supplied_choices}
@@ -386,53 +472,32 @@ def run_case(case: Path, corpus: Path, archive: Path, *, include_timeouts=False,
     if analyze_values or check_equivalence:
         record.update((field, result[field]) for field in VALUE_SUMMARY_FIELDS if field in result)
     if check_equivalence:
-        correctness = result.get("equivalence") or (reference_failure if record["verification_result"] == "race_free" else None) or dict(
-            result="timeout" if result["result"] in TIMEOUTS else
-                   result["result"] if result["result"] in {"memory_budget_exceeded","analysis_budget_exceeded","allocation_failed","tool_failure","invalid_input","missing_input"} else "unsupported",
-            reason="prerequisite_" + result["result"], stage=result.get("active_stage"))
-        correctness = normalize(correctness, operation="equivalence")
-        if not result.get("equivalence"):
-            correctness["checks"]["equivalence"] = "not_run"
+        # The published result already applies the precedence rule: once the
+        # synchronization check passes, the result is the equivalence outcome.
+        # Detailed per-family receipts stay in output.json under internal.equivalence.
+        check = record["checks"].get("equivalence", "not_run")
+        receipts = result.get("equivalence", {})
+        record["equivalence"] = {
+            "result": "verified" if check == "passed" else
+                      record["result"] if record["checks"].get("synchronization") == "passed" else "not_run",
+            "check": check,
+            "diagnostics": [d for d in record["diagnostics"] if isinstance(d, dict) and d.get("stage") == "equivalence"]}
+        if check != "passed" and not record["equivalence"]["diagnostics"]:
+            # Without a top-level equivalence diagnostic, the section's first
+            # diagnostic names why the check did not run.
+            codes = [d.get("code") for d in receipts.get("diagnostics", []) if isinstance(d, dict) and d.get("code")]
+            if codes:
+                record["equivalence"]["reason"] = codes[0]
+        for field in EQUIVALENCE_SUMMARY_FIELDS:
+            if field in receipts:
+                record["equivalence"][field] = receipts[field]
         if supplied_choices:
-            correctness["analysis_scope"] = record["analysis_scope"]
-        if not result.get("equivalence"):
-            # A process failure may leave only a wrapper report. Keep its check
-            # diagnostics in the same output, without loading large IR arrays.
-            output = case / "output.json"
-            temporary = case / "output.json.tmp"
-            shutil.copyfile(output, temporary)
-            with temporary.open("r+b") as stream:
-                stream.seek(0, 2)
-                end = stream.tell()
-                while end:
-                    end -= 1
-                    stream.seek(end)
-                    byte = stream.read(1)
-                    if not byte.isspace():
-                        break
-                if byte != b"}":
-                    raise ValueError("output report must be a JSON object")
-                stream.seek(end)
-                stream.truncate()
-                stream.write(b', "equivalence": ' + json.dumps(correctness).encode() + b"}\n")
-            temporary.replace(output)
-        # Detailed per-family receipts live in output.json under equivalence.
-        # Batch summaries must not repeatedly copy all those rows for every case.
-        record["equivalence"] = {k: v for k, v in correctness.items()
-                                 if k not in {"rows", "counters", "unmatched_reasons"}}
+            record["equivalence"]["analysis_scope"] = record["analysis_scope"]
     else:
         record["equivalence"] = {"result": "unsupported", "reason": "verification_only"}
-    if check_equivalence:
-        record["checks"]["equivalence"] = record["equivalence"].get("checks", {}).get("equivalence", "not_run")
-        if record["verification_result"] == "race_free" and record["result"] in {"race_free","verified"}:
-            record["result"] = record["equivalence"]["result"]
-            if record["result"] != "verified":
-                record["diagnostics"] = result.get("diagnostics", []) + [
-                    d for d in record["equivalence"]["diagnostics"] if d not in result.get("diagnostics", [])]
     if (case / "equivalence.json").exists():
         (case / "equivalence.json").unlink()  # Legacy result archived above.
     record["raw_report"] = str(destination / "native-output.json")
-    record = normalize(record)
     (destination / "run.json").write_text(json.dumps(record, indent=2) + "\n")
     return record
 
@@ -469,14 +534,15 @@ def write_index(examples: Path, records: list[dict]) -> None:
                              if (examples / name / "report.md").exists() else "—")
         check = record.get("equivalence")
         if check:
-            row["Correctness Check"] = check["result"]
+            # Saved tokens appear as code, as in the Verify Result column.
+            row["Correctness Check"] = f"`{check['result']}`"
             if check.get("analysis_scope", {}).get("kind") == "configured_branch_scenario":
                 row["Correctness Check"] += " (conditional branch scenario)"
             if diagnostic_code(check):
-                row["Correctness Check"] += ": " + str(diagnostic_code(check)).replace("|", "/").replace("\n", " ")
+                row["Correctness Check"] += ": `" + str(diagnostic_code(check)).replace("|", "/").replace("\n", " ") + "`"
             if check.get("definedness"):
                 defined = check["definedness"]
-                row["Correctness Check"] += " (total definedness: " + str(defined.get("status", "not_proven")) + ")"
+                row["Correctness Check"] += " (total definedness: `" + str(defined.get("status", "not_proven")) + "`)"
                 if defined.get("partial_equivalence_families", 0):
                     row["Correctness Check"] += " [same-domain partial-function equivalence]"
         output.append("| " + " | ".join(row.get(c, "—") for c in header) + " |")
@@ -541,7 +607,7 @@ def main(argv=None) -> int:
     write_index(examples, [by_name.get(p.name) or {"name": p.name,
         "result": verification_status(read_result(p) or {"result": "unsupported"}), "rerun": False} for p in all_cases])
     print(f"Summary: {archive / 'summary.json'}")
-    return int(any(r["result"] in {"tool_failure", "tool_failure", "tool_failure"} for r in records))
+    return int(any(r["result"] == "tool_failure" for r in records))
 
 
 if __name__ == "__main__":

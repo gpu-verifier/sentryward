@@ -88,6 +88,8 @@ def normalize(report, *, operation=None):
     """Normalize only report metadata; do not traverse expression nodes or witnesses."""
     if not isinstance(report, dict):
         return failure("tool_failure", "invalid_result_object", "Expected a JSON object")
+    if is_public(report):
+        return dict(report)
     out = dict(report)
     if "result" in out and out["result"] in RESULTS and "status" not in out and "diagnostics" in out and "checks" in out and "scope" in out and "reason" not in out and "message" not in out:
         if out["result"] not in RESULTS or not isinstance(out.get("diagnostics"), list):
@@ -106,7 +108,8 @@ def normalize(report, *, operation=None):
     message = out.pop("message", None)
     if "numerical_status" in out:
         out["numerical_result"] = category(str(out.pop("numerical_status")))
-    stage = out.get("stage", out.get("blocked_stage", out.get("active_stage", "pipeline")))
+    stage = out.get("stage", out.get("blocked_stage", out.get("active_stage",
+                    "equivalence_check" if operation == "equivalence" else "pipeline")))
     result = category(status, reason, out.get("resource"))
     raw_diagnostics = out.get("diagnostics", [])
     diagnostics = [dict(d) for d in raw_diagnostics if isinstance(d, dict)] if isinstance(raw_diagnostics,list) else []
@@ -124,6 +127,10 @@ def normalize(report, *, operation=None):
         reason = reason or "unclassified_resource_limit"
     checks = dict(out.get("checks", {}))
     kernel = operation in {"kernel_verification", "verification"} or out.get("mode") == "verify"
+    if "synchronization" in checks and "memory" not in checks:
+        # The two public checks: synchronization includes the memory analysis
+        # (see publish).
+        checks["memory"] = checks["synchronization"]
     for key in ("synchronization","memory","equivalence"):
         checks.setdefault(key,"not_run" if kernel and key != "equivalence" else "not_requested")
     verified = out.pop("verification_status", "")
@@ -174,6 +181,115 @@ def normalize(report, *, operation=None):
     scope.setdefault("operation",operation or ("verification" if checks["synchronization"]!="not_requested" else "analysis"))
     out["scope"]=scope
     return out
+
+PUBLIC_FIELDS = frozenset({"schema", "scope", "result", "checks", "diagnostics", "warnings", "warning_count",
+    "warning_samples_truncated", "warnings_complete", "assumptions", "assumption_dependent", "assumption_reporting",
+    "assumption_hints", "frontend_assumptions", "verification_limitations", "pipeline_elapsed_seconds",
+    "elapsed_seconds", "peak_rss_mib", "rss_limit_mib", "wellsync_timeout_seconds",
+    "whole_pipeline_timeout_seconds", "resource", "timeout_scope"})
+EVIDENCE_FIELDS = frozenset({"races", "race_count", "race_samples_truncated", "failed_required_orders",
+    "failed_required_orders_count", "failed_required_orders_sample_limit", "failed_required_orders_truncated",
+    "counterexample", "rejection", "rejection_kind", "source_events", "synthetic_events", "source_event_scope",
+    "provenance_events_total", "unmapped_witness_events", "witness_event_list_limit",
+    "witness_event_lists_truncated", "unsupported_memory_pair"})
+
+def public_stage(stage):
+    """Public stage of an internal stage name (mirrors result.h PublicStage).
+
+    The first matching rule applies:
+    - ``input``: reading the user's input: ``input_validation``,
+      ``input_configuration``, ``cli_arguments``, ``file_io``, ``ptx_parser``,
+      ``launch_binding`` and names starting with ``ptx_input``.
+    - ``equivalence``: value analysis, scalar fold, expressions, reference
+      import and comparison: ``memory_effect_binding``, names starting with
+      ``value_``, ``semantic_ir``, ``scalar_``, ``expression``, ``equivalence``,
+      ``reference_``, ``left_`` or ``right_``, and names ending in ``_s``.
+    - ``synchronization``: PTX execution, event and memory views and the
+      synchronization, memory and lifecycle checks: names starting with
+      ``ptx_execution``, ``source_ir``, ``event_view``, ``memory_``,
+      ``synchronization``, ``lifecycle``, ``cluster_``, ``shared_memory``,
+      ``verification`` or ``frontend``.
+    - ``pipeline``: every other stage.
+    """
+    if stage in {"input_validation", "input_configuration", "cli_arguments", "file_io", "ptx_parser",
+                 "launch_binding"} or stage.startswith("ptx_input"):
+        return "input"
+    if stage == "memory_effect_binding" or stage.startswith(("value_", "semantic_ir", "scalar_", "expression",
+            "equivalence", "reference_", "left_", "right_")) or stage.endswith("_s"):
+        return "equivalence"
+    if stage.startswith(("ptx_execution", "source_ir", "event_view", "memory_", "synchronization", "lifecycle",
+                         "cluster_", "shared_memory", "verification", "frontend")):
+        return "synchronization"
+    return "pipeline"
+
+def is_public(report):
+    """Whether a report already has the form publish() produces.
+
+    A published report keeps its other fields under ``internal`` and its
+    witnesses under ``evidence``. Without either section, it holds only public
+    fields and exactly the two public checks. A raw report with any other
+    field, such as a wrapper's ``stage``, is not published, whatever its checks.
+    """
+    if not isinstance(report, dict):
+        return False
+    if "internal" in report or "evidence" in report:
+        return True
+    checks = report.get("checks")
+    return (isinstance(checks, dict) and set(checks) == {"synchronization", "equivalence"}
+            and all(key in PUBLIC_FIELDS or key.startswith("_") for key in report))
+
+def _strip_sections(section):
+    for key in REPORT_FIELDS:
+        child = section.get(key)
+        if isinstance(child, dict):
+            child = section[key] = {k: v for k, v in child.items() if k not in {"result", "checks", "scope"}}
+            _strip_sections(child)
+
+def publish(report):
+    """Project a normalized report onto the public contract (mirrors result.h Publish).
+
+    Two checks, diagnostics with public stages, failure evidence, assumptions and
+    resource figures stay at the top level; everything else moves under internal,
+    whose sections keep their diagnostics but no conclusion of their own.
+    Fields whose names start with ``_`` are interface bookkeeping, such as
+    ``_process`` from ``_run_ptx``. They stay at the top level unchanged and
+    are not public report fields. A published report is returned unchanged.
+    """
+    if not isinstance(report, dict) or is_public(report):
+        return report
+    checks = report.get("checks", {})
+    sync = checks.get("synchronization", "not_run")
+    memory = checks.get("memory", sync)
+    merged = ("failed" if report.get("result") == "invalid_lifecycle" or "failed" in (sync, memory) else
+              ("passed" if memory == "passed" else "incomplete") if sync == "passed" else sync)
+    diagnostics = []
+    for original in report.get("diagnostics", []):
+        d = dict(original) if isinstance(original, dict) else original
+        if isinstance(d, dict):
+            internal = d.get("stage") if isinstance(d.get("stage"), str) else "pipeline"
+            d["stage"] = public_stage(internal)
+            if d["stage"] != internal:
+                details = d.get("details", {})
+                d["details"] = {**(details if isinstance(details, dict) else {"evidence": details}),
+                                "internal_stage": internal}
+        diagnostics.append(d)
+    published, evidence, internal = {}, {}, {}
+    for key, value in report.items():
+        if key in PUBLIC_FIELDS or key.startswith("_"):
+            published[key] = value
+        elif key in EVIDENCE_FIELDS:
+            evidence[key] = value
+        else:
+            internal[key] = value
+    if "diagnostics" in report:
+        published["diagnostics"] = diagnostics
+    published["checks"] = {"synchronization": merged, "equivalence": checks.get("equivalence", "not_requested")}
+    if evidence:
+        published["evidence"] = evidence
+    _strip_sections(internal)
+    if internal:
+        published["internal"] = internal
+    return published
 
 def failure(result, code, message, **details):
     if result not in RESULTS:
@@ -285,6 +401,9 @@ def summarize(report):
     if "elapsed_seconds" in report:
         lines.append("elapsed_seconds: " + _plain(report["elapsed_seconds"]))
     assumptions = report.get("semantic_assumptions")
+    if assumptions is None and isinstance(report.get("internal"), dict):
+        # publish() keeps the effective flags under internal.
+        assumptions = report["internal"].get("semantic_assumptions")
     if isinstance(assumptions, dict) and assumptions:
         parts = [key + "=" + _plain(assumptions[key]) for key in assumptions]
         lines.append("semantic_assumptions: " + ", ".join(parts))
@@ -308,7 +427,7 @@ def write_result(report, path):
 import argparse
 class ResultArgumentParser(argparse.ArgumentParser):
     def error(self, message):
-        print(json.dumps(failure("invalid_input", "invalid_arguments", message)))
+        print(json.dumps(publish(failure("invalid_input", "invalid_arguments", message))))
         raise SystemExit(2)
 
 
@@ -345,5 +464,5 @@ def run_cli(main):
     except Exception as error:
         result = failure("tool_failure", "unexpected_exception", error,
                          exception_type=type(error).__name__)
-    print(json.dumps(result))
+    print(json.dumps(publish(result)))
     return 2

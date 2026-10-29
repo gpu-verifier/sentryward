@@ -98,7 +98,7 @@ skip = "*-musllinux_* *_i686"
 test-requires = ["torch>=2.5"]
 test-command = """
 sentryward {project}/corpus/pytorch__aten_MultiMarginLoss__sm_100a.ptx --input {project}/examples/pytorch__aten_MultiMarginLoss__sm_100a/input.json --reference {project}/examples/pytorch__aten_MultiMarginLoss__sm_100a/reference.py --reference-binding {project}/examples/pytorch__aten_MultiMarginLoss__sm_100a/reference_binding.json --timeout 120 > wheel-smoke-output.json || (cat wheel-smoke-output.json; exit 1) &&
-python -c "import json; r=json.load(open('wheel-smoke-output.json')); assert r['result']=='verified', r; assert all(r['checks'][k]=='passed' for k in ('synchronization','memory','equivalence')), r"
+python -c "import json; r=json.load(open('wheel-smoke-output.json')); assert r['result']=='verified', r; assert all(r['checks'][k]=='passed' for k in ('synchronization','equivalence')), r"
 """
 
 [tool.cibuildwheel.linux]

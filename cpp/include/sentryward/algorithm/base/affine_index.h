@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <bit>
 #include <cstdint>
 #include <map>
 #include <numeric>
@@ -76,7 +77,8 @@ inline std::vector<AffineDomain> SubtractAffine(AffineDomain a,AffineDomain b) {
 }
 
 // Index disjoint progressions. Cost is in stored stride/residue patterns, not
-// logical members. The caller supplies an immutable payload index for each run.
+// logical members, and a query visits only the point keys and residue classes
+// it can hit. The caller supplies an immutable payload index for each run.
 class AffineIndex {
   struct Run { AffineDomain domain;std::size_t payload; };
   using Runs=std::vector<Run>;
@@ -99,20 +101,47 @@ class AffineIndex {
   template<class Visit> void intersect(AffineDomain query,Visit visit) const {
     if(!query.count)return;
     for(const auto& [step,residues]:buckets_) {
-      const auto scan=[&](const Runs& runs) {
+      // Reached from four branches below: one out-of-line copy per visitor
+      // instead of inlining the visitor's body at every branch.
+      const auto scan=[&](const Runs& runs) __attribute__((noinline)) {
         auto it=std::lower_bound(runs.begin(),runs.end(),query.first,
             [](const Run& run,auto value){return run.domain.last()<value;});
         for(;it!=runs.end() && it->domain.first<=query.last();++it)
           if(auto match=IntersectAffine(query,it->domain);match.count)visit(it->payload,match);
       };
       if(!step) {
-        for(auto it=residues.lower_bound(query.first);it!=residues.end() && it->first<=query.last();++it)
-          if(!query.step || (it->first-query.first)%query.step==0)scan(it->second);
+        // Point keys that are query members, ascending. Between members, step
+        // over at most log2(keys) other keys, then jump to the next member:
+        // O(min(count,keys)*log(keys)) instead of every key in the range.
+        const auto walk=static_cast<std::size_t>(std::bit_width(residues.size()));
+        auto it=residues.lower_bound(query.first);
+        while(it!=residues.end() && it->first<=query.last()) {
+          const auto offset=it->first-query.first;
+          const auto index=query.step?offset/query.step:0;
+          if(offset==index*query.step) {scan(it->second);++it;continue;}
+          if(index+1>=query.count)break;
+          const auto next=query.first+query.step*(index+1);
+          for(std::size_t i=0;it!=residues.end() && it->first<next;++i)
+            if(i<walk)++it;else {it=residues.lower_bound(next);break;}
+        }
       } else if(query.count==1 || !query.step || query.step%step==0) {
         const auto it=residues.find(query.first%step);if(it!=residues.end())scan(it->second);
       } else {
+        // Members' residues repeat with period step/gcd, so only those can
+        // intersect; visit them ascending, as the full walk below does. Used
+        // when sorting and finding them is cheaper than walking every residue.
         const auto gcd=std::gcd(query.step,step);
-        for(const auto& [residue,runs]:residues)if(residue%gcd==query.first%gcd)scan(runs);
+        const auto hits=std::min(query.count,step/gcd);
+        const auto keys=residues.size();
+        if(hits<keys && hits*static_cast<std::uint64_t>(std::bit_width(hits)+std::bit_width(keys))<keys) {
+          std::vector<std::uint64_t> hit(hits);
+          const auto gap=step-query.step%step;auto residue=query.first%step;
+          for(auto& value:hit) {value=residue;residue=residue>=gap?residue-gap:residue+(step-gap);}
+          std::sort(hit.begin(),hit.end());
+          for(auto value:hit)if(const auto found=residues.find(value);found!=residues.end())scan(found->second);
+        } else {
+          for(const auto& [residue,runs]:residues)if(residue%gcd==query.first%gcd)scan(runs);
+        }
       }
     }
   }

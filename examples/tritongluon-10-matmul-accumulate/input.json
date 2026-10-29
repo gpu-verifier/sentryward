@@ -3,7 +3,7 @@
   "entry": "matmul_accumulate_kernel",
   "launch": {
     "grid_dim": [
-      1,
+      64,
       1,
       1
     ],
@@ -17,7 +17,7 @@
       1,
       1
     ],
-    "dynamic_shared_bytes": 0
+    "dynamic_shared_bytes": 229504
   },
   "declarations": [
     {
@@ -99,7 +99,7 @@
       "parameter": 15,
       "offset": 0,
       "type": "pointer",
-      "object": "A"
+      "object": "D"
     },
     {
       "parameter": 16,
@@ -115,40 +115,95 @@
       "parameter": 18,
       "offset": 0,
       "type": "pointer",
-      "object": "B"
+      "name": "global_scratch"
     },
     {
       "parameter": 19,
       "offset": 0,
       "type": "pointer",
-      "object": "C"
+      "name": "profile_scratch"
     }
   ],
   "arguments": [
     {
+      "parameter": 1,
+      "type": "u32",
+      "value": 1024
+    },
+    {
       "parameter": 2,
       "type": "u32",
-      "value": 0
+      "value": 2048
+    },
+    {
+      "parameter": 3,
+      "type": "u64",
+      "value": 2048
+    },
+    {
+      "parameter": 4,
+      "type": "u64",
+      "value": 1
+    },
+    {
+      "parameter": 6,
+      "type": "u32",
+      "value": 2048
+    },
+    {
+      "parameter": 7,
+      "type": "u32",
+      "value": 1024
+    },
+    {
+      "parameter": 8,
+      "type": "u64",
+      "value": 1024
+    },
+    {
+      "parameter": 9,
+      "type": "u64",
+      "value": 1
     },
     {
       "parameter": 11,
       "type": "u32",
-      "value": 0
+      "value": 1024
     },
     {
       "parameter": 12,
       "type": "u32",
-      "value": 0
+      "value": 1024
+    },
+    {
+      "parameter": 13,
+      "type": "u64",
+      "value": 1024
+    },
+    {
+      "parameter": 14,
+      "type": "u64",
+      "value": 1
     },
     {
       "parameter": 16,
       "type": "u32",
-      "value": 0
+      "value": 1024
     },
     {
       "parameter": 17,
       "type": "u32",
-      "value": 0
+      "value": 1
+    },
+    {
+      "parameter": 18,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 19,
+      "type": "pointer",
+      "value": null
     }
   ],
   "tma_descriptors": [
@@ -158,18 +213,18 @@
       "element_type": "f16",
       "rank": 2,
       "box_shape": [
-        128,
-        64
+        64,
+        128
       ],
       "global_shape": [
-        1024,
-        2048
+        2048,
+        1024
       ],
       "global_strides_bytes": [
         4096
       ],
       "element_strides": [
-        2048,
+        1,
         1
       ],
       "swizzle": "128B",
@@ -186,14 +241,14 @@
         64
       ],
       "global_shape": [
-        2048,
-        1024
+        1024,
+        2048
       ],
       "global_strides_bytes": [
         2048
       ],
       "element_strides": [
-        1024,
+        1,
         1
       ],
       "swizzle": "128B",
@@ -206,8 +261,8 @@
       "element_type": "f32",
       "rank": 2,
       "box_shape": [
-        128,
-        32
+        32,
+        128
       ],
       "global_shape": [
         1024,
@@ -217,7 +272,7 @@
         4096
       ],
       "element_strides": [
-        1024,
+        1,
         1
       ],
       "swizzle": "128B",

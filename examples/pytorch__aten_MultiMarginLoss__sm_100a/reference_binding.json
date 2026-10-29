@@ -144,7 +144,7 @@
   "checker_context": {
     "predicates": [
       {
-        "source": "User-authorized existing all-positive-margin branch scenario, confirmed 2026-10-09: forall i in [0,7], 1-input[0,5]+input[0,i]>0. Fixed target comes separately from verified input.",
+        "source": "All-positive-margin branch scenario of the input's branch decision (analysis scope): forall i in [0,7], 1-input[0,5]+input[0,i]>0. Fixed target comes separately from verified input.",
         "binders": [
           {
             "min_inclusive": 0,
@@ -237,11 +237,11 @@
     ]
   },
   "provenance": {
-    "sha256": "1e56f33cca605a1164b35ed65f6c7aed98198b7e8a882d3667615809e560fbff",
+    "sha256": "49c05b3fcb8cff0f656f8fa567c222ff05d452f669408947cabc2fcb4bee9dd4",
     "source": "// Source: https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/MultiMarginLoss.cu",
-    "scope": "Current fixed launch and input JSON; all mathematical outputs retained.",
+    "scope": "Fixed launch and input JSON; all mathematical outputs retained.",
     "notes": "P=1, weights=null, mean reduction; saved shape_arrays specializes target[0]=5; reference retains target as explicit input.",
-    "optimized_input_sha256": "1e56f33cca605a1164b35ed65f6c7aed98198b7e8a882d3667615809e560fbff",
+    "optimized_input_sha256": "49c05b3fcb8cff0f656f8fa567c222ff05d452f669408947cabc2fcb4bee9dd4",
     "ptx_sha256": "149349f2c99a1dcefe1fa96de5833cb19c9c94b16d5dbbc0dcf1d47df3ed495e",
     "upstream": [
       "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/MultiMarginLoss.cu"
@@ -250,7 +250,7 @@
       {
         "line": 115,
         "taken": true,
-        "note": "MultiMarginLoss backward: the margin term z = margin - input[target] + input[i] is positive for every class i (all margins violated), so the gradient path is executed. User-authorized scenario for the race example."
+        "note": "MultiMarginLoss backward: the margin term z = margin - input[target] + input[i] is positive for every class i (all margins violated), so the gradient path is executed. Analysis scope: conclusions are conditional on this branch choice."
       }
     ],
     "scope_shape_arrays": [
