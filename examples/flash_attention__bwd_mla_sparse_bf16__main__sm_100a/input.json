@@ -19,42 +19,565 @@
     ],
     "dynamic_shared_bytes": 232448
   },
-  "arguments": [],
+  "arguments": [
+    {
+      "field": "V.shape.seqlen_k",
+      "value": 256
+    },
+    {
+      "field": "V.shape.headdim_v",
+      "value": 512
+    },
+    {
+      "field": "V.shape.nheads_kv",
+      "value": 1
+    },
+    {
+      "field": "V.shape.batch",
+      "value": 1
+    },
+    {
+      "field": "V.stride.seqlen_k",
+      "value": 512
+    },
+    {
+      "field": "V.stride.nheads_kv",
+      "value": 512
+    },
+    {
+      "field": "V.stride.batch",
+      "value": 131072
+    },
+    {
+      "field": "dV.shape.seqlen_k",
+      "value": 256
+    },
+    {
+      "field": "dV.shape.headdim_v",
+      "value": 512
+    },
+    {
+      "field": "dV.shape.nheads_kv",
+      "value": 1
+    },
+    {
+      "field": "dV.shape.batch",
+      "value": 1
+    },
+    {
+      "field": "dV.stride.seqlen_k",
+      "value": 512
+    },
+    {
+      "field": "dV.stride.nheads_kv",
+      "value": 512
+    },
+    {
+      "field": "dV.stride.batch",
+      "value": 131072
+    },
+    {
+      "field": "scale_P.shape.seqlen_q",
+      "value": 128
+    },
+    {
+      "field": "scale_P.shape.num_blocks",
+      "value": 1
+    },
+    {
+      "field": "scale_P.shape.batch",
+      "value": 1
+    },
+    {
+      "field": "scale_P.stride.seqlen_q",
+      "value": 128
+    },
+    {
+      "field": "scale_P.stride.block",
+      "value": 128
+    },
+    {
+      "field": "scale_P.stride.batch",
+      "value": 16384
+    },
+    {
+      "field": "dPsum.shape.seqlen_q",
+      "value": 128
+    },
+    {
+      "field": "dPsum.shape.batch",
+      "value": 1
+    },
+    {
+      "field": "dPsum.stride.seqlen_q",
+      "value": 128
+    },
+    {
+      "field": "dPsum.stride.batch",
+      "value": 16384
+    },
+    {
+      "field": "index_topk.shape.topk",
+      "value": 128
+    },
+    {
+      "field": "index_topk.shape.seqlen_q",
+      "value": 128
+    },
+    {
+      "field": "index_topk.shape.batch",
+      "value": 1
+    },
+    {
+      "field": "index_topk.stride.seqlen_q",
+      "value": 128
+    },
+    {
+      "field": "index_topk.stride.batch",
+      "value": 16384
+    },
+    {
+      "field": "softmax_scale",
+      "value": 0.041666666666666664
+    },
+    {
+      "field": "softmax_scale_log2",
+      "value": 0.06011229337037347
+    },
+    {
+      "field": "topk_length",
+      "value": 128
+    }
+  ],
   "declarations": [
+    {
+      "name": "V.shape.seqlen_k",
+      "parameter": 0,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "V.shape.headdim_v",
+      "parameter": 0,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "V.shape.nheads_kv",
+      "parameter": 0,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "V.shape.batch",
+      "parameter": 0,
+      "offset": 20,
+      "type": "s32"
+    },
+    {
+      "name": "V.stride.seqlen_k",
+      "parameter": 0,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "V.stride.nheads_kv",
+      "parameter": 0,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "V.stride.batch",
+      "parameter": 0,
+      "offset": 40,
+      "type": "s64"
+    },
+    {
+      "name": "dV.shape.seqlen_k",
+      "parameter": 1,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "dV.shape.headdim_v",
+      "parameter": 1,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "dV.shape.nheads_kv",
+      "parameter": 1,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "dV.shape.batch",
+      "parameter": 1,
+      "offset": 20,
+      "type": "s32"
+    },
+    {
+      "name": "dV.stride.seqlen_k",
+      "parameter": 1,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "dV.stride.nheads_kv",
+      "parameter": 1,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "dV.stride.batch",
+      "parameter": 1,
+      "offset": 40,
+      "type": "s64"
+    },
+    {
+      "name": "scale_P.shape.seqlen_q",
+      "parameter": 7,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "scale_P.shape.num_blocks",
+      "parameter": 7,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "scale_P.shape.batch",
+      "parameter": 7,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "scale_P.stride.seqlen_q",
+      "parameter": 7,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "scale_P.stride.block",
+      "parameter": 7,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "scale_P.stride.batch",
+      "parameter": 7,
+      "offset": 40,
+      "type": "s64"
+    },
+    {
+      "name": "dPsum.shape.seqlen_q",
+      "parameter": 8,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "dPsum.shape.batch",
+      "parameter": 8,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "dPsum.stride.seqlen_q",
+      "parameter": 8,
+      "offset": 16,
+      "type": "s64"
+    },
+    {
+      "name": "dPsum.stride.batch",
+      "parameter": 8,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "index_topk.shape.topk",
+      "parameter": 9,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "index_topk.shape.seqlen_q",
+      "parameter": 9,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "index_topk.shape.batch",
+      "parameter": 9,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "index_topk.stride.seqlen_q",
+      "parameter": 9,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "index_topk.stride.batch",
+      "parameter": 9,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "softmax_scale",
+      "parameter": 18,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "softmax_scale_log2",
+      "parameter": 19,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "topk_length",
+      "parameter": 20,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "parameter": 10,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 11,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 12,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 13,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 14,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "pointer",
+      "object": "V"
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dV"
+    },
+    {
+      "parameter": 7,
+      "offset": 0,
+      "type": "pointer",
+      "object": "scale_P"
+    },
+    {
+      "parameter": 8,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dPsum"
+    },
+    {
+      "parameter": 9,
+      "offset": 0,
+      "type": "pointer",
+      "object": "index_topk"
+    }
+  ],
+  "tma_descriptors": [
     {
       "parameter": 10,
       "offset": 0,
-      "type": "tensor_map",
-      "object": "tensor_map_parameter_10"
+      "object": "dO",
+      "element_type": "bf16",
+      "global_shape": [
+        512,
+        128,
+        128,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        1024,
+        131072,
+        16777216
+      ],
+      "box_shape": [
+        64,
+        64,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
     },
     {
       "parameter": 11,
       "offset": 0,
-      "type": "tensor_map",
-      "object": "tensor_map_parameter_11"
+      "object": "dO",
+      "element_type": "bf16",
+      "global_shape": [
+        512,
+        128,
+        128,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        1024,
+        131072,
+        16777216
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
     },
     {
       "parameter": 12,
       "offset": 0,
-      "type": "tensor_map",
-      "object": "tensor_map_parameter_12"
+      "object": "Qv",
+      "element_type": "bf16",
+      "global_shape": [
+        512,
+        128,
+        128,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        1024,
+        131072,
+        16777216
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
     },
     {
       "parameter": 13,
       "offset": 0,
-      "type": "tensor_map",
-      "object": "tensor_map_parameter_13"
+      "object": "P",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        128,
+        128,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        32768,
+        4194304
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
     },
     {
       "parameter": 14,
       "offset": 0,
-      "type": "tensor_map",
-      "object": "tensor_map_parameter_14"
+      "object": "dS",
+      "element_type": "bf16",
+      "global_shape": [
+        128,
+        128,
+        128,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        32768,
+        4194304
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
     }
   ],
   "assumptions": {
     "duplicate_tma_store_benign": true,
     "representative_election": true,
-    "clc_always_fails": true
-  }
+    "clc_always_fails": true,
+    "order_independent_atomics": true
+  },
+  "tensor_properties": [
+    {
+      "object": "index_topk",
+      "element_type": "s32",
+      "property": "lower_bound",
+      "value": -1
+    },
+    {
+      "object": "index_topk",
+      "element_type": "s32",
+      "property": "upper_bound",
+      "value": 255
+    }
+  ]
 }

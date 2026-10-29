@@ -1,41 +1,33 @@
 {
-  "assumption_hints": [
-    {
-      "key": "representative_branches",
-      "label": "Representative branches",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    },
-    {
-      "key": "bounded_computation_loops",
-      "label": "Bounded computation loops",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    }
-  ],
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "duplicate_tma_store_benign",
       "label": "Duplicate TMA stores",
       "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "representative_election",
       "label": "Representative election",
       "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
-      "triggered": null
+      "triggered": true
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "clc_always_fails",
       "label": "Failed launch cancellation",
       "text": "Every cluster launch cancellation request fails.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "representative_branches",
       "label": "Representative branches",
@@ -43,300 +35,763 @@
       "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "bounded_computation_loops",
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "not_run",
-    "memory": "not_run",
-    "synchronization": "not_run"
-  },
-  "details": {
-    "required_parameters": []
+    "synchronization": "failed"
   },
   "diagnostics": [
     {
-      "code": "control_predicate_not_static",
+      "code": "conflicting_accesses_unordered",
       "details": {
-        "location": {
-          "column": 0,
-          "file": "corpus/flashmla__flashmla_sm100_sparse_decode_v32_h64__sm_100f.ptx",
-          "line": 1064
-        },
-        "required_parameters": []
+        "count": 1,
+        "internal_stage": "memory_check",
+        "witnesses_path": "races"
       },
-      "message": "control predicate is not statically determined",
-      "stage": "ptx_execution"
+      "message": "Conflicting accesses have no proven required ordering",
+      "stage": "synchronization"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
+  "evidence": {
+    "race_count": 1,
+    "race_samples_truncated": false,
+    "races": [
       {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
+        "first": {
+          "access_index": 0,
+          "actor": 0,
+          "bytes": 4,
+          "effect_index": 0,
+          "endpoint": {
+            "address": 84,
+            "kind": "memory"
           },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/flashmla__flashmla_sm100_sparse_decode_v32_h64__sm_100f.ptx",
-                  "line": 1064
-                },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported"
+          "event": 326,
+          "instruction": 98,
+          "location": {
+            "column": 13,
+            "file": "/home/mengdi/spverify/upstream-survey/FlashMLA/csrc/sm100/decode/head64/instantiations/../kernel.cuh",
+            "line": 309
+          },
+          "mode": "write"
         },
-        "stage": "pipeline"
+        "overlap": "constant byte ranges intersect",
+        "region": {
+          "address_space": "shared",
+          "allocation": "cta:(0, 0, 0):shared:physical.shared.cta.0",
+          "bytes": 4,
+          "offset": 229376
+        },
+        "second": {
+          "access_index": 0,
+          "actor": 64,
+          "bytes": 4,
+          "effect_index": 0,
+          "endpoint": {
+            "address": 84,
+            "kind": "memory"
+          },
+          "event": 68155,
+          "instruction": 9392,
+          "location": {
+            "column": 17,
+            "file": "/home/mengdi/spverify/upstream-survey/FlashMLA/csrc/sm100/decode/head64/instantiations/../kernel.cuh",
+            "line": 229
+          },
+          "mode": "read"
+        }
       }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
+    ]
   },
-  "frontend": {
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 4736,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 23936,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "shape_input_contract": {
+      "kind": "fixed_read_only",
+      "origin": "shape_arrays",
+      "regions": [
+        {
+          "allocation": "scheduler_metadata",
+          "byte_offset": 0,
+          "bytes": 4736,
+          "resource": "input.arg0.256"
+        },
+        {
+          "allocation": "num_splits",
+          "byte_offset": 0,
+          "bytes": 8,
+          "resource": "input.arg0.264"
+        }
       ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 0,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
+      "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
     },
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "Q",
-        "offset": 48,
-        "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "KV",
-        "offset": 56,
-        "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "indices",
-        "offset": 64,
-        "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "input.arg0.80",
-        "offset": 80,
-        "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
-        "source": "address_use"
-      },
-      {
-        "bytes": 8,
-        "object": "LSE",
-        "offset": 88,
-        "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "O",
-        "offset": 96,
-        "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "LSE_accum",
-        "offset": 216,
-        "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "O_accum",
-        "offset": 224,
-        "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "scheduler_metadata",
-        "offset": 256,
-        "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "num_splits",
-        "offset": 264,
-        "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
-        "source": "declaration"
-      }
-    ],
-    "required_parameters": [],
-    "user_branch_decisions": []
-  },
-  "implementation": "cpp",
-  "location": {
-    "column": 0,
-    "file": "corpus/flashmla__flashmla_sm100_sparse_decode_v32_h64__sm_100f.ptx",
-    "line": 1064
-  },
-  "memory_analysis_complete": false,
-  "peak_footprint_mib": 31.46484375,
-  "peak_rss_mib": 35.984375,
-  "pipeline_elapsed_seconds": 0.194153634,
-  "result": "unsupported",
-  "rss_limit_mib": null,
-  "scope": {
-    "operation": "kernel_verification"
-  },
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "execution_cohorts": 0,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 0,
-    "synchronization_groups_materialized": false,
-    "synthetic_synchronization_nodes": 0,
-    "thread_prefix_groups": 0
-  },
-  "stage": "ptx_execution",
-  "template_execution": {
-    "completed_ctas": 0,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 0,
-    "path_entries": 0,
-    "record_bindings": 0,
-    "record_nodes": 0,
-    "splits": 0,
-    "template_steps": 0,
-    "thread_memberships": 0,
-    "value_nodes": 0
-  },
-  "thread_record_compression": {
-    "completed_ctas": 0,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 0,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/flashmla__flashmla_sm100_sparse_decode_v32_h64__sm_100f.ptx",
-                  "line": 1064
-                },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported",
-          "prerequisite_status": "ptx_execution_unsupported"
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "s32",
+          "object": "indices",
+          "property": "lower_bound",
+          "value": -1
         },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "ptx_execution_unsupported",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
+        {
+          "element_type": "s32",
+          "object": "indices",
+          "property": "upper_bound",
+          "value": 63
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "indices",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg0.64"
+        }
+      ],
+      "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [],
+    "trap_only_equality_assertions_hold": true
+  },
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "counts": {
+      "edges": 533423,
+      "events": 203953,
+      "instructions": 38237,
+      "memory_accesses": 139607,
+      "threads": 768
+    },
+    "equivalence": {
       "diagnostics": [
         {
-          "code": "memory_elimination_not_completed",
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "failed",
+              "synchronization": "passed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "conflicting_accesses_unordered",
+                "details": {
+                  "count": 1,
+                  "witnesses_path": "races"
+                },
+                "message": "Conflicting accesses have no proven required ordering",
+                "stage": "memory_check"
+              }
+            ],
+            "prerequisite_result": "potential_race"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [
+          {
+            "code": "tma_gather4_dynamic_rows",
+            "details": {
+              "cta": 0,
+              "instruction": "cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::1.L2::cache_hint [%r345], [%rd103, {%r346, %r347, %r348, %r349, %r350}], [%r351], %rd104;",
+              "instruction_index": 3313,
+              "location": {
+                "file": "corpus/flashmla__flashmla_sm100_sparse_decode_v32_h64__sm_100f.ptx",
+                "line": 14646
+              },
+              "occurrence": 0,
+              "thread": 192
+            },
+            "message": "TMA tile::gather4 coordinates are not statically known (data-dependent rows); the gathered values are not modeled",
+            "stage": "value_lowering"
+          }
+        ],
+        "first_unavailable_reason": "memory occurrence has no value node",
+        "queries": 64,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 64,
+        "value_view_complete": false
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 148,
+      "dependency_compression": {
+        "bulk_read_wait": {
+          "consumers": 128,
+          "emitted_references": 0,
+          "original_references": 0,
+          "prefix_effects": 0
+        },
+        "tcgen_commit": {
+          "consumers": 3,
+          "emitted_references": 49,
+          "original_references": 98,
+          "prefix_effects": 3
+        },
+        "tcgen_load_wait": {
+          "consumers": 640,
+          "emitted_references": 768,
+          "original_references": 2560,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "tcgen_cp_memory_effect_refinement",
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 3270970,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 4736,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 23936,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "shape_input_contract": {
+          "kind": "fixed_read_only",
+          "origin": "shape_arrays",
+          "regions": [
+            {
+              "allocation": "scheduler_metadata",
+              "byte_offset": 0,
+              "bytes": 4736,
+              "resource": "input.arg0.256"
+            },
+            {
+              "allocation": "num_splits",
+              "byte_offset": 0,
+              "bytes": 8,
+              "resource": "input.arg0.264"
+            }
+          ],
+          "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+        },
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "s32",
+              "object": "indices",
+              "property": "lower_bound",
+              "value": -1
+            },
+            {
+              "element_type": "s32",
+              "object": "indices",
+              "property": "upper_bound",
+              "value": 63
+            }
+          ],
+          "regions": [
+            {
+              "allocation": "indices",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg0.64"
+            }
+          ],
+          "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+        },
+        "tensor_property_decisions": [],
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "Q",
+          "offset": 48,
+          "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "KV",
+          "offset": 56,
+          "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "indices",
+          "offset": 64,
+          "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "LSE",
+          "offset": 88,
+          "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "O",
+          "offset": 96,
+          "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "LSE_accum",
+          "offset": 216,
+          "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "O_accum",
+          "offset": 224,
+          "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "scheduler_metadata",
+          "offset": 256,
+          "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "num_splits",
+          "offset": 264,
+          "parameter": "_ZN5sm1006decode6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS1_14KernelTemplateIL9ModelType0EEENS5_9TmaParamsIN4cute5tupleIJiiiiEEENS7_9TiledCopyINS7_9Copy_AtomIJNS7_11Copy_TraitsINS7_13SM90_TMA_LOADEJNS7_1CILi65536EEENS7_12AuxTmaParamsINS8_IJNS7_11ScaledBasisINSE_ILi1EEEJLi1EEEENSH_ISI_JLi0EEEENSH_ISI_JLi2EEEENSH_ISI_JLi3EEEEEEERKNS7_6LayoutINS8_IJNSE_ILi64EEESP_SI_SI_EEESN_EERKNS7_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSO_INS8_IJSI_NS8_IJNS8_IJNS8_IJSP_SP_EEENSE_ILi8EEEEEEEEEEEENS8_IJNSE_ILi0EEENS8_IJNS8_IJNS8_IJSP_SI_EEENSE_ILi4096EEEEEEEEEEEEEENS8_IJSP_NSE_ILi512EEEEEEEES9_NSA_INSB_IJNSC_INS7_14SM90_TMA_STOREEJSF_SY_EEES11_EEENSO_INS8_IJSI_NS8_IJNS8_IJS13_SI_EEEEEEEEENS8_IJS18_NS8_IJNS8_IJS19_S18_EEEEEEEEEEES13_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 38237,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 26
+      },
+      "reached_opcodes": {
+        "add.f32x2": 4096,
+        "add.ftz.f32": 256,
+        "add.s32": 22605,
+        "add.s64": 229080,
+        "and.b16": 293,
+        "and.b32": 195928,
+        "and.b64": 151680,
+        "and.pred": 64,
+        "bar.sync": 57856,
+        "barrier.sync": 384,
+        "bra": 238093,
+        "bra.uni": 5376,
+        "cp.async.bulk.commit_group": 128,
+        "cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::1.L2::cache_hint": 48,
+        "cp.async.bulk.tensor.4d.global.shared::cta.bulk_group": 8,
+        "cp.async.bulk.tensor.4d.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 8,
+        "cp.async.bulk.tensor.5d.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 1,
+        "cp.async.bulk.wait_group.read": 128,
+        "cvt.f32.f16": 32768,
+        "cvt.rn.bf16x2.f32": 34816,
+        "cvt.rn.bf16x2.ue8m0x2": 1024,
+        "cvt.rn.f16x2.e4m3x2": 16384,
+        "cvt.rz.ue8m0x2.f32": 128,
+        "cvt.s32.s8": 320,
+        "cvt.s64.s32": 32,
+        "cvt.u16.u32": 1024,
+        "cvt.u16.u64": 16384,
+        "cvt.u32.u16": 1064,
+        "cvt.u32.u64": 384,
+        "cvt.u64.u32": 19205,
+        "cvta.param.u64": 279,
+        "cvta.shared.u64": 19072,
+        "cvta.to.global.u64": 64,
+        "cvta.to.shared.u64": 128,
+        "div.u32": 64,
+        "elect.sync": 23936,
+        "ex2.approx.ftz.f32": 4096,
+        "fence.mbarrier_init.release.cluster": 148,
+        "fence.proxy.async.shared::cta": 768,
+        "fma.rn.f32x2": 2048,
+        "fma.rn.ftz.f32": 192,
+        "griddepcontrol.launch_dependents": 128,
+        "ld.global.nc.L1::no_allocate.L2::evict_normal.L2::256B.v4.u64": 56832,
+        "ld.global.nc.s32": 384,
+        "ld.global.nc.v2.s32": 32,
+        "ld.global.nc.v4.f32": 64,
+        "ld.param.b32": 86086,
+        "ld.param.b64": 86528,
+        "ld.param.v2.b32": 64,
+        "ld.shared.b32": 5120,
+        "ld.shared.b64": 4096,
+        "ld.shared.v2.b16": 512,
+        "ld.shared.v2.b64": 1024,
+        "ld.shared.v4.b32": 32,
+        "lg2.approx.ftz.f32": 64,
+        "mad.lo.s32": 583,
+        "max.ftz.f32": 4352,
+        "max.s32": 323,
+        "mbarrier.arrive.expect_tx.shared::cta.b64": 3,
+        "mbarrier.arrive.shared::cta.b64": 802,
+        "mbarrier.init.shared::cta.b64": 3700,
+        "mbarrier.try_wait.parity.shared::cta.b64": 941,
+        "min.s32": 32,
+        "mov.b128": 4096,
+        "mov.b16": 680,
+        "mov.b32": 187142,
+        "mov.b64": 223492,
+        "mov.pred": 256,
+        "mov.s32": 24684,
+        "mov.u32": 170496,
+        "mul.bf16": 32768,
+        "mul.f32x2": 16384,
+        "mul.ftz.f32": 192,
+        "mul.hi.s32": 64,
+        "mul.lo.s32": 64,
+        "mul.wide.s32": 608,
+        "mul.wide.u16": 128,
+        "mul.wide.u32": 75904,
+        "neg.ftz.f32": 128,
+        "not.b32": 131,
+        "not.pred": 384,
+        "or.b32": 38400,
+        "or.b64": 6,
+        "or.pred": 128,
+        "prefetch.tensormap": 740,
+        "ret": 56832,
+        "selp.b16": 1098,
+        "selp.b32": 5319,
+        "selp.b64": 2,
+        "selp.f32": 320,
+        "setmaxnreg.dec.sync.aligned.u32": 18944,
+        "setmaxnreg.inc.sync.aligned.u32": 37888,
+        "setp.eq.b32": 119914,
+        "setp.eq.b64": 19712,
+        "setp.eq.ftz.f32": 320,
+        "setp.ge.s32": 57155,
+        "setp.gt.ftz.f32": 128,
+        "setp.gt.s32": 19584,
+        "setp.gt.u32": 256,
+        "setp.lt.s32": 67,
+        "setp.ne.b16": 293,
+        "setp.ne.b32": 115870,
+        "shfl.sync.bfly.b32": 64,
+        "shfl.sync.idx.b32": 132608,
+        "shl.b32": 96485,
+        "shl.b64": 96,
+        "shr.s32": 1518,
+        "shr.u32": 134034,
+        "shr.u64": 163968,
+        "st.global.b32": 64,
+        "st.shared.b32": 256,
+        "st.shared.b8": 8,
+        "st.shared.v2.b32": 32,
+        "st.shared.v4.b16": 32,
+        "st.shared.v4.b32": 1536,
+        "st.v4.b32": 4096,
+        "st.weak.shared::cta.b128": 4096,
+        "sub.ftz.f32": 128,
+        "sub.s32": 773,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 4736,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 3,
+        "tcgen05.cp.cta_group::1.128x256b": 18,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 4736,
+        "tcgen05.fence::after_thread_sync": 261,
+        "tcgen05.fence::before_thread_sync": 128,
+        "tcgen05.ld.sync.aligned.32x32b.x32.b32": 256,
+        "tcgen05.ld.sync.aligned.32x32b.x64.b32": 512,
+        "tcgen05.mma.ws.cta_group::1.kind::f16": 26,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 4736,
+        "tcgen05.wait::ld.sync.aligned": 640,
+        "vote.sync.any.pred": 128,
+        "xor.b16": 293,
+        "xor.b32": 384,
+        "xor.b64": 151680
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 27,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 38237,
+        "stored_bindings": 7421
+      },
+      "source_edge_storage": {
+        "binding_templates": 820,
+        "logical_edges": 37469,
+        "stored_bindings": 820
+      },
+      "tcgen_copy_refinement": {
+        "blocked": [],
+        "discharged": 18
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 3,
+        "operations": 44
+      },
+      "thread_count": 56832,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "event-family-relations",
+        "batches": 4,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 3019012,
+        "filtered_queries": 7969,
+        "queries": 262144,
+        "shared_peak_index_bytes": 16267200
+      },
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 1,
+        "edge_visits": 302787,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 3286,
+          "family_requests": 192,
+          "logical_orders": 20460,
+          "owner_bindings": 1308,
+          "stored_orders": 682
+        }
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 262144,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "first_race_seconds": 0.635489015,
+      "hb_algorithm": "event-family-relations",
+      "hb_batches": 4,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 3019012,
+      "hb_filtered_queries": 7969,
+      "hb_peak_index_bytes": 16267200,
+      "hb_queries": 262144,
+      "hb_query_seconds": 0.393431305,
+      "overlap_queries": 1,
+      "strategy": "conflict-first",
+      "unordered_candidates_examined": 1
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 367.47265625,
+    "required_order_domains": 682,
+    "required_orders": 20460,
+    "search_complete": false,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 1,
+      "binding_diagnostics": [
+        {
+          "code": "incomplete_value_semantics",
+          "message": "tma_gather4_dynamic_rows: TMA tile::gather4 coordinates are not statically known (data-dependent rows); the gathered values are not modeled"
+        }
+      ],
+      "execution_cohorts": 48,
+      "mapping_complete": false,
+      "memory_binding_stored_rows": 0,
+      "memory_binding_templates": 0,
+      "memory_bindings": 0,
+      "memory_linking_templates_used": false,
+      "synchronization_groups": 1001,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 26,
+      "thread_prefix_groups": 5178,
+      "value_diagnostic_count": 1,
+      "value_diagnostics": [
+        {
+          "code": "tma_gather4_dynamic_rows",
+          "line": 14646,
+          "message": "TMA tile::gather4 coordinates are not statically known (data-dependent rows); the gathered values are not modeled"
+        }
+      ]
+    },
+    "source_violations": [],
+    "stage": "memory_check",
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 148,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 3383112,
+      "path_entries": 103615,
+      "record_bindings": 71233,
+      "record_nodes": 73440,
+      "splits": 1483,
+      "template_steps": 76807,
+      "thread_memberships": 56832,
+      "value_nodes": 30157
+    },
+    "thread_record_compression": {
+      "completed_ctas": 148,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 3270970,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "failed",
+              "synchronization": "passed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "conflicting_accesses_unordered",
+                "details": {
+                  "count": 1,
+                  "witnesses_path": "races"
+                },
+                "message": "Conflicting accesses have no proven required ordering",
+                "stage": "memory_check"
+              }
+            ],
+            "prerequisite_result": "potential_race",
+            "prerequisite_status": "potential_race"
+          },
           "stage": "pipeline"
         }
       ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
+      "equivalence_check": "blocked",
+      "prerequisite_status": "potential_race",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
       }
     },
-    "scope": {
-      "operation": "value_analysis"
-    }
+    "value_ir_instance_count": 60835,
+    "value_ir_node_count": 3642,
+    "value_view_complete": false
   },
-  "value_ir_instance_count": 0,
-  "value_ir_node_count": 0,
-  "value_view_complete": false,
+  "peak_rss_mib": 390.83203125,
+  "pipeline_elapsed_seconds": 4.027527513,
+  "result": "potential_race",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "verification_limitations": [],
+  "warning_count": 0,
+  "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.458
 }

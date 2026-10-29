@@ -64,9 +64,16 @@ class IndexedSourceIdentity final {
     return memo_.at(root.get()).id;
   }
   std::size_t storedUses()const{return memo_.size();}
+  // The one spelling of a use context, appended in place; `index` must not
+  // view `out`. context() is this text followed by the domain extents.
+  void appendContext(std::string& out,const Ptr& root,std::string_view index) {
+    out+=std::to_string(use(root));out+=':';out+=std::to_string(index.size());out+=':';
+    out+=index;out+='#';
+  }
   std::string context(const Ptr& root,std::string_view index,
                       std::span<const std::uint64_t> domains) {
-    std::string key=std::to_string(use(root))+":"+std::to_string(index.size())+":"+std::string(index)+"#";
+    std::string key;
+    appendContext(key,root,index);
     for(auto extent:domains)key+=std::to_string(extent)+",";
     return key;
   }

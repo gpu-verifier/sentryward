@@ -10,7 +10,7 @@ Scalar Operand(const ExecutionProgram &program,const ExecutedInstruction &event,
   text=Trim(text); if (text.starts_with('[') && text.ends_with(']')) text=Trim(std::string_view(text).substr(1,text.size()-2));
   auto split=SplitAddress(text); if (!split) return {};
   Scalar value;
-  if (auto known=program.KnownRegister(event,split->first)) value=*known;
+  if (auto known=detail::ExecutionStorage::Value(program,event,split->first)) value=*known;
   else if (program.config.parameters.contains(split->first)) value=program.config.parameters.at(split->first);
   else if (auto number=ParseInteger(split->first)) value=*number;
   if (auto pointer=std::get_if<AllocationPointer>(&value)) { pointer->offset+=split->second; return value; }
@@ -132,10 +132,13 @@ nlohmann::json DecodeTensorMap(const TensorMapFields &fields,const AllocationPoi
   return DecodeTensorMap(fields,AllocationPointer{location.at(0).get<std::string>(),Integer(location.at(1).get<std::uint64_t>()),{}});
 }
 void PublishTensorMap(nlohmann::json &maps,const nlohmann::json &decoded) {
+  // The location's current version; a rewrite supersedes it, and dynamic lookups skip superseded maps.
   for (auto it=maps.begin();it!=maps.end();++it)
-    if (it.value().value("allocation_location",nlohmann::json())==decoded.at("allocation_location")) {
-      if (it.value()!=decoded) Fail("runtime tensor map changes at a reused global address");
-      return;
+    if (!it.value().value("superseded",false) &&
+        it.value().value("allocation_location",nlohmann::json())==decoded.at("allocation_location")) {
+      if (it.value()==decoded) return;
+      it.value()["superseded"]=true;
+      break;
     }
   maps["runtime."+std::to_string(maps.size())]=decoded;
 }
@@ -143,14 +146,21 @@ void RecoverTensorMaps(ExecutionProgram &program) {
   if (std::none_of(program.function->instructions.begin(),program.function->instructions.end(),
                    [](const auto &i){return i.opcode=="tensormap";})) return;
   using Copy=std::tuple<Scalar,Scalar,Scalar>;
-  std::map<std::pair<std::uint32_t,DynamicKey>,std::map<std::uint32_t,Copy>> copies;
+  using Site=std::pair<std::uint32_t,DynamicKey>; // a warp occurrence of a copy
+  using Location=std::pair<std::string,Integer>;
+  auto &maps=program.config.tma_descriptors;
+  // Every version is a map of its own; superseded only steers the executor's lookups.
+  for (auto &map : maps) map.erase("superseded");
+  std::map<Site,std::map<std::uint32_t,Copy>> copies;
+  std::map<Site,std::pair<Location,std::string>> writes; // each publishing copy's location and version
+  std::map<Location,std::vector<Site>> writers;
   for (const auto &lane : program.lane_traces) {
     std::map<Integer,TensorMapFields> fields;
     for (std::size_t index=0;index<lane.instructions.size();++index) {
-      const auto &metadata=lane.instructions.metadata(index);
+      const auto &metadata=detail::ExecutionStorage::Metadata(lane.instructions,index);
       const auto &i=program.function->instructions[metadata.instruction_id()];
       if (i.opcode!="tensormap") continue;
-      const auto event=lane.instructions.read(index);
+      const auto event=detail::ExecutionStorage::Read(lane.instructions,index);
       const auto ops=OperandTexts(*program.module,i);
       auto value=[&](std::size_t k){return Operand(program,event,ops.at(k));};
       if (Has(i,"replace") && Has(i,"tile")) {
@@ -167,10 +177,31 @@ void RecoverTensorMaps(ExecutionProgram &program) {
         const auto *pointer=std::get_if<AllocationPointer>(&destination);
         if (!pointer) Fail("runtime tensor map destination has no allocation");
         auto decoded=DecodeTensorMap(fields.at(*address),*pointer);
-        for (const auto &existing : program.config.tma_descriptors)
-          if (existing.value("allocation_location",nlohmann::json())==decoded.at("allocation_location") && existing.contains("initial_descriptor"))
-            decoded["initial_descriptor"]=existing.at("initial_descriptor");
-        PublishTensorMap(program.config.tma_descriptors,decoded);
+        const auto &location=decoded.at("allocation_location");
+        std::optional<nlohmann::json> initial;
+        bool executed=false;
+        for (auto it=maps.begin();it!=maps.end();++it) {
+          if (it.value().value("allocation_location",nlohmann::json())!=location) continue;
+          executed|=it.key().starts_with("executed.");
+          if (!it.value().contains("initial_descriptor")) continue;
+          if (initial && *initial!=it.value().at("initial_descriptor"))
+            Fail("runtime tensor map versions start from different descriptors");
+          initial=it.value().at("initial_descriptor");
+        }
+        if (initial) decoded["initial_descriptor"]=*initial;
+        std::string version;
+        for (auto it=maps.begin();it!=maps.end() && version.empty();++it)
+          if (it.value()==decoded) version=it.key();
+        if (version.empty()) {
+          // The executor's copies, when it ran the shared-control runtime, are the reference.
+          if (executed) Fail("runtime tensor map recovered from a thread differs from the executed copies");
+          version="runtime."+std::to_string(maps.size());
+          maps[version]=decoded;
+        }
+        const Site site{lane.warp_id,event.Key()};
+        const auto [found,added]=writes.try_emplace(site,Location{pointer->resource,pointer->offset},version);
+        if (!added && found->second.second!=version) Fail("tensor map copy publishes different versions");
+        if (added) writers[found->second.first].push_back(site);
       }
     }
   }
@@ -182,6 +213,40 @@ void RecoverTensorMaps(ExecutionProgram &program) {
       if (!lanes.contains(lane) || lanes.at(lane)!=first) Fail("tensor map copy requires identical operands");
     if (!ScalarInteger(std::get<0>(first)) || !std::holds_alternative<AllocationPointer>(std::get<1>(first)) ||
         ScalarInteger(std::get<2>(first))!=Integer(128)) Fail("tensor map copy has invalid operands or size");
+  }
+  // A TMA read of a written location reads the last copy to it in its own thread (the copy is
+  // warp-aligned, so it is in every lane's trace), else the location's only copy. The lowering's
+  // read-from orders and the race check validate that choice.
+  auto &reads=program.tensor_map_reads.emplace();
+  if (writes.empty()) return;
+  for (const auto &lane : program.lane_traces) {
+    std::map<Location,Site> last;
+    for (std::size_t index=0;index<lane.instructions.size();++index) {
+      const auto &metadata=detail::ExecutionStorage::Metadata(lane.instructions,index);
+      const auto &i=program.function->instructions[metadata.instruction_id()];
+      const bool copy=i.opcode=="tensormap" && Has(i,"cp_fenceproxy");
+      const bool store=i.semantics.operation=="tma_bulk_tensor";
+      if (!copy && !store && i.semantics.operation!="tma_load_complete_tx") continue;
+      const auto event=detail::ExecutionStorage::Read(lane.instructions,index);
+      if (copy) {
+        if (const auto found=writes.find({lane.warp_id,event.Key()});found!=writes.end())
+          last[found->second.first]=found->first;
+        continue;
+      }
+      auto text=Trim(OperandTexts(*program.module,i).at(store?0:1));
+      if (text.starts_with('[')) text.erase(0,1);
+      const auto value=Operand(program,event,text.substr(0,text.find(',')));
+      const auto *pointer=std::get_if<AllocationPointer>(&value);
+      if (!pointer) continue;
+      const Location location{pointer->resource,pointer->offset};
+      const auto written=writers.find(location);
+      if (written==writers.end()) continue;
+      Site write;
+      if (const auto own=last.find(location);own!=last.end()) write=own->second;
+      else if (written->second.size()==1) write=written->second.front();
+      else Fail("a rewritten tensor map is read by a thread that did not write it");
+      reads[{lane.warp_id*32+lane.lane_id,event.Key()}]={write.first,write.second,writes.at(write).second};
+    }
   }
 }
 }

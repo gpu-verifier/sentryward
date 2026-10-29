@@ -1,0 +1,390 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:Y": "Y",
+      "6:global1:X": "X",
+      "6:global6:lora_a": "lora_a",
+      "6:global16:sorted_token_ids": "sorted_token_ids",
+      "6:global10:expert_ids": "expert_ids",
+      "6:global12:lora_indices": "lora_indices"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Y": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2,
+          8
+        ],
+        "source_strides_bytes": [
+          32,
+          16,
+          2
+        ],
+        "target_strides_bytes": [
+          32,
+          16,
+          2
+        ]
+      },
+      "6:global1:X": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          384
+        ],
+        "source_strides_bytes": [
+          768,
+          2
+        ],
+        "target_strides_bytes": [
+          768,
+          2
+        ]
+      },
+      "6:global6:lora_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          8,
+          8,
+          384
+        ],
+        "source_strides_bytes": [
+          49152,
+          6144,
+          768,
+          2
+        ],
+        "target_strides_bytes": [
+          49152,
+          6144,
+          768,
+          2
+        ]
+      },
+      "6:global16:sorted_token_ids": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          2
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global10:expert_ids": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          2
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global12:lora_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:Y": "Y",
+      "6:global1:X": "X",
+      "6:global6:lora_a": "lora_a",
+      "6:global16:sorted_token_ids": "sorted_token_ids",
+      "6:global10:expert_ids": "expert_ids",
+      "6:global12:lora_indices": "lora_indices"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Y": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2,
+          8
+        ],
+        "source_strides_bytes": [
+          32,
+          16,
+          2
+        ],
+        "target_strides_bytes": [
+          32,
+          16,
+          2
+        ]
+      },
+      "6:global1:X": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          384
+        ],
+        "source_strides_bytes": [
+          768,
+          2
+        ],
+        "target_strides_bytes": [
+          768,
+          2
+        ]
+      },
+      "6:global6:lora_a": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          8,
+          8,
+          384
+        ],
+        "source_strides_bytes": [
+          49152,
+          6144,
+          768,
+          2
+        ],
+        "target_strides_bytes": [
+          49152,
+          6144,
+          768,
+          2
+        ]
+      },
+      "6:global16:sorted_token_ids": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          2
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global10:expert_ids": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          2
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      },
+      "6:global12:lora_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:Y",
+    "right_allocation": "6:global1:Y",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      1,
+      2,
+      8
+    ],
+    "left_strides_bytes": [
+      32,
+      16,
+      2
+    ],
+    "right_strides_bytes": [
+      32,
+      16,
+      2
+    ]
+  },
+  "output_value_semantics": "ideal_real",
+  "reference": {
+    "arguments": [
+      {
+        "name": "Y",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:Y"
+      },
+      {
+        "name": "X",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:X"
+      },
+      {
+        "name": "lora_a",
+        "dtype": "bfloat16",
+        "allocation": "6:global6:lora_a"
+      },
+      {
+        "name": "sorted_token_ids",
+        "dtype": "int64",
+        "allocation": "6:global16:sorted_token_ids"
+      },
+      {
+        "name": "expert_ids",
+        "dtype": "int64",
+        "allocation": "6:global10:expert_ids"
+      },
+      {
+        "name": "lora_indices",
+        "dtype": "int64",
+        "allocation": "6:global12:lora_indices"
+      },
+      {
+        "name": "scale",
+        "parameter": 10
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/flashinfer__bgmv_moe__moe_bgmv_bf16_bf16_bf16__sm_100a.ptx",
+    "optimized_input": "examples/flashinfer__bgmv_moe__moe_bgmv_bf16_bf16_bf16__sm_100a/input.json",
+    "optimized_input_sha256": "624683fe13772caed522967ec2ec606be1d886e51c7ebf3d6792b348be487217",
+    "ptx_sha256": "d9db4a306ea2f50b875056265614df99ba955c1a09a5003dd3f786d8d55fd557",
+    "evidence": "moe_bgmv_shrink_sliced_kernel<384,8,8,4,3,4,8,8,32,4,bf16,bf16,bf16,false>(Y, X, w_ptr, sorted_token_ids, expert_ids, lora_indices, num_pairs=2, num_experts=8, num_tokens=1, lora_stride=24576, scale=1.0); w_ptr[e] = lora_a + e*3072 elements; grid (1,1,1).",
+    "semantics": "One slice, two pairs of token 0; Y read-modify-write in bf16 (partial rounded to bf16, then bf16 add); ideal real otherwise.",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/bgmv_moe/moe_bgmv_impl.cuh",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/bgmv_moe/moe_bgmv_ops.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/fused_moe/bgmv_moe.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/moe/test_bgmv_moe.py"
+    ],
+    "scope": "Input: num_pairs 2, num_experts 8, num_tokens 1, num_loras 4 (lora_indices in [0, 3]), expert_ids in [0, 7], sorted_token_ids in [0, 0], one weight buffer lora_a [L, E, R, F] behind the w_ptr table.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [],
+    "scope_pointer_arrays": [
+      {
+        "parameter": 2,
+        "offset": 0,
+        "entries": [
+          {
+            "object": "lora_a",
+            "byte_offset": 0
+          },
+          {
+            "object": "lora_a",
+            "byte_offset": 6144
+          },
+          {
+            "object": "lora_a",
+            "byte_offset": 12288
+          },
+          {
+            "object": "lora_a",
+            "byte_offset": 18432
+          },
+          {
+            "object": "lora_a",
+            "byte_offset": 24576
+          },
+          {
+            "object": "lora_a",
+            "byte_offset": 30720
+          },
+          {
+            "object": "lora_a",
+            "byte_offset": 36864
+          },
+          {
+            "object": "lora_a",
+            "byte_offset": 43008
+          }
+        ]
+      }
+    ],
+    "scope_tensor_properties": [
+      {
+        "object": "sorted_token_ids",
+        "element_type": "s64",
+        "property": "lower_bound",
+        "value": 0
+      },
+      {
+        "object": "sorted_token_ids",
+        "element_type": "s64",
+        "property": "upper_bound",
+        "value": 0
+      },
+      {
+        "object": "lora_indices",
+        "element_type": "s64",
+        "property": "lower_bound",
+        "value": 0
+      },
+      {
+        "object": "expert_ids",
+        "element_type": "s64",
+        "property": "lower_bound",
+        "value": 0
+      },
+      {
+        "object": "expert_ids",
+        "element_type": "s64",
+        "property": "upper_bound",
+        "value": 7
+      },
+      {
+        "object": "lora_indices",
+        "element_type": "s64",
+        "property": "upper_bound",
+        "value": 3
+      }
+    ]
+  }
+}

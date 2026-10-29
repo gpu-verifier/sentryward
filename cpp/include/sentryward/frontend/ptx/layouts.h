@@ -62,6 +62,10 @@ DecodeLdstLaneRegisters(const Instruction &, std::uint64_t taddr,
                         std::optional<std::uint64_t> half_split_offset = {});
 [[nodiscard]] MmaDescriptor DecodeMmaDescriptor(std::string_view kind,
                                                 std::uint64_t value);
+// PTX 9.2 tcgen05.mma.ws shapes: dense M in {32,64,128}, N in {64,128,256}.
+[[nodiscard]] constexpr bool WsMmaShape(std::uint32_t m, std::uint32_t n) {
+  return (m == 32 || m == 64 || m == 128) && (n == 64 || n == 128 || n == 256);
+}
 [[nodiscard]] MmaDescriptor DecodeBlockScaledDescriptor(std::uint64_t value, std::string_view kind);
 [[nodiscard]] std::vector<ByteInterval> DecodeScaleFootprint(
     std::uint64_t taddr, unsigned selector, unsigned rows, unsigned vector_bytes,
@@ -112,6 +116,8 @@ struct TmaTransferSegment {
   std::uint64_t shared_offset{}, bytes{}, logical_offset{};
   std::uint32_t target_rank{};
   bool abstract_global{};
+  // The tile::gather4 row (0..3) the segment belongs to; 0 for every other mode.
+  std::uint32_t gather_row{};
 };
 struct TmaCompletion {
   std::uint32_t rank{};
@@ -126,6 +132,10 @@ struct TmaTransferMapping {
 struct TmaTransferOptions {
   // Unknown origins affect global placement, not shared layout/completion bytes.
   std::vector<bool> symbolic_coordinates;
+  // tile::gather4: the four row coordinates (origins are {column, 0}). The
+  // destination is the dense {box_shape[0], 4} box; row k reads tensor row k.
+  std::optional<std::array<std::int64_t, 4>> gather_rows;
+  std::array<bool, 4> symbolic_rows{};
   std::uint64_t shared_base{};
   std::uint32_t destination_rank{}, cluster_size{1}, cta_group{1};
   std::optional<std::uint32_t> completion_rank, multicast_mask;

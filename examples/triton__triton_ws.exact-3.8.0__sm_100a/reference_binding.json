@@ -1,0 +1,140 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          512,
+          512
+        ],
+        "source_strides_bytes": [
+          1024,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          512,
+          512
+        ],
+        "source_strides_bytes": [
+          1024,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          512,
+          512
+        ],
+        "source_strides_bytes": [
+          1024,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          512,
+          512
+        ],
+        "source_strides_bytes": [
+          1024,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:C",
+    "right_allocation": "6:global1:C",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      512,
+      512
+    ],
+    "left_strides_bytes": [
+      1024,
+      2
+    ],
+    "right_strides_bytes": [
+      1024,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float16",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "float16",
+        "allocation": "6:global1:B"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/triton__triton_ws.exact-3.8.0__sm_100a.ptx",
+    "optimized_input": "examples/triton__triton_ws.exact-3.8.0__sm_100a/input.json",
+    "upstream": [
+      "https://github.com/triton-lang/triton/blob/1826d8ef0baa70686860658f5ab5dd7cb0d3b163/python/test/unit/language/test_warp_specialization.py#L189-L253",
+      "https://github.com/triton-lang/triton/blob/1826d8ef0baa70686860658f5ab5dd7cb0d3b163/python/test/unit/language/test_warp_specialization.py#L320-L331"
+    ],
+    "scope": "M=N=K=512, BLOCK 128x128x64, num_stages=3, GROUP_SIZE_M=8, USE_FP8=False, A_USE_TMA=B_USE_TMA=True, num_warps=4. Grid 16 = (512/128)^2 covers every C tile.",
+    "evidence": "PTX params: 0 A, 1 B, 2 C pointers; 3/4/5 a/b/c_stride0 = 512 (stride1 = 1 specialized away); 6/7/8 M/N/K = 512; 9 global descriptor scratch (each CTA writes three 128-byte tensormaps at ctaid*384 via tensormap.cp_fenceproxy); 10 profile scratch (unused). In-kernel tensormaps: elemtype 6 (F16), swizzle 128B. C is written by one 2-D TMA store per CTA. B is [N,K]; the dot is a @ b.T with f32 accumulation and f16 output.",
+    "semantics": "ideal_real",
+    "ptx_sha256": "e09723bc263f56efb4898bab77dbb77c187c7ca06f12d6dc9b31f12c81fa9f2e",
+    "optimized_input_sha256": "b8436e20be4f1058f4d607b0e7fc188556b6dfe78f3dc1cac60e1dbed021b876",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [],
+    "coverage": "All 512x512 elements of C. Not compared: descriptor_scratch (internal tensormap bytes, not a mathematical output) and profile_scratch (not written)."
+  }
+}

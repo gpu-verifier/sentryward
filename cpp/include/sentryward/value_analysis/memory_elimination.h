@@ -200,7 +200,8 @@ struct OutputViewDomain final {
   std::uint64_t source_byte_offset = 0;
 };
 struct OutputViewGroup final {
-  std::size_t end;  // Upper bound on member records, not a contiguous range.
+  // Member records, ascending; records of other groups may lie between them.
+  std::vector<std::size_t> records;
   std::vector<OutputViewDomain> domains;
 };
 
@@ -264,7 +265,7 @@ struct OutputWriteFamily final {
       throw std::logic_error("invalid output family");
     location.offset=static_cast<std::uint64_t>(offset);
     const MemoryInstance writer{first.node,first.instance+index};
-    return {location,graph.node(writer.node).instances().at(writer.instance).operands.at(1),writer,0};
+    return {location,graph.node(writer.node).instanceOperands(writer.instance).at(1),writer,0};
   }
 };
 

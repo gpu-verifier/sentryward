@@ -1,0 +1,387 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V",
+      "6:global10:kv_indices": "kv_indices",
+      "6:global9:task_kind": "task_kind",
+      "6:global12:task_kv_head": "task_kv_head"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          16,
+          1,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          16384,
+          16384,
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          16384,
+          16384,
+          128,
+          1
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          16,
+          1,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          16384,
+          16384,
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          16384,
+          16384,
+          128,
+          1
+        ]
+      },
+      "6:global10:kv_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          16
+        ],
+        "source_strides_bytes": [
+          64,
+          4
+        ],
+        "target_strides_bytes": [
+          64,
+          4
+        ]
+      },
+      "6:global9:task_kind": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1,
+          16
+        ],
+        "source_strides_bytes": [
+          64,
+          64,
+          4
+        ],
+        "target_strides_bytes": [
+          64,
+          64,
+          4
+        ]
+      },
+      "6:global12:task_kv_head": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V",
+      "6:global10:kv_indices": "kv_indices",
+      "6:global9:task_kind": "task_kind",
+      "6:global12:task_kv_head": "task_kv_head"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          16,
+          1,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          16384,
+          16384,
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          16384,
+          16384,
+          128,
+          1
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 1,
+        "shape": [
+          16,
+          1,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          16384,
+          16384,
+          128,
+          1
+        ],
+        "target_strides_bytes": [
+          16384,
+          16384,
+          128,
+          1
+        ]
+      },
+      "6:global10:kv_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          16
+        ],
+        "source_strides_bytes": [
+          64,
+          4
+        ],
+        "target_strides_bytes": [
+          64,
+          4
+        ]
+      },
+      "6:global9:task_kind": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          1,
+          16
+        ],
+        "source_strides_bytes": [
+          64,
+          64,
+          4
+        ],
+        "target_strides_bytes": [
+          64,
+          64,
+          4
+        ]
+      },
+      "6:global12:task_kv_head": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "left_allocation": "6:global1:O",
+        "right_allocation": "6:global1:O",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16,
+          128
+        ],
+        "left_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      {
+        "left_allocation": "6:global7:msa_lse",
+        "right_allocation": "6:global7:msa_lse",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          16
+        ],
+        "left_strides_bytes": [
+          64,
+          4
+        ],
+        "right_strides_bytes": [
+          64,
+          4
+        ]
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "Q",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:Q"
+      },
+      {
+        "name": "K",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:K"
+      },
+      {
+        "name": "V",
+        "dtype": "float8_e4m3fn",
+        "allocation": "6:global1:V"
+      },
+      {
+        "name": "page_table",
+        "dtype": "int32",
+        "allocation": "6:global10:kv_indices"
+      },
+      {
+        "name": "q2k_indices",
+        "dtype": "int32",
+        "allocation": "6:global9:task_kind"
+      },
+      {
+        "name": "kv_lens",
+        "dtype": "int32",
+        "allocation": "6:global12:task_kv_head"
+      },
+      {
+        "name": "softmax_scale_log2",
+        "parameter": 36
+      },
+      {
+        "name": "seqlen_q",
+        "parameter": 40
+      },
+      {
+        "name": "max_pages",
+        "parameter": 41
+      },
+      {
+        "name": "is_causal",
+        "parameter": 38
+      }
+    ]
+  },
+  "provenance": {
+    "source": "flashinfer blackwell_msa generated SM100 direct M16 sparse decode kernel and its TVM-FFI binding / Python launcher at the pinned commit",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/blackwell_msa/sm100a/blackwell_msa_decode_m16_bf16_query_fp8_kv_paged.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/blackwell_msa/sm100a/blackwell_msa_decode_m16_bf16_query_fp8_kv_paged_binding.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/msa_ops/_blackwell_sm100.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/msa_ops/test_blackwell_msa_sm100.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/benchmarks/bench_blackwell_msa_sm100.py"
+    ],
+    "ptx_sha256": "84413cd8b5dec8b4ea65128d77084ac88a9087b323e68c8fdc81c818cdf90fa3",
+    "optimized_input_sha256": "34d9d1f9a9b3e39eb52210975983e4d7a3068b268d9f1e1605d354740d0594c4",
+    "scope": "input.json: total_q=1 (p30), 16 q heads (p31), 1 kv head (p32), seqlen_q=1 (p40), non-causal (p38=0), topk 16 (p33), msa_max_pages=16 (p41); task_kv_head (kv_lens) shape array [2048] (request 0 of upstream test decode-paged-fp8); FP8 e4m3 K/V pool 16 pages [16, 1, 128, 128] per TMA descriptors; task_kind injective in [0, 15], kv_indices injective in [0, 15]",
+    "semantics": "ideal_real; O = softmax-weighted V over the 16 selected 128-token blocks (per selection slot), msa_lse = natural-log LSE of exp2(softmax_scale_log2 * q.k); bf16 O, f32 LSE; FP8 e4m3 K/V decoded exactly (no K/V scale on this route)",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [
+      {
+        "parameter": 20,
+        "offset": 0,
+        "element_type": "s32",
+        "shapes": [
+          [
+            2048
+          ]
+        ]
+      }
+    ]
+  }
+}

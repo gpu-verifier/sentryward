@@ -34,12 +34,18 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "not_run",
-    "memory": "not_run",
-    "synchronization": "incomplete"
+    "synchronization": "failed"
   },
   "diagnostics": [
     {
@@ -51,11 +57,12 @@
             767
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 768,
         "ptx_line": 300
       },
       "message": "thread arrived twice before wait",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     },
     {
       "code": "cluster_wait_without_arrive",
@@ -66,855 +73,412 @@
             767
           ]
         ],
+        "internal_stage": "event_view_construction",
         "occurrence_count": 768,
         "ptx_line": 302
       },
       "message": "cluster wait without arrival",
-      "stage": "event_view_construction"
+      "stage": "synchronization"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "incomplete"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "cluster_barrier_arrive_repeated_without_wait",
-              "details": {
-                "actor_ranges": [
-                  [
-                    0,
-                    767
-                  ]
-                ],
-                "occurrence_count": 768,
-                "ptx_line": 300
-              },
-              "message": "thread arrived twice before wait",
-              "stage": "event_view_construction"
+  "internal": {
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "incomplete"
             },
-            {
-              "code": "cluster_wait_without_arrive",
-              "details": {
-                "actor_ranges": [
-                  [
-                    0,
-                    767
-                  ]
-                ],
-                "occurrence_count": 768,
-                "ptx_line": 302
+            "prerequisite_diagnostics": [
+              {
+                "code": "cluster_barrier_arrive_repeated_without_wait",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      0,
+                      767
+                    ]
+                  ],
+                  "occurrence_count": 768,
+                  "ptx_line": 300
+                },
+                "message": "thread arrived twice before wait",
+                "stage": "event_view_construction"
               },
-              "message": "cluster wait without arrival",
-              "stage": "event_view_construction"
-            }
-          ],
-          "prerequisite_result": "invalid_lifecycle"
+              {
+                "code": "cluster_wait_without_arrive",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      0,
+                      767
+                    ]
+                  ],
+                  "occurrence_count": 768,
+                  "ptx_line": 302
+                },
+                "message": "cluster wait without arrival",
+                "stage": "event_view_construction"
+              }
+            ],
+            "prerequisite_result": "invalid_lifecycle"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 1,
+      "cta_count": 2,
+      "dependency_compression": {
+        "bulk_read_wait": {
+          "consumers": 128,
+          "emitted_references": 512,
+          "original_references": 512,
+          "prefix_effects": 0
         },
-        "stage": "pipeline"
-      }
-    ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
-  },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [],
-      "first_unavailable_reason": "",
-      "queries": 0,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": true
-    },
-    "branch_scope_capture": {
-      "reason": "branch scope unavailable: unsupported_operation: No exact per-thread value model for compute operation 'vote'",
-      "status": "unavailable"
-    },
-    "cluster_completion_joins": 1,
-    "cta_count": 2,
-    "dependency_compression": {
-      "bulk_read_wait": {
-        "consumers": 128,
-        "emitted_references": 512,
-        "original_references": 512,
-        "prefix_effects": 0
+        "tcgen_commit": {
+          "consumers": 21,
+          "emitted_references": 166,
+          "original_references": 3152,
+          "prefix_effects": 21
+        },
+        "tcgen_load_wait": {
+          "consumers": 768,
+          "emitted_references": 5120,
+          "original_references": 5632,
+          "prefix_effects": 0
+        },
+        "tcgen_store_wait": {
+          "consumers": 512,
+          "emitted_references": 2048,
+          "original_references": 3072,
+          "prefix_effects": 0
+        }
       },
-      "tcgen_commit": {
-        "consumers": 21,
-        "emitted_references": 166,
-        "original_references": 3152,
-        "prefix_effects": 21
-      },
-      "tcgen_load_wait": {
-        "consumers": 768,
-        "emitted_references": 5120,
-        "original_references": 5632,
-        "prefix_effects": 0
-      },
-      "tcgen_store_wait": {
-        "consumers": 512,
-        "emitted_references": 2048,
-        "original_references": 3072,
-        "prefix_effects": 0
-      }
-    },
-    "diagnostic_sample_count": 2,
-    "discharged_codes": [
-      "mma_memory_effect_refinement",
-      "tcgen_pipeline_effect_refinement",
-      "tcgen_commit_notification_order_refinement"
-    ],
-    "executed_records": 736747,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
+      "diagnostic_sample_count": 2,
+      "discharged_codes": [
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
       ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 1473,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
+      "executed_records": 736235,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 1473,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 5088,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "trap_only_equality_assertions_hold": true
       },
-      "election_uses": 5088,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
+      "group2_progress": {
+        "blocked": [],
+        "checked_pairs": 3,
+        "premises": [
+          "Baseline synchronization and asynchronous work must independently make progress.",
+          "Resident peer CTAs must be scheduled fairly and have admitted TMEM capacity.",
+          "Allocation placement and retirement RequiredOrders are separate obligations.",
+          "Source references, actor ordering, and collective participation must be validated."
+        ]
       },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
-    },
-    "group2_progress": {
-      "blocked": [],
-      "checked_pairs": 3,
-      "premises": [
-        "Baseline synchronization and asynchronous work must independently make progress.",
-        "Resident peer CTAs must be scheduled fairly and have admitted TMEM capacity.",
-        "Allocation placement and retirement RequiredOrders are separate obligations.",
-        "Source references, actor ordering, and collective participation must be validated."
+      "implementation": "cpp",
+      "input_objects": [],
+      "lowered_instruction_count": 254362,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 104
+      },
+      "reached_opcodes": {
+        "add.f32": 768,
+        "add.rn.f32x2": 16128,
+        "add.s32": 54816,
+        "add.u32": 6016,
+        "and.b32": 16448,
+        "and.pred": 2496,
+        "bar.arrive": 1024,
+        "bar.sync": 2688,
+        "barrier.cluster.arrive.relaxed": 1536,
+        "barrier.cluster.wait": 1536,
+        "bra": 20617,
+        "bra.uni": 64,
+        "clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128": 320,
+        "clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128": 64,
+        "clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128": 320,
+        "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128": 768,
+        "clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128": 1,
+        "cp.async.bulk.commit_group": 128,
+        "cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.L2::cache_hint": 512,
+        "cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.L2::cache_hint.cta_group::2": 70,
+        "cp.async.bulk.wait_group.read": 128,
+        "cvt.rn.bf16x2.f32": 49152,
+        "cvt.u16.u32": 768,
+        "cvt.u32.u64": 64,
+        "cvt.u64.u32": 64,
+        "cvta.param.u64": 582,
+        "cvta.shared.u64": 64,
+        "cvta.to.shared::cluster.u64": 64,
+        "elect.sync": 5088,
+        "ex2.approx.f32": 256,
+        "ex2.approx.ftz.f32": 32768,
+        "fence.mbarrier_init.release.cluster": 2304,
+        "fence.proxy.async.shared::cta": 1792,
+        "fma.rn.f32x2": 16384,
+        "ld.param.b32": 1280,
+        "ld.shared.b32": 2368,
+        "ld.shared.v2.b64": 768,
+        "mad.lo.s32": 1536,
+        "mapa.shared::cluster.u32": 2144,
+        "max.f32": 17408,
+        "max.s32": 256,
+        "mbarrier.arrive.expect_tx.shared.b64": 13,
+        "mbarrier.arrive.expect_tx.shared::cluster.b64": 2,
+        "mbarrier.arrive.shared.b64": 1026,
+        "mbarrier.arrive.shared::cluster.b64": 2880,
+        "mbarrier.init.shared.b64": 130,
+        "mbarrier.try_wait.parity.shared.b64": 6912,
+        "mov.b128": 1472,
+        "mov.b16": 78,
+        "mov.b32": 13457,
+        "mov.b64": 218566,
+        "mov.u32": 7232,
+        "mul.f32": 1024,
+        "mul.f32x2": 32768,
+        "mul.rn.f32x2": 32768,
+        "neg.s32": 256,
+        "not.pred": 5504,
+        "or.b32": 9792,
+        "prefetch.tensormap": 384,
+        "rcp.approx.ftz.f32": 256,
+        "ret": 768,
+        "selp.b32": 7936,
+        "selp.f32": 18688,
+        "setmaxnreg.dec.sync.aligned.u32": 512,
+        "setmaxnreg.inc.sync.aligned.u32": 256,
+        "setp.eq.b32": 4192,
+        "setp.ge.f32": 256,
+        "setp.gt.s32": 1408,
+        "setp.gt.u32": 1312,
+        "setp.le.f32": 512,
+        "setp.lt.f32": 256,
+        "setp.lt.s32": 18080,
+        "setp.nan.f32": 512,
+        "setp.ne.b32": 19840,
+        "setp.ne.f32": 256,
+        "setp.neu.f32": 512,
+        "shfl.sync.idx.b32": 4032,
+        "shl.b32": 10784,
+        "shr.s32": 2240,
+        "shr.u32": 11008,
+        "st.shared.b32": 1024,
+        "st.shared.v4.b32": 12288,
+        "sub.f32": 768,
+        "sub.s32": 1344,
+        "tcgen05.alloc.cta_group::2.sync.aligned.shared::cta.b32": 64,
+        "tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 21,
+        "tcgen05.dealloc.cta_group::2.sync.aligned.b32": 64,
+        "tcgen05.ld.sync.aligned.32x32b.x32.b32": 5120,
+        "tcgen05.mma.cta_group::2.kind::f16": 104,
+        "tcgen05.relinquish_alloc_permit.cta_group::2.sync.aligned": 64,
+        "tcgen05.st.sync.aligned.32x32b.x32.b32": 2048,
+        "tcgen05.wait::ld.sync.aligned": 768,
+        "tcgen05.wait::st.sync.aligned": 512,
+        "vote.sync.ballot.b32": 256,
+        "xor.b32": 12352
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 30,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 254362,
+        "stored_bindings": 16588
+      },
+      "source_edge_storage": {
+        "binding_templates": 1221,
+        "logical_edges": 253594,
+        "stored_bindings": 1222
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 21,
+        "operations": 104
+      },
+      "thread_count": 768,
+      "unsupported_occurrence_counts": {
+        "cluster_arrive_without_wait": 768,
+        "cluster_wait_without_arrive": 768
+      },
+      "user_branch_decisions": [
+        {
+          "line": 6522,
+          "note": "Analysis scope: always execute softmax correction; do not take the branch that skips correction. Conclusions are conditional on this branch choice.",
+          "taken": false
+        },
+        {
+          "line": 6744,
+          "note": "Analysis scope: execute the second correction path controlled by the same ballot result as line 6522. Conclusions are conditional on this branch choice.",
+          "taken": false
+        }
       ]
     },
     "implementation": "cpp",
-    "input_objects": [],
-    "lowered_instruction_count": 254362,
-    "mma_refinement": {
-      "blocked": [],
-      "discharged": 104
+    "memory_analysis_complete": false,
+    "peak_footprint_mib": 674.734375,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
     },
-    "reached_opcodes": {
-      "add.f32": 768,
-      "add.rn.f32x2": 16128,
-      "add.s32": 54816,
-      "add.u32": 6016,
-      "and.b32": 16448,
-      "and.pred": 2496,
-      "bar.arrive": 1024,
-      "bar.sync": 2688,
-      "barrier.cluster.arrive.relaxed": 1536,
-      "barrier.cluster.wait": 1536,
-      "bra": 21129,
-      "bra.uni": 64,
-      "clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128": 320,
-      "clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128": 64,
-      "clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128": 320,
-      "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128": 768,
-      "clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128": 1,
-      "cp.async.bulk.commit_group": 128,
-      "cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group.L2::cache_hint": 512,
-      "cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.L2::cache_hint.cta_group::2": 70,
-      "cp.async.bulk.wait_group.read": 128,
-      "cvt.rn.bf16x2.f32": 49152,
-      "cvt.u16.u32": 768,
-      "cvt.u32.u64": 64,
-      "cvt.u64.u32": 64,
-      "cvta.param.u64": 582,
-      "cvta.shared.u64": 64,
-      "cvta.to.shared::cluster.u64": 64,
-      "elect.sync": 5088,
-      "ex2.approx.f32": 256,
-      "ex2.approx.ftz.f32": 32768,
-      "fence.mbarrier_init.release.cluster": 2304,
-      "fence.proxy.async.shared::cta": 1792,
-      "fma.rn.f32x2": 16384,
-      "ld.param.b32": 1280,
-      "ld.shared.b32": 2368,
-      "ld.shared.v2.b64": 768,
-      "mad.lo.s32": 1536,
-      "mapa.shared::cluster.u32": 2144,
-      "max.f32": 17408,
-      "max.s32": 256,
-      "mbarrier.arrive.expect_tx.shared.b64": 13,
-      "mbarrier.arrive.expect_tx.shared::cluster.b64": 2,
-      "mbarrier.arrive.shared.b64": 1026,
-      "mbarrier.arrive.shared::cluster.b64": 2880,
-      "mbarrier.init.shared.b64": 130,
-      "mbarrier.try_wait.parity.shared.b64": 6912,
-      "mov.b128": 1472,
-      "mov.b16": 78,
-      "mov.b32": 13457,
-      "mov.b64": 218566,
-      "mov.u32": 7232,
-      "mul.f32": 1024,
-      "mul.f32x2": 32768,
-      "mul.rn.f32x2": 32768,
-      "neg.s32": 256,
-      "not.pred": 5504,
-      "or.b32": 9792,
-      "prefetch.tensormap": 384,
-      "rcp.approx.ftz.f32": 256,
-      "ret": 768,
-      "selp.b32": 7936,
-      "selp.f32": 18688,
-      "setmaxnreg.dec.sync.aligned.u32": 512,
-      "setmaxnreg.inc.sync.aligned.u32": 256,
-      "setp.eq.b32": 4192,
-      "setp.ge.f32": 256,
-      "setp.gt.s32": 1408,
-      "setp.gt.u32": 1312,
-      "setp.le.f32": 512,
-      "setp.lt.f32": 256,
-      "setp.lt.s32": 18080,
-      "setp.nan.f32": 512,
-      "setp.ne.b32": 19840,
-      "setp.ne.f32": 256,
-      "setp.neu.f32": 512,
-      "shfl.sync.idx.b32": 4032,
-      "shl.b32": 10784,
-      "shr.s32": 2240,
-      "shr.u32": 11008,
-      "st.shared.b32": 1024,
-      "st.shared.v4.b32": 12288,
-      "sub.f32": 768,
-      "sub.s32": 1344,
-      "tcgen05.alloc.cta_group::2.sync.aligned.shared::cta.b32": 64,
-      "tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 21,
-      "tcgen05.dealloc.cta_group::2.sync.aligned.b32": 64,
-      "tcgen05.ld.sync.aligned.32x32b.x32.b32": 5120,
-      "tcgen05.mma.cta_group::2.kind::f16": 104,
-      "tcgen05.relinquish_alloc_permit.cta_group::2.sync.aligned": 64,
-      "tcgen05.st.sync.aligned.32x32b.x32.b32": 2048,
-      "tcgen05.wait::ld.sync.aligned": 768,
-      "tcgen05.wait::st.sync.aligned": 512,
-      "vote.sync.ballot.b32": 256,
-      "xor.b32": 12352
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 54,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 462667,
+      "memory_binding_templates": 27962,
+      "memory_bindings": 911972,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 4782,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 227,
+      "thread_prefix_groups": 246022,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 0,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
+    "stage": "cluster_barrier_check",
+    "template_execution": {
+      "completed_ctas": 2,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 745114,
+      "path_entries": 23456,
+      "record_bindings": 23796,
+      "record_nodes": 16477,
+      "splits": 26,
+      "template_steps": 16915,
+      "thread_memberships": 768,
+      "value_nodes": 14840
     },
-    "source_binding_storage": {
-      "binding_templates": 30,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 254362,
-      "stored_bindings": 16588
+    "thread_record_compression": {
+      "completed_ctas": 2,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 736235,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
     },
-    "source_edge_storage": {
-      "binding_templates": 1221,
-      "logical_edges": 253594,
-      "stored_bindings": 1222
-    },
-    "tcgen_history_refinement": {
-      "blocked": [],
-      "notifications": 21,
-      "operations": 104
-    },
-    "thread_count": 768,
-    "unsupported_occurrence_counts": {
-      "cluster_arrive_without_wait": 768,
-      "cluster_wait_without_arrive": 768
-    },
-    "user_branch_decisions": [
-      {
-        "line": 6522,
-        "note": "User-selected scenario: always execute softmax correction; do not take the branch that skips correction. Revisit when dynamic branches are supported.",
-        "taken": false
-      },
-      {
-        "line": 6744,
-        "note": "User-selected scenario: execute the second correction path controlled by the same ballot result as line 6522. Revisit when dynamic branches are supported.",
-        "taken": false
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "incomplete"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "cluster_barrier_arrive_repeated_without_wait",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      0,
+                      767
+                    ]
+                  ],
+                  "occurrence_count": 768,
+                  "ptx_line": 300
+                },
+                "message": "thread arrived twice before wait",
+                "stage": "event_view_construction"
+              },
+              {
+                "code": "cluster_wait_without_arrive",
+                "details": {
+                  "actor_ranges": [
+                    [
+                      0,
+                      767
+                    ]
+                  ],
+                  "occurrence_count": 768,
+                  "ptx_line": 302
+                },
+                "message": "cluster wait without arrival",
+                "stage": "event_view_construction"
+              }
+            ],
+            "prerequisite_result": "invalid_lifecycle",
+            "prerequisite_status": "program_constraint_violation"
+          },
+          "stage": "pipeline"
+        }
+      ],
+      "equivalence_check": "blocked",
+      "prerequisite_status": "program_constraint_violation",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
       }
-    ]
+    },
+    "value_ir_instance_count": 2937126,
+    "value_ir_node_count": 222570,
+    "value_view_complete": true,
+    "verification_performed": false
   },
-  "implementation": "cpp",
-  "memory_analysis_complete": false,
-  "peak_footprint_mib": 680.07421875,
-  "peak_rss_mib": 695.74609375,
-  "pipeline_elapsed_seconds": 4.03943552,
+  "peak_rss_mib": 683.3046875,
+  "pipeline_elapsed_seconds": 3.87142932,
   "result": "invalid_lifecycle",
   "rss_limit_mib": null,
   "scope": {
     "operation": "kernel_verification"
   },
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 104,
-    "binding_diagnostics": [
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      },
-      {
-        "code": "unsupported_mma_value_mapping",
-        "message": "Two-CTA M=128 MMA logical output placement is not decoded"
-      }
-    ],
-    "execution_cohorts": 54,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 360267,
-    "memory_binding_templates": 11546,
-    "memory_bindings": 694884,
-    "memory_linking_templates_used": true,
-    "synchronization_groups": 4782,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 227,
-    "thread_prefix_groups": 244712,
-    "value_diagnostic_count": 0,
-    "value_diagnostics": []
-  },
-  "stage": "cluster_barrier_check",
-  "template_execution": {
-    "completed_ctas": 2,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 745114,
-    "path_entries": 23468,
-    "record_bindings": 23800,
-    "record_nodes": 16481,
-    "splits": 26,
-    "template_steps": 16915,
-    "thread_memberships": 768,
-    "value_nodes": 14840
-  },
-  "thread_record_compression": {
-    "completed_ctas": 2,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 736747,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "incomplete"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "cluster_barrier_arrive_repeated_without_wait",
-              "details": {
-                "actor_ranges": [
-                  [
-                    0,
-                    767
-                  ]
-                ],
-                "occurrence_count": 768,
-                "ptx_line": 300
-              },
-              "message": "thread arrived twice before wait",
-              "stage": "event_view_construction"
-            },
-            {
-              "code": "cluster_wait_without_arrive",
-              "details": {
-                "actor_ranges": [
-                  [
-                    0,
-                    767
-                  ]
-                ],
-                "occurrence_count": 768,
-                "ptx_line": 302
-              },
-              "message": "cluster wait without arrival",
-              "stage": "event_view_construction"
-            }
-          ],
-          "prerequisite_result": "invalid_lifecycle",
-          "prerequisite_status": "program_constraint_violation"
-        },
-        "stage": "pipeline"
-      }
-    ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "program_constraint_violation",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "diagnostics": [
-        {
-          "code": "memory_elimination_not_completed",
-          "stage": "pipeline"
-        }
-      ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    }
-  },
-  "value_ir_instance_count": 2883524,
-  "value_ir_node_count": 221216,
-  "value_view_complete": true,
-  "verification_performed": false,
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.522
 }

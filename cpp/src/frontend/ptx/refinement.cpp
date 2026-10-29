@@ -59,7 +59,8 @@ nlohmann::json Refine(const SourceProgram &program,
           !Contains(plan.a_tmem_reads, target) || address == plan.operand_addresses.end() ||
           address->second.first != prior->second.allocation ||
           (!prior->second.any_operand_address &&
-           !CopyFeedsOperandBase(prior->second.address, address->second.second)) ||
+           !CopyFeedsOperandBase(prior->second.address, address->second.second) &&
+           !Contains(plan.contained_copy_links, std::pair{target, ref})) ||
           target >= op->effects.size() || ref.effect_index >= prev->effects.size() ||
           ref.effect_index % 2 != 1) {
         reject(id, "invalid_copy_pipeline_dependency"); continue;

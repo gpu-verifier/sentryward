@@ -24,33 +24,47 @@
 #include <array>
 #include <bit>
 #include <charconv>
+#include <compare>
+#include <concepts>
 #include <limits>
 #include <functional>
 #include <fstream>
 #include <map>
+#include <memory>
 #include <numeric>
+#include <ranges>
 #include <set>
 #include <sstream>
+#include <string_view>
 #include <tuple>
 #include <stdexcept>
 #include <unordered_map>
-#include <unordered_set>
+#include <utility>
 
 namespace sentryward::value_analysis {
 namespace {
 namespace v = value_ir;
 namespace s = scalar_fold;
+// Compression-audit builds also compute state that only their reports read.
+#if defined(SENTRYWARD_ENABLE_COMPRESSION_AUDIT)
+constexpr bool audit_build=true;
+#else
+constexpr bool audit_build=false;
+#endif
 struct Failure : std::runtime_error {
   std::string code;
-  Failure(std::string c, std::string message):std::runtime_error(std::move(message)),code(std::move(c)){}
+  bool literal=false; // the message is a string literal at its fail() site (first-item rule, run.cpp)
+  Failure(std::string c, std::string message, bool l=false):std::runtime_error(std::move(message)),code(std::move(c)),literal(l){}
 };
 // Exact source-boundary refinement, not a scalar fallback or speculative
 // bisection. Cuts are inverse images in the current output coordinate domain.
 struct OutputDomainCuts { std::vector<std::uint64_t> cuts; unsigned axis=0; };
 struct OutputDomainRadix { unsigned axis; std::uint64_t period; };
-struct RetryFoldDomain {std::vector<std::string> keep;};
 struct CollectProjectionFrontier {};
 [[noreturn]] void fail(std::string c,std::string m){throw Failure(std::move(c),std::move(m));}
+// A string-literal message binds here (exact match before std::string): the
+// site's text carries no CTA, offset or node id (scalar_fold_failure_codes.h).
+[[noreturn]] void fail(std::string c,const char* m){throw Failure(std::move(c),m,true);}
 std::int64_t add(std::int64_t a,std::int64_t b){
   std::int64_t out; if(__builtin_add_overflow(a,b,&out)) fail("scalar_fold_index_overflow",
       "index addition exceeds signed 64-bit range: "+std::to_string(a)+" + "+std::to_string(b));
@@ -64,14 +78,103 @@ std::int64_t mul(std::int64_t a,std::int64_t b){
 std::int64_t integer(std::uint64_t x){
   if(x>std::uint64_t(INT64_MAX)) fail("index_representation_overflow","index exceeds signed 64-bit domain"); return std::int64_t(x);
 }
+// Appends std::to_string(n)'s digits without a temporary string.
+template<std::integral T> void appendDecimal(std::string& out,T n) {
+  char digits[24];
+  out.append(digits,std::to_chars(digits,digits+sizeof digits,n).ptr);
+}
+// The integer std::from_chars reads from the whole of `text`; nullopt when it
+// fails or leaves characters over.
+template<std::integral T> std::optional<T> exactInteger(std::string_view text) {
+  T value{};const auto parsed=std::from_chars(text.data(),text.data()+text.size(),value);
+  if(parsed.ec!=std::errc{} || parsed.ptr!=text.data()+text.size())return std::nullopt;
+  return value;
+}
+// Affine coefficients by binder level, ascending: the std::map interface this
+// file uses (ordered iteration, operator[] inserting 0, find, erase) over a
+// sorted array. Up to four levels stay inline, so the Offset copied with each
+// request, context and expression copies a few words instead of tree nodes.
+// Unlike std::map, every insertion or erasure invalidates references and
+// iterators into the same terms: never hold one across operator[] on a new
+// level or across erase (use erase's return value and re-read end()).
+class OffsetTerms {
+ public:
+  using value_type=std::pair<unsigned,std::int64_t>;
+  using iterator=value_type*;
+  using const_iterator=const value_type*;
+  OffsetTerms()=default;
+  OffsetTerms(const OffsetTerms& o):spill_(o.spill_),size_(o.size_) {
+    if(spill_.empty())std::copy_n(o.inline_.begin(),size_,inline_.begin());
+  }
+  OffsetTerms(OffsetTerms&& o) noexcept:spill_(std::move(o.spill_)),size_(std::exchange(o.size_,0)) {
+    if(spill_.empty())std::copy_n(o.inline_.begin(),size_,inline_.begin());
+    o.spill_.clear();
+  }
+  OffsetTerms& operator=(const OffsetTerms& o) {
+    if(this==&o)return *this;
+    if(o.spill_.empty()){spill_.clear();std::copy_n(o.inline_.begin(),o.size_,inline_.begin());}
+    else spill_=o.spill_;
+    size_=o.size_;return *this;
+  }
+  OffsetTerms& operator=(OffsetTerms&& o) noexcept {
+    if(this==&o)return *this;
+    spill_=std::move(o.spill_);o.spill_.clear();size_=std::exchange(o.size_,0);
+    if(spill_.empty())std::copy_n(o.inline_.begin(),size_,inline_.begin());
+    return *this;
+  }
+  iterator begin(){return data();}
+  iterator end(){return data()+size_;}
+  const_iterator begin()const{return data();}
+  const_iterator end()const{return data()+size_;}
+  std::size_t size()const{return size_;}
+  bool empty()const{return !size_;}
+  iterator find(unsigned level){const auto i=lower(level);return i!=end() && i->first==level?i:end();}
+  const_iterator find(unsigned level)const{return const_cast<OffsetTerms&>(*this).find(level);}
+  std::int64_t& operator[](unsigned level) {
+    const auto i=lower(level);
+    if(i!=end() && i->first==level)return i->second;
+    return insertAt(std::size_t(i-begin()),level)->second;
+  }
+  // A template, so that erase(0) erases level 0 as std::map's erase does,
+  // instead of being ambiguous with a null iterator.
+  template<class It> requires std::same_as<It,iterator> || std::same_as<It,const_iterator>
+  iterator erase(It at) {
+    const auto i=std::size_t(at-begin());
+    std::move(begin()+i+1,end(),begin()+i);
+    --size_;if(!spill_.empty())spill_.pop_back();
+    return begin()+i;
+  }
+  std::size_t erase(unsigned level){const auto i=find(level);if(i==end())return 0;erase(i);return 1;}
+ private:
+  static constexpr std::size_t inline_capacity=4;
+  value_type* data(){return spill_.empty()?inline_.data():spill_.data();}
+  const value_type* data()const{return spill_.empty()?inline_.data():spill_.data();}
+  iterator lower(unsigned level) {
+    return std::lower_bound(begin(),end(),level,[](const value_type& t,unsigned l){return t.first<l;});
+  }
+  iterator insertAt(std::size_t i,unsigned level) {
+    if(spill_.empty() && size_<inline_capacity) {
+      std::move_backward(inline_.begin()+i,inline_.begin()+size_,inline_.begin()+size_+1);
+      inline_[i]={level,0};++size_;return inline_.data()+i;
+    }
+    // Spill once: the vector holds every entry until the terms empty again.
+    if(spill_.empty()){spill_.reserve(2*inline_capacity);spill_.assign(inline_.begin(),inline_.begin()+size_);}
+    spill_.insert(spill_.begin()+i,value_type{level,0});++size_;return spill_.data()+i;
+  }
+  // Invariant: spill_ empty => entries in inline_[0,size_); else spill_.size()==size_.
+  std::array<value_type,inline_capacity> inline_{};
+  std::vector<value_type> spill_;
+  std::uint32_t size_=0;
+};
 struct OffsetExpression;
 struct Offset {
   std::int64_t base=0;
-  std::map<unsigned,std::int64_t> terms;
+  OffsetTerms terms;
   std::shared_ptr<const OffsetExpression> expression;
   Offset()=default;
   Offset(std::int64_t b):base(b){}
   std::string key()const;
+  void appendKey(std::string& out)const;
   std::uint64_t binderMask()const;
 };
 struct OffsetExpression {
@@ -90,10 +193,14 @@ std::uint64_t Offset::binderMask()const {
   }
   return mask;
 }
+// key()'s text, appended in place.
+void Offset::appendKey(std::string& out)const {
+  if(expression){out+=expression->key;return;}
+  appendDecimal(out,base);
+  for(auto [level,c]:terms){out+=',';appendDecimal(out,level);out+=':';appendDecimal(out,c);}
+}
 std::string Offset::key()const {
-  if(expression)return expression->key;
-  std::string k=std::to_string(base);
-  for(auto [level,c]:terms) k+=","+std::to_string(level)+":"+std::to_string(c);
+  std::string k;appendKey(k);
   return k;
 }
 Offset compound(OffsetExpression::Kind kind,Offset left,Offset right={},std::int64_t factor=0) {
@@ -189,12 +296,16 @@ std::optional<std::int64_t> knownInteger(std::int64_t value,const v::ElementType
   if(bits>std::uint64_t(INT64_MAX))return {};
   return std::int64_t(bits);
 }
-std::string valueKey(const v::Value& x){
-  std::string key=std::to_string(x.nodeId())+":"+std::to_string(x.instanceIndex())+":"+std::to_string(x.resultIndex());
-  if(x.conversion())key+="<"+v::typeConversionLabel(x)+":"+valueKey(x.conversion()->source)+">";
-  for(auto i:x.indices())key+="["+valueKey(i)+"]";
-  if(x.threadSelector())key+="{"+valueKey(*x.threadSelector())+"}";
-  if(x.pointer())key+="|"+pointerLabel(*x.pointer());
+// valueKey's text, appended in place.
+void appendValueKey(std::string& out,const v::Value& x) {
+  appendDecimal(out,x.nodeId());out+=':';appendDecimal(out,x.instanceIndex());out+=':';appendDecimal(out,x.resultIndex());
+  if(x.conversion()){out+='<';out+=v::typeConversionLabel(x);out+=':';appendValueKey(out,x.conversion()->source);out+='>';}
+  for(const auto& i:x.indices()){out+='[';appendValueKey(out,i);out+=']';}
+  if(x.threadSelector()){out+='{';appendValueKey(out,*x.threadSelector());out+='}';}
+  if(x.pointer()){out+='|';out+=pointerLabel(*x.pointer());}
+}
+std::string valueKey(const v::Value& x) {
+  std::string key;appendValueKey(key,x);
   return key;
 }
 std::optional<unsigned> scalarBytes(const std::string& type) {
@@ -243,6 +354,272 @@ void coalesceFragments(s::Graph& graph,std::vector<ScalarFoldOutput>& outputs) {
   }
   outputs=std::move(compact);
 }
+// Probe start in a power-of-two table: every hash bit reaches the mask.
+std::size_t keySlot(std::size_t hash,std::size_t mask) {
+  const auto x=static_cast<std::uint64_t>(hash)*0x9e3779b97f4a7c15ULL;
+  return static_cast<std::size_t>(x^(x>>32))&mask;
+}
+// A projection key is its text, interned once per request: two live
+// handles have equal IDs exactly when their texts are equal (a probe hit
+// compares the whole text). Handles are counted; an ID is reused only after
+// its last holder (handle, KeySet member or memo entry) is gone. The memoized
+// result lives in the key's slot, so a request makes one probe.
+// Single-threaded, like the lowering.
+class ProjectionKeys;
+class ProjectionKey {
+ public:
+  static constexpr std::uint32_t none=std::numeric_limits<std::uint32_t>::max();
+  ProjectionKey() noexcept=default;
+  ProjectionKey(const ProjectionKey& o) noexcept;
+  ProjectionKey(ProjectionKey&& o) noexcept:keys_(std::exchange(o.keys_,nullptr)),id_(std::exchange(o.id_,none))
+  {}
+  ProjectionKey& operator=(ProjectionKey o) noexcept {
+    std::swap(keys_,o.keys_);std::swap(id_,o.id_);
+    return *this;
+  }
+  ~ProjectionKey();
+  std::uint32_t id()const noexcept{return id_;}
+  friend bool operator==(const ProjectionKey& a,const ProjectionKey& b) noexcept {return a.id()==b.id();}
+  // Maps keyed by ProjectionKey are ordered by ID; their consumers are order-free.
+  friend std::strong_ordering operator<=>(const ProjectionKey& a,const ProjectionKey& b) noexcept {
+    return a.id()<=>b.id();
+  }
+ private:
+  friend class ProjectionKeys;
+  friend class KeySet;
+  ProjectionKey(ProjectionKeys* keys,std::uint32_t id) noexcept;  // retains
+  ProjectionKeys* keys_=nullptr;
+  std::uint32_t id_=none;
+};
+class ProjectionKeys {
+ public:
+  ProjectionKeys()=default;
+  ProjectionKeys(const ProjectionKeys&)=delete;
+  ProjectionKeys& operator=(const ProjectionKeys&)=delete;
+  ProjectionKey intern(std::string_view text);
+  const std::string& text(const ProjectionKey& k)const{return slot(k.id()).text;}
+  const std::string& textOf(std::uint32_t id)const{return slot(id).text;}
+  // Memoized results with unordered_map's contract: emplace inserts only an
+  // absent key; at() throws the std::out_of_range unordered_map::at throws.
+  s::Ref* find(const ProjectionKey& k){return findId(k.id());}
+  s::Ref& at(const ProjectionKey& k) {
+    if(auto* value=find(k))return *value;
+    throw std::out_of_range("unordered_map::at");
+  }
+  void emplace(const ProjectionKey& k,const s::Ref& value);
+  void erase(const ProjectionKey& k);
+  // Memoized entries by dense position. Erasure moves the last entry into the
+  // erased position, so positions hold only while no entry is added or erased.
+  std::size_t size()const{return cached_.size();}
+  s::Ref& valueAt(std::size_t i){return slot(cached_[i]).value;}
+  s::Ref* findId(std::uint32_t id);
+  // Stable compaction: keep(id,value) is called once per entry, in order.
+  template<class Keep> void retainIf(Keep&& keep);
+ private:
+  friend class ProjectionKey;
+  friend class KeySet;
+  static constexpr unsigned chunk_bits=12;
+  struct Slot {
+    std::string text;           // a free ID keeps the capacity for reuse
+    std::uint32_t tag=0;
+    std::uint32_t refs=0;
+    std::uint32_t cache_pos=0;  // 1-based position in cached_; 0: not memoized
+    s::Ref value;
+  };
+  // The folded text hash places and filters probes; a hit still compares the
+  // whole text, so the tag never decides identity.
+  struct IndexSlot {std::uint32_t tag;std::uint32_t id;};
+  static std::uint32_t tagOf(std::size_t hash){return std::uint32_t(hash^(hash>>32));}
+  Slot& slot(std::uint32_t id){return chunks_[id>>chunk_bits][id&((1u<<chunk_bits)-1)];}
+  const Slot& slot(std::uint32_t id)const{return chunks_[id>>chunk_bits][id&((1u<<chunk_bits)-1)];}
+  void retain(std::uint32_t id) noexcept{++slot(id).refs;}
+  void release(std::uint32_t id) noexcept;
+  void grow();
+  void index(std::uint32_t tag,std::uint32_t id) noexcept;
+  void unindex(std::uint32_t tag,std::uint32_t id) noexcept;
+  // Fixed chunks: slots never move, and growth never copies the records.
+  std::vector<std::unique_ptr<Slot[]>> chunks_;
+  std::uint32_t used_=0;
+  std::vector<std::uint32_t> free_;  // capacity covers every ID: release never allocates
+  std::vector<IndexSlot> index_;     // text tag -> ID; linear probing at load <= 1/2
+  std::size_t indexed_=0;
+  std::vector<std::uint32_t> cached_;
+};
+ProjectionKey::ProjectionKey(ProjectionKeys* keys,std::uint32_t id) noexcept:keys_(keys),id_(id){keys_->retain(id_);}
+ProjectionKey::ProjectionKey(const ProjectionKey& o) noexcept:keys_(o.keys_),id_(o.id())
+{if(keys_)keys_->retain(id_);}
+ProjectionKey::~ProjectionKey(){if(keys_)keys_->release(id_);}
+ProjectionKey ProjectionKeys::intern(std::string_view text) {
+  const auto tag=tagOf(std::hash<std::string_view>{}(text));
+  if(!index_.empty()) {
+    const auto mask=index_.size()-1;
+    for(auto i=keySlot(tag,mask);index_[i].id!=ProjectionKey::none;i=(i+1)&mask)
+      if(index_[i].tag==tag && slot(index_[i].id).text==text)return ProjectionKey(this,index_[i].id);
+  }
+  // Allocate before publishing anything: a throw leaves the table unchanged.
+  if(2*(indexed_+1)>index_.size())grow();
+  if(free_.empty()) {
+    if(used_==ProjectionKey::none)throw std::length_error("projection key table is full");
+    if((used_>>chunk_bits)==chunks_.size())chunks_.push_back(std::make_unique<Slot[]>(std::size_t{1}<<chunk_bits));
+    if(free_.capacity()<=used_)free_.reserve(std::max<std::size_t>(64,2*std::size_t(used_)));
+    free_.push_back(used_++);
+  }
+  const auto id=free_.back();
+  auto& s=slot(id);
+  s.text.assign(text);  // may throw: the ID stays free
+  free_.pop_back();s.tag=tag;s.refs=0;index(tag,id);++indexed_;
+  return ProjectionKey(this,id);
+}
+void ProjectionKeys::release(std::uint32_t id) noexcept {
+  auto& s=slot(id);
+  if(--s.refs)return;
+  unindex(s.tag,id);--indexed_;s.text.clear();free_.push_back(id);
+}
+void ProjectionKeys::grow() {
+  std::vector<IndexSlot> grown(index_.empty()?std::size_t{64}:2*index_.size(),IndexSlot{0,ProjectionKey::none});
+  grown.swap(index_);
+  for(const auto& entry:grown)if(entry.id!=ProjectionKey::none)index(entry.tag,entry.id);
+}
+void ProjectionKeys::index(std::uint32_t tag,std::uint32_t id) noexcept {
+  const auto mask=index_.size()-1;
+  auto i=keySlot(tag,mask);
+  while(index_[i].id!=ProjectionKey::none)i=(i+1)&mask;
+  index_[i]={tag,id};
+}
+// Backward-shift deletion: every remaining probe chain stays unbroken.
+void ProjectionKeys::unindex(std::uint32_t tag,std::uint32_t id) noexcept {
+  const auto mask=index_.size()-1;
+  auto i=keySlot(tag,mask);
+  for(;index_[i].id!=id;i=(i+1)&mask)if(index_[i].id==ProjectionKey::none)return;
+  for(auto j=(i+1)&mask;index_[j].id!=ProjectionKey::none;j=(j+1)&mask)
+    if(((j-keySlot(index_[j].tag,mask))&mask)>=((j-i)&mask)){index_[i]=index_[j];i=j;}
+  index_[i]={0,ProjectionKey::none};
+}
+s::Ref* ProjectionKeys::findId(std::uint32_t id) {
+  auto& s=slot(id);
+  return s.cache_pos?&s.value:nullptr;
+}
+void ProjectionKeys::emplace(const ProjectionKey& k,const s::Ref& value) {
+  const auto id=k.id();
+  auto& s=slot(id);
+  if(s.cache_pos)return;
+  auto copy=value;
+  cached_.push_back(id);  // may throw: nothing is published yet
+  s.value=std::move(copy);s.cache_pos=std::uint32_t(cached_.size());retain(id);
+}
+void ProjectionKeys::erase(const ProjectionKey& k) {
+  const auto id=k.id();
+  auto& s=slot(id);
+  if(!s.cache_pos)return;
+  const auto at=s.cache_pos-1;
+  cached_[at]=cached_.back();slot(cached_[at]).cache_pos=at+1;cached_.pop_back();
+  s.cache_pos=0;s.value=s::Ref{};release(id);
+}
+template<class Keep> void ProjectionKeys::retainIf(Keep&& keep) {
+  std::size_t out=0,i=0;
+  try {
+    for(;i<cached_.size();++i) {
+      const auto id=cached_[i];
+      auto& s=slot(id);
+      if(keep(id,s.value)){cached_[out++]=id;s.cache_pos=std::uint32_t(out);continue;}
+      s.cache_pos=0;s.value=s::Ref{};release(id);
+    }
+  } catch(...) {
+    // Only an invariant violation throws here; the remaining entries stay.
+    for(;i<cached_.size();++i){const auto id=cached_[i];cached_[out++]=id;slot(id).cache_pos=std::uint32_t(out);}
+    cached_.resize(out);throw;
+  }
+  cached_.resize(out);
+}
+// Retained IDs by open addressing (load <= 1/2, linear probing, backward-
+// shift erase): no node allocation per member. Iteration order is
+// unspecified, as with unordered_set; every consumer is order-free.
+class KeySet {
+ public:
+  KeySet()=default;
+  KeySet(const KeySet& o):keys_(o.keys_),ids_(o.ids_),size_(o.size_)
+  {for(const auto id:ids_)if(id!=ProjectionKey::none)keys_->retain(id);}
+  KeySet(KeySet&& o) noexcept:keys_(o.keys_),ids_(std::move(o.ids_)),size_(std::exchange(o.size_,0))
+  {
+    o.ids_.clear();
+  }
+  KeySet& operator=(KeySet o) noexcept {
+    std::swap(keys_,o.keys_);ids_.swap(o.ids_);std::swap(size_,o.size_);
+    return *this;
+  }
+  ~KeySet(){clear();}
+  bool insert(const ProjectionKey& k);  // true when newly inserted (retained)
+  void insert(const KeySet& other);
+  bool contains(const ProjectionKey& k)const;
+  bool contains(std::uint32_t id)const;
+  void erase(const ProjectionKey& k);   // releases an erased member
+  void clear() noexcept;                // releases every member; keeps the table
+  std::size_t size()const{return size_;}
+  template<class F> void forEachId(F&& f)const {
+    for(const auto id:ids_)if(id!=ProjectionKey::none)f(id);
+  }
+ private:
+  bool find(std::uint32_t id)const;
+  bool insertId(ProjectionKeys* keys,std::uint32_t id);
+  void grow();
+  ProjectionKeys* keys_=nullptr;
+  std::vector<std::uint32_t> ids_;
+  std::size_t size_=0;
+};
+bool KeySet::find(std::uint32_t id)const {
+  if(!size_)return false;
+  const auto mask=ids_.size()-1;
+  for(auto i=keySlot(id,mask);ids_[i]!=ProjectionKey::none;i=(i+1)&mask)if(ids_[i]==id)return true;
+  return false;
+}
+void KeySet::grow() {
+  std::vector<std::uint32_t> grown(ids_.empty()?std::size_t{8}:2*ids_.size(),ProjectionKey::none);
+  grown.swap(ids_);
+  const auto mask=ids_.size()-1;
+  for(const auto id:grown)if(id!=ProjectionKey::none) {
+    auto i=keySlot(id,mask);
+    while(ids_[i]!=ProjectionKey::none)i=(i+1)&mask;
+    ids_[i]=id;
+  }
+}
+bool KeySet::insertId(ProjectionKeys* keys,std::uint32_t id) {
+  // At the load limit, grow (allocating first) only for a new member.
+  if(2*(size_+1)>ids_.size()) {
+    if(find(id))return false;
+    grow();
+  }
+  const auto mask=ids_.size()-1;
+  for(auto i=keySlot(id,mask);;i=(i+1)&mask) {
+    if(ids_[i]==id)return false;
+    if(ids_[i]==ProjectionKey::none){ids_[i]=id;++size_;keys_=keys;keys->retain(id);return true;}
+  }
+}
+bool KeySet::insert(const ProjectionKey& k) {return insertId(k.keys_,k.id());}
+void KeySet::insert(const KeySet& other) {
+  for(const auto id:other.ids_)if(id!=ProjectionKey::none)insertId(other.keys_,id);
+}
+bool KeySet::contains(const ProjectionKey& k)const {return find(k.id());}
+bool KeySet::contains(std::uint32_t id)const {return find(id);}
+void KeySet::erase(const ProjectionKey& k) {
+  const auto id=k.id();
+  if(size_) {
+    const auto mask=ids_.size()-1;
+    auto i=keySlot(id,mask);
+    while(ids_[i]!=id && ids_[i]!=ProjectionKey::none)i=(i+1)&mask;
+    if(ids_[i]==id) {
+      // Backward-shift deletion: every remaining probe chain stays unbroken.
+      for(auto j=(i+1)&mask;ids_[j]!=ProjectionKey::none;j=(j+1)&mask)
+        if(((j-keySlot(ids_[j],mask))&mask)>=((j-i)&mask)){ids_[i]=ids_[j];i=j;}
+      ids_[i]=ProjectionKey::none;--size_;keys_->release(id);
+    }
+  }
+}
+void KeySet::clear() noexcept {
+  if(!size_)return;
+  for(auto& id:ids_)if(id!=ProjectionKey::none){keys_->release(id);id=ProjectionKey::none;}
+  size_=0;
+}
+struct RetryFoldDomain {std::vector<ProjectionKey> keep;};
 class Lower {
   const v::Graph& input;
   const MemoryEliminationResult& memory;
@@ -254,7 +631,7 @@ class Lower {
   struct SelectorRun {std::size_t end;std::int64_t thread;};
   std::map<std::string,std::map<std::size_t,SelectorRun>> member_selectors;
   const ScalarFoldOptions& options;
-  ScalarSpecialization specialization{input};
+  ScalarSpecialization specialization{input,options.unit_lifting!=nullptr};
   ScalarFoldResult result;
 #if defined(SENTRYWARD_ENABLE_COMPRESSION_AUDIT)
   std::unique_ptr<debug::ProjectionLedger> ledger=debug::ProjectionLedger::enabled()?
@@ -280,16 +657,32 @@ class Lower {
     }
   };
   std::map<std::size_t,OutputDomain> output_domains;
+  // Lifting mode (unit_lifting.h): outputs [instantiated_end, outputs.size())
+  // are parametric bodies, each of the CTA (coordinates) in output_ctas at the
+  // same index; earlier outputs are instantiated. output_cta is the CTA of the
+  // output being lowered (the convention of the per-CTA output grouping below:
+  // the stored value's instance origin); `writer` is the CTA of its store
+  // (class mode: the unit whose class the output is copied for; empty when the
+  // output's records lie in more than one unit).
+  std::size_t instantiated_end=0;
+  using CtaCoordinates=std::array<std::uint64_t,3>;
+  struct OutputOrigin {std::optional<CtaCoordinates> value,writer;};
+  std::vector<OutputOrigin> output_ctas;
+  OutputOrigin output_cta;
+  const std::array<std::uint64_t,kUnitSiteCount> sites_at_start=UnitSiteCounts();
   s::ReductionBuilder reductions{result.graph};
   s::RealExpressionBuilder real_expressions{result.graph,reductions,[this]{limit();}};
-  std::unordered_map<std::string,s::Ref> cache;
-  std::unordered_map<std::string,std::pair<Failure,std::optional<MemoryInstance>>> failed_projections;
+  // Interned projection keys with their memoized results. Declared before
+  // every key holder below, so it is destroyed after all of them.
+  ProjectionKeys keys;
   struct ViewInterval {
     std::uint64_t begin,end,prefix_end;
     std::size_t block;
   };
   std::unordered_map<const MemoryView*,std::vector<ViewInterval>> view_intervals;
-  std::set<std::string> visiting;
+  KeySet visiting;
+  // Reused buffers for spelling a key in project(); no text outlives a call.
+  std::string key_text,index_text;
   std::vector<std::uint64_t> domains;
   unsigned output_refinement_depth=0;
   unsigned output_domain_rank=0;
@@ -510,8 +903,10 @@ class Lower {
   }
   // Keep binding identities alive for projection cache keys for the whole pass.
   std::vector<std::shared_ptr<const IndexedSource>> output_source_patterns;
-  IndexedSourceMatcher output_source_matcher{input,memory};
-  PureSourceTemplates pure_source_templates{input,memory};
+  // One owner of AssembledRead piece extents for both raw-read consumers.
+  AssembledPieceEnds assembled_piece_ends;
+  IndexedSourceMatcher output_source_matcher{input,memory,assembled_piece_ends};
+  PureSourceTemplates pure_source_templates{input,memory,&assembled_piece_ends,options.unit_lifting!=nullptr};
   // One finite native-fragment proof per collective occurrence, reused across
   // output coordinates and worklist resumptions. These are operand views,
   // never a table of precomputed output expressions.
@@ -524,15 +919,16 @@ class Lower {
   std::map<PartitionLatticeKey,std::optional<MemoryView>> partition_lattices;
   using PartitionGridKey=std::tuple<const PartitionedRead*,std::string,std::string>;
   std::map<PartitionGridKey,std::optional<MemoryView>> partition_grids;
-  using FoldPieceKey=std::pair<std::string,std::uint64_t>;
+  // Ordered by key ID, then piece: lower_bound({key,0}) walks one key's pieces.
+  using FoldPieceKey=std::pair<ProjectionKey,std::uint64_t>;
   struct FoldOwner;
   struct Projection {
     v::Value value;
     Offset offset;
     v::ElementType type;
     std::vector<std::uint64_t> domains;
-    std::string key;
-    std::unordered_set<std::string> dependencies = {};
+    ProjectionKey key;
+    KeySet dependencies = {};
     std::shared_ptr<const IndexedContext> indexed = {};
     std::shared_ptr<const FoldOwner> fold = {};
 #if defined(SENTRYWARD_ENABLE_COMPRESSION_AUDIT)
@@ -544,6 +940,10 @@ class Lower {
   // Keep their direct dependency roots and coordinate context instead of
   // rediscovering the entire inline chain when its leaf becomes available.
   std::vector<Projection> suspended_projections;
+  // Set only between the depth-32 throw in project() and the driver's catch:
+  // InlineFrame destructors then transfer their requests, innermost first.
+  bool suspending=false;
+  std::size_t suspension_base=0,suspension_frames=0;
   std::optional<Projection> refinement_resume;
   struct FoldOwner {
     FoldPieceKey key;
@@ -589,24 +989,24 @@ class Lower {
     for(auto p=owner;p;p=p->parent)retry.keep.push_back(p->key.first);
     throw retry;
   }
-  std::unordered_set<std::string>* requested = nullptr;
+  KeySet* requested = nullptr;
   // A suspended reduction owns only its accumulator and the current domain's
   // dependencies. Completed domains are never reconstructed on resumption.
-  // References live in cache so collectFrontier can remap them; no raw graph
-  // handles survive collection inside the continuation record.
+  // References live in the memo so collectFrontier can remap them; no raw
+  // graph handles survive collection inside the continuation record.
   struct ReductionProgress {
     std::uint64_t next=0;
-    std::string accumulator_key;
-    std::unordered_set<std::string> pending;
+    ProjectionKey accumulator_key;
+    KeySet pending;
     std::uint64_t sub_next=0;
   };
-  std::map<std::string,ReductionProgress> reduction_progress;
-  std::map<std::string,std::vector<algorithm::AffineDomain>> reduction_domain_plans;
-  const std::string* projection_key=nullptr;
+  std::map<ProjectionKey,ReductionProgress> reduction_progress;
+  std::map<ProjectionKey,std::vector<algorithm::AffineDomain>> reduction_domain_plans;
+  const ProjectionKey* projection_key=nullptr;
   struct ReductionRequests {
-    std::unordered_set<std::string>*& current;
-    std::unordered_set<std::string>* previous;
-    ReductionRequests(std::unordered_set<std::string>*& target,ReductionProgress& progress)
+    KeySet*& current;
+    KeySet* previous;
+    ReductionRequests(KeySet*& target,ReductionProgress& progress)
         :current(target),previous(target){current=&progress.pending;}
     ~ReductionRequests(){current=previous;}
   };
@@ -620,15 +1020,16 @@ class Lower {
     // Initialization may itself request a child. Publish the frame only after
     // its initial accumulator has actually been constructed.
     auto initial=initialize();
+    // The accumulator key is the text "$reduction:"+key, interned.
     auto [found,inserted]=reduction_progress.emplace(key,
-        ReductionProgress{0,"$reduction:"+key,{}});
+        ReductionProgress{0,keys.intern("$reduction:"+keys.text(key)),{}});
     if(!inserted)throw std::logic_error("duplicate reduction continuation");
-    cache.emplace(found->second.accumulator_key,initial);
+    keys.emplace(found->second.accumulator_key,initial);
     return found->second;
   }
   void commitReduction(ReductionProgress& progress,std::uint64_t next,s::Ref accumulator) {
     if(next<=progress.next)throw std::logic_error("reduction continuation did not advance");
-    cache.at(progress.accumulator_key)=accumulator;
+    keys.at(progress.accumulator_key)=accumulator;
     progress.next=next;
     progress.sub_next=0;
     // The accumulator now contains the semantic dependencies. Operand cache
@@ -636,15 +1037,15 @@ class Lower {
     progress.pending.clear();
     SENTRYWARD_AUDIT(audit->add(AuditCounter::reduction_domains_committed));
   }
-  void finishReduction(const std::string& key) {
+  void finishReduction(const ProjectionKey& key) {
     if(auto found=reduction_progress.find(key);found!=reduction_progress.end()) {
-      cache.erase(found->second.accumulator_key);reduction_progress.erase(found);
+      keys.erase(found->second.accumulator_key);reduction_progress.erase(found);
     }
     auto piece=fold_pieces.lower_bound({key,0});
     while(piece!=fold_pieces.end() && piece->first.first==key)piece=fold_pieces.erase(piece);
   }
   void discardReductions() {
-    for(const auto& [key,progress]:reduction_progress){(void)key;cache.erase(progress.accumulator_key);}
+    for(const auto& [key,progress]:reduction_progress){(void)key;keys.erase(progress.accumulator_key);}
     reduction_progress.clear();
     fold_pieces.clear();
   }
@@ -770,14 +1171,14 @@ class Lower {
           return;
         }
       }
-      const auto first=input.instance(value);
-      std::vector<std::vector<v::Value>> operands(first.operands.size());
+      const auto first=input.instanceOperands(value);
+      std::vector<std::vector<v::Value>> operands(first.size());
       SENTRYWARD_AUDIT(if(members.count>1)audit->event("INSTANCE_ENUMERATION",
         "spatial_operand_fallback",members.count,1,value.nodeId(),true));
       for(std::size_t member=0;member<members.count;++member) {
-        const auto item=input.instance(members.at(member));
-        if(item.operands.size()!=operands.size())spatialReject();
-        for(std::size_t i=0;i<operands.size();++i)operands[i].push_back(item.operands[i]);
+        const auto item=input.instanceOperands(members.at(member));
+        if(item.size()!=operands.size())spatialReject();
+        for(std::size_t i=0;i<operands.size();++i)operands[i].push_back(item[i]);
       }
       for(auto& items:operands)registerSpatial(std::move(items));
     } else if(!dynamic_cast<const v::LoadOp*>(&op) && !dynamic_cast<const v::ConstantOp*>(&op) &&
@@ -973,6 +1374,372 @@ class Lower {
     }
     return r;
   }
+  // ---- Cross-CTA value lifting (unit_lifting.h) ----------------------------
+  [[noreturn]] void liftRefuse(std::string message) {
+    fail("scalar_fold_unit_parameter_unsupported",std::move(message));
+  }
+  // `op` as the BlockIndex coordinate it is in lifting mode; else null.
+  const v::CoordinateOp* liftedCoordinate(const v::Operation& op) const {
+    if(!options.unit_lifting)return nullptr;
+    const auto* coordinate=dynamic_cast<const v::CoordinateOp*>(&op);
+    return coordinate && coordinate->kind()==v::CoordinateKind::BlockIndex?coordinate:nullptr;
+  }
+  // The unit parameter of a BlockIndex value: `coordinate` is its CTA's ctaid
+  // on `axis`, so the name carries the CTA's offset from its unit's origin
+  // (its %cluster_ctaid). Instantiation substitutes the literal the unlifted
+  // lowering emits, of the type its site uses.
+  s::Ref unitCoordinate(v::Axis axis,std::uint64_t coordinate,std::string type) {
+    const auto a=static_cast<unsigned>(axis);
+    const auto shape=options.unit_lifting->unit_shape.at(a);
+    if(!shape)liftRefuse("empty unit shape");
+    ++result.lifting.parameters;
+    return result.graph.parameter(std::move(type),UnitCoordinateParameter(a,coordinate%shape));
+  }
+  // An indexed binding whose leaf is BlockIndex maps every position to that
+  // leaf's own coordinate (stride 0): without lifting, one u64 literal.
+  // Returns the leaf's BlockIndex operation when the binding is lifted; else null.
+  const v::CoordinateOp* liftedBindingCoordinate(const IndexedValueBinding& binding,const Offset& position) {
+    const auto* lifted=options.unit_lifting?liftedCoordinate(input.definingNode(binding.leaf).operation()):nullptr;
+    if(!lifted)return nullptr;
+    const auto coordinate=input.instanceOrigin(binding.leaf).coordinate_value;
+    if(position.expression || !position.terms.empty() || !coordinate || position.base<0 ||
+       std::uint64_t(position.base)!=*coordinate)
+      liftRefuse("BlockIndex binding is not its leaf's coordinate");
+    return lifted;
+  }
+  // The InitialCell sites, classified for δ (every InitialCell of the lowering
+  // is built through one of these two). Representative-absolute: the offset
+  // is an Offset of the read's slot-resolved region, so a member reads it at
+  // +δ(allocation). κ-covariant: the offset comes from the address value
+  // graph (unit parameters and its own cells are instantiated), so no δ.
+  s::Ref repAbsoluteCell(std::string allocation,s::Ref offset,std::string type) {
+    return result.graph.initialCell(std::move(allocation),std::move(offset),std::move(type));
+  }
+  s::Ref covariantCell(std::string allocation,s::Ref offset,std::string type) {
+    return result.graph.initialCell(std::move(allocation),std::move(offset),std::move(type));
+  }
+  // Phase (e) item boundary (first-item rule, ScalarFoldResult::FailureSite): one
+  // normalized output group, contiguous scalar run or record, keyed by its
+  // first record. O(1) per item.
+  void beginItem(std::size_t record) {
+    result.failure_site.record=record;++result.failure_site.items;
+  }
+  // Every completed output enters here, with its CTA in lifting mode (its
+  // offset is representative-absolute).
+  void pushOutput(ConstantRegion region,s::Ref body) {
+    result.outputs.push_back({std::move(region),std::move(body)});
+    if(!options.unit_lifting)return;
+    output_ctas.resize(result.outputs.size());
+    output_ctas.back()=output_cta;
+  }
+  void setOutputCta(const OutputWrite& output) {
+    if(!options.unit_lifting)return;
+    output_cta.value=input.instanceOrigin(output.value).cta_coordinates;
+    output_cta.writer=input.node(output.writer.node).instanceOrigin(output.writer.instance).cta_coordinates;
+  }
+  // Class mode: an output built from `records` of memory.outputs belongs to
+  // one unit only if every record's store does; otherwise its unit is
+  // unknown and lifting refuses at instantiation. Callers bound the records
+  // by memory.outputs.size(). O(records), class mode only.
+  void includeRecordUnits(std::ranges::input_range auto&& records) {
+    if(!options.unit_lifting || !output_cta.writer)return;
+    const auto unit=unitOrigin(*output_cta.writer);
+    for(const std::size_t k:records) {
+      const auto& writer=memory.outputs[k].writer;
+      const auto cta=input.node(writer.node).instanceOrigin(writer.instance).cta_coordinates;
+      if(!cta || unitOrigin(*cta)!=unit){output_cta.writer.reset();return;}
+    }
+  }
+  static bool integralType(const std::string& type) {
+    return type=="pred" || (!type.empty() && (type[0]=='b' || type[0]=='u' || type[0]=='s'));
+  }
+  // One unit to instantiate bodies for: its origin (the unit parameters), δ
+  // per global allocation of its representative-absolute offsets and the
+  // representative's CTA linear ids renamed to its own (pointer provenance
+  // "cta=N"). A representative's own instance has neither; class mode
+  // supplies both for every member.
+  struct UnitInstance {
+    CtaCoordinates origin{};
+    const std::map<std::string,std::int64_t>* delta=nullptr;
+    const std::map<std::uint64_t,std::uint64_t>* ctas=nullptr;
+  };
+  std::int64_t deltaOf(const UnitInstance& unit,const std::string& allocation) {
+    if(!unit.delta)return 0;
+    const auto found=unit.delta->find(allocation);
+    if(found==unit.delta->end())liftRefuse("no δ for allocation "+allocation);
+    return found->second;
+  }
+  // A pointerLabel's fields: identity, addressing and the position of its
+  // "cta=" value (the labels are length-prefixed, so parsing is exact).
+  struct ProvenanceFields {std::string_view identity,addressing;std::size_t cta_begin=0,cta_end=0;};
+  static std::optional<ProvenanceFields> provenanceFields(std::string_view label) {
+    ProvenanceFields f;std::size_t at=0;
+    const auto field=[&](std::string_view key,std::string_view& out) {
+      if(label.substr(at,key.size())!=key)return false;
+      at+=key.size();std::size_t length=0;
+      const auto parsed=std::from_chars(label.data()+at,label.data()+label.size(),length);
+      if(parsed.ec!=std::errc{} || parsed.ptr>=label.data()+label.size() || *parsed.ptr!=':')return false;
+      at=std::size_t(parsed.ptr-label.data())+1;
+      if(length>label.size()-at)return false;
+      out=label.substr(at,length);at+=length;return true;
+    };
+    if(!field("pointer={identity=",f.identity) || !field(",addressing=",f.addressing) ||
+       label.substr(at,5)!=",cta=")return std::nullopt;
+    f.cta_begin=at+5;f.cta_end=label.find(',',f.cta_begin);
+    if(f.cta_end==std::string_view::npos)return std::nullopt;
+    return f;
+  }
+  // A use's own changes for `unit`: its pointer provenance renamed to the
+  // unit's CTA, and a slot constant (a numeric literal naming a global
+  // allocation, SlotAddressValue) moved by δ.
+  s::Ref instantiateUse(s::Ref use,const UnitInstance& unit) {
+    if(use.pointer_provenance.empty() || (!unit.delta && !unit.ctas))return use;
+    const auto fields=provenanceFields(use.pointer_provenance);
+    if(!fields)liftRefuse("unparsed pointer provenance");
+    const auto cta=std::string_view(use.pointer_provenance).substr(fields->cta_begin,fields->cta_end-fields->cta_begin);
+    if(unit.ctas && cta!="none") {
+      const auto id=exactInteger<std::uint64_t>(cta);
+      if(!id)liftRefuse("unparsed provenance CTA");
+      const auto renamed=unit.ctas->find(*id);
+      if(renamed==unit.ctas->end())liftRefuse("provenance CTA outside the unit");
+      use.pointer_provenance.replace(fields->cta_begin,cta.size(),std::to_string(renamed->second));
+    }
+    const auto& node=result.graph.node(use);
+    if(unit.delta && node.kind==s::Kind::Constant && !fields->identity.empty() && fields->addressing=="global") {
+      // δ is keyed as a region's allocation: the length-prefixed space and
+      // allocation name (semantic_program.cpp AllocationIdentity).
+      const auto delta=deltaOf(unit,std::to_string(fields->addressing.size())+':'+std::string(fields->addressing)+
+          std::to_string(fields->identity.size())+':'+std::string(fields->identity));
+      const auto value=exactInteger<std::int64_t>(node.name);
+      if(!value)liftRefuse("unparsed slot constant");
+      if(delta) {
+        auto moved=result.graph.constant(node.type,std::to_string(add(*value,delta)));
+        moved.conversion=use.conversion;moved.converted_type=use.converted_type;
+        moved.pointer_provenance=use.pointer_provenance;use=moved;
+      }
+    }
+    return use;
+  }
+  // plus(offset, Offset(δ)) on offsetValue's emitted form, for a
+  // representative-absolute InitialCell offset: a plain Offset is a left-deep
+  // Add chain from its (always emitted) constant base over Index and
+  // Multiply(Index, c) terms; an expression Offset keeps a nonzero constant
+  // displacement as Add(Constant c, R) and drops a zero one. Any other form
+  // refuses (the rule was checked against members' own bodies).
+  s::Ref shiftOffset(const s::Ref& offset,std::int64_t delta) {
+    if(!delta)return offset;
+    if(!offset.conversion.empty() || !offset.converted_type.empty() || !offset.pointer_provenance.empty())
+      liftRefuse("decorated representative-absolute offset");
+    const auto node=result.graph.node(offset);
+    const auto literal=[&](const s::Node& n)->std::optional<std::int64_t> {
+      if(n.kind!=s::Kind::Constant || n.type!="u64")return std::nullopt;
+      return exactInteger<std::int64_t>(n.name);
+    };
+    const auto plain=[](const s::Ref& r){return r.conversion.empty() && r.converted_type.empty() && r.pointer_provenance.empty();};
+    if(const auto value=literal(node))return result.graph.constant("u64",std::to_string(add(*value,delta)));
+    if(node.kind==s::Kind::Operation && node.name=="Add" && node.type=="u64" && node.attributes.empty() &&
+       node.operands.size()==2 && plain(node.operands[0]) && plain(node.operands[1])) {
+      const auto& right=result.graph.node(node.operands[1]);
+      const bool term=right.kind==s::Kind::Index || (right.kind==s::Kind::Operation && right.name=="Multiply" &&
+          right.operands.size()==2 && result.graph.node(right.operands[0]).kind==s::Kind::Index &&
+          literal(result.graph.node(right.operands[1])));
+      if(term)return emitOperation("Add","u64",{shiftOffset(node.operands[0],delta),node.operands[1]});
+      if(const auto value=literal(result.graph.node(node.operands[0]))) {
+        const auto moved=add(*value,delta);
+        if(!moved)return node.operands[1];
+        return emitOperation("Add","u64",{result.graph.constant("u64",std::to_string(moved)),node.operands[1]});
+      }
+    }
+    if(node.kind==s::Kind::Operation)
+      return emitOperation("Add","u64",{result.graph.constant("u64",std::to_string(delta)),offset});
+    liftRefuse("unrecognized representative-absolute offset");
+  }
+  // Rebuild one body for `unit`. Only nodes marked
+  // in `depends` (one ascending pass: node IDs are topological) are rebuilt,
+  // bottom-up through emitOperation, the lowering's own constant-folding path;
+  // `memo` shares them within the unit and hash-consing shares everything
+  // else. A rebuild that the unlifted construction would not produce the
+  // same way refuses: a real-valued operation or a Fold over a unit parameter
+  // (built by the real-expression and reduction builders, whose decisions read
+  // literal operands). δ alone moves cells, never decisions, so a Fold over
+  // representative-absolute cells is rebuilt as it stands.
+  s::Ref instantiate(const s::Ref& root,const UnitInstance& unit,const std::vector<std::uint8_t>& depends,
+                     std::unordered_map<s::Id,s::Ref>& memo) {
+    // A use's decorations apply on top of the rebuilt node, as graph.convert
+    // and withPointer applied them to the parametric node. A folded Select
+    // stands for its selected operand, which may carry its own conversion; a
+    // use converting it again is not rebuilt (the unlifted convert would compose).
+    const auto rebuilt=[&](const s::Ref& old) {
+      if(!depends[old.node])return instantiateUse(old,unit);
+      auto value=memo.at(old.node);
+      if(!old.conversion.empty() || !old.converted_type.empty()) {
+        if(!value.conversion.empty() || !value.converted_type.empty())
+          liftRefuse("a converted use of a folded selection");
+        value.conversion=old.conversion;value.converted_type=old.converted_type;
+      }
+      if(!old.pointer_provenance.empty())value.pointer_provenance=old.pointer_provenance;
+      return instantiateUse(value,unit);
+    };
+    std::vector<std::pair<s::Id,bool>> work{{root.node,false}};
+    while(!work.empty()) {
+      const auto [id,ready]=work.back();work.pop_back();
+      if(!depends[id] || memo.contains(id))continue;
+      const auto node=result.graph.node(id); // a copy: rebuilding appends nodes
+      if(!ready) {
+        work.emplace_back(id,true);
+        for(const auto& operand:node.operands)
+          if(depends[operand.node] && !memo.contains(operand.node))work.emplace_back(operand.node,false);
+        continue;
+      }
+      const bool kappa=depends[id]&kKappaDependent;
+      s::Ref value;
+      switch(node.kind) {
+        case s::Kind::InputParameter: {
+          const std::string_view name(node.name);
+          const auto axis=std::string_view("xyz").find(name.at(kUnitCoordinatePrefix.size()));
+          std::uint64_t offset=0;
+          if(name.size()>kUnitCoordinatePrefix.size()+1) {
+            const auto digits=exactInteger<std::uint64_t>(name.substr(kUnitCoordinatePrefix.size()+2));
+            if(name[kUnitCoordinatePrefix.size()+1]!='+' || !digits)liftRefuse("malformed unit parameter "+node.name);
+            offset=*digits;
+          }
+          if(axis>2)liftRefuse("malformed unit parameter "+node.name);
+          value=result.graph.constant(node.type,std::to_string(unit.origin[axis]+offset));
+          break;
+        }
+        case s::Kind::InputValue: {
+          // Representative-absolute (an Offset-built offset, free of input
+          // parameters) moves by δ; a κ-covariant offset (symbolic read: the
+          // address value graph) is only rebuilt.
+          auto offset=rebuilt(node.operands.at(0));
+          if(!(depends[id]&kCovariantCell))offset=shiftOffset(offset,deltaOf(unit,node.name));
+          value=result.graph.initialCell(node.name,offset,node.type);
+          break;
+        }
+        case s::Kind::Operation: {
+          if(kappa && !integralType(node.type))liftRefuse("real-valued "+node.name+" over a unit parameter");
+          std::vector<s::Ref> operands;operands.reserve(node.operands.size());
+          for(const auto& operand:node.operands)operands.push_back(rebuilt(operand));
+          value=kappa?emitOperation(node.name,node.type,std::move(operands),node.attributes):
+              result.graph.operation(node.name,node.type,std::move(operands),node.attributes);
+          // Uses were converted from this type; a folded literal of another
+          // type would change their conversion chains.
+          if(result.graph.type(value)!=node.type)liftRefuse("instantiated "+node.name+" changes its type");
+          break;
+        }
+        case s::Kind::Fold:
+          if(kappa)liftRefuse("Fold over a unit parameter");
+          value=result.graph.fold(node.fold->reducer,rebuilt(node.operands.at(0)),rebuilt(node.operands.at(1)),
+              node.fold->binder_level,node.fold->count,node.type);
+          break;
+        default:liftRefuse("unexpected parameter-dependent "+s::kindName(node.kind));
+      }
+      memo.emplace(id,value);
+    }
+    return rebuilt(root);
+  }
+  CtaCoordinates unitOrigin(const CtaCoordinates& cta) const {
+    CtaCoordinates origin{};
+    for(unsigned axis=0;axis<3;++axis) {
+      const auto shape=options.unit_lifting->unit_shape[axis];
+      origin[axis]=shape?cta[axis]-cta[axis]%shape:cta[axis];
+    }
+    return origin;
+  }
+  // Instantiation marks (one ascending pass over the graph; node IDs are
+  // topological). kKappaDependent: a unit parameter below. kCellDependent: a
+  // cell or a decorated use that moves by δ / is renamed below (only when
+  // `moves`, i.e. some unit has δ or renaming). kCovariantCell: an InitialCell
+  // whose offset contains an input parameter (the symbolic read's base).
+  static constexpr std::uint8_t kKappaDependent=1,kCellDependent=2,kCovariantCell=4;
+  std::vector<std::uint8_t> instantiationMarks(bool moves) const {
+    const auto& graph=result.graph;
+    std::vector<std::uint8_t> marks(graph.size());
+    std::vector<bool> parametric(graph.size()); // an input parameter (not a unit's) below
+    for(s::Id id=0;id<graph.size();++id) {
+      const auto& node=graph.node(id);
+      std::uint8_t m=0;bool p=false;
+      if(node.kind==s::Kind::InputParameter) {
+        if(node.name.starts_with(kUnitCoordinatePrefix))m|=kKappaDependent;else p=true;
+      }
+      for(const auto& operand:node.operands) {
+        m|=marks[operand.node]&(kKappaDependent|kCellDependent);p=p || parametric[operand.node];
+        if(moves && !operand.pointer_provenance.empty())m|=kCellDependent;
+      }
+      if(node.kind==s::Kind::InputValue) {
+        if(p)m|=kCovariantCell;else if(moves)m|=kCellDependent;
+      }
+      marks[id]=(m&(kKappaDependent|kCellDependent))?m:0;
+      parametric[id]=p;
+    }
+    return marks;
+  }
+  // Instantiate every pending output (instantiateClasses).
+  void instantiatePending() {
+    if(!options.unit_lifting)return;
+    if(instantiated_end>=result.outputs.size()){output_ctas.clear();return;}
+    instantiateClasses();
+  }
+  // Class mode: every pending output is a
+  // representative's. For each member of its class (unit order) a copy is
+  // appended, instantiated at the member's origin, δ and CTA ids, its region
+  // moved by δ(allocation); then the representative's own body is
+  // instantiated for its coordinate. The output's unit is its store's (its
+  // records must lie in one unit). Cost: two marking passes per call, then
+  // work linear in the κ-dependent part for the representative and in the
+  // moving part (κ, cells, renamed uses) per member, memoized per unit.
+  void instantiateClasses() {
+    const auto& lifting=*options.unit_lifting;
+    const auto kappa=instantiationMarks(false),moving=instantiationMarks(true);
+    std::map<CtaCoordinates,std::unordered_map<s::Id,s::Ref>> own,copies;
+    const auto end=result.outputs.size();
+    for(auto i=instantiated_end;i<end;++i) {
+      const auto origin=i<output_ctas.size()?output_ctas[i]:OutputOrigin{};
+      if(!origin.writer)liftRefuse("an output has no unit, or its records lie in more than one unit");
+      const auto rep=unitOrigin(*origin.writer);
+      const auto parametric=result.outputs[i].value;
+      const auto region=result.outputs[i].region;
+      if(kappa.at(parametric.node) && (!origin.value || unitOrigin(*origin.value)!=rep))
+        liftRefuse("an output over unit parameters is stored by another unit");
+      std::optional<OutputDomain> domain;
+      if(const auto found=output_domains.find(i);found!=output_domains.end())domain=found->second;
+      if(const auto found=lifting.members.find(rep);found!=lifting.members.end())
+        for(const auto& member:found->second) {
+          const UnitInstance unit{member.origin,&member.delta,&member.ctas};
+          auto body=instantiate(parametric,unit,moving,copies[member.origin]);
+          auto moved=region;
+          moved.offset=shiftRegion(region,domain,deltaOf(unit,region.allocation));
+          if(domain)output_domains.emplace(result.outputs.size(),*domain);
+          result.outputs.push_back({std::move(moved),std::move(body)});
+        }
+      auto body=parametric;
+      if(kappa.at(parametric.node))body=instantiate(parametric,{rep,nullptr,nullptr},kappa,own[rep]);
+      result.outputs[i].value=std::move(body);
+    }
+    instantiated_end=result.outputs.size();output_ctas.clear();
+  }
+  // A member's output region: the representative's moved by δ. Every byte it
+  // covers (a strided domain: the last element too) must stay in the signed
+  // 64-bit offset domain the member's own lowering works in; otherwise
+  // lifting refuses.
+  std::uint64_t shiftRegion(const ConstantRegion& region,const std::optional<OutputDomain>& domain,std::int64_t delta) {
+    const auto refuse=[&]{liftRefuse("a member's output region leaves the signed 64-bit offset domain");};
+    std::int64_t begin=0,end=0;
+    if(region.offset>std::uint64_t(INT64_MAX) || region.bytes>std::uint64_t(INT64_MAX) ||
+       __builtin_add_overflow(std::int64_t(region.offset),delta,&begin) || begin<0 ||
+       __builtin_add_overflow(begin,std::int64_t(region.bytes),&end))refuse();
+    if(domain && !domain->strides.empty() && domain->count) {
+      std::int64_t last=0;
+      if(__builtin_add_overflow(begin,std::int64_t(region.bytes/domain->count),&last))refuse();
+      for(std::size_t axis=0;axis<domain->shape.size();++axis) {
+        std::int64_t step=0;
+        if(domain->strides[axis]>std::uint64_t(INT64_MAX) ||
+           __builtin_mul_overflow(std::int64_t(domain->shape[axis]-1),std::int64_t(domain->strides[axis]),&step) ||
+           __builtin_add_overflow(last,step,&last))refuse();
+      }
+    }
+    return static_cast<std::uint64_t>(begin);
+  }
   std::optional<std::int64_t> known(v::Value x,unsigned depth=0)const{
     return knownAt(x,depth,indexed_context?indexed_context->use.get():nullptr);
   }
@@ -991,6 +1758,8 @@ class Lower {
         const auto& binding=*use->binding;
         if(binding.fixed)return {};
         if(binding.initial || binding.producer)return {};
+        if(options.unit_lifting && liftedCoordinate(input.definingNode(binding.leaf).operation()))
+          NoteUnitSite(UnitSite::FoldBindingKnown);
         const auto decode=[&](std::optional<std::int64_t> coordinate)->std::optional<std::int64_t> {
           if(!coordinate || !binding.power_of_two)return coordinate;
           const auto width=input.type(x).element().width();
@@ -1023,13 +1792,14 @@ class Lower {
       return value?knownInteger(*value,input.type(x).element()):std::nullopt;
     }
     if(dynamic_cast<const v::CoordinateOp*>(&n.operation())){
-      if(auto val=input.instance(x).origin.coordinate_value)
+      if(liftedCoordinate(n.operation())){NoteUnitSite(UnitSite::FoldKnown);return {};}
+      if(auto val=input.instanceOrigin(x).coordinate_value)
         if(*val<=std::uint64_t(INT64_MAX))return knownInteger(std::int64_t(*val),input.type(x).element());
     }
     if(dynamic_cast<const v::BinaryOp*>(&n.operation()) && input.type(x).element().isBitLike()) {
       std::vector<equivalence::ConstantValue> operands;
       std::size_t operand_index=0;
-      for(auto operand:input.instance(x).operands) {
+      for(auto operand:input.instanceOperands(x)) {
         auto value=knownAt(operand,depth+1,use?use->children.at(operand_index).get():nullptr);
         ++operand_index;
         if(!value)return {};
@@ -1046,6 +1816,70 @@ class Lower {
   s::Ref cast(s::Ref x,const v::ElementType& type,std::string step="Bitcast"){
     auto target=type.toString();if(result.graph.type(x)==target && step=="Bitcast")return x;
     return result.graph.convert(std::move(x),target,std::move(step));
+  }
+  // A whole-byte matrix constant whose bits are all zero (the frontend's TMA
+  // out-of-bounds zero fill): every byte of it reads as zero.
+  bool zeroMatrixLiteral(const v::Value& value) const {
+    if(value.conversion() || !value.indices().empty() || value.threadSelector() || value.pointer())return false;
+    const auto& type=input.type(value);
+    if(!type.isMatrix() || !type.hasStaticShape() || type.element().isParameterized() || type.bitSize()%8)return false;
+    const auto* constant=dynamic_cast<const v::ConstantOp*>(&input.definingNode(value).operation());
+    return constant && !constant->pointer() && constant->literal()=="0";
+  }
+  // Whether every byte of a Load is backed by zero matrix literals, through its
+  // normalized read only (the substitution read() projects). Any other source,
+  // initial memory or an uncertain view is not zero. Memoized per operand read
+  // instance; nested source reads are not, so the bounded answer is order-free.
+  struct MemoryInstanceHash {
+    std::size_t operator()(const MemoryInstance& x)const noexcept {
+      const auto h=std::hash<std::size_t>{}(x.node);
+      return h^(std::hash<std::size_t>{}(x.instance)+0x9e3779b97f4a7c15ULL+(h<<6)+(h>>2));
+    }
+  };
+  std::unordered_map<MemoryInstance,bool,MemoryInstanceHash> zero_reads;
+  bool zeroRead(v::Value value,unsigned depth=0) {
+    value=input.canonicalInterpretation(value);
+    if(zeroMatrixLiteral(value))return true;
+    if(depth>=8 || value.conversion() || !value.indices().empty() || value.threadSelector() || value.pointer() ||
+       !dynamic_cast<const v::LoadOp*>(&input.definingNode(value).operation()))return false;
+    const MemoryInstance key{value.nodeId(),value.instanceIndex()};
+    if(const auto found=zero_reads.find(key);!depth && found!=zero_reads.end())return found->second;
+    // An indexed region projects its use's prototype; only an Exact use keeps
+    // that prototype for every member (CoordinateMap only remaps coordinates).
+    const auto zeroView=[&](const MemoryView& view) {
+      if(const auto& source=view.indexed_source) {
+        auto use=source->root;
+        while(use && use->kind==IndexedSourceUse::Kind::CoordinateMap && use->children.size()==1)use=use->children[0];
+        return !source->zero_mask && use && use->kind==IndexedSourceUse::Kind::Exact && zeroMatrixLiteral(use->prototype);
+      }
+      return !view.blocks.empty() && std::all_of(view.blocks.begin(),view.blocks.end(),[&](const ViewBlock& block) {
+        const auto* source=block.source<view.sources.size()?std::get_if<v::Value>(&view.sources[block.source]):nullptr;
+        return source && zeroRead(*source,depth+1);
+      });
+    };
+    bool zero=false;
+    if(!memory.symbolic_initial_reads.contains(key) && !memory.initialRead(key))
+      if(const auto found=memory.normalizedRead(key)) {
+        if(const auto* r=std::get_if<const v::Value*>(&*found))zero=zeroRead(**r,depth+1);
+        else if(const auto* r=std::get_if<const MemoryView*>(&*found))zero=zeroView(**r);
+        else if(const auto* r=std::get_if<const PartitionedRead*>(&*found))
+          zero=!(*r)->regions.empty() && std::all_of((*r)->regions.begin(),(*r)->regions.end(),
+              [&](const ReadRegion& region){return zeroView(region.view);});
+      }
+    if(!depth)zero_reads.emplace(key,zero);
+    return zero;
+  }
+  // D_in of a tcgen05 MMA whose product terms are all +0: the accumulator when
+  // enable-input-d is a known nonzero (an unguarded D load), +0 when it is a
+  // known zero. A guarded D load (unknown predicate) keeps the reduction path.
+  // `cell` is the byte stride of D_in elements, as in each caller's reduction.
+  std::optional<s::Ref> zeroProductMma(const v::OperandsRef& args,bool accumulate,std::size_t accumulator,
+      const Offset& index,std::int64_t cell,const v::ElementType& dtype,const v::ElementType& element) {
+    if(spatial_count || !(zeroRead(args.at(0)) || zeroRead(args.at(1))))return std::nullopt;
+    if(!accumulate)return cast(result.graph.constant(dtype.toString(),"0"),element);
+    const auto* load=dynamic_cast<const v::LoadOp*>(&input.definingNode(args.at(accumulator)).operation());
+    if(!load || load->attributes().guarded)return std::nullopt;
+    return cast(project(args.at(accumulator),times(index,cell),dtype),element);
   }
   v::Value selected(v::Value value){
     if(!value.threadSelector())return value;
@@ -1071,12 +1905,17 @@ class Lower {
       return result;
     }
     const auto& n=input.definingNode(value);
-    const auto cta=input.instance(value).origin.cta;
+    const auto cta=input.instanceOrigin(value).cta;
     if(n.origin().cta==cta) {
-      auto j=n.instanceThreads().indexOf(static_cast<std::uint64_t>(*thread));
-      if(n.instanceThreads().empty() && n.origin().thread==std::optional<std::uint64_t>(*thread))j=0;
+      const auto j=n.memberIndex(static_cast<std::uint64_t>(*thread));
       if(j) {
         auto result=n.result(value.resultIndex(),*j);
+        // A ThreadForward instance is that source thread's own value.
+        if(dynamic_cast<const v::ThreadForwardOp*>(&n.operation())) {
+          if(!value.indices().empty() || value.pointer())
+            fail("scalar_fold_thread_selector","a value forwarded from another thread carries component indices or a pointer annotation");
+          return selected(input.forwarded(result));
+        }
         if(!value.indices().empty())result=input.component(result,{value.indices().begin(),value.indices().end()});
         if(value.pointer())result=input.asPointer(result,*value.pointer());
         return result;
@@ -1085,7 +1924,7 @@ class Lower {
     fail("scalar_fold_thread_selector","selected thread "+std::to_string(*thread)+
         " has no matching value instance; source thread="+
         (n.origin().thread?std::to_string(*n.origin().thread):"none")+
-        ", members="+std::to_string(n.instances().size()));
+        ", members="+std::to_string(n.instanceCount()));
   }
   s::Ref scalar(v::Value x){
     const auto& type=input.type(x);
@@ -1097,7 +1936,7 @@ class Lower {
     const auto bytes=type.width()/8;
     if(lo<0 || hi<0 || std::uint64_t(hi)>x.region.bytes || bytes>x.region.bytes-std::uint64_t(hi))
       fail("scalar_fold_invalid_index","initial-memory slice exceeds its recorded region");
-    return result.graph.initialCell(x.region.allocation,offsetValue(plus(offset,Offset(integer(x.region.offset)))),type.toString());
+    return repAbsoluteCell(x.region.allocation,offsetValue(plus(offset,Offset(integer(x.region.offset)))),type.toString());
   }
   s::Ref source(const ViewSource& x,const Offset& offset,const v::ElementType& type){
     if(const auto* i=std::get_if<InitialMemorySymbol>(&x))return initial(*i,offset,type);
@@ -1175,7 +2014,7 @@ class Lower {
     // native copy must not turn a known matrix domain into K scalar queries.
     if(const auto* copy=dynamic_cast<const v::NativeMatrixOp*>(&operation);
        copy && copy->opcode()==v::NativeMatrixOpcode::TcgenCopyValue) {
-      const auto source=input.instance(value).operands.at(0);
+      const auto source=input.instanceOperands(value).at(0);
       if(input.type(source)==value_type)
         return readSpan(source,offset,stride,type,count,depth+1);
     }
@@ -1183,6 +2022,8 @@ class Lower {
         dynamic_cast<const v::MatMulOp*>(&operation) ||
         dynamic_cast<const v::TcgenMmaOp*>(&operation)))
       return fit(value_type.bitSize()/8,std::uint64_t(hi));
+    // An all-zero matrix constant is one span: its pieces project to zero (projectImpl).
+    if(zeroMatrixLiteral(value))return fit(value_type.bitSize()/8,std::uint64_t(hi));
     if(value.conversion() || !dynamic_cast<const v::LoadOp*>(&operation))return single("read_span_not_matrix_or_load");
     if(auto initial=memory.initialRead({value.nodeId(),value.instanceIndex()}))
       return fit(initial->region.bytes,std::uint64_t(hi));
@@ -1418,6 +2259,119 @@ class Lower {
     }
     return cast(packed,type);
   }
+  // The region of `split` holding every byte the query can read, if any.
+  const ReadRegion* coveringRegion(const PartitionedRead& split,const Offset& offset,const v::ElementType& type) {
+    const auto [lo,hi]=bounds(offset);
+    if(lo>=0 && hi>=lo)for(const auto& region:split.regions)
+      if(std::uint64_t(lo)>=region.begin && std::uint64_t(hi)<=region.begin+region.bytes &&
+         type.width()/8<=region.begin+region.bytes-std::uint64_t(hi) &&
+         (!split.template_domains || viewOffset(region.view.blocks.at(0),offset,type)))return &region;
+    return nullptr;
+  }
+  // A partition whose regions repeat with one period P (TMA zero fill of a
+  // partial tile: per matrix row, initial bytes then zero bytes) re-encoded as
+  // one strided region per phase: phase j of n periods gets the outer axis
+  // (n, source step, P). Exact: every byte keeps its source byte; a zero-literal
+  // phase reads its first period's literal, whose bytes are zero too. Only
+  // maximal runs of at least two whole periods are re-encoded, with the next
+  // region of the same shape as the one candidate period. Built once per
+  // partition in O(R log R + checked phases), R = stored regions; consulted
+  // only when the stored partition has no region for a query.
+  std::map<const PartitionedRead*,std::optional<PartitionedRead>> periodic_partitions;
+  const PartitionedRead* periodicPartition(const PartitionedRead& split) {
+    auto [entry,inserted]=periodic_partitions.try_emplace(&split);
+    if(!inserted)return entry->second?&*entry->second:nullptr;
+    const auto& regions=split.regions;
+    struct Phase {const InitialMemorySymbol* initial;std::uint64_t address;};
+    const auto phase=[&](const ReadRegion& r)->std::optional<Phase> {
+      const auto& view=r.view;
+      if(view.indexed_source || view.sources.size()!=1 || view.blocks.size()!=1)return {};
+      const auto& b=view.blocks[0];
+      if(b.source || b.result_offset!=r.begin || !r.bytes)return {};
+      if(const auto* initial=std::get_if<InitialMemorySymbol>(&view.sources[0])) {
+        const auto address=static_cast<unsigned __int128>(initial->region.offset)+b.source_offset;
+        if(address>std::uint64_t(INT64_MAX))return {};
+        return Phase{initial,static_cast<std::uint64_t>(address)};
+      }
+      if(zeroMatrixLiteral(std::get<v::Value>(view.sources[0])))return Phase{nullptr,0};
+      return {};
+    };
+    const auto shape=[&](const ReadRegion& a,const ReadRegion& b) {
+      const auto pa=phase(a),pb=phase(b);
+      return pa && pb && a.bytes==b.bytes && a.view.blocks[0].bytes==b.view.blocks[0].bytes &&
+          a.view.blocks[0].axes==b.view.blocks[0].axes && !pa->initial==!pb->initial &&
+          (!pa->initial || pa->initial->region.allocation==pb->initial->region.allocation);
+    };
+    // Next region of the same shape: keyed by shape, scanned from the back.
+    std::vector<std::size_t> next(regions.size(),regions.size());
+    {
+      std::map<std::tuple<std::uint64_t,std::uint64_t,std::vector<std::uint64_t>,std::string>,std::size_t> later;
+      for(auto i=regions.size();i-->0;) {
+        const auto p=phase(regions[i]);
+        if(!p)continue;
+        const auto& b=regions[i].view.blocks[0];
+        std::vector<std::uint64_t> axes;
+        for(const auto& axis:b.axes){axes.push_back(axis.count);axes.push_back(axis.source_stride);axes.push_back(axis.result_stride);}
+        auto [found,fresh]=later.try_emplace({regions[i].bytes,b.bytes,std::move(axes),
+            p->initial?p->initial->region.allocation:std::string()},i);
+        if(!fresh){next[i]=found->second;found->second=i;}
+      }
+    }
+    PartitionedRead result{split.type,{},true};
+    bool changed=false;
+    for(std::size_t i=0;i<regions.size();) {
+      const auto q=next[i]-i;
+      std::size_t periods=0;
+      std::vector<std::uint64_t> steps;
+      if(next[i]<regions.size() && regions[next[i]].begin>regions[i].begin) {
+        const auto period=regions[next[i]].begin-regions[i].begin;
+        const auto matches=[&](std::size_t p) {
+          if(i+(p+1)*q>regions.size())return false;
+          for(std::size_t j=0;j<q;++j) {
+            const auto& first=regions[i+j];const auto& later=regions[i+p*q+j];
+            if(!shape(first,later) || __int128(later.begin)!=__int128(first.begin)+__int128(p)*period)return false;
+            const auto a=phase(first),b=phase(later);
+            if(!a->initial)continue;
+            if(p==1){if(b->address<a->address)return false;steps[j]=b->address-a->address;}
+            else if(__int128(b->address)!=__int128(a->address)+__int128(p)*steps[j])return false;
+          }
+          return true;
+        };
+        steps.assign(q,0);
+        periods=1;
+        while(matches(periods))++periods;
+      }
+      const auto period=periods<2?0:regions[next[i]].begin-regions[i].begin;
+      std::vector<ReadRegion> merged;
+      for(std::size_t j=0;j<q && periods>=2;++j) {
+        auto region=regions[i+j];
+        // The period must enclose the phase, so that it is the outermost radix.
+        if(region.bytes>period)break;
+        auto& b=region.view.blocks[0];
+        if(auto* s=std::get_if<InitialMemorySymbol>(&region.view.sources[0])) {
+          const auto origin=phase(region)->address;
+          auto end=static_cast<unsigned __int128>(s->region.offset)+s->region.bytes;
+          for(std::size_t p=1;p<periods;++p) {
+            const auto& later=std::get<InitialMemorySymbol>(regions[i+p*q+j].view.sources[0]);
+            end=std::max(end,static_cast<unsigned __int128>(later.region.offset)+later.region.bytes);
+          }
+          s->region.offset=origin;s->region.bytes=static_cast<std::uint64_t>(end-origin);
+          s->type=v::ValueType::matrix(v::ElementType::bit(8),{s->region.bytes});
+          b.source_offset=0;
+        }
+        const auto bytes=static_cast<unsigned __int128>(periods-1)*period+region.bytes;
+        if(bytes>std::uint64_t(INT64_MAX) || static_cast<unsigned __int128>(region.begin)+bytes>std::uint64_t(INT64_MAX))break;
+        b.axes.push_back({periods,steps[j],period});
+        region.bytes=static_cast<std::uint64_t>(bytes);region.view.kind=MemoryViewKind::Layout;
+        merged.push_back(std::move(region));
+      }
+      if(merged.size()!=q || periods<2){result.regions.push_back(regions[i++]);continue;}
+      for(auto& region:merged)result.regions.push_back(std::move(region));
+      i+=periods*q;changed=true;
+    }
+    if(changed)entry->second=std::move(result);
+    return entry->second?&*entry->second:nullptr;
+  }
   struct PartitionLattice {const MemoryView* view;Offset offset;};
   const MemoryView* partitionGrid(const PartitionedRead& split,v::Value reader,
                                   const v::ElementType& type) {
@@ -1590,13 +2544,7 @@ class Lower {
   }
   s::Ref partition(const PartitionedRead& split,v::Value reader,const Offset& offset,const v::ElementType& type) {
     SENTRYWARD_LEDGER(ledger->add("partition_queries");ledger->add("partition_regions_available",split.regions.size()));
-    const auto [lo,hi]=bounds(offset);
-    if(lo>=0 && hi>=lo)for(const auto& region:split.regions)
-      if(std::uint64_t(lo)>=region.begin && std::uint64_t(hi)<=region.begin+region.bytes &&
-         type.width()/8<=region.begin+region.bytes-std::uint64_t(hi) &&
-         (!split.template_domains || viewOffset(region.view.blocks.at(0),offset,type))) {
-        return view(region.view,offset,type);
-      }
+    if(const auto* region=coveringRegion(split,offset,type))return view(region->view,offset,type);
     // A template-domain partition is not necessarily a complete rectangular
     // formula: independent row/column operands and causal zero masks can span
     // many such regions. Reuse the cached grid proof over retained raw pieces
@@ -1605,6 +2553,8 @@ class Lower {
     if(const auto* grid=partitionGrid(split,reader,type))return view(*grid,offset,type);
     if(!split.template_domains)
       if(auto lattice=partitionLattice(split,reader,offset,type))return view(*lattice->view,lattice->offset,type);
+    if(const auto* periodic=periodicPartition(split))
+      if(const auto* region=coveringRegion(*periodic,offset,type))return view(region->view,offset,type);
     refinePartitionDomain(split,offset,type);
     SENTRYWARD_AUDIT({
       (void)audit;
@@ -1794,14 +2744,18 @@ class Lower {
         fail("symbolic_initial_base_unsupported","No unique pointer root for symbolic initial-memory allocation "+region.allocation);
       // Preserve the exact integer address, including page-table loads. This is
       // a subtraction of the real object base, not substitution of base=0.
-      const auto address=input.instance(value).operands.at(0);
+      const auto address=input.instanceOperands(value).at(0);
       auto address_value=inUse(indexed_context && indexed_context->use &&
           indexed_context->use->kind==IndexedSourceUse::Kind::Operands?
           indexed_context->use->children.at(0):nullptr,[&]{return scalar(address);});
       auto base_value=inUse(nullptr,[&]{return scalar(base->second);});
       auto relative=emitOperation("Subtract","u64",{address_value,base_value});
+      // Lifting: the payload offset is relative to the address (serialization
+      // sets it to 0 for Loads); a nonzero one would mix a representative-
+      // absolute displacement into a covariant offset.
+      if(options.unit_lifting && region.offset)liftRefuse("symbolic initial read with an absolute payload offset");
       relative=emitOperation("Add","u64",{relative,offsetValue(plus(offset,Offset(integer(region.offset))))});
-      return result.graph.initialCell(region.allocation,relative,type.toString());
+      return covariantCell(region.allocation,relative,type.toString());
     }
     if(spatial_count) {
       const auto stride=spatial_instance_strides.find(valueKey(value));
@@ -1822,7 +2776,7 @@ class Lower {
                  type.width()/8<=first->region.bytes-std::uint64_t(hi)) {
                 Offset address(static_cast<std::int64_t>(first->region.offset));
                 if(step)address.terms[0]=static_cast<std::int64_t>(step);
-                return result.graph.initialCell(first->region.allocation,offsetValue(plus(address,offset)),type.toString());
+                return repAbsoluteCell(first->region.allocation,offsetValue(plus(address,offset)),type.toString());
               }
             }
           }
@@ -1878,7 +2832,7 @@ class Lower {
       const auto* first=&initials[0];
       const auto [lo,hi]=bounds(offset);
       if(lo<0 || hi<0 || std::uint64_t(hi)>first->region.bytes || type.width()/8>first->region.bytes-std::uint64_t(hi))spatialReject();
-      return result.graph.initialCell(first->region.allocation,
+      return repAbsoluteCell(first->region.allocation,
           offsetValue(plus(offset,spatialOffsets(offsets))),type.toString());
     }
     auto found=memory.normalizedRead({value.nodeId(),value.instanceIndex()});
@@ -1926,7 +2880,7 @@ class Lower {
         if(cursor.conversion() || !cursor.indices().empty() || cursor.threadSelector() ||
            !op || op->opcode()!=binary->opcode() || op->attributes().saturate || op->attributes().propagate_nan ||
            input.type(cursor)!=v::ValueType::scalar(type))break;
-        const auto args=input.instance(cursor).operands;
+        const auto args=input.instanceOperands(cursor);
         if(args.size()!=2)break;
         plan.terms.push_back(args[1]);cursor=args[0];
       }
@@ -1942,7 +2896,7 @@ class Lower {
     const auto identity=*reducer==s::Reducer::Sum?"0":*reducer==s::Reducer::Max?"-inf":"inf";
     auto& progress=resumeReduction([&]{return result.graph.constant(type.toString(),identity);});
     ReductionRequests requests(requested,progress);
-    auto accumulated=cache.at(progress.accumulator_key);
+    auto accumulated=keys.at(progress.accumulator_key);
     for(auto i=progress.next;i<plan.pieces.size();++i) {
       const auto& piece=plan.pieces[i];
       const FoldPieceKey piece_key{*projection_key,i};
@@ -1968,7 +2922,7 @@ class Lower {
         accumulated=result.graph.fold(*reducer,accumulated,term,level,count,type.toString());
       else accumulated=emitOperation(*reducer==s::Reducer::Sum?"Add":
           *reducer==s::Reducer::Max?"Maximum":"Minimum",type.toString(),{accumulated,term},"ideal_arithmetic");
-      cache.at(progress.accumulator_key)=accumulated;progress.sub_next=sub+1;progress.pending.clear();
+      keys.at(progress.accumulator_key)=accumulated;progress.sub_next=sub+1;progress.pending.clear();
       }
       commitReduction(progress,i+1,accumulated);limit();
     }
@@ -1977,7 +2931,7 @@ class Lower {
   s::Ref pure(v::Value value,const Offset& index,const v::ElementType& type){
     if(auto compact=plannedScalarReduction(value,type))return *compact;
     const auto& node=input.definingNode(value);const auto& op=node.operation();
-    const auto input_operands=input.instance(value).operands;
+    const auto input_operands=input.instanceOperands(value);
     std::vector<s::Ref> operands(input_operands.size());
     const auto projectOperand=[&](std::size_t i) {
       auto operand=input_operands[i];
@@ -2057,31 +3011,15 @@ class Lower {
     if(const auto* p=dynamic_cast<const v::PtxScalarOp*>(&op))attr+=" source_type="+p->sourceType().toString();
     return emitOperation(std::string(op.name()),type.toString(),std::move(operands),attr);
   }
-  // Pull a reduction's index progression through stored read domains. This
-  // never asks whether the source expressions have a common mathematical form.
-  std::optional<std::vector<algorithm::AffineDomain>> reductionDomains(
-      v::Value value,const Offset& offset,std::uint64_t stride,
-      const v::ElementType& type,std::uint64_t count) {
-    SENTRYWARD_LEDGER(ledger->add("reduction_domain_queries"));
+  // The K domains of a template-domain partition: one interval or AP per
+  // stored region the contraction crosses; none unless they cover K.
+  std::optional<std::vector<algorithm::AffineDomain>> regionDomains(const PartitionedRead& split,
+      const Offset& offset,std::uint64_t stride,const v::ElementType& type,std::uint64_t count) {
     const auto [lo,hi]=bounds(offset);
-    if(lo<0 || hi<lo || !stride || !count || !type.width() || type.width()%8)return {};
-    const auto read=memory.normalizedRead({value.nodeId(),value.instanceIndex()});
-    const auto* split=read?std::get_if<const PartitionedRead*>(&*read):nullptr;
-    if(split)if(const auto* grid=partitionGrid(**split,value,type)) {
-      const auto end=static_cast<unsigned __int128>(hi)+
-          static_cast<unsigned __int128>(count-1)*stride+type.width()/8;
-      if(end<=grid->type.bitSize()/8)
-        return std::vector<algorithm::AffineDomain>{{0,1,count}};
-    }
-    if(!split || !(*split)->template_domains) {
-      if(readSpan(value,offset,stride,type,count)==count)
-        return std::vector<algorithm::AffineDomain>{{0,1,count}};
-      return {};
-    }
     std::vector<algorithm::AffineDomain> result;
     std::uint64_t covered=0;
     const auto width=type.width()/8;
-    for(const auto& region:(*split)->regions) {
+    for(const auto& region:split.regions) {
       // Filter whole stored row groups before interpreting their local axes.
       // Different source templates may own disjoint row intervals.
       const auto query_end=static_cast<unsigned __int128>(hi)+
@@ -2174,28 +3112,57 @@ class Lower {
     if(covered!=count)return {};
     return result;
   }
+  // Pull a reduction's index progression through stored read domains. This
+  // never asks whether the source expressions have a common mathematical form.
+  std::optional<std::vector<algorithm::AffineDomain>> reductionDomains(
+      v::Value value,const Offset& offset,std::uint64_t stride,
+      const v::ElementType& type,std::uint64_t count) {
+    SENTRYWARD_LEDGER(ledger->add("reduction_domain_queries"));
+    const auto [lo,hi]=bounds(offset);
+    if(lo<0 || hi<lo || !stride || !count || !type.width() || type.width()%8)return {};
+    const auto read=memory.normalizedRead({value.nodeId(),value.instanceIndex()});
+    const auto* split=read?std::get_if<const PartitionedRead*>(&*read):nullptr;
+    if(split)if(const auto* grid=partitionGrid(**split,value,type)) {
+      const auto end=static_cast<unsigned __int128>(hi)+
+          static_cast<unsigned __int128>(count-1)*stride+type.width()/8;
+      if(end<=grid->type.bitSize()/8)
+        return std::vector<algorithm::AffineDomain>{{0,1,count}};
+    }
+    if(!split || !(*split)->template_domains) {
+      if(readSpan(value,offset,stride,type,count)==count)
+        return std::vector<algorithm::AffineDomain>{{0,1,count}};
+      if(split)if(const auto* periodic=periodicPartition(**split))return regionDomains(*periodic,offset,stride,type,count);
+      return {};
+    }
+    if(auto planned=regionDomains(**split,offset,stride,type,count))return planned;
+    if(const auto* periodic=periodicPartition(**split))return regionDomains(*periodic,offset,stride,type,count);
+    return {};
+  }
   s::Ref warpMma(v::Value value,const Offset& index){
     auto [lo,hi]=bounds(index);
     if(lo<0 || hi>=128)fail("scalar_fold_invalid_index","warp MMA output exceeds 16x8 matrix");
     const auto& op=dynamic_cast<const v::WarpMmaOp&>(input.definingNode(value).operation());
-    const auto type=v::ElementType::floating(16,op.bfloat()?"bf16":"f16");
+    const unsigned K=op.k(),bytes=op.elementBytes(),per=4/bytes;
+    const auto type=v::ElementType::floating(8*bytes,op.element());
     const MemoryInstance key{value.nodeId(),value.instanceIndex()};
     auto found=warp_operand_views.find(key);
     // https://docs.nvidia.com/cuda/parallel-thread-execution/#warp-level-matrix-fragment-mma-16816-float
+    // https://docs.nvidia.com/cuda/parallel-thread-execution/#warp-level-matrix-fragment-mma-16832
+    // Element k of a row sits in lane group (k%(K/2))/per, register half k/(K/2), byte bytes*(k%per).
     if(found==warp_operand_views.end()) {
-      const auto args=input.instance(value).operands;
+      const auto args=input.instanceOperands(value);
       if(args.size()!=320)fail("scalar_fold_mma_shape","warp MMA fragment operand count is not 320");
       std::array<std::vector<IndexedSourceSlice>,3> slices;
-      slices[0].reserve(256);slices[1].reserve(128);slices[2].reserve(128);
-      for(unsigned row=0;row<16;++row)for(unsigned k=0;k<16;++k)
-        slices[0].push_back({args.at(((row%8)*4+(k%8)/2)*4+(row/8)+2*(k/8)),2*(k%2),2});
-      for(unsigned col=0;col<8;++col)for(unsigned k=0;k<16;++k)
-        slices[1].push_back({args.at(128+(col*4+(k%8)/2)*2+k/8),2*(k%2),2});
+      slices[0].reserve(16*K);slices[1].reserve(8*K);slices[2].reserve(128);
+      for(unsigned row=0;row<16;++row)for(unsigned k=0;k<K;++k)
+        slices[0].push_back({args.at(((row%8)*4+(k%(K/2))/per)*4+(row/8)+2*(k/(K/2))),bytes*(k%per),bytes});
+      for(unsigned col=0;col<8;++col)for(unsigned k=0;k<K;++k)
+        slices[1].push_back({args.at(128+(col*4+(k%(K/2))/per)*2+k/(K/2)),bytes*(k%per),bytes});
       for(unsigned row=0;row<16;++row)for(unsigned col=0;col<8;++col)
         slices[2].push_back({args.at(192+((row%8)*4+col/2)*4+(row/8)*2+col%2),0,4});
       const auto make=[&](unsigned role) {
         auto pattern=output_source_matcher.matchSlices(slices[role]);
-        const auto width=role==2?4u:2u;
+        const auto width=role==2?4u:bytes;
         const auto matrix_type=v::ValueType::matrix(role==2?v::ElementType::floating(32):type,{slices[role].size()});
         PartitionedRead partition{matrix_type,{},true};
         if(pattern) {
@@ -2206,7 +3173,7 @@ class Lower {
         }
         // Preserve existing register/component domains instead of requiring
         // unrelated C registers to match one expression. This finite layout
-        // contains at most 256 records, independently of output/kernel size.
+        // contains at most 512 records, independently of output/kernel size.
         std::vector<v::Value> values;std::vector<std::uint64_t> offsets;
         for(const auto& slice:slices[role]){values.push_back(slice.value);offsets.push_back(slice.offset);}
         for(const auto& domain:mapSourceTemplates(input,values,true,offsets)) {
@@ -2233,29 +3200,29 @@ class Lower {
       return operand(2,times(index,4),v::ElementType::floating(32));
     });
     ReductionRequests requests(requested,progress);
-    auto sum=cache.at(progress.accumulator_key);
+    auto sum=keys.at(progress.accumulator_key);
     if(progress.next)return sum;
     // Native warp contractions own their reduction axis just like other MMA
     // contractions. Read partitions may refine only the current uncommitted
     // piece; dependency suspension and collection retain completed sums.
     const FoldPieceKey piece_key{*projection_key,0};
     auto [parts,inserted]=fold_pieces.try_emplace(piece_key,
-        std::vector<std::pair<std::uint64_t,std::uint64_t>>{{0,16}});
+        std::vector<std::pair<std::uint64_t,std::uint64_t>>{{0,K}});
     for(auto sub=progress.sub_next;sub<parts->second.size();++sub) {
       const auto [first,count]=parts->second[sub];
       domains.resize(level);
       FoldScope scope(*this,piece_key,level,sub,first,count);
       Offset k(integer(first));
       if(count>1){domains.push_back(count);k.terms[level]=1;}
-      auto a=operand(0,times(plus(times(row,16),k),2),type);
-      auto b=operand(1,times(plus(times(col,16),k),2),type);
+      auto a=operand(0,times(plus(times(row,K),k),bytes),type);
+      auto b=operand(1,times(plus(times(col,K),k),bytes),type);
       a=result.graph.convert(a,"f32","NumericInterpretation");
       b=result.graph.convert(b,"f32","NumericInterpretation");
       const auto body=emitOperation("Multiply","f32",{a,b},"ideal_arithmetic");
       domains.resize(level);
       sum=count==1?reductions.append(s::Reducer::Sum,sum,body,"f32",level):
           reductions.appendFold(s::Reducer::Sum,sum,body,level,count,"f32");
-      cache.at(progress.accumulator_key)=sum;
+      keys.at(progress.accumulator_key)=sum;
       progress.sub_next=sub+1;progress.pending.clear();
       limit();
     }
@@ -2263,7 +3230,7 @@ class Lower {
     return sum;
   }
   s::Ref scaledMma(v::Value value,const Offset& index,const v::TcgenMmaAttributes& attr) {
-    const auto& args=input.instance(value).operands;
+    const auto args=input.instanceOperands(value);
     const auto& dst=input.type(value);
     std::string kind;
     unsigned group=1;
@@ -2301,10 +3268,12 @@ class Lower {
       fail("scalar_fold_mma_shape","FP4 output shape disagrees with descriptor");
     const auto row=quotient(index,d.n),col=remainder(index,d.n);
     const auto dtype=v::ElementType::floating(32);
+    // A zero-fill A or B makes every scaled product +0, whatever the scales.
+    if(auto zero=zeroProductMma(args,attr.accumulate,3,index,4,dtype,dst.element()))return *zero;
     auto& progress=resumeReduction([&]{return attr.accumulate?
         project(args.at(3),times(index,4),dtype):result.graph.constant("f32","0");});
     ReductionRequests requests(requested,progress);
-    auto sum=cache.at(progress.accumulator_key);
+    auto sum=keys.at(progress.accumulator_key);
     const auto level=static_cast<unsigned>(domains.size());
     // PTX scale replicas: https://docs.nvidia.com/cuda/parallel-thread-execution/#tcgen05-mma-scale-factor-a-layout-2x
     const auto scale=[&](bool b,unsigned chunk) {
@@ -2381,7 +3350,7 @@ class Lower {
   }
   s::Ref mma(v::Value value,const Offset& index){
     const auto& node=input.definingNode(value);const auto& op=node.operation();
-    const auto& args=input.instance(value).operands;
+    const auto args=input.instanceOperands(value);
     const auto& dst=input.type(value);
     if(!dst.hasStaticShape() || dst.shape().size()!=2)
       fail("scalar_fold_parameterized_mma","MMA result shape is not a fixed rank-two matrix");
@@ -2430,6 +3399,9 @@ class Lower {
     const auto k=a.shape()[1];
     if(a.shape()[0]!=rows || (native?(b.shape()[0]!=cols || b.shape()[1]!=k):(b.shape()[0]!=k || b.shape()[1]!=cols)))
       fail("scalar_fold_mma_shape","MMA operand shapes disagree with scalar contraction");
+    // A zero-fill A or B makes every product term +0: no plan, pieces or cuts.
+    if(native)if(auto zero=zeroProductMma(args,accumulate,accumulator,index,
+        integer(dst.element().width()/8),dtype,dst.element()))return *zero;
     const auto level=static_cast<unsigned>(domains.size());
     // Publish only a complete plan. Domain refinement may throw; leaving an
     // empty cache entry then would silently disable planning on the retry.
@@ -2492,7 +3464,7 @@ class Lower {
         project(args.at(accumulator),times(index,integer(dst.element().width()/8)),dtype):
         result.graph.constant(dtype.toString(),"0");});
     ReductionRequests requests(requested,progress);
-    auto folded=cache.at(progress.accumulator_key);
+    auto folded=keys.at(progress.accumulator_key);
     const auto& plan=plan_it->second;
     const bool planned=!plan.empty();
     for(std::uint64_t cursor=progress.next;cursor<(planned?plan.size():k);) {
@@ -2534,7 +3506,7 @@ class Lower {
       // Recognition starts after three terms; a mismatch remains an Add.
       if(count==1)folded=reductions.append(s::Reducer::Sum,folded,body,dtype.toString(),level);
       else folded=reductions.appendFold(s::Reducer::Sum,folded,body,level,count,dtype.toString());
-      cache.at(progress.accumulator_key)=folded;progress.sub_next=sub+1;progress.pending.clear();
+      keys.at(progress.accumulator_key)=folded;progress.sub_next=sub+1;progress.pending.clear();
       SENTRYWARD_LEDGER(ledger->add("mma_pieces_committed"));
       }
       cursor+=planned?1:whole_count;
@@ -2560,19 +3532,29 @@ class Lower {
       if(!type.isScalar())r=emitOperation("ParameterElement",type.element().toString(),{r,offsetValue(index)});
       return r;
     }
-    if(dynamic_cast<const v::CoordinateOp*>(&op)){
+    if(const auto* coordinate_op=dynamic_cast<const v::CoordinateOp*>(&op)){
+      const bool lift=liftedCoordinate(op);
       if(spatial_count) {
         std::vector<std::uint64_t> values;
         const auto& members=spatialValues(value);
         for(std::size_t i=0;i<members.count;++i) {
-          auto coordinate=input.instance(members.at(i)).origin.coordinate_value;
+          auto coordinate=input.instanceOrigin(members.at(i)).coordinate_value;
           if(!coordinate)spatialReject();
           values.push_back(*coordinate);
         }
-        return result.graph.convert(offsetValue(spatialOffsets(values)),type.element().toString(),"Convert");
+        auto offsets=spatialOffsets(values);
+        if(lift) {
+          // BlockIndex is constant across one CTA's members: the parameter plus
+          // the zero-stride spatial offset (without lifting: one u64 literal, converted).
+          if(offsets.expression || !offsets.terms.empty())liftRefuse("spatial BlockIndex members differ");
+          return result.graph.convert(unitCoordinate(coordinate_op->axis(),values.front(),"u64"),
+              type.element().toString(),"Convert");
+        }
+        return result.graph.convert(offsetValue(offsets),type.element().toString(),"Convert");
       }
-      const auto& origin=input.instance(value).origin;
+      const auto origin=input.instanceOrigin(value);
       if(!origin.coordinate_value)fail("scalar_fold_coordinate","execution coordinate is not bound");
+      if(lift)return unitCoordinate(coordinate_op->axis(),*origin.coordinate_value,type.element().toString());
       return result.graph.constant(type.element().toString(),std::to_string(*origin.coordinate_value));
     }
     if(dynamic_cast<const v::WarpMmaOp*>(&op))return warpMma(value,index);
@@ -2628,7 +3610,7 @@ class Lower {
     }
     if(node.isCollectiveOccurrence() && dynamic_cast<const v::WarpMmaOp*>(&node.operation()) &&
         !value.conversion() && !value.threadSelector() && !value.pointer()) {
-      if(first<0 || last<first || std::uint64_t(last)>=node.instances().size())
+      if(first<0 || last<first || std::uint64_t(last)>=node.instanceCount())
         fail("scalar_fold_invalid_index","collective use exceeds its member domain");
       return inUse({},[&]{return project(value,offset,desired);});
     }
@@ -2636,7 +3618,7 @@ class Lower {
     // producer's domain (a warp broadcast commonly selects a singleton).
     if(value.threadSelector()) {
       const auto selector=input.canonicalInterpretation(*value.threadSelector());
-      const auto count=input.definingNode(selector).instances().size();
+      const auto count=input.definingNode(selector).instanceCount();
       if(first<0 || last<first || (count!=1 && std::uint64_t(last)>=count))
         fail("scalar_fold_invalid_index","selector member map exceeds its domain");
       auto [entry,inserted]=member_selectors.try_emplace(valueKey(selector));
@@ -2684,7 +3666,7 @@ class Lower {
       expanded_member_uses.emplace(original.get(),use);
       return inUse(std::move(use),[&]{return projectImpl(value,offset,desired);});
     }
-    if(first<0 || last<first || std::uint64_t(last)>=node.instances().size())
+    if(first<0 || last<first || std::uint64_t(last)>=node.instanceCount())
       fail("scalar_fold_invalid_index","source template member map exceeds its domain");
     if(first==last)return inUse({},[&]{return project(memberValue(value,std::size_t(first)),offset,desired);});
     // A pointer annotation identifies an allocation; it does not change this
@@ -2697,7 +3679,8 @@ class Lower {
       if(inserted) {
         // The launch binding is an existing finite table. Validate it once
         // per coordinate node, not once per projected output or ancestor.
-        for(std::size_t i=0;i<node.instances().size();++i) {
+        const auto count=node.instanceCount();
+        for(std::size_t i=0;i<count;++i) {
           const auto x=node.instanceOrigin(i).coordinate_value;
           if(!x || *x>INT64_MAX){entry->second=v::ThreadMembers{};break;}
           entry->second.push_back(*x);
@@ -2720,6 +3703,12 @@ class Lower {
       if(bounds(offset)!=std::pair<std::int64_t,std::int64_t>{0,0} ||
           desired.width()!=input.type(value).element().width())
         fail("scalar_fold_invalid_index","coordinate projection requires the full scalar");
+      if(const auto* lifted=liftedCoordinate(op)) {
+        // One CTA's BlockIndex members are equal (stride 0): without lifting, one u64 literal.
+        if(segment->stride)liftRefuse("BlockIndex member domain is not constant");
+        return result.graph.convert(unitCoordinate(lifted->axis(),
+            coordinates.at(segment->begin),"u64"),desired.toString(),"Convert");
+      }
       return result.graph.convert(offsetValue(plus(Offset(integer(coordinates.at(segment->begin))),
           times(plus(position,Offset(-integer(segment->begin))),segment->stride))),desired.toString(),"Convert");
     }
@@ -2734,7 +3723,7 @@ class Lower {
                   times(quotient(delta,initial->period),initial->outer_stride)):
               times(delta,initial->stride);
           auto address=plus(Offset(integer(initial->initial.offset)),plus(offset,relative));
-          return result.graph.initialCell(initial->initial.allocation,offsetValue(address),desired.toString());
+          return repAbsoluteCell(initial->initial.allocation,offsetValue(address),desired.toString());
         }
       }
       auto domain=symbolic_read_domains.upper_bound({value.nodeId(),std::size_t(first)});
@@ -2748,7 +3737,7 @@ class Lower {
             prototype->second.offset==region->second.offset && prototype->second.bytes==region->second.bytes &&
             node.hasUniformThreadTemplate()) {
           std::vector<std::shared_ptr<const IndexedSourceUse>> children;
-          for(auto operand:input.instance(value).operands) {
+          for(auto operand:input.instanceOperands(value)) {
             operand=input.canonicalInterpretation(operand);
             auto use=bindSourceUse(input,operand,value,map.base,map.stride);
             if(!use)fail("compact_view_unsupported","symbolic read address requires a cross-domain member mapping");
@@ -2793,7 +3782,7 @@ class Lower {
           if(initial && std::uint64_t(hi)<=initial->region.bytes && width<=initial->region.bytes-std::uint64_t(hi)) {
             auto address=plus(Offset(integer(initial->region.offset)),plus(offset,
                 times(plus(position,Offset(-integer(family.first.instance))),family.byte_stride)));
-            return result.graph.initialCell(initial->region.allocation,offsetValue(address),desired.toString());
+            return repAbsoluteCell(initial->region.allocation,offsetValue(address),desired.toString());
           }
         }
       }
@@ -2825,7 +3814,7 @@ class Lower {
           }
         });
       if(lo==hi) {
-          PartitionedRead partition{v::ValueType::matrix(bit(8),{node.instances().size()}),{},true};
+          PartitionedRead partition{v::ValueType::matrix(bit(8),{node.instanceCount()}),{},true};
           const auto addDomain=[&](std::uint64_t begin,std::uint64_t count) {
             if(begin>std::uint64_t(last) || begin+count<=std::uint64_t(first))return;
             partition.regions.push_back({begin,count,MemoryView{partition.type,MemoryViewKind::Slice,{},
@@ -2865,7 +3854,7 @@ class Lower {
     std::vector<std::shared_ptr<const IndexedSourceUse>> children;
     // One stored operand list. Graph owns the SameDomain/Fixed distinction;
     // do not enumerate members to rediscover it or search operand ancestry.
-    for(auto operand:input.instance(value).operands) {
+    for(auto operand:input.instanceOperands(value)) {
       operand=input.canonicalInterpretation(operand);
       auto use=bindSourceUse(input,operand,value,map.base,map.stride);
       if(use)children.push_back(std::move(use));
@@ -3027,7 +4016,7 @@ class Lower {
           fail("scalar_fold_conversion_projection","decoded floating field requires its complete numerical scalar");
         const auto field=binding.numerical_field.value_or(desired);
         if(binding.initial) {
-          auto r=result.graph.initialCell(binding.initial->region.allocation,
+          auto r=repAbsoluteCell(binding.initial->region.allocation,
               offsetValue(plus(position,offset)),field.toString());
           return binding.numerical_field?result.graph.convert(r,desired.toString(),"NumericInterpretation"):r;
         }
@@ -3038,7 +4027,11 @@ class Lower {
               [&]{return project(*binding.producer,plus(position,offset),field);});
           return binding.numerical_field?result.graph.convert(r,desired.toString(),"NumericInterpretation"):r;
         }
-        auto scalar=result.graph.convert(offsetValue(position),t.element().toString(),"Convert");
+        const auto* lifted=liftedBindingCoordinate(binding,position);
+        auto scalar=lifted?
+            result.graph.convert(unitCoordinate(lifted->axis(),std::uint64_t(position.base),"u64"),
+                t.element().toString(),"Convert"):
+            result.graph.convert(offsetValue(position),t.element().toString(),"Convert");
         if(binding.power_of_two) {
           const auto [first,last]=bounds(position);
           if(first<0 || last>=t.element().width() || binding.initial || binding.producer)
@@ -3118,13 +4111,16 @@ class Lower {
     if(dynamic_cast<const v::LoadOp*>(&op))return read(value,offset,desired);
     if(const auto* copy=dynamic_cast<const v::NativeMatrixOp*>(&op);
         copy && copy->opcode()==v::NativeMatrixOpcode::TcgenCopyValue && type.hasStaticShape()) {
-      const auto source=input.instance(value).operands.at(0);
+      const auto source=input.instanceOperands(value).at(0);
       if(input.type(source)==type)return project(source,offset,desired);
     }
     const auto width=type.element().width()/8;
     auto [lo,hi]=bounds(offset);
     if(lo<0 || hi<0 || std::uint64_t(hi)>type.bitSize()/8 || desired.width()/8>type.bitSize()/8-std::uint64_t(hi))
       fail("scalar_fold_invalid_index","scalar projection exceeds producer value");
+    // Inside an all-zero matrix every requested byte is zero, whatever the element boundaries.
+    if(desired.width()%8==0 && desired.width()<=64 && zeroMatrixLiteral(value))
+      return cast(result.graph.constant("b"+std::to_string(desired.width()),"0"),desired);
     auto index=quotient(offset,width),inner=remainder(offset,width);
     auto [il,ih]=bounds(inner);
     if(il<0 || ih<0 || std::uint64_t(ih)+desired.width()/8>width)
@@ -3135,14 +4131,14 @@ class Lower {
       "width="+std::to_string(desired.width()));
   }
   s::Ref evaluateProjection(Projection& task) {
-    SENTRYWARD_LEDGER(ledger->evaluate(task.key));
+    SENTRYWARD_LEDGER(ledger->evaluate(keys.text(task.key)));
     // A task owns its direct requested results, not every request made by
     // inlined descendants. A completed child's value already retains its
     // semantic operands. Rooting the child's temporary construction history
     // prevents Fold replacement from releasing concrete intermediate terms.
     struct RestoreRequests {
-      std::unordered_set<std::string>*& target;
-      std::unordered_set<std::string>* saved;
+      KeySet*& target;
+      KeySet* saved;
       ~RestoreRequests(){target=saved;}
     } restore_requests{requested,requested};
     // Explicitly suspended child results remain roots until this task has
@@ -3167,8 +4163,8 @@ class Lower {
       ~Restore(){target=std::move(saved);}
     } restore{indexed_context,indexed_context};
     struct RestoreKey {
-      const std::string*& target;
-      const std::string* saved;
+      const ProjectionKey*& target;
+      const ProjectionKey* saved;
       ~RestoreKey(){target=saved;}
     } restore_key{projection_key,projection_key};
     projection_key=&task.key;
@@ -3184,8 +4180,8 @@ class Lower {
     }
     if(pointer)r=result.graph.withPointer(std::move(r),pointerLabel(*pointer));
     limit();
-    cache.emplace(task.key,r);
-    SENTRYWARD_LEDGER(ledger->complete(task.key));
+    keys.emplace(task.key,r);
+    SENTRYWARD_LEDGER(ledger->complete(keys.text(task.key)));
     finishReduction(task.key);
     return r;
   }
@@ -3226,7 +4222,13 @@ class Lower {
         value=field->value;offset=Offset(integer(field->offset));
       }
     }
-    auto identity=valueKey(value);
+    // The key text is spelled component by component into a reused buffer,
+    // then interned once. A view identity replaces the value's key; valueKey
+    // is pure, so not spelling it in that case is exact.
+    auto& text=key_text;
+    text.clear();
+    if(spatial_count){text+="spatial:";appendDecimal(text,spatial_serial);text+=':';}
+    bool view=false;
     if(!value.pointer() && !value.conversion() && value.indices().empty() && !value.threadSelector() &&
        dynamic_cast<const v::LoadOp*>(&input.definingNode(value).operation())) {
       auto read=memory.canonicalRead({value.nodeId(),value.instanceIndex()});
@@ -3234,42 +4236,43 @@ class Lower {
         read=alias->second;
       if(const auto canonical=memory.normalized_reads.find(read);
           canonical!=memory.normalized_reads.end()) {
-        identity="view:"+std::to_string(read.node)+":"+std::to_string(read.instance);
-        shared_view=true;
+        text+="view:";appendDecimal(text,read.node);text+=':';appendDecimal(text,read.instance);
+        view=shared_view=true;
       }
     }
-    auto key=(spatial_count?"spatial:"+std::to_string(spatial_serial)+":":"")+identity+"@"+offset.key()+"/"+type.toString()+"#";
+    if(!view)appendValueKey(text,value);
+    text+='@';offset.appendKey(text);text+='/';text+=type.toString();text+='#';
     auto used=offset.binderMask();
     if(indexed_context) {
       used|=indexed_context->index.binderMask();
-      key+="indexed:"+indexed_use_identity.context(indexed_context->use,indexed_context->index.key(),{});
+      index_text.clear();indexed_context->index.appendKey(index_text);
+      text+="indexed:";indexed_use_identity.appendContext(text,indexed_context->use,index_text);
     }
     // A projection depends on its selected Value/use and index bindings, not
     // the extents of unrelated enclosing Folds. Keep binder positions/rank
     // (inner Fold levels rely on them), and all used extents. Spatial legacy
     // bindings retain their full environment. No operand ancestors are read.
     for(std::size_t i=0;i<domains.size();++i)
-      key+=(spatial_count || i>=64 || (used&(std::uint64_t{1}<<i)))?
-          std::to_string(domains[i])+",":"_,";
-    SENTRYWARD_LEDGER(ledger->request(key,projection_key,std::string(input.definingNode(value).operation().name())+
-        (indexed_context?"/indexed":"/plain"));
-      if(ledger->checkpoint())ledger->snapshot(result.graph,cache.size(),result.outputs.size()));
+      if(spatial_count || i>=64 || (used&(std::uint64_t{1}<<i))){appendDecimal(text,domains[i]);text+=',';}
+      else text+="_,";
+    const auto key=keys.intern(text);
+    SENTRYWARD_LEDGER(ledger->request(keys.text(key),projection_key?&keys.text(*projection_key):nullptr,
+        std::string(input.definingNode(value).operation().name())+(indexed_context?"/indexed":"/plain"));
+      if(ledger->checkpoint())ledger->snapshot(result.graph,keys.size(),result.outputs.size()));
     SENTRYWARD_AUDIT(if(requested) {
       audit->add(AuditCounter::dependency_requests);
     });
     // Retain cache hits too: an unfinished parent needs these roots across GC.
-    // Expected O(key length), rather than scanning every prior dependency.
+    // One probe of the interned key serves the retention and the memo test.
     if(requested)requested->insert(key);
-    if(auto i=cache.find(key);i!=cache.end()){
-      SENTRYWARD_LEDGER(ledger->hit(key));
+    if(const auto* hit=keys.find(key)){
+      SENTRYWARD_LEDGER(ledger->hit(keys.text(key)));
       SENTRYWARD_AUDIT(audit->add(AuditCounter::projection_cache_hits));
       if(shared_view)++result.shared_view_projection_hits;
-      return i->second;
+      return *hit;
     }
-    if(auto i=failed_projections.find(key);i!=failed_projections.end()) {
-      current=i->second.second;throw i->second.first;
-    }
-    Projection request{value,std::move(offset),type,domains,key};
+    // `value` is not read below; the request owns it.
+    Projection request{std::move(value),std::move(offset),type,domains,key};
     request.indexed=indexed_context;
     request.fold=fold_owner;
     if(projecting) {
@@ -3278,24 +4281,34 @@ class Lower {
       if(inline_projection_depth>=32) {
         SENTRYWARD_LEDGER(ledger->add("dependency_suspensions"));
         SENTRYWARD_AUDIT(audit->event("DEPENDENCY_SUSPEND","projection_exception_worklist",
-          projection_depth,inline_projection_depth,value.nodeId()));
+          projection_depth,inline_projection_depth,request.value.nodeId()));
+        // One unwind to the driver. While it unwinds, every inline ancestor's
+        // InlineFrame moves its request into suspended_projections; no handler
+        // in between may catch Projection or `...` (the driver checks the
+        // count). Reserved first, so those nothrow pushes cannot throw.
+        static_assert(std::is_nothrow_move_constructible_v<Projection>);
+        suspended_projections.reserve(suspended_projections.size()+inline_projection_depth);
+        suspension_base=suspended_projections.size();suspension_frames=inline_projection_depth;
+        suspending=true;
         throw request;
       }
-      if(!visiting.insert(request.key).second)fail("scalar_fold_cycle","cyclic value or read substitution; requested="+
-          request.key+"; parent="+(active_projection?active_projection->key:"none"));
-      try {
+      if(!visiting.insert(request.key))fail("scalar_fold_cycle","cyclic value or read substitution; requested="+
+          keys.text(request.key)+"; parent="+(active_projection?keys.text(active_projection->key):"none"));
       struct InlineFrame {
         Lower& owner;
-        const std::string& key;
+        Projection& request;
         std::vector<std::uint64_t> saved_domains;
         std::optional<MemoryInstance> saved_current;
         bool completed=false;
         ~InlineFrame() {
           --owner.projection_depth;--owner.inline_projection_depth;
-          owner.visiting.erase(key);owner.domains=std::move(saved_domains);
+          owner.visiting.erase(request.key);owner.domains=std::move(saved_domains);
           if(completed)owner.current=saved_current;
+          // After this frame's cleanup and before request's own destructor;
+          // unwinding records the inline frames innermost first.
+          else if(owner.suspending)owner.suspended_projections.push_back(std::move(request));
         }
-      } frame{*this,request.key,domains,current};
+      } frame{*this,request,domains,current};
       ++projection_depth;++inline_projection_depth;
       // A dependency suspension is handled once by the outer worklist. Do
       // not catch/rethrow it at every inline ancestor: that restarts exception
@@ -3304,17 +4317,11 @@ class Lower {
       auto r=evaluateProjection(request);
       frame.completed=true;
       return r;
-      } catch(const Projection&) {
-        // InlineFrame has already restored context and removed its visiting
-        // key. Move, rather than copy, the accumulated dependency set.
-        suspended_projections.push_back(std::move(request));
-        throw;
-      }
     }
     const auto outer_domains=domains;
     projecting=true;
     std::vector<Projection> work;
-    std::optional<std::pair<std::string,std::size_t>> pressure_retry;
+    std::optional<std::pair<ProjectionKey,std::size_t>> pressure_retry;
     work.push_back(std::move(request));
     visiting.insert(key);
     try {
@@ -3351,7 +4358,8 @@ class Lower {
           SENTRYWARD_LEDGER(ledger->add("fold_domain_retries"));
           // Only the current, uncommitted Fold piece changed. Accumulators
           // retain completed pieces; cached completed projections remain valid.
-          const std::unordered_set<std::string> keep(retry.keep.begin(),retry.keep.end());
+          KeySet keep;
+          for(const auto& kept:retry.keep)keep.insert(kept);
           for(auto p=reduction_progress.begin();p!=reduction_progress.end();) {
             if(keep.contains(p->first)){p->second.pending.clear();++p;continue;}
             const auto abandoned=p->first;++p;finishReduction(abandoned);
@@ -3372,10 +4380,14 @@ class Lower {
           }
           requested=nullptr;
         } catch(Projection& child) {
+          suspending=false;
+          // Every inline frame unwound by this suspension recorded itself.
+          if(suspended_projections.size()-suspension_base!=suspension_frames)
+            throw std::logic_error("suspended inline projection frames were not recorded");
           requested=nullptr;
           const auto enqueue=[&](Projection&& next) {
             work.back().dependencies.insert(next.key);
-            if(!visiting.insert(next.key).second)fail("scalar_fold_cycle","cyclic value or read substitution");
+            if(!visiting.insert(next.key))fail("scalar_fold_cycle","cyclic value or read substitution");
             if(work.size()>=options.max_pending_projections)
               fail("projection_worklist_limit_exceeded","projection worklist budget exceeded");
             work.push_back(std::move(next));
@@ -3388,19 +4400,15 @@ class Lower {
             enqueue(std::move(*i));
           suspended_projections.clear();
           enqueue(std::move(child));
-        } catch(const Failure& error) {
-          if(error.code!="scalar_fold_non_affine_projection")throw;
-          failed_projections.insert_or_assign(task.key,std::make_pair(error,current));
-          visiting.erase(task.key);work.pop_back();requested=nullptr;
-          if(work.empty())throw;
         }
       }
       domains=outer_domains;
       requested=nullptr;
       projecting=false;
       discardReductions();
-      return cache.at(key);
+      return keys.at(key);
     } catch(...) {
+      suspending=false;
       suspended_projections.clear();
       // Output-domain refinement intentionally unwinds this driver and later
       // retries another domain. The explicit work frames are being destroyed,
@@ -3421,42 +4429,58 @@ class Lower {
                                             result.graph.size()/2));
     next_collection=std::min(options.max_nodes,result.graph.size()+interval);
   }
-  void collectFrontier(const std::vector<Projection>& work,const std::string& root) {
+  void collectFrontier(const std::vector<Projection>& work,const ProjectionKey& root) {
 #if defined(SENTRYWARD_ENABLE_COMPRESSION_AUDIT)
-    auto measurement=ledger?std::make_unique<debug::ProjectionLedger::Collection>(*ledger,result.graph,cache.size()):nullptr;
+    auto measurement=ledger?std::make_unique<debug::ProjectionLedger::Collection>(*ledger,result.graph,keys.size()):nullptr;
 #endif
     struct CollectionScope {bool& flag;bool saved;~CollectionScope(){flag=saved;}}
       scope{collecting,collecting};
     collecting=true;
     SENTRYWARD_AUDIT(audit->add(AuditCounter::gc_calls);
       audit->add(AuditCounter::gc_input_nodes,result.graph.size());
-      audit->event("GRAPH_COLLECTION","projection_frontier_collection",result.graph.size(),cache.size()));
-    std::unordered_set<std::string> needed{root};
-    for(const auto& task:work)
-      needed.insert(task.dependencies.begin(),task.dependencies.end());
-    for(const auto& [key,progress]:reduction_progress) {
-      (void)key;
-      needed.insert(progress.accumulator_key);
-      needed.insert(progress.pending.begin(),progress.pending.end());
+      audit->event("GRAPH_COLLECTION","projection_frontier_collection",result.graph.size(),keys.size()));
+    // Completed projections are memoized computations, including results
+    // whose *first* reuse is in a later output. Keep the existing cache while
+    // it fits within graph headroom; a hit-only policy loses those results
+    // before their first reuse. At pressure retain only actual dependencies.
+    // Nothing below adds nodes before this decision takes effect.
+    const auto reserve=std::max<std::size_t>(1,options.max_nodes/4);
+    const bool headroom=result.graph.size()<options.max_nodes-reserve;
+    // With headroom every cache entry is a root, so none is evicted whatever
+    // the dependency set holds: build it only under pressure (audit builds
+    // also report its size).
+    KeySet needed;
+    if(!headroom || audit_build) {
+      needed.insert(root);
+      for(const auto& task:work)needed.insert(task.dependencies);
+      for(const auto& [key,progress]:reduction_progress) {
+        (void)key;
+        needed.insert(progress.accumulator_key);
+        needed.insert(progress.pending);
+      }
     }
-    std::vector<std::string> keys;
     std::vector<s::Ref> roots;
     for(const auto& output:result.outputs)roots.push_back(output.value);
-    std::unordered_set<s::Id> live;
+    // Dense marks over this epoch's IDs: the membership answers of a node set,
+    // without a heap node and rehash per live node.
+    std::vector<char> live(result.graph.size());std::size_t live_count=0;
+    const auto isLive=[&](s::Id id){return id<live.size() && live[id];};
     std::vector<s::Id> pending;
     for(const auto& value:roots)pending.push_back(value.node);
     const auto trace=[&] {
       while(!pending.empty()) {
         const auto id=pending.back();pending.pop_back();
-        if(!live.insert(id).second)continue;
-        for(const auto& child:result.graph.node(id).operands)pending.push_back(child.node);
+        if(isLive(id))continue;
+        const auto& node=result.graph.node(id);  // an invalid ID throws here
+        live[id]=1;++live_count;
+        for(const auto& child:node.operands)pending.push_back(child.node);
       }
     };
     trace();
-    SENTRYWARD_AUDIT(audit->event("LIVE_GRAPH","completed_output_nodes",live.size(),result.outputs.size());
-      if(sentryward::debug::environment("SENTRYWARD_OUTPUT_DOMAIN_WITNESS") && !live.empty()) {
+    SENTRYWARD_AUDIT(audit->event("LIVE_GRAPH","completed_output_nodes",live_count,result.outputs.size());
+      if(sentryward::debug::environment("SENTRYWARD_OUTPUT_DOMAIN_WITNESS") && live_count) {
         std::map<std::string,std::size_t> kinds,shapes;
-        for(auto id:live) {
+        for(s::Id id=0;id<live.size();++id)if(live[id]) {
           const auto& n=result.graph.node(id);
           ++kinds[std::to_string(int(n.kind))+":"+(n.kind==s::Kind::Operation?n.name:"")];
         }
@@ -3470,36 +4494,36 @@ class Lower {
         SENTRYWARD_DEBUG_PRINT(scalar_fold_lowering_44);for(const auto& [shape,count]:shapes)SENTRYWARD_DEBUG_PRINT(scalar_fold_lowering_45);
         SENTRYWARD_DEBUG_PRINT(scalar_fold_lowering_46);
       });
-    [[maybe_unused]] const auto output_live=live.size();
-    for(const auto& key:needed)
-      if(const auto entry=cache.find(key);entry!=cache.end())pending.push_back(entry->second.node);
-    // Completed projections are memoized computations, including results
-    // whose *first* reuse is in a later output. Keep the existing cache while
-    // it fits within graph headroom; a hit-only policy loses those results
-    // before their first reuse. At pressure retain only actual dependencies.
-    const auto reserve=std::max<std::size_t>(1,options.max_nodes/4);
-    if(result.graph.size()<options.max_nodes-reserve) {
-      for(const auto& [key,value]:cache)pending.push_back(value.node);
-      SENTRYWARD_LEDGER(ledger->add("headroom_projection_roots",cache.size()));
+    [[maybe_unused]] const auto output_live=live_count;
+    needed.forEachId([&](std::uint32_t id) {  // empty under headroom outside audit builds
+      if(const auto* value=keys.findId(id))pending.push_back(value->node);
+    });
+    if(headroom) {
+      for(std::size_t i=0;i<keys.size();++i)pending.push_back(keys.valueAt(i).node);
+      SENTRYWARD_LEDGER(ledger->add("headroom_projection_roots",keys.size()));
     } else {
       SENTRYWARD_LEDGER(ledger->add("pressure_weak_cache_collections"));
     }
     trace();
-    SENTRYWARD_AUDIT(audit->event("LIVE_GRAPH","additional_frontier_nodes",live.size()-output_live,needed.size());
-      audit->event("LIVE_GRAPH","unreachable_before_collection",result.graph.size()-live.size(),cache.size());
+    SENTRYWARD_AUDIT(audit->event("LIVE_GRAPH","additional_frontier_nodes",live_count-output_live,needed.size());
+      audit->event("LIVE_GRAPH","unreachable_before_collection",result.graph.size()-live_count,keys.size());
       if(sentryward::debug::environment("SENTRYWARD_COMPRESSION_AUDIT"))
         SENTRYWARD_DEBUG_PRINT(scalar_fold_lowering_47));
-    for(auto entry=cache.begin();entry!=cache.end();) {
-      if(!needed.contains(entry->first) && !live.contains(entry->second.node)) {
-        SENTRYWARD_LEDGER(ledger->evict(entry->first));entry=cache.erase(entry);
-      }
-      else {keys.push_back(entry->first);roots.push_back(entry->second);++entry;}
-    }
+    keys.retainIf([&](std::uint32_t id,const s::Ref& value) {
+      if(isLive(value.node) || needed.contains(id))return true;
+      SENTRYWARD_LEDGER(ledger->evict(keys.textOf(id)));
+      return false;
+    });
+    // Copy, not move: collect() first refreshes real-expression facts, and
+    // that budget poll may raise a Failure the spatial-family loop recovers.
+    // Nothing adds or erases a memo entry below, so positions stay valid.
+    roots.reserve(roots.size()+keys.size());
+    for(std::size_t i=0;i<keys.size();++i)roots.push_back(keys.valueAt(i));
     result.nodes_reclaimed+=real_expressions.collect(roots,
         std::span<const s::Ref>(roots).subspan(result.outputs.size()));
     ++result.construction_collections;
-    for(std::size_t i=0;i<result.outputs.size();++i)result.outputs[i].value=roots[i];
-    for(std::size_t i=0;i<keys.size();++i)cache.at(keys[i])=roots[result.outputs.size()+i];
+    for(std::size_t i=0;i<result.outputs.size();++i)result.outputs[i].value=std::move(roots[i]);
+    for(std::size_t i=0;i<keys.size();++i)keys.valueAt(i)=std::move(roots[result.outputs.size()+i]);
     if(result.graph.size()>options.max_nodes)
       fail("expression_node_limit_exceeded","scalar graph node limit exceeded");
     scheduleCollection();
@@ -3513,26 +4537,28 @@ class Lower {
     if(!force && options.construction_collection_interval==std::numeric_limits<std::size_t>::max() &&
         result.graph.size()<options.max_nodes-std::max<std::size_t>(1,options.max_nodes/4))return;
 #if defined(SENTRYWARD_ENABLE_COMPRESSION_AUDIT)
-    auto measurement=ledger?std::make_unique<debug::ProjectionLedger::Collection>(*ledger,result.graph,cache.size()):nullptr;
+    auto measurement=ledger?std::make_unique<debug::ProjectionLedger::Collection>(*ledger,result.graph,keys.size()):nullptr;
 #endif
     SENTRYWARD_AUDIT(audit->add(AuditCounter::gc_calls);
       audit->add(AuditCounter::gc_input_nodes,result.graph.size());
-      audit->event("CACHE_COLLECTION","completed_output_weak_projections",cache.size(),result.outputs.size()));
+      audit->event("CACHE_COLLECTION","completed_output_weak_projections",keys.size(),result.outputs.size()));
+    // Lifting: consolidation takes instantiated outputs, so instantiate them first.
+    instantiatePending();
     std::vector<s::Ref> roots;
     for(const auto& out:result.outputs)roots.push_back(out.value);
     // Observe, never root, cached projections. Consolidation must be allowed to
     // discard concrete terms replaced by a Fold. Both collections remap only
     // survivors, in O(cache entries) extra work; no ancestry search per entry.
     std::vector<std::optional<s::Id>> weak_cache;
-    weak_cache.reserve(cache.size());
-    for(const auto& [key,value]:cache) {
+    weak_cache.reserve(keys.size());
+    for(std::size_t i=0;i<keys.size();++i) {
+      const auto& value=keys.valueAt(i);
       result.graph.node(value); // validate owner before retaining only the ID
       // The following collect deliberately drops completed Fold matcher seeds.
       // Do not cache an accumulator whose compact extension needs those seeds.
       if(reductions.hasMatchingState(value))weak_cache.emplace_back(std::nullopt);
       else weak_cache.emplace_back(value.node);
     }
-    failed_projections.clear();
     result.nodes_reclaimed+=real_expressions.collect(roots, {}, weak_cache);
     for(std::size_t i=0;i<roots.size();++i)result.outputs[i].value=roots[i];
     if(!output_domains.empty()) {
@@ -3557,21 +4583,27 @@ class Lower {
         output_domains.emplace(result.outputs.size(),std::move(domain));
         result.outputs.push_back({{family.allocation,family.offset,bytes},family.body});
       }
+      // Lifting: every rebuilt output was instantiated before the consolidation;
+      // outputs completed from here on start at the new end.
+      instantiated_end=result.outputs.size();
     }
     std::size_t i=0;
     [[maybe_unused]] std::size_t discarded=0;
-    // No insertion occurred between collecting observers and this traversal;
-    // erasing an entry preserves all remaining unordered-map iterators.
-    for(auto entry=cache.begin();entry!=cache.end();++i) {
-      if(weak_cache[i]) {
-        const auto retained=result.graph.ref(*weak_cache[i]);
-        entry->second.node=retained.node;entry->second.owner=retained.owner;
-        ++entry;
+    // No memo entry was added or erased since the observers were collected,
+    // so the stable compaction visits them in the same order.
+    keys.retainIf([&](std::uint32_t id,s::Ref& value) {
+      const auto& weak=weak_cache[i++];
+      if(weak) {
+        const auto retained=result.graph.ref(*weak);
+        value.node=retained.node;value.owner=retained.owner;
+        return true;
       }
-      else {SENTRYWARD_LEDGER(ledger->evict(entry->first));entry=cache.erase(entry);++discarded;}
-    }
+      SENTRYWARD_LEDGER(ledger->evict(keys.textOf(id)));
+      (void)id;++discarded;
+      return false;
+    });
     SENTRYWARD_AUDIT(audit->add(AuditCounter::cache_entries_discarded,discarded);
-      audit->event("CACHE_RETENTION","live_projections_after_output_consolidation",cache.size(),discarded));
+      audit->event("CACHE_RETENTION","live_projections_after_output_consolidation",keys.size(),discarded));
     ++result.construction_collections;
     scheduleCollection();
     const auto cap=std::max<std::size_t>(1,options.max_nodes/4);
@@ -3604,7 +4636,7 @@ class Lower {
         }
       });
       output_domains.emplace(result.outputs.size(),layout);
-      result.outputs.push_back({region,body});
+      pushOutput(region,body);
       SENTRYWARD_LEDGER(ledger->add("output_domains_completed");ledger->add("output_elements_completed",layout.count));
     }
     catch(const OutputDomainCuts& refinement) {
@@ -3640,7 +4672,7 @@ class Lower {
           const auto& e=*x.expression;
           return compound(e.kind,self(self,e.left),self(self,e.right),e.factor);
         }
-        std::map<unsigned,std::int64_t> terms;
+        OffsetTerms terms;
         for(auto [level,c]:x.terms) {
           if(level<axis)terms[level]=c;
           else if(level==axis){terms[level]=mul(c,integer(period));terms[level+1]=c;}
@@ -3808,13 +4840,14 @@ class Lower {
     }
     spatial_count=family.count;++spatial_serial;
     spatial_values.clear();spatial_instance_strides.clear();domains={spatial_count};
+    if(options.unit_lifting)setOutputCta(family.at(input,0));
     try {
       registerSpatialFamily({&input,base,spatial_count,stride,{}});
       const auto& type=input.type(base);
       auto body=project(base,Offset{},type.element());
       auto region=family.region;region.bytes*=family.count;
       output_domains.emplace(result.outputs.size(),family.count);
-      result.outputs.push_back({region,body});
+      pushOutput(region,body);
       ++result.spatial_families_projected;result.spatial_outputs_projected+=family.count;
     } catch(const Failure& error) {
       spatial_count=0;spatial_values.clear();spatial_instance_strides.clear();domains.clear();
@@ -3962,8 +4995,11 @@ class Lower {
         SENTRYWARD_DEBUG_PRINT(scalar_fold_lowering_52);
       }
     });
+    auto& stop=result.failure_site; // first-item rule bookkeeping (phases: ScalarFoldResult)
     try{
+      stop.phase='a';
       if(!memory.complete || !memory.views_normalized)fail("scalar_fold_prerequisite","complete memory elimination and normalized views are required");
+      stop.phase='b';
       for(const auto& [key,read]:memory.normalized_reads) {
         (void)key;
         if(const auto* split=std::get_if<PartitionedRead>(&read)) {
@@ -4051,13 +5087,16 @@ class Lower {
           if(cursor!=split->type.bitSize()/8)fail("compact_view_unsupported","incomplete read-result domains");
         }
       }
+      stop.phase='c';
       if(!options.max_nodes || !options.max_outputs || !options.max_recursion || !options.max_pending_projections)fail("invalid_analysis_budget","scalar/Fold budgets must be positive");
       next_collection=std::min(options.construction_collection_interval,
                                std::max<std::size_t>(1,options.max_nodes/4));
       next_completed_collection=next_collection;
+      stop.phase='d';stop.output_families=!memory.output_families.empty();
       for(const auto& family:memory.output_families) {
         if(spatialStoreFamily(family))continue;
         std::vector<OutputWrite> outputs;
+        if(options.unit_lifting)setOutputCta(family.at(input,0));
         if(options.compact_output_families && family.count>1 && family.byte_stride>=0 &&
            std::uint64_t(family.byte_stride)==family.region.bytes) {
           outputs.reserve(family.count);
@@ -4071,20 +5110,26 @@ class Lower {
         for(std::size_t i=0;i<family.count;++i) {
           const auto output=family.at(input,i);
           const auto& type=input.type(output.value);
+          setOutputCta(output);
           outputFamily(output,0,1,type.element(),output.region.bytes);
         }
       }
       std::size_t spatial_failed_end=0;
+      stop.phase='e';
       if((!memory.normalized_output_groups.empty() || !memory.normalized_output_members.empty()) &&
          memory.normalized_output_members.size()!=memory.outputs.size())
         fail("scalar_fold_prerequisite","invalid normalized output membership");
       for(std::size_t output_index=0;output_index<memory.outputs.size();++output_index){
+        setOutputCta(memory.outputs[output_index]);
         if(options.compact_output_families) {
           if(const auto found=memory.normalized_output_groups.find(output_index);
              found!=memory.normalized_output_groups.end()) {
             const auto& group=found->second;
-            if(group.end<=output_index || group.end>memory.outputs.size())
+            beginItem(output_index);
+            if(group.records.empty() || group.records.front()!=output_index ||
+               group.records.back()>=memory.outputs.size())
               fail("scalar_fold_prerequisite","invalid normalized output record range");
+            includeRecordUnits(group.records);
             for(const auto& output:group.domains) {
               const auto width=output.element_type.width()/8;
               if(!width || !output.region.bytes || output.region.bytes%width)
@@ -4116,6 +5161,7 @@ class Lower {
           }
           if(!memory.normalized_output_members.empty() && memory.normalized_output_members[output_index])continue;
         }
+        beginItem(output_index);
         const auto& output=memory.outputs[output_index];
         const auto& type=input.type(output.value);
         const auto element=output.element_type.value_or(type.element());
@@ -4125,14 +5171,14 @@ class Lower {
         if(options.compact_output_families && output_index>=spatial_failed_end && type.isScalar() &&
            element==type.element() && output.region.bytes==element_bytes && element_bytes<=8) {
           auto end=output_index+1;
-          const auto cta=input.instance(output.value).origin.cta;
+          const auto cta=input.instanceOrigin(output.value).cta;
           while(end<memory.outputs.size()) {
             const auto& next=memory.outputs[end];
             const auto offset=static_cast<__int128>(output.region.offset)+static_cast<__int128>(end-output_index)*element_bytes;
             if(next.region.allocation!=output.region.allocation || next.region.bytes!=element_bytes ||
                offset!=next.region.offset || input.type(next.value)!=type ||
                next.element_type.value_or(type.element())!=element ||
-               next.value_byte_offset!=output.value_byte_offset || input.instance(next.value).origin.cta!=cta)break;
+               next.value_byte_offset!=output.value_byte_offset || input.instanceOrigin(next.value).cta!=cta)break;
             ++end;
           }
           // Node identity is not a source-pattern boundary after memory
@@ -4140,10 +5186,12 @@ class Lower {
           // output domain. Plan/validate that domain before constructing any
           // scalar expressions; do not build N outputs and recover it later.
           if(end-output_index>1) {
+            includeRecordUnits(std::views::iota(output_index,end));
             if(spatialOutput(std::span(memory.outputs).subspan(output_index,end-output_index))) {
               output_index=end-1;continue;
             }
             spatial_failed_end=end;
+            setOutputCta(output); // the single record's own unit again
           }
         }
         if(options.compact_output_families && output.region.bytes &&
@@ -4159,11 +5207,14 @@ class Lower {
           auto target=bytes==element_bytes?element:bit(unsigned(8*bytes));
           auto projected=project(output.value,Offset(integer(output.value_byte_offset+done)),target);
           auto region=output.region;region.offset+=done;region.bytes=bytes;
-          result.outputs.push_back({region,projected});done+=bytes;
+          pushOutput(region,projected);done+=bytes;
           if(options.collection_interval && result.outputs.size()%options.collection_interval==0)
             collectCompletedOutputs();
         }
       }
+      // Lifting: every body for its unit, then the output tail the unlifted lowering runs.
+      stop.phase='f';
+      instantiatePending();
       if(output_domains.empty())coalesceFragments(result.graph,result.outputs);
       std::vector<s::Ref> roots;for(const auto& out:result.outputs)roots.push_back(out.value);
       std::map<std::size_t,std::vector<s::Ref>> validation_roots;
@@ -4198,15 +5249,39 @@ class Lower {
         for(std::size_t i=0;i<result.outputs.size();++i)result.outputs[i].value=artifact.outputs[i].value;
       }
       result.complete=true;
-    }catch(const Failure& e){result.diagnostic=ScalarFoldDiagnostic{e.code,e.what(),current};}
+    }catch(const Failure& e){result.diagnostic=ScalarFoldDiagnostic{e.code,e.what(),current};stop.literal_message=e.literal;}
      catch(const IndexedSourceLimit& e){result.diagnostic=ScalarFoldDiagnostic{e.code,e.what(),current};}
      catch(const frontend::ptx::LayoutError& e){result.diagnostic=ScalarFoldDiagnostic{"scalar_fold_mma_descriptor",e.what(),current};}
+    if(result.diagnostic)stop.completed_outputs=result.outputs.size();
+    if(options.unit_lifting) {
+      const auto sites=UnitSiteCounts();
+      const auto delta=[&](UnitSite site){return sites[std::size_t(site)]-sites_at_start[std::size_t(site)];};
+      result.lifting.declined=delta(UnitSite::FoldKnown)+delta(UnitSite::FoldSpecialization)+
+          delta(UnitSite::FoldTemplateLeaf);
+      // A lowering that never met a BlockIndex value ran exactly the unlifted
+      // lowering's course, so its failure is the unlifted lowering's. Otherwise
+      // the failure may be the lifting's own (an unknown coordinate): refuse,
+      // and the driver restarts per unit.
+      if(result.diagnostic && (result.diagnostic->code=="scalar_fold_unit_parameter_unsupported" ||
+                               result.lifting.parameters || result.lifting.declined))
+        result.lifting.refused=true;
+      // Class mode: the bodies also stand for members that were never
+      // analysed, so any failure may be one the members' own lowering would
+      // report differently (or not at all), and a BlockIndex value read
+      // numerically by any instance in the fold baked the representative's
+      // coordinate into a body: refuse.
+      if(!result.lifting.refused) {
+        const auto numeric=delta(UnitSite::ValueSpecialization)+delta(UnitSite::ValueTemplateLeaf)+
+            delta(UnitSite::FoldBindingKnown);
+        if(result.diagnostic || numeric)result.lifting.refused=true;
+      }
+    }
     if(sentryward::debug::environment("SENTRYWARD_SCALAR_NODE_HISTOGRAM")) {
 #if defined(SENTRYWARD_DEVELOPMENT_DIAGNOSTICS) || defined(SENTRYWARD_ENABLE_COMPRESSION_AUDIT)
 #include "sentryward/development/blocks/scalar_fold_lowering_trace_4.inc"
 #endif
 }
-    SENTRYWARD_LEDGER(ledger->snapshot(result.graph,cache.size(),result.outputs.size()));
+    SENTRYWARD_LEDGER(ledger->snapshot(result.graph,keys.size(),result.outputs.size()));
     return std::move(result);
   }
 };

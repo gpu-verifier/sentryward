@@ -6,7 +6,7 @@ import sys
 import time
 from .assumptions import validate_assumptions
 from .frontend.ptx_native import _positive, _run_ptx
-from .results import failure, normalize
+from .results import failure, normalize, publish
 
 
 def verify(ptx, *, input, reference=None,
@@ -21,6 +21,13 @@ def verify(ptx, *, input, reference=None,
     assumptions maps configuration keys to booleans and overrides the same keys
     in the kernel input for this invocation only.
     """
+    return publish(_verify(ptx, input=input, reference=reference, reference_binding=reference_binding,
+                           timeout_seconds=timeout_seconds, memory_limit_mib=memory_limit_mib,
+                           assumptions=assumptions))
+
+
+def _verify(ptx, *, input, reference, reference_binding, timeout_seconds, memory_limit_mib,
+            assumptions):
     started = time.monotonic()
     stage = 'input_validation'
     try:
@@ -91,10 +98,15 @@ def verify(ptx, *, input, reference=None,
         result.pop('_process', None)
         result['elapsed_seconds'] = time.monotonic() - started
         if result['elapsed_seconds'] > timeout_seconds and result.get('result') != 'timeout':
+            # The completed report is public and keeps its two checks: normalize
+            # reads its synchronization check as including the memory check.
+            checks = result.get('checks', {})
             result = normalize({'result': 'timeout', 'stage': 'result_processing',
                 'diagnostics': [{'code': 'invocation_time_budget_exceeded',
                     'stage': 'result_processing', 'details': {'limit_seconds': timeout_seconds}}],
-                'checks': result.get('checks', {}), 'partial_report': result})
+                'checks': {'synchronization': checks.get('synchronization', 'not_run'),
+                           'equivalence': checks.get('equivalence', 'not_run')},
+                'partial_report': result})
         return result
     except subprocess.TimeoutExpired:
         return normalize({'result': 'timeout', 'stage': stage,

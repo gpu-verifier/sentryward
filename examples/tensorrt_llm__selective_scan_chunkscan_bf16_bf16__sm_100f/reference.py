@@ -10,7 +10,7 @@ import torch
 
 
 def reference(X, Os, dc, dA, CB, D, Z, last_token_ids):
-    # The checked fixed-input context binds last_token_ids=[256].
+    # last_token_ids is the fixed table [256] from input.json, passed for the binding; not used by the computation.
     # This full-length specialization has no masked/padded output rows.
     x = X[:, :32].float()
     c = X[:, 160:288].float()

@@ -124,7 +124,7 @@ class Matcher {
     const auto key=std::tuple{node.instanceThreads().storageIdentity(),*cta,axis};
     auto found=coordinate_bounds.find(key);
     if(found==coordinate_bounds.end()) {
-      std::optional<CoordinateTree> tree{std::in_place};tree->count=node.instances().size();
+      std::optional<CoordinateTree> tree{std::in_place};tree->count=node.instanceCount();
       while(tree->base<tree->count) {
         if(tree->base>SIZE_MAX/2)return nullptr;tree->base*=2;
       }
@@ -163,7 +163,7 @@ class Matcher {
     }
     if(!found->second)return nullptr;
     const auto& tree=*found->second;
-    if(tree.count!=node.instances().size() ||
+    if(tree.count!=node.instanceCount() ||
        tree.nodes[tree.base].first!=*prototype.coordinate_value)return nullptr;
     return &tree;
   }
@@ -223,7 +223,7 @@ class Matcher {
       return {};
     }
     if(!admittedPure(op))return {};
-    const auto inputs=g.instance(value).operands;selectorWork(inputs.size());
+    const auto inputs=g.instanceOperands(value);selectorWork(inputs.size());
     auto end=selector_scope_end;
     for(const auto& input:inputs) {
       const auto child=fixedInDomain(input,context,depth+1);if(!child)return {};
@@ -280,7 +280,7 @@ class Matcher {
       const auto* binary=dynamic_cast<const v::BinaryOp*>(&node.operation());
       if(!binary || !node.hasUniformThreadTemplate() ||
          g.threadBindingRelation(value,context)!=v::Graph::ThreadBindingRelation::SameDomain)return {};
-      const auto inputs=g.instance(value).operands;
+      const auto inputs=g.instanceOperands(value);
       if(inputs.size()!=2)return {};
       auto left=selectorBounds(inputs[0],context,depth+1),right=selectorBounds(inputs[1],context,depth+1);
       if(!left || !right)return {};
@@ -353,7 +353,7 @@ class Matcher {
     const auto selector=*value.threadSelector();
     const auto* op=dynamic_cast<const v::BinaryOp*>(&g.node(selector.nodeId()).operation());
     if(!op || op->opcode()!=v::BinaryOpcode::BitXor)return fail("not_xor");
-    const auto operands=g.instance(selector).operands;
+    const auto operands=g.instanceOperands(selector);
     if(operands.size()!=2)return {};
     for(unsigned side=0;side<2;++side) {
       const auto coordinate=operands[side],constant=operands[1-side];
@@ -365,7 +365,7 @@ class Matcher {
       const auto plain=value.withoutSelection();
       if(!mask || *mask<0 || static_cast<std::uint64_t>(*mask)>UINT32_MAX || !denseDomain(plain) ||
           !std::has_single_bit(member_count) || static_cast<std::size_t>(*mask)>=member_count ||
-          g.node(plain.nodeId()).instances().size()!=member_count ||
+          g.node(plain.nodeId()).instanceCount()!=member_count ||
           g.threadBindingRelation(coordinate,plain)!=v::Graph::ThreadBindingRelation::SameDomain)return fail("coordinate_domain");
       return static_cast<std::size_t>(*mask);
     }
@@ -749,9 +749,13 @@ class Matcher {
     const auto& node=valueNode(info);
     // The stored prototype needs no allocation or SourceOrigin construction.
     if(!resolved.instanceIndex())return node.operands();
-    auto [it,inserted]=operand_cache.try_emplace({node.id(),resolved.instanceIndex()});
-    if(inserted)it->second=g.instance(resolved).operands;
-    return it->second;
+    const OperandKey key{node.id(),resolved.instanceIndex()};
+    if(const auto found=operand_cache.find(key);found!=operand_cache.end())return found->second;
+    // Stored records and collective members are borrowed from the graph;
+    // only a rebound template member list is retained here.
+    auto list=g.instanceOperands(resolved);
+    if(list.borrowed())return list.span();
+    return operand_cache.emplace(key,std::move(list).toVector()).first->second;
   }
   void charge(unsigned depth) {
     if(++work>2000000 || depth>128) {
@@ -847,7 +851,10 @@ class Matcher {
   using SliceKey=std::tuple<std::size_t,std::size_t,std::uint64_t,std::uint64_t>;
   std::unordered_map<SliceKey,std::optional<Slice>,TupleHash> slices;
   std::set<SliceKey> active_slices;
-  std::unordered_map<const AssembledRead*,std::vector<std::uint64_t>> piece_ends;
+  // The pass's shared extents; their owner outlives this matcher.
+  AssembledPieceEnds& piece_ends;
+  // Assemblies whose unrepresentable extent this matcher already reported.
+  std::set<const AssembledRead*> reported_extents;
   bool rejected([[maybe_unused]] const char* reason,[[maybe_unused]] v::Value a,
                 [[maybe_unused]] v::Value b,[[maybe_unused]] std::size_t index) {
     SENTRYWARD_AUDIT(audit->event("SOURCE_PATTERN_REJECTED",reason,index,b.nodeId(),a.nodeId()));
@@ -955,21 +962,20 @@ class Matcher {
         if(offset<=UINT64_MAX-part->byte_offset)found=from(part->source,offset+part->byte_offset);
       } else {
         const auto& assembly=std::get<AssembledRead>(*raw);
-        auto [entry,inserted]=piece_ends.try_emplace(&assembly);
-        if(inserted) {
-          std::uint64_t end=0;
-          entry->second.reserve(assembly.pieces.size());
-          for(const auto& part:assembly.pieces) {
-            const auto bytes=part.type.bitSize()/8;
-            if(bytes>UINT64_MAX-end)throw IndexedSourceLimit("assembled source extent overflow", "index_representation_overflow");
-            entry->second.push_back(end+=bytes);
-          }
+        const auto& extents=piece_ends.extents(assembly);
+        // Our first use of an unrepresentable assembly reports its first bad
+        // piece: the same bitSize() error, or the extent limit. Later uses
+        // search the representable prefix, as after a partial measurement.
+        if(extents.stop!=AssembledPieceEnds::Stop::None && reported_extents.insert(&assembly).second) {
+          if(extents.stop==AssembledPieceEnds::Stop::Dynamic)(void)assembly.pieces[extents.ends.size()].type.bitSize();
+          throw IndexedSourceLimit("assembled source extent overflow", "index_representation_overflow");
         }
+        const auto& ends=extents.ends;
         // Different scalar slices must not each rescan the complete producer.
-        const auto it=std::upper_bound(entry->second.begin(),entry->second.end(),offset);
-        if(it!=entry->second.end() && width<=*it-offset) {
-          const auto index=static_cast<std::size_t>(it-entry->second.begin());
-          const auto begin=index?entry->second[index-1]:0;
+        const auto it=std::upper_bound(ends.begin(),ends.end(),offset);
+        if(it!=ends.end() && width<=*it-offset) {
+          const auto index=static_cast<std::size_t>(it-ends.begin());
+          const auto begin=index?ends[index-1]:0;
           const auto& part=assembly.pieces[index];
           if(offset-begin<=UINT64_MAX-part.byte_offset)found=from(part.source,part.byte_offset+offset-begin);
         }
@@ -1285,7 +1291,7 @@ class Matcher {
                 field?"packed_numerical_field":grid_columns?"grid_coordinate_scope":
                 !result->result->binding?"missing_index_binding":"source_stride_not_certified";
             audit->event("SOURCE_RANGE_PROOF_BOUNDARY",reason,index,1,b.nodeId());
-            const auto witness_kind=sb->pattern?0u:valueNode(b).instances().size()>1?2u:1u;
+            const auto witness_kind=sb->pattern?0u:valueNode(b).instanceCount()>1?2u:1u;
             if(range_witnesses[witness_kind]<8) {
               ++range_witnesses[witness_kind];
               const auto show=[&](const v::Value& x,const Slice* slice) {
@@ -1412,7 +1418,7 @@ class Matcher {
             const auto bytes=b_type().bitSize()/8;
             if(target_node.hasUniformThreadTemplate() &&
                range.first.node==b.nodeId() && range.first.instance==0 &&
-               range.count==target_node.instances().size() && range.byte_stride==0 &&
+               range.count==target_node.instanceCount() && range.byte_stride==0 &&
                b_type().bitSize()!=0 && b_type().bitSize()%8==0 &&
                sb->read_offset<=range.initial.region.bytes &&
                bytes<=range.initial.region.bytes-sb->read_offset &&
@@ -1678,7 +1684,7 @@ class Matcher {
           const auto type_name=b_type.element().toString();
           const bool unsigned_type=!type_name.empty() && (type_name[0]=='u' || type_name[0]=='b');
           const auto maximum=width && width<64?((std::uint64_t{1}<<width)-1):UINT64_MAX;
-          if(metadata && metadata->count==b_node.instances().size() &&
+          if(metadata && metadata->count==b_node.instanceCount() &&
              unsigned_type && width && width<=64 && metadata->nodes[1].second<=maximum &&
              metadata->nodes[metadata->base+b.instanceIndex()].first==*bv) {
             selectorWork(std::bit_width(metadata->runs.size()+1));
@@ -1813,7 +1819,7 @@ class Matcher {
     std::vector<Ptr> children(aa.size());
     auto end=member_count;bool unchanged=(!canonical_select || old->kind==result_kind) && same_bit_map,spatial=false;
     std::size_t index_stride=0;
-    bool template_proved=b_node.hasUniformThreadTemplate() && b_node.instances().size()>1;
+    bool template_proved=b_node.hasUniformThreadTemplate() && b_node.instanceCount()>1;
     bool unproved_spatial=false;
     std::vector<v::Value> scoped_selector_children;
     // Match the newly supplied terms before an accumulator's long prefix.
@@ -1892,9 +1898,9 @@ class Matcher {
     // child lacks a rebinding proof, another spatial operand cannot authorize
     // changing that child's instance with the parent.
     if(spatial && !template_proved && !unproved_spatial && !scoped_selector_children.empty() &&
-       b_node.hasUniformThreadTemplate() && b_node.instances().size()>1 && end>index+1) {
+       b_node.hasUniformThreadTemplate() && b_node.instanceCount()>1 && end>index+1) {
       const auto step=index_stride?index_stride:1;
-      const auto available=b_node.instances().size()-b.instanceIndex();
+      const auto available=b_node.instanceCount()-b.instanceIndex();
       const auto extent=end-index;
       const auto members=std::min(available,extent/step+bool(extent%step));
       const auto saved_begin=selector_scope_begin,saved_end=selector_scope_end;
@@ -1940,10 +1946,10 @@ class Matcher {
         index_stride?index_stride:1,thread_invariant};
   }
  public:
-  Matcher(const v::Graph& graph,const MemoryEliminationResult& r):g(graph),memory(r),specialization(graph),
+  Matcher(const v::Graph& graph,const MemoryEliminationResult& r,AssembledPieceEnds& shared_piece_ends):g(graph),memory(r),specialization(graph),
       packed(graph,[this](auto value)->std::optional<std::int64_t> {
         auto known=specialization.known(value);return known?literal(known->literal):std::nullopt;
-      }){indexInitialRanges();}
+      }),piece_ends(shared_piece_ends){indexInitialRanges();}
   ~Matcher() {
     sentryward::algorithm::ProfileScope facts("value_analysis.indexed_source.immutable_facts");
     facts.nodes=interpretation_hits;facts.edges=interpretation_misses;
@@ -2120,8 +2126,8 @@ class Matcher {
     const auto& first=domain.prototype;
     if(domain.count<3 || !g.contains(first) || !fixedProjection(first))return {};
     const auto& node=g.node(first.nodeId());
-    if(!node.hasUniformThreadTemplate() || first.instanceIndex()>node.instances().size() ||
-       domain.count>node.instances().size()-first.instanceIndex())return {};
+    if(!node.hasUniformThreadTemplate() || first.instanceIndex()>node.instanceCount() ||
+       domain.count>node.instanceCount()-first.instanceIndex())return {};
     auto root=exact(first);
     // These local matches construct an index map, not a sample-based proof.
     // Acceptance additionally requires the read-from/domain certificates to
@@ -2450,8 +2456,8 @@ std::vector<IndexedValueBinding> indexedSourceBindings(const IndexedSource& sour
   }
   return result;
 }
-IndexedSourceMatcher::IndexedSourceMatcher(const v::Graph& graph,const MemoryEliminationResult& memory)
-    :impl_(std::make_unique<Impl>(graph,memory)) {}
+IndexedSourceMatcher::IndexedSourceMatcher(const v::Graph& graph,const MemoryEliminationResult& memory,
+    AssembledPieceEnds& piece_ends):impl_(std::make_unique<Impl>(graph,memory,piece_ends)) {}
 IndexedSourceMatcher::~IndexedSourceMatcher()=default;
 std::optional<IndexedSource> IndexedSourceMatcher::match(std::span<const v::Value> values) {
   return impl_->run(values);
@@ -2483,10 +2489,6 @@ std::vector<IndexedSourceDomain> IndexedSourceMatcher::partition(std::span<const
   }
   return domains;
 }
-std::optional<IndexedSource> matchIndexedSource(const v::Graph& graph,
-    const MemoryEliminationResult& memory,std::span<const v::Value> values) {
-  return Matcher(graph,memory).run(values);
-}
 std::vector<IndexedSourceDomain> mapSourceTemplates(const v::Graph& graph,
     std::span<const v::Value> values,bool interleaved,
     std::span<const std::uint64_t> payload_offsets) {
@@ -2496,7 +2498,7 @@ std::vector<IndexedSourceDomain> mapSourceTemplates(const v::Graph& graph,
   // A MemberTemplate's absolute instance is in its binding, not its template
   // identity. Normalize the representative while retaining conversions and
   // constant component annotations. No operands or logical members are visited.
-  const auto prototypeOf=[&](auto&& self,v::Value value)->v::Value {
+  const auto prototypeOf=[&](auto&& self,const v::Value& value)->v::Value {
     if(!graph.node(value.nodeId()).hasUniformThreadTemplate() ||
        value.pointer() || value.threadSelector())return value;
     if(!value.indices().empty())return graph.component(self(self,value.withoutSelection()),
@@ -2508,7 +2510,7 @@ std::vector<IndexedSourceDomain> mapSourceTemplates(const v::Graph& graph,
     }
     return graph.node(value.nodeId()).result(value.resultIndex(),0);
   };
-  const auto sameTemplate=[&](auto&& self,v::Value a,v::Value b)->bool {
+  const auto sameTemplate=[&](auto&& self,const v::Value& a,const v::Value& b)->bool {
     if(a.nodeId()!=b.nodeId() || a.resultIndex()!=b.resultIndex() ||
        a.pointer() || b.pointer() || a.threadSelector() || b.threadSelector())return false;
     // Repeated uses of one exact value need no thread-template certificate.

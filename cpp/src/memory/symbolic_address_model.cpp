@@ -85,6 +85,17 @@ std::optional<Affine> Combine(const Affine& a, const Affine& b, Int scale) {
   return result;
 }
 
+Int Gcd(Int a, Int b) {
+  if (a < 0) a = -a;
+  if (b < 0) b = -b;
+  while (b != 0) {
+    const Int r = a % b;
+    a = b;
+    b = r;
+  }
+  return a;
+}
+
 std::optional<Int> Integer(const Json& value) {
   if (value.is_number_unsigned()) return Int(value.get<std::uint64_t>());
   if (value.is_number_integer()) return Int(value.get<std::int64_t>());
@@ -174,6 +185,10 @@ struct SymbolicAddressModel::Impl {
 
   std::vector<TermBound> term_bounds;
   std::map<std::string, GatherPolicy> gather_policies;
+  // The input object of each tensor-property lookup symbol.
+  std::map<std::string, std::string> gather_objects;
+  // Lookup symbols an address invariant names element by element (term bounds, joint injectivity).
+  std::set<std::string> pinned_gathers;
   std::vector<std::vector<std::string>> joint_injective;
   std::set<std::pair<NameId, NameId>> distinct_allocations;
 
@@ -181,13 +196,28 @@ struct SymbolicAddressModel::Impl {
   std::unordered_map<PairKey, decltype(lru)::iterator, PairHash> cache;
 
   Impl(const std::vector<ConstantAddressBinding>& bindings, std::string_view invariants,
-       SymbolicSolverOptions solver_options, std::size_t cache_capacity)
+       SymbolicSolverOptions solver_options, std::size_t cache_capacity, std::string_view tensor_properties)
       : constants(bindings, cache_capacity), options(solver_options),
         solver(address_solver::MakeSolver()), capacity(cache_capacity) {
     error = constants.validate();
     try {
       if (options.timeout_ms == 0) throw std::invalid_argument("SMT timeout_ms must be positive");
       ParseInvariants(invariants);
+      for (const auto& bound : term_bounds)
+        for (const auto& [atom, ignored] : bound.term.terms) {
+          (void)ignored;
+          if (!atoms[atom].gather.empty()) pinned_gathers.insert(atoms[atom].gather);
+        }
+      for (const auto& group : joint_injective) pinned_gathers.insert(group.begin(), group.end());
+      // Trusted element properties bound every lookup of their object's elements.
+      for (const auto& property : Json::parse(tensor_properties)) {
+        const auto object = property.at("object").get<std::string>();
+        const auto symbol = TensorPropertySymbol(object, property.at("element_type").get<std::string>());
+        auto& policy = gather_policies[symbol];
+        gather_objects[symbol] = object;
+        policy.injective = policy.injective || property.value("injective", false);
+        Tighten(policy.lower, policy.upper, property);
+      }
       for (const auto& binding : bindings) {
         const auto shape = InternShape(ParseBinding(binding));
         binding_shapes.emplace(binding.address.value(), shape);
@@ -495,16 +525,6 @@ struct SymbolicAddressModel::Impl {
         if (!bound.lower && !bound.upper && bound.multiples.empty())
           throw std::invalid_argument("term invariant requires a bound or multiple_of");
         term_bounds.push_back(std::move(bound));
-      } else if (value.contains("gather")) {
-        Keys(value, {"gather", "injective", "lower_bound", "upper_bound"});
-        if (!value.at("gather").is_string() || value.at("gather").get<std::string>().empty())
-          throw std::invalid_argument("gather must be a nonempty symbol");
-        auto& policy = gather_policies[value.at("gather").get<std::string>()];
-        if (value.contains("injective")) {
-          if (!value.at("injective").is_boolean()) throw std::invalid_argument("injective must be Boolean");
-          policy.injective = policy.injective || value.at("injective").get<bool>();
-        }
-        Tighten(policy.lower, policy.upper, value);
       } else if (value.contains("joint_injective")) {
         Keys(value, {"joint_injective"});
         joint_injective.push_back(Names(value.at("joint_injective"), "joint_injective"));
@@ -517,7 +537,8 @@ struct SymbolicAddressModel::Impl {
             distinct_allocations.emplace(std::min(a, b), std::max(a, b));
           }
       } else {
-        throw std::invalid_argument("address invariant needs term, gather, joint_injective or distinct_allocations");
+        throw std::invalid_argument("address invariant needs term, joint_injective or distinct_allocations "
+                                    "(element bounds of input objects are tensor_properties)");
       }
     }
   }
@@ -674,6 +695,39 @@ struct SymbolicAddressModel::Impl {
       // Overlapping bounding intervals do not imply overlapping strided tiles.
       // Let SMT select one bounded element coordinate from each tile.
     }
+    const Int goal_lower = a.region_bytes ? -Int(a.region_element) : lower;
+    const Int goal_upper = b.region_bytes ? Int(b.region_element) : upper;
+    // Layer 1: congruence. The goal is the constant plus a multiple of g, the
+    // gcd of its coefficients (atoms and TMA axis strides), for every integer
+    // valuation, so it needs no invariant: no such value strictly inside the
+    // goal interval means disjoint.
+    Int g = 0;
+    for (const auto& [atom, coefficient] : difference->terms) { (void)atom; g = Gcd(g, coefficient); }
+    for (const auto* shape : {&a, &b})
+      for (const auto& [stride, extent] : shape->region_axes)
+        if (extent > 1 && stride != 0) g = Gcd(g, Int(stride));
+    if (g > 1) {
+      Int residue = (difference->constant - (goal_lower + 1)) % g;
+      if (residue < 0) residue += g;
+      if (goal_lower + 1 + residue >= goal_upper) { ++stats.congruence_disjoint; return OverlapResult::Disjoint(); }
+    }
+    // Layer 1.5: S x (x - y) for two different elements x, y of one injective input object is a
+    // nonzero multiple of S, so with every other term (the constant and the axes) in [lo, hi] the
+    // goal is unreachable once lo + |S| >= goal_upper and hi - |S| <= goal_lower.
+    if (difference->terms.size() == 2 && difference->terms[0].second == -difference->terms[1].second) {
+      const auto &x = atoms[difference->terms[0].first], &y = atoms[difference->terms[1].first];
+      const auto policy = gather_policies.find(x.gather);
+      if (!x.gather.empty() && x.gather == y.gather && x.args != y.args && policy != gather_policies.end() &&
+          policy->second.injective) {
+        const Int s = difference->terms[0].second < 0 ? -difference->terms[0].second : difference->terms[0].second;
+        Int lo = difference->constant, hi = difference->constant;
+        for (const auto& [stride, extent] : a.region_axes)
+          if (extent > 1) hi += Int(stride) * Int(extent - 1);
+        for (const auto& [stride, extent] : b.region_axes)
+          if (extent > 1) lo -= Int(stride) * Int(extent - 1);
+        if (lo + s >= goal_upper && hi - s <= goal_lower) { ++stats.injective_disjoint; return OverlapResult::Disjoint(); }
+      }
+    }
     // Layer 2: SMT over Gamma AND Ovl.
     if (!solver)
       return OverlapResult::Unknown("symbolic offsets in " + Describe(a) +
@@ -696,8 +750,8 @@ struct SymbolicAddressModel::Impl {
       }
     };
     add_axes(a,1,"first"); add_axes(b,-1,"second");
-    query.goal_lower = a.region_bytes ? -Int(a.region_element) : lower;
-    query.goal_upper = b.region_bytes ? Int(b.region_element) : upper;
+    query.goal_lower = goal_lower;
+    query.goal_upper = goal_upper;
     ++stats.solver_queries;
     const auto answer = solver->solve(query, options.timeout_ms);
     using address_solver::Verdict;
@@ -732,6 +786,97 @@ struct SymbolicAddressModel::Impl {
     return evidence;
   }
 
+  // A family's footprint: one allocation, equal symbolic suffix, offsets in progression.
+  // `cross_unit`: also the suffix's tensor-property lookups (FamilyFootprint::gathers) and strided
+  // regions (TMA boxes) whose suffix is such lookups.
+  std::optional<FamilyFootprint> Footprint(const MemoryAccessFamily& family, bool cross_unit) {
+    if(!family.first.bytes || !std::holds_alternative<AddressId>(family.first.address))return {};
+    const auto shape=[&](const MemoryAccess& access)->const Shape* {
+      const auto id=std::get<AddressId>(access.address).value();
+      auto it=binding_shapes.find(id);
+      return it==binding_shapes.end()?nullptr:&shapes[it->second];
+    };
+    const auto* first=shape(family.first);
+    if(!first || (first->region_bytes && !cross_unit) || !first->offset || !KnownSpace(names[first->space]) ||
+        first->base!=Base::kAllocation)return {};
+    auto suffix=*first->offset;suffix.constant=0;
+    FamilyFootprint result{names[first->space],
+        names[first->identity],
+        names[first->alias_scope],suffix.key(),first->offset->constant,0,
+        first->region_bytes?*first->region_bytes:*family.first.bytes,true,first->absent,{}};
+    if(first->region_bytes){result.region_axes=first->region_axes;result.region_element=first->region_element;}
+    for(std::size_t k=1;k<family.count;++k) {
+      const auto* current=shape(family.at(family.first_member+k));
+      if(!current || current->region_bytes!=first->region_bytes || current->region_axes!=first->region_axes ||
+          current->region_element!=first->region_element || !current->offset || current->space!=first->space ||
+          current->base!=first->base || current->identity!=first->identity || current->alias_scope!=first->alias_scope ||
+          current->absent!=first->absent || current->offset->terms!=first->offset->terms)return {};
+      Int difference;
+      if(__builtin_sub_overflow(current->offset->constant,first->offset->constant,&difference))return {};
+      if(k==1)result.step=difference;
+      auto expected=Checked(result.step,Int(k),true);
+      if(!expected || difference!=*expected)return {};
+    }
+    auto bias=Checked(result.step,Int(family.first_member),true);
+    if(!bias)return {};
+    Int offset;
+    if(__builtin_sub_overflow(result.offset,*bias,&offset))return {};
+    result.offset=offset;
+    if(cross_unit)for(const auto& [atom,coefficient]:suffix.terms) {
+      const auto& lookup=atoms[atom];
+      const auto object=gather_objects.find(lookup.gather);
+      if(object==gather_objects.end() || lookup.args.size()!=1) { result.gathers.clear(); break; }
+      result.gathers.push_back({lookup.gather,object->second,lookup.args.front(),coefficient,
+                                !pinned_gathers.contains(lookup.gather)});
+    }
+    // A region is a cross-unit footprint only as a lookup part (CheckCrossUnit's lookup pass decides it).
+    if(first->region_bytes && result.gathers.empty())return {};
+    return result;
+  }
+
+  // A family footprint as one shape: its lowest member's offset plus the lookups, and the
+  // progression as one region axis. Nullopt when it is not affine or has a non-lookup suffix.
+  std::optional<Shape> FamilyShape(const MemoryAccessFamily& family, const FamilyFootprint& footprint) {
+    if (!footprint.affine || family.count == 0 || footprint.bytes == 0 ||
+        (!footprint.symbolic.empty() && footprint.gathers.empty()))
+      return std::nullopt;
+    Shape shape;
+    shape.space = Name(footprint.space);
+    shape.base = Base::kAllocation;
+    shape.identity = Name(footprint.allocation);
+    shape.alias_scope = Name(footprint.alias);
+    shape.absent = footprint.empty;
+    const Int step = footprint.step;
+    const auto lowest = Checked(step, Int(step < 0 ? family.first_member + family.count - 1 : family.first_member), true);
+    const auto constant = lowest ? Checked(footprint.offset, *lowest, false) : std::nullopt;
+    if (!constant) return std::nullopt;
+    std::map<AtomId, Int> terms;
+    for (const auto& gather : footprint.gathers) {
+      const auto atom = Intern(GatherKey(gather.symbol, {gather.arg}), gather.symbol, {gather.arg});
+      const auto sum = Checked(terms[atom], gather.coefficient, false);
+      if (!sum) return std::nullopt;
+      terms[atom] = *sum;
+    }
+    Affine offset{*constant, {}};
+    for (const auto& [atom, coefficient] : terms)
+      if (coefficient != 0) offset.terms.emplace_back(atom, coefficient);
+    shape.offset = std::move(offset);
+    // A region member: its own axes and element; the progression adds one axis.
+    shape.region_axes = footprint.region_axes;
+    shape.region_element = footprint.region_axes.empty() ? footprint.bytes : footprint.region_element;
+    Int width = Int(footprint.bytes);
+    if (family.count > 1 && step != 0) {
+      const Int stride = step < 0 ? -step : step;
+      const auto span = Checked(stride, Int(family.count - 1), true);
+      const auto total = span ? Checked(*span, width, false) : std::nullopt;
+      if (!total || *total > Int(UINT64_MAX)) return std::nullopt;
+      width = *total;
+      shape.region_axes.push_back({static_cast<std::uint64_t>(stride), static_cast<std::uint64_t>(family.count)});
+    }
+    if (!shape.region_axes.empty()) shape.region_bytes = static_cast<std::uint64_t>(width);
+    return shape;
+  }
+
   OverlapResult Refine(const MemoryAccess& first, const MemoryAccess& second, OverlapResult base) {
     const auto* a = std::get_if<AddressId>(&first.address);
     const auto* b = std::get_if<AddressId>(&second.address);
@@ -762,8 +907,9 @@ struct SymbolicAddressModel::Impl {
 SymbolicAddressModel::SymbolicAddressModel(const std::vector<ConstantAddressBinding>& bindings,
                                            std::string_view address_invariants,
                                            SymbolicSolverOptions solver,
-                                           std::size_t cache_capacity)
-    : impl_(std::make_unique<Impl>(bindings, address_invariants, solver, cache_capacity)) {}
+                                           std::size_t cache_capacity,
+                                           std::string_view tensor_properties)
+    : impl_(std::make_unique<Impl>(bindings, address_invariants, solver, cache_capacity, tensor_properties)) {}
 SymbolicAddressModel::~SymbolicAddressModel() = default;
 SymbolicAddressModel::SymbolicAddressModel(SymbolicAddressModel&&) noexcept = default;
 SymbolicAddressModel& SymbolicAddressModel::operator=(SymbolicAddressModel&&) noexcept = default;
@@ -794,36 +940,19 @@ std::unique_ptr<MemoryConflictCandidates> SymbolicAddressModel::conflictOrder(
 
 std::optional<FamilyFootprint> SymbolicAddressModel::familyFootprint(const MemoryAccessFamily& family) {
   if(auto constant=impl_->constants.familyFootprint(family))return constant;
-  if(!family.first.bytes || !std::holds_alternative<AddressId>(family.first.address))return {};
-  const auto shape=[&](const MemoryAccess& access)->const Impl::Shape* {
-    const auto id=std::get<AddressId>(access.address).value();
-    auto it=impl_->binding_shapes.find(id);
-    return it==impl_->binding_shapes.end()?nullptr:&impl_->shapes[it->second];
-  };
-  const auto* first=shape(family.first);
-  if(!first || first->region_bytes || !first->offset || !KnownSpace(impl_->names[first->space]) ||
-      first->base!=Impl::Base::kAllocation)return {};
-  auto suffix=*first->offset;suffix.constant=0;
-  FamilyFootprint result{impl_->names[first->space],
-      impl_->names[first->identity],
-      impl_->names[first->alias_scope],suffix.key(),first->offset->constant,0,*family.first.bytes,true,first->absent};
-  for(std::size_t k=1;k<family.count;++k) {
-    const auto* current=shape(family.at(family.first_member+k));
-    if(!current || current->region_bytes || !current->offset || current->space!=first->space || current->base!=first->base ||
-        current->identity!=first->identity || current->alias_scope!=first->alias_scope || current->absent!=first->absent ||
-        current->offset->terms!=first->offset->terms)return {};
-    Int difference;
-    if(__builtin_sub_overflow(current->offset->constant,first->offset->constant,&difference))return {};
-    if(k==1)result.step=difference;
-    auto expected=Checked(result.step,Int(k),true);
-    if(!expected || difference!=*expected)return {};
-  }
-  auto bias=Checked(result.step,Int(family.first_member),true);
-  if(!bias)return {};
-  Int offset;
-  if(__builtin_sub_overflow(result.offset,*bias,&offset))return {};
-  result.offset=offset;
-  return result;
+  return impl_->Footprint(family,false);
+}
+std::optional<FamilyFootprint> SymbolicAddressModel::crossUnitFootprint(const MemoryAccessFamily& family) {
+  if(auto constant=impl_->constants.familyFootprint(family))return constant;
+  return impl_->Footprint(family,true);
+}
+
+OverlapResult SymbolicAddressModel::translatedFamilyOverlap(const MemoryAccessFamily& a, const FamilyFootprint& x,
+                                                            const MemoryAccessFamily& b, const FamilyFootprint& y) {
+  if(impl_->error)return OverlapResult::Unknown("invalid symbolic-address model: "+impl_->error->message,"invalid_address_model");
+  auto sa=impl_->FamilyShape(a,x),sb=impl_->FamilyShape(b,y);
+  if(!sa || !sb)return OverlapResult::Unknown("family footprint is not an affine lookup form","translated_family_unsupported");
+  return impl_->Decide(*sa,x.bytes,*sb,y.bytes);
 }
 const ConstantAddressModel& SymbolicAddressModel::constantModel() const noexcept { return impl_->constants; }
 std::unique_ptr<MemoryConflictCandidates> SymbolicAddressModel::conflictCandidatesWithExemptions(

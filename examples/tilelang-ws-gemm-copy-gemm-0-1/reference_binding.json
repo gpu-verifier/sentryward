@@ -1,0 +1,139 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          128,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          64,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:A": "A",
+      "6:global1:B": "B"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          128,
+          64
+        ],
+        "source_strides_bytes": [
+          128,
+          2
+        ],
+        "target_strides_bytes": [
+          128,
+          2
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          64,
+          128
+        ],
+        "source_strides_bytes": [
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          256,
+          2
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global1:C",
+    "right_allocation": "6:global1:C",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+      128,
+      128
+    ],
+    "left_strides_bytes": [
+      256,
+      2
+    ],
+    "right_strides_bytes": [
+      256,
+      2
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "A",
+        "dtype": "float16",
+        "allocation": "6:global1:A"
+      },
+      {
+        "name": "B",
+        "dtype": "float16",
+        "allocation": "6:global1:B"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/tilelang-ws-gemm-copy-gemm-0-1.ptx",
+    "optimized_input": "examples/tilelang-ws-gemm-copy-gemm-0-1/input.json",
+    "upstream": [
+      "https://github.com/tile-ai/tilelang/blob/cd37ed5fc35ae7a60a1277c8eb49028174ac51e6/examples/warp_specialize/example_warp_specialize_gemm_copy_gemm_0_1.py#L5-L71"
+    ],
+    "scope": "Upstream main(): M=N=128, K=64, block 128x128x64, f16 in/out, f32 accumulation; grid ceil(N/128) x ceil(M/128) = 1x1, 256 threads (two warpgroups, each owning 64 output columns). The single CTA computes the whole C.",
+    "evidence": "PTX entry matmul_warp_specialize_copy_gemm_0_1_kernel(A, B, C) uses plain global loads (no tensor maps). A: thread offset 8*tid elements, four 4096-byte passes = 128x64 f16 contiguous (row pitch 128 B). B: rows (tid>>3)-16 with pitch 128 elements (256 B), 64 rows per warpgroup, second warpgroup +64 columns. No K loop (one 64-wide K tile). C stores use row pitch 128 elements via st.global.b32 after cvt.rn.f16x2.f32. Parameter 2 is the distinct output C.",
+    "semantics": "ideal_real",
+    "ptx_sha256": "906489fd9861d455156d442247d122429c74635a0103ba17be99a614d94bdaa6",
+    "optimized_input_sha256": "e90ba4732d536c3593970b06f625f1d4d3bdeabf8c640ddf2a27f66c25309e3e",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [],
+    "coverage": "All 128x128 elements of C."
+  }
+}

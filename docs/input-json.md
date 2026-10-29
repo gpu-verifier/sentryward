@@ -32,10 +32,12 @@ size at parameter 1. Change the ABI and launch to match the actual PTX.
 | `declarations` | Optional array describing ABI fields, pointer identities and tensor-map identities |
 | `arguments` | Optional array assigning concrete scalar values to ABI fields |
 | `shape_arrays` | Optional array of concrete, read-only shape tables |
+| `pointer_arrays` | Optional array of read-only pointer tables whose entries name input objects |
 | `tma_descriptors` | Optional array describing tensor-map metadata |
 | `branch_decisions` | Optional explicit branch choices; conclusions are conditional on them |
 | `assumptions` | Optional Boolean overrides of the [named analysis assumptions](input-json.md#assumptions) |
 | `address_invariants` | Optional trusted address constraints; see [forms and semantics](assumptions.md#address-invariants) |
+| `tensor_properties` | Optional trusted element properties of input objects; see [Tensor properties](#tensor-properties) |
 | `data_branch_loop_iterations` | Optional positive iteration bound for loops under `bounded_computation_loops`; default 4; does not itself enable that assumption |
 
 Omitted record arrays are empty. Missing values needed during analysis produce
@@ -86,6 +88,82 @@ These bytes are a read-only input contract, not just a hint for the reference.
 }
 ```
 
+## Pointer arrays
+
+Each record has `parameter`, optional `offset` (0), and `entries`: a nonempty array
+describing the global table that the 8-byte pointer field at that location points to.
+Entry k is the pointer stored at table byte 8k. An entry is `null` (a null pointer)
+or has `object` (the named global storage), optional `byte_offset` (0) into it, and
+optional `extent_bytes` (a positive bound on the bytes reachable through the entry).
+The table bytes are a read-only input contract, like shape arrays: the kernel
+must not write them. Loading a whole entry yields a pointer to the named object;
+other loads from the table are unknown.
+
+```json
+{
+  "pointer_arrays": [
+    {"parameter": 0, "offset": 1192,
+     "entries": [{"object": "A.group0"}, {"object": "A.group1"}]}
+  ]
+}
+```
+
+Distinct objects are distinct allocations. An entry that names an object
+already declared in the input, by a pointer declaration or a `tma_descriptors`
+record, aliases that object. Entries that share one buffer use one object with
+different `byte_offset` values; conclusions then rely on the stated offsets and
+extents, which describe one launch.
+
+The entries are trusted, not checked: the verifier does not see the table's
+runtime contents. Results record the tables under
+`frontend_assumptions.pointer_array_contract`.
+
+## Tensor properties
+
+Each record states one property of the elements of a declared input object,
+read as `element_type` (`s32`, `u32`, `s64` or `u64`):
+
+| `property` | Meaning |
+| --- | --- |
+| `injective` | The elements are pairwise distinct. |
+| `lower_bound` | Every element is at least `value`. |
+| `upper_bound` | Every element is at most `value`. |
+
+```json
+{
+  "tensor_properties": [
+    {"object": "kv_indices", "element_type": "s32", "property": "lower_bound", "value": 0},
+    {"object": "kv_indices", "element_type": "s32", "property": "upper_bound", "value": 1023}
+  ]
+}
+```
+
+`object` names a declared pointer object, a `tma_descriptors` object or a
+pointer-array entry object. A bound requires `value`, which must fit
+`element_type`; `injective` takes none.
+An object's properties use one element type; repeated bounds combine to the
+tightest, and contradictory bounds make the input invalid.
+
+Properties are trusted, not checked. An object with properties is read-only
+input memory for the analyzed launch: a write to it makes the input invalid.
+The element values themselves stay unknown. A load of one whole, aligned
+element yields an unknown value within the bounds, and an integer comparison
+that the bounds decide (for example a `-1` sentinel test against a nonnegative
+index) takes its decided outcome. Loads of other widths are plain unknown
+values. Results list the properties under
+`frontend_assumptions.tensor_properties`, the source lines decided by them
+under `frontend_assumptions.tensor_property_decisions`, and set
+`assumption_dependent`.
+
+The address model uses such a loaded value as an offset term. A global pointer
+plus an affine offset in loaded elements keeps its allocation while the
+offset's range stays within the allocation. The memory checker then treats
+each loaded element as a symbol with the stated bounds, and `injective` lets it
+conclude that loads of different elements give different values. For example,
+CTAs that read-modify-write the state slot `state[idx[cta]]` are race-free when
+`idx` is injective and the slot arithmetic cannot overflow. Arithmetic in 32
+bits without an upper bound may wrap, so the offset stays unknown.
+
 ## Tensor-map descriptors
 
 A descriptor identifies its ABI location with `parameter` and optional `offset`.
@@ -131,17 +209,6 @@ The production parser is [public_input_parse.cpp](../cpp/src/frontend/ptx/public
 Unspecified keys use [repository defaults](../config/default-assumptions.json).
 Unknown names and non-Boolean values are rejected with distinct diagnostics.
 
-Immediate visibility remains a fixed premise of the current model; removing its
-configuration switch did not add weak-memory analysis. Do not put
-`immediate_visibility` in the `assumptions` object. Existing
-`immediate_visibility: true` configurations can omit the field without changing
-this premise; configurations requesting `false` are not supported.
-The removed `warp_tmem_load_completion: false` override can also be omitted.
-A former `true` override must not be silently dropped: its TMEM completion
-semantics require review.
-
-
-
 | Key | Default |
 | --- | --- |
 | `duplicate_tma_store_benign` | `true` |
@@ -165,8 +232,9 @@ limitations. CLI `--assume` / `--no-assume` and Python `verify(..., assumptions=
 override the same keys for one invocation without editing this file.
 `address_invariants` are separate trusted constraints, not Boolean
 assumptions; their [forms and examples](assumptions.md#address-invariants)
-are documented there. Neither assumptions nor address invariants are established
-by the verifier merely because they appear in the configuration.
+are documented there. The verifier does not establish assumptions, address
+invariants, `tensor_properties`, `pointer_arrays` or `shape_arrays` merely
+because they appear in the configuration; it trusts them as stated.
 
 
 ## Related files

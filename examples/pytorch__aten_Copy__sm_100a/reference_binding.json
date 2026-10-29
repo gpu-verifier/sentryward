@@ -1,0 +1,98 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global2:in": "in"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global2:in": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          3
+        ],
+        "source_strides_bytes": [
+          12,
+          4
+        ],
+        "target_strides_bytes": [
+          12,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global2:in": "in"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global2:in": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          3
+        ],
+        "source_strides_bytes": [
+          12,
+          4
+        ],
+        "target_strides_bytes": [
+          12,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global3:out",
+    "right_allocation": "6:global3:out",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+      2,
+      3
+    ],
+    "left_strides_bytes": [
+      12,
+      4
+    ],
+    "right_strides_bytes": [
+      16,
+      4
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "x",
+        "allocation": "6:global2:in",
+        "dtype": "float32"
+      }
+    ]
+  },
+  "provenance": {
+    "ptx": "corpus/pytorch__aten_Copy__sm_100a.ptx",
+    "optimized_input": "examples/pytorch__aten_Copy__sm_100a/input.json",
+    "optimized_input_sha256": "39cfbe8258ad71b6fdf8d7e595749996744fd70f52fa766c374ce9b983d1f729",
+    "ptx_sha256": "0e23d7f8e0194136679d26326ddeac4a4261d129ec29e130563fb34991864050",
+    "source": "// Source: https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/Copy.cu ; https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/CUDALoops.cuh ; https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/MemoryAccess.cuh ; https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/cuda/detail/OffsetCalculator.cuh ; https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/cuda/detail/IntegerDivider.cuh",
+    "upstream": [
+      "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/Copy.cu#L213-L253",
+      "https://github.com/pytorch/pytorch/blob/2b3ec34829036a65cd9d1398ea72a0167dc37470/aten/src/ATen/native/cuda/CUDALoops.cuh"
+    ],
+    "scope": "N=6 float copy through the non-contiguous OffsetCalculator path: iterator sizes [3, 2]; in strides (4, 12) B = dense [2, 3]; out strides (4, 16) B = column slice buf[:, :3] of a dense [2, 4] buffer. Output bytes 12..15 and 28..31 of `out` are not written.",
+    "notes": "strides_[1][0] = 16: output row pitch 16 B (column slice of a dense [2, 4] buffer; non-overlapping, non-coalescible output).",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

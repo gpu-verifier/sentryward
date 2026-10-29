@@ -91,6 +91,42 @@
       "type": "bool",
       "value": false,
       "offset": 38
+    },
+    {
+      "parameter": 0,
+      "offset": 112,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 120,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 128,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 136,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 144,
+      "type": "pointer",
+      "value": null
+    },
+    {
+      "parameter": 0,
+      "offset": 152,
+      "type": "pointer",
+      "value": null
     }
   ],
   "declarations": [
@@ -150,42 +186,6 @@
     },
     {
       "parameter": 0,
-      "offset": 112,
-      "type": "pointer",
-      "object": "Os"
-    },
-    {
-      "parameter": 0,
-      "offset": 120,
-      "type": "pointer",
-      "object": "St"
-    },
-    {
-      "parameter": 0,
-      "offset": 128,
-      "type": "pointer",
-      "object": "dc"
-    },
-    {
-      "parameter": 0,
-      "offset": 136,
-      "type": "pointer",
-      "object": "dA"
-    },
-    {
-      "parameter": 0,
-      "offset": 144,
-      "type": "pointer",
-      "object": "CB"
-    },
-    {
-      "parameter": 0,
-      "offset": 152,
-      "type": "pointer",
-      "object": "desc"
-    },
-    {
-      "parameter": 0,
       "offset": 160,
       "type": "pointer",
       "object": "last_token_ids"
@@ -197,9 +197,36 @@
       "object": "slot_mapping"
     }
   ],
+  "shape_arrays": [
+    {
+      "parameter": 0,
+      "offset": 160,
+      "element_type": "s32",
+      "shapes": [
+        [
+          4
+        ]
+      ]
+    }
+  ],
   "assumptions": {
     "duplicate_tma_store_benign": true,
     "representative_election": true,
-    "clc_always_fails": true
-  }
+    "clc_always_fails": true,
+    "order_independent_atomics": true
+  },
+  "tensor_properties": [
+    {
+      "object": "slot_mapping",
+      "element_type": "s32",
+      "property": "lower_bound",
+      "value": 0
+    },
+    {
+      "object": "slot_mapping",
+      "element_type": "s32",
+      "property": "upper_bound",
+      "value": 0
+    }
+  ]
 }

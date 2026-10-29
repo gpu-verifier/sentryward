@@ -73,6 +73,19 @@ bool intersects(Range a,Range b) {
   if(first<lo)first+=((lo-first+period-1)/period)*period;
   return first<=std::min(a.last,b.last);
 }
+// Pairwise disjointness of n items, swept along one axis on which item i spans
+// [lo(i), hi(i)]: only an active item p whose span meets the current item b's
+// is tested with overlap(p,b), not all pairs.
+template<class Lo,class Hi,class Overlap> void require_disjoint(std::size_t n,Lo lo,Hi hi,Overlap overlap) {
+  std::vector<std::size_t> order(n);std::iota(order.begin(),order.end(),std::size_t(0));
+  std::sort(order.begin(),order.end(),[&](std::size_t x,std::size_t y){return lo(x)<lo(y);});
+  std::vector<std::size_t> active;
+  for(auto b:order) {
+    std::erase_if(active,[&](std::size_t p){return hi(p)<lo(b);});
+    for(auto p:active)if(overlap(p,b))throw Unsupported("overlapping outputs");
+    active.push_back(b);
+  }
+}
 void partition(const Document& left,const Document& right,const J& m,Builder& a,Builder& b,J& maps) {
   auto shape=m.at("shape").get<std::vector<uint64_t>>();
   auto steps=m.at("right_strides_bytes").get<std::vector<uint64_t>>();
@@ -119,6 +132,17 @@ void partition(const Document& left,const Document& right,const J& m,Builder& a,
   // certificate falsely requires every individual family to be dense.
   bool rectangular=false;for(const auto& f:families)if(f.at("shape").size()!=1)rectangular=true;
   if(rectangular) {
+    // A packed family (element_bytes = P * width) is P families of width-byte
+    // elements at byte offsets slot * width; emit extracts each slot exactly.
+    // A piece refers to its family in families, which outlives pieces.
+    struct Piece {const J* family;uint64_t offset,slot;};
+    std::vector<Piece> pieces;
+    for(const auto& f:families) {
+      const auto packed=input_unsigned(f.at("element_bytes"));
+      if(!packed || packed%width)throw Unsupported("invalid rectangular output");
+      for(uint64_t slot=0;slot<packed/width;++slot)
+        pieces.push_back({&f,checked(Z(input_unsigned(f.at("offset")))+Z(slot)*width),slot});
+    }
     // Refine physical tensor axes by the declared family strides. A block
     // [3,30] at strides [64,2] is rectangular in (row, column/32, column%32),
     // even though it is not an AP in the original column axis. Only exact
@@ -128,7 +152,8 @@ void partition(const Document& left,const Document& right,const J& m,Builder& a,
     std::vector<Axis> grid_axes;
     for(const auto& axis:tensor_axes) {
       std::vector<uint64_t> cuts{1,axis.size};
-      for(const auto& f:families) {
+      for(const auto& piece:pieces) {
+        const J& f=*piece.family;
         auto fs=f.at("shape").get<std::vector<uint64_t>>(),st=f.at("strides_bytes").get<std::vector<uint64_t>>();
         if(fs.size()!=st.size())throw Unsupported("invalid output axes");
         for(unsigned i=0;i<fs.size();++i)if(fs[i]>1 && st[i]%axis.stride==0) {
@@ -148,12 +173,13 @@ void partition(const Document& left,const Document& right,const J& m,Builder& a,
     axes=std::move(grid_axes);
     struct Term {unsigned dim;uint64_t divisor,radix,slope,count;};
     struct Box {std::vector<uint64_t> base,count,step;std::vector<std::vector<Term>> bindings;};
-    std::vector<Box> boxes;Z total=0;
-    for(const auto& f:families) {
+    std::vector<Box> boxes;std::vector<std::vector<Range>> ranges;Z total=0;
+    for(const auto& piece:pieces) {
+      const J& f=*piece.family;
       auto fs=f.at("shape").get<std::vector<uint64_t>>(),st=f.at("strides_bytes").get<std::vector<uint64_t>>();
-      if(f.at("element_bytes")!=width || fs.empty() || fs.size()!=st.size())throw Unsupported("invalid rectangular output");
+      if(fs.empty() || fs.size()!=st.size())throw Unsupported("invalid rectangular output");
       Box box{std::vector<uint64_t>(grid_shape.size()),std::vector<uint64_t>(grid_shape.size(),1),std::vector<uint64_t>(grid_shape.size(),1),std::vector<std::vector<Term>>(grid_shape.size())};
-      auto rem=checked(Z(input_unsigned(f.at("offset")))-origin);
+      auto rem=checked(Z(piece.offset)-origin);
       for(auto it=axes.rbegin();it!=axes.rend();++it){box.base[it->index]=rem/it->stride;rem%=it->stride;if(box.base[it->index]>=it->size)throw Unsupported("output outside tensor");}
       if(rem)throw Unsupported("output in padding");
       for(unsigned dim=0;dim<fs.size();++dim) {
@@ -182,14 +208,23 @@ void partition(const Document& left,const Document& right,const J& m,Builder& a,
         if(Z(box.base[axis])+Z(step)*(count-1)>=grid_shape[axis])throw Unsupported("output extent outside tensor");
         box.count[axis]=count;box.step[axis]=step;
       }
-      for(const auto& prev:boxes){bool overlap=true;for(unsigned i=0;i<grid_shape.size() && overlap;++i)
-        overlap=intersects({box.base[i],checked(Z(box.base[i])+Z(box.step[i])*(box.count[i]-1)),box.step[i]},
-                           {prev.base[i],checked(Z(prev.base[i])+Z(prev.step[i])*(prev.count[i]-1)),prev.step[i]});
-        if(overlap)throw Unsupported("overlapping outputs");}
-      total+=product(box.count);boxes.push_back(std::move(box));
+      total+=product(box.count);
+      auto& row=ranges.emplace_back();
+      for(unsigned i=0;i<grid_shape.size();++i)row.push_back({box.base[i],checked(Z(box.base[i])+Z(box.step[i])*(box.count[i]-1)),box.step[i]});
+      boxes.push_back(std::move(box));
     }
+    // Pairwise disjointness, swept along the widest grid axis: only boxes whose
+    // ranges on that axis meet are compared on every axis (not all pairs).
+    // Without grid axes the tensor is one element, which every box covers.
+    if(grid_shape.empty() && boxes.size()>1)throw Unsupported("overlapping outputs");
+    unsigned sweep=0;
+    for(unsigned i=1;i<grid_shape.size();++i)if(grid_shape[i]>grid_shape[sweep])sweep=i;
+    require_disjoint(boxes.size(),[&](std::size_t x){return ranges[x][sweep].first;},[&](std::size_t x){return ranges[x][sweep].last;},
+      [&](std::size_t p,std::size_t b){bool overlap=true;for(unsigned i=0;i<grid_shape.size() && overlap;++i)
+        overlap=intersects(ranges[b][i],ranges[p][i]);
+        return overlap;});
     if(total!=product(shape))throw Unsupported("incomplete output coverage");
-    for(size_t i=0;i<families.size();++i) {
+    for(size_t i=0;i<pieces.size();++i) {
       auto& box=boxes[i];std::vector<Edge> coords(shape.size(),a.constant(0)),right_coords;
       std::vector<Edge> grid_coords;
       for(unsigned axis=0;axis<grid_shape.size();++axis){auto c=a.constant(box.base[axis]);for(auto t:box.bindings[axis]){auto x=a.index(t.dim);if(t.divisor!=1)x=a.op("Divide",x,a.constant(t.divisor));if(t.radix)x=a.op("Remainder",x,a.constant(t.radix));if(t.slope!=1)x=a.op("Multiply",x,a.constant(t.slope));c=a.op("Add",c,x);}grid_coords.push_back(c);}
@@ -200,8 +235,9 @@ void partition(const Document& left,const Document& right,const J& m,Builder& a,
         if(factor!=1)x=a.op("Multiply",x,a.constant(factor));
         coords[parent->index]=a.op("Add",coords[parent->index],x);
       }
-      for(unsigned j=0;j<families[i].at("shape").size();++j)right_coords.push_back(b.index(j));
-      emit(families[i],coords,right_coords,families[i].at("shape").get<std::vector<uint64_t>>());
+      const J& f=*pieces[i].family;
+      for(unsigned j=0;j<f.at("shape").size();++j)right_coords.push_back(b.index(j));
+      emit(f,coords,right_coords,f.at("shape").get<std::vector<uint64_t>>(),pieces[i].slot);
     }
     return;
   }
@@ -214,8 +250,8 @@ void partition(const Document& left,const Document& right,const J& m,Builder& a,
     for(uint64_t slot=0;slot<packed/width;++slot)ranges.push_back({begin/width+slot,checked(Z(begin/width+slot)+Z(count-1)*(step/width)),step/width});
   }
   if(total!=Z(product(shape))*width || (strided && extent!=total))throw Unsupported("incomplete output coverage");
-  std::sort(ranges.begin(),ranges.end(),[](Range x,Range y){return x.first<y.first;});std::vector<Range> active;
-  for(auto r:ranges){std::erase_if(active,[&](Range x){return x.last<r.first;});for(auto x:active)if(intersects(x,r))throw Unsupported("overlapping outputs");active.push_back(r);}
+  require_disjoint(ranges.size(),[&](std::size_t i){return ranges[i].first;},[&](std::size_t i){return ranges[i].last;},
+    [&](std::size_t p,std::size_t b){return intersects(ranges[p],ranges[b]);});
   for(const auto& f:families) {
     uint64_t packed=f.at("element_bytes"),step=f.at("strides_bytes")[0],size=f.at("shape")[0];
     for(uint64_t slot=0;slot<packed/width;++slot)for(uint64_t start=0;start<size;) {

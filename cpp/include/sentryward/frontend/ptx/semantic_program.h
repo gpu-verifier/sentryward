@@ -169,7 +169,10 @@ class SemanticProgramBuilder final {
   ~SemanticProgramBuilder();
   SemanticProgramBuilder(const SemanticProgramBuilder&) = delete;
   SemanticProgramBuilder& operator=(const SemanticProgramBuilder&) = delete;
-  void AddCta(std::uint32_t cta, Coordinates, const ExecutionProgram&);
+  // The CTA id is facts.Linear(); the coordinates are facts.frame().SelfCoordinates().
+  void AddCta(const CtaFacts& facts);
+  // Cross-CTA class mode, before the first AddCta (ModelLowerer::TrackUnits).
+  void TrackUnits(algorithm::UnitQuotient* quotient) noexcept;
   [[nodiscard]] const value_ir::Graph& graph() const noexcept;
   [[nodiscard]] const std::vector<ValueIrDiagnostic>& valueDiagnostics() const noexcept;
   // Publish observations from THIS emission before moving/mutating its Value

@@ -1,14 +1,4 @@
 {
-  "address_model": {
-    "address_invariants": [],
-    "kind": "symbolic",
-    "layers": [
-      0,
-      2
-    ],
-    "solver": "z3",
-    "solver_timeout_ms": 100
-  },
   "assumption_dependent": true,
   "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
@@ -51,1475 +41,25 @@
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "passed",
-    "memory": "passed",
     "synchronization": "passed"
   },
-  "counts": {
-    "edges": 704036,
-    "events": 289481,
-    "instructions": 52356,
-    "memory_accesses": 191786,
-    "threads": 256
-  },
   "diagnostics": [],
-  "equivalence": {
-    "access_validity": "no_unresolved_symbolic_byte_reads",
-    "arena_nodes": 1946,
-    "checks": {
-      "equivalence": "passed",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "comparison_elapsed_seconds": 0.022074234,
-    "context_declaration": {
-      "assumptions": [
-        {
-          "finite": true,
-          "input": "scale_a",
-          "interpretation": "e8m0",
-          "kind": "input_elements",
-          "reason": "Additional decoded finite-scale premise explicitly authorized by user 2026-10-09; exact e8m0 interpretation, not generic uint8 finiteness."
-        },
-        {
-          "finite": true,
-          "input": "scale_b",
-          "interpretation": "e8m0",
-          "kind": "input_elements",
-          "reason": "Additional decoded finite-scale premise explicitly authorized by user 2026-10-09; exact e8m0 interpretation, not generic uint8 finiteness."
-        }
-      ],
-      "fixed_inputs": [],
-      "inputs": [],
-      "predicate_nodes": []
-    },
-    "context_policy": "explicit native caller premises; no implied provenance certification",
-    "counters": {
-      "add_term_visits": 7368,
-      "affine_output_decline_singleton_projection_ambiguous": 16,
-      "affine_state_banks": 1,
-      "call_definition_node_visits": 32,
-      "canonical_factor_visits": 384,
-      "canonical_node_visits": 746,
-      "canonical_sum_initials": 16,
-      "certified_state_pattern_decline_nonplain_pattern": 16,
-      "certified_state_pattern_work": 192,
-      "coefficient_normalizations": 1,
-      "coordinate_sum_constraints_checked": 64,
-      "coverage_polynomial_peak": 4,
-      "coverage_polynomial_visits": 144,
-      "ep_body_anchor_edges": 1028,
-      "ep_body_anchor_nodes": 1346,
-      "ep_body_deferred_call_anchors": 126,
-      "ep_body_deferred_unmatched_anchors": 126,
-      "ep_body_fold_scope_boundaries": 128,
-      "ep_body_instance_cache_entries": 32,
-      "ep_body_obligations": 32,
-      "ep_body_pattern_anchor_cache_hits": 495,
-      "ep_body_proofs": 32,
-      "ep_body_read_anchor_rejections": 392,
-      "ep_body_read_match_cache_entries": 64,
-      "ep_body_target_anchor_cache_hits": 207,
-      "ep_identity_proofs": 48,
-      "ep_reduction_outer_obligations": 16,
-      "ep_scalar_attempts": 64,
-      "ep_scalar_proofs": 48,
-      "exact_proof_reuse_certificates": 16,
-      "finite_bilinear_banks": 1,
-      "finite_bilinear_fusions": 0,
-      "finite_bilinear_masks": 0,
-      "finite_bilinear_singleton_sums": 0,
-      "finite_bilinear_swaps": 0,
-      "finite_bilinear_work": 2448,
-      "finite_e8m0_nan_branches_eliminated": 32,
-      "finite_state_reuse_banks": 1,
-      "fold_alpha_signature_edges": 561,
-      "fold_alpha_signatures": 272,
-      "fold_alpha_states": 553,
-      "fp_idiom_power_constructions": 0,
-      "fp_idiom_rm_producers": 0,
-      "ideal_additive_compiler_exp_sequences": 0,
-      "ideal_compiler_exp_sequences": 0,
-      "ideal_compiler_log2_polynomials": 0,
-      "ideal_compiler_lse_sequences": 0,
-      "ideal_single_constant_exp_sequences": 0,
-      "imported_context_nodes": 2421,
-      "importer_scope_banks": 2,
-      "importer_scope_binder_hits": 48,
-      "importer_scope_binders_created": 48,
-      "importer_scope_leaf_lookups": 96,
-      "importer_scope_nested_body_fallbacks": 64,
-      "input_index_radix_quotients": 112,
-      "intern_requests": 19807,
-      "linear_reduction_closed_groups": 16,
-      "linear_reduction_pattern_attempts": 16,
-      "linear_reduction_pattern_proofs": 16,
-      "linear_reduction_preserved_partial_groups": 0,
-      "linear_reduction_weighted_states": 192,
-      "local_pattern_candidates": 390,
-      "masked_sum_prefix_queries": 80,
-      "normalization_cache_context_changes": 16,
-      "normalization_node_visits": 896,
-      "packed_radix_probes": 144,
-      "packed_radix_rewrites": 112,
-      "parametric_state_attempts": 0,
-      "pattern_build_peak_nodes": 8,
-      "pattern_build_unique_nodes": 128,
-      "pattern_node_visits": 1158,
-      "proved_select_arms_imported": 32,
-      "select_max_probe_ancestor_nodes": 0,
-      "select_max_probe_temporary_nodes": 0,
-      "summary_bind_nodes": 64,
-      "summary_concat_nodes": 16,
-      "symbolic_byte_reads_without_extent_proof": 0,
-      "typed_e8m0_initial_decodes": 64,
-      "unary_reduction_composition_attempts": 16,
-      "unary_reduction_composition_context_changes": 16
-    },
-    "definedness": {
-      "partial_equivalence_families": 0,
-      "proved_families": 16,
-      "status": "proved"
-    },
-    "diagnostics": [],
-    "elapsed_s": 0.020363461,
-    "engine": "reference_guided_cpp",
-    "ep_profile": {
-      "body_instantiation_s": 0.0,
-      "body_scalar_s": 0.0,
-      "candidate_discovery_and_bookkeeping_s": 0.0,
-      "cross_product_s": 0.0,
-      "enabled": false,
-      "equal_s": 0.0,
-      "fraction": {
-        "computations": 0,
-        "previously_completed": 0,
-        "repeated_across_queries": 0,
-        "requests": 0,
-        "shared_hits": 0,
-        "unique_query_nodes": 0
-      },
-      "fraction_witness_s": 0.0,
-      "match_total_s": 0.0,
-      "normal": {
-        "computations": 0,
-        "previously_completed": 0,
-        "repeated_across_queries": 0,
-        "requests": 0,
-        "shared_hits": 0,
-        "unique_query_nodes": 0
-      },
-      "ordinary_polynomial_s": 0.0,
-      "polynomial": {
-        "computations": 0,
-        "previously_completed": 0,
-        "repeated_across_queries": 0,
-        "requests": 0,
-        "shared_hits": 0,
-        "unique_query_nodes": 0
-      },
-      "query_count": 64,
-      "reset_s": 0.0,
-      "reuse_cache": false,
-      "shared_evictions": 0
-    },
-    "equivalence_context": {
-      "applied_predicates": 0,
-      "element_assumptions": 2,
-      "fixed_input_elements": 0,
-      "scoped_predicates": 0
-    },
-    "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
-    "equivalent_families": 16,
-    "finished_families": 16,
-    "idealizations_applied": [],
-    "input_contract": [
-      {
-        "element_type": "e8m0",
-        "finite": true,
-        "object": "scale_a",
-        "region": "whole_object",
-        "source": "Additional decoded finite-scale premise explicitly authorized by user 2026-10-09; exact e8m0 interpretation, not generic uint8 finiteness."
-      },
-      {
-        "element_type": "e8m0",
-        "finite": true,
-        "object": "scale_b",
-        "region": "whole_object",
-        "source": "Additional decoded finite-scale premise explicitly authorized by user 2026-10-09; exact e8m0 interpretation, not generic uint8 finiteness."
-      }
-    ],
-    "input_contract_applied_reads": [
-      {
-        "element_type": "e8m0",
-        "object": "scale_a",
-        "side": "left"
-      },
-      {
-        "element_type": "e8m0",
-        "object": "scale_b",
-        "side": "left"
-      },
-      {
-        "element_type": "e8m0",
-        "object": "scale_a",
-        "side": "right"
-      },
-      {
-        "element_type": "e8m0",
-        "object": "scale_b",
-        "side": "right"
-      }
-    ],
-    "legacy_scalar_fallback": false,
-    "mapping_input_memory_constraints": {},
-    "native_context": null,
-    "normalized_reachable_nodes": 524,
-    "numerical_result": "verified",
-    "pattern_nodes": 92,
-    "peak_rss_kib": 467076,
-    "peak_rss_scope": "process_lifetime_not_comparison_delta",
-    "piece_nodes": 112,
-    "piece_union": {
-      "abstract_optimized_replacements": 0,
-      "abstract_reference_replacements": 0,
-      "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
-      "collected_pieces": 0,
-      "late_certificates": "accepted_until_each_schema_is_complete",
-      "method": "complete_output_equalities_with_finite_piece_union",
-      "replacements": 0,
-      "schemas": [],
-      "stored_dag_work": 0,
-      "work_limit": 2000000
-    },
-    "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
-    "raw_nodes": [
-      151,
-      255
-    ],
-    "reference_term_patterns": 24,
-    "result": "verified",
-    "rows": [
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 5.838999999999996e-05,
-        "cumulative_elapsed_s": 0.001837875,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 0,
-        "left_import_s": 0.000505234,
-        "left_normalize_s": 0.00013450099999999998,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 5.999999999999062e-07,
-        "piece_union_record_s": 3.099999999998937e-07,
-        "piece_union_seal_s": 3.2000000000005115e-07,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.000280533,
-        "right_normalize_s": 0.00021031200000000004,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 0
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.0002173119999999999,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 2.040000000000028e-06
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.9611000000000134e-05,
-        "cumulative_elapsed_s": 0.003099625,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 1,
-        "left_import_s": 0.00039275300000000024,
-        "left_normalize_s": 0.000111641,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 2.2999999999993512e-07,
-        "piece_union_record_s": 2.5000000000025e-07,
-        "piece_union_seal_s": 1.4999999999997654e-07,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.00030024200000000004,
-        "right_normalize_s": 0.00018415100000000002,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 3
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.00019298199999999996,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 1.2900000000001452e-06
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.7261000000000212e-05,
-        "cumulative_elapsed_s": 0.004332245,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 2,
-        "left_import_s": 0.000400133,
-        "left_normalize_s": 0.00010607000000000021,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 2.199999999999945e-07,
-        "piece_union_record_s": 6.000000000051103e-08,
-        "piece_union_seal_s": 1.4000000000003593e-07,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.000285132,
-        "right_normalize_s": 0.00017944200000000014,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 5
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.00018661200000000006,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 1.1600000000000499e-06
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.5810000000000242e-05,
-        "cumulative_elapsed_s": 0.005576525,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 3,
-        "left_import_s": 0.0004046229999999998,
-        "left_normalize_s": 0.00010404100000000003,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 1.89999999999739e-07,
-        "piece_union_record_s": 4.999999999970306e-08,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.00028497199999999966,
-        "right_normalize_s": 0.0001793519999999998,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 7
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.0001997520000000001,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 9.500000000004297e-07
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.4699999999999896e-05,
-        "cumulative_elapsed_s": 0.006792144,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 4,
-        "left_import_s": 0.00039221299999999976,
-        "left_normalize_s": 0.00011404100000000049,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 2.1000000000048757e-07,
-        "piece_union_record_s": 5.999999999964367e-08,
-        "piece_union_seal_s": 4.000000000062981e-08,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.00028367199999999957,
-        "right_normalize_s": 0.0001752510000000004,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 9
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.00018163100000000067,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 8.700000000000374e-07
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.4159999999999633e-05,
-        "cumulative_elapsed_s": 0.008012894,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 5,
-        "left_import_s": 0.00039982300000000054,
-        "left_normalize_s": 0.0001055409999999998,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 2.099999999996202e-07,
-        "piece_union_record_s": 3.999999999976245e-08,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.00028980299999999994,
-        "right_normalize_s": 0.00017453099999999947,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 11
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.00018504199999999985,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 7.600000000006907e-07
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.3970999999999368e-05,
-        "cumulative_elapsed_s": 0.009246324,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 6,
-        "left_import_s": 0.0004086430000000002,
-        "left_normalize_s": 0.00010603999999999995,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 1.7999999999893102e-07,
-        "piece_union_record_s": 5.999999999964367e-08,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.00029351199999999925,
-        "right_normalize_s": 0.00017416200000000027,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 12
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.0001873710000000004,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 6.499999999996092e-07
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.1919999999999926e-05,
-        "cumulative_elapsed_s": 0.010489853,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 7,
-        "left_import_s": 0.0004121129999999987,
-        "left_normalize_s": 0.00010728100000000074,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 1.9000000000060635e-07,
-        "piece_union_record_s": 6.999999999958428e-08,
-        "piece_union_seal_s": 3.999999999976245e-08,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.0002930420000000003,
-        "right_normalize_s": 0.0001733710000000003,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 13
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.00019642100000000044,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 6.50000000001344e-07
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.1970000000001363e-05,
-        "cumulative_elapsed_s": 0.011690603,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 8,
-        "left_import_s": 0.00037633300000000126,
-        "left_normalize_s": 0.00010157099999999995,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 1.3999999999916857e-07,
-        "piece_union_record_s": 5.999999999964367e-08,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.00027298199999999974,
-        "right_normalize_s": 0.00019082200000000021,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 14
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.00019353199999999973,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 6.799999999994311e-07
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.5189999999999588e-05,
-        "cumulative_elapsed_s": 0.012919312,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 9,
-        "left_import_s": 0.00039932300000000004,
-        "left_normalize_s": 0.0001055109999999991,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 1.699999999989904e-07,
-        "piece_union_record_s": 4.999999999970306e-08,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.00030112199999999915,
-        "right_normalize_s": 0.0001718220000000003,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 16
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.00018566100000000016,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 6.200000000015221e-07
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.2290000000001198e-05,
-        "cumulative_elapsed_s": 0.014137492,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 10,
-        "left_import_s": 0.0004064240000000007,
-        "left_normalize_s": 0.00010524100000000071,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 1.7000000000072513e-07,
-        "piece_union_record_s": 4.999999999970306e-08,
-        "piece_union_seal_s": 2.9999999999821836e-08,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.00028970200000000106,
-        "right_normalize_s": 0.00017314100000000165,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 17
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.00018245200000000135,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 6.099999999998468e-07
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.237999999999893e-05,
-        "cumulative_elapsed_s": 0.015366862,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 11,
-        "left_import_s": 0.0004050329999999991,
-        "left_normalize_s": 0.00010537099999999994,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 1.6100000000025816e-07,
-        "piece_union_record_s": 3.999999999976245e-08,
-        "piece_union_seal_s": 4.000000000149717e-08,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.00029719199999999994,
-        "right_normalize_s": 0.00017676100000000097,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 18
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.00018404200000000058,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 8.09999999998659e-07
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.2270000000001317e-05,
-        "cumulative_elapsed_s": 0.016551821,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 12,
-        "left_import_s": 0.00038255300000000075,
-        "left_normalize_s": 0.00010192099999999787,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 1.7999999999893102e-07,
-        "piece_union_record_s": 3.999999999976245e-08,
-        "piece_union_seal_s": 3.000000000155656e-08,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.00026757200000000064,
-        "right_normalize_s": 0.000175630999999999,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 19
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.0001931620000000002,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 6.799999999994311e-07
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.3010999999999865e-05,
-        "cumulative_elapsed_s": 0.017781851,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 13,
-        "left_import_s": 0.000397452999999999,
-        "left_normalize_s": 0.00010618000000000086,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 1.4999999999737446e-07,
-        "piece_union_record_s": 5.000000000143778e-08,
-        "piece_union_seal_s": 1.9999999999881224e-08,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.00028804199999999877,
-        "right_normalize_s": 0.00018846200000000035,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 21
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.0001870219999999985,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 8.199999999985996e-07
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.260000000000109e-05,
-        "cumulative_elapsed_s": 0.01900168,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 14,
-        "left_import_s": 0.00039348300000000003,
-        "left_normalize_s": 0.00010442100000000037,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 1.3999999999916857e-07,
-        "piece_union_record_s": 3.999999999976245e-08,
-        "piece_union_seal_s": 3.999999999976245e-08,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.00029906199999999925,
-        "right_normalize_s": 0.00017243200000000014,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 22
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.0001853209999999987,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 6.599999999995498e-07
-      },
-      {
-        "affine_state_decline": "singleton_projection_ambiguous",
-        "affine_state_pattern_s": 2.1630000000001648e-05,
-        "cumulative_elapsed_s": 0.02020647,
-        "equivalence_contract": "existing_total_value_proof",
-        "family": 15,
-        "left_import_s": 0.00040583400000000075,
-        "left_normalize_s": 0.00010432100000000097,
-        "optimized_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 2,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 123,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "parametric_state_s": 1.599999999990498e-07,
-        "piece_union_record_s": 3.999999999976245e-08,
-        "piece_union_seal_s": 3.999999999976245e-08,
-        "reference_bilinear_proof": {
-          "coverage": "required_by_subsequent_native_reduction_check",
-          "fusions": 0,
-          "invariant_factor_pulls": 0,
-          "method": "finite_distributivity_and_sum_interchange",
-          "projection_axis": 4294967295,
-          "projection_read": 4294967295,
-          "singleton_sums": 0,
-          "stored_work": 30,
-          "swaps": 0,
-          "zero_masks": 0
-        },
-        "right_import_s": 0.00028121199999999943,
-        "right_normalize_s": 0.00017133100000000026,
-        "scalar_engine": "mandatory_exponential_polynomial",
-        "state_pattern_proof": {
-          "closures": [
-            {
-              "coefficient": "1",
-              "count": "256",
-              "spec": 23
-            }
-          ],
-          "contribution_pieces": 7,
-          "coverage": "exact_multiplicity_one_per_closed_group",
-          "factor_choices": 0,
-          "method": "linear_reduction_combination_certificate",
-          "output_polynomial_terms": 0,
-          "polynomial_work": 0,
-          "preserved_partial_groups": 0,
-          "visited_nodes": 72,
-          "weighted_add_edges": 0,
-          "witness_nodes": 7
-        },
-        "state_pattern_s": 0.00018227200000000068,
-        "status": "equivalent",
-        "total_definedness": "proved",
-        "unary_reduction_s": 6.50000000001344e-07
-      }
-    ],
-    "scalar_engine": "mandatory_exponential_polynomial",
-    "scope": {
-      "kind": "mapped_expression_equivalence",
-      "operation": "equivalence"
-    },
-    "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
-    "stages_s": {
-      "affine_state_pattern_s": 0.00041716400000000437,
-      "exponential_polynomial_s": 0.0,
-      "left_import_s": 0.006481971000000001,
-      "left_normalize_s": 0.001723693000000001,
-      "parametric_state_s": 3.300999999992886e-06,
-      "piece_union_record_s": 1.2699999999985292e-06,
-      "piece_union_reuse_s": 0.0,
-      "piece_union_seal_s": 1.0400000000018467e-06,
-      "proof_reuse_s": 0.0,
-      "right_import_s": 0.004607793999999997,
-      "right_normalize_s": 0.0028709740000000036,
-      "state_pattern_s": 0.0030405870000000013
-    },
-    "timings": {
-      "load_and_scope_analysis": 0.000358223
-    },
-    "total_output_families": 16,
-    "transport": "in_memory_cpp_objects",
-    "unmatched_reasons": {}
-  },
-  "frontend": {
-    "address_value_bridge": {
-      "diagnostics": [],
-      "first_unavailable_reason": "",
-      "queries": 0,
-      "resolved": 0,
-      "source": "value_lowering",
-      "unavailable": 0,
-      "value_view_complete": true
-    },
-    "cluster_completion_joins": 0,
-    "cta_count": 1,
-    "dependency_compression": {
-      "bulk_read_wait": {
-        "consumers": 128,
-        "emitted_references": 96,
-        "original_references": 192,
-        "prefix_effects": 0
-      },
-      "tcgen_commit": {
-        "consumers": 2,
-        "emitted_references": 15,
-        "original_references": 24,
-        "prefix_effects": 2
-      },
-      "tcgen_load_wait": {
-        "consumers": 128,
-        "emitted_references": 512,
-        "original_references": 512,
-        "prefix_effects": 0
-      }
-    },
-    "diagnostic_sample_count": 0,
-    "discharged_codes": [
-      "tcgen_cp_memory_effect_refinement",
-      "mma_memory_effect_refinement",
-      "tcgen_pipeline_effect_refinement",
-      "tcgen_commit_notification_order_refinement"
-    ],
-    "executed_records": 117904,
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
-      ],
-      "assertion_uses": 640,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 225,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 1376,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
-    },
-    "implementation": "cpp",
-    "input_objects": [],
-    "lowered_instruction_count": 52356,
-    "mma_refinement": {
-      "blocked": [],
-      "discharged": 8
-    },
-    "reached_opcodes": {
-      "add.s32": 6589,
-      "add.s64": 1699,
-      "and.b16": 768,
-      "and.b32": 3136,
-      "and.pred": 256,
-      "bar.arrive": 32,
-      "bar.sync": 1664,
-      "bar.warp.sync": 64,
-      "bra": 5965,
-      "bra.uni": 128,
-      "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128": 224,
-      "clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128": 1,
-      "cp.async.bulk.commit_group": 128,
-      "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group": 128,
-      "cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 4,
-      "cp.async.bulk.tensor.4d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 2,
-      "cp.async.bulk.wait_group.read": 128,
-      "cvt.rn.bf16x2.f32": 8192,
-      "cvt.u16.u32": 2336,
-      "cvt.u32.u16": 1024,
-      "cvt.u32.u64": 128,
-      "cvt.u64.u32": 128,
-      "cvta.param.u64": 261,
-      "cvta.to.shared.u64": 128,
-      "div.s32": 1024,
-      "div.u32": 256,
-      "elect.sync": 1376,
-      "fence.mbarrier_init.release.cluster": 1536,
-      "fence.proxy.async.shared::cta": 736,
-      "griddepcontrol.launch_dependents": 32,
-      "griddepcontrol.wait": 64,
-      "ld.param.b32": 1856,
-      "ld.param.b64": 768,
-      "ld.param.v4.b32": 416,
-      "ld.shared.b128": 224,
-      "ld.shared.b32": 160,
-      "mad.lo.s32": 864,
-      "mapa.shared::cluster.u32": 385,
-      "max.s32": 32,
-      "mbarrier.arrive.expect_tx.shared::cluster.b64": 1,
-      "mbarrier.arrive.expect_tx.shared::cta.b64": 1,
-      "mbarrier.arrive.shared::cluster.b64": 384,
-      "mbarrier.arrive.shared::cta.b64": 32,
-      "mbarrier.init.shared::cta.b64": 28,
-      "mbarrier.test_wait.parity.shared::cta.b64": 64,
-      "mbarrier.try_wait.parity.shared::cta.b64": 1024,
-      "min.u32": 32,
-      "mov.b16": 288,
-      "mov.b32": 10844,
-      "mov.b64": 807,
-      "mov.s32": 1419,
-      "mov.u32": 3904,
-      "mul.f32": 16384,
-      "mul.hi.u32": 832,
-      "mul.lo.s32": 1793,
-      "neg.s32": 288,
-      "or.b16": 1312,
-      "or.b32": 293,
-      "or.b64": 128,
-      "or.pred": 1280,
-      "prefetch.tensormap": 6,
-      "rem.u32": 256,
-      "ret": 256,
-      "selp.b16": 64,
-      "selp.b32": 3104,
-      "selp.b64": 1024,
-      "selp.u32": 224,
-      "setp.eq.b32": 5024,
-      "setp.eq.b64": 384,
-      "setp.eq.u32": 96,
-      "setp.le.s32": 32,
-      "setp.lt.s32": 1472,
-      "setp.lt.u32": 96,
-      "setp.ne.b32": 4907,
-      "setp.ne.b64": 256,
-      "shfl.sync.idx.b32": 2304,
-      "shl.b32": 4645,
-      "shr.s32": 128,
-      "shr.u32": 3904,
-      "st.shared.v4.b32": 2048,
-      "sub.s32": 1760,
-      "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 32,
-      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 1,
-      "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 1,
-      "tcgen05.cp.cta_group::1.32x128b.warpx4": 4,
-      "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 32,
-      "tcgen05.ld.sync.aligned.32x32b.x32.b32": 512,
-      "tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale": 8,
-      "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 32,
-      "tcgen05.wait::ld.sync.aligned": 128,
-      "xor.b32": 1184
-    },
-    "shared_constant_propagation": {
-      "read_from_dependencies": 0,
-      "representation": "sparse_known_bytes",
-      "validation": "pending_backend"
-    },
-    "source_binding_storage": {
-      "binding_templates": 17,
-      "generated_address_rows": 0,
-      "generated_body_rows": 0,
-      "generated_memory_instances": 0,
-      "logical_instructions": 52356,
-      "stored_bindings": 4543
-    },
-    "source_edge_storage": {
-      "binding_templates": 290,
-      "logical_edges": 52100,
-      "stored_bindings": 290
-    },
-    "tcgen_copy_refinement": {
-      "blocked": [],
-      "discharged": 4
-    },
-    "tcgen_history_refinement": {
-      "blocked": [],
-      "notifications": 2,
-      "operations": 12
-    },
-    "thread_count": 256,
-    "unsupported_occurrence_counts": {},
-    "user_branch_decisions": []
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -1527,6 +67,7 @@
       "__assertfail"
     ],
     "assertion_uses": 640,
+    "atomic_uses": 0,
     "bounded_loop_uses": 0,
     "clc_failure": true,
     "clc_uses": 225,
@@ -1548,270 +89,1877 @@
     "representative_branch_uses": 0,
     "trap_only_equality_assertions_hold": true
   },
-  "hb_queries": {
-    "memory": {
-      "algorithm": "not-built",
-      "batches": 0,
-      "cache_hits": 0,
-      "dfs_queries": 0,
-      "edge_visits": 0,
-      "filtered_queries": 0,
-      "queries": 0,
-      "shared_peak_index_bytes": 0
-    },
-    "required_orders": {
-      "algorithm": "member-relations",
-      "batches": 1,
-      "edge_visits": 64984,
-      "member_enumerations": 0,
-      "request_construction": {
-        "concrete_pair_materializations": 0,
-        "endpoint_reads": 2080,
-        "family_requests": 128,
-        "logical_orders": 17408,
-        "owner_bindings": 1088,
-        "stored_orders": 544
-      }
-    }
-  },
-  "implementation": "cpp",
-  "memory_analysis": {
-    "address_candidates": 1026308,
+  "internal": {
     "address_model": {
-      "cache_hits": 0,
-      "ground_disjoint": 0,
-      "ground_overlap": 0,
-      "layer0_disjoint": 0,
-      "refined_pairs": 0,
-      "solver_queries": 0,
-      "solver_sat": 0,
-      "solver_unknown": 0,
-      "solver_unsat": 0
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
     },
-    "candidate_generation_fallback": false,
-    "exhaustive": false,
-    "family_analysis": {
-      "access_families": 38091,
-      "affine_member_rows": 2800,
-      "candidate_relations": 213208,
-      "hb_frontier_pieces": 3070,
-      "hb_member_enumerations": 0,
-      "logical_accesses": 191786
+    "counts": {
+      "edges": 687652,
+      "events": 289481,
+      "instructions": 52356,
+      "memory_accesses": 191786,
+      "threads": 256
     },
-    "hb_algorithm": "member-relations",
-    "hb_batches": 112,
-    "hb_cache_hits": 0,
-    "hb_dfs_queries": 0,
-    "hb_edge_visits": 611711,
-    "hb_filtered_queries": 0,
-    "hb_peak_index_bytes": 0,
-    "hb_queries": 1026308,
-    "hb_query_seconds": 0.114106525,
-    "overlap_queries": 43648,
-    "strategy": "conflict-family",
-    "unordered_candidates_examined": 43648
+    "equivalence": {
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 1946,
+      "comparison_elapsed_seconds": 0.010242119,
+      "context_declaration": {
+        "assumptions": [
+          {
+            "finite": true,
+            "input": "scale_a",
+            "interpretation": "e8m0",
+            "kind": "input_elements",
+            "reason": "Additional decoded finite-scale premise (analysis scope); exact e8m0 interpretation, not generic uint8 finiteness."
+          },
+          {
+            "finite": true,
+            "input": "scale_b",
+            "interpretation": "e8m0",
+            "kind": "input_elements",
+            "reason": "Additional decoded finite-scale premise (analysis scope); exact e8m0 interpretation, not generic uint8 finiteness."
+          }
+        ],
+        "fixed_inputs": [],
+        "inputs": [],
+        "predicate_nodes": []
+      },
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 7368,
+        "affine_output_decline_singleton_projection_ambiguous": 16,
+        "affine_state_banks": 1,
+        "call_definition_node_visits": 32,
+        "canonical_factor_visits": 384,
+        "canonical_node_visits": 746,
+        "canonical_sum_initials": 16,
+        "certified_state_pattern_decline_nonplain_pattern": 16,
+        "certified_state_pattern_work": 192,
+        "coefficient_normalizations": 1,
+        "coordinate_sum_constraints_checked": 64,
+        "coverage_polynomial_peak": 4,
+        "coverage_polynomial_visits": 144,
+        "ep_body_anchor_edges": 1028,
+        "ep_body_anchor_nodes": 1346,
+        "ep_body_deferred_call_anchors": 126,
+        "ep_body_deferred_unmatched_anchors": 126,
+        "ep_body_fold_scope_boundaries": 128,
+        "ep_body_instance_cache_entries": 32,
+        "ep_body_obligations": 32,
+        "ep_body_pattern_anchor_cache_hits": 495,
+        "ep_body_proofs": 32,
+        "ep_body_read_anchor_rejections": 392,
+        "ep_body_read_match_cache_entries": 64,
+        "ep_body_target_anchor_cache_hits": 207,
+        "ep_identity_proofs": 48,
+        "ep_reduction_outer_obligations": 16,
+        "ep_scalar_attempts": 64,
+        "ep_scalar_proofs": 48,
+        "exact_proof_reuse_certificates": 16,
+        "finite_bilinear_banks": 1,
+        "finite_bilinear_fusions": 0,
+        "finite_bilinear_masks": 0,
+        "finite_bilinear_singleton_sums": 0,
+        "finite_bilinear_swaps": 0,
+        "finite_bilinear_work": 2448,
+        "finite_e8m0_nan_branches_eliminated": 32,
+        "finite_state_reuse_banks": 1,
+        "fold_alpha_signature_edges": 561,
+        "fold_alpha_signatures": 272,
+        "fold_alpha_states": 553,
+        "fp_idiom_power_constructions": 0,
+        "fp_idiom_rm_producers": 0,
+        "ideal_additive_compiler_exp_sequences": 0,
+        "ideal_compiler_exp_sequences": 0,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_single_constant_exp_sequences": 0,
+        "imported_context_nodes": 2421,
+        "importer_scope_banks": 2,
+        "importer_scope_binder_hits": 48,
+        "importer_scope_binders_created": 48,
+        "importer_scope_leaf_lookups": 96,
+        "importer_scope_nested_body_fallbacks": 64,
+        "input_index_radix_quotients": 112,
+        "intern_requests": 19807,
+        "linear_reduction_closed_groups": 16,
+        "linear_reduction_pattern_attempts": 16,
+        "linear_reduction_pattern_proofs": 16,
+        "linear_reduction_preserved_partial_groups": 0,
+        "linear_reduction_weighted_states": 192,
+        "local_pattern_candidates": 390,
+        "masked_sum_prefix_queries": 80,
+        "normalization_cache_context_changes": 16,
+        "normalization_node_visits": 896,
+        "packed_radix_probes": 144,
+        "packed_radix_rewrites": 112,
+        "parametric_state_attempts": 0,
+        "pattern_build_peak_nodes": 8,
+        "pattern_build_unique_nodes": 128,
+        "pattern_node_visits": 1158,
+        "proved_select_arms_imported": 32,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_temporary_nodes": 0,
+        "summary_bind_nodes": 64,
+        "summary_concat_nodes": 16,
+        "symbolic_byte_reads_without_extent_proof": 0,
+        "typed_e8m0_initial_decodes": 64,
+        "unary_reduction_composition_attempts": 16,
+        "unary_reduction_composition_context_changes": 16
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 16,
+        "status": "proved"
+      },
+      "diagnostics": [],
+      "elapsed_s": 0.008603621,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "query_count": 64,
+        "reset_s": 0.0,
+        "reuse_cache": false,
+        "shared_evictions": 0
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 2,
+        "fixed_input_elements": 0,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 16,
+      "finished_families": 16,
+      "idealizations_applied": [],
+      "input_contract": [
+        {
+          "element_type": "e8m0",
+          "finite": true,
+          "object": "scale_a",
+          "region": "whole_object",
+          "source": "Additional decoded finite-scale premise (analysis scope); exact e8m0 interpretation, not generic uint8 finiteness."
+        },
+        {
+          "element_type": "e8m0",
+          "finite": true,
+          "object": "scale_b",
+          "region": "whole_object",
+          "source": "Additional decoded finite-scale premise (analysis scope); exact e8m0 interpretation, not generic uint8 finiteness."
+        }
+      ],
+      "input_contract_applied_reads": [
+        {
+          "element_type": "e8m0",
+          "object": "scale_a",
+          "side": "left"
+        },
+        {
+          "element_type": "e8m0",
+          "object": "scale_b",
+          "side": "left"
+        },
+        {
+          "element_type": "e8m0",
+          "object": "scale_a",
+          "side": "right"
+        },
+        {
+          "element_type": "e8m0",
+          "object": "scale_b",
+          "side": "right"
+        }
+      ],
+      "legacy_scalar_fallback": false,
+      "mapping_input_memory_constraints": {},
+      "native_context": null,
+      "normalized_reachable_nodes": 524,
+      "numerical_result": "verified",
+      "pattern_nodes": 92,
+      "peak_rss_kib": 454264,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 112,
+      "piece_union": {
+        "abstract_optimized_replacements": 0,
+        "abstract_reference_replacements": 0,
+        "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+        "collected_pieces": 0,
+        "late_certificates": "accepted_until_each_schema_is_complete",
+        "method": "complete_output_equalities_with_finite_piece_union",
+        "replacements": 0,
+        "schemas": [],
+        "stored_dag_work": 0,
+        "work_limit": 2000000
+      },
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        151,
+        255
+      ],
+      "reference_term_patterns": 24,
+      "row_groups": [
+        {
+          "count": 1,
+          "families": [
+            [
+              0,
+              0
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 0
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 5.443000000000006e-05,
+            "cumulative_elapsed_s": 0.001153795,
+            "left_import_s": 0.00029492099999999996,
+            "left_normalize_s": 7.746000000000001e-05,
+            "parametric_state_s": 5.800000000000249e-07,
+            "piece_union_record_s": 2.0000000000011328e-07,
+            "piece_union_seal_s": 3.2999999999999176e-07,
+            "right_import_s": 0.00011547099999999991,
+            "right_normalize_s": 8.679100000000002e-05,
+            "state_pattern_s": 0.00010807000000000004,
+            "unary_reduction_s": 2.1199999999999865e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              1,
+              1
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 3
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.1439999999999957e-05,
+            "cumulative_elapsed_s": 0.001727458,
+            "left_import_s": 0.00016886099999999997,
+            "left_normalize_s": 4.726000000000014e-05,
+            "parametric_state_s": 2.0000000000011328e-07,
+            "piece_union_record_s": 3.999999999997929e-08,
+            "piece_union_seal_s": 1.3000000000009532e-07,
+            "right_import_s": 0.00012215100000000003,
+            "right_normalize_s": 6.982999999999989e-05,
+            "state_pattern_s": 9.131999999999999e-05,
+            "unary_reduction_s": 1.020000000000014e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              2,
+              2
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 5
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.0469999999999863e-05,
+            "cumulative_elapsed_s": 0.002262421,
+            "left_import_s": 0.00016354100000000012,
+            "left_normalize_s": 3.9739999999999914e-05,
+            "parametric_state_s": 1.6999999999985776e-07,
+            "piece_union_record_s": 4.000000000019613e-08,
+            "piece_union_seal_s": 1.1999999999972102e-07,
+            "right_import_s": 0.00012019099999999996,
+            "right_normalize_s": 6.908000000000001e-05,
+            "state_pattern_s": 7.614100000000006e-05,
+            "unary_reduction_s": 8.600000000000968e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              3,
+              3
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 7
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.8069999999999805e-05,
+            "cumulative_elapsed_s": 0.002795943,
+            "left_import_s": 0.000160641,
+            "left_normalize_s": 3.797000000000002e-05,
+            "parametric_state_s": 1.8000000000023206e-07,
+            "piece_union_record_s": 3.999999999976245e-08,
+            "piece_union_seal_s": 2.0000000000314905e-08,
+            "right_import_s": 0.00012226999999999984,
+            "right_normalize_s": 8.138100000000016e-05,
+            "state_pattern_s": 6.884999999999964e-05,
+            "unary_reduction_s": 6.100000000002805e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              4,
+              4
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 9
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.7960000000000025e-05,
+            "cumulative_elapsed_s": 0.003290176,
+            "left_import_s": 0.00015438099999999988,
+            "left_normalize_s": 3.701000000000008e-05,
+            "parametric_state_s": 1.89999999999739e-07,
+            "piece_union_record_s": 4.000000000019613e-08,
+            "piece_union_seal_s": 2.9999999999821836e-08,
+            "right_import_s": 0.00011351099999999973,
+            "right_normalize_s": 6.543999999999994e-05,
+            "state_pattern_s": 6.409099999999963e-05,
+            "unary_reduction_s": 6.500000000000429e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              5,
+              5
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 11
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.621000000000001e-05,
+            "cumulative_elapsed_s": 0.003776428,
+            "left_import_s": 0.00015322000000000035,
+            "left_normalize_s": 3.3459999999999913e-05,
+            "parametric_state_s": 1.4000000000003593e-07,
+            "piece_union_record_s": 4.000000000019613e-08,
+            "piece_union_seal_s": 3.999999999976245e-08,
+            "right_import_s": 0.00010739100000000008,
+            "right_normalize_s": 7.208100000000031e-05,
+            "state_pattern_s": 6.420999999999987e-05,
+            "unary_reduction_s": 5.999999999999062e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              6,
+              6
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 12
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.6580000000000414e-05,
+            "cumulative_elapsed_s": 0.00427369,
+            "left_import_s": 0.00016724100000000026,
+            "left_normalize_s": 3.418099999999945e-05,
+            "parametric_state_s": 1.5999999999991715e-07,
+            "piece_union_record_s": 2.9999999999821836e-08,
+            "piece_union_seal_s": 1.9999999999881224e-08,
+            "right_import_s": 0.00011923000000000055,
+            "right_normalize_s": 5.725000000000001e-05,
+            "state_pattern_s": 6.438000000000017e-05,
+            "unary_reduction_s": 4.999999999996327e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              7,
+              7
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 13
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.5229999999999758e-05,
+            "cumulative_elapsed_s": 0.004756773,
+            "left_import_s": 0.00014967100000000053,
+            "left_normalize_s": 3.1910000000000445e-05,
+            "parametric_state_s": 1.5999999999991715e-07,
+            "piece_union_record_s": 2.9999999999821836e-08,
+            "piece_union_seal_s": 3.00000000006892e-08,
+            "right_import_s": 0.00011557100000000008,
+            "right_normalize_s": 6.997999999999987e-05,
+            "state_pattern_s": 6.369100000000027e-05,
+            "unary_reduction_s": 4.899999999996921e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              8,
+              8
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 14
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.5170000000000114e-05,
+            "cumulative_elapsed_s": 0.005228105,
+            "left_import_s": 0.00014925000000000008,
+            "left_normalize_s": 3.449999999999981e-05,
+            "parametric_state_s": 1.7999999999979838e-07,
+            "piece_union_record_s": 4.000000000062981e-08,
+            "piece_union_seal_s": 2.9999999999821836e-08,
+            "right_import_s": 0.00010905100000000063,
+            "right_normalize_s": 6.314999999999966e-05,
+            "state_pattern_s": 6.107999999999981e-05,
+            "unary_reduction_s": 4.999999999996327e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              9,
+              9
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 16
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.4290000000000136e-05,
+            "cumulative_elapsed_s": 0.005700857,
+            "left_import_s": 0.00014957100000000025,
+            "left_normalize_s": 3.3530000000000365e-05,
+            "parametric_state_s": 1.6999999999985776e-07,
+            "piece_union_record_s": 4.000000000062981e-08,
+            "piece_union_seal_s": 2.9999999999821836e-08,
+            "right_import_s": 0.00010663000000000079,
+            "right_normalize_s": 5.6871000000000005e-05,
+            "state_pattern_s": 7.59300000000001e-05,
+            "unary_reduction_s": 4.499999999999296e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              10,
+              10
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 17
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.5620000000000044e-05,
+            "cumulative_elapsed_s": 0.006155479,
+            "left_import_s": 0.00015084099999999965,
+            "left_normalize_s": 3.380099999999997e-05,
+            "parametric_state_s": 1.7999999999979838e-07,
+            "piece_union_record_s": 3.999999999976245e-08,
+            "piece_union_seal_s": 3.00000000006892e-08,
+            "right_import_s": 0.0001035999999999997,
+            "right_normalize_s": 5.491999999999997e-05,
+            "state_pattern_s": 5.976999999999979e-05,
+            "unary_reduction_s": 5.099999999995733e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              11,
+              11
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 18
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.4500000000000624e-05,
+            "cumulative_elapsed_s": 0.006618692,
+            "left_import_s": 0.00014803099999999986,
+            "left_normalize_s": 3.218999999999965e-05,
+            "parametric_state_s": 1.4999999999997654e-07,
+            "piece_union_record_s": 1.9999999999881224e-08,
+            "piece_union_seal_s": 1.9999999999881224e-08,
+            "right_import_s": 0.00011216100000000038,
+            "right_normalize_s": 6.197999999999967e-05,
+            "state_pattern_s": 6.003999999999992e-05,
+            "unary_reduction_s": 3.899999999994186e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              12,
+              12
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 19
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.6149999999999498e-05,
+            "cumulative_elapsed_s": 0.007111354,
+            "left_import_s": 0.0001622100000000003,
+            "left_normalize_s": 3.4839999999999524e-05,
+            "parametric_state_s": 1.89999999999739e-07,
+            "piece_union_record_s": 2.9999999999821836e-08,
+            "piece_union_seal_s": 2.9999999999821836e-08,
+            "right_import_s": 0.00011729100000000027,
+            "right_normalize_s": 6.300000000000056e-05,
+            "state_pattern_s": 6.054000000000042e-05,
+            "unary_reduction_s": 4.700000000006782e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              13,
+              13
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 21
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.5040000000000019e-05,
+            "cumulative_elapsed_s": 0.007576976,
+            "left_import_s": 0.0001524209999999998,
+            "left_normalize_s": 3.359000000000001e-05,
+            "parametric_state_s": 1.5999999999991715e-07,
+            "piece_union_record_s": 1.9999999999881224e-08,
+            "piece_union_seal_s": 1.9999999999881224e-08,
+            "right_import_s": 0.00010767999999999976,
+            "right_normalize_s": 5.933100000000014e-05,
+            "state_pattern_s": 6.228999999999957e-05,
+            "unary_reduction_s": 4.499999999999296e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              14,
+              14
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 22
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.5871000000000635e-05,
+            "cumulative_elapsed_s": 0.008072068,
+            "left_import_s": 0.00017372099999999994,
+            "left_normalize_s": 3.363999999999971e-05,
+            "parametric_state_s": 1.6000000000078451e-07,
+            "piece_union_record_s": 1.9999999999881224e-07,
+            "piece_union_seal_s": 1.9999999999881224e-08,
+            "right_import_s": 0.00010949999999999935,
+            "right_normalize_s": 5.5860000000001325e-05,
+            "state_pattern_s": 6.335000000000021e-05,
+            "unary_reduction_s": 5.800000000000249e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              15,
+              15
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "singleton_projection_ambiguous",
+            "equivalence_contract": "existing_total_value_proof",
+            "optimized_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 2,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 123,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "reference_bilinear_proof": {
+              "coverage": "required_by_subsequent_native_reduction_check",
+              "fusions": 0,
+              "invariant_factor_pulls": 0,
+              "method": "finite_distributivity_and_sum_interchange",
+              "projection_axis": 4294967295,
+              "projection_read": 4294967295,
+              "singleton_sums": 0,
+              "stored_work": 30,
+              "swaps": 0,
+              "zero_masks": 0
+            },
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "1",
+                  "count": "256",
+                  "spec": 23
+                }
+              ],
+              "contribution_pieces": 7,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 0,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 72,
+              "weighted_add_edges": 0,
+              "witness_nodes": 7
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.5130000000000352e-05,
+            "cumulative_elapsed_s": 0.008530351,
+            "left_import_s": 0.00014779000000000007,
+            "left_normalize_s": 3.2390000000000196e-05,
+            "parametric_state_s": 1.599999999990498e-07,
+            "piece_union_record_s": 2.9999999999821836e-08,
+            "piece_union_seal_s": 2.9999999999821836e-08,
+            "right_import_s": 0.00011265100000000007,
+            "right_normalize_s": 5.52399999999998e-05,
+            "state_pattern_s": 5.886100000000033e-05,
+            "unary_reduction_s": 4.4000000000085637e-07
+          }
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 0.0003021610000000013,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.002646312000000001,
+        "left_normalize_s": 0.0006074719999999992,
+        "parametric_state_s": 3.1299999999987588e-06,
+        "piece_union_record_s": 8.799999999993275e-07,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 9.299999999998979e-07,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 0.001814350000000001,
+        "right_normalize_s": 0.0010421850000000015,
+        "state_pattern_s": 0.0011026139999999998
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.000350852
+      },
+      "total_output_families": 16,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 1,
+      "dependency_compression": {
+        "bulk_read_wait": {
+          "consumers": 128,
+          "emitted_references": 96,
+          "original_references": 192,
+          "prefix_effects": 0
+        },
+        "tcgen_commit": {
+          "consumers": 2,
+          "emitted_references": 15,
+          "original_references": 24,
+          "prefix_effects": 2
+        },
+        "tcgen_load_wait": {
+          "consumers": 128,
+          "emitted_references": 512,
+          "original_references": 512,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "tcgen_cp_memory_effect_refinement",
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 117904,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 640,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 225,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 1376,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [],
+      "lowered_instruction_count": 52356,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 8
+      },
+      "reached_opcodes": {
+        "add.s32": 6589,
+        "add.s64": 1699,
+        "and.b16": 768,
+        "and.b32": 3136,
+        "and.pred": 256,
+        "bar.arrive": 32,
+        "bar.sync": 1664,
+        "bar.warp.sync": 64,
+        "bra": 5965,
+        "bra.uni": 128,
+        "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128": 224,
+        "clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128": 1,
+        "cp.async.bulk.commit_group": 128,
+        "cp.async.bulk.tensor.3d.global.shared::cta.bulk_group": 128,
+        "cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 4,
+        "cp.async.bulk.tensor.4d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster.L2::cache_hint": 2,
+        "cp.async.bulk.wait_group.read": 128,
+        "cvt.rn.bf16x2.f32": 8192,
+        "cvt.u16.u32": 2336,
+        "cvt.u32.u16": 1024,
+        "cvt.u32.u64": 128,
+        "cvt.u64.u32": 128,
+        "cvta.param.u64": 261,
+        "cvta.to.shared.u64": 128,
+        "div.s32": 1024,
+        "div.u32": 256,
+        "elect.sync": 1376,
+        "fence.mbarrier_init.release.cluster": 1536,
+        "fence.proxy.async.shared::cta": 736,
+        "griddepcontrol.launch_dependents": 32,
+        "griddepcontrol.wait": 64,
+        "ld.param.b32": 1856,
+        "ld.param.b64": 768,
+        "ld.param.v4.b32": 416,
+        "ld.shared.b128": 224,
+        "ld.shared.b32": 160,
+        "mad.lo.s32": 864,
+        "mapa.shared::cluster.u32": 385,
+        "max.s32": 32,
+        "mbarrier.arrive.expect_tx.shared::cluster.b64": 1,
+        "mbarrier.arrive.expect_tx.shared::cta.b64": 1,
+        "mbarrier.arrive.shared::cluster.b64": 384,
+        "mbarrier.arrive.shared::cta.b64": 32,
+        "mbarrier.init.shared::cta.b64": 28,
+        "mbarrier.test_wait.parity.shared::cta.b64": 64,
+        "mbarrier.try_wait.parity.shared::cta.b64": 1024,
+        "min.u32": 32,
+        "mov.b16": 288,
+        "mov.b32": 10844,
+        "mov.b64": 807,
+        "mov.s32": 1419,
+        "mov.u32": 3904,
+        "mul.f32": 16384,
+        "mul.hi.u32": 832,
+        "mul.lo.s32": 1793,
+        "neg.s32": 288,
+        "or.b16": 1312,
+        "or.b32": 293,
+        "or.b64": 128,
+        "or.pred": 1280,
+        "prefetch.tensormap": 6,
+        "rem.u32": 256,
+        "ret": 256,
+        "selp.b16": 64,
+        "selp.b32": 3104,
+        "selp.b64": 1024,
+        "selp.u32": 224,
+        "setp.eq.b32": 5024,
+        "setp.eq.b64": 384,
+        "setp.eq.u32": 96,
+        "setp.le.s32": 32,
+        "setp.lt.s32": 1472,
+        "setp.lt.u32": 96,
+        "setp.ne.b32": 4907,
+        "setp.ne.b64": 256,
+        "shfl.sync.idx.b32": 2304,
+        "shl.b32": 4645,
+        "shr.s32": 128,
+        "shr.u32": 3904,
+        "st.shared.v4.b32": 2048,
+        "sub.s32": 1760,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 32,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 1,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 1,
+        "tcgen05.cp.cta_group::1.32x128b.warpx4": 4,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 32,
+        "tcgen05.ld.sync.aligned.32x32b.x32.b32": 512,
+        "tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale": 8,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 32,
+        "tcgen05.wait::ld.sync.aligned": 128,
+        "xor.b32": 1184
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 15,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 52356,
+        "stored_bindings": 4232
+      },
+      "source_edge_storage": {
+        "binding_templates": 290,
+        "logical_edges": 52100,
+        "stored_bindings": 290
+      },
+      "tcgen_copy_refinement": {
+        "blocked": [],
+        "discharged": 4
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 2,
+        "operations": 12
+      },
+      "thread_count": 256,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      },
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 1,
+        "edge_visits": 63697,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 2080,
+          "family_requests": 120,
+          "logical_orders": 17408,
+          "owner_bindings": 1088,
+          "stored_orders": 544
+        }
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 859944,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 37369,
+        "affine_member_rows": 0,
+        "candidate_relations": 82976,
+        "hb_frontier_pieces": 451,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 191786
+      },
+      "hb_algorithm": "member-relations",
+      "hb_batches": 88,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 264813,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 859944,
+      "hb_query_seconds": 0.06400360299999999,
+      "overlap_queries": 43648,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 43648
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 435.66015625,
+    "required_order_domains": 544,
+    "required_orders": 17408,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 27,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 49950,
+      "memory_binding_templates": 2842,
+      "memory_bindings": 134790,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 2181,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 17,
+      "thread_prefix_groups": 40533,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 1,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 121561,
+      "path_entries": 6445,
+      "record_bindings": 5204,
+      "record_nodes": 5405,
+      "splits": 13,
+      "template_steps": 5550,
+      "thread_memberships": 256,
+      "value_nodes": 1162
+    },
+    "thread_record_compression": {
+      "completed_ctas": 1,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 117904,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [],
+      "duplicate_write_value_checks": 43648,
+      "equivalence_check": "equivalent",
+      "initial_memory_regions": 2754,
+      "initial_read_families": 2754,
+      "memory_action_storage": {
+        "logical_actions": 134790,
+        "stored_runs": 92190
+      },
+      "output_region_families": 0,
+      "output_regions": 1408,
+      "passes": [
+        {
+          "name": "packing",
+          "rewritten_instances": 16440,
+          "rewritten_nodes": 824,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 99041,
+          "name": "type_edges",
+          "removed_nodes": 5091
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 27,
+          "layouts": 2836,
+          "mapping_blocks": 3604,
+          "name": "view_normalization",
+          "original_pieces": 45440,
+          "reused_initial_reads": 2754,
+          "reused_views": 1408,
+          "segmented": 16,
+          "slices": 512,
+          "stored_mapping_blocks": 2196,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
+        }
+      ],
+      "processed_memory_actions": 134790,
+      "processed_memory_families": 0,
+      "read_substitutions": 48749,
+      "scalar_fold": {
+        "construction_collections": 0,
+        "diagnostics": [],
+        "output_count": 16384,
+        "output_families_merged": 0,
+        "output_family_count": 16,
+        "output_root_count": 16,
+        "peak_construction_nodes": 1096,
+        "shared_view_projection_hits": 976,
+        "source_outputs": 1408,
+        "spatial_families_projected": 1,
+        "spatial_outputs_projected": 16384,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 21,
+          "edges": 428,
+          "folds": 64,
+          "indices": 4,
+          "initial_cells": 32,
+          "logical_iterations": 1152,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 2,
+          "nodes": 255,
+          "nodes_before_final_collection": 1096,
+          "nodes_reclaimed": 841,
+          "operations": 134,
+          "parameters": 0,
+          "range_descriptions": 64,
+          "storage_nodes": 255,
+          "unique_fold_bodies": 64
+        }
+      },
+      "serialization": {
+        "action_patterns": 92190,
+        "binding_patterns": 49950,
+        "domain_refinements": 157336,
+        "elapsed_seconds": 1.29795958,
+        "event_families": 79113,
+        "expanded_event_records": 0,
+        "largest_batch_members": 62,
+        "logical_actions": 134790,
+        "logical_events": 767423,
+        "peak_rss_mib_at_completion": 443.6171875,
+        "reachability_queries": 0,
+        "relations": 275110,
+        "rss_mib_at_completion": 357.28125,
+        "scheduled_batches": 79113,
+        "singleton_batches": 55191,
+        "value_families": 31572
+      },
+      "shared_read_families": 1420,
+      "shared_read_instances": 42604,
+      "stored_read_substitutions": 6145
+    },
+    "value_ir_instance_count": 315799,
+    "value_ir_node_count": 28985,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 1.359126851,
+    "verification_result": "race_free"
   },
-  "memory_analysis_complete": true,
-  "mma_operand_ordering": {},
-  "mode": "verify",
-  "peak_footprint_mib": 447.453125,
-  "peak_rss_mib": 456.12890625,
-  "pipeline_elapsed_seconds": 4.020612831,
-  "race_count": 0,
-  "race_samples_truncated": false,
-  "races": [],
-  "required_order_domains": 544,
-  "required_orders": 17408,
+  "peak_rss_mib": 443.6171875,
+  "pipeline_elapsed_seconds": 3.137040447,
   "result": "verified",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "search_complete": true,
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "binding_diagnostic_count": 0,
-    "binding_diagnostics": [],
-    "execution_cohorts": 27,
-    "mapping_complete": true,
-    "memory_binding_stored_rows": 49950,
-    "memory_binding_templates": 2844,
-    "memory_bindings": 134790,
-    "memory_linking_templates_used": true,
-    "synchronization_groups": 2181,
-    "synchronization_groups_materialized": true,
-    "synthetic_synchronization_nodes": 17,
-    "thread_prefix_groups": 40533,
-    "value_diagnostic_count": 0,
-    "value_diagnostics": []
-  },
-  "source_violations": [],
-  "synchronization_input": {
-    "compute_access_binding": "after_happens_before",
-    "kind": "ordering_endpoints",
-    "memory_address_payloads": false
-  },
-  "template_execution": {
-    "completed_ctas": 1,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 121561,
-    "path_entries": 6445,
-    "record_bindings": 5224,
-    "record_nodes": 5427,
-    "splits": 13,
-    "template_steps": 5574,
-    "thread_memberships": 256,
-    "value_nodes": 1181
-  },
-  "thread_record_compression": {
-    "completed_ctas": 1,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 117904,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "unresolved_count": 0,
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [],
-    "duplicate_write_value_checks": 43648,
-    "equivalence_check": "equivalent",
-    "initial_memory_regions": 2754,
-    "initial_read_families": 2754,
-    "memory_action_storage": {
-      "logical_actions": 134790,
-      "stored_runs": 92190
-    },
-    "output_region_families": 0,
-    "output_regions": 1408,
-    "passes": [
-      {
-        "name": "packing",
-        "rewritten_instances": 16440,
-        "rewritten_nodes": 824,
-        "semantics": "exact_fixed_width"
-      },
-      {
-        "abstraction": "matched approximation and clamp replaced by ideal Exp2",
-        "name": "software_exp2",
-        "rewritten_instances": 0,
-        "rewritten_nodes": 0,
-        "semantics": "ideal_exp2"
-      },
-      {
-        "converted_instances": 99041,
-        "name": "type_edges",
-        "removed_nodes": 5091
-      },
-      {
-        "name": "memory_elimination"
-      },
-      {
-        "elements": 0,
-        "identities": 27,
-        "layouts": 2836,
-        "mapping_blocks": 3604,
-        "name": "view_normalization",
-        "original_pieces": 45440,
-        "reused_initial_reads": 2754,
-        "reused_views": 1408,
-        "segmented": 16,
-        "slices": 512,
-        "stored_mapping_blocks": 2196,
-        "typed_output_pieces": 0,
-        "typed_output_regions": 0
-      }
-    ],
-    "processed_memory_actions": 134790,
-    "processed_memory_families": 0,
-    "read_substitutions": 48749,
-    "result": "verified",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
-      },
-      "construction_collections": 0,
-      "diagnostics": [],
-      "output_count": 16384,
-      "output_families_merged": 0,
-      "output_family_count": 16,
-      "output_root_count": 16,
-      "peak_construction_nodes": 1096,
-      "result": "verified",
-      "scope": {
-        "operation": "scalar_fold"
-      },
-      "shared_view_projection_hits": 976,
-      "source_outputs": 1408,
-      "spatial_families_projected": 1,
-      "spatial_outputs_projected": 16384,
-      "spatial_template_operations": 0,
-      "statistics": {
-        "constants": 21,
-        "edges": 428,
-        "folds": 64,
-        "indices": 4,
-        "initial_cells": 32,
-        "logical_iterations": 1152,
-        "logical_iterations_overflow": false,
-        "max_fold_nesting": 2,
-        "nodes": 255,
-        "nodes_before_final_collection": 1096,
-        "nodes_reclaimed": 841,
-        "operations": 134,
-        "parameters": 0,
-        "range_descriptions": 64,
-        "storage_nodes": 255,
-        "unique_fold_bodies": 64
-      }
-    },
-    "scope": {
-      "operation": "value_analysis"
-    },
-    "serialization": {
-      "action_patterns": 92190,
-      "binding_patterns": 49950,
-      "domain_refinements": 155676,
-      "elapsed_seconds": 1.472988031,
-      "event_families": 80225,
-      "expanded_event_records": 0,
-      "largest_batch_members": 62,
-      "logical_actions": 134790,
-      "logical_events": 767423,
-      "peak_rss_mib_at_completion": 456.12890625,
-      "reachability_queries": 0,
-      "relations": 277779,
-      "rss_mib_at_completion": 369.0703125,
-      "scheduled_batches": 80225,
-      "singleton_batches": 57415,
-      "value_families": 31572
-    },
-    "shared_read_families": 1420,
-    "shared_read_instances": 42604,
-    "stored_read_substitutions": 6145
-  },
-  "value_ir_instance_count": 315799,
-  "value_ir_node_count": 28985,
-  "value_view_complete": true,
-  "verification_elapsed_seconds": 1.802560263,
   "verification_limitations": [],
-  "verification_result": "race_free",
   "warning_count": 698368,
   "warning_samples_truncated": true,
   "warnings": [
@@ -2569,5 +2717,5 @@
     }
   ],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.48
+  "whole_pipeline_timeout_seconds": 498.468
 }

@@ -1,0 +1,528 @@
+{
+ "schema": "spverify.equivalence-mapping.v1",
+ "output_value_semantics": "ideal_real",
+ "left_inputs": {
+  "allocations": {
+   "6:global1:q": "q",
+   "6:global1:k": "k",
+   "6:global1:v": "v",
+   "6:global1:g": "g",
+   "6:global4:beta": "beta",
+   "6:global5:A_log": "A_log",
+   "6:global7:dt_bias": "dt_bias",
+   "6:global5:state": "state",
+   "6:global17:ssm_state_indices": "ssm_state_indices"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global1:q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:k": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:v": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:g": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global4:beta": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     1
+    ],
+    "source_strides_bytes": [
+     2,
+     2
+    ],
+    "target_strides_bytes": [
+     2,
+     2
+    ]
+   },
+   "6:global5:A_log": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global7:dt_bias": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     512,
+     4
+    ],
+    "target_strides_bytes": [
+     512,
+     4
+    ]
+   },
+   "6:global5:state": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     65536,
+     1,
+     128,
+     128
+    ],
+    "source_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ]
+   },
+   "6:global17:ssm_state_indices": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   }
+  }
+ },
+ "right_inputs": {
+  "allocations": {
+   "6:global1:q": "q",
+   "6:global1:k": "k",
+   "6:global1:v": "v",
+   "6:global1:g": "g",
+   "6:global4:beta": "beta",
+   "6:global5:A_log": "A_log",
+   "6:global7:dt_bias": "dt_bias",
+   "6:global5:state": "state",
+   "6:global17:ssm_state_indices": "ssm_state_indices"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global1:q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:k": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:v": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:g": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global4:beta": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     1
+    ],
+    "source_strides_bytes": [
+     2,
+     2
+    ],
+    "target_strides_bytes": [
+     2,
+     2
+    ]
+   },
+   "6:global5:A_log": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global7:dt_bias": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     512,
+     4
+    ],
+    "target_strides_bytes": [
+     512,
+     4
+    ]
+   },
+   "6:global5:state": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     65536,
+     1,
+     128,
+     128
+    ],
+    "source_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ]
+   },
+   "6:global17:ssm_state_indices": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   }
+  }
+ },
+ "outputs": {
+  "kind": "dense_tensors",
+  "tensors": [
+   {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global5:state",
+    "right_allocation": "6:global5:state",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     65536,
+     1,
+     128,
+     128
+    ],
+    "left_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ],
+    "right_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ]
+   },
+   {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global3:out",
+    "right_allocation": "6:global3:out",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     1,
+     128
+    ],
+    "left_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "right_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   }
+  ]
+ },
+ "reference": {
+  "arguments": [
+   {
+    "name": "q",
+    "allocation": "6:global1:q",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "k",
+    "allocation": "6:global1:k",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "v",
+    "allocation": "6:global1:v",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "g",
+    "allocation": "6:global1:g",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "beta",
+    "allocation": "6:global4:beta",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "A_log",
+    "allocation": "6:global5:A_log",
+    "dtype": "float32"
+   },
+   {
+    "name": "dt_bias",
+    "allocation": "6:global7:dt_bias",
+    "dtype": "float32"
+   },
+   {
+    "name": "state",
+    "allocation": "6:global5:state",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "ssm_state_indices",
+    "allocation": "6:global17:ssm_state_indices",
+    "dtype": "int32"
+   },
+   {
+    "name": "seq_start",
+    "value": {
+     "input": "/shape_arrays/0/shapes/0/0"
+    }
+   },
+   {
+    "name": "seq_end",
+    "value": {
+     "input": "/shape_arrays/0/shapes/1/0"
+    }
+   },
+   {
+    "name": "scale",
+    "parameter": 12
+   },
+   {
+    "name": "beta_is_logit",
+    "parameter": 25
+   },
+   {
+    "name": "H",
+    "parameter": 27
+   },
+   {
+    "name": "HV",
+    "parameter": 28
+   },
+   {
+    "name": "head_ratio",
+    "parameter": 29
+   }
+  ]
+ },
+ "provenance": {
+  "source": "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/kda/cake_kda_decode_d128_t1_unbounded_softplus_direct_split8.cu",
+  "upstream": [
+   "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/kda/cake_kda_decode_d128_t1_unbounded_softplus_direct_split8.cu",
+   "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/kda/cake_kda_decode_binding_common.cuh",
+   "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/kda_decode.py"
+  ],
+  "scope": "One sequence (cu_seqlens shape array [0,1]), one token, H=HV=head_ratio=1, K=V=128, beta_is_logit=0; grid 8 value tiles x 1 value head. State slot dimension sized 65536 from the ssm_state_indices upper_bound 65535; the full slot buffer is compared, unselected slots unchanged.",
+  "optimized_input_sha256": "02316ebcacbe5bae7711372a8e8a7e6e38d11e434dcdde9e1bb639b9c92acfbb",
+  "ptx_sha256": "1e99014fd45e90ff38c6e6f3f134059ce3a0c3f74c09af6594c65551911b997e",
+  "scope_branch_choices": [],
+  "scope_shape_arrays": [
+   {
+    "parameter": 9,
+    "offset": 0,
+    "element_type": "s32",
+    "shapes": [
+     [
+      0
+     ],
+     [
+      1
+     ]
+    ]
+   }
+  ]
+ }
+}

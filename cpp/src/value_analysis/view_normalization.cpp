@@ -890,7 +890,7 @@ class Normalizer {
       source_end=add(source_end,output.region.bytes);physical_end=add(physical_end,output.region.bytes);
     }
     if(first.value_byte_offset%width || source_end-first.value_byte_offset<=width)return false;
-    OutputViewGroup group{records[end-1]+1,{}};
+    OutputViewGroup group{{records.begin()+begin,records.begin()+end},{}};
     auto cursor=first.value_byte_offset;
     const auto append=[&](const MemoryView& view,std::uint64_t lo,std::uint64_t hi) {
       lo=std::max(lo,first.value_byte_offset);hi=std::min(hi,source_end);
@@ -1017,7 +1017,7 @@ class Normalizer {
           }
           SENTRYWARD_DEBUG_PRINT(view_normalization_11);
         });
-        OutputViewGroup group{records[record_end-1]+1,{}};
+        OutputViewGroup group{{records.begin()+record_begin,records.begin()+record_end},{}};
         for(const auto& domain:plan) {
           const auto type=v::ValueType::matrix(first.element,{domain.count});
           auto at=domain.begin,left=domain.count;

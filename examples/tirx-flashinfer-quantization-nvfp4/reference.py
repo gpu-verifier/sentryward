@@ -1,7 +1,6 @@
 """NVFP4 linear quantization, including the INTERNAL rounded E4M3 scale.
 
-Exporter integration uses the accompanying staged lowering.py extensions.
-Do not erase the internal float8 conversion as an output cast.
+The internal float8 rounding of the scale is part of the computation, not an output cast.
 """
 import torch
 

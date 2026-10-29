@@ -1,6 +1,7 @@
 #include "sentryward/algorithm/event_ir/lowering.h"
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <optional>
 #include <ranges>
@@ -42,7 +43,7 @@ Diagnostic unsupportedTryWait(const SourceInstruction& instruction) {
   return Diagnostic{DiagnosticClass::kUnsupported,
                     DiagnosticCode::kRawTryWaitUnsupported,
                     "raw try_wait must be canonicalized before lowering",
-                    instruction.id, instruction.location};
+                    instruction.id, instruction.location, {}};
 }
 
 EventId addNormalEvent(EventDagBuilder& graph,
@@ -68,14 +69,17 @@ std::optional<CompleteTxEffect> lowerCompletion(
   return CompleteTxEffect{completion->barrier, completion->bytes};
 }
 
-bool lessSourceEdge(const SourceEdge* left, const SourceEdge* right) {
-  if (left->from != right->from) {
-    return left->from < right->from;
+// The key is the whole record, so equivalent edges are equal values; Lowerer::Run sorts
+// edge values on that basis. The binding stops compiling if SourceEdge gains a field.
+bool lessSourceEdge(const SourceEdge& left, const SourceEdge& right) {
+  const auto& [from, to, kind] = left;
+  if (from != right.from) {
+    return from < right.from;
   }
-  if (left->to != right->to) {
-    return left->to < right->to;
+  if (to != right.to) {
+    return to < right.to;
   }
-  return static_cast<int>(left->kind) < static_cast<int>(right->kind);
+  return static_cast<int>(kind) < static_cast<int>(right.kind);
 }
 
 bool lessCollectiveSpec(const CollectiveSpec* left,
@@ -169,15 +173,28 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
     graph.endEdgeGroup();
     if(previous_cohort)graph.compressThreadTail(event_begin,previous_cohort->first,previous_cohort->second);
   };
+  // Later passes visit only what they act on: the thread transitions (by step), the
+  // requirement holders (step, position) and the state waits (position).
+  struct ThreadTransition final {
+    std::size_t step;
+    std::optional<std::pair<std::uint64_t,std::uintptr_t>> cohort;
+  };
+  std::vector<ThreadTransition> transitions;
+  std::vector<std::pair<std::size_t,std::size_t>> requirement_holders;
+  std::vector<std::size_t> wait_positions;
+  std::size_t next_step=0;
   for (auto position : instructions) {
+    const auto step=next_step++;
     const auto instruction_view=source.instructions.view(position); const auto& snapshot=*instruction_view;
     const auto* instruction=&snapshot;
     auto cohort=source.instructions.threadCohort(position);
+    // The requirement pass replays these transitions; it has no transition rule of its own.
     if(previous_actor!=instruction->actor || previous_cohort!=cohort) {
       finish_thread();
       event_begin=graph.beginThread();
       previous_actor=instruction->actor;previous_cohort=cohort;
       if(cohort)graph.beginEdgeGroup(cohort->first,cohort->second);
+      transitions.push_back({step,cohort});
     }
     std::optional<Diagnostic> lowering_error;
     const LoweredInstruction lowered = std::visit(
@@ -443,12 +460,19 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
     if (!origins.record(instruction->id, lowered.milestones)) {
       throw std::logic_error("validated source produced duplicate origin map");
     }
+    // IDs ascend in this pass, so every insertion appends.
     if (!lowered.blocking && lowered.milestones.issue != lowered.milestones.done)
-      nonblocking_instructions.insert(instruction->id);
+      nonblocking_instructions.emplace_hint(nonblocking_instructions.end(), instruction->id);
+    if (std::holds_alternative<AsyncOp>(instruction->op) || std::holds_alternative<Await>(instruction->op))
+      requirement_holders.emplace_back(step, position);
+    else if (std::holds_alternative<MBarrierWaitState>(instruction->op))
+      wait_positions.push_back(position);
   }
   finish_thread();
 
   const auto resolve = [&](const MilestoneRef& ref) -> EventId {
+    // Scalar lookup first; on a miss, the path below raises the direct lookup's exceptions.
+    if (const auto event = origins.resolve(ref)) return *event;
     const Milestones milestones = *origins.findMilestones(ref.instruction);
     switch (ref.milestone) {
       case Milestone::kIssue:
@@ -462,17 +486,20 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
     }
     throw std::logic_error("validated source has an invalid milestone");
   };
-  previous_actor.reset();previous_cohort.reset();
-  for (auto position : instructions) {
+  // The lowering loop's thread transitions, replayed in step order around the requirement
+  // holders: the graph sees the edge groups in the lowering loop's sequence.
+  std::size_t transition=0;
+  const auto replay_transitions=[&](std::size_t until) {
+    for(;transition<transitions.size() && transitions[transition].step<=until;++transition) {
+      graph.endEdgeGroup();
+      if(const auto& cohort=transitions[transition].cohort)graph.beginEdgeGroup(cohort->first,cohort->second);
+    }
+  };
+  for (const auto& [step, position] : requirement_holders) {
+    replay_transitions(step);
     const auto instruction_view=source.instructions.view(position); const auto& snapshot=*instruction_view;
     const auto* instruction=&snapshot;
     const Milestones milestones = *origins.findMilestones(instruction->id);
-    const auto cohort=source.instructions.threadCohort(position);
-    if(previous_actor!=instruction->actor || previous_cohort!=cohort) {
-      graph.endEdgeGroup();
-      if(cohort)graph.beginEdgeGroup(cohort->first,cohort->second);
-      previous_actor=instruction->actor;previous_cohort=cohort;
-    }
     const auto addRequirements = [&](const std::vector<MilestoneRef>& refs,
                                      EventId target, EventEdgeReason reason) {
       for (const MilestoneRef& ref : refs) {
@@ -493,7 +520,10 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
                       EventEdgeReason::kAwaitRequirement);
     }
   }
+  replay_transitions(std::numeric_limits<std::size_t>::max());
   graph.endEdgeGroup();
+  // Release the lowering loop's tables now (assigning {} would keep their capacity).
+  decltype(transitions)().swap(transitions);decltype(requirement_holders)().swap(requirement_holders);
   for (const EndpointDependency& dependency : source.dependencies) {
     addRequiredEdge(graph, resolve(dependency.from), resolve(dependency.to),
                     EventEdgeReason::kEndpointDependency,
@@ -501,40 +531,50 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
                                          dependency.to.instruction});
   }
 
-  const auto lower_source_edge=[&](const SourceEdge& value) {
-    const auto* edge=&value;
-    const Milestones from = *origins.findMilestones(edge->from);
-    const Milestones to = *origins.findMilestones(edge->to);
-    EventId source_event;
+  const auto lower_source_edge=[&](const SourceEdge& edge) {
+    // Endpoint events only, looked up source, then target, then the kind check.
+    const auto source_milestone=(edge.kind==SourceEdgeKind::kProgramOrder &&
+        nonblocking_instructions.contains(edge.from)) ? Milestone::kIssue : Milestone::kComplete;
+    const EventId source_event = *origins.resolve({edge.from, source_milestone});
+    const EventId target_event = *origins.resolve({edge.to, Milestone::kIssue});
     EventEdgeReason reason;
-    switch (edge->kind) {
+    switch (edge.kind) {
       case SourceEdgeKind::kProgramOrder:
-        source_event = nonblocking_instructions.contains(edge->from) ? from.issue : from.done;
         reason = EventEdgeReason::kSourceProgramOrder;
         break;
       case SourceEdgeKind::kCompleteBeforeIssue:
-        source_event = from.done;
         reason = EventEdgeReason::kSourceCompletionDependency;
         break;
       default:
         throw std::logic_error("invalid source edge kind during lowering");
     }
-    addRequiredEdge(graph, source_event, to.issue, reason,
-                    SourceEdgeProvenance{edge->from, edge->to});
+    addRequiredEdge(graph, source_event, target_event, reason,
+                    SourceEdgeProvenance{edge.from, edge.to});
   };
-  const auto less=[](const SourceEdge& left,const SourceEdge& right){return lessSourceEdge(&left,&right);};
-  if(std::is_sorted(source.edges.begin(),source.edges.end(),less)) {
-    for(const auto& edge:source.edges)lower_source_edge(edge);
-  } else {
-    std::vector<std::size_t> source_edges;
-    source_edges.reserve(source.edges.size());
-    for(std::size_t i=0;i<source.edges.size();++i)source_edges.push_back(i);
-    std::sort(source_edges.begin(),source_edges.end(),[&](auto left,auto right){return less(source.edges[left],source.edges[right]);});
-    for(auto index:source_edges)lower_source_edge(source.edges[index]);
+  {
+    // Equivalent edges are equal values, so the sorted sequence is unique: one family pass
+    // fills the logical edges and the sort compares values, not two materialized records.
+    // The block frees the copy before the graph is frozen.
+    std::vector<SourceEdge> ordered_edges(source.edges.size());
+    std::size_t covered=0;
+    source.edges.forEachAffineColumn([&](const SourceEdge& value,const SourceEdgeCodec::Delta& delta,
+        std::size_t first,std::size_t stride,std::size_t count) {
+      auto edge=value;SourceEdgeCodec::Binding base{};SourceEdgeCodec::split(edge,base);
+      ordered_edges[first]=value;
+      for(std::size_t member=1;member<count;++member) {
+        const auto binding=SourceEdgeCodec::translate(base,delta,member);
+        if(!binding)throw std::logic_error("invalid compressed record binding");
+        SourceEdgeCodec::bind(edge,*binding);ordered_edges[first+stride*member]=edge;
+      }
+      covered+=count;
+    });
+    if(covered!=ordered_edges.size())throw std::logic_error("source edge families do not cover every edge");
+    if(!std::is_sorted(ordered_edges.begin(),ordered_edges.end(),lessSourceEdge))
+      std::sort(ordered_edges.begin(),ordered_edges.end(),lessSourceEdge);
+    for(const auto& edge:ordered_edges)lower_source_edge(edge);
   }
 
-  for (auto position : instructions) {
-    if (!source.instructions.holdsOperation<MBarrierWaitState>(position)) continue;
+  for (const auto position : wait_positions) {
     const auto instruction_view=source.instructions.view(position); const auto& snapshot=*instruction_view;
     const auto* instruction=&snapshot;
     const auto* wait = std::get_if<MBarrierWaitState>(&instruction->op);
@@ -545,6 +585,7 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
     const EventId issue = origins.milestones(instruction->id)->issue;
     addRequiredEdge(graph, definition, issue, EventEdgeReason::kStateDefUse);
   }
+  decltype(wait_positions)().swap(wait_positions);
 
   std::vector<const CollectiveSpec*> collective_specs;
   collective_specs.reserve(source.collectives.size());
@@ -560,7 +601,7 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
       return Result<LoweredProgram, Diagnostic>::Failure(Diagnostic{
           DiagnosticClass::kInvalidInput,
           DiagnosticCode::kCollectiveParticipantMismatch,
-          "collective has no participant calls", std::nullopt, std::nullopt});
+          "collective has no participant calls", std::nullopt, std::nullopt, {}});
     }
     std::vector<CollectiveCall>& calls = found_calls->second;
     std::sort(calls.begin(), calls.end(),
@@ -574,7 +615,7 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
     if (std::any_of(calls.begin(), calls.end(), [&](const auto& call) { return call.kind != kind; }))
       return Result<LoweredProgram, Diagnostic>::Failure(Diagnostic{
           DiagnosticClass::kInvalidInput, DiagnosticCode::kCollectiveParticipantMismatch,
-          "collective participants disagree on memory-ordering semantics", std::nullopt, std::nullopt});
+          "collective participants disagree on memory-ordering semantics", std::nullopt, std::nullopt, {}});
     const EventId completion = graph.addEvent(
         EventSchedulingClass::kUrgentDerived, std::nullopt, std::nullopt,
         CollectiveCompleteEvent{spec->sync_id, kind});
@@ -612,7 +653,7 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
     return Result<LoweredProgram, Diagnostic>::Failure(Diagnostic{
         DiagnosticClass::kInvalidInput, DiagnosticCode::kCyclicSourceGraph,
         "source lowering produced a cyclic event graph", std::nullopt,
-        std::nullopt});
+        std::nullopt, {}});
   }
 
   return Result<LoweredProgram, Diagnostic>::Success(LoweredProgram(

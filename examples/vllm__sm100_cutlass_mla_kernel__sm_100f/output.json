@@ -1,20 +1,9 @@
 {
-  "assumption_hints": [
-    {
-      "key": "representative_branches",
-      "label": "Representative branches",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    },
-    {
-      "key": "bounded_computation_loops",
-      "label": "Bounded computation loops",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    }
-  ],
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "duplicate_tma_store_benign",
       "label": "Duplicate TMA stores",
@@ -22,20 +11,23 @@
       "triggered": null
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "representative_election",
       "label": "Representative election",
       "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
-      "triggered": null
+      "triggered": true
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "clc_always_fails",
       "label": "Failed launch cancellation",
       "text": "Every cluster launch cancellation request fails.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "representative_branches",
       "label": "Representative branches",
@@ -43,251 +35,1524 @@
       "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "bounded_computation_loops",
       "label": "Bounded computation loops",
       "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
     }
   ],
   "checks": {
     "equivalence": "not_run",
-    "memory": "not_run",
-    "synchronization": "not_run"
-  },
-  "details": {
-    "required_parameters": []
+    "synchronization": "failed"
   },
   "diagnostics": [
     {
-      "code": "control_predicate_not_static",
+      "code": "allocation_before_use_not_proven",
       "details": {
-        "location": {
-          "column": 0,
-          "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
-          "line": 1252
-        },
-        "required_parameters": []
+        "constraint": "allocation_before_use",
+        "count": 1280,
+        "internal_stage": "lifecycle_check",
+        "witnesses": [
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 134934
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 134936
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 135086
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 135088
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 135090
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 135092
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 135414
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 135416
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 135418
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 135420
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 162874
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 162876
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 163026
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 163028
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 163030
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 163032
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 163354
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 163356
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 163358
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 163360
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 190814
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 190816
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 190966
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 190968
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 190970
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 190972
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 191294
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 191296
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 191298
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 191300
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 218752
+          },
+          {
+            "failed_target_count": 32,
+            "from_instruction": 246687,
+            "kind": "allocation_before_use",
+            "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+            "to_instruction": 218754
+          }
+        ],
+        "witnesses_truncated": true
       },
-      "message": "control predicate is not statically determined",
-      "stage": "ptx_execution"
+      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+      "stage": "synchronization"
     }
   ],
-  "equivalence": {
-    "checks": {
-      "equivalence": "not_run",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
+  "evidence": {
+    "failed_required_orders": [
       {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
-                  "line": 1252
-                },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported"
-        },
-        "stage": "pipeline"
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 134934
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 134936
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 135086
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 135088
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 135090
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 135092
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 135414
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 135416
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 135418
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 135420
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 162874
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 162876
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 163026
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 163028
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 163030
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 163032
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 163354
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 163356
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 163358
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 163360
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 190814
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 190816
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 190966
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 190968
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 190970
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 190972
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 191294
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 191296
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 191298
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 191300
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 218752
+      },
+      {
+        "failed_target_count": 32,
+        "from_instruction": 246687,
+        "kind": "allocation_before_use",
+        "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+        "to_instruction": 218754
       }
     ],
-    "result": "unsupported",
-    "scope": {
-      "operation": "equivalence"
-    }
+    "failed_required_orders_count": 1280,
+    "failed_required_orders_sample_limit": 32,
+    "failed_required_orders_truncated": true
   },
-  "frontend": {
-    "frontend_assumptions": {
-      "assertion_failure_forms": [
-        "trap",
-        "__assertfail"
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 256,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 4736,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "shape_input_contract": {
+      "kind": "fixed_read_only",
+      "origin": "shape_arrays",
+      "regions": [
+        {
+          "allocation": "sequence_lengths",
+          "byte_offset": 0,
+          "bytes": 4,
+          "resource": "input.arg0.112"
+        }
       ],
-      "assertion_uses": 0,
-      "bounded_loop_uses": 0,
-      "clc_failure": true,
-      "clc_uses": 0,
-      "data_branch_decisions": [],
-      "election_policy": {
-        "fallback": "lowest_member",
-        "preferred_lane": 0,
-        "strategy": "preferred_member"
-      },
-      "election_uses": 0,
-      "fixed_election": true,
-      "isolated_launch": true,
-      "noalias_unbounded": false,
-      "opaque_compute_regions": [],
-      "pointer_contract": {
-        "aliasing": "distinct_objects_noalias",
-        "extent_bytes": "unbounded"
-      },
-      "representative_branch_uses": 0,
-      "trap_only_equality_assertions_hold": true
+      "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
     },
-    "input_objects": [
-      {
-        "bytes": 8,
-        "object": "sequence_lengths",
-        "offset": 112,
-        "parameter": "_ZN7cutlass13device_kernelINS_4fmha6kernel36Sm100FmhaMlaKernelTmaWarpspecializedIN4cute5tupleIJNS4_1CILi128EEES7_NS5_IJNS6_ILi512EEENS6_ILi64EEEEEEEEENS_6half_tEfSC_fNS2_31Sm100MlaPersistentTileSchedulerELb0EEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "page_table",
-        "offset": 120,
-        "parameter": "_ZN7cutlass13device_kernelINS_4fmha6kernel36Sm100FmhaMlaKernelTmaWarpspecializedIN4cute5tupleIJNS4_1CILi128EEES7_NS5_IJNS6_ILi512EEENS6_ILi64EEEEEEEEENS_6half_tEfSC_fNS2_31Sm100MlaPersistentTileSchedulerELb0EEEEEvNT_6ParamsE_param_0",
-        "source": "declaration"
-      },
-      {
-        "bytes": 8,
-        "object": "input.arg0.192",
-        "offset": 192,
-        "parameter": "_ZN7cutlass13device_kernelINS_4fmha6kernel36Sm100FmhaMlaKernelTmaWarpspecializedIN4cute5tupleIJNS4_1CILi128EEES7_NS5_IJNS6_ILi512EEENS6_ILi64EEEEEEEEENS_6half_tEfSC_fNS2_31Sm100MlaPersistentTileSchedulerELb0EEEEEvNT_6ParamsE_param_0",
-        "source": "address_use"
-      }
-    ],
-    "required_parameters": [],
-    "user_branch_decisions": []
-  },
-  "implementation": "cpp",
-  "location": {
-    "column": 0,
-    "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
-    "line": 1252
-  },
-  "memory_analysis_complete": false,
-  "peak_footprint_mib": 129.8125,
-  "peak_rss_mib": 161.21875,
-  "pipeline_elapsed_seconds": 0.471141575,
-  "result": "unsupported",
-  "rss_limit_mib": null,
-  "scope": {
-    "operation": "kernel_verification"
-  },
-  "semantic_assumptions": {
-    "bounded_computation_loops": false,
-    "clc_always_fails": true,
-    "duplicate_tma_store_benign": true,
-    "representative_branches": false,
-    "representative_election": true
-  },
-  "semantic_program": {
-    "execution_cohorts": 0,
-    "mapping_complete": false,
-    "memory_binding_stored_rows": 0,
-    "memory_binding_templates": 0,
-    "memory_bindings": 0,
-    "memory_linking_templates_used": false,
-    "synchronization_groups": 0,
-    "synchronization_groups_materialized": false,
-    "synthetic_synchronization_nodes": 0,
-    "thread_prefix_groups": 0
-  },
-  "stage": "ptx_execution",
-  "template_execution": {
-    "completed_ctas": 0,
-    "coordinate_bindings": 0,
-    "logical_thread_steps": 0,
-    "path_entries": 0,
-    "record_bindings": 0,
-    "record_nodes": 0,
-    "splits": 0,
-    "template_steps": 0,
-    "thread_memberships": 0,
-    "value_nodes": 0
-  },
-  "thread_record_compression": {
-    "completed_ctas": 0,
-    "enabled": true,
-    "estimated_pool_bytes_sum": 0,
-    "intern_calls": 0,
-    "logical_records": 0,
-    "record_handle_bytes": 32,
-    "templates": 0,
-    "unique_bindings": 0
-  },
-  "value_analysis": {
-    "checks": {
-      "equivalence": "not_requested",
-      "memory": "not_requested",
-      "synchronization": "not_requested"
-    },
-    "diagnostics": [
-      {
-        "code": "prerequisite_check_not_passed",
-        "details": {
-          "prerequisite_checks": {
-            "equivalence": "not_run",
-            "memory": "not_run",
-            "synchronization": "not_run"
-          },
-          "prerequisite_diagnostics": [
-            {
-              "code": "control_predicate_not_static",
-              "details": {
-                "location": {
-                  "column": 0,
-                  "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
-                  "line": 1252
-                },
-                "required_parameters": []
-              },
-              "message": "control predicate is not statically determined",
-              "stage": "ptx_execution"
-            }
-          ],
-          "prerequisite_result": "unsupported",
-          "prerequisite_status": "ptx_execution_unsupported"
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "s32",
+          "object": "page_table",
+          "property": "lower_bound",
+          "value": 0
         },
-        "stage": "pipeline"
+        {
+          "element_type": "s32",
+          "object": "page_table",
+          "property": "upper_bound",
+          "value": 0
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "page_table",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg0.120"
+        }
+      ],
+      "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [
+      {
+        "lines": [
+          1425,
+          1516,
+          1607,
+          1698,
+          1789,
+          1880,
+          1971,
+          2062,
+          2153,
+          6067,
+          6147,
+          6225,
+          6304,
+          6382,
+          6461,
+          6539,
+          6618
+        ],
+        "object": "page_table"
       }
     ],
-    "equivalence_check": "blocked",
-    "prerequisite_status": "ptx_execution_unsupported",
-    "result": "unsupported",
-    "scalar_fold": {
-      "checks": {
-        "equivalence": "not_requested",
-        "memory": "not_requested",
-        "synchronization": "not_requested"
+    "trap_only_equality_assertions_hold": true
+  },
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "counts": {
+      "edges": 1993961,
+      "events": 945778,
+      "instructions": 257412,
+      "threads": 512
+    },
+    "eliminated_synchronization": [
+      {
+        "barrier": 32,
+        "barrier_kind": "named",
+        "count": 256,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "line": 16884
       },
+      {
+        "barrier": 68,
+        "barrier_kind": "named",
+        "count": 256,
+        "file": "corpus/vllm__sm100_cutlass_mla_kernel__sm_100f.ptx",
+        "line": 16884
+      }
+    ],
+    "equivalence": {
       "diagnostics": [
         {
-          "code": "memory_elimination_not_completed",
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "incomplete"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "allocation_before_use_not_proven",
+                "details": {
+                  "constraint": "allocation_before_use",
+                  "count": 1280,
+                  "witnesses": [
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 134934
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 134936
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135086
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135088
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135090
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135092
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135414
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135416
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135418
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135420
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 162874
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 162876
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163026
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163028
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163030
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163032
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163354
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163356
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163358
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163360
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 190814
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 190816
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 190966
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 190968
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 190970
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 190972
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 191294
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 191296
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 191298
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 191300
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 218752
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 218754
+                    }
+                  ],
+                  "witnesses_truncated": true
+                },
+                "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                "stage": "lifecycle_check"
+              }
+            ],
+            "prerequisite_result": "invalid_lifecycle"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "error": {
+      "code": "allocation_before_use_not_proven",
+      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it"
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 2,
+      "cta_count": 2,
+      "dependency_compression": {
+        "tcgen_commit": {
+          "consumers": 20,
+          "emitted_references": 111,
+          "original_references": 1360,
+          "prefix_effects": 20
+        },
+        "tcgen_load_wait": {
+          "consumers": 512,
+          "emitted_references": 2560,
+          "original_references": 3072,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 501321,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 256,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 4736,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "shape_input_contract": {
+          "kind": "fixed_read_only",
+          "origin": "shape_arrays",
+          "regions": [
+            {
+              "allocation": "sequence_lengths",
+              "byte_offset": 0,
+              "bytes": 4,
+              "resource": "input.arg0.112"
+            }
+          ],
+          "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+        },
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "s32",
+              "object": "page_table",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s32",
+              "object": "page_table",
+              "property": "upper_bound",
+              "value": 0
+            }
+          ],
+          "regions": [
+            {
+              "allocation": "page_table",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg0.120"
+            }
+          ],
+          "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+        },
+        "tensor_property_decisions": [
+          {
+            "lines": [
+              1425,
+              1516,
+              1607,
+              1698,
+              1789,
+              1880,
+              1971,
+              2062,
+              2153,
+              6067,
+              6147,
+              6225,
+              6304,
+              6382,
+              6461,
+              6539,
+              6618
+            ],
+            "object": "page_table"
+          }
+        ],
+        "trap_only_equality_assertions_hold": true
+      },
+      "group2_progress": {
+        "blocked": [],
+        "checked_pairs": 2,
+        "premises": [
+          "Baseline synchronization and asynchronous work must independently make progress.",
+          "Resident peer CTAs must be scheduled fairly and have admitted TMEM capacity.",
+          "Allocation placement and retirement RequiredOrders are separate obligations.",
+          "Source references, actor ordering, and collective participation must be validated."
+        ]
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "sequence_lengths",
+          "offset": 112,
+          "parameter": "_ZN7cutlass13device_kernelINS_4fmha6kernel36Sm100FmhaMlaKernelTmaWarpspecializedIN4cute5tupleIJNS4_1CILi128EEES7_NS5_IJNS6_ILi512EEENS6_ILi64EEEEEEEEENS_6half_tEfSC_fNS2_31Sm100MlaPersistentTileSchedulerELb0EEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "page_table",
+          "offset": 120,
+          "parameter": "_ZN7cutlass13device_kernelINS_4fmha6kernel36Sm100FmhaMlaKernelTmaWarpspecializedIN4cute5tupleIJNS4_1CILi128EEES7_NS5_IJNS6_ILi512EEENS6_ILi64EEEEEEEEENS_6half_tEfSC_fNS2_31Sm100MlaPersistentTileSchedulerELb0EEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "out",
+          "offset": 144,
+          "parameter": "_ZN7cutlass13device_kernelINS_4fmha6kernel36Sm100FmhaMlaKernelTmaWarpspecializedIN4cute5tupleIJNS4_1CILi128EEES7_NS5_IJNS6_ILi512EEENS6_ILi64EEEEEEEEENS_6half_tEfSC_fNS2_31Sm100MlaPersistentTileSchedulerELb0EEEEEvNT_6ParamsE_param_0",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 257412,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 52
+      },
+      "reached_opcodes": {
+        "add.f32": 768,
+        "add.f32x2": 7936,
+        "add.s32": 30849,
+        "add.s64": 1642,
+        "and.b16": 1024,
+        "and.b32": 6914,
+        "bar.arrive": 768,
+        "bar.sync": 576,
+        "bar.warp.sync": 64,
+        "barrier.cluster.arrive.aligned": 512,
+        "barrier.cluster.arrive.relaxed.aligned": 512,
+        "barrier.cluster.wait.aligned": 1024,
+        "bra": 21296,
+        "bra.uni": 610,
+        "cp.async.bulk.tensor.3d.cta_group::2.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 68,
+        "cvt.rn.f16.f32": 65536,
+        "cvt.rn.f16x2.f32": 8192,
+        "cvt.rn.f32.s32": 256,
+        "cvt.s64.s32": 256,
+        "cvt.u16.u32": 2048,
+        "cvt.u32.u64": 512,
+        "cvt.u64.u32": 864,
+        "cvta.param.u64": 66,
+        "cvta.to.global.u64": 928,
+        "div.rn.f32": 512,
+        "div.s32": 352,
+        "elect.sync": 4736,
+        "ex2.approx.f32": 16640,
+        "fence.mbarrier_init.release.cluster": 2560,
+        "fence.proxy.async.shared::cta": 256,
+        "fma.rn.f32": 3328,
+        "ld.global.b32": 386,
+        "ld.param.b32": 1280,
+        "ld.param.b64": 2048,
+        "ld.param.v2.b32": 512,
+        "ld.param.v2.b64": 512,
+        "ld.param.v4.b32": 1024,
+        "ld.shared.b32": 576,
+        "mad.lo.s64": 1024,
+        "max.f32": 16384,
+        "mbarrier.arrive.expect_tx.shared::cta.b64": 17,
+        "mbarrier.arrive.shared::cluster.b64": 768,
+        "mbarrier.expect_tx.shared::cta.b64": 9,
+        "mbarrier.init.shared::cta.b64": 72,
+        "mbarrier.try_wait.parity.shared::cta.b64": 2496,
+        "min.s32": 352,
+        "mov.b16": 512,
+        "mov.b32": 26334,
+        "mov.b64": 10098,
+        "mov.pred": 2424,
+        "mov.s32": 4884,
+        "mov.u32": 10080,
+        "mul.f32": 83200,
+        "mul.hi.u32": 1056,
+        "mul.lo.s32": 1440,
+        "mul.wide.s32": 1312,
+        "neg.s32": 512,
+        "not.pred": 736,
+        "or.b16": 64,
+        "or.b32": 3328,
+        "or.b64": 640,
+        "or.pred": 1792,
+        "prefetch.tensormap": 10,
+        "ret": 512,
+        "selp.b16": 1664,
+        "selp.b32": 20096,
+        "selp.f32": 3328,
+        "setp.eq.b32": 15006,
+        "setp.eq.b64": 1792,
+        "setp.eq.f32": 256,
+        "setp.ge.s32": 384,
+        "setp.gt.s32": 768,
+        "setp.gt.u32": 256,
+        "setp.le.s32": 352,
+        "setp.lt.f32": 512,
+        "setp.lt.s32": 448,
+        "setp.lt.u32": 16448,
+        "setp.ne.b16": 576,
+        "setp.ne.b32": 4850,
+        "shfl.sync.idx.b32": 3584,
+        "shl.b32": 8482,
+        "shl.b64": 512,
+        "shr.s32": 704,
+        "shr.u32": 2848,
+        "shr.u64": 512,
+        "st.global.v2.b16": 32768,
+        "st.shared.b32": 512,
+        "st.shared.v4.b32": 2048,
+        "sub.f32": 16640,
+        "sub.s32": 1952,
+        "tcgen05.alloc.cta_group::2.sync.aligned.shared::cta.b32": 64,
+        "tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 20,
+        "tcgen05.dealloc.cta_group::2.sync.aligned.b32": 64,
+        "tcgen05.ld.sync.aligned.32x32b.x32.b32": 2560,
+        "tcgen05.mma.cta_group::2.kind::f16": 52,
+        "tcgen05.wait::ld.sync.aligned": 512,
+        "xor.b32": 2752
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 30,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 257412,
+        "stored_bindings": 20816
+      },
+      "source_edge_storage": {
+        "binding_templates": 645,
+        "logical_edges": 256900,
+        "stored_bindings": 648
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 20,
+        "operations": 52
+      },
+      "thread_count": 512,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 4,
+        "edge_visits": 353849,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 12152,
+          "family_requests": 1008,
+          "logical_orders": 253312,
+          "owner_bindings": 15832,
+          "stored_orders": 5304
+        }
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis_complete": false,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 850.078125,
+    "required_order_domains": 5304,
+    "required_orders": 253312,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 54,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 242606,
+      "memory_binding_templates": 8410,
+      "memory_bindings": 301188,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 15474,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 84,
+      "thread_prefix_groups": 171546,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "stage": "lifecycle_check",
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 2,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 509537,
+      "path_entries": 31977,
+      "record_bindings": 47197,
+      "record_nodes": 30845,
+      "splits": 26,
+      "template_steps": 31301,
+      "thread_memberships": 512,
+      "value_nodes": 25316
+    },
+    "thread_record_compression": {
+      "completed_ctas": 2,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 501321,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "incomplete"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "allocation_before_use_not_proven",
+                "details": {
+                  "constraint": "allocation_before_use",
+                  "count": 1280,
+                  "witnesses": [
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 134934
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 134936
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135086
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135088
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135090
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135092
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135414
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135416
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135418
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 135420
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 162874
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 162876
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163026
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163028
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163030
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163032
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163354
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163356
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163358
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 163360
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 190814
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 190816
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 190966
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 190968
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 190970
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 190972
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 191294
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 191296
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 191298
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 191300
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 218752
+                    },
+                    {
+                      "failed_target_count": 32,
+                      "from_instruction": 246687,
+                      "kind": "allocation_before_use",
+                      "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                      "to_instruction": 218754
+                    }
+                  ],
+                  "witnesses_truncated": true
+                },
+                "message": "tmem.alloc.W4.I260.O0 must be allocated before tcgen05.load uses it",
+                "stage": "lifecycle_check"
+              }
+            ],
+            "prerequisite_result": "invalid_lifecycle",
+            "prerequisite_status": "unsafe_lifecycle"
+          },
           "stage": "pipeline"
         }
       ],
-      "result": "unsupported",
-      "scope": {
-        "operation": "scalar_fold"
+      "equivalence_check": "blocked",
+      "prerequisite_status": "unsafe_lifecycle",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
       }
     },
-    "scope": {
-      "operation": "value_analysis"
-    }
+    "value_ir_instance_count": 1108461,
+    "value_ir_node_count": 139541,
+    "value_view_complete": true
   },
-  "value_ir_instance_count": 0,
-  "value_ir_node_count": 0,
-  "value_view_complete": false,
+  "peak_rss_mib": 868.2421875,
+  "pipeline_elapsed_seconds": 5.569168302,
+  "result": "invalid_lifecycle",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "verification_limitations": [],
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 500.0
+  "whole_pipeline_timeout_seconds": 498.507
 }

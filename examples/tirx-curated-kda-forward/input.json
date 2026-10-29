@@ -3,7 +3,7 @@
   "entry": "kda_fwd_kernel",
   "launch": {
     "grid_dim": [
-      1,
+      96,
       1,
       1
     ],
@@ -17,14 +17,14 @@
       1,
       1
     ],
-    "dynamic_shared_bytes": 0
+    "dynamic_shared_bytes": 232448
   },
   "declarations": [
     {
       "parameter": 0,
       "offset": 0,
       "type": "pointer",
-      "object": "A"
+      "object": "A_log"
     },
     {
       "parameter": 1,
@@ -35,25 +35,25 @@
       "parameter": 2,
       "offset": 0,
       "type": "pointer",
-      "object": "B"
+      "object": "cu_seqlens"
     },
     {
       "parameter": 3,
       "offset": 0,
       "type": "pointer",
-      "object": "C"
+      "object": "dt_bias"
     },
     {
       "parameter": 4,
       "offset": 0,
       "type": "pointer",
-      "object": "D"
+      "object": "final_state"
     },
     {
       "parameter": 5,
       "offset": 0,
       "type": "pointer",
-      "object": "ptr4"
+      "object": "flags"
     },
     {
       "parameter": 6,
@@ -64,13 +64,13 @@
       "parameter": 7,
       "offset": 0,
       "type": "pointer",
-      "object": "ptr5"
+      "object": "h0"
     },
     {
       "parameter": 8,
       "offset": 0,
       "type": "pointer",
-      "object": "ptr6"
+      "object": "hand"
     },
     {
       "parameter": 9,
@@ -86,7 +86,7 @@
       "parameter": 11,
       "offset": 0,
       "type": "pointer",
-      "object": "ptr7"
+      "object": "out"
     },
     {
       "parameter": 12,
@@ -118,51 +118,47 @@
     {
       "parameter": 14,
       "type": "u32",
-      "value": 0
+      "value": 1
     },
     {
       "parameter": 15,
       "type": "u32",
-      "value": 0
+      "value": 96
     },
     {
       "parameter": 16,
       "type": "f32",
-      "value": 0
+      "value": 0.08838834764831845
     }
   ],
   "tma_descriptors": [
     {
       "parameter": 1,
-      "object": "B",
+      "object": "beta",
       "element_type": "bf16",
-      "rank": 3,
+      "rank": 2,
       "box_shape": [
-        64,
-        64,
-        2
+        8,
+        64
       ],
       "global_shape": [
-        64,
-        8192,
-        192
+        96,
+        8192
       ],
       "element_strides": [
         1,
-        1,
         1
       ],
-      "swizzle": "128B",
+      "swizzle": "none",
       "interleave": "none",
       "global_strides_bytes": [
-        24576,
-        128
+        192
       ],
       "oob_fill": "zero"
     },
     {
       "parameter": 6,
-      "object": "C",
+      "object": "g",
       "element_type": "bf16",
       "rank": 3,
       "box_shape": [
@@ -190,7 +186,7 @@
     },
     {
       "parameter": 9,
-      "object": "B",
+      "object": "q",
       "element_type": "bf16",
       "rank": 3,
       "box_shape": [
@@ -218,7 +214,35 @@
     },
     {
       "parameter": 10,
-      "object": "C",
+      "object": "out",
+      "element_type": "bf16",
+      "rank": 3,
+      "box_shape": [
+        64,
+        32,
+        2
+      ],
+      "global_shape": [
+        64,
+        8192,
+        192
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "global_strides_bytes": [
+        24576,
+        128
+      ],
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 12,
+      "object": "k",
       "element_type": "bf16",
       "rank": 3,
       "box_shape": [
@@ -245,37 +269,13 @@
       "oob_fill": "zero"
     },
     {
-      "parameter": 12,
-      "object": "A",
-      "element_type": "bf16",
-      "rank": 2,
-      "box_shape": [
-        8,
-        64
-      ],
-      "global_shape": [
-        96,
-        8192
-      ],
-      "element_strides": [
-        1,
-        1
-      ],
-      "swizzle": "none",
-      "interleave": "none",
-      "global_strides_bytes": [
-        192
-      ],
-      "oob_fill": "zero"
-    },
-    {
       "parameter": 13,
-      "object": "B",
+      "object": "v",
       "element_type": "bf16",
       "rank": 3,
       "box_shape": [
         64,
-        32,
+        64,
         2
       ],
       "global_shape": [
@@ -301,5 +301,20 @@
     "duplicate_tma_store_benign": true,
     "representative_election": true,
     "clc_always_fails": true
-  }
+  },
+  "shape_arrays": [
+    {
+      "parameter": 2,
+      "offset": 0,
+      "element_type": "s64",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          8192
+        ]
+      ]
+    }
+  ]
 }

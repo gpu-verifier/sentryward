@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cctype>
+#include <deque>
+#include <functional>
 #include <limits>
 #include <regex>
 #include <set>
@@ -14,8 +16,46 @@ using PointerMap = std::unordered_map<std::string_view, TmemPointer>;
 struct Atom {
   TmemAtomSite site;
   TmemLaneExecutions lanes;
+  std::deque<RecordHolder> held; // the Full reads `lanes` views (ExpansionSite::Tmem); stable addresses
 };
 using Atoms = std::map<TmemAllocationId, Atom>;
+// One lane's records for the analysis passes. BlockScaleTmem expands the lane;
+// Tmem never does: every pass walks metadata, and a step that reads values gets
+// the record read at that position (Full, or a Slice of the registers it
+// names). On an expanded lane, whichever site expanded it, the Expanded
+// element serves both, as lowering's own reads do.
+class LaneRecords {
+public:
+  LaneRecords(const CtaFacts &facts, LaneRef lane, ExpansionSite site) : facts_(facts), lane_(lane) {
+    if (site != ExpansionSite::Tmem) (void)facts.ExpandLane(lane, site);
+    expanded_ = facts.Expanded(lane);
+  }
+  [[nodiscard]] std::size_t size() const { return facts_.Size(lane_); }
+  [[nodiscard]] RecordView Meta(std::size_t pos) const { return facts_.Meta({lane_, pos}); }
+  // The record at `pos` with every value; valid until Values reads another position.
+  [[nodiscard]] RecordView Values(std::size_t pos) {
+    if (expanded_) return Meta(pos);
+    if (!held_ || held_pos_ != pos) {
+      held_ = facts_.ReadFull({lane_, pos});
+      held_pos_ = pos;
+    }
+    return held_.view();
+  }
+  [[nodiscard]] RecordHolder Hold(std::size_t pos) const { return facts_.ReadFull({lane_, pos}); }
+  [[nodiscard]] bool expanded() const noexcept { return expanded_; }
+  // The record at `pos` with the values an operand's resolution reads: the
+  // registers its text and its split base name (ResolveExpression reads no
+  // other); valid until the next Operand call.
+  [[nodiscard]] RecordView Operand(std::size_t pos, std::string_view operand);
+
+private:
+  const CtaFacts &facts_;
+  LaneRef lane_;
+  bool expanded_ = false;
+  RecordHolder held_, operand_;
+  std::size_t held_pos_ = 0;
+  std::vector<RegId> slice_;
+};
 std::string_view Trim(std::string_view text) {
   while (!text.empty() &&
          std::isspace(static_cast<unsigned char>(text.front())))
@@ -36,10 +76,10 @@ std::string Opcode(const Instruction &instruction) {
     result += "." + modifier;
   return result;
 }
-TmemAtomSite Site(const ExecutionProgram &program, std::uint32_t warp,
-                  const ExecutedInstruction &execution) {
+TmemAtomSite Site(const FactSource &facts, std::uint32_t warp,
+                  const RecordView &execution) {
   const auto &instruction =
-      program.function->instructions.at(execution.instruction_id());
+      facts.function().instructions.at(execution.instruction_id());
   return {warp, instruction.id, execution.occurrence(), instruction.line,
           Opcode(instruction)};
 }
@@ -47,22 +87,30 @@ void Poll(const TmemAnalysisOptions &options, std::size_t &count) {
   if ((++count & 4095) == 0 && options.poll)
     options.poll();
 }
-Atoms MakeAtoms(const ExecutionProgram &program,
+Atoms MakeAtoms(const CtaFacts &facts, ExpansionSite site,
                 const TmemAnalysisOptions &options) {
+  const auto &function = facts.function();
   Atoms atoms;
   std::size_t count = 0;
-  for (const auto &trace : program.lane_traces) {
-    for (const auto &execution : trace.instructions) {
+  for (std::size_t index = 0; index < facts.LaneCount(); ++index) {
+    const auto lane = facts.Lane(index);
+    const auto warp = facts.Warp(lane), lane_id = facts.LaneId(lane);
+    LaneRecords records(facts, lane, site);
+    for (std::size_t pos = 0; pos < records.size(); ++pos) {
       Poll(options, count);
-      if (program.function->instructions[execution.instruction_id()]
+      const auto execution = records.Meta(pos);
+      if (function.instructions[execution.instruction_id()]
               .semantics.category != "tmem_lifetime")
         continue;
-      const TmemAllocationId key{trace.warp_id, execution.instruction_id(),
+      const TmemAllocationId key{warp, execution.instruction_id(),
                                  execution.occurrence()};
       auto [found, inserted] = atoms.try_emplace(key);
       if (inserted)
-        found->second.site = Site(program, trace.warp_id, execution);
-      found->second.lanes.emplace_back(trace.lane_id, &execution);
+        found->second.site = Site(facts, warp, execution);
+      if (records.expanded())
+        found->second.lanes.emplace_back(lane_id, execution);
+      else
+        found->second.lanes.emplace_back(lane_id, found->second.held.emplace_back(records.Hold(pos)).view());
     }
   }
   return atoms;
@@ -88,24 +136,25 @@ std::optional<unsigned> CtaGroup(const Instruction &instruction) {
   }
   return group;
 }
-std::optional<Integer> Known(const ExecutionProgram &program,
-                             const ExecutedInstruction &execution,
+std::optional<Integer> Known(const FactSource &facts,
+                             const RecordView &execution,
                              std::string_view token) {
   token = Trim(token);
   if (auto integer = ParseInteger(token))
     return integer;
-  if (const auto *value = program.KnownRegister(execution, token)) {
+  if (const auto *value = facts.Value(execution, token)) {
     if (const auto *integer = std::get_if<Integer>(value))
       return *integer;
   }
-  const auto fixed = program.config.parameters.find(std::string(token));
-  if (fixed != program.config.parameters.end())
+  const auto &parameters = facts.launch().parameters();
+  const auto fixed = parameters.find(std::string(token));
+  if (fixed != parameters.end())
     return fixed->second;
   return {};
 }
 template <class Lookup>
-ResolvedTmemOperand ResolveExpression(const ExecutionProgram &program,
-                                      const ExecutedInstruction &execution,
+ResolvedTmemOperand ResolveExpression(const FactSource &facts,
+                                      const RecordView &execution,
                                       std::string_view token,
                                       Lookup &&pointer) {
   token = Trim(token);
@@ -113,37 +162,66 @@ ResolvedTmemOperand ResolveExpression(const ExecutionProgram &program,
     return *integer;
   if (auto found = pointer(token))
     return *found;
-  if (auto integer = Known(program, execution, token))
+  if (auto integer = Known(facts, execution, token))
     return *integer;
   if (auto split = SplitAddress(token)) {
     if (auto found = pointer(split->first)) {
       if (auto added = found->AddEncoded(split->second))
         return *added;
-    } else if (auto integer = Known(program, execution, split->first))
+    } else if (auto integer = Known(facts, execution, split->first))
       return Integer(*integer + split->second);
   }
   return {};
 }
-ResolvedTmemOperand ResolveExpression(const ExecutionProgram &program,
-                                      const ExecutedInstruction &execution,
+std::optional<TmemPointer> FindPointer(const PointerMap &pointers,
+                                       std::string_view name) {
+  auto found = pointers.find(name);
+  return found == pointers.end() ? std::nullopt
+                                 : std::optional(found->second);
+}
+ResolvedTmemOperand ResolveExpression(const FactSource &facts,
+                                      const RecordView &execution,
                                       std::string_view token,
                                       const PointerMap &pointers) {
   return ResolveExpression(
-      program, execution, token,
-      [&](std::string_view name) -> std::optional<TmemPointer> {
-        auto found = pointers.find(name);
-        return found == pointers.end() ? std::nullopt
-                                       : std::optional(found->second);
-      });
+      facts, execution, token,
+      [&](std::string_view name) { return FindPointer(pointers, name); });
 }
-std::optional<Integer> UniformInteger(const ExecutionProgram &program,
+// The TmemPointer alternative of ResolveExpression(token, pointers), found in
+// the same order without reading a value. The one exception: a pointer split
+// base is taken only after Known(token) failed, because an integer answer at
+// that step takes precedence over it.
+std::optional<TmemPointer> ResolvePointer(const FactSource &facts,
+                                          const RecordView &execution,
+                                          std::string_view token,
+                                          const PointerMap &pointers) {
+  token = Trim(token);
+  if (ParseInteger(token))
+    return {};
+  if (auto found = FindPointer(pointers, token))
+    return found;
+  // Without a '+' or '-' after its first character, the token splits to
+  // itself or not at all, and FindPointer(token) has just failed.
+  if (token.find_first_of("+-", 1) == std::string_view::npos)
+    return {};
+  if (auto split = SplitAddress(token)) {
+    if (auto found = FindPointer(pointers, split->first)) {
+      if (Known(facts, execution, token)) {
+        return {};
+      }
+      return found->AddEncoded(split->second);
+    }
+  }
+  return {};
+}
+std::optional<Integer> UniformInteger(const FactSource &facts,
                                       const Atom &atom,
                                       std::string_view operand) {
   std::optional<Integer> result;
   const PointerMap empty;
   for (const auto &[_, execution] : atom.lanes) {
     const auto value =
-        ResolveExpression(program, *execution, Strip(operand), empty);
+        ResolveExpression(facts, execution, Strip(operand), empty);
     const auto *integer = std::get_if<Integer>(&value);
     if (!integer || (result && *result != *integer))
       return {};
@@ -159,12 +237,12 @@ std::string Hex(const Integer &integer) {
     result << std::hex << integer;
   return result.str();
 }
-void AllocationRecords(const ExecutionProgram &program, const Atoms &atoms,
+void AllocationRecords(const FactSource &facts, const Atoms &atoms,
                        const TmemAnalysisOptions &options,
                        TmemProvenanceIndex &result) {
   for (const auto &[key, atom] : atoms) {
     const auto &instruction =
-        program.function->instructions[key.instruction_index];
+        facts.function().instructions[key.instruction_index];
     if (instruction.semantics.operation != "alloc")
       continue;
     const auto issue = [&](std::string code, std::string message) {
@@ -188,9 +266,9 @@ void AllocationRecords(const ExecutionProgram &program, const Atoms &atoms,
       continue;
     }
     const auto slot = UniformInteger(
-        program, atom, program.module->view(instruction.operands[0]));
+        facts, atom, facts.module().view(instruction.operands[0]));
     const auto columns = UniformInteger(
-        program, atom, program.module->view(instruction.operands[1]));
+        facts, atom, facts.module().view(instruction.operands[1]));
     if (!slot) {
       issue("tmem_unresolved_alloc_slot",
             "allocation result shared-memory slot is not lane-uniform and "
@@ -218,21 +296,36 @@ void AllocationRecords(const ExecutionProgram &program, const Atoms &atoms,
         {key, atom.site, *slot, columns->convert_to<std::uint32_t>(), *group});
   }
 }
-std::optional<TmemPointer> CopyPointer(const ExecutionProgram &program,
-                                       const ExecutedInstruction &execution,
+// Operands are classified by ResolvePointer; the integer partner of a pointer
+// (the Integer alternative of ResolveExpression) is read only where the result
+// uses it. This returns what resolving both operands eagerly would return:
+// every skipped lookup is a pure const read whose result cannot change the
+// return value. An operand classified as a pointer is exactly one
+// whose ResolveExpression is a TmemPointer, so it has no Integer alternative
+// and is never read as a partner.
+std::optional<TmemPointer> CopyPointer(const FactSource &facts,
+                                       const RecordView &execution,
                                        const PointerMap &pointers) {
   const auto &instruction =
-      program.function->instructions[execution.instruction_id()];
+      facts.function().instructions[execution.instruction_id()];
   if (instruction.operands.size() < 2 ||
       (instruction.opcode != "mov" && instruction.opcode != "cvt" &&
        instruction.opcode != "add" && instruction.opcode != "sub" &&
        instruction.opcode != "selp" && instruction.opcode != "and" &&
        instruction.opcode != "xor"))
     return {};
-  const auto resolve = [&](std::size_t i) {
-    return ResolveExpression(program, execution,
-                             program.module->view(instruction.operands[i]),
-                             pointers);
+  const auto operand = [&](std::size_t i) {
+    return facts.module().view(instruction.operands[i]);
+  };
+  const auto classify = [&](std::size_t i) {
+    return ResolvePointer(facts, execution, operand(i), pointers);
+  };
+  const auto partner = [&](std::size_t i) -> std::optional<Integer> {
+    const auto value =
+        ResolveExpression(facts, execution, operand(i), pointers);
+    if (const auto *integer = std::get_if<Integer>(&value))
+      return *integer;
+    return {};
   };
   const auto integer32 = [](std::string_view type) {
     return type == "b32" || type == "u32" || type == "s32";
@@ -242,50 +335,54 @@ std::optional<TmemPointer> CopyPointer(const ExecutionProgram &program,
        std::all_of(modifiers.begin(), modifiers.end(), integer32)) ||
       (instruction.opcode == "cvt" && modifiers.size() == 2 &&
        std::all_of(modifiers.begin(), modifiers.end(), integer32))) {
-    const auto value = resolve(1);
-    if (const auto *pointer = std::get_if<TmemPointer>(&value))
-      return *pointer;
+    if (auto pointer = classify(1))
+      return pointer;
   }
   if (instruction.operands.size() < 3 || modifiers.size() != 1)
     return {};
-  const auto left = resolve(1), right = resolve(2);
-  const auto *lp = std::get_if<TmemPointer>(&left);
-  const auto *rp = std::get_if<TmemPointer>(&right);
-  const auto *li = std::get_if<Integer>(&left);
-  const auto *ri = std::get_if<Integer>(&right);
-  if (instruction.opcode == "xor" && modifiers[0] == "b32") {
-    for (const auto &[pointer, integer] : {std::pair{lp, ri}, std::pair{rp, li}})
-      if (pointer && integer) {
+  const auto left = classify(1), right = classify(2);
+  const auto *lp = left ? &*left : nullptr;
+  const auto *rp = right ? &*right : nullptr;
+  if ((instruction.opcode == "xor" || instruction.opcode == "and") && modifiers[0] == "b32") {
+    const bool exclusive = instruction.opcode == "xor";
+    for (const auto &[pointer, other] :
+         {std::pair{lp, std::size_t{2}}, std::pair{rp, std::size_t{1}}}) {
+      if (!pointer || (other == 2 ? rp : lp))
+        continue;
+      if (const auto integer = partner(other)) {
         const auto mask = (*integer & Integer(0xffffffffU)).convert_to<std::uint32_t>();
-        // Preserve the allocation when only subword-selector bits change.
-        if ((mask & 0x3fffffffU) == 0)
-          return TmemPointer{pointer->allocation, pointer->encoded_offset ^ mask};
+        // Preserve the allocation when xor changes only subword-selector bits,
+        // or and clears only bits among the low five.
+        if (exclusive ? (mask & 0x3fffffffU) == 0 : (mask & 0xffffffe0U) == 0xffffffe0U)
+          return TmemPointer{pointer->allocation,
+                             exclusive ? pointer->encoded_offset ^ mask : pointer->encoded_offset & mask};
       }
-  }
-  if (instruction.opcode == "and" && modifiers[0] == "b32") {
-    for (const auto &[pointer, integer] : {std::pair{lp, ri}, std::pair{rp, li}})
-      if (pointer && integer) {
-        const auto mask = (*integer & Integer(0xffffffffU)).convert_to<std::uint32_t>();
-        if ((mask & 0xffffffe0U) == 0xffffffe0U)
-          return TmemPointer{pointer->allocation, pointer->encoded_offset & mask};
-      }
+    }
   }
   if ((instruction.opcode == "add" || instruction.opcode == "sub") &&
       (modifiers[0] == "u32" || modifiers[0] == "s32")) {
-    if (lp && ri)
-      return lp->AddEncoded(instruction.opcode == "sub" ? Integer(-*ri) : *ri);
-    if (instruction.opcode == "add" && rp && li)
-      return rp->AddEncoded(*li);
+    // Each case needs exactly one pointer side: the other one must have an
+    // Integer alternative.
+    if (lp && !rp) {
+      if (const auto ri = partner(2))
+        return lp->AddEncoded(instruction.opcode == "sub" ? Integer(-*ri) : *ri);
+    } else if (instruction.opcode == "add" && rp && !lp) {
+      if (const auto li = partner(1))
+        return rp->AddEncoded(*li);
+    }
   }
   if (instruction.opcode == "selp" && integer32(modifiers[0]) && lp && rp &&
       *lp == *rp)
     return *lp;
   return {};
 }
-std::optional<Integer> SharedLoadSlot(const ExecutionProgram &program,
-                                      const ExecutedInstruction &execution) {
+// `execution` is the record's metadata; `values` reads it with its values,
+// only for a 4-byte shared load.
+std::optional<Integer> SharedLoadSlot(const FactSource &facts,
+                                      const RecordView &execution,
+                                      const std::function<RecordView()> &values) {
   const auto &instruction =
-      program.function->instructions[execution.instruction_id()];
+      facts.function().instructions[execution.instruction_id()];
   if ((instruction.opcode != "ld" && instruction.opcode != "ldu") ||
       (instruction.semantics.memory_space != "shared" &&
        instruction.semantics.memory_space != "shared.cta") ||
@@ -295,16 +392,40 @@ std::optional<Integer> SharedLoadSlot(const ExecutionProgram &program,
     return {};
   const PointerMap empty;
   auto value = ResolveExpression(
-      program, execution, Strip(program.module->view(instruction.operands[1])),
+      facts, values(), Strip(facts.module().view(instruction.operands[1])),
       empty);
   if (const auto *integer = std::get_if<Integer>(&value))
     return *integer;
   return {};
 }
+// Whether some operand after the first names a pointer register, itself or as
+// its split base: otherwise CopyPointer classifies no pointer, reads no value
+// and returns nothing.
+bool NamesPointer(const FactSource &facts, const Instruction &instruction,
+                  const PointerMap &pointers) {
+  for (std::size_t k = 1; k < instruction.operands.size(); ++k) {
+    const auto token = Trim(facts.module().view(instruction.operands[k]));
+    if (pointers.contains(token)) return true;
+    if (const auto split = SplitAddress(token); split && pointers.contains(std::string_view(split->first))) return true;
+  }
+  return false;
+}
+RecordView LaneRecords::Operand(std::size_t pos, std::string_view operand) {
+  if (expanded_) return Meta(pos);
+  const auto token = Strip(operand);
+  slice_.clear();
+  if (const auto reg = facts_.Reg(token)) slice_.push_back(*reg);
+  if (const auto split = SplitAddress(token))
+    if (const auto reg = facts_.Reg(split->first); reg && std::find(slice_.begin(), slice_.end(), *reg) == slice_.end())
+      slice_.push_back(*reg);
+  std::sort(slice_.begin(), slice_.end());
+  operand_ = facts_.ReadSlice({lane_, pos}, slice_);
+  return operand_.view();
+}
 class LocalPointerSpills {
   struct Object { std::string symbol; std::vector<std::uint32_t> scope; Integer size; };
   struct Address { std::size_t object; Integer offset; };
-  const ExecutionProgram &program;
+  const FactSource &facts;
   std::vector<Object> objects;
   std::map<std::string,Address> registers;
   std::map<std::pair<std::size_t,Integer>,std::pair<TmemPointer,unsigned>> bytes;
@@ -322,10 +443,10 @@ class LocalPointerSpills {
     return result;
   }
 public:
-  explicit LocalPointerSpills(const ExecutionProgram &p):program(p) {
+  explicit LocalPointerSpills(const FactSource &f):facts(f) {
     static const std::regex declaration(R"(^\s*\.local\s+(?:\.align\s+\d+\s+)?\.([bus]\d+)\s+([A-Za-z_$][A-Za-z0-9_$]*)(?:\[(\d+)\])?\s*;?\s*$)");
-    for (const auto &d : p.function->directives) {
-      auto text=std::string(p.module->view(d.source)); std::smatch match;
+    for (const auto &d : facts.function().directives) {
+      auto text=std::string(facts.module().view(d.source)); std::smatch match;
       if (std::regex_match(text,match,declaration)) {
         const auto width=std::stoul(match[1].str().substr(1))/8;
         const Integer count=match[3].matched?Integer(match[3].str()):Integer(1);
@@ -333,11 +454,12 @@ public:
       }
     }
   }
-  PointerMap Step(const ExecutedInstruction &e,const PointerMap &pointers) {
+  // `e` is the record's metadata; `values` reads the record with its values.
+  PointerMap Step(const RecordView &e,const std::function<RecordView()> &values,const PointerMap &pointers) {
     if (objects.empty()) return {};
-    const auto &i=program.function->instructions[e.instruction_id()];
+    const auto &i=facts.function().instructions[e.instruction_id()];
     std::vector<std::string_view> ops;
-    for (auto operand : i.operands) ops.push_back(Trim(program.module->view(operand)));
+    for (auto operand : i.operands) ops.push_back(Trim(facts.module().view(operand)));
     PointerMap recovered;
     if (i.semantics.memory_space=="generic" &&
         (i.semantics.memory_mode=="write" || i.semantics.memory_mode=="atomic")) bytes.clear();
@@ -355,7 +477,7 @@ public:
           for (;;) { auto comma=text.find(','); parts.push_back(Trim(text.substr(0,comma))); if (comma==text.npos) break; text.remove_prefix(comma+1); }
           if (*width==4*parts.size())
             for (std::size_t k=0;k<parts.size();++k) {
-              const auto value=ResolveExpression(program,e,parts[k],pointers);
+              const auto value=ResolveExpression(facts,values(),parts[k],pointers);
               if (const auto *pointer=std::get_if<TmemPointer>(&value))
                 for (unsigned byte=0;byte<4;++byte) bytes[{address->object,address->offset+4*k+byte}]={*pointer,byte};
             }
@@ -377,8 +499,8 @@ public:
       if ((i.opcode=="mov" && mods.size()==1 && (mods[0]=="b64" || mods[0]=="u64" || mods[0]=="s64")) ||
           (i.opcode=="cvta" && local && std::find(mods.begin(),mods.end(),"u64")!=mods.end())) propagated=Resolve(ops[1],i);
       else if ((i.opcode=="add" || i.opcode=="sub") && ops.size()==3 && mods.size()==1 && (mods[0]=="u64" || mods[0]=="s64")) {
-        auto base=Resolve(ops[1],i); auto delta=Known(program,e,ops[2]);
-        if (!base && i.opcode=="add") { base=Resolve(ops[2],i); delta=Known(program,e,ops[1]); }
+        auto base=Resolve(ops[1],i); auto delta=Known(facts,values(),ops[2]);
+        if (!base && i.opcode=="add") { base=Resolve(ops[2],i); delta=Known(facts,values(),ops[1]); }
         if (base && delta) { base->offset+=i.opcode=="sub"?Integer(-*delta):*delta; propagated=base; }
       }
     }
@@ -386,12 +508,14 @@ public:
     return recovered;
   }
 };
-TmemProvenanceIndex BuildProvenance(const ExecutionProgram &program,
+TmemProvenanceIndex BuildProvenance(const CtaFacts &facts, ExpansionSite site,
                                     const Atoms &atoms,
                                     const TmemAnalysisOptions &options) {
+  const auto &function = facts.function();
   TmemProvenanceIndex result;
-  result.program = &program;
-  AllocationRecords(program, atoms, options, result);
+  result.facts = &facts;
+  result.positioned = site == ExpansionSite::Tmem;
+  AllocationRecords(facts, atoms, options, result);
   std::map<TmemAllocationId, const TmemAllocation *> by_site;
   std::map<Integer, std::vector<const TmemAllocation *>> by_slot;
   for (const auto &allocation : result.allocations) {
@@ -399,42 +523,47 @@ TmemProvenanceIndex BuildProvenance(const ExecutionProgram &program,
     by_slot[allocation.shared_slot].push_back(&allocation);
   }
   std::vector<std::vector<std::string>> referenced_registers(
-      program.function->instructions.size());
-  for (const auto &instruction : program.function->instructions) {
+      function.instructions.size());
+  for (const auto &instruction : function.instructions) {
     if (instruction.opcode != "tcgen05" && instruction.opcode != "cvt")
       continue;
     auto &names = referenced_registers[instruction.id];
     names = instruction.registers;
     for (const auto &operand : instruction.operands) {
-      if (auto split = SplitAddress(Strip(program.module->view(operand)));
+      if (auto split = SplitAddress(Strip(facts.module().view(operand)));
           split &&
           std::find(names.begin(), names.end(), split->first) == names.end())
         names.push_back(split->first);
     }
   }
   std::set<TmemPublicationRead> reads;
-  std::map<TmemAllocationId, TmemPublicationCandidates> candidates;
   std::set<TmemLifetimeIssue> issues(result.issues.begin(),
                                      result.issues.end());
   std::size_t count = 0;
-  for (const auto &trace : program.lane_traces) {
+  for (std::size_t index = 0; index < facts.LaneCount(); ++index) {
+    const auto lane = facts.Lane(index);
+    const auto warp = facts.Warp(lane);
     PointerMap pointers;
-    LocalPointerSpills spills(program);
+    LocalPointerSpills spills(facts);
     std::map<Integer, const TmemAllocation *> local_slots;
-    for (const auto &execution : trace.instructions) {
+    LaneRecords records(facts, lane, site);
+    for (std::size_t pos = 0; pos < records.size(); ++pos) {
       Poll(options, count);
+      const auto execution = records.Meta(pos);
+      const std::function<RecordView()> values = [&] { return records.Values(pos); };
       const auto &instruction =
-          program.function->instructions[execution.instruction_id()];
+          function.instructions[execution.instruction_id()];
       if ((instruction.opcode == "tcgen05" || instruction.opcode == "cvt") && !pointers.empty()) {
         TmemProvenanceIndex::Snapshot snapshot;
         for (const auto &name : referenced_registers[instruction.id]) {
           if (auto found = pointers.find(name); found != pointers.end())
             snapshot.emplace_back(found->first, found->second);
         }
-        if (!snapshot.empty())
-          result.register_state_before.emplace(&execution, std::move(snapshot));
+        if (!snapshot.empty()) {
+          result.register_state_before.emplace(*execution.ref(), std::move(snapshot));
+        }
       }
-      const TmemAllocationId key{trace.warp_id, instruction.id,
+      const TmemAllocationId key{warp, instruction.id,
                                  execution.occurrence()};
       if (auto allocation = by_site.find(key); allocation != by_site.end())
         local_slots[allocation->second->shared_slot] = allocation->second;
@@ -442,7 +571,7 @@ TmemProvenanceIndex BuildProvenance(const ExecutionProgram &program,
         if (auto p = pointers.find(execution.assumed_equality()->first);
             p != pointers.end() && p->second.encoded_offset == 0)
           result.zero_based_allocations.insert(p->second.allocation);
-      const auto recovered=spills.Step(execution,pointers);
+      const auto recovered=spills.Step(execution,values,pointers);
       if (instruction.opcode=="ld" && instruction.semantics.memory_space=="local") {
         for (const auto &dest : instruction.destinations) {
           pointers.erase(dest);
@@ -452,7 +581,7 @@ TmemProvenanceIndex BuildProvenance(const ExecutionProgram &program,
       }
       if (instruction.destinations.empty())
         continue;
-      const auto loaded_slot = SharedLoadSlot(program, execution);
+      const auto loaded_slot = SharedLoadSlot(facts, execution, values);
       std::optional<TmemPointer> propagated;
       auto slot = loaded_slot ? by_slot.find(*loaded_slot) : by_slot.end();
       if (slot != by_slot.end()) {
@@ -465,13 +594,6 @@ TmemProvenanceIndex BuildProvenance(const ExecutionProgram &program,
         if (!selected && choices.size() == 1)
           selected = choices.front();
         if (!selected && choices.size() > 1) {
-          std::vector<TmemAllocationId> ids;
-          for (const auto *choice : choices)
-            ids.push_back(choice->identifier);
-          candidates.try_emplace(
-              key,
-              TmemPublicationCandidates{Site(program, trace.warp_id, execution),
-                                        *loaded_slot, ids});
           if (auto resolved = options.publication_resolution.find(key);
               resolved != options.publication_resolution.end()) {
             for (const auto *choice : choices)
@@ -486,7 +608,7 @@ TmemProvenanceIndex BuildProvenance(const ExecutionProgram &program,
         if (selected) {
           propagated = TmemPointer{selected->identifier, 0};
           if (!provisional)
-            reads.insert({Site(program, trace.warp_id, execution),
+            reads.insert({Site(facts, warp, execution),
                           selected->identifier});
         } else {
           issues.insert({"tmem_ambiguous_publication_slot",
@@ -494,10 +616,10 @@ TmemProvenanceIndex BuildProvenance(const ExecutionProgram &program,
                              " is reused by " + std::to_string(choices.size()) +
                              " allocation occurrences; this cross-warp load "
                              "has no unique producer",
-                         Site(program, trace.warp_id, execution)});
+                         Site(facts, warp, execution)});
         }
-      } else if (!pointers.empty())
-        propagated = CopyPointer(program, execution, pointers);
+      } else if (!pointers.empty() && NamesPointer(facts, instruction, pointers))
+        propagated = CopyPointer(facts, values(), pointers);
       for (const auto &destination : instruction.destinations) {
         if (propagated)
           pointers[destination] = *propagated;
@@ -507,16 +629,14 @@ TmemProvenanceIndex BuildProvenance(const ExecutionProgram &program,
     }
   }
   result.publication_reads.assign(reads.begin(), reads.end());
-  for (auto &[_, candidate] : candidates)
-    result.publication_candidates.push_back(std::move(candidate));
   result.issues.assign(issues.begin(), issues.end());
   return result;
 }
-std::vector<std::string_view> TmemOperands(const ExecutionProgram &program,
+std::vector<std::string_view> TmemOperands(const FactSource &facts,
                                            const Instruction &instruction) {
   std::vector<std::string_view> bracketed;
   for (const auto &range : instruction.operands) {
-    const auto operand = Trim(program.module->view(range));
+    const auto operand = Trim(facts.module().view(range));
     if (operand.size() >= 2 && operand.front() == '[' && operand.back() == ']')
       bracketed.push_back(operand);
   }
@@ -536,19 +656,20 @@ struct LanePositions {
   std::map<DynamicKey, std::size_t> positions;
 };
 std::vector<LanePositions>
-RelevantPositions(const ExecutionProgram &program,
+RelevantPositions(const CtaFacts &facts,
                   const std::set<TmemAllocationId> &relevant,
                   const TmemAnalysisOptions &options) {
   std::vector<LanePositions> result;
   std::size_t count = 0;
-  for (const auto &trace : program.lane_traces) {
+  for (std::size_t index = 0; index < facts.LaneCount(); ++index) {
+    const auto trace = facts.Lane(index);
     auto &lane = result.emplace_back();
-    lane.warp = trace.warp_id;
-    for (std::size_t i = 0; i < trace.instructions.size(); ++i) {
+    lane.warp = facts.Warp(trace);
+    for (std::size_t i = 0; i < facts.Size(trace); ++i) {
       Poll(options, count);
-      const auto &execution = trace.instructions.metadata(i);
+      const auto execution = facts.Meta({trace, i});
       if (relevant.contains(
-              {trace.warp_id, execution.instruction_id(), execution.occurrence()}))
+              {lane.warp, execution.instruction_id(), execution.occurrence()}))
         lane.positions.emplace(execution.Key(), i);
     }
   }
@@ -575,28 +696,33 @@ bool Precedes(const std::vector<LanePositions> &positions,
   return saw_target;
 }
 std::map<TmemAtomSite, TmemAtomSite>
-RetirementSites(const ExecutionProgram &program,
+RetirementSites(const CtaFacts &facts, ExpansionSite site,
                 const TmemAnalysisOptions &options) {
+  const auto &function = facts.function();
   std::map<TmemAtomSite, std::set<std::optional<TmemAtomSite>>> candidates;
   std::size_t count = 0;
-  for (const auto &trace : program.lane_traces) {
+  for (std::size_t index = 0; index < facts.LaneCount(); ++index) {
+    const auto lane = facts.Lane(index);
+    const auto warp = facts.Warp(lane);
     std::vector<TmemAtomSite> loads, stores;
-    for (const auto &execution : trace.instructions) {
+    LaneRecords records(facts, lane, site);
+    for (std::size_t pos = 0; pos < records.size(); ++pos) {
       Poll(options, count);
+      const auto execution = records.Meta(pos);
       const auto &instruction =
-          program.function->instructions[execution.instruction_id()];
+          function.instructions[execution.instruction_id()];
       if (instruction.opcode != "tcgen05" ||
           instruction.semantics.category != "async")
         continue;
       const auto &operation = instruction.semantics.operation;
       if (operation == "load")
-        loads.push_back(Site(program, trace.warp_id, execution));
+        loads.push_back(Site(facts, warp, execution));
       else if (operation == "store")
-        stores.push_back(Site(program, trace.warp_id, execution));
+        stores.push_back(Site(facts, warp, execution));
       else if (operation == "wait_load" || operation == "wait_store") {
         auto &pending = operation == "wait_load" ? loads : stores;
         if (!pending.empty()) {
-          const auto site = Site(program, trace.warp_id, execution);
+          const auto site = Site(facts, warp, execution);
           for (const auto &item : pending)
             candidates[item].insert(site);
           pending.clear();
@@ -626,16 +752,22 @@ std::optional<TmemPointer> TmemPointer::AddEncoded(const Integer &delta) const {
 }
 ResolvedTmemOperand
 TmemProvenanceIndex::Resolve(std::uint32_t,
-                             const ExecutedInstruction &execution,
+                             const RecordView &execution,
                              std::string_view operand, std::uint32_t) const {
-  if (!program)
+  if (!facts)
     return {};
-  const auto snapshot = register_state_before.find(&execution);
+  const Snapshot *snapshot = nullptr;
+  const auto kind = execution.kind();
+  if (kind == RecordKind::Expanded ||
+      (positioned && (kind == RecordKind::Full || kind == RecordKind::Slice)))
+    if (const auto at = execution.ref())
+      if (const auto found = register_state_before.find(*at); found != register_state_before.end())
+        snapshot = &found->second;
   return ResolveExpression(
-      *program, execution, Strip(operand),
+      *facts, execution, Strip(operand),
       [&](std::string_view name) -> std::optional<TmemPointer> {
-        if (snapshot != register_state_before.end()) {
-          for (const auto &[reg, pointer] : snapshot->second)
+        if (snapshot) {
+          for (const auto &[reg, pointer] : *snapshot)
             if (reg == name)
               return pointer;
         }
@@ -644,42 +776,16 @@ TmemProvenanceIndex::Resolve(std::uint32_t,
 }
 ResolvedTmemOperand
 TmemProvenanceIndex::Resolve(std::uint32_t warp,
-                             const ExecutedInstruction &execution,
+                             const RecordView &execution,
                              std::size_t operand, std::uint32_t lane) const {
-  if (!program)
+  if (!facts)
     return {};
   const auto &instruction =
-      program->function->instructions[execution.instruction_id()];
+      facts->function().instructions[execution.instruction_id()];
   if (operand >= instruction.operands.size())
     return {};
   return Resolve(warp, execution,
-                 program->module->view(instruction.operands[operand]), lane);
-}
-ResolvedTmemOperand
-TmemProvenanceIndex::ResolveUniform(std::uint32_t warp,
-                                    const TmemLaneExecutions &lanes,
-                                    std::string_view operand) const {
-  std::optional<ResolvedTmemOperand> result;
-  for (const auto &[lane, execution] : lanes) {
-    auto value = Resolve(warp, *execution, operand, lane);
-    if (result && *result != value)
-      return {};
-    result = std::move(value);
-  }
-  return result.value_or(ResolvedTmemOperand{});
-}
-ResolvedTmemOperand
-TmemProvenanceIndex::ResolveUniform(std::uint32_t warp,
-                                    const TmemLaneExecutions &lanes,
-                                    std::size_t operand) const {
-  std::optional<ResolvedTmemOperand> result;
-  for (const auto &[lane, execution] : lanes) {
-    auto value = Resolve(warp, *execution, operand, lane);
-    if (result && *result != value)
-      return {};
-    result = std::move(value);
-  }
-  return result.value_or(ResolvedTmemOperand{});
+                 facts->module().view(instruction.operands[operand]), lane);
 }
 std::optional<TmemPointer>
 TmemProvenanceIndex::NormalizeTaddr(const ResolvedTmemOperand &value) const {
@@ -705,16 +811,12 @@ TmemProvenanceIndex::AllocationById(TmemAllocationId id) const {
   return found != allocations.end() && found->identifier == id ? &*found
                                                                : nullptr;
 }
-TmemProvenanceIndex BuildTmemProvenance(const ExecutionProgram &program,
-                                        const TmemAnalysisOptions &options) {
-  return BuildProvenance(program, MakeAtoms(program, options), options);
-}
-
-TmemLifetimeAnalysis AnalyzeTmemLifetimes(const ExecutionProgram &program,
+TmemLifetimeAnalysis AnalyzeTmemLifetimes(const CtaFacts &facts, ExpansionSite site,
                                           const TmemAnalysisOptions &options) {
-  const auto atoms = MakeAtoms(program, options);
+  const auto &function = facts.function();
+  const auto atoms = MakeAtoms(facts, site, options);
   TmemLifetimeAnalysis result;
-  result.provenance = BuildProvenance(program, atoms, options);
+  result.provenance = BuildProvenance(facts, site, atoms, options);
   auto &provenance = result.provenance;
   std::set<TmemLifetimeIssue> issues(provenance.issues.begin(),
                                      provenance.issues.end());
@@ -725,7 +827,7 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const ExecutionProgram &program,
   std::set<TmemOrderObligation> obligations;
   for (const auto &[key, atom] : atoms) {
     const auto &instruction =
-        program.function->instructions[key.instruction_index];
+        function.instructions[key.instruction_index];
     const auto &operation = instruction.semantics.operation;
     const auto issue = [&](std::string code, std::string message) {
       issues.insert({std::move(code), std::move(message), atom.site});
@@ -751,7 +853,7 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const ExecutionProgram &program,
     bool unresolved = false;
     for (const auto &[lane, execution] : atom.lanes) {
       auto pointer = provenance.NormalizeTaddr(
-          provenance.Resolve(atom.site.warp, *execution, std::size_t{0}, lane));
+          provenance.Resolve(atom.site.warp, execution, std::size_t{0}, lane));
       if (pointer)
         pointers.insert(*pointer);
       else
@@ -782,7 +884,7 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const ExecutionProgram &program,
     std::set<Integer> columns;
     for (const auto &[lane, execution] : atom.lanes) {
       const auto value =
-          provenance.Resolve(atom.site.warp, *execution, std::size_t{1}, lane);
+          provenance.Resolve(atom.site.warp, execution, std::size_t{1}, lane);
       if (const auto *integer = std::get_if<Integer>(&value))
         columns.insert(*integer);
       else
@@ -810,12 +912,16 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const ExecutionProgram &program,
     deallocations.emplace(atom.site, pointer.allocation);
   }
   std::size_t count = 0;
-  for (const auto &trace : program.lane_traces) {
+  for (std::size_t index = 0; index < facts.LaneCount(); ++index) {
+    const auto lane = facts.Lane(index);
+    const auto warp = facts.Warp(lane), lane_id = facts.LaneId(lane);
     std::set<TmemAllocationId> freed;
-    for (const auto &execution : trace.instructions) {
+    LaneRecords records(facts, lane, site);
+    for (std::size_t pos = 0; pos < records.size(); ++pos) {
       Poll(options, count);
+      const auto execution = records.Meta(pos);
       const auto &instruction =
-          program.function->instructions[execution.instruction_id()];
+          function.instructions[execution.instruction_id()];
       const auto &semantics = instruction.semantics;
       if (semantics.category == "tmem_lifetime") {
         if (semantics.operation != "dealloc") {
@@ -824,10 +930,10 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const ExecutionProgram &program,
             issues.insert(
                 {"tmem_cta_group_2",
                  "cta_group::2 TMEM lifetime operation spans two CTAs",
-                 Site(program, trace.warp_id, execution)});
+                 Site(facts, warp, execution)});
         } else {
           const auto found = deallocation_by_site.find(
-              {trace.warp_id, instruction.id, execution.occurrence()});
+              {warp, instruction.id, execution.occurrence()});
           if (found != deallocation_by_site.end())
             freed.insert(found->second);
         }
@@ -835,15 +941,15 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const ExecutionProgram &program,
       }
       if (instruction.opcode != "tcgen05" || semantics.category != "async")
         continue;
-      const auto site = Site(program, trace.warp_id, execution);
+      const auto site = Site(facts, warp, execution);
       if (CtaGroup(instruction) == 2 && !options.allow_cta_group2) {
         issues.insert({"tmem_cta_group_2",
                        "cta_group::2 tcgen05 access spans two CTAs", site});
         continue;
       }
-      for (const auto operand : TmemOperands(program, instruction)) {
+      for (const auto operand : TmemOperands(facts, instruction)) {
         const auto pointer = provenance.NormalizeTaddr(provenance.Resolve(
-            trace.warp_id, execution, operand, trace.lane_id));
+            warp, records.Operand(pos, operand), operand, lane_id));
         if (!pointer) {
           issues.insert({"tmem_unresolved_use_pointer",
                          "tcgen05." + semantics.operation +
@@ -876,7 +982,7 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const ExecutionProgram &program,
                          " distinct deallocation occurrences",
                      *found->second.begin()});
   }
-  const auto retirement = RetirementSites(program, options);
+  const auto retirement = RetirementSites(facts, site, options);
   std::set<TmemAllocationId> relevant;
   for (const auto &[key, _] : atoms)
     relevant.insert(key);
@@ -886,7 +992,7 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const ExecutionProgram &program,
     relevant.insert(use.site.Key());
   for (const auto &[_, wait] : retirement)
     relevant.insert(wait.Key());
-  const auto positions = RelevantPositions(program, relevant, options);
+  const auto positions = RelevantPositions(facts, relevant, options);
   const auto before = [&](const TmemAtomSite &source,
                           const TmemAtomSite &target) {
     return Precedes(positions, source, target);
@@ -918,7 +1024,7 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const ExecutionProgram &program,
   }
   for (const auto &allocation : provenance.allocations) {
     for (const auto &[key, atom] : atoms) {
-      if (program.function->instructions[key.instruction_index]
+      if (function.instructions[key.instruction_index]
               .semantics.operation != "relinquish_alloc_permit")
         continue;
       if (before(allocation.site, atom.site))
@@ -989,95 +1095,5 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const ExecutionProgram &program,
       provenance.allocations.begin(), provenance.allocations.end(),
       [](const auto &allocation) { return allocation.cta_group == 2; });
   return result;
-}
-std::map<TmemAllocationId, TmemSiteCertificate>
-BuildTmemSiteCertificates(const ExecutionProgram &program,
-                          const TmemLifetimeAnalysis &analysis) {
-  std::map<TmemAllocationId, TmemAllocationId> allocation_by_site;
-  for (const auto &allocation : analysis.provenance.allocations)
-    allocation_by_site.emplace(allocation.site.Key(), allocation.identifier);
-  for (const auto &[site, id] : analysis.deallocations)
-    allocation_by_site.emplace(site.Key(), id);
-  std::map<TmemAllocationId, TmemSiteCertificate> result;
-  for (const auto &[key, atom] : MakeAtoms(program, {})) {
-    std::optional<TmemAllocationId> allocation;
-    if (auto found = allocation_by_site.find(key);
-        found != allocation_by_site.end())
-      allocation = found->second;
-    result.emplace(key,
-                   TmemSiteCertificate{
-                       atom.site,
-                       program.function->instructions[key.instruction_index]
-                           .semantics.operation,
-                       allocation, &analysis, analysis.IdentityProven(),
-                       analysis.Proven()});
-  }
-  return result;
-}
-nlohmann::json TmemLifetimeJson(const TmemLifetimeAnalysis &analysis) {
-  using nlohmann::json;
-  const auto id = [](const TmemAllocationId &value) -> json {
-    return {{"warp", value.warp},
-            {"instruction_index", value.instruction_index},
-            {"occurrence", value.occurrence}};
-  };
-  const auto site = [](const TmemAtomSite &value) -> json {
-    return {{"warp", value.warp},
-            {"instruction_index", value.instruction_index},
-            {"occurrence", value.occurrence},
-            {"ptx_line", value.ptx_line},
-            {"opcode", value.opcode}};
-  };
-  const auto integer = [](const Integer &value) -> json {
-    return json::parse(value.str());
-  };
-  json allocations = json::array(), reads = json::array(),
-       candidates = json::array(), uses = json::array(),
-       deallocs = json::array(), issues = json::array(),
-       obligations = json::array();
-  for (const auto &value : analysis.provenance.allocations)
-    allocations.push_back({{"identifier", id(value.identifier)},
-                           {"site", site(value.site)},
-                           {"shared_slot", integer(value.shared_slot)},
-                           {"columns", value.columns},
-                           {"cta_group", value.cta_group}});
-  for (const auto &value : analysis.provenance.publication_reads)
-    reads.push_back(
-        {{"site", site(value.site)}, {"allocation", id(value.allocation)}});
-  for (const auto &value : analysis.provenance.publication_candidates) {
-    json ids = json::array();
-    for (const auto &item : value.allocations)
-      ids.push_back(id(item));
-    candidates.push_back({{"site", site(value.site)},
-                          {"shared_slot", integer(value.shared_slot)},
-                          {"allocations", std::move(ids)}});
-  }
-  for (const auto &value : analysis.uses)
-    uses.push_back({{"site", site(value.site)},
-                    {"allocation", id(value.allocation)},
-                    {"encoded_offset", value.encoded_offset},
-                    {"operation", value.operation}});
-  for (const auto &[where, allocation] : analysis.deallocations)
-    deallocs.push_back(json::array({site(where), id(allocation)}));
-  for (const auto &value : analysis.issues)
-    issues.push_back({{"code", value.code},
-                      {"message", value.message},
-                      {"site", site(value.site)}});
-  for (const auto &value : analysis.ordering_obligations)
-    obligations.push_back({{"kind", value.kind},
-                           {"allocation", id(value.allocation)},
-                           {"source", site(value.source)},
-                           {"target", site(value.target)},
-                           {"message", value.message}});
-  return {{"allocations", std::move(allocations)},
-          {"publication_reads", std::move(reads)},
-          {"publication_candidates", std::move(candidates)},
-          {"uses", std::move(uses)},
-          {"deallocations", std::move(deallocs)},
-          {"issues", std::move(issues)},
-          {"ordering_obligations", std::move(obligations)},
-          {"cluster_pairing_required", analysis.cluster_pairing_required},
-          {"identity_proven", analysis.IdentityProven()},
-          {"proven", analysis.Proven()}};
 }
 } // namespace sentryward::frontend::ptx

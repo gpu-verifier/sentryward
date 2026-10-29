@@ -365,6 +365,18 @@
       "offset": 1920,
       "type": "pointer",
       "object": "epilogue.tensormaps"
+    },
+    {
+      "parameter": 0,
+      "offset": 16,
+      "type": "pointer",
+      "object": "problem_shapes"
+    },
+    {
+      "parameter": 0,
+      "offset": 2160,
+      "type": "pointer",
+      "object": "scheduler.problem_shapes"
     }
   ],
   "shape_arrays": [
@@ -419,6 +431,63 @@
           256,
           256,
           128
+        ]
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1200,
+      "element_type": "s64",
+      "shapes": [
+        [
+          128
+        ],
+        [
+          128
+        ],
+        [
+          256
+        ],
+        [
+          128
+        ]
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1216,
+      "element_type": "s64",
+      "shapes": [
+        [
+          128
+        ],
+        [
+          128
+        ],
+        [
+          256
+        ],
+        [
+          128
+        ]
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1952,
+      "element_type": "s64",
+      "shapes": [
+        [
+          128
+        ],
+        [
+          256
+        ],
+        [
+          128
+        ],
+        [
+          256
         ]
       ]
     }
@@ -542,6 +611,98 @@
       "oob_fill": "zero",
       "global_strides_bytes": [
         0
+      ]
+    }
+  ],
+  "pointer_arrays": [
+    {
+      "parameter": 0,
+      "offset": 1280,
+      "entries": [
+        {
+          "object": "b_scales_ptrs.g0"
+        },
+        {
+          "object": "b_scales_ptrs.g1"
+        },
+        {
+          "object": "b_scales_ptrs.g2"
+        },
+        {
+          "object": "b_scales_ptrs.g3"
+        }
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1296,
+      "entries": [
+        {
+          "object": "a_scales_ptrs.g0"
+        },
+        {
+          "object": "a_scales_ptrs.g1"
+        },
+        {
+          "object": "a_scales_ptrs.g2"
+        },
+        {
+          "object": "a_scales_ptrs.g3"
+        }
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1192,
+      "entries": [
+        {
+          "object": "mainloop.ptr_A.g0"
+        },
+        {
+          "object": "mainloop.ptr_A.g1"
+        },
+        {
+          "object": "mainloop.ptr_A.g2"
+        },
+        {
+          "object": "mainloop.ptr_A.g3"
+        }
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1208,
+      "entries": [
+        {
+          "object": "mainloop.ptr_B.g0"
+        },
+        {
+          "object": "mainloop.ptr_B.g1"
+        },
+        {
+          "object": "mainloop.ptr_B.g2"
+        },
+        {
+          "object": "mainloop.ptr_B.g3"
+        }
+      ]
+    },
+    {
+      "parameter": 0,
+      "offset": 1944,
+      "entries": [
+        {
+          "object": "epilogue.ptr_D.g0"
+        },
+        {
+          "object": "epilogue.ptr_D.g1"
+        },
+        {
+          "object": "epilogue.ptr_D.g2"
+        },
+        {
+          "object": "epilogue.ptr_D.g3"
+        }
       ]
     }
   ]
