@@ -88,6 +88,12 @@ sentryward kernel.ptx --input input.json --output output.json
 # Compact listing on stdout; JSON still goes to --output
 sentryward kernel.ptx --input input.json --output output.json --format summary --fail-on findings
 
+# Override one analysis assumption for this invocation
+sentryward kernel.ptx --input input.json --assume order_independent_atomics
+
+# Accepted keys and repository defaults
+sentryward --list-assumptions
+
 # Also check equivalence to a PyTorch reference
 sentryward kernel.ptx \
   --input input.json \
@@ -110,6 +116,7 @@ result = verify(
     reference_binding="reference_binding.json",  # optional
     timeout_seconds=500,
     memory_limit_mib=None,                       # unlimited
+    assumptions={"order_independent_atomics": True},  # optional
 )
 print(result["result"], result["checks"])
 print(summarize(result), end="")
@@ -125,6 +132,8 @@ print(summarize(result), end="")
 | `--output` | | Optional. Write the JSON result object to this path. stdout still prints `--format`. |
 | `--format` | `summarize(result)` | Optional. `json` (default) writes the result object to stdout. `summary` writes a compact text listing of `result`, `checks`, diagnostics, and warning counts. |
 | `--fail-on` | | Optional, repeatable. Exit 1 when `result` matches a public category. `findings` selects `not_wellsynced`, `potential_race`, `invalid_lifecycle`, and `equivalence_not_proven`. `any` selects every category other than `verified` and `race_free`. Default exit codes are unchanged. |
+| `--assume` / `--no-assume` | `assumptions` | Optional. Enable or disable a named analysis assumption for this invocation. Overrides the same key in the kernel input. Repeatable; each key may appear only once. |
+| `--list-assumptions` | | Print accepted assumption keys and repository defaults as JSON. Does not verify a kernel. |
 
 The reference takes no separate input file. Its arguments are derived from the
 kernel's input configuration and the binding; anything that cannot be derived
@@ -137,7 +146,9 @@ reference function. Timeout values must be positive and finite; explicit memory
 limits must be positive integers and apply to both capture and verification.
 The reference function executes as Python code during capture.
 The public Python package exports `verify` and `summarize`; the CLI accepts the
-PTX path directly, without a subcommand.
+PTX path directly, without a subcommand, except `--list-assumptions`, which
+prints the assumption pool and does not take a PTX path. Assumption flags are
+documented in [assumptions.md](docs/assumptions.md#invocation-overrides).
 
 ### Read the result
 
