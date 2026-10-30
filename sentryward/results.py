@@ -297,6 +297,133 @@ def failure(result, code, message, **details):
     return {"result":result,"diagnostics":[{"code":code,"message":str(message),**details}],
             "checks":{"synchronization":"not_run","memory":"not_run","equivalence":"not_run"}}
 
+# Categories that report a kernel finding rather than a clean pass or a tool stop.
+FINDINGS = frozenset({
+    "not_wellsynced", "potential_race", "invalid_lifecycle", "equivalence_not_proven",
+})
+FAIL_ON_ALIASES = {
+    "findings": FINDINGS,
+    "any": RESULTS - {"verified", "race_free"},
+}
+
+
+def expand_fail_on(names):
+    """Resolve --fail-on values to public result categories."""
+    selected = set()
+    unknown = []
+    for name in names or ():
+        if name in FAIL_ON_ALIASES:
+            selected.update(FAIL_ON_ALIASES[name])
+        elif name in RESULTS:
+            selected.add(name)
+        else:
+            unknown.append(name)
+    if unknown:
+        raise ValueError("unknown --fail-on value: " + ", ".join(unknown))
+    return selected
+
+
+def apply_fail_on(result, fail_on, default_code):
+    """Exit 1 when a passing default code matches a requested result category."""
+    selected = fail_on if isinstance(fail_on, (set, frozenset)) else expand_fail_on(fail_on)
+    if result.get("result") in selected and default_code == 0:
+        return 1
+    return default_code
+
+
+def _plain(value):
+    if isinstance(value, str):
+        return value
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+
+
+def _clip(text, limit=160):
+    text = " ".join(str(text).split())
+    return text if len(text) <= limit else text[: limit - 3] + "..."
+
+
+def summarize(report):
+    """Return a compact text view of a public result dictionary.
+
+    The JSON object is unchanged. This listing does not infer a pass from a
+    missing field, and it does not collapse diagnostics by code.
+    """
+    if not isinstance(report, dict):
+        raise TypeError("summarize expects a result dictionary")
+    lines = ["result: " + _plain(report.get("result"))]
+    checks = report.get("checks")
+    if isinstance(checks, dict):
+        lines.append("checks:")
+        seen = set()
+        for key in ("synchronization", "memory", "equivalence"):
+            if key in checks:
+                lines.append("  " + key + ": " + _plain(checks[key]))
+                seen.add(key)
+        for key, value in checks.items():
+            if key not in seen:
+                lines.append("  " + key + ": " + _plain(value))
+    elif "checks" in report:
+        lines.append("checks: " + _plain(checks))
+    diagnostics = report.get("diagnostics")
+    if not isinstance(diagnostics, list) or not diagnostics:
+        if "diagnostics" in report:
+            lines.append("diagnostics: none" if diagnostics == [] else "diagnostics: " + _plain(diagnostics))
+        else:
+            lines.append("diagnostics: none")
+    else:
+        lines.append("diagnostics: " + str(len(diagnostics)))
+        for item in diagnostics[:20]:
+            if not isinstance(item, dict):
+                lines.append("  - " + _clip(_plain(item)))
+                continue
+            code = item.get("code", "diagnostic_code_missing")
+            stage = item.get("stage")
+            line = "  - " + _plain(code)
+            if stage:
+                line += " [" + _plain(stage) + "]"
+            if item.get("message"):
+                line += ": " + _clip(item["message"])
+            lines.append(line)
+        extra = len(diagnostics) - 20
+        if extra > 0:
+            lines.append("  - ... " + str(extra) + " more")
+    if "warning_count" in report or "warnings" in report:
+        count = report.get("warning_count")
+        if count is None and isinstance(report.get("warnings"), list):
+            count = len(report["warnings"])
+        complete = report.get("warnings_complete")
+        suffix = ""
+        if complete is False:
+            suffix = " (incomplete)"
+        elif complete is True:
+            suffix = " (complete)"
+        lines.append("warnings: " + _plain(count) + suffix)
+    if "elapsed_seconds" in report:
+        lines.append("elapsed_seconds: " + _plain(report["elapsed_seconds"]))
+    assumptions = report.get("semantic_assumptions")
+    if assumptions is None and isinstance(report.get("internal"), dict):
+        # publish() keeps the effective flags under internal.
+        assumptions = report["internal"].get("semantic_assumptions")
+    if isinstance(assumptions, dict) and assumptions:
+        parts = [key + "=" + _plain(assumptions[key]) for key in assumptions]
+        lines.append("semantic_assumptions: " + ", ".join(parts))
+    return "\n".join(lines) + "\n"
+
+
+def encode_result(report):
+    return json.dumps(report, indent=2)
+
+
+def write_result(report, path):
+    """Write the JSON result object. Does not change the in-memory report."""
+    destination = Path(path)
+    if destination.exists() and destination.is_dir():
+        raise ValueError("output path is a directory: " + str(destination))
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(encode_result(report) + "\n", encoding="utf-8")
+    return destination
+
+
 import argparse
 class ResultArgumentParser(argparse.ArgumentParser):
     def error(self, message):
