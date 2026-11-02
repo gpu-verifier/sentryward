@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": false
     }
   ],
   "checks": {
@@ -110,7 +118,7 @@
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
       "arena_nodes": 9750,
-      "comparison_elapsed_seconds": 0.056362439,
+      "comparison_elapsed_seconds": 0.058067849,
       "context_declaration": {
         "assumptions": [],
         "fixed_inputs": [],
@@ -149,7 +157,7 @@
         "status": "proved"
       },
       "diagnostics": [],
-      "elapsed_s": 0.042730878,
+      "elapsed_s": 0.044294288,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -187,7 +195,7 @@
         },
         "query_count": 1000,
         "reset_s": 0.0,
-        "reuse_cache": false,
+        "reuse_cache": true,
         "shared_evictions": 0
       },
       "equivalence_context": {
@@ -207,7 +215,7 @@
       "normalized_reachable_nodes": 4001,
       "numerical_result": "verified",
       "pattern_nodes": 2,
-      "peak_rss_kib": 2438584,
+      "peak_rss_kib": 2585008,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
       "piece_nodes": 0,
       "piece_union": {
@@ -244,36 +252,36 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00011066999999996834,
-            "cumulative_elapsed_s": 0.041479969,
-            "left_import_s": 0.01623913899999989,
-            "left_normalize_s": 0.0021935379999999684,
-            "parametric_state_s": 0.0002576430000000465,
-            "piece_union_record_s": 0.0011099079999999514,
-            "piece_union_seal_s": 2.3750000000023752e-05,
-            "right_import_s": 0.015056455000000015,
-            "right_normalize_s": 0.0013336680000000482
+            "affine_state_pattern_s": 0.00012287100000004,
+            "cumulative_elapsed_s": 0.042969967,
+            "left_import_s": 0.016824441000000023,
+            "left_normalize_s": 0.0022994000000000226,
+            "parametric_state_s": 0.00026982099999994314,
+            "piece_union_record_s": 0.001093470000000025,
+            "piece_union_seal_s": 2.3770000000090854e-05,
+            "right_import_s": 0.015552297000000067,
+            "right_normalize_s": 0.001383634000000043
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 0.00011066999999996834,
+        "affine_state_pattern_s": 0.00012287100000004,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.01623913899999989,
-        "left_normalize_s": 0.0021935379999999684,
-        "parametric_state_s": 0.0002576430000000465,
-        "piece_union_record_s": 0.0011099079999999514,
+        "left_import_s": 0.016824441000000023,
+        "left_normalize_s": 0.0022994000000000226,
+        "parametric_state_s": 0.00026982099999994314,
+        "piece_union_record_s": 0.001093470000000025,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 2.3750000000023752e-05,
+        "piece_union_seal_s": 2.3770000000090854e-05,
         "proof_reuse_s": 0.0,
-        "right_import_s": 0.015056455000000015,
-        "right_normalize_s": 0.0013336680000000482,
+        "right_import_s": 0.015552297000000067,
+        "right_normalize_s": 0.001383634000000043,
         "state_pattern_s": 0.0
       },
       "timings": {
-        "load_and_scope_analysis": 0.000429903
+        "load_and_scope_analysis": 0.000427274
       },
       "total_output_families": 1000,
       "transport": "in_memory_cpp_objects",
@@ -420,7 +428,7 @@
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 640896,
-        "stored_bindings": 26834
+        "stored_bindings": 9746
       },
       "source_edge_storage": {
         "binding_templates": 4858,
@@ -477,7 +485,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 1824896,
-      "hb_query_seconds": 1.956879737,
+      "hb_query_seconds": 1.9152476320000007,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -485,7 +493,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 2382.73828125,
+    "peak_footprint_mib": 2526.37109375,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -493,6 +501,7 @@
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
@@ -502,14 +511,14 @@
       "binding_diagnostics": [],
       "execution_cohorts": 10,
       "mapping_complete": true,
-      "memory_binding_stored_rows": 79128,
-      "memory_binding_templates": 68728,
-      "memory_bindings": 1332864,
+      "memory_binding_stored_rows": 59976,
+      "memory_binding_templates": 54424,
+      "memory_bindings": 1026432,
       "memory_linking_templates_used": true,
       "synchronization_groups": 9980,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 4096,
-      "thread_prefix_groups": 493988,
+      "thread_prefix_groups": 438500,
       "value_diagnostic_count": 0,
       "value_diagnostics": []
     },
@@ -549,8 +558,8 @@
       "initial_memory_regions": 160000,
       "initial_read_families": 22320,
       "memory_action_storage": {
-        "logical_actions": 1332864,
-        "stored_runs": 79128
+        "logical_actions": 1026432,
+        "stored_runs": 59976
       },
       "output_region_families": 0,
       "output_regions": 80000,
@@ -579,20 +588,20 @@
         {
           "elements": 0,
           "identities": 0,
-          "layouts": 204288,
+          "layouts": 0,
           "mapping_blocks": 524288,
           "name": "view_normalization",
-          "original_pieces": 408576,
+          "original_pieces": 0,
           "reused_initial_reads": 160000,
           "reused_views": 262144,
           "segmented": 0,
-          "slices": 320000,
+          "slices": 524288,
           "stored_mapping_blocks": 262144,
           "typed_output_pieces": 0,
           "typed_output_regions": 0
         }
       ],
-      "processed_memory_actions": 1332864,
+      "processed_memory_actions": 1026432,
       "processed_memory_families": 0,
       "read_substitutions": 684288,
       "scalar_fold": {
@@ -628,35 +637,35 @@
         }
       },
       "serialization": {
-        "action_patterns": 79128,
-        "binding_patterns": 79128,
-        "domain_refinements": 1608388,
-        "elapsed_seconds": 4.5789308,
-        "event_families": 475916,
+        "action_patterns": 59976,
+        "binding_patterns": 59976,
+        "domain_refinements": 1606660,
+        "elapsed_seconds": 4.031470392,
+        "event_families": 420428,
         "expanded_event_records": 0,
         "largest_batch_members": 64,
-        "logical_actions": 1332864,
-        "logical_events": 12534142,
-        "peak_rss_mib_at_completion": 2381.4296875,
+        "logical_actions": 1026432,
+        "logical_events": 11308414,
+        "peak_rss_mib_at_completion": 2524.421875,
         "reachability_queries": 0,
-        "relations": 1491750,
-        "rss_mib_at_completion": 1555.359375,
-        "scheduled_batches": 475916,
+        "relations": 1417110,
+        "rss_mib_at_completion": 1707.6953125,
+        "scheduled_batches": 420428,
         "singleton_batches": 8318,
-        "value_families": 344818
+        "value_families": 289330
       },
       "shared_read_families": 0,
       "shared_read_instances": 0,
       "stored_read_substitutions": 684288
     },
-    "value_ir_instance_count": 8316704,
-    "value_ir_node_count": 343786,
+    "value_ir_instance_count": 7090976,
+    "value_ir_node_count": 288298,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 22.012566048,
+    "verification_elapsed_seconds": 15.711542719,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 2382.73828125,
-  "pipeline_elapsed_seconds": 33.426050093,
+  "peak_rss_mib": 2526.37109375,
+  "pipeline_elapsed_seconds": 24.839836759,
   "result": "verified",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -668,5 +677,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.591
+  "whole_pipeline_timeout_seconds": 498.579
 }

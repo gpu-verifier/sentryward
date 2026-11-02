@@ -1,5 +1,6 @@
 #include "sentryward/equivalence/comparison_context.h"
 #include "sentryward/equivalence/input_mapping.h"
+#include "sentryward/value_analysis/memory_actions.h"
 
 #include <nlohmann/json.hpp>
 #include <algorithm>
@@ -120,9 +121,6 @@ std::string integerLiteral(const Json& j,const std::string& type) {
   if(type=="u32" && value>UINT32_MAX)invalid("cell_value_out_of_range");
   return std::to_string(value);
 }
-std::string globalIdentity(const std::string& object) {
-  return "6:global"+std::to_string(object.size())+":"+object;
-}
 } // namespace
 
 std::string comparisonSha256(std::istream& file) {
@@ -220,7 +218,8 @@ std::shared_ptr<const ComparisonContext> ComparisonContext::load(
         // Public shape values are nonnegative and type checked; do not admit
         // values the original NormalizeKernelInput would have rejected.
         (void)natural(value);const auto literal=integerLiteral(value,type);
-        auto cell=scope.graph.initialCell(globalIdentity(allocation),scope.graph.constant("u64",std::to_string(offset)),type);
+        auto cell=scope.graph.initialCell(sentryward::value_analysis::AllocationIdentity("global",allocation),
+                                          scope.graph.constant("u64",std::to_string(offset)),type);
         scope.outputs.push_back({"context",static_cast<std::uint64_t>(values.size())*8,bytes,cell});
         values.emplace_back(type,literal);offset=add(offset,bytes);
       }

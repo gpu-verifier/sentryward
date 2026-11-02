@@ -94,7 +94,7 @@ std::vector<std::uint8_t> FamilyRelationQuery::allReachGroups(
   std::size_t width=0;
   for(auto& [source,pending]:by_source) {
     const auto next_width=MemberSet::storageWords(families().families()[source].count);
-    if(batch.size()==64 || (!batch.empty() && width!=next_width))flush();
+    if(batch.size()==kMaxRelationBatchSources || (!batch.empty() && width!=next_width))flush();
     width=next_width;
     FamilyRelationBatch item{source,{}};item.requests.reserve(pending.size());
     for(auto& p:pending)item.requests.push_back(std::move(p.request));
@@ -104,7 +104,7 @@ std::vector<std::uint8_t> FamilyRelationQuery::allReachGroups(
 }
 void FamilyRelationQuery::checkOrderBatch(std::vector<FamilyRelationBatch>& batch,bool forward_only,bool strict) {
   if(batch.empty())return;
-  if(batch.size()>64)throw std::invalid_argument("family HB source-label chunk exceeds 64");
+  if(batch.size()>kMaxRelationBatchSources)throw std::invalid_argument("family HB source-label chunk exceeds 64");
   if(visit_census_ && ++batch_serial_==0) {
     for(auto& visits:last_visit_batch_)std::fill(visits.begin(),visits.end(),0);
     ++batch_serial_;

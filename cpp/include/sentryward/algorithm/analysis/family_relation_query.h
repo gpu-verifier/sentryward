@@ -7,6 +7,9 @@
 #include "sentryward/algorithm/analysis/alternate_topological_order.h"
 #include "sentryward/algorithm/analysis/relation_frontier.h"
 
+#include <cstdint>
+#include <limits>
+
 namespace sentryward::algorithm {
 struct FamilyRelationRequest {
   std::size_t target;
@@ -69,9 +72,10 @@ struct FamilyRelationRequest {
     const auto m=requested.empty()?0:requested.front().right.extent();
     return !coverage || bool(coverage->uncovered(MemberRelation::Rectangle(MemberRange(n,i,i+1),MemberRange(m,j,j+1)),nullptr,nullptr,source_label));
   }
-  // A002's existing full-obligation adapter only. Ordinary race/lifecycle
-  // consumers must use witness/target coverage and never call this adapter.
-  std::vector<MemberRelation> duplicateResidual(std::size_t domain,std::size_t& expanded) const {
+  // Write-obligation adapter only (A002 duplicate stores, same-value writes):
+  // the complete unordered part of a requested relation. Ordinary race and
+  // lifecycle consumers must use witness/target coverage instead.
+  std::vector<MemberRelation> obligationResidual(std::size_t domain,std::size_t& expanded) const {
     std::vector<MemberRelation> out{requested.at(domain)};
     visitProofs([&](const MemberRelation& p) {
       auto adjusted=p;adjusted.left=adjusted.left.shifted(0,requested.at(domain).left.extent());
@@ -88,6 +92,9 @@ struct FamilyRelationBatch {
   std::size_t source;
   std::vector<FamilyRelationRequest> requests;
 };
+// Most batches (sources) of one FamilyRelationQuery::checkOrderBatch call: each source takes one
+// bit of a 64-bit source label.
+inline constexpr std::size_t kMaxRelationBatchSources=std::numeric_limits<std::uint64_t>::digits;
 struct FamilyRelationQueryStats {
   std::size_t traversals=0,relation_visits=0,member_enumerations=0,frontier_pieces=0;
   std::size_t exact_hits=0,history_candidates=0,subtractions=0,subtraction_pieces=0,pending_hits=0;

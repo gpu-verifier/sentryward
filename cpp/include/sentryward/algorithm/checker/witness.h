@@ -93,10 +93,23 @@ struct FinalHappensBeforeCycleWitness final {
                          const FinalHappensBeforeCycleWitness&) = default;
 };
 
+// A thread never arrives at `phase` of a CTA-wide barrier (ExitGate), yet the
+// phase completion reaches the thread's exit: the barrier waits for the exit,
+// which waits for the barrier.
+struct ExitGateWitness final {
+  PhaseKey phase;
+  EventId exit;
+  EventId completion;
+
+  friend bool operator==(const ExitGateWitness&,
+                         const ExitGateWitness&) = default;
+};
+
 using RejectionWitness =
     std::variant<ReferenceDeadlock, SemanticViolation,
                  InitializationOrderWitness, PreviousPhaseSeparationWitness,
                  PhaseBoundaryError, WaitCheckError, LifecycleCheckError,
-                 HappensBeforeGraphMutationError, FinalHappensBeforeCycleWitness>;
+                 HappensBeforeGraphMutationError, FinalHappensBeforeCycleWitness,
+                 ExitGateWitness>;
 
 } // namespace sentryward::algorithm

@@ -89,7 +89,7 @@ bool IsValidEdgeKind(SourceEdgeKind kind) {
 // Dense per-actor memory chains admit streaming structural validation.
 bool IsDenseMemoryChains(const SourceProgram& program,
                         const std::map<ActorId,const ActorInfo*>& actors) {
-  if(!program.collectives.empty() || !program.dependencies.empty())return false;
+  if(!program.collectives.empty() || !program.dependencies.empty() || !program.exit_gates.empty())return false;
   std::set<ActorId> seen;
   std::optional<ActorId> previous;
   auto edge=program.edges.begin();
@@ -542,6 +542,16 @@ std::vector<Diagnostic> SourceValidator::Validate(
     if (const auto init = barrier_initializers.find(barrier); init != barrier_initializers.end())
       AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
           DiagnosticCode::kCollectiveKindMismatch, "named barrier must not have an mbarrier initializer", init->second);
+  }
+  for (const ExitGate& gate : program.exit_gates) {
+    if (!ranks.find(gate.exit)) {
+      AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput, DiagnosticCode::kInvalidMilestoneReference,
+                    "exit gate references an unknown instruction");
+      continue;
+    }
+    if (!named_barriers.contains(gate.barrier))
+      AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput, DiagnosticCode::kCollectiveKindMismatch,
+                    "exit gate names a barrier without named-barrier operations", handleOf(gate.exit));
   }
   for (const auto& [barrier, use] : barrier_uses) {
     if (named_barriers.contains(barrier))

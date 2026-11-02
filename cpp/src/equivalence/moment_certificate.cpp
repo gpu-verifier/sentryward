@@ -1,6 +1,6 @@
 #include "sentryward/equivalence/moment_certificate.h"
+#include "sentryward/algorithm/base/analysis_scope.h"
 #include <algorithm>
-#include <atomic>
 #include <bit>
 #include <limits>
 #include <numeric>
@@ -49,13 +49,8 @@ bool equal(const Signature& a,const Signature& b) {
   return true;
 }
 Builder::Builder(Limits v):limits_(bounded(v)),coefficients_(polynomialLimits(limits_)),
-    intervals_(intervalLimits(limits_)) {
-  static std::atomic<std::uint64_t> next{1};auto candidate=next.load(std::memory_order_relaxed);
-  for(;;) {
-    if(!candidate)throw std::overflow_error("moment certificate owner overflow");
-    if(next.compare_exchange_weak(candidate,candidate+1,std::memory_order_relaxed)){owner_=candidate;break;}
-  }
-}
+    intervals_(intervalLimits(limits_)),
+    owner_(algorithm::AnalysisScope::Current().Next(algorithm::AnalysisScope::Ids::kMomentCertificate)) {}
 std::size_t Builder::work() const{return local_work_+coefficients_.work()+intervals_.work();}
 bool Builder::exhausted() const{return exhausted_ || coefficients_.exhausted() || intervals_.exhausted();}
 bool Builder::charge(std::size_t n) {

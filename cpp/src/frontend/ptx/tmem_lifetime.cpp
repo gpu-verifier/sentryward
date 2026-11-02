@@ -87,9 +87,21 @@ void Poll(const TmemAnalysisOptions &options, std::size_t &count) {
   if ((++count & 4095) == 0 && options.poll)
     options.poll();
 }
+// Per static instruction, whether `select` holds: the passes below test it per record by index
+// instead of comparing the instruction's strings. O(instructions).
+template <class Select> std::vector<bool> InstructionFlags(const Function &function, Select select) {
+  std::vector<bool> flags(function.instructions.size());
+  for (std::size_t id = 0; id < flags.size(); ++id) flags[id] = select(function.instructions[id]);
+  return flags;
+}
+bool TmemAsync(const Instruction &instruction) {
+  return instruction.opcode == "tcgen05" && instruction.semantics.category == "async";
+}
 Atoms MakeAtoms(const CtaFacts &facts, ExpansionSite site,
                 const TmemAnalysisOptions &options) {
-  const auto &function = facts.function();
+  const auto lifetime = InstructionFlags(facts.function(), [](const Instruction &instruction) {
+    return instruction.semantics.category == "tmem_lifetime";
+  });
   Atoms atoms;
   std::size_t count = 0;
   for (std::size_t index = 0; index < facts.LaneCount(); ++index) {
@@ -99,8 +111,7 @@ Atoms MakeAtoms(const CtaFacts &facts, ExpansionSite site,
     for (std::size_t pos = 0; pos < records.size(); ++pos) {
       Poll(options, count);
       const auto execution = records.Meta(pos);
-      if (function.instructions[execution.instruction_id()]
-              .semantics.category != "tmem_lifetime")
+      if (!lifetime[execution.instruction_id()])
         continue;
       const TmemAllocationId key{warp, execution.instruction_id(),
                                  execution.occurrence()};
@@ -423,10 +434,26 @@ RecordView LaneRecords::Operand(std::size_t pos, std::string_view operand) {
   return operand_.view();
 }
 class LocalPointerSpills {
+public:
   struct Object { std::string symbol; std::vector<std::uint32_t> scope; Integer size; };
+  // The function's .local declarations, the spill objects (one scan per analysis).
+  static std::vector<Object> Objects(const FactSource &facts) {
+    static const std::regex declaration(R"(^\s*\.local\s+(?:\.align\s+\d+\s+)?\.([bus]\d+)\s+([A-Za-z_$][A-Za-z0-9_$]*)(?:\[(\d+)\])?\s*;?\s*$)");
+    std::vector<Object> objects;
+    for (const auto &d : facts.function().directives) {
+      auto text=std::string(facts.module().view(d.source)); std::smatch match;
+      if (std::regex_match(text,match,declaration)) {
+        const auto width=std::stoul(match[1].str().substr(1))/8;
+        const Integer count=match[3].matched?Integer(match[3].str()):Integer(1);
+        objects.push_back({match[2].str(),d.scope,width*count});
+      }
+    }
+    return objects;
+  }
+private:
   struct Address { std::size_t object; Integer offset; };
   const FactSource &facts;
-  std::vector<Object> objects;
+  const std::vector<Object> &objects;
   std::map<std::string,Address> registers;
   std::map<std::pair<std::size_t,Integer>,std::pair<TmemPointer,unsigned>> bytes;
   std::optional<Address> Resolve(std::string_view text,const Instruction &instruction) const {
@@ -443,17 +470,7 @@ class LocalPointerSpills {
     return result;
   }
 public:
-  explicit LocalPointerSpills(const FactSource &f):facts(f) {
-    static const std::regex declaration(R"(^\s*\.local\s+(?:\.align\s+\d+\s+)?\.([bus]\d+)\s+([A-Za-z_$][A-Za-z0-9_$]*)(?:\[(\d+)\])?\s*;?\s*$)");
-    for (const auto &d : facts.function().directives) {
-      auto text=std::string(facts.module().view(d.source)); std::smatch match;
-      if (std::regex_match(text,match,declaration)) {
-        const auto width=std::stoul(match[1].str().substr(1))/8;
-        const Integer count=match[3].matched?Integer(match[3].str()):Integer(1);
-        objects.push_back({match[2].str(),d.scope,width*count});
-      }
-    }
-  }
+  LocalPointerSpills(const FactSource &f, const std::vector<Object> &spill_objects) : facts(f), objects(spill_objects) {}
   // `e` is the record's metadata; `values` reads the record with its values.
   PointerMap Step(const RecordView &e,const std::function<RecordView()> &values,const PointerMap &pointers) {
     if (objects.empty()) return {};
@@ -539,17 +556,70 @@ TmemProvenanceIndex BuildProvenance(const CtaFacts &facts, ExpansionSite site,
   std::set<TmemPublicationRead> reads;
   std::set<TmemLifetimeIssue> issues(result.issues.begin(),
                                      result.issues.end());
+  const auto spill_objects = LocalPointerSpills::Objects(facts);
+  // Records the walk below cannot change and that read nothing (`inert` instructions, without an
+  // assumed equality) are skipped. A pointer enters `pointers` only at a destination of a 4-byte
+  // shared load (SharedLoadSlot), of a local load, or of an instruction one of whose operands
+  // after the first (or its split base) names a pointer (CopyPointer needs NamesPointer). So the
+  // closure `holders` of those destinations under naming contains every key `pointers` ever has.
+  // An instruction that is none of these loads, no tcgen05 or cvt (the snapshot), no TMEM
+  // lifetime operation (the allocation sites) and has no destination in `holders` (nor, with a
+  // destination, an operand naming one) then changes nothing: NamesPointer is false, no slot
+  // applies, and erasing its destinations erases nothing. Only without spill objects (their
+  // walk reads every record). O(instructions x operands x closure rounds), once.
+  std::vector<bool> inert(function.instructions.size());
+  if (spill_objects.empty()) {
+    const auto shared_slot_load = [](const Instruction &i) {
+      return (i.opcode == "ld" || i.opcode == "ldu") &&
+             (i.semantics.memory_space == "shared" || i.semantics.memory_space == "shared.cta") &&
+             i.semantics.memory_mode == "read" && i.memory_width == 4 && i.destinations.size() == 1 &&
+             i.operands.size() >= 2;
+    };
+    const auto local_load = [](const Instruction &i) {
+      return i.opcode == "ld" && i.semantics.memory_space == "local";
+    };
+    std::vector<std::vector<std::string_view>> names(function.instructions.size());
+    for (const auto &instruction : function.instructions)
+      for (std::size_t k = 1; k < instruction.operands.size(); ++k) {
+        const auto token = Trim(facts.module().view(instruction.operands[k]));
+        names[instruction.id].push_back(token);
+        if (const auto split = SplitAddress(token)) names[instruction.id].push_back(split->first);
+      }
+    std::unordered_set<std::string_view> holders;
+    for (const auto &instruction : function.instructions)
+      if (shared_slot_load(instruction) || local_load(instruction))
+        holders.insert(instruction.destinations.begin(), instruction.destinations.end());
+    const auto names_holder = [&](const Instruction &instruction) {
+      return std::any_of(names[instruction.id].begin(), names[instruction.id].end(),
+                         [&](std::string_view name) { return holders.contains(name); });
+    };
+    for (bool grown = true; grown;) {
+      grown = false;
+      for (const auto &instruction : function.instructions)
+        if (!instruction.destinations.empty() && names_holder(instruction))
+          for (const auto &destination : instruction.destinations) grown |= holders.insert(destination).second;
+    }
+    for (const auto &instruction : function.instructions)
+      inert[instruction.id] =
+          !shared_slot_load(instruction) && !local_load(instruction) && instruction.opcode != "tcgen05" &&
+          instruction.opcode != "cvt" && instruction.semantics.category != "tmem_lifetime" &&
+          std::none_of(instruction.destinations.begin(), instruction.destinations.end(),
+                       [&](const std::string &destination) { return holders.contains(destination); }) &&
+          (instruction.destinations.empty() || !names_holder(instruction));
+  }
   std::size_t count = 0;
   for (std::size_t index = 0; index < facts.LaneCount(); ++index) {
     const auto lane = facts.Lane(index);
     const auto warp = facts.Warp(lane);
     PointerMap pointers;
-    LocalPointerSpills spills(facts);
+    LocalPointerSpills spills(facts, spill_objects);
     std::map<Integer, const TmemAllocation *> local_slots;
     LaneRecords records(facts, lane, site);
     for (std::size_t pos = 0; pos < records.size(); ++pos) {
       Poll(options, count);
       const auto execution = records.Meta(pos);
+      if (inert[execution.instruction_id()] && !execution.assumed_equality())
+        continue;
       const std::function<RecordView()> values = [&] { return records.Values(pos); };
       const auto &instruction =
           function.instructions[execution.instruction_id()];
@@ -660,6 +730,10 @@ RelevantPositions(const CtaFacts &facts,
                   const std::set<TmemAllocationId> &relevant,
                   const TmemAnalysisOptions &options) {
   std::vector<LanePositions> result;
+  // The instructions of some relevant site: the others are never looked up.
+  std::vector<bool> named(facts.function().instructions.size());
+  for (const auto &key : relevant)
+    if (key.instruction_index < named.size()) named[key.instruction_index] = true;
   std::size_t count = 0;
   for (std::size_t index = 0; index < facts.LaneCount(); ++index) {
     const auto trace = facts.Lane(index);
@@ -668,7 +742,7 @@ RelevantPositions(const CtaFacts &facts,
     for (std::size_t i = 0; i < facts.Size(trace); ++i) {
       Poll(options, count);
       const auto execution = facts.Meta({trace, i});
-      if (relevant.contains(
+      if (named[execution.instruction_id()] && relevant.contains(
               {lane.warp, execution.instruction_id(), execution.occurrence()}))
         lane.positions.emplace(execution.Key(), i);
     }
@@ -699,6 +773,7 @@ std::map<TmemAtomSite, TmemAtomSite>
 RetirementSites(const CtaFacts &facts, ExpansionSite site,
                 const TmemAnalysisOptions &options) {
   const auto &function = facts.function();
+  const auto tmem_async = InstructionFlags(function, TmemAsync);
   std::map<TmemAtomSite, std::set<std::optional<TmemAtomSite>>> candidates;
   std::size_t count = 0;
   for (std::size_t index = 0; index < facts.LaneCount(); ++index) {
@@ -709,12 +784,9 @@ RetirementSites(const CtaFacts &facts, ExpansionSite site,
     for (std::size_t pos = 0; pos < records.size(); ++pos) {
       Poll(options, count);
       const auto execution = records.Meta(pos);
-      const auto &instruction =
-          function.instructions[execution.instruction_id()];
-      if (instruction.opcode != "tcgen05" ||
-          instruction.semantics.category != "async")
+      if (!tmem_async[execution.instruction_id()])
         continue;
-      const auto &operation = instruction.semantics.operation;
+      const auto &operation = function.instructions[execution.instruction_id()].semantics.operation;
       if (operation == "load")
         loads.push_back(Site(facts, warp, execution));
       else if (operation == "store")
@@ -911,6 +983,9 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const CtaFacts &facts, ExpansionSite s
     dealloc_by_allocation[pointer.allocation].insert(atom.site);
     deallocations.emplace(atom.site, pointer.allocation);
   }
+  const auto visited = InstructionFlags(function, [](const Instruction &instruction) {
+    return instruction.semantics.category == "tmem_lifetime" || TmemAsync(instruction);
+  });
   std::size_t count = 0;
   for (std::size_t index = 0; index < facts.LaneCount(); ++index) {
     const auto lane = facts.Lane(index);
@@ -920,6 +995,8 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const CtaFacts &facts, ExpansionSite s
     for (std::size_t pos = 0; pos < records.size(); ++pos) {
       Poll(options, count);
       const auto execution = records.Meta(pos);
+      if (!visited[execution.instruction_id()])
+        continue;
       const auto &instruction =
           function.instructions[execution.instruction_id()];
       const auto &semantics = instruction.semantics;

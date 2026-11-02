@@ -5,19 +5,30 @@
 #include <stdexcept>
 
 namespace sentryward::algorithm {
-InstId SourceProgramBuilder::append(ActorId actor, SourceLocation location, SourceOp op,
-                                   std::optional<PtxOrigin> origin, bool program_order) {
+InstId SourceProgramBuilder::nextId() const {
   if (program.instructions.size() > std::numeric_limits<std::uint32_t>::max())
     throw std::overflow_error("instruction ID space exhausted");
-  const InstId id(static_cast<std::uint32_t>(program.instructions.size()));
+  return InstId(static_cast<std::uint32_t>(program.instructions.size()));
+}
+void SourceProgramBuilder::orderAfterLast(ActorId actor, InstId id) {
+  first_.try_emplace(actor, id);
+  if (auto previous=last_.find(actor); previous!=last_.end())
+    program.edges.pushBackAffine({previous->second,id,SourceEdgeKind::kProgramOrder});
+  last_.insert_or_assign(actor,id);
+}
+InstId SourceProgramBuilder::append(ActorId actor, SourceLocation location, SourceOp op,
+                                   std::optional<PtxOrigin> origin, bool program_order) {
+  const auto id = nextId();
   program.instructions.push_back({id, actor, std::move(location), std::move(op), std::move(origin)});
-  if (program_order) {
-    first_.try_emplace(actor, id);
-    if (auto previous=last_.find(actor); previous!=last_.end())
-      program.edges.pushBackAffine({previous->second,id,SourceEdgeKind::kProgramOrder});
-    last_.insert_or_assign(actor,id);
-  }
+  if (program_order) orderAfterLast(actor, id);
   return id;
+}
+void SourceProgramBuilder::appendSplit(std::uint32_t prototype, SourceRecordCodec::Binding binding) {
+  const auto id = nextId();
+  if (binding.id != id) throw std::invalid_argument("split instruction out of order");
+  const auto actor = binding.actor;
+  program.instructions.pushSplit(prototype, std::move(binding));
+  orderAfterLast(actor, id);
 }
 void SourceProgramBuilder::appendGeneratedThread(ActorId actor,std::size_t count,
     std::function<SourceInstruction(std::size_t)> generate,
@@ -34,9 +45,7 @@ void SourceProgramBuilder::appendGeneratedThread(ActorId actor,std::size_t count
     return value;
   },cohort,std::move(columns),family);
   const InstId first(begin),last(begin+count-1);
-  first_.try_emplace(actor,first);
-  if(auto previous=last_.find(actor);previous!=last_.end())
-    program.edges.pushBackAffine({previous->second,first,SourceEdgeKind::kProgramOrder});
+  orderAfterLast(actor,first);
   if(count>1)program.edges.appendAffine(
       SourceEdge{InstId(begin),InstId(begin+1),SourceEdgeKind::kProgramOrder},
       SourceEdgeCodec::Delta{1,1},count-1);

@@ -111,7 +111,7 @@ result = verify(
     reference="reference.py",                    # optional
     reference_binding="reference_binding.json",  # optional
     timeout_seconds=500,
-    memory_limit_mib=None,                       # unlimited
+    memory_limit_mib=None,                       # default budget: 90% of the memory the process may use
     assumptions={"order_independent_atomics": True},  # optional
 )
 print(result["result"], result["checks"])
@@ -123,7 +123,7 @@ print(result["result"], result["checks"])
 | `--reference` | `reference` | Optional. A Python file that defines a `reference(...)` function. |
 | `--reference-binding` | `reference_binding` | Optional. Maps the reference to the kernel's inputs and outputs. Defaults to `reference_binding.json` next to the reference, then in its parent directory. |
 | `--timeout` | `timeout_seconds` | Total budget for the whole call, including reference capture. Default: 600 seconds. |
-| `--memory-limit-mib` | `memory_limit_mib` | Memory budget as a positive integer in MiB, e.g. 81920 for 80 GiB. Default: unlimited. |
+| `--memory-limit-mib` | `memory_limit_mib` | Memory budget as a positive integer in MiB, e.g. 81920 for 80 GiB. Default: 90% of the memory the process may use (physical memory, bounded by its cgroup limit on Linux) for verification, none for reference capture. |
 | `--assume` / `--no-assume` | `assumptions` | Optional. Enable or disable a named analysis assumption for this invocation. Overrides the same key in the kernel input. Repeatable; each key may appear only once. |
 | `--list-assumptions` | | Print accepted assumption keys and repository defaults as JSON. Does not verify a kernel. |
 

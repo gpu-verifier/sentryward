@@ -5,7 +5,7 @@
 // consumer's thread. A producer's exception is rethrown by the Take of its item,
 // so the consumer sees failures exactly where sequential production would.
 // Destruction cancels: the workers' poll throws at its next call, finished items
-// are dropped, and the workers are joined (before, e.g., a restart's exec).
+// are dropped, and the workers are joined.
 // With threads == 0, Take produces inline with the consumer's own poll.
 //
 // Cost: O(1) locking per item; at most `window` items are alive beyond the one
@@ -61,6 +61,41 @@ public:
     auto &slot = node.mapped();
     if (slot.error) std::rethrow_exception(slot.error);
     return std::move(*slot.value);
+  }
+  // Applies `refresh` to every item produced and not yet taken, on up to `threads` threads, while
+  // the consumer waits: workers only insert items (map insertion moves no other item), so none of
+  // these is touched meanwhile. An item still being produced is not refreshed. A refresh's
+  // exception is rethrown here (the first in index order).
+  void RefreshReady(std::size_t threads, const std::function<void(T &)> &refresh) {
+    std::vector<T *> items;
+    {
+      std::lock_guard lock(mutex_);
+      for (auto &[index, slot] : ready_)
+        if (slot.value) items.push_back(&*slot.value);
+    }
+    if (items.empty()) return;
+    std::vector<std::exception_ptr> errors(items.size());
+    std::atomic<std::size_t> next{0};
+    const auto run = [&] {
+      for (std::size_t k; (k = next.fetch_add(1)) < items.size();) {
+        try {
+          refresh(*items[k]);
+        } catch (...) {
+          errors[k] = std::current_exception();
+        }
+      }
+    };
+    std::vector<std::thread> helpers;
+    try {
+      for (std::size_t i = 1; i < threads && i < items.size(); ++i) helpers.emplace_back(run);
+    } catch (...) {
+      for (auto &helper : helpers) helper.join();
+      throw;
+    }
+    run();
+    for (auto &helper : helpers) helper.join();
+    for (const auto &error : errors)
+      if (error) std::rethrow_exception(error);
   }
 
 private:

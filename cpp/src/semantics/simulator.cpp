@@ -1054,7 +1054,7 @@ Result<ReferenceTrace, SimulationError> ReferenceSimulator::Run(
   }
 
   const bool compact = options.batch_templates &&
-      program.graph().events().storedBindingCount() < program.graph().eventCount();
+      program.graph().events().unrolledBindingCount() < program.graph().eventCount();
   SimulatorState state(program, options, compact);
   ReportSimulatorMemory(state, "sync.simulator.state_initialized");
   while (state.executed_count < program.graph().eventCount()) {

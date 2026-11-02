@@ -1,11 +1,13 @@
 #include "sentryward/frontend/ptx/semantic_program.h"
 
 #include <algorithm>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <limits>
 #include <map>
 #include <numeric>
+#include <optional>
 #include <queue>
 #include <set>
 #include <stdexcept>
@@ -22,6 +24,7 @@
 #include "sentryward/algorithm/diagnostics/memory_profile.h"
 #include "sentryward/algorithm/diagnostics/performance_profile.h"
 #include "sentryward/algorithm/base/affine_index.h"
+#include "sentryward/algorithm/base/template_records.h"
 
 namespace sentryward::frontend::ptx {
 namespace {
@@ -46,7 +49,8 @@ std::vector<SourceAccess> Accesses(const a::SourceInstruction& instruction) {
     const auto opcode = instruction.ptx_origin ? instruction.ptx_origin->opcode.view() : std::string_view{};
     const bool ordered_native = opcode.starts_with("ldmatrix.") || opcode.starts_with("stmatrix.") ||
         opcode.starts_with("tcgen05.ld.") || opcode.starts_with("tcgen05.st.") ||
-        opcode.starts_with("clusterlaunchcontrol.try_cancel.") || opcode.starts_with("cp.async.bulk.tensor.");
+        opcode.starts_with("clusterlaunchcontrol.try_cancel.") || opcode.starts_with("cp.async.bulk.tensor.") ||
+        opcode.starts_with("cp.reduce.async.bulk.global.");
     result.push_back({{instruction.id, operand, effect, access}, mode, address, bytes, immediate, ordered_native});
   };
   std::visit([&](const auto& op) {
@@ -79,8 +83,7 @@ std::optional<SemanticOccurrence> Occurrence(const v::SourceOrigin& origin) {
 }
 
 std::string AllocationIdentity(const a::ConstantAddressBinding& binding) {
-  const auto field = [](const std::string& value) { return std::to_string(value.size()) + ':' + value; };
-  return field(binding.address_space) + field(binding.allocation);
+  return va::AllocationIdentity(binding.address_space, binding.allocation);
 }
 
 struct ValueAccess {
@@ -89,6 +92,9 @@ struct ValueAccess {
   std::optional<std::uint64_t> bytes;
   bool ordinary_scalar = false;
   bool ordered_payload = false;
+  // A reduction Store (MemoryAttributes::reduction): its instruction's values bind the ordered
+  // element fragments of their own direction.
+  bool reduction = false;
 };
 
 std::optional<ValueAccess> Access(const v::Graph& graph, const v::Node& node, std::size_t instance) {
@@ -98,6 +104,7 @@ std::optional<ValueAccess> Access(const v::Graph& graph, const v::Node& node, st
   ValueAccess result{{node.id(), instance}, load ? a::AccessMode::kRead : a::AccessMode::kWrite, {}, false};
   const auto& record = node.instances().at(instance);
   const auto& attributes = load ? load->attributes() : store->attributes();
+  result.reduction = attributes.reduction.has_value();
   if(load && !record.operands.empty() && record.result_types.size()==1 && record.result_types[0].isMatrix()) {
     const auto* native=dynamic_cast<const v::NativeMatrixOp*>(&graph.definingNode(record.operands[0]).operation());
     result.ordered_payload=native && native->opcode()==v::NativeMatrixOpcode::TcgenRegisterAddress;
@@ -148,6 +155,18 @@ struct DynamicKeyHash {
   }
 };
 
+// A lowered instruction under its lane's record key (PTX instruction index, occurrence; occurrences
+// fit 32 bits, AddCta checks), ordered by key.
+struct CohortRequest {
+  std::uint64_t key;
+  a::InstId instruction;
+};
+std::uint64_t CohortKey(std::uint32_t instruction, std::uint64_t occurrence) {
+  return std::uint64_t(instruction) << 32 | occurrence;
+}
+
+// The requests of a lane are one flat vector sorted by key: O(N log N) for the CTA's N lowered
+// instructions, one binary search per lane record in the walk.
 void BuildCohorts(std::uint32_t cta, const CtaFacts& facts,
     const a::SourceProgram& source, std::size_t instruction_begin, std::vector<ExecutionCohort>& cohorts,
     std::vector<std::optional<ExecutionCohortId>>& bindings, const std::function<void()>& poll) {
@@ -170,25 +189,32 @@ void BuildCohorts(std::uint32_t cta, const CtaFacts& facts,
     bindings.resize(source.instructions.size());
     for(std::size_t i=instruction_begin;i<source.instructions.size();++i) {
       if((i&1023)==0&&poll)poll();
-      const auto instruction=source.instructions[i];
-      if(!instruction.ptx_origin||instruction.actor.value()>=source.actors.size())continue;
+      const auto instruction=a::HeaderOf(source.instructions,i);
+      if(!instruction.origin||instruction.actor.value()>=source.actors.size())continue;
       const auto& actor=source.actors[instruction.actor.value()];
       if(actor.id==instruction.actor&&actor.cta.value()==cta&&lanes.contains({actor.warp.value(),actor.lane})&&
-          occurrences.contains({instruction.ptx_origin->instruction_index,instruction.ptx_origin->occurrence}))
+          occurrences.contains({instruction.origin->first,instruction.origin->second}))
         bindings.at(instruction.id.value())=root;
     }
     return;
   }
-  std::vector<std::unordered_map<DynamicKey, std::vector<a::InstId>, DynamicKeyHash>> requests(count);
+  std::vector<std::vector<CohortRequest>> requests(count);
   bindings.resize(source.instructions.size());
   for (std::size_t index = instruction_begin; index < source.instructions.size(); ++index) {
-    const auto& instruction = source.instructions[index];
-    if (!instruction.ptx_origin || instruction.actor.value() >= source.actors.size()) continue;
+    const auto instruction = a::HeaderOf(source.instructions, index);
+    if (!instruction.origin || instruction.actor.value() >= source.actors.size()) continue;
     const auto& actor = source.actors[instruction.actor.value()];
     if (actor.id != instruction.actor || actor.cta.value() != cta) continue;
     const auto lane = lanes.find({actor.warp.value(), actor.lane});
     if (lane == lanes.end()) continue;
-    requests[lane->second][{instruction.ptx_origin->instruction_index, instruction.ptx_origin->occurrence}].push_back(instruction.id);
+    requests[lane->second].push_back({CohortKey(instruction.origin->first, instruction.origin->second), instruction.id});
+  }
+  // A key is answered once per lane, at its first record (as erasing it would).
+  std::vector<std::vector<bool>> answered(count);
+  for (std::size_t lane = 0; lane < count; ++lane) {
+    std::sort(requests[lane].begin(), requests[lane].end(),
+              [](const CohortRequest& a, const CohortRequest& b) { return a.key < b.key; });
+    answered[lane].resize(requests[lane].size());
   }
   struct Work {
     ExecutionCohortId group;
@@ -229,49 +255,71 @@ void BuildCohorts(std::uint32_t cta, const CtaFacts& facts,
         break;
       }
       if (!first) break;
+      const auto key = CohortKey(first->instruction_id(), first->occurrence());
       for (auto lane : work.lanes) {
         if ((++visits & 1023) == 0 && poll) poll();
-        auto& queries = requests[lane];
-        const auto found = queries.find(first->Key());
-        if (found == queries.end()) continue;
-        for (auto instruction : found->second) bindings.at(instruction.value()) = work.group;
-        queries.erase(found);
+        const auto& queries = requests[lane];
+        const auto lower = std::lower_bound(queries.begin(), queries.end(), key,
+                                            [](const CohortRequest& r, std::uint64_t k) { return r.key < k; });
+        if (lower == queries.end() || lower->key != key || answered[lane][lower - queries.begin()]) continue;
+        answered[lane][lower - queries.begin()] = true;
+        for (auto it = lower; it != queries.end() && it->key == key; ++it) bindings.at(it->instruction.value()) = work.group;
       }
       ++work.position;
     }
   }
 }
 
+// One pass over the source records in program order, reading only their headers (HeaderOf;
+// a record without a PTX origin is reconstructed for its accesses). O(instructions) expected:
+// actors by id, occurrence counts and groups in hash tables.
 void BuildSyncGroups(SemanticProgram& result, const std::vector<std::optional<ExecutionCohortId>>& cohorts) {
-  std::map<a::ActorId, const a::ActorInfo*> actors;
-  for (const auto& actor : result.lowering.artifact.program.actors) actors.emplace(actor.id, &actor);
+  const auto& program = result.lowering.artifact.program;
+  std::vector<const a::ActorInfo*> actors;
+  for (const auto& actor : program.actors) {
+    if (actor.id.value() >= actors.size()) actors.resize(std::size_t(actor.id.value()) + 1, nullptr);
+    if (!actors[actor.id.value()]) actors[actor.id.value()] = &actor;
+  }
   using GroupKey = std::tuple<ExecutionCohortId, std::uint32_t, std::uint64_t, std::size_t, std::size_t>;
-  std::map<GroupKey, std::size_t> groups;
-  std::map<SemanticOccurrence, std::size_t> lowerings;
-  for (const auto& instruction : result.lowering.artifact.program.instructions) {
-    const auto actor = actors.find(instruction.actor);
-    if (actor != actors.end() && !instruction.ptx_origin && Accesses(instruction).empty()) {
+  // Only lookups use the hashes (no iteration over the tables).
+  const auto hash = [](std::initializer_list<std::uint64_t> values) {
+    std::size_t seed = 0;
+    for (const auto value : values) a::HashCombine(seed, std::hash<std::uint64_t>{}(value));
+    return seed;
+  };
+  const auto key_hash = [&](const GroupKey& key) {
+    const auto& [group, instruction, occurrence, operation, lowering] = key;
+    return hash({group, instruction, occurrence, operation, lowering});
+  };
+  const auto occurrence_hash = [&](const SemanticOccurrence& o) {
+    return hash({o.cta, o.warp, o.lane, o.instruction, o.occurrence});
+  };
+  std::unordered_map<GroupKey, std::size_t, decltype(key_hash)> groups(0, key_hash);
+  std::unordered_map<SemanticOccurrence, std::size_t, decltype(occurrence_hash)> lowerings(
+      program.instructions.size(), occurrence_hash);
+  for (std::size_t index = 0; index < program.instructions.size(); ++index) {
+    const auto instruction = a::HeaderOf(program.instructions, index);
+    const auto* actor = instruction.actor.value() < actors.size() ? actors[instruction.actor.value()] : nullptr;
+    if (actor && !instruction.origin && Accesses(program.instructions[index]).empty()) {
       result.synthetic_synchronization_nodes.push_back(instruction.id);
       continue;
     }
-    if (actor == actors.end() || !instruction.ptx_origin) {
+    if (!actor || !instruction.origin) {
       Diagnostic(result, "missing_semantic_occurrence", "Source instruction has no complete thread/PTX occurrence identity", {}, instruction.id);
       continue;
     }
-    const auto& thread = *actor->second;
-    const auto& origin = *instruction.ptx_origin;
-    const SemanticOccurrence occurrence{thread.cta.value(), thread.warp.value(), thread.lane,
-        origin.instruction_index, origin.occurrence};
+    const auto [site, visit] = *instruction.origin;
+    const SemanticOccurrence occurrence{actor->cta.value(), actor->warp.value(), actor->lane, site, visit};
     const auto lowering_index = lowerings[occurrence]++;
     const auto group = instruction.id.value() < cohorts.size() ? cohorts[instruction.id.value()] : std::nullopt;
     if (!group) {
       Diagnostic(result, "missing_synchronization_group", "Source occurrence has no exact execution-prefix cohort", occurrence, instruction.id);
       continue;
     }
-    const GroupKey key{*group, origin.instruction_index, origin.occurrence, instruction.op.index(), lowering_index};
+    const GroupKey key{*group, site, visit, instruction.operation, lowering_index};
     auto [entry, inserted] = groups.try_emplace(key, result.synchronization_groups.size());
     if (inserted)
-      result.synchronization_groups.push_back({*group, origin.instruction_index, origin.occurrence, instruction.op.index(), lowering_index, {}});
+      result.synchronization_groups.push_back({*group, site, visit, instruction.operation, lowering_index, {}});
     result.synchronization_groups[entry->second].members.push_back(instruction.id);
   }
 }
@@ -636,6 +684,27 @@ void LinkMemory(SemanticProgram& result, bool compact,
       if(value.bytes!=payload)throw LayoutError("Incomplete register payload mapping");
       continue;
     }
+    // A bulk reduction: the payload Load and the reduction Store each bind, in source order,
+    // the element fragments of their own direction (one per mode).
+    if(std::any_of(values.begin(),values.end(),[](const ValueAccess& v){return v.reduction;})) {
+      std::set<a::AccessMode> modes;
+      for(const auto& value:values) {
+        if(!modes.insert(value.mode).second || !value.bytes)throw LayoutError("Reduction values do not bind one per direction");
+        std::uint64_t payload=0;
+        for(const auto& access:source) {
+          if(access.mode!=value.mode)continue;
+          if(!access.ordered_native || !access.bytes || *access.bytes>*value.bytes-payload)
+            throw LayoutError("Reduction payload does not match its element fragments");
+          auto part=value;part.bytes=access.bytes;
+          const auto address=addresses.find(access.address);
+          auto binding=BindMemoryValue(access,part,occurrence,0,address==addresses.end()?nullptr:address->second);
+          binding.value_byte_offset=payload;payload+=*access.bytes;
+          result.memory_bindings.push_back(std::move(binding));
+        }
+        if(payload!=*value.bytes)throw LayoutError("Incomplete reduction payload mapping");
+      }
+      continue;
+    }
     if (LinkCopyMemory(result,occurrence,source,values,addresses)) continue;
     if (!source.empty())
       if (const auto layout=matrix_layouts.find(source[0].key.instruction); layout!=matrix_layouts.end()) {
@@ -681,6 +750,35 @@ void LinkMemory(SemanticProgram& result, bool compact,
     }
   }
 }
+// The memory profile of the value graph after one CTA's value view.
+void ReportValueGraph(const v::Graph& graph, std::uint32_t cta) {
+  a::MemoryReport report("frontend.values", "value_graph", &graph);
+  report.Metric("cta", cta);
+  report.Add("nodes", graph.size()*sizeof(v::Node), graph.size()*sizeof(v::Node), graph.size(), 0, true);
+  report.Add("groups", graph.groups().size()*sizeof(v::ThreadGroup), graph.groups().size()*sizeof(v::ThreadGroup), graph.groups().size(), 0, true);
+  std::set<const void*> member_storage;
+  for (const auto& group : graph.groups())
+    if(member_storage.insert(group.threads.storageIdentity()).second)
+      report.Vector("group_members", group.threads.values());
+  std::set<const v::ValueType*> type_storage;
+  for (const auto& node : graph.nodes()) {
+    report.Metric("stored_instances", node.storedInstanceCount());
+    report.Add("instances", node.instanceCount()*sizeof(v::Instance), node.instanceCount()*sizeof(v::Instance), node.instanceCount(), 0, true);
+    for (const auto& instance : node.instances()) {
+      report.Vector("operands", instance.operands);
+      if (!instance.result_types.empty() && type_storage.insert(instance.result_types.data()).second)
+        report.Add("result_types", instance.result_types.size()*sizeof(v::ValueType), instance.result_types.size()*sizeof(v::ValueType), instance.result_types.size());
+      if (!instance.element_types.empty() && type_storage.insert(instance.element_types.data()).second)
+        report.Add("element_types", instance.element_types.size()*sizeof(v::ValueType), instance.element_types.size()*sizeof(v::ValueType), instance.element_types.size());
+      report.Vector("unroll_context", instance.origin.unroll_context);
+      if (instance.origin.function) report.String("function_names", *instance.origin.function);
+      if (instance.origin.source_file) report.String("source_files", *instance.origin.source_file);
+      if (instance.origin.source_text) report.String("source_text", *instance.origin.source_text);
+      if (instance.origin.scope) report.String("scopes", *instance.origin.scope);
+    }
+  }
+  report.Emit();
+}
 }  // namespace
 
 struct SemanticProgramBuilder::Impl {
@@ -697,11 +795,14 @@ struct SemanticProgramBuilder::Impl {
   bool finished = false;
   std::size_t address_queries = 0, address_resolved = 0;
   std::string address_unavailable;
+  // CTAs whose value view was built / was never built (values on demand).
+  std::size_t value_view_ctas = 0, deferred_value_view_ctas = 0;
   SemanticProgramOptions options;
   Impl(const Module& m, const Function& f, std::function<void()> poll, SemanticProgramOptions options)
       : module(m), function(f),
         branch_capture(options.capture_branch_scope ? std::make_unique<BranchScopeCapture>(graph) : nullptr),
-        values(graph, true, true, branch_capture.get()), model(m, f, poll, true, options.atomics), poll(std::move(poll)), options(options) {}
+        values(graph, true, true, branch_capture.get()), model(m, f, poll, true, options.atomics, options.threads),
+        poll(std::move(poll)), options(options) {}
 };
 
 SemanticProgramBuilder::SemanticProgramBuilder(const Module& module, const Function& function,
@@ -730,46 +831,44 @@ void SemanticProgramBuilder::AddCta(const CtaFacts& facts) {
   }
   impl_->ctas.insert(cta);
   const auto first_value_node = impl_->graph.size();
-  impl_->values.AddCta(facts);
-  ValueAddressIndex address_values(impl_->graph, facts, first_value_node,
-                                  impl_->options.defer_address_serialization);
-  if (a::MemoryProfileEnabled()) {
-    a::MemoryReport report("frontend.values", "value_graph", &impl_->graph);
-    report.Metric("cta", cta);
-    report.Add("nodes", impl_->graph.size()*sizeof(v::Node), impl_->graph.size()*sizeof(v::Node), impl_->graph.size(), 0, true);
-    report.Add("groups", impl_->graph.groups().size()*sizeof(v::ThreadGroup), impl_->graph.groups().size()*sizeof(v::ThreadGroup), impl_->graph.groups().size(), 0, true);
-    std::set<const void*> member_storage;
-    for (const auto& group : impl_->graph.groups())
-      if(member_storage.insert(group.threads.storageIdentity()).second)
-        report.Vector("group_members", group.threads.values());
-    std::set<const v::ValueType*> type_storage;
-    for (const auto& node : impl_->graph.nodes()) {
-      report.Metric("stored_instances", node.storedInstanceCount());
-      report.Add("instances", node.instanceCount()*sizeof(v::Instance), node.instanceCount()*sizeof(v::Instance), node.instanceCount(), 0, true);
-      for (const auto& instance : node.instances()) {
-        report.Vector("operands", instance.operands);
-        if (!instance.result_types.empty() && type_storage.insert(instance.result_types.data()).second)
-          report.Add("result_types", instance.result_types.size()*sizeof(v::ValueType), instance.result_types.size()*sizeof(v::ValueType), instance.result_types.size());
-        if (!instance.element_types.empty() && type_storage.insert(instance.element_types.data()).second)
-          report.Add("element_types", instance.element_types.size()*sizeof(v::ValueType), instance.element_types.size()*sizeof(v::ValueType), instance.element_types.size());
-        report.Vector("unroll_context", instance.origin.unroll_context);
-        if (instance.origin.function) report.String("function_names", *instance.origin.function);
-        if (instance.origin.source_file) report.String("source_files", *instance.origin.source_file);
-        if (instance.origin.source_text) report.String("source_text", *instance.origin.source_text);
-        if (instance.origin.scope) report.String("scopes", *instance.origin.scope);
-      }
-    }
-    report.Emit();
-  }
+  // The CTA's value view and its bridge index. On demand, the CTAs before the
+  // first one that queries the bridge get neither; that CTA builds both at its
+  // first query, before answering it, and every later CTA builds them first,
+  // as without on demand. The extractor's graph and diagnostics then hold no
+  // view of the CTAs before that one, so an earlier CTA's value diagnostic does
+  // not stop it (stop_on_unsupported); its only other state across CTAs is a
+  // cache of the function's partition rules.
+  std::optional<ValueAddressIndex> address_values;
+  const auto build_values = [&] {
+    impl_->values.AddCta(facts);
+    address_values.emplace(impl_->graph, facts, first_value_node, impl_->options.defer_address_serialization);
+    ++impl_->value_view_ctas;
+    if (a::MemoryProfileEnabled()) ReportValueGraph(impl_->graph, cta);
+  };
+  if (!impl_->options.values_on_demand || impl_->value_view_ctas) build_values();
   const auto instruction_begin = impl_->model.currentProgram().instructions.size();
-  impl_->model.AddCta(facts,
-      [&](LaneRef lane, const RecordView& record, std::string_view text) {
-        return address_values.Extract(lane, record, text);
-      });
-  impl_->address_queries += address_values.queries();
-  impl_->address_resolved += address_values.resolved();
-  if (impl_->address_unavailable.empty())
-    impl_->address_unavailable = address_values.firstUnavailableReason();
+  // A value view that fails inside a bridge query skips lowering's handlers:
+  // AddCta throws its exception, as when the view is built before lowering.
+  struct ValueViewFailure { std::exception_ptr error; };
+  // Lane workers read this CTA's records while the lowering's bridge queries run, so they wait for
+  // a CTA whose view a query would build.
+  const bool lane_workers = address_values.has_value();
+  try {
+    impl_->model.AddCta(facts,
+        [&](LaneRef lane, const RecordView& record, std::string_view text) {
+          if (!address_values) {
+            try { build_values(); }
+            catch (...) { throw ValueViewFailure{std::current_exception()}; }
+          }
+          return address_values->Extract(lane, record, text);
+        }, lane_workers);
+  } catch (const ValueViewFailure& failure) { std::rethrow_exception(failure.error); }
+  if (address_values) {
+    impl_->address_queries += address_values->queries();
+    impl_->address_resolved += address_values->resolved();
+    if (impl_->address_unavailable.empty())
+      impl_->address_unavailable = address_values->firstUnavailableReason();
+  } else ++impl_->deferred_value_view_ctas;
   if (impl_->options.collect_synchronization_groups) {
     const FactSource::ConsumerScope consumer(facts, {Consumer::Cohorts, 0});
     BuildCohorts(cta, facts, impl_->model.currentProgram(), instruction_begin,
@@ -785,13 +884,18 @@ SemanticProgram SemanticProgramBuilder::Finish(std::function<void(std::string_vi
   if (stage) stage("frontend.model.finalize");
   SemanticProgram result{impl_->model.Finish(), std::move(impl_->graph), impl_->values.diagnostics(), {}, {}, {}, {}, std::move(impl_->cohorts)};
   result.source_complete = result.lowering.diagnostics.empty();
-  result.lowering.metadata["address_value_bridge"] = {
-      {"source", "value_lowering"}, {"value_view_complete", result.valuesComplete()},
+  auto& bridge = result.lowering.metadata["address_value_bridge"];
+  bridge = {
+      {"source", "value_lowering"},
+      {"value_view_complete", result.valuesComplete() && impl_->deferred_value_view_ctas == 0},
       {"queries", impl_->address_queries}, {"resolved", impl_->address_resolved},
       {"unavailable", impl_->address_queries - impl_->address_resolved},
       {"first_unavailable_reason", impl_->address_unavailable}};
+  if (impl_->options.values_on_demand)
+    bridge["values_on_demand"] = {{"value_view_ctas", impl_->value_view_ctas},
+                                  {"deferred_ctas", impl_->deferred_value_view_ctas}};
   // Preserve value-lowering causes even if memory checking blocks correctness.
-  auto& causes = result.lowering.metadata["address_value_bridge"]["diagnostics"];
+  auto& causes = bridge["diagnostics"];
   causes = nlohmann::json::array();
   for (const auto& diagnostic : result.value_diagnostics) {
     nlohmann::json details = nlohmann::json::object();

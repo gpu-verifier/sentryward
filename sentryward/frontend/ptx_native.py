@@ -21,6 +21,9 @@ from .._paths import ROOT, native_binary
 
 DEFAULT_WELLSYNC_TIMEOUT_SECONDS = 600
 DEFAULT_RSS_LIMIT_MIB = None
+# For help texts: the native default memory budget, as a percentage of the memory the verifier
+# process may use (run.cpp kDefaultBudgetNumerator / kDefaultBudgetDenominator, UsableMemory).
+DEFAULT_MEMORY_BUDGET_PERCENT = 90
 
 
 def native_executable() -> Path:
@@ -53,7 +56,8 @@ def _run_ptx(ptx: str | Path, config: str | Path, *,
 
     ``_process`` contains interface bookkeeping: exit code, wall time and retained
     log paths. The native process owns both deadline scopes and RSS enforcement;
-    An omitted RSS limit (None) imposes no tool memory budget.
+    An omitted RSS limit (None) leaves the native default budget: 90% of the memory the process
+    may use (physical memory, bounded by its cgroup limit).
     Python adds no outer timeout. An interrupted native result retains completed
     timing snapshots, without turning partial work into a verification success.
     """

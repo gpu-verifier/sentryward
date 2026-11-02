@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -2324,7 +2332,7 @@
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 864420,
-        "stored_bindings": 119715
+        "stored_bindings": 119356
       },
       "source_edge_storage": {
         "binding_templates": 6828,
@@ -2364,13 +2372,14 @@
     "memory_analysis_complete": false,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 7317.4765625,
+    "peak_footprint_mib": 7698.02734375,
     "required_order_domains": 73065,
     "required_orders": 2219040,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": true,
       "representative_branches": false,
       "representative_election": true
@@ -3073,8 +3082,8 @@
     "value_ir_node_count": 3607464,
     "value_view_complete": true
   },
-  "peak_rss_mib": 7317.4765625,
-  "pipeline_elapsed_seconds": 94.650991878,
+  "peak_rss_mib": 7707.890625,
+  "pipeline_elapsed_seconds": 88.079442691,
   "result": "invalid_lifecycle",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -3084,5 +3093,5 @@
   "verification_limitations": [],
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 474.252
+  "whole_pipeline_timeout_seconds": 473.969
 }

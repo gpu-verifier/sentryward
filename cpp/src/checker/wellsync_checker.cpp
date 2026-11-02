@@ -683,6 +683,90 @@ CheckDerivedEdgeTraceOrder(const HappensBeforeGraph& proof,
   return std::nullopt;
 }
 
+// An exit gate (ExitGate) asks for an execution in which the thread exits before
+// the phase it never arrives at completes. Gates add no edge to the certified
+// graph G: an exiting thread releases nothing. Executions in which the phases
+// also wait for the exits deadlock iff G plus an edge from each gated exit to its
+// completion has a cycle. Each gate the reference trace orders (exit first)
+// agrees with that trace, a linear extension of G; if it orders all of them,
+// there is no cycle. Otherwise, split a cycle at its gate edges into paths of G
+// from a completion to an exit. A barrier's phase completions are ordered in G,
+// so a cycle through the gates of one barrier implies one path from the
+// completion of phase k to the exit of a gate at a phase <= k on that barrier,
+// which closes a cycle by itself: a deadlock. With no such path and no path to
+// the exit of another barrier's gate there is no cycle. A path of the latter kind
+// alone is not proven either way. O(gates) trace lookups, then (if needed)
+// O(gates log gates) and at most three reachability queries per gated phase.
+[[nodiscard]] std::optional<CheckResult> CheckExitGates(
+    const SourceProgram& source, const LoweredProgram& program,
+    const ReferenceTrace& trace, HappensBeforeGraphBuilder& proof,
+    ReachabilityOracle& reachability) {
+  if (source.exit_gates.empty()) return std::nullopt;
+  ProfileScope profile("sync.exit_gates");
+  profile.nodes = source.exit_gates.size();
+  struct Gate {
+    PhaseKey phase;
+    EventId exit;
+    EventId completion;
+  };
+  std::vector<Gate> gates;
+  gates.reserve(source.exit_gates.size());
+  bool trace_ordered = true;
+  for (const ExitGate& gate : source.exit_gates) {
+    const PhaseKey phase{gate.barrier, gate.phase};
+    const auto exit = program.origins().resolve({gate.exit, Milestone::kComplete});
+    const auto completion = proof.happensBeforeGraph().phaseCompletion(phase);
+    const auto exit_index = exit ? trace.indexOf(*exit) : std::nullopt;
+    const auto completion_index = trace.completionIndex(phase);
+    if (!exit_index || !completion || !completion_index) {
+      return CheckResult::Invalid(InvalidInput{std::vector<Diagnostic>{},
+          "an exit gate names an exit or phase completion outside the reference execution"});
+    }
+    gates.push_back({phase, *exit, *completion});
+    trace_ordered = trace_ordered && *exit_index < *completion_index;
+  }
+  if (trace_ordered) return std::nullopt;
+  std::sort(gates.begin(), gates.end(), [](const Gate& left, const Gate& right) {
+    return left.phase < right.phase;
+  });
+  std::vector<EventId> exits;
+  exits.reserve(gates.size());
+  for (const Gate& gate : gates) exits.push_back(gate.exit);
+  const std::span<const EventId> all(exits);
+  std::optional<PhaseKey> unproven;
+  for (std::size_t first = 0, barrier = 0, barrier_end = 0; first < gates.size();) {
+    if (first == barrier_end) {
+      barrier = first;
+      while (barrier_end < gates.size() && gates[barrier_end].phase.barrier == gates[barrier].phase.barrier)
+        ++barrier_end;
+    }
+    std::size_t end = first;
+    while (end < gates.size() && gates[end].phase == gates[first].phase) ++end;
+    const EventId completion = gates[first].completion;
+    if (const auto reached =
+            reachability.FindDescendant(completion, all.subspan(barrier, end - barrier))) {
+      const auto gate = std::find_if(gates.begin() + barrier, gates.begin() + end,
+                                     [&](const Gate& item) { return item.exit == *reached; });
+      ExitGateWitness witness{gate->phase, gate->exit, gate->completion};
+      return RejectedFrom(witness, BuildRejectionContext(source, program,
+                                                         &proof.happensBeforeGraph()));
+    }
+    const auto reaches = [&](std::span<const EventId> targets) {
+      return !targets.empty() && reachability.ReachesAny(completion, targets);
+    };
+    if (!unproven && (reaches(all.first(barrier)) || reaches(all.subspan(barrier_end))))
+      unproven = gates[first].phase;
+    first = end;
+  }
+  if (!unproven) return std::nullopt;
+  return CheckResult::Unsupported(UnsupportedInput{
+      UnsupportedReason::kExitGateOrderUnproven, {},
+      "the completion of barrier " + std::to_string(unproven->barrier.value()) + " phase " +
+          std::to_string(unproven->phase) +
+          " is ordered before the exit of a thread that another CTA-wide barrier waits for; "
+          "an execution in which every such barrier waits for those exits is not proven"});
+}
+
 }  // namespace
 
 CheckResult WellSyncChecker::Run(const SourceProgram& source,
@@ -1043,6 +1127,10 @@ CheckResult WellSyncChecker::RunExecutionOrder(const SourceProgram& source,
     return InvalidFrom(
         *inconsistency,
         "a derived happens-before edge contradicts the reference trace");
+  }
+
+  if (auto failure = CheckExitGates(source, lowered, trace, proof, reachability)) {
+    return std::move(*failure);
   }
 
   ProfileScope freeze_profile("sync.freeze");

@@ -77,6 +77,69 @@ Interval Span(const CrossUnitPart &part) {
   const auto [lo, hi] = FootprintSpan(part.family, part.footprint);
   return {lo, hi};
 }
+// A class's units on one allocation: (δ, unit index in the class), sorted.
+using Deltas = std::vector<std::pair<std::int64_t, std::uint32_t>>;
+// The runs of equal δ of a sorted list whose distinct values are first + step * k: run k holds
+// positions [starts[k], starts[k + 1]). Nullopt when the distinct values are no progression.
+struct Progression {
+  std::vector<std::size_t> starts;
+  I first = 0, step = 0; // step 0: one value
+};
+std::optional<Progression> AsProgression(const Deltas &list) {
+  if (list.empty()) return std::nullopt;
+  Progression result;
+  result.first = list.front().first;
+  for (std::size_t k = 0; k < list.size(); ++k) {
+    if (k > 0 && list[k].first == list[k - 1].first) continue;
+    const auto value = I(list[k].first);
+    if (result.starts.size() == 1) result.step = value - result.first;
+    else if (result.starts.size() > 1 && value - I(list[result.starts.back()].first) != result.step)
+      return std::nullopt;
+    result.starts.push_back(k);
+  }
+  result.starts.push_back(list.size());
+  return result;
+}
+I FloorDiv(I a, I b) { // b > 0
+  I q = a / b;
+  if (a % b != 0 && a < 0) --q;
+  return q;
+}
+// The window search over two progressions with one step s (a one-value list takes the other's):
+// δ_v - δ_u = base + s * t for value indexes l - k = t, so the window low < d < high is one range
+// of t for every u. Per t, its first unit pair in the search order (u by position, then v by
+// position) that is neither one unit of one class nor the two representatives; the pairs in that
+// order. O(|du| + |dv| + T log T) for the T < |du| + |dv| translations (t = 0 of one class scans
+// its runs for two distinct units).
+std::vector<std::pair<std::size_t, std::size_t>> FirstPairs(const Deltas &du, const Progression &pu, const Deltas &dv,
+                                                            const Progression &pv, I step, I low, I high,
+                                                            bool same_class) {
+  const I n = I(pu.starts.size() - 1), m = I(pv.starts.size() - 1), base = pv.first - pu.first;
+  I lowest = -(n - 1), highest = m - 1;
+  if (step > 0) {
+    lowest = std::max(lowest, FloorDiv(low - base, step) + 1);
+    highest = std::min(highest, -FloorDiv(base - high, step) - 1);
+  } else if (!(low < base && base < high)) {
+    return {};
+  }
+  std::vector<std::pair<std::size_t, std::size_t>> pairs;
+  for (I t = lowest; t <= highest; ++t) {
+    bool found = false;
+    for (I k = t < 0 ? -t : I(0); !found && k < n && k + t < m; ++k) {
+      const auto u = static_cast<std::size_t>(k), v = static_cast<std::size_t>(k + t);
+      for (auto p = pu.starts[u]; !found && p < pu.starts[u + 1]; ++p)
+        for (auto q = pv.starts[v]; q < pv.starts[v + 1]; ++q) {
+          const auto i = du[p].second, j = dv[q].second;
+          if ((same_class && i == j) || (i == 0 && j == 0)) continue;
+          pairs.emplace_back(p, q);
+          found = true;
+          break;
+        }
+    }
+  }
+  std::sort(pairs.begin(), pairs.end());
+  return pairs;
+}
 // Unit-private spaces (owner-qualified or per thread): never shared across units.
 bool UnitPrivateSpace(std::string_view space) noexcept {
   return space == "shared" || space == "local" || space == "tensor" || space == "register" || space == "param" ||
@@ -153,8 +216,10 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
       return unknown("alias_group:" + alias);
 
   for (auto &[allocation, classes] : by_allocation) {
-    // δ of every unit of every class with parts here, sorted (the window search).
-    std::map<std::uint32_t, std::vector<std::pair<std::int64_t, std::uint32_t>>> deltas;
+    // δ of every unit of every class with parts here, sorted (the window search), and its runs
+    // when the distinct values form a progression.
+    std::map<std::uint32_t, Deltas> deltas;
+    std::map<std::uint32_t, std::optional<Progression>> progressions;
     for (auto &[klass, entry] : classes) {
       entry.all.Build();
       std::vector<Interval> writes;
@@ -175,6 +240,7 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
         list.emplace_back(found->second, static_cast<std::uint32_t>(i));
       }
       std::sort(list.begin(), list.end());
+      progressions[klass] = AsProgression(list);
     }
     for (const auto &[a, A] : classes) {
       if (A.write_hull.empty()) continue;
@@ -184,62 +250,89 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
         const I low = A.write_hull.front().lo - B.all_hull.back().hi;
         const I high = A.write_hull.back().hi - B.all_hull.front().lo;
         const auto &du = deltas.at(a), &dv = deltas.at(b);
+        // The translation d = δ_v - δ_u of the unit pair at positions (p_u, p_v); nullopt on overflow.
+        const auto translation = [&](std::size_t p_u, std::size_t p_v) -> std::optional<std::int64_t> {
+          std::int64_t d;
+          if (__builtin_sub_overflow(dv[p_v].first, du[p_u].first, &d)) return std::nullopt;
+          return d;
+        };
+        // Decides translation d for the unit pair at positions (p_u, p_v): nullopt when disjoint.
+        const auto decide = [&](std::size_t p_u, std::size_t p_v, std::int64_t d) -> std::optional<CrossUnitOutcome> {
+          const auto [delta_u, i] = du[p_u];
+          const auto [delta_v, j] = dv[p_v];
+          if (!Meet(A.write_hull, B.all_hull, I(d))) return std::nullopt;
+          // Exact: every write part of A against the parts of B whose translated span meets it.
+          for (const auto k : A.writes) {
+            const auto &p = parts[k];
+            const auto span = Span(p);
+            std::optional<CrossUnitOutcome> found;
+            B.all.Query(span.lo - I(d), span.hi - I(d), [&](std::size_t index) {
+              const auto &q = parts[B.all.parts[index]];
+              if (++refinements > limits.refinements) {
+                found = cap("refinements");
+                return false;
+              }
+              auto shifted = q.footprint;
+              shifted.offset += I(d);
+              auto relation = ClassifyFamilyOverlap(p.family, p.footprint, q.family, shifted);
+              if (!relation.unknown.empty()) {
+                found = unknown("family_overlap_unknown:" + allocation);
+                return false;
+              }
+              for (const auto &r : relation.overlap)
+                if (const auto witness = r.witness()) {
+                  CrossUnitOutcome race;
+                  race.status = Status::kRace;
+                  race.first_part = k;
+                  race.second_part = B.all.parts[index];
+                  race.first_member = witness->first;
+                  race.second_member = witness->second;
+                  const auto &ca = quotient.classes.at(a), &cb = quotient.classes.at(b);
+                  race.first_unit = ca.units.at(i);
+                  race.second_unit = cb.units.at(j);
+                  race.first_delta = delta_u;
+                  race.second_delta = delta_v;
+                  race.allocation = allocation;
+                  const I x = p.footprint.offset + p.footprint.step * I(witness->first) + I(delta_u);
+                  const I y = q.footprint.offset + q.footprint.step * I(witness->second) + I(delta_v);
+                  const I begin = std::max(x, y), end = std::min(x + I(p.footprint.bytes), y + I(q.footprint.bytes));
+                  race.region_offset = begin > 0 ? static_cast<std::uint64_t>(begin) : 0;
+                  race.region_bytes = end > begin ? static_cast<std::uint64_t>(end - begin) : 0;
+                  found = race;
+                  return false;
+                }
+              return true;
+            });
+            if (found) return found;
+          }
+          return std::nullopt;
+        };
+        // Progressions with one step: each translation once, at the pair where the search below
+        // first decides it, in the same order (the same first race).
+        const auto &pu = progressions.at(a), &pv = progressions.at(b);
+        if (pu && pv && (pu->step == 0 || pv->step == 0 || pu->step == pv->step)) {
+          for (const auto &[p_u, p_v] : FirstPairs(du, *pu, dv, *pv, std::max(pu->step, pv->step), low, high, a == b)) {
+            if (++unit_pairs > limits.unit_pairs) return cap("unit_pairs");
+            const auto d = translation(p_u, p_v);
+            if (!d) return unknown("delta_overflow:" + allocation);
+            if (auto outcome = decide(p_u, p_v, *d)) return std::move(*outcome);
+          }
+          continue;
+        }
         std::unordered_set<std::int64_t> memo; // d already decided disjoint (a meeting d returns)
-        for (const auto &[delta_u, i] : du) {
+        for (std::size_t p_u = 0; p_u < du.size(); ++p_u) {
+          const auto [delta_u, i] = du[p_u];
           const I lo = I(delta_u) + low, hi = I(delta_u) + high;
-          auto first = std::upper_bound(dv.begin(), dv.end(), lo, [](I x, const auto &e) { return x < I(e.first); });
-          for (auto it = first; it != dv.end() && I(it->first) < hi; ++it) {
-            const auto [delta_v, j] = *it;
+          auto p_v = static_cast<std::size_t>(
+              std::upper_bound(dv.begin(), dv.end(), lo, [](I x, const auto &e) { return x < I(e.first); }) - dv.begin());
+          for (; p_v < dv.size() && I(dv[p_v].first) < hi; ++p_v) {
+            const auto j = dv[p_v].second;
             if ((a == b && i == j) || (i == 0 && j == 0)) continue; // same unit; representative pair
             if (++unit_pairs > limits.unit_pairs) return cap("unit_pairs");
-            std::int64_t d;
-            if (__builtin_sub_overflow(delta_v, delta_u, &d)) return unknown("delta_overflow:" + allocation);
-            if (!memo.insert(d).second) continue;
-            if (!Meet(A.write_hull, B.all_hull, I(d))) continue;
-            // Exact: every write part of A against the parts of B whose translated span meets it.
-            for (const auto k : A.writes) {
-              const auto &p = parts[k];
-              const auto span = Span(p);
-              std::optional<CrossUnitOutcome> found;
-              B.all.Query(span.lo - I(d), span.hi - I(d), [&](std::size_t index) {
-                const auto &q = parts[B.all.parts[index]];
-                if (++refinements > limits.refinements) {
-                  found = cap("refinements");
-                  return false;
-                }
-                auto shifted = q.footprint;
-                shifted.offset += I(d);
-                auto relation = ClassifyFamilyOverlap(p.family, p.footprint, q.family, shifted);
-                if (!relation.unknown.empty()) {
-                  found = unknown("family_overlap_unknown:" + allocation);
-                  return false;
-                }
-                for (const auto &r : relation.overlap)
-                  if (const auto witness = r.witness()) {
-                    CrossUnitOutcome race;
-                    race.status = Status::kRace;
-                    race.first_part = k;
-                    race.second_part = B.all.parts[index];
-                    race.first_member = witness->first;
-                    race.second_member = witness->second;
-                    const auto &ca = quotient.classes.at(a), &cb = quotient.classes.at(b);
-                    race.first_unit = ca.units.at(i);
-                    race.second_unit = cb.units.at(j);
-                    race.first_delta = delta_u;
-                    race.second_delta = delta_v;
-                    race.allocation = allocation;
-                    const I x = p.footprint.offset + p.footprint.step * I(witness->first) + I(delta_u);
-                    const I y = q.footprint.offset + q.footprint.step * I(witness->second) + I(delta_v);
-                    const I begin = std::max(x, y), end = std::min(x + I(p.footprint.bytes), y + I(q.footprint.bytes));
-                    race.region_offset = begin > 0 ? static_cast<std::uint64_t>(begin) : 0;
-                    race.region_bytes = end > begin ? static_cast<std::uint64_t>(end - begin) : 0;
-                    found = race;
-                    return false;
-                  }
-                return true;
-              });
-              if (found) return std::move(*found);
-            }
+            const auto d = translation(p_u, p_v);
+            if (!d) return unknown("delta_overflow:" + allocation);
+            if (!memo.insert(*d).second) continue;
+            if (auto outcome = decide(p_u, p_v, *d)) return std::move(*outcome);
           }
         }
       }

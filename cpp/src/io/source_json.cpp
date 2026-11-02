@@ -29,6 +29,7 @@
 #include "sentryward/algorithm/checker/verifier.h"
 #include "sentryward/algorithm/event_ir/lowering.h"
 #include "sentryward/algorithm/memory/access.h"
+#include "sentryward/algorithm/memory/family_access.h"
 #include "sentryward/algorithm/source_ir/validator.h"
 #include "sentryward/algorithm/source_ir/initialization_recovery.h"
 #include "sentryward/algorithm/source_ir/unobserved_synchronization.h"
@@ -243,7 +244,7 @@ SourceOp Operation(const Json& value) {
 
 enum class RecordKind {
   kNone, kActor, kInstruction, kEdge, kCollective, kDependency, kBinding,
-  kRequiredOrder, kVerificationLimitation, kSourceViolation,
+  kRequiredOrder, kVerificationLimitation, kSourceViolation, kExitGate,
 };
 
 void DecodeRecord(SourceArtifact& result, RecordKind kind, const Json& item,
@@ -326,6 +327,7 @@ class StrictJsonSax final : public nlohmann::json_sax<Json> {
       if (frame.key == "edges") return RecordKind::kEdge;
       if (frame.key == "collectives") return RecordKind::kCollective;
       if (frame.key == "dependencies") return RecordKind::kDependency;
+      if (frame.key == "exit_gates") return RecordKind::kExitGate;
     }
     if (frame.role == Role::kMemory && frame.key == "bindings") return RecordKind::kBinding;
     if (frame.role == Role::kRoot) {
@@ -460,6 +462,11 @@ void DecodeRecord(SourceArtifact& result, RecordKind kind, const Json& item,
     Fields(item, {"from_ref", "to_ref"});
     result.program.dependencies.push_back({Reference(item.at("from_ref")), Reference(item.at("to_ref"))});
     return;
+  case RecordKind::kExitGate:
+    Fields(item, {"barrier", "phase", "exit_instruction"});
+    result.program.exit_gates.push_back({Id<BarrierLifetimeId>(item.at("barrier")),
+        UInt<std::uint32_t>(item.at("phase")), Id<InstId>(item.at("exit_instruction"))});
+    return;
   case RecordKind::kBinding:
     Fields(item, {"address", "address_space", "allocation", "offset"}, {"alias_scope", "expression"});
     result.addresses.push_back({Id<AddressId>(item.at("address")), String(item.at("address_space")),
@@ -580,7 +587,8 @@ SourceArtifact Decode(ParsedArtifact parsed) {
     OverridePtxAssumptions(parsed.records.semantic_assumptions, overrides);
   }
   const auto& program = root.at("program");
-  Fields(program, {"actors", "instructions", "edges", "collectives", "dependencies"});
+  Fields(program, {"actors", "instructions", "edges", "collectives", "dependencies"}, {"exit_gates"});
+  if (program.contains("exit_gates")) (void)Array(program.at("exit_gates"));
   for (const auto* name : {"actors", "instructions", "edges", "collectives", "dependencies"}) {
     (void)Array(program.at(name));
   }
@@ -711,7 +719,7 @@ class RejectionReport final {
   void Write(Json& report, const RejectionWitness& witness, const RejectionContext* context) {
     static constexpr const char* names[] = {"reference_deadlock", "semantic_violation",
         "initialization_order", "previous_phase_separation", "phase_boundary",
-        "wait_condition", "barrier_lifecycle", "hb_graph_mutation", "hb_cycle"};
+        "wait_condition", "barrier_lifecycle", "hb_graph_mutation", "hb_cycle", "exit_gate"};
     report["rejection_kind"] = names[witness.index()];
     report["rejection"] = Visit(witness);
     report["message"] = report["rejection"].at("message");
@@ -871,6 +879,12 @@ class RejectionReport final {
     return {{"message", "The constructed happens-before graph contains a cycle."},
         {"partial_topological_order", Events(value.partial_topological_order)}};
   }
+  Json Detail(const ExitGateWitness& value) {
+    return {{"code", "exit_gate_unsatisfiable"},
+        {"message", "A thread that never arrives at a CTA-wide barrier phase exits only after the phase "
+                    "completes, but the phase waits for that exit."},
+        {"phase", PhaseJson(value.phase)}, {"exit", Event(value.exit)}, {"completion", Event(value.completion)}};
+  }
 };
 
 std::string RenderReport(Json& report) {
@@ -885,7 +899,8 @@ std::string RenderReport(Json& report) {
     const bool enabled = flags.value(entry.key, false);
     Json triggered = enabled ? Json(nullptr) : Json(false);
     if (enabled && entry.key == "duplicate_tma_store_benign" && report.contains("warning_count"))
-      triggered = report["warning_count"] > 0;
+      triggered = report["warning_count"].get<std::size_t>() >
+          report.value("same_value_writes", Json::object()).value("warnings", std::size_t{0});
     if (enabled && entry.key == "representative_election" && frontend.contains("election_uses"))
       triggered = frontend["election_uses"] > 0;
     if (enabled && entry.key == "clc_always_fails" && frontend.contains("clc_uses"))
@@ -985,7 +1000,7 @@ std::vector<LifecycleAnswer> CheckRequiredOrders(
       batch.clear();metadata.clear();
     };
     for(auto& [source,p]:pending) {
-      if(batch.size()==64)flush();
+      if(batch.size()==kMaxRelationBatchSources)flush();
       batch.push_back(std::move(p.batch));metadata.push_back(&p);
     }
     flush();pending.clear();
@@ -1038,9 +1053,13 @@ constexpr ReadFromValues kSharedConstants{"shared_constant_read_from","shared","
 constexpr ReadFromValues kRuntimeTensorMaps{"tensor_map_read_from","global","A runtime tensor map",
     "tensor map copy","global-memory","Tensor map validation"};
 
+// `same_value_groups`: the same-value write obligation group of each write, by access id (an event
+// may carry several write accesses). Under the obligations (docs/assumptions.md, "Same-value
+// writes") a write of the chosen source's group stores its bytes, so it does not intervene.
 std::optional<std::string> ValidateReadFromWrites(const SourceArtifact& input,
     const PassCertificate& certificate,const OriginMap& lowered,
-    HbReachability& hb,const ReadFromValues& values) {
+    HbReachability& hb,const ReadFromValues& values,
+    const std::unordered_map<std::uint32_t,std::size_t>& same_value_groups) {
   ProfileScope profile("frontend_values.interference");
   const auto text=[](auto... parts){std::string result;((result+=parts),...);return result;};
   std::unordered_set<std::uint32_t> wanted;
@@ -1069,7 +1088,7 @@ std::optional<std::string> ValidateReadFromWrites(const SourceArtifact& input,
         return {};
       });
   if(!scan)return scan.error().message;
-  struct Query { std::uint64_t begin,end; EventId write,read; };
+  struct Query { std::uint64_t begin,end; EventId write,read; AccessId source; };
   struct Index { std::map<std::uint64_t,std::vector<Query>> starts; std::uint64_t max_width=0; };
   std::map<std::string,Index> queries;
   for(std::size_t i=0;i<input.required_orders.size();++i) {
@@ -1084,7 +1103,7 @@ std::optional<std::string> ValidateReadFromWrites(const SourceArtifact& input,
         const auto begin=std::max(x.begin,y.begin),end=std::min(x.end,y.end);
         if(x.allocation!=y.allocation || begin>=end)continue;
         auto& index=queries[x.allocation]; index.max_width=std::max(index.max_width,end-begin);
-        index.starts[begin].push_back({begin,end,write,read}); found=true;
+        index.starts[begin].push_back({begin,end,write,read,a.id}); found=true;
       }
     if(!found)return text(values.subject,"'s supplying write and read lack resolved overlapping ",values.memory," footprints.");
     }
@@ -1135,6 +1154,9 @@ std::optional<std::string> ValidateReadFromWrites(const SourceArtifact& input,
         for(;it!=index->second.starts.end() && it->first<region->end;++it)
           for(const auto& query:it->second) {
             if(query.end<=region->begin || access.event==query.write)continue;
+            if(const auto group=same_value_groups.find(access.id.value());group!=same_value_groups.end())
+              if(const auto source=same_value_groups.find(query.source.value());
+                  source!=same_value_groups.end() && source->second==group->second)continue;
             pending.push_back({access.event,query.write,query.read});
           }
         if(pending.size()>=(std::size_t(1)<<16) && !flush())
@@ -1151,12 +1173,12 @@ std::optional<std::string> ValidateReadFromWrites(const SourceArtifact& input,
 class QuotientEvidence {
  public:
   QuotientEvidence(const UnitQuotient& quotient, const SourceProgram& program)
-      : quotient_(quotient), program_(program), actors_(quotient, program.actors) {}
+      : quotient_(quotient), program_(program), ctas_(program.actors) {}
   // The CTA of an instruction (its actor's); instruction ids are dense in emission order.
   [[nodiscard]] std::uint32_t Cta(InstId id) const {
     if (id.value() >= program_.instructions.size()) throw std::logic_error("instruction outside the program");
     if (program_.instructions.id(id.value()) != id) throw std::logic_error("instruction ids are not dense");
-    return actors_.Cta(program_.instructions.actor(id.value()));
+    return ctas_(program_.instructions.actor(id.value()));
   }
   [[nodiscard]] std::uint64_t Weight(std::uint32_t cta) const { return quotient_.Weight(cta); }
   [[nodiscard]] const UnitQuotient& quotient() const noexcept { return quotient_; }
@@ -1164,7 +1186,7 @@ class QuotientEvidence {
  private:
   const UnitQuotient& quotient_;
   const SourceProgram& program_;
-  ActorWeights actors_;
+  ActorCtas ctas_;
 };
 
 // The CTA of an instruction, and CTA-specific ids taken relative to their CTA (repeated entries): an
@@ -1411,7 +1433,8 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
                     const PtxAssumptions& assumptions, ReachabilityOptions reachability_options,
                     std::optional<double> wellsync_timeout_seconds,
                     const VerifiedProgramObserver& on_verified,
-                    const MemoryInputProvider& memory_input = {}) {
+                    const MemoryInputProvider& memory_input = {},
+                    std::string_view established_verdict = {}) {
   const char* profile_env = sentryward::debug::environment("SENTRYWARD_PROFILE");
   ProfileSession profile_session(profile_env && std::string_view(profile_env) == "1");
   ProfileScope native_profile("native.total");
@@ -1547,27 +1570,32 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
     ReportSourceMemory(input, "input.after_recovery");
     std::unique_ptr<SymbolicAddressModel> model;
     std::optional<MemoryAccessRecords> compute_accesses;
+    // The address bindings and the compute accesses bound to them (once).
+    const auto bind_accesses = [&](const EventRecords& events) {
+      if (compute_accesses) return;
+      if (memory_input) input.addresses = memory_input();
+      ValidateRequiredEffectGroups(input);
+      std::unordered_set<std::uint32_t> addresses;
+      addresses.reserve(input.addresses.size());
+      for (const auto& binding : input.addresses) addresses.insert(binding.address.value());
+      auto bound = ProfileCall("memory.bind_compute_accesses", [&] {
+        return ExtractMemoryAccesses(events, input.program);
+      });
+      if (!bound) Fail(bound.error().message);
+      compute_accesses.emplace(std::move(bound).value());
+      ProfileCall("memory.validate_bindings", [&] {
+        for (const auto& access : *compute_accesses) {
+          if (const auto* address = std::get_if<AddressId>(&access.address);
+              access.bytes != 0 && address && !addresses.contains(address->value()))
+            Fail("memory access has no address binding");
+        }
+      });
+      report["counts"]["memory_accesses"] = compute_accesses->size();
+    };
     const auto prepare_memory = [&](const EventRecords& events) -> SymbolicAddressModel& {
       if (!model) {
         ProfileScope memory_profile("memory.prepare");
-        if (memory_input) input.addresses = memory_input();
-        ValidateRequiredEffectGroups(input);
-        std::unordered_set<std::uint32_t> addresses;
-        addresses.reserve(input.addresses.size());
-        for (const auto& binding : input.addresses) addresses.insert(binding.address.value());
-        auto bound = ProfileCall("memory.bind_compute_accesses", [&] {
-          return ExtractMemoryAccesses(events, input.program);
-        });
-        if (!bound) Fail(bound.error().message);
-        compute_accesses.emplace(std::move(bound).value());
-        ProfileCall("memory.validate_bindings", [&] {
-          for (const auto& access : *compute_accesses) {
-            if (const auto* address = std::get_if<AddressId>(&access.address);
-                access.bytes != 0 && address && !addresses.contains(address->value()))
-              Fail("memory access has no address binding");
-          }
-        });
-        report["counts"]["memory_accesses"] = compute_accesses->size();
+        bind_accesses(events);
         model = std::make_unique<SymbolicAddressModel>(
             input.addresses, input.address_invariants_json, input.address_solver, 4096,
             input.tensor_properties_json);
@@ -1640,6 +1668,21 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
       report["stage"] = "lifecycle_check";
       report["reason"] = input.source_violations.front().code;
       return RenderReport(report);
+    }
+    if (!established_verdict.empty()) {
+      // The established verdict covers lifecycle, races and the frontend value validations of
+      // this program; its certificate orders the value side's memory actions.
+      if (!on_verified || !synchronization.passed())
+        throw std::logic_error("internal error: CTA class bookkeeping (the kept class-mode synchronization verdict "
+                               "does not hold for the per-unit program)");
+      const auto& certificate = *synchronization.certificate();
+      bind_accesses(certificate.happensBeforeGraph.events());
+      MemoryRaceResult memory;
+      memory.search_complete = true;
+      memory.duplicate_write_groups_complete = true;
+      std::string kept(established_verdict);
+      (void)on_verified(input, certificate, memory, *compute_accesses, kept);
+      return kept;
     }
     VerificationResult result{std::move(synchronization), std::nullopt, std::nullopt};
     std::optional<StaticHbQueries> static_hb;
@@ -1821,23 +1864,27 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
       case VerificationStatus::kUnresolved: report["status"] = "memory_analysis_inconclusive"; break;
     }
     if (const auto* diagnostic = result.synchronization.invalidInput()) report["message"] = diagnostic->message;
-    if (const auto* diagnostic = result.synchronization.unsupported()) report["message"] = diagnostic->message;
+    if (const auto* diagnostic = result.synchronization.unsupported()) {
+      report["message"] = diagnostic->message;
+      if (const auto code = UnsupportedReasonCode(diagnostic->reason); !code.empty())
+        report["reason"] = std::string(code);
+    }
     if (result.memory_error) report["message"] = result.memory_error->message;
     if (const auto* rejection = result.synchronization.rejection()) {
       RejectionReport{}.Write(report, *rejection, result.synchronization.rejectionContext());
     }
+    const auto finding_json = [](const RaceFinding& race) {
+      Json finding{{"first", Source(race.first)}, {"second", Source(race.second)},
+          {"overlap", race.overlap.description}};
+      if (race.overlap.constant_region) {
+        const auto& region = *race.overlap.constant_region;
+        finding["region"] = {{"address_space", region.address_space}, {"allocation", region.allocation},
+                             {"offset", region.offset}, {"bytes", region.bytes}};
+      }
+      return finding;
+    };
     if (result.memory) {
       report["races"] = Json::array();
-      const auto finding_json = [](const RaceFinding& race) {
-        Json finding{{"first", Source(race.first)}, {"second", Source(race.second)},
-            {"overlap", race.overlap.description}};
-        if (race.overlap.constant_region) {
-          const auto& region = *race.overlap.constant_region;
-          finding["region"] = {{"address_space", region.address_space}, {"allocation", region.allocation},
-                               {"offset", region.offset}, {"bytes", region.bytes}};
-        }
-        return finding;
-      };
       for (const auto& race : result.memory->races) {
         report["races"].push_back(finding_json(race));
       }
@@ -1859,6 +1906,15 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
       report["race_samples_truncated"] = result.memory->race_count > result.memory->races.size();
       report["warning_samples_truncated"] = result.memory->warning_count >
           result.memory->duplicate_tma_store_warnings.size();
+      // Undecided until the value analysis settles them (below); moot after a race.
+      if (result.status() == VerificationStatus::kRaceFree && result.memory->search_complete &&
+          !result.memory->same_value_write_groups.empty()) {
+        std::size_t writes = 0;
+        for (const auto& group : result.memory->same_value_write_groups) writes += group.size();
+        report["same_value_writes"] = {{"status", "pending"},
+            {"groups", result.memory->same_value_write_groups.size()}, {"writes", writes},
+            {"site_pairs", result.memory->same_value_write_count}, {"warnings", 0}};
+      }
       report["unresolved_count"] = result.memory->unresolved_count;
       if (!result.memory->unresolved.empty()) {
         const auto& pair = result.memory->unresolved.front();
@@ -1934,13 +1990,17 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
     }
     if((shared_value_orders || tensor_map_orders) && result.status()==VerificationStatus::kRaceFree &&
         result.memory && result.memory->search_complete) {
+      std::unordered_map<std::uint32_t,std::size_t> same_value_groups;
+      for(std::size_t group=0;group<result.memory->same_value_write_groups.size();++group)
+        for(const auto id:result.memory->same_value_write_groups[group])
+          same_value_groups.emplace(id.value(),group);
       for(const auto& [values,count,field,code]:{
           std::tuple{&kSharedConstants,shared_value_orders,"frontend_value_validation","shared_constant_interference_unproven"},
           std::tuple{&kRuntimeTensorMaps,tensor_map_orders,"tensor_map_validation","tensor_map_interference_unproven"}}) {
         if(!count)continue;
         const auto before = static_hb->stats();
         const auto error = ValidateReadFromWrites(input,*result.synchronization.certificate(),lifecycle_origins,
-                                                  static_hb->get(),*values);
+                                                  static_hb->get(),*values,same_value_groups);
         record_hb(values==&kSharedConstants?"shared_constant_interference":"tensor_map_interference", before);
         if(error) {
           report["status"]="shared_memory_value_unproven";
@@ -1953,13 +2013,70 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
       }
       lifecycle_origins=OriginMap{};
     }
+    // Same-value write obligations decide race freedom (docs/assumptions.md, "Same-value
+    // writes"). Proven: one warning per sampled site pair. Otherwise the pair is a data race
+    // (PTX ISA 8.7.1): the write that the value stage could not prove equal, paired with the
+    // write that the race search accepted with it (unordered, on the same bytes); or,
+    // undecided, the first obligation found.
+    const bool same_value_pending = result.status() == VerificationStatus::kRaceFree &&
+        result.memory && result.memory->search_complete && !result.memory->same_value_write_groups.empty();
+    const auto settle_same_value = [&](const std::optional<SameValueFailure>& failure) {
+      const auto& memory = *result.memory;
+      auto& section = report["same_value_writes"];
+      if (!failure) {
+        section["status"] = "proven";
+        section["warnings"] = memory.same_value_write_count;
+        for (const auto& sample : memory.same_value_write_samples) {
+          Json finding = finding_json(sample);
+          finding["code"] = "same-value-writes";
+          finding["message"] = "Unordered plain writes cover the same bytes; the value analysis proved "
+              "that they store equal values, so they do not race (docs/assumptions.md, Same-value writes).";
+          report["warnings"].push_back(std::move(finding));
+        }
+        report["warning_count"] = memory.warning_count + memory.same_value_write_count;
+        report["warning_samples_truncated"] = memory.warning_count + memory.same_value_write_count >
+            memory.duplicate_tma_store_warnings.size() + memory.same_value_write_samples.size();
+        return;
+      }
+      section["status"] = failure->write ? "unproven" : "undecided";
+      auto race = memory.same_value_write_samples.front();
+      if (failure->write) {
+        // The partner of the write in the race search's accepted pairs: unordered with it, on the
+        // same bytes. O(log writes).
+        const auto& partners = memory.same_value_write_partners;
+        const auto found = std::lower_bound(partners.begin(), partners.end(), *failure->write,
+            [](const auto& entry, AccessId id) { return entry.first < id; });
+        if (found == partners.end() || found->first != *failure->write)
+          throw std::logic_error("an unproven same-value write has no pair in the race search");
+        const auto write = (*compute_accesses)[failure->write->value()];
+        const auto partner = (*compute_accesses)[found->second.value()];
+        auto overlap = model->mayOverlap(partner, write);
+        race = {partner, write, overlap.status == OverlapStatus::kOverlap && overlap.evidence
+                                    ? std::move(*overlap.evidence)
+                                    : OverlapEvidence{"unordered writes of the same bytes (an accepted same-value "
+                                                      "write pair)", std::nullopt}};
+      }
+      report["status"] = "potential_race";
+      report["races"] = Json::array({finding_json(race)});
+      report["race_count"] = 1;
+      report["race_samples_truncated"] = false;
+      report["diagnostics"] = Json::array({{{"code", failure->code}, {"stage", "memory_check"},
+          {"message", failure->message}, {"details", {{"witnesses_path", "races"}, {"count", 1}}}}});
+    };
     if (on_verified && result.status() == VerificationStatus::kRaceFree &&
         result.memory && result.memory->search_complete) {
       auto rendered = RenderReport(report);
       report_rendered = true;
-      on_verified(input, *result.synchronization.certificate(), *result.memory, *compute_accesses, rendered);
-      return rendered;
+      const auto failure = on_verified(input, *result.synchronization.certificate(), *result.memory,
+                                       *compute_accesses, rendered);
+      if (!same_value_pending) return rendered;
+      settle_same_value(failure);
+      return RenderReport(report);
     }
+    if (same_value_pending)
+      settle_same_value(SameValueFailure{"same_value_writes_unchecked",
+          "Unordered writes cover the same bytes and are not races only if they store equal values; "
+          "the value analysis that proves this was not requested.", std::nullopt});
   } catch (const SourceIrError& error) {
     report["status"] = "invalid_event_view";
     report["stage"] = "event_view_validation";
@@ -1989,8 +2106,10 @@ std::string AnalyzeSourceArtifact(SourceArtifact input, bool verify, const Memor
                                   const PtxAssumptions& assumptions, ReachabilityOptions reachability,
                                   std::optional<double> wellsync_timeout_seconds,
                                   const VerifiedProgramObserver& on_verified,
-                                  const MemoryInputProvider& memory_input) {
-  return Analyze(std::move(input), verify, memory, assumptions, reachability, wellsync_timeout_seconds, on_verified, memory_input);
+                                  const MemoryInputProvider& memory_input,
+                                  std::string_view established_verdict) {
+  return Analyze(std::move(input), verify, memory, assumptions, reachability, wellsync_timeout_seconds, on_verified,
+                 memory_input, established_verdict);
 }
 
 std::string AnalyzeSourceArtifact(std::string_view text, bool verify, const MemoryRaceOptions& memory,

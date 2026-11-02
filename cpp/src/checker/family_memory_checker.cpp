@@ -1,5 +1,6 @@
 #include "sentryward/algorithm/checker/family_memory_checker.h"
 #include "sentryward/algorithm/checker/duplicate_tma_stores.h"
+#include "sentryward/algorithm/checker/same_value_writes.h"
 #include "sentryward/algorithm/checker/unit_quotient.h"
 #include "sentryward/algorithm/analysis/family_relation_query.h"
 #include "sentryward/algorithm/memory/family_conflict_order.h"
@@ -8,6 +9,8 @@
 #include <map>
 #include <numeric>
 #include <optional>
+#include <set>
+#include <string>
 #include <unordered_map>
 
 namespace sentryward::algorithm {
@@ -81,7 +84,86 @@ struct FamilyIntervalIndex {
           if(allocation!=footprint.allocation)group.query(lo,hi,visit);
   }
 };
+// Union complete write-obligation groups (duplicate TMA stores, same-value writes) by relation
+// support, never by enumerating a relation's Cartesian product. AccessIds are materialized only
+// for the public obligation interface, once per newly connected member.
+struct ObligationGroups {
+  WriteObligationGroups accesses;
+  struct ConnectedDomain {MemberSet members;AccessId anchor;};
+  std::unordered_map<std::size_t,std::vector<ConnectedDomain>> connected;
+  // `members` of `family` join the group of `anchor`, each paired with `partner`.
+  void connect(const std::vector<MemoryAccessFamily>& families,std::size_t family,const MemberSet& members,
+      AccessId anchor,AccessId partner) {
+    auto& domains=connected[family];MemberSet covered(members.extent());
+    for(auto& domain:domains) {
+      if(!domain.members.intersect(members).empty())accesses.unite(anchor,domain.anchor);
+    }
+    for(const auto& domain:domains)
+      if(accesses.connected(anchor,domain.anchor))covered.unite(domain.members);
+    members.subtract(covered).forEach([&](auto member){accesses.join(families[family].at(member).id,partner,anchor);});
+    for(auto& domain:domains)if(accesses.connected(anchor,domain.anchor)) {
+      domain.members.unite(members);return;
+    }
+    domains.push_back({members,anchor});
+  }
+  // Every pair of `relation` between families i and j; `anchor` is one of its accesses. Each
+  // member of a rectangle is paired with the other side's first member.
+  void add(const std::vector<MemoryAccessFamily>& families,std::size_t i,std::size_t j,
+      const MemberRelation& relation,AccessId anchor) {
+    if(relation.diagonal)relation.left.forEach([&](auto x) {
+      accesses.pair(families[i].at(x).id,families[j].at(std::size_t(std::int64_t(x)+relation.shift)).id);
+    });
+    else {
+      const auto left=families[i].at(relation.left.first()).id,right=families[j].at(relation.right.first()).id;
+      connect(families,i,relation.left,anchor,right);connect(families,j,relation.right,anchor,left);
+    }
+  }
+};
 } // namespace
+void WriteObligationGroups::setPartner(AccessId access,AccessId partner) {
+  auto& entry=entries_.try_emplace(access.value(),Entry{access.value()}).first->second;
+  if(!entry.paired) {entry.partner=partner.value();entry.paired=true;}
+}
+// A root is the least id of its group (unite links the larger root below the smaller).
+std::uint32_t WriteObligationGroups::root(std::uint32_t id) {
+  const auto found=entries_.find(id);
+  if(found==entries_.end())return id;
+  auto* entry=&found->second;
+  while(entry->parent!=id) {
+    entry->parent=entries_.at(entry->parent).parent;
+    id=entry->parent;entry=&entries_.at(id);
+  }
+  return id;
+}
+void WriteObligationGroups::unite(AccessId first,AccessId second) {
+  for(const auto id:{first.value(),second.value()})entries_.try_emplace(id,Entry{id});
+  const auto a=root(first.value()),b=root(second.value());
+  entries_.at(std::max(a,b)).parent=std::min(a,b);
+}
+void WriteObligationGroups::join(AccessId access,AccessId partner,AccessId anchor) {
+  setPartner(access,partner);unite(access,anchor);
+}
+void WriteObligationGroups::pair(AccessId first,AccessId second) {
+  setPartner(first,second);setPartner(second,first);unite(first,second);
+}
+bool WriteObligationGroups::connected(AccessId first,AccessId second) {
+  return root(first.value())==root(second.value());
+}
+std::vector<std::vector<AccessId>> WriteObligationGroups::groups() {
+  std::map<std::uint32_t,std::vector<AccessId>> by_root;
+  for(const auto& [id,entry]:entries_)by_root[root(id)].push_back(AccessId(id));
+  std::vector<std::vector<AccessId>> result;result.reserve(by_root.size());
+  for(auto& [id,members]:by_root) {
+    std::sort(members.begin(),members.end());result.push_back(std::move(members));
+  }
+  return result;
+}
+std::vector<std::pair<AccessId,AccessId>> WriteObligationGroups::partners() const {
+  std::vector<std::pair<AccessId,AccessId>> result;
+  for(const auto& [id,entry]:entries_)if(entry.paired)result.emplace_back(AccessId(id),AccessId(entry.partner));
+  std::sort(result.begin(),result.end());
+  return result;
+}
 std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck(
     const SourceProgram& source,const PassCertificate& certificate,MemoryModel& memory,
     const MemoryRaceOptions& options,
@@ -100,6 +182,7 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
   // CTA's class.
   std::optional<ActorWeights> weights;
   if(options.units)weights.emplace(*options.units,source.actors);
+  const ActorCtas ctas(source.actors);
   std::vector<MemoryAccessFamily> extracted_families;
   if (!supplied_families) {
     auto extracted=ProfileCall("memory.family.extract_accesses",[&]{return ExtractMemoryAccessFamilies(graph,source);});
@@ -110,7 +193,9 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
   std::vector<MemoryAccessFamily> families;
   std::vector<FamilyFootprint> footprints;
   std::vector<std::optional<std::size_t>> copy_classes;
-  std::vector<std::uint8_t> exempt_families;
+  // Families whose storage FamilyConflictOrder leaves unreduced: duplicate-store exemptions, and
+  // below the families of a same-value pair.
+  std::vector<std::uint8_t> blocked_families;
   bool declined=false;std::size_t logical_accesses=0;
   ProfileCall("memory.family.accesses",[&] {
     const auto append=[&](MemoryAccessFamily family,FamilyFootprint footprint) {
@@ -118,7 +203,7 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
       if(!safe(footprint.offset) || !safe(footprint.step)) {declined=true;return;}
       const auto emit=[&](MemoryAccessFamily part,std::optional<std::size_t> copy) {
         families.push_back(std::move(part));footprints.push_back(footprint);
-        copy_classes.push_back(copy);exempt_families.push_back(copy.has_value());
+        copy_classes.push_back(copy);blocked_families.push_back(copy.has_value());
       };
       if(!options.warn_duplicate_tma_stores || family.first.mode!=AccessMode::kWrite ||
           family.first.operand!=AccessOperand::kEffect) {emit(std::move(family),{});return;}
@@ -138,6 +223,8 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
       auto part=family;part.first=access;part.first_member=first;
       part.count=family.first_member+family.count-first;emit(std::move(part),copy);
     };
+    // Reads with a member that has no footprint: dropped below when no write can reach their storage.
+    std::vector<const MemoryAccessFamily*> unplaced_reads;
     for(const auto& family:source_families) {
         logical_accesses+=family.count;
         if(family.first.atomic_scope) {
@@ -146,10 +233,15 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
         auto footprint=memory.familyFootprint(family);
         if(footprint) {append(family,std::move(*footprint));if(declined)return;continue;}
         // Partition a flat address table once; no guessed affine interpolation.
+        const auto mark=families.size();
         std::optional<MemoryAccessFamily> run;FamilyFootprint previous;
         for(std::size_t member=family.first_member;member<family.first_member+family.count;++member) {
           auto single=family;single.first=family.at(member);single.first_member=member;single.count=1;
           auto current=memory.familyFootprint(single);
+          if(!current && family.first.mode==AccessMode::kRead) {
+            families.resize(mark);footprints.resize(mark);copy_classes.resize(mark);blocked_families.resize(mark);
+            unplaced_reads.push_back(&family);run.reset();break;
+          }
           if(!current) {declined=true;return;}
           current->offset+=current->step*I(member);
           current->step=0;
@@ -168,6 +260,25 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
         }
         if(run)append(*run,previous);
         if(declined)return;
+    }
+    // A race needs a write. Every write family has footprints (else declined above); a read is
+    // disjoint from all of them when its storage is known and each nonempty write is in another
+    // known space, or on another allocation of its space without a shared alias scope (the address
+    // models' allocation separation). Such reads are dropped; any other unplaced read declines.
+    // O(F log F) for F families, plus each unplaced read's members once.
+    if(unplaced_reads.empty())return;
+    std::set<std::pair<std::string,std::string>> written,written_aliases; // (space, allocation / alias)
+    for(std::size_t k=0;k<families.size();++k) {
+      const auto& f=footprints[k];
+      if(families[k].first.mode==AccessMode::kRead || f.empty)continue;
+      if(!KnownSpace(f.space)) {declined=true;return;}
+      written.emplace(f.space,f.allocation);
+      if(!f.alias.empty())written_aliases.emplace(f.space,f.alias);
+    }
+    for(const auto* read:unplaced_reads) {
+      const auto storage=memory.familyStorage(*read);
+      if(!storage || !KnownSpace(storage->space) || written.contains({storage->space,storage->allocation}) ||
+          (!storage->alias.empty() && written_aliases.contains({storage->space,storage->alias}))) {declined=true;return;}
     }
   });
   if(declined) {profile.pruned=1;return {};}
@@ -196,44 +307,55 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
   StaticHbQueries local_hb(graph,options.reachability);
   auto& hb=(shared_hb?*shared_hb:local_hb).relations();
   const auto initial_hb_stats=hb.stats();
+  // Same-value write obligations (same_value_writes.h). Whether every member of a family is an
+  // eligible write is decided once per family, only for families of a candidate write pair.
+  const auto same_value_writes=[&]{
+    return SameValueWrites(source,&ctas,weights?&*weights:nullptr,options.max_warning_samples);
+  };
+  auto same_value=same_value_writes();
+  std::vector<std::uint8_t> plain_writes(families.size()); // 0 unknown, 1 eligible, 2 not
+  const auto same_value_candidate=[&](std::size_t i,std::size_t j) {
+    const auto& x=footprints[i];const auto& y=footprints[j];
+    if(families[i].first.mode!=AccessMode::kWrite || families[j].first.mode!=AccessMode::kWrite ||
+        !x.affine || !y.affine || !x.symbolic.empty() || !y.symbolic.empty() || x.bytes!=y.bytes ||
+        x.space!=y.space || x.allocation!=y.allocation)return false;
+    for(auto k:{i,j})if(!plain_writes[k])plain_writes[k]=same_value.eligible(families[k])?1:2;
+    return plain_writes[i]==1 && plain_writes[j]==1;
+  };
+  // A pair of the relation whose ranges start at different bytes, a partial overlap (every pair
+  // of a relation overlaps and the candidate test fixed equal widths), or none when every pair
+  // covers the same bytes. Starts are affine in the members, so the corner pairs decide.
+  const auto partial_pair=[&](std::size_t i,std::size_t j,const MemberRelation& relation)
+      -> std::optional<std::pair<std::size_t,std::size_t>> {
+    const auto start=[&](std::size_t k,std::size_t member){return footprints[k].offset+footprints[k].step*I(member);};
+    const auto last=[](const MemberSet& set){std::size_t end=0;set.forEachRun([&](auto,auto stop){end=stop;});return end-1;};
+    const auto l0=relation.left.first(),l1=last(relation.left);
+    std::vector<std::pair<std::size_t,std::size_t>> corners;
+    if(relation.diagonal)corners={{l0,std::size_t(std::int64_t(l0)+relation.shift)},{l1,std::size_t(std::int64_t(l1)+relation.shift)}};
+    else {
+      const auto r0=relation.right.first(),r1=last(relation.right);
+      corners={{l0,r0},{l0,r1},{l1,r0},{l1,r1}};
+    }
+    for(const auto& [p,q]:corners)if(start(i,p)!=start(j,q))return std::pair{p,q};
+    return std::nullopt;
+  };
+  // A same-value pair of a reduced family (FamilyConflictOrder) blocks its storage, since the
+  // order constraints through their unordered pair no longer certify the pairs around it; every
+  // pair of that storage is then checked directly. A pass collects all such pairs (its races and
+  // unknowns stand), then the relation search runs again; each repetition blocks at least one more
+  // storage, so there are at most as many repetitions as storages.
+  bool rescan=false;
+  for(;;) {
   auto order=ProfileCall("memory.family.conflict_order",[&] {
-    auto result=FamilyConflictOrder(families,footprints,graph.traceOrder(),exempt_families);
+    auto result=FamilyConflictOrder(families,footprints,graph.traceOrder(),blocked_families);
     ProfileScope counts("memory.family.conflict_order_counts");
     counts.nodes=result.reducedFamilies();counts.edges=result.memberChecks();
     return result;
   });
   std::size_t relation_count=0,row_enumerations=0;
-  std::size_t duplicate_rows=0,self_rows=0;
+  std::size_t obligation_rows=0,self_rows=0;
   ProfileScope expansion("memory.family.expansion_sites");
-  // Union complete duplicate-write obligations by relation support, never by
-  // enumerating its Cartesian product. Materialize AccessIds only for the
-  // existing public obligation interface (once per newly connected member).
-  std::unordered_map<std::uint32_t,std::uint32_t> parents;
-  const auto root=[&](std::uint32_t id) {
-    auto [it,inserted]=parents.try_emplace(id,id);
-    while(it->second!=id) {
-      it->second=parents.at(it->second);id=it->second;it=parents.find(id);
-    }
-    return id;
-  };
-  const auto unite=[&](std::uint32_t a,std::uint32_t b) {
-    a=root(a);b=root(b);parents[std::max(a,b)]=std::min(a,b);
-  };
-  struct ConnectedDomain {MemberSet members;std::uint32_t anchor;};
-  std::unordered_map<std::size_t,std::vector<ConnectedDomain>> connected;
-  const auto connect=[&](std::size_t family,const MemberSet& members,std::uint32_t anchor) {
-    auto& domains=connected[family];MemberSet covered(members.extent());
-    for(auto& domain:domains) {
-      if(!domain.members.intersect(members).empty())unite(anchor,domain.anchor);
-    }
-    for(const auto& domain:domains)
-      if(root(anchor)==root(domain.anchor))covered.unite(domain.members);
-    members.subtract(covered).forEach([&](auto member){unite(anchor,families[family].at(member).id.value());});
-    for(auto& domain:domains)if(root(anchor)==root(domain.anchor)) {
-      domain.members.unite(members);return;
-    }
-    domains.push_back({members,anchor});
-  };
+  ObligationGroups duplicates,same_values;
   const auto cardinality=[](const MemberRelation& relation) {
     const auto a=relation.left.count();
     if(relation.diagonal)return a;
@@ -255,16 +377,33 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
     });
     return rows;
   };
+  // An accepted obligation certifies every different-actor pair of its relation. A same-actor
+  // pair must already be ordered; validate that invariant, rather than using a witness to
+  // assume it for the domain.
+  const auto same_actor=[](const MemberRelation& relation,const MemoryAccessFamily& first,
+                           const MemoryAccessFamily& second) {
+    const auto step=second.delta[MemoryAccessFamily::kActorField];
+    bool found=false;
+    relation.left.forEach([&](auto x) {
+      const auto actor=first.actor(x);
+      if(relation.diagonal)found|=actor==second.actor(std::size_t(std::int64_t(x)+relation.shift));
+      else if(!step)found|=actor==second.first.actor;
+      else {
+        // The member of `second` with this actor, if any (its actor is affine in the member).
+        const auto difference=std::int64_t(actor.value())-std::int64_t(second.first.actor.value());
+        if(difference%step==0) {
+          const auto y=std::int64_t(second.first_member)+difference/step;
+          found|=y>=0 && std::uint64_t(y)<second.extent && relation.right.contains(std::size_t(y));
+        }
+      }
+    });
+    return found;
+  };
   const auto finish=[&]() -> Output {
     result.duplicate_write_groups_complete=options.collect_duplicate_write_groups && result.search_complete;
-    if(options.collect_duplicate_write_groups) {
-      std::map<std::uint32_t,std::vector<AccessId>> groups;
-      for(const auto& [id,parent]:parents)groups[root(id)].push_back(AccessId(id));
-      for(auto& [id,members]:groups) {
-        std::sort(members.begin(),members.end());
-        result.duplicate_write_groups.push_back(std::move(members));
-      }
-    }
+    if(options.collect_duplicate_write_groups)result.duplicate_write_groups=duplicates.accesses.groups();
+    result.same_value_write_groups=same_values.accesses.groups();
+    result.same_value_write_partners=same_values.accesses.partners();
     profile.nodes=families.size();profile.edges=relation_count;
     profile.pruned=row_enumerations+hb.stats().member_enumerations-initial_hb_stats.member_enumerations;
     result.family_stats=MemoryRaceResult::FamilyStats{logical_accesses,families.size(),relation_count,
@@ -285,14 +424,23 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
     for(std::size_t q=0;q<requests.size();++q)for(std::size_t domain=0;domain<requests[q].requested.size();++domain) {
       const auto i=targets[q].first,j=targets[q].second;
       const bool duplicate_candidate=copy_classes[i] && copy_classes[i]==copy_classes[j];
-      std::vector<MemberRelation> duplicate_parts;
+      const bool same_candidate=!duplicate_candidate && same_value_candidate(i,j);
+      // Obligations take the complete unordered residual, not one witness.
+      bool residual=duplicate_candidate;
+      std::vector<MemberRelation> residual_parts;
       std::span<const MemberRelation> parts(&requests[q].requested[domain],1);
       if(duplicate_candidate) {
-        duplicate_parts=requests[q].duplicateResidual(domain,duplicate_rows);
-        expansion.pruned=duplicate_rows;parts=duplicate_parts;
+        residual_parts=requests[q].obligationResidual(domain,obligation_rows);
+        expansion.pruned=obligation_rows;parts=residual_parts;
+      } else if(same_candidate && requests[q].witness(domain)) {
+        if(order.candidates(i) || order.candidates(j)) {
+          blocked_families[i]=blocked_families[j]=1;rescan=true;continue;
+        }
+        residual_parts=requests[q].obligationResidual(domain,obligation_rows);
+        expansion.pruned=obligation_rows;parts=residual_parts;residual=true;
       }
       for(const auto& relation:parts) {
-      const auto witness=duplicate_candidate?relation.witness():requests[q].witness(domain);
+      const auto witness=residual?relation.witness():requests[q].witness(domain);
       if(!witness)continue;
       const auto& first=families[i];const auto& second=families[j];
       auto a=first.at(witness->first),b=second.at(witness->second);
@@ -311,55 +459,28 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
       if(copy_classes[i] && copy_classes[i]==copy_classes[j] &&
           (first.count==1 || !first.delta[4]) && (second.count==1 || !second.delta[4]) &&
           duplicate.contains(a,b)) {
-        // Same copy class, field and endpoint certify every different-actor
-        // pair. A same-actor pair must already be ordered; validate that
-        // invariant, rather than using a witness to assume it for the domain.
-        const auto actor_base=[](const auto& f) {
-          return std::int64_t(f.first.actor.value())-f.delta[3]*std::int64_t(f.first_member);
-        };
-        const auto abase=actor_base(first),bbase=actor_base(second);
-        bool same_actor=false;
-        relation.left.forEach([&](auto x) {
-          const auto actor=abase+first.delta[3]*std::int64_t(x);
-          if(relation.diagonal) {
-            same_actor|=actor==bbase+second.delta[3]*(std::int64_t(x)+relation.shift);
-          } else if(!second.delta[3])same_actor|=actor==bbase;
-          else {
-            const auto difference=actor-bbase;
-            if(difference%second.delta[3]==0) {
-              const auto y=difference/second.delta[3];
-              same_actor|=y>=0 && std::uint64_t(y)<second.extent && relation.right.contains(y);
-            }
-          }
-        });
-        if(same_actor) {declined=true;return {};}
+        // Same copy class, field and endpoint certify every different-actor pair.
+        if(same_actor(relation,first,second)) {declined=true;return {};}
         auto pairs=cardinality(relation);
         if(weights) {
           // One weight when the first family lies in one CTA (its actors are affine in the member);
           // otherwise per row, as the same-actor check above.
           const auto& w=*weights;
           const auto row=relation.diagonal?std::size_t(1):relation.right.count();
-          const auto front=first.first.actor,back=first.at(first.first_member+first.count-1).actor;
+          const auto front=first.first.actor,back=first.actor(first.first_member+first.count-1);
           std::size_t weighted=0;
           const auto add=[&](std::uint64_t weight,std::size_t count) {
             if(count && weight>SIZE_MAX/count)throw std::overflow_error("warning count overflow");
             if(weight*count>SIZE_MAX-weighted)throw std::overflow_error("warning count overflow");
             weighted+=weight*count;
           };
-          if(w.Cta(front)==w.Cta(back))add(w(front),pairs);
-          else relation.left.forEach([&](auto x){add(w(first.at(x).actor),row);});
+          if(ctas(front)==ctas(back))add(w(front),pairs);
+          else relation.left.forEach([&](auto x){add(w(first.actor(x)),row);});
           pairs=weighted;
         }
         if(pairs>SIZE_MAX-result.warning_count)throw std::overflow_error("warning count overflow");
         result.warning_count+=pairs;
-        if(options.collect_duplicate_write_groups) {
-          if(relation.diagonal)relation.left.forEach([&](auto x) {
-            unite(first.at(x).id.value(),second.at(std::size_t(std::int64_t(x)+relation.shift)).id.value());
-          });
-          else {
-            connect(i,relation.left,a.id.value());connect(j,relation.right,a.id.value());
-          }
-        }
+        if(options.collect_duplicate_write_groups)duplicates.add(families,i,j,relation,a.id);
         if(result.duplicate_tma_store_warnings.size()<options.max_warning_samples) {
           relation.left.forEach([&](auto x) {
             const auto sample=[&](auto y) {
@@ -374,8 +495,40 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
         }
         continue;
       }
+      auto evidence=*overlap.evidence;
+      if(residual && same_candidate) {
+        if(const auto partial=partial_pair(i,j,relation)) {
+          // A mixed-size race: report that pair rather than the witness.
+          a=first.at(partial->first);b=second.at(partial->second);
+          ++result.overlap_queries;
+          auto exact=memory.mayOverlap(a,b);
+          if(exact.status==OverlapStatus::kUnknown) {
+            result.status=MemoryRaceStatus::kUnresolved;result.unresolved_count=1;
+            result.unresolved.push_back({a,b,exact.reason,exact.code});return finish();
+          }
+          if(exact.status==OverlapStatus::kDisjoint || !exact.evidence) {profile.pruned=2;declined=true;return {};}
+          evidence=std::move(*exact.evidence);
+        } else if(same_value.pair(a,b,evidence)) {
+          if(same_actor(relation,first,second)) {declined=true;return {};}
+          same_values.add(families,i,j,relation,a.id);
+          // Every pair of the relation covers the same bytes, at the first family's member offset:
+          // a further sample's overlap is the witness's, its region moved with that member.
+          const auto moved=[&](std::size_t x,std::size_t) {
+            auto shifted=evidence;
+            if(shifted.constant_region) {
+              const auto offset=I(shifted.constant_region->offset)+footprints[i].step*(I(x)-I(witness->first));
+              if(offset<0 || offset>I(UINT64_MAX))shifted.constant_region.reset();
+              else shifted.constant_region->offset=std::uint64_t(offset);
+            }
+            return shifted;
+          };
+          // Unknown CTA ranges (ActorCtas::contiguous): the access path counts pair by pair.
+          if(!same_value.sampleRelation(first,second,relation,moved,result)) {declined=true;return {};}
+          continue;
+        }
+      }
       result.status=MemoryRaceStatus::kRaceFound;result.race_count=1;
-      result.races.push_back({a,b,*overlap.evidence});
+      result.races.push_back({a,b,evidence});
       result.first_race_seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();
       if(options.on_race)options.on_race(result.races.front());
       return finish();
@@ -438,7 +591,7 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
     // Inline masks of 1..256 members have the same physical cost. Mix their
     // labels; for larger masks retain equal storage widths, so padding cannot
     // turn singleton queries into large dense-array work.
-    if(!batch.empty() && (batch.size()==std::min(std::size_t(64),options.reachability.max_batch_sources) ||
+    if(!batch.empty() && (batch.size()==std::min(kMaxRelationBatchSources,options.reachability.max_batch_sources) ||
         MemberSet::storageWords(extent)!=MemberSet::storageWords(hb.families().families()[batch.front().source].count))) {
       if(auto answer=process())return answer;
       if(declined)return {};
@@ -451,7 +604,14 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
     if(auto answer=process())return answer;
     if(declined)return {};
   }
+  if(rescan) {
+    rescan=false;same_value=same_value_writes();
+    result=MemoryRaceResult{};
+    result.search_strategy="conflict-family";result.reachability_algorithm="member-relations";
+    continue;
+  }
   result.search_complete=true;
   return finish();
+  }
 }
 } // namespace sentryward::algorithm

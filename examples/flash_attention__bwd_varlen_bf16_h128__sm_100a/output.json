@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -17456,30 +17464,13 @@
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "atomic_add_value_semantics_unsupported",
-            "details": {
-              "cta": 0,
-              "instruction": "cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f32 [%rd732], [%r2614], %r2574;",
-              "instruction_index": 4979,
-              "location": {
-                "file": "corpus/flash_attention__bwd_varlen_bf16_h128__sm_100a.ptx",
-                "line": 5893
-              },
-              "occurrence": 0,
-              "thread": 0
-            },
-            "message": "Atomic add numerical semantics are unsupported",
-            "stage": "value_lowering"
-          }
-        ],
+        "diagnostics": [],
         "first_unavailable_reason": "",
         "queries": 0,
         "resolved": 0,
         "source": "value_lowering",
         "unavailable": 0,
-        "value_view_complete": false
+        "value_view_complete": true
       },
       "cluster_completion_joins": 144,
       "cta_count": 48,
@@ -17758,7 +17749,7 @@
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 7788752,
-        "stored_bindings": 655024
+        "stored_bindings": 631120
       },
       "source_edge_storage": {
         "binding_templates": 33377,
@@ -17778,41 +17769,31 @@
     "memory_analysis_complete": false,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 5096.6328125,
+    "peak_footprint_mib": 10225.88671875,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
     },
     "semantic_program": {
-      "binding_diagnostic_count": 1,
-      "binding_diagnostics": [
-        {
-          "code": "incomplete_value_semantics",
-          "message": "atomic_add_value_semantics_unsupported: Atomic add numerical semantics are unsupported"
-        }
-      ],
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
       "execution_cohorts": 2768,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
-      "memory_linking_templates_used": false,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 5337952,
+      "memory_binding_templates": 243585,
+      "memory_bindings": 7675360,
+      "memory_linking_templates_used": true,
       "synchronization_groups": 330944,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 4544,
-      "thread_prefix_groups": 55036,
-      "value_diagnostic_count": 1,
-      "value_diagnostics": [
-        {
-          "code": "atomic_add_value_semantics_unsupported",
-          "line": 5893,
-          "message": "Atomic add numerical semantics are unsupported"
-        }
-      ]
+      "thread_prefix_groups": 4656904,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
     "stage": "event_view_validation",
     "template_execution": {
@@ -26244,12 +26225,12 @@
         ]
       }
     },
-    "value_ir_instance_count": 532918,
-    "value_ir_node_count": 43209,
-    "value_view_complete": false
+    "value_ir_instance_count": 59594432,
+    "value_ir_node_count": 3759288,
+    "value_view_complete": true
   },
-  "peak_rss_mib": 5096.6328125,
-  "pipeline_elapsed_seconds": 74.018524205,
+  "peak_rss_mib": 10225.88671875,
+  "pipeline_elapsed_seconds": 75.958670695,
   "result": "invalid_lifecycle",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -26258,5 +26239,5 @@
   },
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.193
+  "whole_pipeline_timeout_seconds": 498.196
 }

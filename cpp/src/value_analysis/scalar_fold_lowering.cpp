@@ -15,6 +15,7 @@
 #include "sentryward/scalar_fold/reduction_builder.h"
 #include "sentryward/scalar_fold/real_expression_builder.h"
 #include "sentryward/equivalence/constant_values.h"
+#include "sentryward/equivalence/conversion_uses.h"
 #include "sentryward/scalar_fold/consolidate_outputs.h"
 #include "sentryward/value_ir/operations.h"
 #include "sentryward/value_ir/native_matrix.h"
@@ -39,6 +40,7 @@
 #include <tuple>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 namespace sentryward::value_analysis {
@@ -354,6 +356,88 @@ void coalesceFragments(s::Graph& graph,std::vector<ScalarFoldOutput>& outputs) {
   }
   outputs=std::move(compact);
 }
+// The bytes one binding tensor compares (scalar_fold::ComparedOutput): runs
+// of run_ contiguous bytes (the element and the dense axes inside it) at
+// origin_ + sum_k i_k*stride_k, i_k < size_k, over the other axes, outermost
+// first. Only nested layouts are represented (each stride a multiple of the
+// element width and at least the extent of the axes inside it; the comparison
+// admits no other layout), with at most kAxes outer axes. Queries: O(axes) per
+// run visited, never per byte or element.
+class ComparedBytes {
+ public:
+  static constexpr std::size_t kAxes=16;
+  static std::optional<ComparedBytes> of(const s::ComparedOutput& layout) {
+    const auto width=layout.element_bytes;
+    if(!width || width>UINT64_MAX-layout.offset || layout.shape.size()!=layout.strides_bytes.size())return {};
+    std::vector<std::pair<std::uint64_t,std::uint64_t>> axes;
+    for(std::size_t i=0;i<layout.shape.size();++i) {
+      if(!layout.shape[i])return {};
+      if(layout.shape[i]>1)axes.emplace_back(layout.strides_bytes[i],layout.shape[i]);
+    }
+    std::sort(axes.begin(),axes.end());
+    ComparedBytes result;result.origin_=layout.offset;result.run_=width;
+    unsigned __int128 extent=width;
+    for(const auto& [stride,size]:axes) {
+      if(stride<extent || stride%width)return {};
+      if(result.outer_.empty() && stride==result.run_)result.run_*=size;
+      else result.outer_.emplace_back(stride,size);
+      extent+=static_cast<unsigned __int128>(stride)*(size-1);
+      if(extent>UINT64_MAX-layout.offset)return {};
+    }
+    if(result.outer_.size()>kAxes)return {};
+    std::reverse(result.outer_.begin(),result.outer_.end());
+    return result;
+  }
+  // The first run that ends after `at`, as [begin,end); none past the last.
+  std::optional<std::pair<std::uint64_t,std::uint64_t>> run(std::uint64_t at) const {
+    if(at<origin_)return std::pair(origin_,origin_+run_);
+    auto x=at-origin_;
+    std::array<std::uint64_t,kAxes> digit{};
+    std::size_t level=0;
+    for(;level<outer_.size();++level) {
+      const auto [stride,size]=outer_[level];
+      digit[level]=x/stride;
+      if(digit[level]>=size)break;
+      x-=digit[level]*stride;
+    }
+    if(level==outer_.size() && x<run_)return std::pair(at-x,at-x+run_);
+    // Past the inner part at `level`: the next element of the level above.
+    while(level-->0)if(digit[level]+1<outer_[level].second) {
+      auto begin=origin_+(digit[level]+1)*outer_[level].first;
+      for(std::size_t k=0;k<level;++k)begin+=digit[k]*outer_[k].first;
+      return std::pair(begin,begin+run_);
+    }
+    return std::nullopt;
+  }
+  bool covers(std::uint64_t begin,std::uint64_t end) const {
+    for(auto at=begin;at<end;) {
+      const auto r=run(at);
+      if(!r || r->first>at)return false;
+      at=r->second;
+    }
+    return true;
+  }
+  bool meets(std::uint64_t begin,std::uint64_t end) const {
+    const auto r=run(begin);
+    return begin<end && r && r->first<end;
+  }
+  // The compared bytes of [begin,end), as maximal intervals in order.
+  template<class F> void pieces(std::uint64_t begin,std::uint64_t end,F&& f) const {
+    std::optional<std::pair<std::uint64_t,std::uint64_t>> open;
+    for(auto at=begin;at<end;) {
+      const auto r=run(at);
+      if(!r || r->first>=end)break;
+      const auto lo=std::max(r->first,at),hi=std::min(r->second,end);
+      if(open && open->second==lo)open->second=hi;
+      else {if(open)f(open->first,open->second);open=std::pair(lo,hi);}
+      at=hi;
+    }
+    if(open)f(open->first,open->second);
+  }
+ private:
+  std::uint64_t origin_=0,run_=0;
+  std::vector<std::pair<std::uint64_t,std::uint64_t>> outer_;
+};
 // Probe start in a power-of-two table: every hash bit reaches the mask.
 std::size_t keySlot(std::size_t hash,std::size_t mask) {
   const auto x=static_cast<std::uint64_t>(hash)*0x9e3779b97f4a7c15ULL;
@@ -627,6 +711,10 @@ class Lower {
   // Contiguous stored initial-read domains; built once, never by a projection
   // query enumerating logical members. The address remains a Value operand.
   std::map<MemoryInstance,std::size_t> symbolic_read_domains;
+  // Consecutive positioned reads of one node with one base whose constant parts form a
+  // progression (MemoryEliminationResult::symbolic_read_positions), keyed by the first.
+  struct PositionRun {std::size_t count;std::int64_t step;const SymbolicPosition* first;};
+  std::map<MemoryInstance,PositionRun> position_runs;
   std::map<std::size_t,v::ThreadMembers> member_coordinates;
   struct SelectorRun {std::size_t end;std::int64_t thread;};
   std::map<std::string,std::map<std::size_t,SelectorRun>> member_selectors;
@@ -931,6 +1019,7 @@ class Lower {
     KeySet dependencies = {};
     std::shared_ptr<const IndexedContext> indexed = {};
     std::shared_ptr<const FoldOwner> fold = {};
+    std::uint32_t select_context = 0;
 #if defined(SENTRYWARD_ENABLE_COMPRESSION_AUDIT)
     std::uint64_t audit_attempts=0;
 #endif
@@ -963,7 +1052,7 @@ class Lower {
       const auto& task=*o.active_projection;
       // Snapshot only the bounded request, never its accumulated dependency set.
       auto resume=std::make_shared<Projection>(Projection{task.value,task.offset,task.type,task.domains,task.key});
-      resume->indexed=task.indexed;resume->fold=task.fold;
+      resume->indexed=task.indexed;resume->fold=task.fold;resume->select_context=task.select_context;
       owner.fold_owner=std::make_shared<FoldOwner>(FoldOwner{std::move(key),axis,segment,first,count,saved,std::move(resume)});
     }
     ~FoldScope(){owner.fold_owner=std::move(saved);}
@@ -1181,7 +1270,8 @@ class Lower {
         for(std::size_t i=0;i<operands.size();++i)operands[i].push_back(item[i]);
       }
       for(auto& items:operands)registerSpatial(std::move(items));
-    } else if(!dynamic_cast<const v::LoadOp*>(&op) && !dynamic_cast<const v::ConstantOp*>(&op) &&
+    } else if(const auto* opaque=dynamic_cast<const v::OpaqueValueOp*>(&op))unspecified(value,*opaque);
+    else if(!dynamic_cast<const v::LoadOp*>(&op) && !dynamic_cast<const v::ConstantOp*>(&op) &&
               !dynamic_cast<const v::InputParameterOp*>(&op) && !dynamic_cast<const v::CoordinateOp*>(&op))spatialReject();
   }
   static v::ElementType bit(unsigned n){return v::ElementType::bit(n);}
@@ -1412,8 +1502,27 @@ class Lower {
   // is an Offset of the read's slot-resolved region, so a member reads it at
   // +δ(allocation). κ-covariant: the offset comes from the address value
   // graph (unit parameters and its own cells are instantiated), so no δ.
+  // Instantiation tells them apart by an input parameter (not a unit's) in the
+  // offset's cone: a covariant offset keeps the pointer root it is relative to
+  // (read), and a representative-absolute one must not contain one (refused
+  // here). The kind is thus part of the cell's hash-consed identity and
+  // survives every rebuild (merging, canonical forms), which a side table of
+  // tagged cells would not. O(offset cone) in lifting mode, nothing otherwise.
   s::Ref repAbsoluteCell(std::string allocation,s::Ref offset,std::string type) {
+    if(options.unit_lifting && parametricCone(offset))
+      liftRefuse("representative-absolute offset over an input parameter");
     return result.graph.initialCell(std::move(allocation),std::move(offset),std::move(type));
+  }
+  bool parametricCone(const s::Ref& root) const {
+    std::vector<s::Id> work{root.node};std::unordered_set<s::Id> seen;
+    while(!work.empty()) {
+      const auto id=work.back();work.pop_back();
+      if(!seen.insert(id).second)continue;
+      const auto& node=result.graph.node(id);
+      if(node.kind==s::Kind::InputParameter && !node.name.starts_with(kUnitCoordinatePrefix))return true;
+      for(const auto& operand:node.operands)work.push_back(operand.node);
+    }
+    return false;
   }
   s::Ref covariantCell(std::string allocation,s::Ref offset,std::string type) {
     return result.graph.initialCell(std::move(allocation),std::move(offset),std::move(type));
@@ -1427,10 +1536,34 @@ class Lower {
   // Every completed output enters here, with its CTA in lifting mode (its
   // offset is representative-absolute).
   void pushOutput(ConstantRegion region,s::Ref body) {
+    if(!output_base.empty())body=placed(std::move(body));
     result.outputs.push_back({std::move(region),std::move(body)});
     if(!options.unit_lifting)return;
     output_ctas.resize(result.outputs.size());
     output_ctas.back()=output_cta;
+  }
+  // The symbolic base of the output records being lowered (OutputWrite::base).
+  std::vector<SymbolicAddressTerm> output_base;
+  // The atom of a symbolic term: the representative-absolute cell of its element of the
+  // input object (an exact element, which lifting moves by the member's δ, like the
+  // kernel's own read of that element).
+  s::Ref atomCell(const SymbolicAddressTerm& term) {
+    if(term.element_offset<0)fail("symbolic_output_placement_unsupported","negative element offset");
+    return repAbsoluteCell(AllocationIdentity("global",term.object),
+        result.graph.constant("u64",std::to_string(term.element_offset)),term.element_type);
+  }
+  // The body annotated with its symbolic position (output_family.h), one atom cell per term.
+  s::Ref placed(s::Ref body) {
+    std::vector<s::Ref> operands{body};std::vector<s::PlacementTerm> terms;
+    for(const auto& term:output_base) {
+      const auto* fact=findTensorProperty(memory.tensor_properties,term);
+      if(!fact || !fact->lower || !fact->upper)
+        fail("symbolic_output_position_unbounded","a symbolic output position's element has no bounds");
+      operands.push_back(atomCell(term));
+      terms.push_back({term.coefficient,*fact->lower,*fact->upper});
+    }
+    const auto type=result.graph.type(body);
+    return result.graph.operation(std::string(s::kPlacementOperation),type,std::move(operands),s::placementAttributes(terms));
   }
   void setOutputCta(const OutputWrite& output) {
     if(!options.unit_lifting)return;
@@ -1453,6 +1586,34 @@ class Lower {
   static bool integralType(const std::string& type) {
     return type=="pred" || (!type.empty() && (type[0]=='b' || type[0]=='u' || type[0]=='s'));
   }
+  // Whether a use's decoration has a step other than a bitcast from or to a non-integral
+  // type. The unlifted lowering evaluates such a conversion of a literal as the instruction
+  // rounds (constantConversion), so lifting cannot rebuild one over a unit parameter. An
+  // unparsed chain counts as such a conversion. O(conversion steps).
+  bool realConversion(const s::Ref& use) const {
+    auto current=result.graph.node(use).type;
+    auto rest=use.conversion;
+    while(!rest.empty()) {
+      const auto step=equivalence::leadingConversion(current,rest);
+      if(!step)return true;
+      if(step->operation!="Bitcast" && (!integralType(current) || !integralType(step->target)))return true;
+      current=step->target;rest=step->remainder;
+    }
+    return false;
+  }
+  // The rebuilds lifting refuses over a unit parameter, the same in instantiate and
+  // memberBody: a real-valued operation or a Fold (the real-expression and reduction
+  // builders decide from literal operands), and a use with a real-valued conversion
+  // (realConversion). The unlifted lowering would build each differently from the unit's
+  // literal coordinates.
+  void refuseUnliftableNode(const s::Node& node) {
+    if(node.kind==s::Kind::Fold)liftRefuse("Fold over a unit parameter");
+    if(node.kind==s::Kind::Operation && !integralType(node.type))
+      liftRefuse("real-valued "+node.name+" over a unit parameter");
+  }
+  void refuseUnliftableUse(const s::Ref& use) {
+    if(realConversion(use))liftRefuse("real-valued conversion over a unit parameter");
+  }
   // One unit to instantiate bodies for: its origin (the unit parameters), δ
   // per global allocation of its representative-absolute offsets and the
   // representative's CTA linear ids renamed to its own (pointer provenance
@@ -1463,11 +1624,15 @@ class Lower {
     const std::map<std::string,std::int64_t>* delta=nullptr;
     const std::map<std::uint64_t,std::uint64_t>* ctas=nullptr;
   };
-  std::int64_t deltaOf(const UnitInstance& unit,const std::string& allocation) {
-    if(!unit.delta)return 0;
-    const auto found=unit.delta->find(allocation);
-    if(found==unit.delta->end())liftRefuse("no δ for allocation "+allocation);
+  // δ(allocation) in one δ table (a unit's, or a member box digit's); an allocation without
+  // an entry refuses lifting.
+  std::int64_t deltaIn(const std::map<std::string,std::int64_t>& delta,const std::string& allocation) {
+    const auto found=delta.find(allocation);
+    if(found==delta.end())liftRefuse("no δ for allocation "+allocation);
     return found->second;
+  }
+  std::int64_t deltaOf(const UnitInstance& unit,const std::string& allocation) {
+    return unit.delta?deltaIn(*unit.delta,allocation):0;
   }
   // A pointerLabel's fields: identity, addressing and the position of its
   // "cta=" value (the labels are length-prefixed, so parsing is exact).
@@ -1489,13 +1654,33 @@ class Lower {
     if(f.cta_end==std::string_view::npos)return std::nullopt;
     return f;
   }
+  // The δ key of a slot constant (a numeric literal naming a global allocation,
+  // SlotAddressValue) with provenance `fields`; nullopt for any other use. δ is keyed as a
+  // region's allocation (AllocationIdentity).
+  std::optional<std::string> slotAllocation(const s::Ref& use,const ProvenanceFields& fields) const {
+    if(result.graph.node(use).kind!=s::Kind::Constant || fields.identity.empty() || fields.addressing!="global")
+      return std::nullopt;
+    return AllocationIdentity(fields.addressing,fields.identity);
+  }
+  // A slot constant moved by `delta`, its decorations kept.
+  s::Ref moveSlot(s::Ref use,std::int64_t delta) {
+    const auto& node=result.graph.node(use);
+    const auto value=exactInteger<std::int64_t>(node.name);
+    if(!value)liftRefuse("unparsed slot constant");
+    if(!delta)return use;
+    auto moved=result.graph.constant(node.type,std::to_string(add(*value,delta)));
+    moved.conversion=std::move(use.conversion);moved.converted_type=std::move(use.converted_type);
+    moved.pointer_provenance=std::move(use.pointer_provenance);
+    return moved;
+  }
   // A use's own changes for `unit`: its pointer provenance renamed to the
-  // unit's CTA, and a slot constant (a numeric literal naming a global
-  // allocation, SlotAddressValue) moved by δ.
+  // unit's CTA, and a slot constant moved by δ.
   s::Ref instantiateUse(s::Ref use,const UnitInstance& unit) {
     if(use.pointer_provenance.empty() || (!unit.delta && !unit.ctas))return use;
     const auto fields=provenanceFields(use.pointer_provenance);
     if(!fields)liftRefuse("unparsed pointer provenance");
+    // Read the fields before the rename below edits the label they view.
+    const auto slot=unit.delta?slotAllocation(use,*fields):std::nullopt;
     const auto cta=std::string_view(use.pointer_provenance).substr(fields->cta_begin,fields->cta_end-fields->cta_begin);
     if(unit.ctas && cta!="none") {
       const auto id=exactInteger<std::uint64_t>(cta);
@@ -1504,20 +1689,7 @@ class Lower {
       if(renamed==unit.ctas->end())liftRefuse("provenance CTA outside the unit");
       use.pointer_provenance.replace(fields->cta_begin,cta.size(),std::to_string(renamed->second));
     }
-    const auto& node=result.graph.node(use);
-    if(unit.delta && node.kind==s::Kind::Constant && !fields->identity.empty() && fields->addressing=="global") {
-      // δ is keyed as a region's allocation: the length-prefixed space and
-      // allocation name (semantic_program.cpp AllocationIdentity).
-      const auto delta=deltaOf(unit,std::to_string(fields->addressing.size())+':'+std::string(fields->addressing)+
-          std::to_string(fields->identity.size())+':'+std::string(fields->identity));
-      const auto value=exactInteger<std::int64_t>(node.name);
-      if(!value)liftRefuse("unparsed slot constant");
-      if(delta) {
-        auto moved=result.graph.constant(node.type,std::to_string(add(*value,delta)));
-        moved.conversion=use.conversion;moved.converted_type=use.converted_type;
-        moved.pointer_provenance=use.pointer_provenance;use=moved;
-      }
-    }
+    if(slot)use=moveSlot(std::move(use),deltaOf(unit,*slot));
     return use;
   }
   // plus(offset, Offset(δ)) on offsetValue's emitted form, for a
@@ -1554,15 +1726,21 @@ class Lower {
       return emitOperation("Add","u64",{result.graph.constant("u64",std::to_string(delta)),offset});
     liftRefuse("unrecognized representative-absolute offset");
   }
+  // A unit parameter's axis and offset (ParseUnitCoordinateParameter); any other spelling
+  // refuses lifting.
+  UnitCoordinate unitParameter(const std::string& name) {
+    const auto parameter=ParseUnitCoordinateParameter(name);
+    if(!parameter)liftRefuse("malformed unit parameter "+name);
+    return *parameter;
+  }
   // Rebuild one body for `unit`. Only nodes marked
   // in `depends` (one ascending pass: node IDs are topological) are rebuilt,
   // bottom-up through emitOperation, the lowering's own constant-folding path;
   // `memo` shares them within the unit and hash-consing shares everything
   // else. A rebuild that the unlifted construction would not produce the
-  // same way refuses: a real-valued operation or a Fold over a unit parameter
-  // (built by the real-expression and reduction builders, whose decisions read
-  // literal operands). δ alone moves cells, never decisions, so a Fold over
-  // representative-absolute cells is rebuilt as it stands.
+  // same way refuses (refuseUnliftableNode, refuseUnliftableUse). δ alone moves
+  // cells, never decisions, so a Fold over representative-absolute cells is
+  // rebuilt as it stands.
   s::Ref instantiate(const s::Ref& root,const UnitInstance& unit,const std::vector<std::uint8_t>& depends,
                      std::unordered_map<s::Id,s::Ref>& memo) {
     // A use's decorations apply on top of the rebuilt node, as graph.convert
@@ -1571,6 +1749,7 @@ class Lower {
     // use converting it again is not rebuilt (the unlifted convert would compose).
     const auto rebuilt=[&](const s::Ref& old) {
       if(!depends[old.node])return instantiateUse(old,unit);
+      if(depends[old.node]&kKappaDependent)refuseUnliftableUse(old);
       auto value=memo.at(old.node);
       if(!old.conversion.empty() || !old.converted_type.empty()) {
         if(!value.conversion.empty() || !value.converted_type.empty())
@@ -1592,18 +1771,11 @@ class Lower {
         continue;
       }
       const bool kappa=depends[id]&kKappaDependent;
+      if(kappa)refuseUnliftableNode(node);
       s::Ref value;
       switch(node.kind) {
         case s::Kind::InputParameter: {
-          const std::string_view name(node.name);
-          const auto axis=std::string_view("xyz").find(name.at(kUnitCoordinatePrefix.size()));
-          std::uint64_t offset=0;
-          if(name.size()>kUnitCoordinatePrefix.size()+1) {
-            const auto digits=exactInteger<std::uint64_t>(name.substr(kUnitCoordinatePrefix.size()+2));
-            if(name[kUnitCoordinatePrefix.size()+1]!='+' || !digits)liftRefuse("malformed unit parameter "+node.name);
-            offset=*digits;
-          }
-          if(axis>2)liftRefuse("malformed unit parameter "+node.name);
+          const auto [axis,offset]=unitParameter(node.name);
           value=result.graph.constant(node.type,std::to_string(unit.origin[axis]+offset));
           break;
         }
@@ -1617,7 +1789,6 @@ class Lower {
           break;
         }
         case s::Kind::Operation: {
-          if(kappa && !integralType(node.type))liftRefuse("real-valued "+node.name+" over a unit parameter");
           std::vector<s::Ref> operands;operands.reserve(node.operands.size());
           for(const auto& operand:node.operands)operands.push_back(rebuilt(operand));
           value=kappa?emitOperation(node.name,node.type,std::move(operands),node.attributes):
@@ -1628,7 +1799,6 @@ class Lower {
           break;
         }
         case s::Kind::Fold:
-          if(kappa)liftRefuse("Fold over a unit parameter");
           value=result.graph.fold(node.fold->reducer,rebuilt(node.operands.at(0)),rebuilt(node.operands.at(1)),
               node.fold->binder_level,node.fold->count,node.type);
           break;
@@ -1680,18 +1850,372 @@ class Lower {
     if(instantiated_end>=result.outputs.size()){output_ctas.clear();return;}
     instantiateClasses();
   }
-  // Class mode: every pending output is a
-  // representative's. For each member of its class (unit order) a copy is
-  // appended, instantiated at the member's origin, δ and CTA ids, its region
-  // moved by δ(allocation); then the representative's own body is
-  // instantiated for its coordinate. The output's unit is its store's (its
-  // records must lie in one unit). Cost: two marking passes per call, then
-  // work linear in the κ-dependent part for the representative and in the
-  // moving part (κ, cells, renamed uses) per member, memoized per unit.
+  // Class mode: a class whose units fill one box, the representative's origin + unit_shape x
+  // [0, n) per axis, factored per axis into mixed-radix digits (innermost first) along which
+  // every allocation's δ is linear: the unit at digit values v has δ(a) = sum v_d x delta_d(a)
+  // and origin rep + sum v_d x step_d on each digit's axis. nullopt when the members do not
+  // fill such a box (each unit once) or some δ is not of that form. O(units x δ entries x
+  // log units): δ additivity over the axes is checked per unit, a digit's linearity and the
+  // separability E(p q + r) = E(p q) + E(r) of the sequence left over per digit level.
+  struct MemberDigit {unsigned axis=0;std::uint64_t count=1,step=0;std::map<std::string,std::int64_t> delta;};
+  struct MemberBox {std::vector<MemberDigit> digits;};
+  std::optional<MemberBox> memberBox(const CtaCoordinates& rep,const std::vector<UnitLifting::Member>& members) const {
+    const auto& shape=options.unit_lifting->unit_shape;
+    std::array<std::uint64_t,3> extent{1,1,1};
+    std::vector<std::array<std::uint64_t,3>> positions;positions.reserve(members.size());
+    for(const auto& member:members) {
+      std::array<std::uint64_t,3> at{};
+      for(unsigned axis=0;axis<3;++axis) {
+        if(!shape[axis] || member.origin[axis]<rep[axis] || (member.origin[axis]-rep[axis])%shape[axis])return std::nullopt;
+        at[axis]=(member.origin[axis]-rep[axis])/shape[axis];
+        if(at[axis]>=(std::uint64_t(1)<<32))return std::nullopt;
+        extent[axis]=std::max(extent[axis],at[axis]+1);
+      }
+      positions.push_back(at);
+    }
+    if(members.empty() || static_cast<unsigned __int128>(extent[0])*extent[1]*extent[2]!=members.size()+1)return std::nullopt;
+    const std::array<std::uint64_t,3> stride{1,extent[0],extent[0]*extent[1]};
+    MemberBox box;std::vector<bool> seen(members.size()+1);
+    std::vector<std::string> keys;
+    for(const auto& [key,delta]:members.front().delta)keys.push_back(key);
+    std::vector<std::vector<std::int64_t>> table(members.size()+1,std::vector<std::int64_t>(keys.size()));
+    for(std::size_t i=0;i<members.size();++i) {
+      const auto& at=positions[i];
+      const auto linear=at[0]+stride[1]*at[1]+stride[2]*at[2];
+      if(!linear || seen[linear] || members[i].delta.size()!=keys.size())return std::nullopt;
+      seen[linear]=true;
+      std::size_t k=0;
+      for(const auto& [key,delta]:members[i].delta) {
+        if(key!=keys[k])return std::nullopt;
+        table[linear][k++]=delta;
+      }
+    }
+    for(std::size_t linear=1;linear<table.size();++linear)
+      for(std::size_t k=0;k<keys.size();++k) {
+        __int128 sum=0;
+        for(unsigned axis=0;axis<3;++axis)sum+=table[linear/stride[axis]%extent[axis]*stride[axis]][k];
+        if(sum!=table[linear][k])return std::nullopt;
+      }
+    for(unsigned axis=0;axis<3;++axis) {
+      std::uint64_t period=1,n=extent[axis];
+      const auto at=[&](std::uint64_t j)->const std::vector<std::int64_t>&{return table[j*period*stride[axis]];};
+      while(n>1) {
+        // The longest prefix on which every δ is linear in the digit.
+        std::uint64_t p=n;
+        for(std::uint64_t j=2;j<n && p==n;++j)
+          for(std::size_t k=0;k<keys.size() && p==n;++k)
+            if(static_cast<__int128>(at(1)[k])*j!=at(j)[k])p=j;
+        if(n%p)return std::nullopt;
+        for(std::uint64_t j=p;j<n;++j)
+          for(std::size_t k=0;k<keys.size();++k)
+            if(static_cast<__int128>(at(j-j%p)[k])+at(j%p)[k]!=at(j)[k])return std::nullopt;
+        MemberDigit digit{axis,p,shape[axis]*period,{}};
+        for(std::size_t k=0;k<keys.size();++k)digit.delta.emplace(keys[k],at(1)[k]);
+        box.digits.push_back(std::move(digit));
+        period*=p;n/=p;
+      }
+    }
+    return box;
+  }
+  // A position in a member box: dense digits are the family's Index levels, the others are
+  // fixed (arm) values; old levels (the representative's domain and Fold binders) move up by
+  // `shift`, the number of dense digits.
+  struct MemberPoint {
+    std::vector<std::optional<std::uint32_t>> level;
+    std::vector<std::uint64_t> value;
+    std::uint32_t shift=0;
+  };
+  // `base` plus sum_d (digit value or Index level) x coefficient_d in `type` (the arm
+  // digits' part folded into the literal `constant`, or into a u64 offset by shiftOffset when
+  // `constant` is null); an Index is converted exactly to `type`. A negative coefficient
+  // subtracts: the value is a member's exact offset or coordinate, never negative.
+  s::Ref addMemberTerms(s::Ref base,std::optional<std::int64_t> constant,const std::string& type,
+      const MemberBox& box,const MemberPoint& p,const std::function<std::int64_t(const MemberDigit&)>& coefficient) {
+    std::int64_t fixed=constant.value_or(0);
+    std::vector<std::pair<std::uint32_t,std::int64_t>> terms;
+    for(std::size_t d=0;d<box.digits.size();++d) {
+      const auto c=coefficient(box.digits[d]);
+      if(!c)continue;
+      if(p.level[d])terms.emplace_back(*p.level[d],c);
+      else fixed=add(fixed,mul(c,integer(p.value[d])));
+    }
+    if(constant)base=result.graph.constant(type,std::to_string(fixed));
+    else if(fixed)base=shiftOffset(base,fixed);
+    for(const auto& [level,c]:terms) {
+      auto term=result.graph.index(level);
+      if(type!="u64")term=result.graph.convert(term,type,"Convert");
+      const auto magnitude=c<0?-static_cast<unsigned __int128>(c):static_cast<unsigned __int128>(c);
+      if(magnitude!=1)term=result.graph.operation("Multiply",type,{term,result.graph.constant(type,std::to_string(std::uint64_t(magnitude)))});
+      base=result.graph.operation(c<0?"Subtract":"Add",type,{base,term});
+    }
+    return base;
+  }
+  // Rebuild marks for member families (one ascending pass; node IDs are topological):
+  // kFamilyRebuild for an Index, a Fold, a unit parameter, a cell, a decorated use or
+  // anything above one; kFamilyParametric for an input parameter (not a unit's) below;
+  // kFamilyKappa for a unit parameter below (instantiationMarks' kKappaDependent).
+  static constexpr std::uint8_t kFamilyRebuild=1,kFamilyParametric=2,kFamilyKappa=4;
+  static constexpr std::uint8_t kFamilyUnitParameter=kFamilyRebuild|kFamilyKappa;
+  std::vector<std::uint8_t> familyMarks() const {
+    const auto& graph=result.graph;
+    std::vector<std::uint8_t> marks(graph.size());
+    for(s::Id id=0;id<graph.size();++id) {
+      const auto& node=graph.node(id);
+      std::uint8_t m=0;
+      if(node.kind==s::Kind::InputParameter)
+        m=node.name.starts_with(kUnitCoordinatePrefix)?kFamilyUnitParameter:kFamilyParametric;
+      if(node.kind==s::Kind::Index || node.kind==s::Kind::Fold || node.kind==s::Kind::InputValue)m|=kFamilyRebuild;
+      for(const auto& operand:node.operands) {
+        m|=marks[operand.node];
+        if(!operand.pointer_provenance.empty())m|=kFamilyRebuild;
+      }
+      marks[id]=m;
+    }
+    return marks;
+  }
+  struct MemberFamilyUnavailable {};
+  // `root` as one body over a member point: Index levels and Fold binders move up by
+  // p.shift, unit parameters become the point's unit coordinates, representative-absolute
+  // cells and slot constants move by the point's δ, κ-covariant cells (an input parameter
+  // in the offset) are only rebuilt. This is the per-member instantiation with the members'
+  // differences as Index terms, and it refuses lifting where instantiate does, through the
+  // same checks (refuseUnliftableNode, refuseUnliftableUse). A unit coordinate (an arm
+  // digit's part a literal) therefore reaches integral operations and conversions only,
+  // whose exact fixed-width values do not depend on whether they are folded, so the body is
+  // the representative's parametric body evaluated at each member. A use whose provenance
+  // names a CTA, or a slot constant moving along a dense digit, has no such form:
+  // MemberFamilyUnavailable (the caller copies per member). Marked nodes only, memoized per
+  // point.
+  s::Ref memberBody(const s::Ref& root,const MemberBox& box,const MemberPoint& p,const CtaCoordinates& rep,
+                    const std::vector<std::uint8_t>& marks,std::unordered_map<s::Id,s::Ref>& memo) {
+    const auto decorate=[&](const s::Ref& old) {
+      if(marks[old.node]&kFamilyKappa)refuseUnliftableUse(old);
+      auto value=marks[old.node]&kFamilyRebuild?memo.at(old.node):old;
+      if(marks[old.node]&kFamilyRebuild) {
+        value.conversion=old.conversion;value.converted_type=old.converted_type;
+        value.pointer_provenance=old.pointer_provenance;
+      }
+      if(value.pointer_provenance.empty())return value;
+      const auto fields=provenanceFields(value.pointer_provenance);
+      if(!fields)liftRefuse("unparsed pointer provenance");
+      if(std::string_view(value.pointer_provenance).substr(fields->cta_begin,fields->cta_end-fields->cta_begin)!="none")
+        throw MemberFamilyUnavailable{};
+      if(const auto slot=slotAllocation(value,*fields)) {
+        std::int64_t shift=0;
+        for(std::size_t d=0;d<box.digits.size();++d) {
+          const auto c=deltaIn(box.digits[d].delta,*slot);
+          if(!c)continue;
+          if(p.level[d])throw MemberFamilyUnavailable{};
+          shift=add(shift,mul(c,integer(p.value[d])));
+        }
+        value=moveSlot(std::move(value),shift);
+      }
+      return value;
+    };
+    std::vector<std::pair<s::Id,bool>> work{{root.node,false}};
+    while(!work.empty()) {
+      const auto [id,ready]=work.back();work.pop_back();
+      if(!(marks[id]&kFamilyRebuild) || memo.contains(id))continue;
+      const auto node=result.graph.node(id); // a copy: rebuilding appends nodes
+      if(!ready) {
+        work.emplace_back(id,true);
+        for(const auto& operand:node.operands)
+          if((marks[operand.node]&kFamilyRebuild) && !memo.contains(operand.node))work.emplace_back(operand.node,false);
+        continue;
+      }
+      std::vector<s::Ref> operands;operands.reserve(node.operands.size());
+      for(const auto& operand:node.operands)operands.push_back(decorate(operand));
+      if(marks[id]&kFamilyKappa)refuseUnliftableNode(node);
+      s::Ref value;
+      switch(node.kind) {
+        case s::Kind::Index:value=result.graph.index(node.index_level+p.shift);break;
+        case s::Kind::InputParameter: { // a unit parameter (the only marked ones)
+          const auto [axis,offset]=unitParameter(node.name);
+          value=addMemberTerms({},add(integer(rep[axis]),integer(offset)),node.type,box,p,
+              [axis=axis](const MemberDigit& digit){return digit.axis==axis?integer(digit.step):std::int64_t{0};});
+          break;
+        }
+        case s::Kind::InputValue: {
+          auto offset=operands.at(0);
+          if(!(marks[node.operands.at(0).node]&kFamilyParametric))
+            offset=addMemberTerms(offset,{},"u64",box,p,
+                [&](const MemberDigit& digit){return deltaIn(digit.delta,node.name);});
+          value=result.graph.initialCell(node.name,offset,node.type);
+          break;
+        }
+        case s::Kind::Operation:
+          value=result.graph.operation(node.name,node.type,std::move(operands),node.attributes);
+          break;
+        case s::Kind::Fold:
+          value=result.graph.fold(node.fold->reducer,operands.at(0),operands.at(1),node.fold->binder_level+p.shift,
+              node.fold->count,node.type);
+          break;
+        default:liftRefuse("unexpected member-dependent "+s::kindName(node.kind));
+      }
+      memo.emplace(id,value);
+    }
+    return decorate(root);
+  }
+  // Lifted outputs stay within the lowering's node budget; no collection runs while they are
+  // built. O(1), after each lifted family or copy.
+  void liftBudget() {
+    if(result.graph.size()>options.max_nodes)
+      fail("expression_node_limit_exceeded","lifted member outputs exceed the scalar graph node budget");
+  }
+  // Exact canonical forms (RealExpressionBuilder::canonicalize) of the bodies of outputs
+  // `owners`, before their families merge. Every merge types bf16 field reads, so outputs
+  // that unpack the low and high fields of packed pairs become shifted copies; only
+  // mergeRepresentativeFamilies, which says why, also makes ideal-real sums canonical.
+  // O(reachable nodes), plus the sorts.
+  void canonicalizeOutputs(const std::vector<std::size_t>& owners,s::CanonicalForms forms) {
+    std::vector<s::Ref> bodies;bodies.reserve(owners.size());
+    for(const auto i:owners)bodies.push_back(result.outputs[i].value);
+    real_expressions.canonicalize(bodies,forms);
+    for(std::size_t k=0;k<owners.size();++k)result.outputs[owners[k]].value=bodies[k];
+  }
+  // The outputs consolidation merges: those with an output domain.
+  std::vector<std::size_t> familyOutputs() const {
+    std::vector<std::size_t> owners;owners.reserve(output_domains.size());
+    for(const auto& [i,domain]:output_domains)if(i<result.outputs.size())owners.push_back(i);
+    return owners;
+  }
+  // Class mode, for the classes lifted as member families: their representative outputs
+  // that are families merge first, by consolidation's exact shifted-body merge, so every
+  // lifted family stands for a merged one and the lifted family graph fits the node budget.
+  // Two more exact forms are what make such outputs merge, and only this merge uses them:
+  // canonical sums (CanonicalForms::SumsAndBf16Fields: sums associated differently, as by
+  // the lanes of a warp butterfly) and contiguous equal rows as one two-dimensional family
+  // (tensor_families). Ordinary consolidation does without them, since there they enable no
+  // merge that pays for them: a flattened sum loses the shared partial sums the equivalence
+  // importer reuses, and a two-dimensional family can exceed the tensor's declared extent,
+  // which the comparison refuses. Both are exact identities, so the choice affects only
+  // representation and budgets, never values. A one-element family's stride addresses
+  // nothing; it is set to the element width so that adjacent ones can merge. Only outputs of
+  // one unit (store and value) merge with each other. O(graph) for the merge's affine forms,
+  // plus the canonical forms and the pending families and their compared bodies.
+  void mergeRepresentativeFamilies(const std::map<CtaCoordinates,MemberBox>& classes) {
+    const auto end=result.outputs.size();
+    std::map<std::pair<CtaCoordinates,CtaCoordinates>,std::vector<std::size_t>> groups;
+    for(auto i=instantiated_end;i<end;++i) {
+      const auto origin=i<output_ctas.size()?output_ctas[i]:OutputOrigin{};
+      if(!origin.writer || !origin.value || !output_domains.contains(i) ||
+         !classes.contains(unitOrigin(*origin.writer)))continue;
+      groups[{unitOrigin(*origin.writer),unitOrigin(*origin.value)}].push_back(i);
+    }
+    std::vector<std::size_t> owners;
+    for(const auto& [units,indices]:groups)owners.insert(owners.end(),indices.begin(),indices.end());
+    canonicalizeOutputs(owners,s::CanonicalForms::SumsAndBf16Fields);
+    std::vector<bool> merged(end-instantiated_end);
+    std::vector<std::pair<std::size_t,std::vector<s::OutputFamily>>> replacements;
+    for(const auto& [units,indices]:groups) {
+      if(indices.size()<2)continue;
+      std::vector<s::OutputFamily> families;families.reserve(indices.size());
+      for(const auto i:indices) {
+        auto family=output_domains.at(i).family(result.outputs[i]);
+        if(family.shape==std::vector<std::uint64_t>{1})family.strides_bytes={family.element_bytes};
+        families.push_back(std::move(family));
+      }
+      if(!s::mergeOutputFamilies(result.graph,families,/*tensor_families=*/true))continue;
+      for(const auto i:indices)merged[i-instantiated_end]=true;
+      replacements.emplace_back(indices.front(),std::move(families));
+    }
+    if(replacements.empty())return;
+    std::vector<ScalarFoldOutput> outputs;std::vector<OutputOrigin> origins;
+    std::vector<std::optional<OutputDomain>> domains;
+    for(auto i=instantiated_end;i<end;++i) {
+      if(merged[i-instantiated_end])continue;
+      outputs.push_back(result.outputs[i]);origins.push_back(i<output_ctas.size()?output_ctas[i]:OutputOrigin{});
+      if(const auto found=output_domains.find(i);found!=output_domains.end())domains.emplace_back(found->second);
+      else domains.emplace_back();
+    }
+    for(const auto& [first,families]:replacements)
+      for(const auto& family:families) {
+        OutputDomain domain(family.shape,family.strides_bytes);
+        if(!family.element_bytes || domain.count>UINT64_MAX/family.element_bytes)
+          fail("scalar_fold_prerequisite","merged output payload overflow");
+        outputs.push_back({{family.allocation,family.offset,domain.count*family.element_bytes},family.body});
+        origins.push_back(output_ctas[first]);domains.emplace_back(std::move(domain));
+      }
+    result.outputs.resize(instantiated_end);output_ctas.resize(instantiated_end);
+    output_domains.erase(output_domains.lower_bound(instantiated_end),output_domains.end());
+    for(std::size_t k=0;k<outputs.size();++k) {
+      if(domains[k])output_domains.emplace(result.outputs.size(),std::move(*domains[k]));
+      result.outputs.push_back(std::move(outputs[k]));output_ctas.push_back(origins[k]);
+    }
+  }
+  // Whether per-member copies of a class's pending outputs (values `roots`) fit the node
+  // budget. A copy rebuilds the moving nodes below its outputs; a rebuilt node is new only
+  // where something below it changes for the member: a unit parameter, a cell of an
+  // allocation the member moves (δ ≠ 0) or a decorated (renamed or moved) use. These are
+  // counted per member over the marked part in topological order, an upper bound of the
+  // copies' new nodes, stopping once graph + count exceeds the budget.
+  // O(marked part x log + min(members x marked part, budget)).
+  bool copiesFit(const std::vector<UnitLifting::Member>& members,const std::vector<s::Ref>& roots,
+                 const std::vector<std::uint8_t>& moving) const {
+    const auto& graph=result.graph;
+    std::vector<std::uint8_t> state(graph.size()); // bit 0: in the marked part; bit 1: changed
+    std::vector<s::Id> part,work;
+    for(const auto& root:roots)if(moving[root.node] && !state[root.node]){state[root.node]=1;work.push_back(root.node);}
+    while(!work.empty()) {
+      const auto id=work.back();work.pop_back();part.push_back(id);
+      for(const auto& operand:graph.node(id).operands)
+        if(moving[operand.node] && !state[operand.node]){state[operand.node]=1;work.push_back(operand.node);}
+    }
+    std::sort(part.begin(),part.end());
+    std::uint64_t total=graph.size();
+    for(const auto& member:members) {
+      for(const auto id:part) {
+        const auto& node=graph.node(id);
+        bool changed=node.kind==s::Kind::InputParameter;
+        if(node.kind==s::Kind::InputValue && !(moving[id]&kCovariantCell)) {
+          const auto delta=member.delta.find(node.name);
+          changed=delta==member.delta.end() || delta->second;
+        }
+        for(const auto& operand:node.operands)
+          changed=changed || (state[operand.node]&2) || !operand.pointer_provenance.empty();
+        if(changed) {
+          state[id]|=2;
+          if(++total>options.max_nodes)return false;
+        }
+      }
+      for(const auto id:part)state[id]&=1;
+    }
+    return true;
+  }
+  // Class mode: every pending output is a representative's. Each member gets a copy,
+  // instantiated at its origin, δ and CTA ids, its region moved by δ(allocation), and the
+  // representative's own body is instantiated for its coordinate. A class whose copies do
+  // not fit the node budget (copiesFit) and whose units fill a member box is lifted as
+  // member families instead: its representative families merge first, then each output
+  // becomes one family per arm point: digits that move its bytes by a positive δ, and leave a
+  // placement's atoms in place, are the family's outer dimensions (outermost first, their δ
+  // the strides); the others are arms, enumerated in unit order, each arm family standing
+  // for all members at that point (index-function arms become pull arms, the last
+  // outermost); an output with no dense digit, or a body without a family form, is copied.
+  // The output's unit is its store's (its records must lie in one unit). Cost: two marking
+  // passes, the copies' count per class, and for member-family classes one member box, the
+  // merge and one more marking pass; then per family the marked part of its body per arm
+  // point (memoized per point), or, per copy, the moving part (κ, cells, renamed uses)
+  // memoized per unit. The lifted graph is bounded by the node budget (liftBudget).
   void instantiateClasses() {
     const auto& lifting=*options.unit_lifting;
-    const auto kappa=instantiationMarks(false),moving=instantiationMarks(true);
+    auto kappa=instantiationMarks(false),moving=instantiationMarks(true);
+    std::map<CtaCoordinates,std::vector<s::Ref>> roots;
+    for(auto i=instantiated_end;i<result.outputs.size();++i)
+      if(i<output_ctas.size() && output_ctas[i].writer)roots[unitOrigin(*output_ctas[i].writer)].push_back(result.outputs[i].value);
+    std::map<CtaCoordinates,MemberBox> boxes;
+    for(const auto& [rep,values]:roots) {
+      const auto found=lifting.members.find(rep);
+      if(found==lifting.members.end() || copiesFit(found->second,values,moving))continue;
+      if(auto box=memberBox(rep,found->second))boxes.emplace(rep,std::move(*box));
+    }
+    if(!boxes.empty()) {
+      mergeRepresentativeFamilies(boxes);
+      kappa=instantiationMarks(false);moving=instantiationMarks(true);
+    }
+    const auto marks=boxes.empty()?std::vector<std::uint8_t>{}:familyMarks();
     std::map<CtaCoordinates,std::unordered_map<s::Id,s::Ref>> own,copies;
+    std::map<std::tuple<CtaCoordinates,std::vector<bool>,std::size_t>,std::unordered_map<s::Id,s::Ref>> points;
     const auto end=result.outputs.size();
     for(auto i=instantiated_end;i<end;++i) {
       const auto origin=i<output_ctas.size()?output_ctas[i]:OutputOrigin{};
@@ -1703,7 +2227,8 @@ class Lower {
         liftRefuse("an output over unit parameters is stored by another unit");
       std::optional<OutputDomain> domain;
       if(const auto found=output_domains.find(i);found!=output_domains.end())domain=found->second;
-      if(const auto found=lifting.members.find(rep);found!=lifting.members.end())
+      if(const auto found=lifting.members.find(rep);found!=lifting.members.end()) {
+        if(const auto box=boxes.find(rep);box!=boxes.end() && memberFamilies(i,box->second,rep,domain,marks,points))continue;
         for(const auto& member:found->second) {
           const UnitInstance unit{member.origin,&member.delta,&member.ctas};
           auto body=instantiate(parametric,unit,moving,copies[member.origin]);
@@ -1711,12 +2236,73 @@ class Lower {
           moved.offset=shiftRegion(region,domain,deltaOf(unit,region.allocation));
           if(domain)output_domains.emplace(result.outputs.size(),*domain);
           result.outputs.push_back({std::move(moved),std::move(body)});
+          liftBudget();
         }
+      }
       auto body=parametric;
       if(kappa.at(parametric.node))body=instantiate(parametric,{rep,nullptr,nullptr},kappa,own[rep]);
       result.outputs[i].value=std::move(body);
     }
     instantiated_end=result.outputs.size();output_ctas.clear();
+  }
+  // Output i as member families over `box` (instantiateClasses); false when no digit is dense
+  // or a body has no family form. The arm points are enumerated with the innermost arm digit
+  // fastest (unit order); the first replaces output i, the others are appended.
+  bool memberFamilies(std::size_t i,const MemberBox& box,const CtaCoordinates& rep,const std::optional<OutputDomain>& domain,
+      const std::vector<std::uint8_t>& marks,
+      std::map<std::tuple<CtaCoordinates,std::vector<bool>,std::size_t>,std::unordered_map<s::Id,s::Ref>>& points) {
+    const auto parametric=result.outputs[i].value;
+    const auto region=result.outputs[i].region;
+    std::vector<std::string> atoms;
+    if(const auto& root=result.graph.node(parametric);root.kind==s::Kind::Operation && root.name==s::kPlacementOperation)
+      for(std::size_t k=1;k<root.operands.size();++k)atoms.push_back(result.graph.node(root.operands[k]).name);
+    std::vector<bool> dense(box.digits.size());
+    MemberPoint point;point.level.resize(box.digits.size());point.value.resize(box.digits.size());
+    std::vector<std::uint64_t> shape,strides;
+    for(std::size_t d=box.digits.size();d-->0;) {
+      const auto& digit=box.digits[d];
+      dense[d]=deltaIn(digit.delta,region.allocation)>0 &&
+          std::ranges::all_of(atoms,[&](const std::string& atom){return !deltaIn(digit.delta,atom);});
+      if(!dense[d])continue;
+      point.level[d]=static_cast<std::uint32_t>(shape.size());
+      shape.push_back(digit.count);strides.push_back(std::uint64_t(deltaIn(digit.delta,region.allocation)));
+    }
+    if(shape.empty())return false;
+    point.shift=static_cast<std::uint32_t>(shape.size());
+    std::uint64_t width=region.bytes;
+    if(domain) {
+      width=region.bytes/domain->count;
+      shape.insert(shape.end(),domain->shape.begin(),domain->shape.end());
+      if(domain->strides.empty())strides.push_back(width);
+      else strides.insert(strides.end(),domain->strides.begin(),domain->strides.end());
+    }
+    const OutputDomain layout(shape,strides);
+    if(layout.count>UINT64_MAX/width)fail("index_representation_overflow","member family payload overflow");
+    std::uint64_t arms=1;
+    for(std::size_t d=0;d<box.digits.size();++d)if(!dense[d])arms*=box.digits[d].count;
+    std::vector<std::pair<ConstantRegion,s::Ref>> families;families.reserve(arms);
+    try {
+      for(std::size_t arm=0;arm<arms;++arm) {
+        std::int64_t moved=0;
+        for(std::size_t d=0,rest=arm;d<box.digits.size();++d) {
+          if(dense[d])continue;
+          point.value[d]=rest%box.digits[d].count;rest/=box.digits[d].count;
+          moved=add(moved,mul(deltaIn(box.digits[d].delta,region.allocation),integer(point.value[d])));
+        }
+        auto family=region;family.bytes=layout.count*width;
+        family.offset=shiftRegion(family,layout,moved);
+        families.emplace_back(family,memberBody(parametric,box,point,rep,marks,points[{rep,dense,arm}]));
+        liftBudget();
+      }
+    } catch(const MemberFamilyUnavailable&) {return false;}
+    for(std::size_t arm=0;arm<arms;++arm) {
+      auto& [family,body]=families[arm];
+      const auto at=arm?result.outputs.size():i;
+      output_domains.insert_or_assign(at,layout);
+      if(arm)result.outputs.push_back({family,body});
+      else result.outputs[i]={family,body};
+    }
+    return true;
   }
   // A member's output region: the representative's moved by δ. Every byte it
   // covers (a strided domain: the last element too) must stay in the signed
@@ -2731,6 +3317,92 @@ class Lower {
       SENTRYWARD_DEBUG_PRINT(scalar_fold_lowering_28);
     });
   }
+  // Add/Subtract and bitcast steps followed from an address to its cvta root. A deeper
+  // address is not decomposed; the caller's whole-address form is exact as well.
+  static constexpr unsigned kCvtaTermDepth=16;
+  // An address built as cvta.to.global(root parameter) + terms by Add/Subtract: the terms,
+  // which are exactly address - cvta(root). The conversion never has to be evaluated or
+  // assumed to be the identity. `use` is the address's use DAG in a template projection
+  // (its operand children are followed; any other use kind is not decomposed).
+  // nullopt for any other form. O(depth), depth <= kCvtaTermDepth.
+  std::optional<s::Ref> cvtaRelative(v::Value address,const v::Value& root,
+      const std::shared_ptr<const IndexedSourceUse>& use,unsigned depth) {
+    using UseKind=IndexedSourceUse::Kind;
+    if(depth>kCvtaTermDepth || !address.indices().empty() || address.threadSelector())return std::nullopt;
+    if(use && use->prototype!=input.canonicalInterpretation(address))return std::nullopt;
+    // The use of an operand or conversion source: the stored child, or (member template)
+    // its own member mapping, bound exactly as the template projection binds a uniform
+    // template's operands. Null without a use; nullopt when no mapping is certified.
+    const auto sourceUse=[&](const v::Value& source,std::size_t k)->std::optional<std::shared_ptr<const IndexedSourceUse>> {
+      if(!use)return std::shared_ptr<const IndexedSourceUse>{};
+      if(use->kind==UseKind::Operands || use->kind==UseKind::Conversion) {
+        if(k>=use->children.size())return std::nullopt;
+        return use->children[k];
+      }
+      if(use->kind!=UseKind::MemberTemplate || !use->binding)return std::nullopt;
+      auto bound=bindSourceUse(input,input.canonicalInterpretation(source),address,use->binding->base,use->binding->stride);
+      if(!bound)return std::nullopt;
+      return bound;
+    };
+    // A 64-bit scalar integer bitcast (s64/u64/b64 views of one address) changes no bits.
+    if(const auto& conversion=address.conversion()) {
+      if(conversion->spec->kind!=v::TypeConversionKind::Bitcast || !input.type(address).isScalar() ||
+         input.type(address).bitSize()!=64 || input.type(conversion->source).bitSize()!=64)return std::nullopt;
+      if(use && use->kind!=UseKind::Conversion && use->kind!=UseKind::MemberTemplate)return std::nullopt;
+      const auto inner=sourceUse(conversion->source,0);
+      if(!inner)return std::nullopt;
+      return cvtaRelative(conversion->source,root,*inner,depth+1);
+    }
+    address=input.resolve(address);
+    if(use && use->kind!=UseKind::Operands &&
+       !(use->kind==UseKind::MemberTemplate && input.definingNode(address).hasUniformThreadTemplate()))return std::nullopt;
+    const auto& op=input.definingNode(address).operation();
+    const auto operands=input.instanceOperands(address);
+    const auto bits=[&](v::Value x) {
+      while(x.conversion() && x.conversion()->spec->kind==v::TypeConversionKind::Bitcast &&
+            x.indices().empty() && !x.threadSelector())x=x.conversion()->source;
+      return input.resolve(x);
+    };
+    if(const auto* convert=dynamic_cast<const v::PtxScalarOp*>(&op);convert &&
+       convert->opcode()==v::PtxScalarOpcode::AddressSpaceConvert && !convert->attributes().carry_in &&
+       !convert->attributes().carry_out && operands.size()==1 && bits(operands[0])==bits(root) &&
+       (convert->attributes().modifiers==std::vector<std::string>{"to","global","u64"} ||
+        convert->attributes().modifiers==std::vector<std::string>{"global","u64"}))
+      return result.graph.constant("u64","0");
+    const auto* binary=dynamic_cast<const v::BinaryOp*>(&op);
+    if(!binary || operands.size()!=2 || input.type(address).bitSize()!=64 ||
+       (binary->opcode()!=v::BinaryOpcode::Add && binary->opcode()!=v::BinaryOpcode::Subtract))return std::nullopt;
+    const auto first=sourceUse(operands[0],0),second=sourceUse(operands[1],1);
+    if(!first || !second)return std::nullopt;
+    const auto term=[&](std::size_t k){return inUse(k?*second:*first,[&]{return scalar(operands[k]);});};
+    if(auto left=cvtaRelative(operands[0],root,*first,depth+1))
+      return emitOperation(binary->opcode()==v::BinaryOpcode::Add?"Add":"Subtract","u64",{*left,term(1)});
+    if(binary->opcode()==v::BinaryOpcode::Add)
+      if(auto right=cvtaRelative(operands[1],root,*second,depth+1))return emitOperation("Add","u64",{term(0),*right});
+    return std::nullopt;
+  }
+  // The positioned read run covering members [first, last] of a node, if any.
+  const std::pair<const MemoryInstance,PositionRun>* positionRun(std::size_t node,std::size_t first,std::size_t last) const {
+    auto found=position_runs.upper_bound({node,first});
+    if(found==position_runs.begin())return nullptr;
+    --found;
+    if(found->first.node!=node || first<found->first.instance || last-found->first.instance>=found->second.count)return nullptr;
+    return &*found;
+  }
+  // A positioned initial read at its exact position (memory elimination): the cell at
+  // `constant` + sum(coefficient x atom), each atom its atomCell (as placements are). No
+  // address value graph, hence no unit parameter: lifting moves the constant by
+  // δ(allocation) and each atom by δ(its object), the members' own positions. `constant`
+  // is an Offset over the projection's binder when the read is a template member.
+  s::Ref positionedCell(const SymbolicPosition& position,const Offset& constant,const std::string& type) {
+    auto offset=offsetValue(constant);
+    for(const auto& term:position.base) {
+      const auto atom=result.graph.convert(atomCell(term),"s64","Convert");
+      offset=emitOperation("Add","u64",{offset,emitOperation("Multiply","s64",
+          {atom,result.graph.constant("s64",std::to_string(term.coefficient))})});
+    }
+    return repAbsoluteCell(position.constant.allocation,offset,type);
+  }
   s::Ref read(v::Value value,const Offset& offset,const v::ElementType& type){
     if(auto found=memory.symbolic_initial_reads.find({value.nodeId(),value.instanceIndex()});
         found!=memory.symbolic_initial_reads.end()) {
@@ -2739,23 +3411,33 @@ class Lower {
       const auto bytes=(type.width()+7)/8;
       if(lo<0 || hi<0 || std::uint64_t(hi)>region.bytes || bytes>region.bytes-std::uint64_t(hi))
         fail("scalar_fold_invalid_index","symbolic initial-memory slice exceeds its recorded payload");
+      // Outside a template projection the instance is this one: its exact position.
+      if(!indexed_context)
+        if(const auto position=memory.symbolic_read_positions.find({value.nodeId(),value.instanceIndex()});
+           position!=memory.symbolic_read_positions.end())
+          return positionedCell(position->second,plus(Offset(integer(position->second.constant.offset)),offset),type.toString());
       const auto base=allocation_bases.find(region.allocation);
       if(base==allocation_bases.end())
         fail("symbolic_initial_base_unsupported","No unique pointer root for symbolic initial-memory allocation "+region.allocation);
       // Preserve the exact integer address, including page-table loads. This is
       // a subtraction of the real object base, not substitution of base=0.
       const auto address=input.instanceOperands(value).at(0);
-      auto address_value=inUse(indexed_context && indexed_context->use &&
+      const auto use=indexed_context && indexed_context->use &&
           indexed_context->use->kind==IndexedSourceUse::Kind::Operands?
-          indexed_context->use->children.at(0):nullptr,[&]{return scalar(address);});
+          indexed_context->use->children.at(0):nullptr;
       auto base_value=inUse(nullptr,[&]{return scalar(base->second);});
-      auto relative=emitOperation("Subtract","u64",{address_value,base_value});
+      // A cvta.to.global root: (root parameter + terms) - root parameter keeps the
+      // parameter in the offset's cone (a κ-covariant cell for lifting) without the cvta.
+      const auto terms=cvtaRelative(address,base->second,use,0);
+      auto address_value=terms?emitOperation("Add","u64",{base_value,*terms}):
+          inUse(use,[&]{return scalar(address);});
+      const auto relative=emitOperation("Subtract","u64",{address_value,base_value});
       // Lifting: the payload offset is relative to the address (serialization
       // sets it to 0 for Loads); a nonzero one would mix a representative-
       // absolute displacement into a covariant offset.
       if(options.unit_lifting && region.offset)liftRefuse("symbolic initial read with an absolute payload offset");
-      relative=emitOperation("Add","u64",{relative,offsetValue(plus(offset,Offset(integer(region.offset))))});
-      return covariantCell(region.allocation,relative,type.toString());
+      return covariantCell(region.allocation,emitOperation("Add","u64",
+          {relative,offsetValue(plus(offset,Offset(integer(region.offset))))}),type.toString());
     }
     if(spatial_count) {
       const auto stride=spatial_instance_strides.find(valueKey(value));
@@ -2928,6 +3610,81 @@ class Lower {
     }
     return accumulated;
   }
+  // The exact value of a scalar-graph constant seen through its exact (bit-preserving or
+  // representable) conversions, e.g. an f64 parameter read as b64 bits.
+  std::optional<equivalence::ConstantValue> exactConstant(const s::Ref& r) const {
+    const auto& n=result.graph.node(r);
+    if(n.kind!=s::Kind::Constant || !r.pointer_provenance.empty())return {};
+    return equivalence::constantValue(n.type,n.name,r.conversion,r.converted_type);
+  }
+  // Exact constants (docs/reference-binding-json.md, numerical model): an IEEE binary32/binary64
+  // add, sub, mul, div or fma whose operands are all exact constants has its IEEE round-to-nearest-
+  // even result, not the ideal real one. PTX rounds a default-rounding add/sub/mul to nearest even,
+  // but may contract a default mul into a default add/sub (PTX ISA, mul/add): such an add/sub keeps
+  // the ideal-real semantics. Other rounding modes, saturation and non-finite results do as well.
+  // O(operands) per operation.
+  std::optional<s::Ref> constantArithmetic(const v::Operation& op,std::span<const v::Value> args,
+      const std::vector<s::Ref>& operands,const v::ElementType& type) {
+    const auto name=type.toString();
+    if(type.kind()!=v::ElementKind::Floating || (name!="f32" && name!="f64"))return {};
+    const auto contractible=[&](v::Value x) {
+      if(x.conversion() || !x.indices().empty() || x.threadSelector())return false;
+      const auto* product=dynamic_cast<const v::BinaryOp*>(&input.definingNode(x).operation());
+      return product && product->opcode()==v::BinaryOpcode::Multiply &&
+          product->attributes().rounding==v::RoundingMode::None &&
+          input.type(x).element().kind()==v::ElementKind::Floating;
+    };
+    std::string operation;bool flush=false;
+    if(const auto* binary=dynamic_cast<const v::BinaryOp*>(&op)) {
+      const auto& a=binary->attributes();
+      const bool nearest=a.rounding==v::RoundingMode::NearestEven,plain=a.rounding==v::RoundingMode::None;
+      if(a.saturate || a.propagate_nan || !(nearest || plain))return {};
+      switch(binary->opcode()) {
+        case v::BinaryOpcode::Add:operation="Add";break;
+        case v::BinaryOpcode::Subtract:operation="Subtract";break;
+        case v::BinaryOpcode::Multiply:operation="Multiply";break;
+        case v::BinaryOpcode::Divide:if(!nearest)return {};operation="Divide";break;
+        default:return {};
+      }
+      if(plain && operation!="Multiply" && std::any_of(args.begin(),args.end(),contractible))return {};
+      flush=a.flush_to_zero;
+    } else if(const auto* fma=dynamic_cast<const v::FmaOp*>(&op)) {
+      const auto& a=fma->attributes();
+      if(a.saturate || a.propagate_nan || a.rounding!=v::RoundingMode::NearestEven)return {};
+      operation="Fma";flush=a.flush_to_zero;
+    } else return {};
+    std::vector<equivalence::ConstantValue> values;
+    for(const auto& r:operands) {
+      auto value=exactConstant(r);
+      if(!value || value->type!=name)return {};
+      values.push_back(std::move(*value));
+    }
+    const auto folded=equivalence::ieeeArithmetic(operation,name,values,flush);
+    if(!folded)return {};
+    return real_expressions.constant(name,folded->literal);
+  }
+  // A conversion of an exact constant to a floating type with an explicit rounding mode is that
+  // constant rounded as the conversion rounds (cvt.{rn,rz,rm,rp}); saturating or flushing
+  // conversions keep the existing conversion edge. O(1).
+  std::optional<s::Ref> constantConversion(const s::Ref& base,const v::ConversionAttributes& attributes,
+      const v::ElementType& target) {
+    if(target.kind()!=v::ElementKind::Floating || attributes.saturate || attributes.flush_to_zero ||
+       attributes.saturate_finite)return {};
+    std::optional<equivalence::Rounding> rounding;
+    switch(attributes.rounding) {
+      case v::RoundingMode::NearestEven:rounding=equivalence::Rounding::NearestEven;break;
+      case v::RoundingMode::TowardZero:rounding=equivalence::Rounding::TowardZero;break;
+      case v::RoundingMode::TowardNegative:rounding=equivalence::Rounding::TowardNegative;break;
+      case v::RoundingMode::TowardPositive:rounding=equivalence::Rounding::TowardPositive;break;
+      default:return {};
+    }
+    const auto value=exactConstant(base);
+    if(!value)return {};
+    const auto type=target.toString();
+    const auto folded=equivalence::roundedConversion(*value,type,*rounding);
+    if(!folded)return {};
+    return real_expressions.constant(type,folded->literal);
+  }
   s::Ref pure(v::Value value,const Offset& index,const v::ElementType& type){
     if(auto compact=plannedScalarReduction(value,type))return *compact;
     const auto& node=input.definingNode(value);const auto& op=node.operation();
@@ -2953,7 +3710,23 @@ class Lower {
         binary && binary->opcode()==v::BinaryOpcode::Multiply && input_operands.size()==2 &&
         input_operands[1].nodeId()<input_operands[0].nodeId()) {
       projectOperand(1);projectOperand(0);
+    } else if(dynamic_cast<const v::SelectOp*>(&op) && input_operands.size()==3 && !spatial_count &&
+              inUnspecifiedCone(value)) {
+      // A Select in the unspecified cone (selection contexts, above): the condition first; an arm
+      // that the context or a constant rules out is not lowered; each lowered arm gets the literals
+      // its condition value implies.
+      projectOperand(0);
+      if(const auto runs=decidedPredicate(operands[0])) {
+        const std::size_t arm=*runs?1:2;
+        projectOperand(arm);
+        if(result.graph.type(operands[arm])==type.toString())return operands[arm];
+        projectOperand(3-arm);
+      } else for(const std::size_t arm:{std::size_t{1},std::size_t{2}}) {
+        SelectScope scope(*this,selectContextFor(operands[0],arm==1));
+        projectOperand(arm);
+      }
     } else for(std::size_t i=0;i<input_operands.size();++i)projectOperand(i);
+    if(auto folded=constantArithmetic(op,input_operands,operands,type))return *folded;
     if (type.kind()==v::ElementKind::Floating) {
       const auto eligible=[](const v::ArithmeticAttributes& a) {
         // This path constructs ideal-real mathematics, consistently with the
@@ -3042,6 +3815,10 @@ class Lower {
         if(!outer.result_stride || !outer.count)return {};
         const auto origin=b.result_offset-b.result_offset%outer.result_stride;
         const auto relative=plus(local_offset,Offset(-integer(origin)));
+        // The overlap filter admits a query that begins in an earlier
+        // region's rows. No row of this region then holds every binder value,
+        // the same no-plan outcome as a row past the last one.
+        if(bounds(relative).first<0)return {};
         const auto row=bounds(quotient(relative,outer.result_stride));
         if(row.first<0 || row.second<row.first || std::uint64_t(row.second)>=outer.count)return {};
         local_offset=remainder(relative,outer.result_stride);
@@ -3138,6 +3915,38 @@ class Lower {
     if(const auto* periodic=periodicPartition(**split))return regionDomains(*periodic,offset,stride,type,count);
     return {};
   }
+  // Lane selections and same-width bitcasts constantBits crosses; past them a value counts
+  // as not constant, which only keeps it symbolic.
+  static constexpr unsigned kConstantBitsDepth=8;
+  // The exact bits of a value when they are a launch-time constant, after its
+  // lane selection is resolved and same-width bitcasts are crossed.
+  std::optional<equivalence::ConstantValue> constantBits(v::Value value) {
+    for(unsigned depth=0;depth<kConstantBitsDepth;++depth) {
+      value=specialization.selected(input.canonicalInterpretation(value));
+      if(value.threadSelector() || value.pointer() || !value.indices().empty())return {};
+      if(!value.conversion())return specialization.known(value);
+      const auto& c=*value.conversion();
+      if(c.spec->kind!=v::TypeConversionKind::Bitcast || input.type(c.source).bitSize()!=input.type(value).bitSize())
+        return {};
+      value=c.source;
+    }
+    return {};
+  }
+  // A representative slice when every slice is a whole value of one type whose
+  // bits are the same constant; equal bits of equal types are equal values.
+  std::optional<v::Value> uniformConstant(std::span<const IndexedSourceSlice> slices,std::uint64_t width) {
+    if(slices.empty())return {};
+    const auto& type=input.type(slices.front().value);
+    if(!type.isScalar() || type.bitSize()!=8*width)return {};
+    std::optional<equivalence::ConstantValue> bits;
+    for(const auto& slice:slices) {
+      if(slice.offset || slice.bytes!=width || input.type(slice.value)!=type)return {};
+      auto c=constantBits(slice.value);
+      if(!c || (bits && (c->type!=bits->type || c->literal!=bits->literal)))return {};
+      bits=std::move(c);
+    }
+    return slices.front().value;
+  }
   s::Ref warpMma(v::Value value,const Offset& index){
     auto [lo,hi]=bounds(index);
     if(lo<0 || hi>=128)fail("scalar_fold_invalid_index","warp MMA output exceeds 16x8 matrix");
@@ -3169,6 +3978,15 @@ class Lower {
           auto source=std::make_shared<const IndexedSource>(std::move(*pattern));
           partition.regions.push_back({0,source->count*width,MemoryView{matrix_type,
               MemoryViewKind::Layout,{source->prototype},{{0,0,0,width,{{source->count,0,width}}}},{},source}});
+          return partition;
+        }
+        // Every element one exact constant (a zero-initialized accumulator in
+        // per-lane registers): one region whose elements all read that value
+        // (source stride 0), not one region per register, which would split
+        // every consumer domain at each element. O(slices) cached lookups.
+        if(const auto uniform=uniformConstant(slices[role],width)) {
+          partition.regions.push_back({0,slices[role].size()*width,MemoryView{matrix_type,MemoryViewKind::Layout,
+              {*uniform},{{0,0,0,width,{{slices[role].size(),0,width}}}},{},{}}});
           return partition;
         }
         // Preserve existing register/component domains instead of requiring
@@ -3515,6 +4333,190 @@ class Lower {
     }
     return cast(folded,dst.element());
   }
+  // ---- Selection contexts ------------------------------------------------------
+  // select(c, a, b) is a where c holds and b elsewhere, so inside arm a, c is true and inside arm
+  // b it is false: a Select there whose condition c fixes has one possible arm. Lowering a Select
+  // in the unspecified cone (below) gives each arm the predicates its condition's value fixes,
+  // its selection context; a Select under it whose condition the context fixes lowers only the
+  // arm that runs: select(c, a, f(select(c, u, v))) = select(c, a, f(v)) and the symmetric forms,
+  // also when u has unspecified bits. Predicates are identified by the scalar graph's hash-consed
+  // Refs: equal Refs are one function of the inputs, so equal in every execution (and in every
+  // thread that computes them). An arm's context holds only its own Select's literals: it ends at
+  // the next Select it does not fix, so a cone node is lowered at most once per arm of its nearest
+  // such Select (contexts never multiply), and a projection outside the cone is context-free.
+  static constexpr std::size_t kSelectContextLiterals=16;
+  // BitNot and constant-armed Select wrappers decidedPredicate strips from one predicate; a
+  // deeper predicate stays undecided, so both arms are lowered.
+  static constexpr std::size_t kPredicateSteps=16;
+  struct SelectContext {std::vector<std::pair<s::Ref,bool>> literals;};
+  // The live contexts by serial (0: no context), interned by literal set. Serials are never
+  // reused, since projection keys name them: an output collection retires (erases) every
+  // context, and a later context takes the next serial.
+  std::unordered_map<std::uint32_t,SelectContext> select_contexts;
+  std::unordered_map<std::string,std::uint32_t> select_context_ids;
+  std::uint32_t next_select_context=1;
+  std::uint32_t select_context=0;
+  struct SelectScope {
+    Lower& owner;std::uint32_t saved;
+    SelectScope(Lower& o,std::uint32_t context):owner(o),saved(o.select_context){o.select_context=context;}
+    ~SelectScope(){owner.select_context=saved;}
+  };
+  // Value nodes from which an OpaqueValueOp is reachable through operands (conversions, component
+  // indices and thread selections included; a load is a leaf). Built on first use from users of
+  // each node in compressed rows: O(nodes + stored operand references) time and memory, nothing
+  // when the graph has no OpaqueValueOp.
+  std::vector<char> unspecified_cone;
+  bool unspecified_cone_built=false;
+  void buildUnspecifiedCone() {
+    unspecified_cone_built=true;
+    std::size_t end=0;bool opaque=false;
+    for(const auto& node:input.nodes()) {
+      end=std::max(end,node.id()+1);
+      opaque=opaque || dynamic_cast<const v::OpaqueValueOp*>(&node.operation());
+    }
+    if(!opaque)return;
+    std::vector<std::size_t> referenced;
+    const auto operandNodes=[&](const v::Node& node) {
+      referenced.clear();
+      const auto add=[&](auto&& self,const v::Value& x)->void {
+        referenced.push_back(input.resolve(x).nodeId());
+        if(x.conversion())self(self,x.conversion()->source);
+        for(const auto& index:x.indices())self(self,index);
+        if(x.threadSelector())self(self,*x.threadSelector());
+      };
+      node.forEachInstancePattern([&](const v::Instance& pattern,std::size_t,std::size_t,bool) {
+        for(const auto& operand:pattern.operands)add(add,operand);
+      });
+      std::sort(referenced.begin(),referenced.end());
+      referenced.erase(std::unique(referenced.begin(),referenced.end()),referenced.end());
+    };
+    std::vector<std::size_t> first(end+1,0);
+    for(const auto& node:input.nodes()) {
+      operandNodes(node);
+      for(const auto id:referenced)if(id<end)++first[id+1];
+    }
+    for(std::size_t i=0;i<end;++i)first[i+1]+=first[i];
+    std::vector<std::size_t> users(first[end]),next(first.begin(),first.end()-1);
+    for(const auto& node:input.nodes()) {
+      operandNodes(node);
+      for(const auto id:referenced)if(id<end)users[next[id]++]=node.id();
+    }
+    unspecified_cone.assign(end,0);
+    std::vector<std::size_t> pending;
+    for(const auto& node:input.nodes())
+      if(dynamic_cast<const v::OpaqueValueOp*>(&node.operation())){unspecified_cone[node.id()]=1;pending.push_back(node.id());}
+    while(!pending.empty()) {
+      const auto id=pending.back();pending.pop_back();
+      for(auto k=first[id];k<first[id+1];++k)
+        if(!unspecified_cone[users[k]]){unspecified_cone[users[k]]=1;pending.push_back(users[k]);}
+    }
+  }
+  bool inUnspecifiedCone(const v::Value& value) {
+    if(!unspecified_cone_built)buildUnspecifiedCone();
+    if(unspecified_cone.empty())return false;
+    const auto in=[&](auto&& self,const v::Value& x)->bool {
+      const auto id=input.resolve(x).nodeId();
+      if(id<unspecified_cone.size() && unspecified_cone[id])return true;
+      if(x.conversion() && self(self,x.conversion()->source))return true;
+      for(const auto& index:x.indices())if(self(self,index))return true;
+      return x.threadSelector() && self(self,*x.threadSelector());
+    };
+    return in(in,value);
+  }
+  // A predicate constant: PTX reads an integer constant used as a predicate as C does, zero
+  // false and nonzero true (ISA, Predicate Constants).
+  std::optional<bool> predicateConstant(const s::Ref& x) const {
+    if(!x.conversion.empty() || !x.pointer_provenance.empty() || (!x.converted_type.empty() && x.converted_type!="pred"))
+      return std::nullopt;
+    const auto& node=result.graph.node(x);
+    if(node.kind!=s::Kind::Constant || node.type!="pred")return std::nullopt;
+    if(node.name=="true" || node.name=="false")return node.name=="true";
+    const auto integer=exactInteger<std::int64_t>(node.name);
+    if(!integer)return std::nullopt;
+    return *integer!=0;
+  }
+  // The predicate operation that is x (a use without conversion or provenance), if any.
+  const s::Node* predicateOperation(const s::Ref& x) const {
+    if(!x.conversion.empty() || !x.converted_type.empty() || !x.pointer_provenance.empty())return nullptr;
+    const auto& node=result.graph.node(x);
+    return node.kind==s::Kind::Operation && node.type=="pred" && node.attributes.empty()?&node:nullptr;
+  }
+  // The value predicate x has where the current selection context holds: a constant, a context
+  // literal, or one of those behind BitNot or a Select of two constant arms.
+  std::optional<bool> decidedPredicate(s::Ref x) const {
+    bool negated=false;
+    const auto context=select_context?select_contexts.find(select_context):select_contexts.end();
+    for(std::size_t step=0;step<=kPredicateSteps;++step) {
+      if(const auto constant=predicateConstant(x))return *constant!=negated;
+      if(context!=select_contexts.end())
+        for(const auto& [atom,holds]:context->second.literals)
+          if(atom==x)return holds!=negated;
+      const auto* node=predicateOperation(x);
+      if(!node)return std::nullopt;
+      if(node->name=="BitNot" && node->operands.size()==1){x=node->operands[0];negated=!negated;continue;}
+      if(node->name!="Select" || node->operands.size()!=3)return std::nullopt;
+      const auto yes=predicateConstant(node->operands[1]),no=predicateConstant(node->operands[2]);
+      if(!yes || !no)return std::nullopt;
+      if(*yes==*no)return *yes!=negated;
+      if(!*yes)negated=!negated;
+      x=node->operands[0];
+    }
+    return std::nullopt;
+  }
+  // The context of an arm on which `condition` is `value`: that literal and the literals it implies
+  // through BitNot, BitAnd (true), BitOr (false) and a Select with a constant arm (an arm whose
+  // constant differs from the Select's value did not run); at most kSelectContextLiterals.
+  std::uint32_t selectContextFor(const s::Ref& condition,bool value) {
+    std::vector<std::pair<s::Ref,bool>> literals,pending{{condition,value}};
+    while(!pending.empty() && literals.size()<kSelectContextLiterals) {
+      const auto entry=pending.back();
+      pending.pop_back();
+      const auto& x=entry.first;
+      const bool holds=entry.second;
+      if(predicateConstant(x) ||
+         std::any_of(literals.begin(),literals.end(),[&](const auto& literal){return literal.first==x;}))continue;
+      literals.emplace_back(x,holds);
+      const auto* node=predicateOperation(x);
+      if(!node)continue;
+      const auto& o=node->operands;
+      if(node->name=="BitNot" && o.size()==1)pending.emplace_back(o[0],!holds);
+      else if(o.size()==2 && ((node->name=="BitAnd" && holds) || (node->name=="BitOr" && !holds))) {
+        pending.emplace_back(o[0],holds);pending.emplace_back(o[1],holds);
+      } else if(node->name=="Select" && o.size()==3) {
+        const auto yes=predicateConstant(o[1]),no=predicateConstant(o[2]);
+        if(yes && *yes!=holds){pending.emplace_back(o[0],false);pending.emplace_back(o[2],holds);}
+        else if(no && *no!=holds){pending.emplace_back(o[0],true);pending.emplace_back(o[1],holds);}
+      }
+    }
+    if(literals.empty())return 0;
+    const auto text=selectContextText(literals);
+    const auto [entry,inserted]=select_context_ids.try_emplace(text,next_select_context);
+    if(inserted)select_contexts.emplace(next_select_context++,SelectContext{std::move(literals)});
+    return entry->second;
+  }
+  // The interning text of a literal set: its literals' Refs and values, sorted.
+  static std::string selectContextText(const std::vector<std::pair<s::Ref,bool>>& literals) {
+    std::vector<std::string> spelled;
+    for(const auto& [x,holds]:literals) {
+      std::string out;appendDecimal(out,x.node);out+=':';appendDecimal(out,x.owner);
+      for(const auto* part:{&x.conversion,&x.converted_type,&x.pointer_provenance}) {
+        out+=':';appendDecimal(out,part->size());out+=':';out+=*part;
+      }
+      out+=holds?"=1;":"=0;";
+      spelled.push_back(std::move(out));
+    }
+    std::sort(spelled.begin(),spelled.end());
+    std::string text;
+    for(const auto& literal:spelled)text+=literal;
+    return text;
+  }
+  // An OpaqueValue (a register read before its first assignment, an edited tensor map) has bits that
+  // neither PTX nor the model determines, hence no scalar semantics: name it wherever a projection reaches it.
+  [[noreturn]] void unspecified(v::Value value,const v::OpaqueValueOp& opaque) {
+    const auto line=input.definingNode(value).origin().source_line;
+    fail("unspecified_value_dependence","the projected value depends on bits that are unspecified: "+
+        opaque.provenance()+(line?" (PTX line "+std::to_string(*line)+")":""));
+  }
   s::Ref whole(v::Value value,const Offset& index){
     const auto& op=input.definingNode(value).operation();
     const auto& type=input.type(value);
@@ -3560,6 +4562,7 @@ class Lower {
     if(dynamic_cast<const v::WarpMmaOp*>(&op))return warpMma(value,index);
     if(dynamic_cast<const v::TcgenMmaOp*>(&op) || dynamic_cast<const v::MatMulOp*>(&op))return mma(value,index);
     if(scalarOperation(op))return pure(value,index,type.element());
+    if(const auto* opaque=dynamic_cast<const v::OpaqueValueOp*>(&op))unspecified(value,*opaque);
     fail("scalar_fold_operation_unsupported","scalar semantics unavailable for "+std::string(op.name()));
   }
   std::optional<PackedStorageDecoder::Fields> packedFields(v::Value value) const {
@@ -3736,6 +4739,16 @@ class Lower {
             prototype->second.allocation==region->second.allocation &&
             prototype->second.offset==region->second.offset && prototype->second.bytes==region->second.bytes &&
             node.hasUniformThreadTemplate()) {
+          // Positioned members of one run: constant(member) = first constant + step x
+          // (member - run start), at member = map.base + map.stride x binder.
+          if(const auto* run=positionRun(value.nodeId(),std::size_t(first),std::size_t(last))) {
+            const auto& [start,positions]=*run;
+            if(std::uint64_t(hi)+width>positions.first->constant.bytes)
+              fail("scalar_fold_invalid_index","positioned read slice exceeds its payload");
+            return positionedCell(*positions.first,plus(plus(Offset(integer(positions.first->constant.offset)),
+                times(plus(position,Offset(-integer(start.instance))),positions.step)),offset),
+                desired.toString());
+          }
           std::vector<std::shared_ptr<const IndexedSourceUse>> children;
           for(auto operand:input.instanceOperands(value)) {
             operand=input.canonicalInterpretation(operand);
@@ -3849,6 +4862,7 @@ class Lower {
     }
     if(dynamic_cast<const v::ConstantOp*>(&op) || dynamic_cast<const v::InputParameterOp*>(&op))
       return inUse({},[&]{return project(value,offset,desired);});
+    if(const auto* opaque=dynamic_cast<const v::OpaqueValueOp*>(&op))unspecified(value,*opaque);
     if(!scalarOperation(op) || !node.hasUniformThreadTemplate())
       fail("compact_view_unsupported","operation requires an explicit template member mapping");
     std::vector<std::shared_ptr<const IndexedSourceUse>> children;
@@ -4080,6 +5094,37 @@ class Lower {
             if(field.start==std::uint64_t(lo)*8 && field.width==desired.width())
               return project(field.value,Offset{},desired);
     }
+    // Exact slice rules: a byte slice of a same-width bitcast is the source's
+    // slice, and a slice of a Select (selp chooses a whole value) is the
+    // Select of the alternatives' slices. Neither reads the other bits.
+    if(!indexed_context && type.isScalar() && desired.width()%8==0 && desired.width()<type.element().width() &&
+       value.indices().empty()) {
+      const auto [lo,hi]=bounds(offset);
+      if(lo>=0 && lo==hi && std::uint64_t(lo)+desired.width()/8<=type.element().width()/8) {
+        if(const auto& c=value.conversion()) {
+          if(c->spec->kind==v::TypeConversionKind::Bitcast && input.type(c->source).isScalar() &&
+             input.type(c->source).bitSize()==type.bitSize())
+            return project(c->source,offset,desired);
+        } else if(const auto& op=input.definingNode(value).operation();dynamic_cast<const v::SelectOp*>(&op)) {
+          const auto operands=input.instanceOperands(value);
+          if(operands.size()==3 && input.type(operands[0]).isScalar()) {
+            auto condition=scalar(operands[0]);
+            // In the unspecified cone, the selection-context rule of pure(): an arm the context
+            // or a constant rules out is not lowered; each lowered arm gets its literals.
+            const bool cone=!spatial_count && inUnspecifiedCone(value);
+            if(cone)if(const auto runs=decidedPredicate(condition))return project(operands[*runs?1:2],offset,desired);
+            const auto arm=[&](std::size_t i) {
+              SelectScope scope(*this,cone?selectContextFor(condition,i==1):select_context);
+              return project(operands[i],offset,desired);
+            };
+            auto yes=arm(1);
+            auto no=arm(2);
+            return emitOperation("Select",desired.toString(),{std::move(condition),std::move(yes),std::move(no)},
+                attributes(op));
+          }
+        }
+      }
+    }
     if(value.conversion()){
       if(!value.indices().empty())fail("scalar_fold_conversion_projection","component selection after conversion is not lowered");
       if(!type.isScalar())fail("scalar_fold_conversion_projection","matrix conversion requires per-element rules");
@@ -4089,6 +5134,8 @@ class Lower {
       std::string step=c.spec->kind==v::TypeConversionKind::Bitcast?"Bitcast":"Convert";
       if(c.spec->kind==v::TypeConversionKind::Convert)step+=" "+attributes(v::ConvertOp(c.spec->target,c.spec->attributes));
       auto converted=result.graph.convert(base,type.element().toString(),step);
+      if(c.spec->kind==v::TypeConversionKind::Convert)
+        if(auto exact=constantConversion(base,c.spec->attributes,type.element()))converted=*exact;
       auto [lo,hi]=bounds(offset);
       if(lo==0 && hi==0 && desired.width()==type.element().width())return cast(converted,desired);
       if(lo<0 || hi<0 || add(hi,desired.width()/8)>integer(type.bitSize()/8))
@@ -4167,6 +5214,7 @@ class Lower {
       const ProjectionKey* saved;
       ~RestoreKey(){target=saved;}
     } restore_key{projection_key,projection_key};
+    SelectScope restore_select{*this,task.select_context};
     projection_key=&task.key;
     indexed_context=task.indexed;
     current=MemoryInstance{task.value.nodeId(),task.value.instanceIndex()};
@@ -4255,6 +5303,10 @@ class Lower {
     for(std::size_t i=0;i<domains.size();++i)
       if(spatial_count || i>=64 || (used&(std::uint64_t{1}<<i))){appendDecimal(text,domains[i]);text+=',';}
       else text+="_,";
+    // Only a projection in the unspecified cone reads its selection context; any other one is
+    // context-free and keeps its plain key and memo entry.
+    const auto context=select_context && !spatial_count && inUnspecifiedCone(value)?select_context:0;
+    if(context){text+="select:";appendDecimal(text,context);}
     const auto key=keys.intern(text);
     SENTRYWARD_LEDGER(ledger->request(keys.text(key),projection_key?&keys.text(*projection_key):nullptr,
         std::string(input.definingNode(value).operation().name())+(indexed_context?"/indexed":"/plain"));
@@ -4275,6 +5327,7 @@ class Lower {
     Projection request{std::move(value),std::move(offset),type,domains,key};
     request.indexed=indexed_context;
     request.fold=fold_owner;
+    request.select_context=context;
     if(projecting) {
       if(projection_depth>=options.max_pending_projections)
         fail("projection_worklist_limit_exceeded","projection worklist budget exceeded");
@@ -4519,11 +5572,24 @@ class Lower {
     // Nothing adds or erases a memo entry below, so positions stay valid.
     roots.reserve(roots.size()+keys.size());
     for(std::size_t i=0;i<keys.size();++i)roots.push_back(keys.valueAt(i));
+    // Pending requests keep their selection contexts: the literals are roots and are remapped,
+    // as are the partial results held across a projection (PinnedRoot).
+    for(const auto& [serial,context]:select_contexts)
+      for(const auto& literal:context.literals)roots.push_back(literal.first);
+    roots.insert(roots.end(),pinned_roots.begin(),pinned_roots.end());
     result.nodes_reclaimed+=real_expressions.collect(roots,
-        std::span<const s::Ref>(roots).subspan(result.outputs.size()));
+        std::span<const s::Ref>(roots).subspan(result.outputs.size(),keys.size()));
     ++result.construction_collections;
     for(std::size_t i=0;i<result.outputs.size();++i)result.outputs[i].value=std::move(roots[i]);
     for(std::size_t i=0;i<keys.size();++i)keys.valueAt(i)=std::move(roots[result.outputs.size()+i]);
+    auto remapped=roots.begin()+std::ptrdiff_t(result.outputs.size()+keys.size());
+    // The same iteration order as above: nothing inserted or erased a context since.
+    select_context_ids.clear();
+    for(auto& [serial,context]:select_contexts) {
+      for(auto& literal:context.literals)literal.first=std::move(*remapped++);
+      select_context_ids.emplace(selectContextText(context.literals),serial);
+    }
+    for(auto& pinned:pinned_roots)pinned=std::move(*remapped++);
     if(result.graph.size()>options.max_nodes)
       fail("expression_node_limit_exceeded","scalar graph node limit exceeded");
     scheduleCollection();
@@ -4542,6 +5608,8 @@ class Lower {
     SENTRYWARD_AUDIT(audit->add(AuditCounter::gc_calls);
       audit->add(AuditCounter::gc_input_nodes,result.graph.size());
       audit->event("CACHE_COLLECTION","completed_output_weak_projections",keys.size(),result.outputs.size()));
+    // Only collectFrontier remaps pinned partial results (PinnedRoot).
+    if(!pinned_roots.empty())throw std::logic_error("a partial result is pinned across an output collection");
     // Lifting: consolidation takes instantiated outputs, so instantiate them first.
     instantiatePending();
     std::vector<s::Ref> roots;
@@ -4562,6 +5630,8 @@ class Lower {
     result.nodes_reclaimed+=real_expressions.collect(roots, {}, weak_cache);
     for(std::size_t i=0;i<roots.size();++i)result.outputs[i].value=roots[i];
     if(!output_domains.empty()) {
+      // Typed bf16 reads only, and no two-dimensional families (mergeRepresentativeFamilies).
+      canonicalizeOutputs(familyOutputs(),s::CanonicalForms::Bf16Fields);
       s::Artifact artifact;artifact.graph=std::move(result.graph);
       for(std::size_t i=0;i<result.outputs.size();++i) {
         const auto& output=result.outputs[i];
@@ -4587,6 +5657,10 @@ class Lower {
       // outputs completed from here on start at the new end.
       instantiated_end=result.outputs.size();
     }
+    // No request is pending between outputs: retire the selection contexts, whose literals this
+    // collection did not keep. Their serials stay unused (next_select_context).
+    select_contexts.clear();
+    select_context_ids.clear();
     std::size_t i=0;
     [[maybe_unused]] std::size_t discarded=0;
     // No memo entry was added or erased since the observers were collected,
@@ -4687,6 +5761,119 @@ class Lower {
       layout.strides[axis]*=period;layout.strides.insert(layout.strides.begin()+axis+1,stride);
       emitOutputDomain(region,std::move(layout),remap(remap,offset),project);
     }
+  }
+  // Partial results held across top-level projections, which may collect the graph and
+  // expire raw Refs: collectFrontier roots and remaps them. A stack of PinnedRoot entries;
+  // none is held across an output collection.
+  std::vector<s::Ref> pinned_roots;
+  struct PinnedRoot {
+    Lower& owner;std::size_t slot;
+    PinnedRoot(Lower& o,s::Ref value):owner(o),slot(o.pinned_roots.size()){o.pinned_roots.push_back(std::move(value));}
+    ~PinnedRoot(){owner.pinned_roots.pop_back();}
+    PinnedRoot(const PinnedRoot&)=delete;
+    PinnedRoot& operator=(const PinnedRoot&)=delete;
+    s::Ref& value(){return owner.pinned_roots[slot];}
+  };
+  // A reduced element (ReducedContents): base (op) contribution_1 (op) ..., one output
+  // element. The base is the prior stored value or, absent, the initial cell at the element.
+  // Floating add is ideal-real (order-free); integer add, min and max are exact. O(contributions).
+  void reducedOutput(const OutputWrite& output) {
+    const auto& contents=*output.reduced;
+    const auto width=contents.element.width()/8;
+    if(!width || contents.element.width()%8 || output.region.bytes!=width)
+      fail("scalar_fold_prerequisite","invalid reduced output extent");
+    const bool floating=contents.element.kind()==v::ElementKind::Floating;
+    const std::string name=contents.operation=="add"?"Add":contents.operation=="min"?"Minimum":
+        contents.operation=="max"?"Maximum":"";
+    if(name.empty() || (floating && name!="Add"))fail("scalar_fold_operation_unsupported","unsupported reduction operator");
+    const auto type=contents.element.toString();
+    emitOutputDomain(output.region,OutputDomain(1),Offset(0),[&](const Offset& at) {
+      // A projection may collect the graph: the running result is pinned, so it stays current.
+      PinnedRoot sum(*this,contents.base?
+          project(contents.base->first,plus(Offset(integer(contents.base->second)),at),contents.element):
+          repAbsoluteCell(output.region.allocation,offsetValue(plus(Offset(integer(output.region.offset)),at)),type));
+      for(const auto& [value,offset]:contents.contributions) {
+        auto next=project(value,plus(Offset(integer(offset)),at),contents.element);
+        auto combined=floating?
+            real_expressions.operation(name,type,{sum.value(),next},"ideal_arithmetic",domains.size()):
+            emitOperation(name,type,{sum.value(),next});
+        sum.value()=std::move(combined);
+      }
+      return sum.value();
+    });
+    if(options.collection_interval)collectCompletedOutputs();
+  }
+  // Equivalence runs: the bytes the binding compares, per allocation; empty
+  // in lifting mode, whose regions are the representative's.
+  std::map<std::string,ComparedBytes> compared_bytes;
+  enum class Compared {All,None,Some};
+  // Whether the elements at offset + sum_i n_i*strides[i] (n_i < shape[i]),
+  // `width` bytes each, are compared entirely, not at all or in part. The hull
+  // first, O(axes); a hull that crosses uncompared bytes visits each row of
+  // contiguous elements, O(rows * axes), only for such hulls.
+  Compared comparedIn(const std::string& allocation,std::uint64_t offset,std::uint64_t width,
+                      const std::vector<std::uint64_t>& shape={},const std::vector<std::uint64_t>& strides={}) const {
+    const auto found=compared_bytes.find(allocation);
+    if(found==compared_bytes.end() || !width || shape.size()!=strides.size() ||
+       std::find(shape.begin(),shape.end(),0)!=shape.end())return Compared::All;
+    const auto& bytes=found->second;
+    unsigned __int128 last=offset;
+    for(std::size_t i=0;i<shape.size();++i)last+=static_cast<unsigned __int128>(strides[i])*(shape[i]-1);
+    if(last+width>UINT64_MAX)return Compared::All;
+    const auto end=static_cast<std::uint64_t>(last+width);
+    if(bytes.covers(offset,end))return Compared::All;
+    if(!bytes.meets(offset,end))return Compared::None;
+    std::size_t row=shape.size();
+    for(std::size_t i=0;i<shape.size() && row==shape.size();++i)if(shape[i]>1 && strides[i]==width)row=i;
+    const auto row_bytes=row<shape.size()?width*shape[row]:width;
+    std::vector<std::uint64_t> index(shape.size());
+    bool all=true,any=false;
+    for(;;) {
+      auto at=offset;
+      for(std::size_t i=0;i<shape.size();++i)at+=index[i]*strides[i];
+      if(bytes.covers(at,at+row_bytes))any=true;
+      else {all=false;any|=bytes.meets(at,at+row_bytes);}
+      if(any && !all)return Compared::Some;
+      auto i=shape.size();
+      for(;i-->0;) {
+        if(i==row)continue;
+        if(++index[i]<shape[i])break;
+        index[i]=0;
+      }
+      if(i==std::numeric_limits<std::size_t>::max())break;
+    }
+    return all?Compared::All:Compared::None;
+  }
+  Compared comparedIn(const OutputWriteFamily& family) const {
+    const auto step=family.byte_stride<0?-static_cast<__int128>(family.byte_stride):family.byte_stride;
+    const auto low=static_cast<__int128>(family.region.offset)-(family.byte_stride<0?step*(family.count-1):0);
+    if(!family.count || low<0 || step>UINT64_MAX)return Compared::All;
+    return comparedIn(family.region.allocation,static_cast<std::uint64_t>(low),family.region.bytes,
+        {step?family.count:1},{static_cast<std::uint64_t>(step)});
+  }
+  // A store the binding compares only in part: project just those bytes, as
+  // runs of whole `element` values where elements are compared entirely and as
+  // aligned power-of-two bit slices of at most 8 bytes elsewhere, each an
+  // output family. Exact: every compared byte is projected once, no other
+  // byte is. O(compared pieces) families.
+  void projectComparedBytes(const OutputWrite& output,const v::ElementType& element) {
+    const auto width=element.width()/8;
+    if(!width)fail("scalar_fold_subbyte_value","sub-byte output requires bit projection");
+    const auto& region=output.region;
+    compared_bytes.at(region.allocation).pieces(region.offset,region.offset+region.bytes,
+        [&](std::uint64_t lo,std::uint64_t hi) {
+      const auto end=hi-region.offset;
+      for(auto at=lo-region.offset;at<end;) {
+        const auto inner=at%width;
+        if(!inner && width<=8 && end-at>=width) {
+          const auto count=(end-at)/width;
+          outputFamily(output,at,count,element,width);at+=count*width;continue;
+        }
+        std::uint64_t bytes=8;
+        while(bytes>end-at || bytes>width-inner || inner%bytes)bytes/=2;
+        outputFamily(output,at,1,bit(unsigned(8*bytes)),bytes);at+=bytes;
+      }
+    });
   }
   void outputFamily(const OutputWrite& output,std::uint64_t begin,std::uint64_t count,
                     const v::ElementType& type,std::uint64_t bytes) {
@@ -4795,6 +5982,9 @@ class Lower {
   }
  public:
   Lower(const v::Graph& g,const MemoryEliminationResult& m,const ScalarFoldOptions& o):input(g),memory(m),options(o){
+    if(options.compared_outputs && !options.unit_lifting)
+      for(const auto& [allocation,layout]:*options.compared_outputs)
+        if(auto bytes=ComparedBytes::of(layout))compared_bytes.emplace(allocation,std::move(*bytes));
     for(auto it=memory.symbolic_initial_reads.begin();it!=memory.symbolic_initial_reads.end();) {
       const auto begin=it;auto end=it->first.instance+1;++it;
       while(it!=memory.symbolic_initial_reads.end() && it->first.node==begin->first.node &&
@@ -4802,15 +5992,27 @@ class Lower {
           it->second.offset==begin->second.offset && it->second.bytes==begin->second.bytes) {++end;++it;}
       symbolic_read_domains.emplace(begin->first,end);
     }
+    for(auto it=memory.symbolic_read_positions.begin();it!=memory.symbolic_read_positions.end();) {
+      const auto begin=it;PositionRun run{1,0,&it->second};++it;
+      while(it!=memory.symbolic_read_positions.end() && it->first.node==begin->first.node &&
+          it->first.instance==begin->first.instance+run.count && it->second.base==run.first->base &&
+          it->second.constant.allocation==run.first->constant.allocation &&
+          it->second.constant.bytes==run.first->constant.bytes) {
+        const auto delta=static_cast<__int128>(it->second.constant.offset)-run.first->constant.offset;
+        if(run.count==1 && delta>=INT64_MIN && delta<=INT64_MAX)run.step=static_cast<std::int64_t>(delta);
+        if(delta!=static_cast<__int128>(run.step)*run.count)break;
+        ++run.count;++it;
+      }
+      position_runs.emplace(begin->first,run);
+    }
     if(m.symbolic_initial_reads.empty())return;
-    const auto field=[](const std::string& s){return std::to_string(s.size())+":"+s;};
     std::set<std::string> ambiguous;
     for(const auto& node:g.nodes()) {
       const auto* parameter=dynamic_cast<const v::InputParameterOp*>(&node.operation());
       if(!parameter || !parameter->pointer())continue;
       const auto& p=*parameter->pointer();
       if(p.owner_cta || p.owner_thread || p.addressing!="global")continue;
-      const auto identity=field(p.addressing)+field(p.identity);
+      const auto identity=AllocationIdentity(p.addressing,p.identity);
       const auto [it,inserted]=allocation_bases.emplace(identity,node.result());
       if(!inserted) {
         const auto& prior=dynamic_cast<const v::InputParameterOp&>(g.definingNode(it->second).operation());
@@ -4859,6 +6061,80 @@ class Lower {
     }
     spatial_count=0;spatial_values.clear();spatial_instance_strides.clear();domains.clear();
     return true;
+  }
+  // A store family whose compared members are all compared entirely: one spatial family, else
+  // the spatial domains recovered from its members, else one output per member.
+  void storeFamily(const OutputWriteFamily& family) {
+    if(spatialStoreFamily(family))return;
+    if(options.unit_lifting)setOutputCta(family.at(input,0));
+    if(options.compact_output_families && family.count>1 && family.byte_stride>=0 &&
+       std::uint64_t(family.byte_stride)==family.region.bytes) {
+      std::vector<OutputWrite> outputs;outputs.reserve(family.count);
+      SENTRYWARD_AUDIT(audit->event("INSTANCE_ENUMERATION","output_family_materialized_for_spatial_recovery",
+        family.count,1,family.first.node,true));
+      for(std::size_t i=0;i<family.count;++i)outputs.push_back(family.at(input,i));
+      if(spatialOutput(outputs))return;
+    }
+    SENTRYWARD_AUDIT(if(family.count>1)audit->event("INSTANCE_ENUMERATION","output_family_scalar_fallback",
+      family.count,1,family.first.node,true));
+    for(std::size_t i=0;i<family.count;++i) {
+      const auto output=family.at(input,i);
+      const auto& type=input.type(output.value);
+      setOutputCta(output);
+      outputFamily(output,0,1,type.element(),output.region.bytes);
+    }
+  }
+  // A store family the binding compares in part (comparedIn(family) is Some), in member
+  // order: every maximal run of members compared entirely as one sub-family (storeFamily),
+  // every member compared in part at its compared bytes (projectComparedBytes), no member
+  // without a compared byte. Members lie at least their width apart (memory elimination), so
+  // one is compared entirely exactly when it lies inside one maximal compared piece, and in
+  // part when it extends past an end of a piece it meets. Whole members of consecutive
+  // pieces join one run (possible only when members have gaps between them: the byte that
+  // separates two pieces otherwise lies in a member). O(compared pieces of the family's hull
+  // + runs), never per member.
+  void comparedStoreFamily(const OutputWriteFamily& family) {
+    const auto width=family.region.bytes,count=std::uint64_t(family.count);
+    const auto magnitude=family.byte_stride<0?0-std::uint64_t(family.byte_stride):
+        std::uint64_t(family.byte_stride);
+    const auto step=count>1?magnitude:width;
+    if(!width || step<width)fail("scalar_fold_prerequisite","overlapping output family members");
+    // Positions count members in address order; comparedIn bounded the hull [low, high).
+    const auto low=family.byte_stride<0?family.region.offset-step*(count-1):family.region.offset;
+    const auto high=low+step*(count-1)+width;
+    struct Run {std::uint64_t begin,end;bool whole;};
+    std::vector<Run> runs;
+    std::uint64_t next=0; // the first position no run holds
+    const auto take=[&](std::uint64_t begin,std::uint64_t end,bool whole) {
+      begin=std::max(begin,next);
+      if(begin>=end)return;
+      if(whole && !runs.empty() && runs.back().whole && runs.back().end==begin)runs.back().end=end;
+      else runs.push_back({begin,end,whole});
+      next=end;
+    };
+    compared_bytes.at(family.region.allocation).pieces(low,high,[&](std::uint64_t lo,std::uint64_t hi) {
+      const auto first=(lo-low)/step,last=(hi-1-low)/step;
+      const auto into_first=(lo-low)%step,into_last=(hi-1-low)%step;
+      // Positions [inside, end) lie within [lo, hi).
+      const auto inside=first+(into_first!=0),end=hi-low>=width?(hi-low-width)/step+1:0;
+      if(into_first && into_first<width)take(first,first+1,false); // also holds bytes before lo
+      if(inside<end)take(inside,end,true);
+      if(last>=std::max(inside,end) && into_last<width)take(last,last+1,false); // also holds bytes from hi
+    });
+    const bool reversed=family.byte_stride<0;
+    for(std::size_t k=0;k<runs.size();++k) {
+      const auto& run=runs[reversed?runs.size()-1-k:k];
+      const auto member=reversed?count-run.end:run.begin; // the run's first member
+      if(run.whole) {
+        auto part=family;
+        part.first.instance+=member;part.count=run.end-run.begin;part.region=family.at(input,member).region;
+        storeFamily(part);
+        continue;
+      }
+      const auto output=family.at(input,member);
+      setOutputCta(output);
+      projectComparedBytes(output,input.type(output.value).element());
+    }
   }
   void validateRadixPartition(const PartitionedRead& split) {
     // First reduce coverage-only adjacent axes to a progression of intervals.
@@ -5094,25 +6370,10 @@ class Lower {
       next_completed_collection=next_collection;
       stop.phase='d';stop.output_families=!memory.output_families.empty();
       for(const auto& family:memory.output_families) {
-        if(spatialStoreFamily(family))continue;
-        std::vector<OutputWrite> outputs;
-        if(options.unit_lifting)setOutputCta(family.at(input,0));
-        if(options.compact_output_families && family.count>1 && family.byte_stride>=0 &&
-           std::uint64_t(family.byte_stride)==family.region.bytes) {
-          outputs.reserve(family.count);
-          SENTRYWARD_AUDIT(audit->event("INSTANCE_ENUMERATION","output_family_materialized_for_spatial_recovery",
-            family.count,1,family.first.node,true));
-          for(std::size_t i=0;i<family.count;++i)outputs.push_back(family.at(input,i));
-          if(spatialOutput(outputs))continue;
-        }
-        SENTRYWARD_AUDIT(if(family.count>1)audit->event("INSTANCE_ENUMERATION","output_family_scalar_fallback",
-          family.count,1,family.first.node,true));
-        for(std::size_t i=0;i<family.count;++i) {
-          const auto output=family.at(input,i);
-          const auto& type=input.type(output.value);
-          setOutputCta(output);
-          outputFamily(output,0,1,type.element(),output.region.bytes);
-        }
+        const auto coverage=comparedIn(family);
+        if(coverage==Compared::None)continue;
+        if(coverage==Compared::Some)comparedStoreFamily(family);
+        else storeFamily(family);
       }
       std::size_t spatial_failed_end=0;
       stop.phase='e';
@@ -5126,6 +6387,7 @@ class Lower {
              found!=memory.normalized_output_groups.end()) {
             const auto& group=found->second;
             beginItem(output_index);
+            output_base=memory.outputs[output_index].base;
             if(group.records.empty() || group.records.front()!=output_index ||
                group.records.back()>=memory.outputs.size())
               fail("scalar_fold_prerequisite","invalid normalized output record range");
@@ -5134,6 +6396,12 @@ class Lower {
               const auto width=output.element_type.width()/8;
               if(!width || !output.region.bytes || output.region.bytes%width)
                 fail("scalar_fold_prerequisite","invalid numerical output view extent");
+              const auto coverage=comparedIn(output.region.allocation,output.region.offset,width,
+                  output.shape,output.strides_bytes);
+              if(coverage==Compared::None)continue;
+              if(coverage==Compared::Some)
+                fail("output_comparison_partial_view","a numerical output view stores bytes the binding compares "
+                     "and bytes it does not compare; only whole stored records are projected at compared bytes");
               if(result.outputs.size()>=options.max_outputs) {
                 collectCompletedOutputs(true);
                 if(result.outputs.size()>=options.max_outputs)
@@ -5161,13 +6429,18 @@ class Lower {
           }
           if(!memory.normalized_output_members.empty() && memory.normalized_output_members[output_index])continue;
         }
-        beginItem(output_index);
         const auto& output=memory.outputs[output_index];
+        const auto coverage=comparedIn(output.region.allocation,output.region.offset,output.region.bytes);
+        if(coverage==Compared::None)continue;
+        beginItem(output_index);
+        output_base=output.base;
+        if(output.reduced){setOutputCta(output);reducedOutput(output);continue;}
         const auto& type=input.type(output.value);
         const auto element=output.element_type.value_or(type.element());
         if(element.isParameterized())fail("scalar_fold_parameterized_type","output element type is unresolved");
         const auto element_bytes=element.width()/8;
         if(!element_bytes)fail("scalar_fold_subbyte_value","sub-byte output requires bit projection");
+        if(coverage==Compared::Some){projectComparedBytes(output,element);continue;}
         if(options.compact_output_families && output_index>=spatial_failed_end && type.isScalar() &&
            element==type.element() && output.region.bytes==element_bytes && element_bytes<=8) {
           auto end=output_index+1;
@@ -5178,7 +6451,9 @@ class Lower {
             if(next.region.allocation!=output.region.allocation || next.region.bytes!=element_bytes ||
                offset!=next.region.offset || input.type(next.value)!=type ||
                next.element_type.value_or(type.element())!=element ||
-               next.value_byte_offset!=output.value_byte_offset || input.instanceOrigin(next.value).cta!=cta)break;
+               next.value_byte_offset!=output.value_byte_offset || input.instanceOrigin(next.value).cta!=cta ||
+               next.base!=output.base || next.reduced ||
+               comparedIn(next.region.allocation,next.region.offset,next.region.bytes)!=Compared::All)break;
             ++end;
           }
           // Node identity is not a source-pattern boundary after memory
@@ -5216,6 +6491,7 @@ class Lower {
       stop.phase='f';
       instantiatePending();
       if(output_domains.empty())coalesceFragments(result.graph,result.outputs);
+      else canonicalizeOutputs(familyOutputs(),s::CanonicalForms::Bf16Fields); // as at every consolidation
       std::vector<s::Ref> roots;for(const auto& out:result.outputs)roots.push_back(out.value);
       std::map<std::size_t,std::vector<s::Ref>> validation_roots;
       for(std::size_t i=0;i<roots.size();++i) {

@@ -14,7 +14,7 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
+          12,
           1,
           128,
           128
@@ -37,17 +37,17 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
-          256,
+          12,
+          129,
           64
         ],
         "source_strides_bytes": [
-          32768,
+          16512,
           128,
           2
         ],
         "target_strides_bytes": [
-          32768,
+          16512,
           128,
           2
         ]
@@ -57,17 +57,17 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
-          256,
+          12,
+          129,
           512
         ],
         "source_strides_bytes": [
-          262144,
+          132096,
           1024,
           2
         ],
         "target_strides_bytes": [
-          262144,
+          132096,
           1024,
           2
         ]
@@ -77,7 +77,7 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          1,
+          12,
           1,
           128
         ],
@@ -108,7 +108,7 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
+          12,
           1,
           128,
           128
@@ -131,17 +131,17 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
-          256,
+          12,
+          129,
           64
         ],
         "source_strides_bytes": [
-          32768,
+          16512,
           128,
           2
         ],
         "target_strides_bytes": [
-          32768,
+          16512,
           128,
           2
         ]
@@ -151,17 +151,17 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
-          256,
+          12,
+          129,
           512
         ],
         "source_strides_bytes": [
-          262144,
+          132096,
           1024,
           2
         ],
         "target_strides_bytes": [
-          262144,
+          132096,
           1024,
           2
         ]
@@ -171,7 +171,7 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          1,
+          12,
           1,
           128
         ],
@@ -199,7 +199,7 @@
         "right_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
+          12,
           1,
           128,
           64
@@ -225,7 +225,7 @@
         "right_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
+          12,
           1,
           128,
           512
@@ -280,8 +280,8 @@
     "evidence": "flash_bwd_mla_dq_dqv_sm100.py docstring: dQ = dS @ K[I], dQv = dS @ V[I]; K/V rows gathered by CpasyncGatherKVManager.load_X with pred row_valid = 0 <= I < seqlen_k (topk_gather_kv.py); PTX cp.async.cg uses the src-size operand, so invalid rows are zero-filled. No scaling in the epilogue; outputs cast to bf16.",
     "ptx": "corpus/flash_attention__bwd_mla_sparse_bf16__dq_dqv__sm_100a.ptx",
     "optimized_input": "examples/flash_attention__bwd_mla_sparse_bf16__dq_dqv__sm_100a/input.json",
-    "semantics": "ideal_real; fixed saved configuration (b=1, s_q=1, heads=128, topk=128, d=64, dv=512, seqlen_k=256); outputs dQ and dQv.",
-    "optimized_input_sha256": "b1f9d4c4f3b273d7284b8a8ce37361cbfeeba97bef772baccf8196d97f4c60c5",
+    "semantics": "ideal_real; upstream test row tests/cute/test_flash_attn.py::test_flash_attn_mla_absorbed[0-1-1-False-True-64-False-0-False-False-mqa-dtype0], first gather length (b=12, s_q=1, heads=128, topk=128, d=64, dv=512, seqlen_k=129); outputs dQ and dQv.",
+    "optimized_input_sha256": "b56159c7db724a1747c21ebfac8f650a2ec664237c0852db41d74157eb119805",
     "ptx_sha256": "6e35ac8efeaaa0778141be841ad5e34cd80a10e1af35b516fff2f2236e8837d9",
     "upstream": [
       "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_bwd_mla_dq_dqv_sm100.py",

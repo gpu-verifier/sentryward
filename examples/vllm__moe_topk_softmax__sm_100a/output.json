@@ -1,41 +1,33 @@
 {
-  "assumption_hints": [
-    {
-      "key": "representative_branches",
-      "label": "Representative branches",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    },
-    {
-      "key": "bounded_computation_loops",
-      "label": "Bounded computation loops",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    }
-  ],
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "duplicate_tma_store_benign",
       "label": "Duplicate TMA stores",
       "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "representative_election",
       "label": "Representative election",
       "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "clc_always_fails",
       "label": "Failed launch cancellation",
       "text": "Every cluster launch cancellation request fails.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "representative_branches",
       "label": "Representative branches",
@@ -43,6 +35,7 @@
       "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "bounded_computation_loops",
       "label": "Bounded computation loops",
@@ -50,69 +43,1312 @@
       "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "order_independent_atomics",
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "not_run",
-    "synchronization": "not_run"
+    "equivalence": "incomplete",
+    "synchronization": "passed"
   },
   "diagnostics": [
     {
-      "code": "control_predicate_not_static",
+      "code": "not_proven",
       "details": {
-        "internal_stage": "ptx_execution",
-        "location": {
-          "column": 0,
-          "file": "corpus/vllm__moe_topk_softmax__sm_100a.ptx",
-          "line": 352
-        },
-        "required_parameters": []
+        "internal_stage": "equivalence_check"
       },
-      "message": "control predicate is not statically determined",
-      "stage": "synchronization"
+      "stage": "equivalence"
     }
   ],
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 0,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "trap_only_equality_assertions_hold": true
+  },
   "internal": {
-    "details": {
-      "required_parameters": []
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "counts": {
+      "edges": 95776,
+      "events": 63264,
+      "instructions": 21328,
+      "memory_accesses": 13136,
+      "threads": 128
     },
     "equivalence": {
+      "access_validity": "not_proven",
+      "arena_nodes": 71887,
+      "comparison_elapsed_seconds": 1.172141923,
+      "context_declaration": {
+        "assumptions": [],
+        "fixed_inputs": [],
+        "inputs": [],
+        "predicate_nodes": []
+      },
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 519939,
+        "affine_state_banks": 1,
+        "call_definition_node_visits": 144,
+        "canonical_node_visits": 23900,
+        "canonical_sum_initials": 128,
+        "certified_state_pattern_cache_hits": 158,
+        "certified_state_pattern_decline_no_certified_state": 2,
+        "certified_state_pattern_work": 50,
+        "coefficient_normalizations": 9,
+        "completed_reductions": 64,
+        "constant_binary32_bitcasts": 512,
+        "coverage_polynomial_peak": 2,
+        "coverage_polynomial_visits": 1600,
+        "coverage_stored_piece_visits": 10752,
+        "ep_body_anchor_edges": 3064867,
+        "ep_body_anchor_limited": 4264,
+        "ep_body_anchor_nodes": 1565208,
+        "ep_body_call_rebuilds": 641712,
+        "ep_body_deferred_call_anchors": 183461,
+        "ep_body_deferred_unmatched_anchors": 44325,
+        "ep_body_instance_cache_entries": 768,
+        "ep_body_instance_cache_hits": 15264,
+        "ep_body_obligations": 235168,
+        "ep_body_pattern_anchor_cache_hits": 41348,
+        "ep_body_payload_summary_nodes": 12848,
+        "ep_body_predicate_rebuilds": 218864,
+        "ep_body_proofs": 1920,
+        "ep_body_read_anchor_rejections": 8854,
+        "ep_body_read_match_cache_entries": 2432,
+        "ep_body_read_match_cache_hits": 230816,
+        "ep_body_select_rebuilds": 218864,
+        "ep_body_target_anchor_cache_hits": 34263,
+        "ep_cross_products": 19552,
+        "ep_identity_proofs": 1928,
+        "ep_scalar_attempts": 235240,
+        "ep_scalar_proofs": 1928,
+        "finite_bilinear_banks": 1,
+        "finite_state_reuse_banks": 1,
+        "floating_lane_transport_visits": 1536,
+        "fold_alpha_root_cache_hits": 21088,
+        "fold_alpha_signature_edges": 128006,
+        "fold_alpha_signatures": 60507,
+        "fold_alpha_states": 57155,
+        "fp_idiom_numeric_replacements": 640,
+        "fp_idiom_power_constructions": 640,
+        "fp_idiom_power_instances": 640,
+        "fp_idiom_rm_producers": 640,
+        "fp_idiom_rounding_instances": 640,
+        "ideal_additive_compiler_exp_sequences": 0,
+        "ideal_compiler_exp_sequences": 640,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_single_constant_exp_sequences": 0,
+        "imported_context_nodes": 26036,
+        "importer_scope_banks": 2,
+        "importer_scope_binder_hits": 615,
+        "importer_scope_binders_created": 9,
+        "importer_scope_leaf_lookups": 624,
+        "importer_scope_nested_body_fallbacks": 560,
+        "intern_requests": 4288955,
+        "known_bits_cache_hits": 9569,
+        "known_bits_edges": 26576,
+        "known_bits_nodes": 17709,
+        "linear_reduction_decline_incomplete_targets": 32,
+        "linear_reduction_pattern_attempts": 32,
+        "linear_reduction_weighted_states": 96,
+        "local_pattern_candidates": 107824,
+        "masked_sum_prefix_queries": 368,
+        "max_finite_coordinate_witnesses": 104,
+        "maximum_dominated_operands": 0,
+        "normalization_cache_context_changes": 33,
+        "normalization_node_visits": 47879,
+        "parametric_state_attempts": 0,
+        "pattern_build_peak_nodes": 17,
+        "pattern_build_unique_nodes": 3280,
+        "pattern_node_visits": 263358,
+        "predicate_boolean_complements": 4576,
+        "predicate_integer_affine_normalizations": 440,
+        "proved_select_arms_imported": 608,
+        "select_complementary_polarities": 2432,
+        "select_floating_bitcasts": 1024,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_calls": 245664,
+        "select_max_probe_hits": 768,
+        "select_max_probe_temporary_nodes": 0,
+        "sum_positive_coordinate_witnesses": 56,
+        "summary_bind_nodes": 1024,
+        "summary_concat_nodes": 3008,
+        "symbolic_byte_reads_without_extent_proof": 32,
+        "unary_reduction_composition_argument_attempts": 32,
+        "unary_reduction_composition_argument_decline_incomplete_targets": 32,
+        "unary_reduction_composition_attempts": 32,
+        "unary_reduction_composition_context_changes": 32,
+        "welford_fragment_misses": 16,
+        "welford_reference_candidates": 16
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 40,
+        "status": "proved"
+      },
       "diagnostics": [
         {
-          "code": "prerequisite_check_not_passed",
-          "details": {
-            "prerequisite_checks": {
-              "equivalence": "not_run",
-              "memory": "not_run",
-              "synchronization": "not_run"
-            },
-            "prerequisite_diagnostics": [
-              {
-                "code": "control_predicate_not_static",
-                "details": {
-                  "location": {
-                    "column": 0,
-                    "file": "corpus/vllm__moe_topk_softmax__sm_100a.ptx",
-                    "line": 352
-                  },
-                  "required_parameters": []
-                },
-                "message": "control predicate is not statically determined",
-                "stage": "ptx_execution"
-              }
-            ],
-            "prerequisite_result": "unsupported"
-          },
+          "code": "not_proven",
           "stage": "equivalence_check"
         }
-      ]
+      ],
+      "elapsed_s": 1.097533827,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 477679,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 18960,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 530511,
+          "unique_query_nodes": 0
+        },
+        "query_count": 235208,
+        "reset_s": 0.0,
+        "reuse_cache": true,
+        "shared_evictions": 0
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 0,
+        "fixed_input_elements": 0,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 8,
+      "finished_families": 40,
+      "idealizations_applied": [
+        "recognized fma.rm exponent encoding with split log2(e) is ideal Exp"
+      ],
+      "input_contract_applied_reads": [],
+      "legacy_scalar_fallback": false,
+      "mapping_input_memory_constraints": {},
+      "native_context": null,
+      "normalized_reachable_nodes": 11627,
+      "numerical_result": "equivalence_not_proven",
+      "pattern_nodes": 87,
+      "peak_rss_kib": 155352,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 11712,
+      "piece_union": {
+        "abstract_optimized_replacements": 0,
+        "abstract_reference_replacements": 0,
+        "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+        "collected_pieces": 0,
+        "late_certificates": "accepted_until_each_schema_is_complete",
+        "method": "complete_output_equalities_with_finite_piece_union",
+        "replacements": 0,
+        "schemas": [],
+        "stored_dag_work": 0,
+        "work_limit": 2000000
+      },
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        175,
+        24239
+      ],
+      "reference_term_patterns": 10,
+      "row_groups": [
+        {
+          "count": 1,
+          "families": [
+            [
+              0,
+              0
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](0,),),exp[](add[,-1,1](call[,0](0,),read[input\nreal:byte-address:f32](word[,64](mul#4624,),),),),recip[](call[,7](0,word[,64](mul[,-4](call#4646,),),word[,64](mul[,-4](call#4698,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#6958,select#6947,select#6713,),select[](select#7438,select#7427,select#7193,),),1,mul[,1](compare[le](add#7444,-1,),compare[eq](select#6959,select#7439,),),),select[](select[](compare[lt](select#7193,select#7427,),1,mul[,1](compare#7435,compare#7436,),),select[](select[](compare#7380,1,mul#7425,),select[](select#7378,max#7376,max#7331,),select[](select#7285,max#7283,max#7238,),),select[](select[](compare#7146,1,mul#7191,),select[](select#7144,max#7142,max#7097,),select[](select#7051,max#7049,max#7004,),),),select[](select[](compare[lt](select#6713,select#6947,),1,mul[,1](compare#6955,compare#6956,),),select[](select[](compare#6900,1,mul#6945,),select[](select#6898,max#6896,max#6851,),select[](select#6805,max#6803,max#6758,),),select[](select[](compare#6668,1,mul#6711,),select[](select#6666,max#6664,max#6619,),select[](select#6573,max#6571,max#6526,),),),),recip[](add[,1,1](select[](select[](compare#7440,1,mul#7449,),select[](select#7438,select#7427,select#7193,),select[](select#6958,select#6947,select#6713,),),select[](select[](compare#8455,1,mul#8462,),select[](select#8453,select#8478,select#8493,),select[](select#8093,select#8509,select#8524,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 6.2299999999994304e-06,
+            "cumulative_elapsed_s": 0.095555673,
+            "left_import_s": 0.0005241909999999998,
+            "left_normalize_s": 0.00025619099999999936,
+            "parametric_state_s": 7.099999999992529e-07,
+            "piece_union_reuse_s": 4.4999999999906226e-07,
+            "piece_union_seal_s": 3.099999999998937e-07,
+            "right_import_s": 0.007967775,
+            "right_normalize_s": 0.082860393,
+            "state_pattern_s": 1.5340000000002574e-05,
+            "unary_reduction_s": 7.414000000000032e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              1,
+              1
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](0,),),recip[](call[,7](0,word[,64](mul[,-4](call#4646,),),word[,64](mul[,-4](call#4698,),),),),exp[](add[,-1,1](call[,0](0,),read[input\nreal:byte-address:f32](word[,64](mul#8580,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#8093,select#8082,select#7836,),select[](select#8453,select#8442,select#8268,),),1,mul[,1](compare[le](add#8459,-1,),compare[eq](select#8094,select#8454,),),),select[](select[](compare[lt](select#8268,select#8442,),1,mul[,1](compare#8450,compare#8451,),),select[](select[](compare#8395,1,mul#8440,),select[](select#8393,select#8466,select#8469,),select[](select#8330,select#8473,select#8476,),),select[](select[](compare#8221,1,mul#8266,),select[](select#8219,select#8481,select#8484,),select[](select#8156,select#8488,select#8491,),),),select[](select[](compare[lt](select#7836,select#8082,),1,mul[,1](compare#8090,compare#8091,),),select[](select[](compare#8035,1,mul#8080,),select[](select#8033,select#8497,select#8500,),select[](select#7934,select#8504,select#8507,),),select[](select[](compare#7791,1,mul#7834,),select[](select#7789,select#8512,select#8515,),select[](select#7618,select#8519,select#8522,),),),),recip[](add[,1,1](select[](select[](compare#7440,1,mul#7449,),select[](select#7438,select#7427,select#7193,),select[](select#6958,select#6947,select#6713,),),select[](select[](compare#8455,1,mul#8462,),select[](select#8453,select#8478,select#8493,),select[](select#8093,select#8509,select#8524,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.1799999999895228e-06,
+            "cumulative_elapsed_s": 0.135060568,
+            "left_import_s": 8.919999999999761e-05,
+            "left_normalize_s": 0.00015125100000000502,
+            "parametric_state_s": 4.599999999937987e-07,
+            "piece_union_reuse_s": 2.999999999808711e-07,
+            "piece_union_seal_s": 1.5000000000431335e-07,
+            "right_import_s": 2.8899999999915105e-06,
+            "right_normalize_s": 0.03796543999999999,
+            "state_pattern_s": 9.680000000011901e-06,
+            "unary_reduction_s": 2.0619999999998972e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              2,
+              2
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](1,),),exp[](add[,-1,1](call[,0](1,),read[input\nreal:byte-address:f32](word[,64](add#13566,),),),),recip[](call[,7](1,word[,64](add[,256,-4](1,call#13588,),),word[,64](add[,256,-4](1,call#13641,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#15902,select#15891,select#15657,),select[](select#16382,select#16371,select#16137,),),1,mul[,1](compare[le](add#16388,-1,),compare[eq](select#15903,select#16383,),),),select[](select[](compare[lt](select#16137,select#16371,),1,mul[,1](compare#16379,compare#16380,),),select[](select[](compare#16324,1,mul#16369,),select[](select#16322,max#16320,max#16275,),select[](select#16229,max#16227,max#16182,),),select[](select[](compare#16090,1,mul#16135,),select[](select#16088,max#16086,max#16041,),select[](select#15995,max#15993,max#15948,),),),select[](select[](compare[lt](select#15657,select#15891,),1,mul[,1](compare#15899,compare#15900,),),select[](select[](compare#15844,1,mul#15889,),select[](select#15842,max#15840,max#15795,),select[](select#15749,max#15747,max#15702,),),select[](select[](compare#15612,1,mul#15655,),select[](select#15610,max#15608,max#15563,),select[](select#15517,max#15515,max#15470,),),),),recip[](add[,1,1](select[](select[](compare#16384,1,mul#16393,),select[](select#16382,select#16371,select#16137,),select[](select#15902,select#15891,select#15657,),),select[](select[](compare#17399,1,mul#17406,),select[](select#17397,select#17422,select#17437,),select[](select#17037,select#17453,select#17468,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 7.499999999938112e-07,
+            "cumulative_elapsed_s": 0.228992446,
+            "left_import_s": 0.00040486100000000635,
+            "left_normalize_s": 0.000241960999999985,
+            "parametric_state_s": 2.9000000001389026e-07,
+            "piece_union_reuse_s": 2.1000000000048757e-07,
+            "piece_union_seal_s": 5.999999999617422e-08,
+            "right_import_s": 0.007330653999999992,
+            "right_normalize_s": 0.08457942699999998,
+            "state_pattern_s": 1.1769999999994285e-05,
+            "unary_reduction_s": 5.971000000001836e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              3,
+              3
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](1,),),recip[](call[,7](1,word[,64](add[,256,-4](1,call#13588,),),word[,64](add[,256,-4](1,call#13641,),),),),exp[](add[,-1,1](call[,0](1,),read[input\nreal:byte-address:f32](word[,64](add#17531,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#17037,select#17026,select#16780,),select[](select#17397,select#17386,select#17212,),),1,mul[,1](compare[le](add#17403,-1,),compare[eq](select#17038,select#17398,),),),select[](select[](compare[lt](select#17212,select#17386,),1,mul[,1](compare#17394,compare#17395,),),select[](select[](compare#17339,1,mul#17384,),select[](select#17337,select#17410,select#17413,),select[](select#17274,select#17417,select#17420,),),select[](select[](compare#17165,1,mul#17210,),select[](select#17163,select#17425,select#17428,),select[](select#17100,select#17432,select#17435,),),),select[](select[](compare[lt](select#16780,select#17026,),1,mul[,1](compare#17034,compare#17035,),),select[](select[](compare#16979,1,mul#17024,),select[](select#16977,select#17441,select#17444,),select[](select#16878,select#17448,select#17451,),),select[](select[](compare#16735,1,mul#16778,),select[](select#16733,select#17456,select#17459,),select[](select#16562,select#17463,select#17466,),),),),recip[](add[,1,1](select[](select[](compare#16384,1,mul#16393,),select[](select#16382,select#16371,select#16137,),select[](select#15902,select#15891,select#15657,),),select[](select[](compare#17399,1,mul#17406,),select[](select#17397,select#17422,select#17437,),select[](select#17037,select#17453,select#17468,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 5.90000000022517e-07,
+            "cumulative_elapsed_s": 0.268615451,
+            "left_import_s": 8.759999999999324e-05,
+            "left_normalize_s": 0.0001556010000000052,
+            "parametric_state_s": 2.4999999997943334e-07,
+            "piece_union_reuse_s": 1.0000000000287557e-07,
+            "piece_union_seal_s": 5.999999999617422e-08,
+            "right_import_s": 2.940000000006826e-06,
+            "right_normalize_s": 0.03808684000000001,
+            "state_pattern_s": 9.280000000000399e-06,
+            "unary_reduction_s": 1.8009999999957227e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              4,
+              4
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](2,),),exp[](add[,-1,1](call[,0](2,),read[input\nreal:byte-address:f32](word[,64](add#22517,),),),),recip[](call[,7](2,word[,64](add[,512,-4](1,call#22539,),),word[,64](add[,512,-4](1,call#22592,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#24853,select#24842,select#24608,),select[](select#25333,select#25322,select#25088,),),1,mul[,1](compare[le](add#25339,-1,),compare[eq](select#24854,select#25334,),),),select[](select[](compare[lt](select#25088,select#25322,),1,mul[,1](compare#25330,compare#25331,),),select[](select[](compare#25275,1,mul#25320,),select[](select#25273,max#25271,max#25226,),select[](select#25180,max#25178,max#25133,),),select[](select[](compare#25041,1,mul#25086,),select[](select#25039,max#25037,max#24992,),select[](select#24946,max#24944,max#24899,),),),select[](select[](compare[lt](select#24608,select#24842,),1,mul[,1](compare#24850,compare#24851,),),select[](select[](compare#24795,1,mul#24840,),select[](select#24793,max#24791,max#24746,),select[](select#24700,max#24698,max#24653,),),select[](select[](compare#24563,1,mul#24606,),select[](select#24561,max#24559,max#24514,),select[](select#24468,max#24466,max#24421,),),),),recip[](add[,1,1](select[](select[](compare#25335,1,mul#25344,),select[](select#25333,select#25322,select#25088,),select[](select#24853,select#24842,select#24608,),),select[](select[](compare#26350,1,mul#26357,),select[](select#26348,select#26373,select#26388,),select[](select#25988,select#26404,select#26419,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 5.699999999775329e-07,
+            "cumulative_elapsed_s": 0.359995101,
+            "left_import_s": 0.0004006119999999669,
+            "left_normalize_s": 0.00020524099999996714,
+            "parametric_state_s": 2.599999999741698e-07,
+            "piece_union_reuse_s": 1.0000000000287557e-07,
+            "piece_union_seal_s": 4.000000003445692e-08,
+            "right_import_s": 0.006764160999999991,
+            "right_normalize_s": 0.082744072,
+            "state_pattern_s": 1.1380000000005275e-05,
+            "unary_reduction_s": 5.7560000000012046e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              5,
+              5
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](2,),),recip[](call[,7](2,word[,64](add[,512,-4](1,call#22539,),),word[,64](add[,512,-4](1,call#22592,),),),),exp[](add[,-1,1](call[,0](2,),read[input\nreal:byte-address:f32](word[,64](add#26482,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#25988,select#25977,select#25731,),select[](select#26348,select#26337,select#26163,),),1,mul[,1](compare[le](add#26354,-1,),compare[eq](select#25989,select#26349,),),),select[](select[](compare[lt](select#26163,select#26337,),1,mul[,1](compare#26345,compare#26346,),),select[](select[](compare#26290,1,mul#26335,),select[](select#26288,select#26361,select#26364,),select[](select#26225,select#26368,select#26371,),),select[](select[](compare#26116,1,mul#26161,),select[](select#26114,select#26376,select#26379,),select[](select#26051,select#26383,select#26386,),),),select[](select[](compare[lt](select#25731,select#25977,),1,mul[,1](compare#25985,compare#25986,),),select[](select[](compare#25930,1,mul#25975,),select[](select#25928,select#26392,select#26395,),select[](select#25829,select#26399,select#26402,),),select[](select[](compare#25686,1,mul#25729,),select[](select#25684,select#26407,select#26410,),select[](select#25513,select#26414,select#26417,),),),),recip[](add[,1,1](select[](select[](compare#25335,1,mul#25344,),select[](select#25333,select#25322,select#25088,),select[](select#24853,select#24842,select#24608,),),select[](select[](compare#26350,1,mul#26357,),select[](select#26348,select#26373,select#26388,),select[](select#25988,select#26404,select#26419,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 5.100000000091143e-07,
+            "cumulative_elapsed_s": 0.398859214,
+            "left_import_s": 9.198999999998625e-05,
+            "left_normalize_s": 0.00014282100000001519,
+            "parametric_state_s": 2.599999999741698e-07,
+            "piece_union_reuse_s": 1.200000000478596e-07,
+            "piece_union_seal_s": 2.9999999984209325e-08,
+            "right_import_s": 3.0599999999991745e-06,
+            "right_normalize_s": 0.03744855800000002,
+            "state_pattern_s": 9.059999999949664e-06,
+            "unary_reduction_s": 1.769000000001464e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              6,
+              6
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](3,),),exp[](add[,-1,1](call[,0](3,),read[input\nreal:byte-address:f32](word[,64](add#31473,),),),),recip[](call[,7](3,word[,64](add[,768,-4](1,call#31495,),),word[,64](add[,768,-4](1,call#31548,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#33809,select#33798,select#33564,),select[](select#34289,select#34278,select#34044,),),1,mul[,1](compare[le](add#34295,-1,),compare[eq](select#33810,select#34290,),),),select[](select[](compare[lt](select#34044,select#34278,),1,mul[,1](compare#34286,compare#34287,),),select[](select[](compare#34231,1,mul#34276,),select[](select#34229,max#34227,max#34182,),select[](select#34136,max#34134,max#34089,),),select[](select[](compare#33997,1,mul#34042,),select[](select#33995,max#33993,max#33948,),select[](select#33902,max#33900,max#33855,),),),select[](select[](compare[lt](select#33564,select#33798,),1,mul[,1](compare#33806,compare#33807,),),select[](select[](compare#33751,1,mul#33796,),select[](select#33749,max#33747,max#33702,),select[](select#33656,max#33654,max#33609,),),select[](select[](compare#33519,1,mul#33562,),select[](select#33517,max#33515,max#33470,),select[](select#33424,max#33422,max#33377,),),),),recip[](add[,1,1](select[](select[](compare#34291,1,mul#34300,),select[](select#34289,select#34278,select#34044,),select[](select#33809,select#33798,select#33564,),),select[](select[](compare#35306,1,mul#35313,),select[](select#35304,select#35329,select#35344,),select[](select#34944,select#35360,select#35375,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 5.700000000330441e-07,
+            "cumulative_elapsed_s": 0.490552844,
+            "left_import_s": 0.00039045100000001387,
+            "left_normalize_s": 0.00019283999999997192,
+            "parametric_state_s": 3.199999999980996e-07,
+            "piece_union_reuse_s": 9.000000000813912e-08,
+            "piece_union_seal_s": 6.999999996315509e-08,
+            "right_import_s": 0.00641321100000003,
+            "right_normalize_s": 0.08349664499999998,
+            "state_pattern_s": 1.0840000000011951e-05,
+            "unary_reduction_s": 5.8110000000000106e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              7,
+              7
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](3,),),recip[](call[,7](3,word[,64](add[,768,-4](1,call#31495,),),word[,64](add[,768,-4](1,call#31548,),),),),exp[](add[,-1,1](call[,0](3,),read[input\nreal:byte-address:f32](word[,64](add#35438,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#34944,select#34933,select#34687,),select[](select#35304,select#35293,select#35119,),),1,mul[,1](compare[le](add#35310,-1,),compare[eq](select#34945,select#35305,),),),select[](select[](compare[lt](select#35119,select#35293,),1,mul[,1](compare#35301,compare#35302,),),select[](select[](compare#35246,1,mul#35291,),select[](select#35244,select#35317,select#35320,),select[](select#35181,select#35324,select#35327,),),select[](select[](compare#35072,1,mul#35117,),select[](select#35070,select#35332,select#35335,),select[](select#35007,select#35339,select#35342,),),),select[](select[](compare[lt](select#34687,select#34933,),1,mul[,1](compare#34941,compare#34942,),),select[](select[](compare#34886,1,mul#34931,),select[](select#34884,select#35348,select#35351,),select[](select#34785,select#35355,select#35358,),),select[](select[](compare#34642,1,mul#34685,),select[](select#34640,select#35363,select#35366,),select[](select#34469,select#35370,select#35373,),),),),recip[](add[,1,1](select[](select[](compare#34291,1,mul#34300,),select[](select#34289,select#34278,select#34044,),select[](select#33809,select#33798,select#33564,),),select[](select[](compare#35306,1,mul#35313,),select[](select#35304,select#35329,select#35344,),select[](select#34944,select#35360,select#35375,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 4.599999999799209e-07,
+            "cumulative_elapsed_s": 0.53015455,
+            "left_import_s": 8.54909999999931e-05,
+            "left_normalize_s": 0.00014071000000004386,
+            "parametric_state_s": 2.500000000349445e-07,
+            "piece_union_reuse_s": 1.0000000005838672e-07,
+            "piece_union_seal_s": 4.000000003445692e-08,
+            "right_import_s": 3.960000000025055e-06,
+            "right_normalize_s": 0.03822466099999999,
+            "state_pattern_s": 8.730000000012339e-06,
+            "unary_reduction_s": 1.6369999999987783e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              8,
+              8
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](4,),),exp[](add[,-1,1](call[,0](4,),read[input\nreal:byte-address:f32](word[,64](add#40424,),),),),recip[](call[,7](4,word[,64](add[,1024,-4](1,call#40446,),),word[,64](add[,1024,-4](1,call#40499,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#42760,select#42749,select#42515,),select[](select#43240,select#43229,select#42995,),),1,mul[,1](compare[le](add#43246,-1,),compare[eq](select#42761,select#43241,),),),select[](select[](compare[lt](select#42995,select#43229,),1,mul[,1](compare#43237,compare#43238,),),select[](select[](compare#43182,1,mul#43227,),select[](select#43180,max#43178,max#43133,),select[](select#43087,max#43085,max#43040,),),select[](select[](compare#42948,1,mul#42993,),select[](select#42946,max#42944,max#42899,),select[](select#42853,max#42851,max#42806,),),),select[](select[](compare[lt](select#42515,select#42749,),1,mul[,1](compare#42757,compare#42758,),),select[](select[](compare#42702,1,mul#42747,),select[](select#42700,max#42698,max#42653,),select[](select#42607,max#42605,max#42560,),),select[](select[](compare#42470,1,mul#42513,),select[](select#42468,max#42466,max#42421,),select[](select#42375,max#42373,max#42328,),),),),recip[](add[,1,1](select[](select[](compare#43242,1,mul#43251,),select[](select#43240,select#43229,select#42995,),select[](select#42760,select#42749,select#42515,),),select[](select[](compare#44257,1,mul#44264,),select[](select#44255,select#44280,select#44295,),select[](select#43895,select#44311,select#44326,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 5.4999999998806e-07,
+            "cumulative_elapsed_s": 0.623480225,
+            "left_import_s": 0.0004037709999999972,
+            "left_normalize_s": 0.00019381999999990018,
+            "parametric_state_s": 2.300000000454716e-07,
+            "piece_union_reuse_s": 1.200000000478596e-07,
+            "piece_union_seal_s": 6.000000007944095e-08,
+            "right_import_s": 0.006481000999999931,
+            "right_normalize_s": 0.08499931000000005,
+            "state_pattern_s": 1.1140000000020578e-05,
+            "unary_reduction_s": 5.650000000001487e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              9,
+              9
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](4,),),recip[](call[,7](4,word[,64](add[,1024,-4](1,call#40446,),),word[,64](add[,1024,-4](1,call#40499,),),),),exp[](add[,-1,1](call[,0](4,),read[input\nreal:byte-address:f32](word[,64](add#44389,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#43895,select#43884,select#43638,),select[](select#44255,select#44244,select#44070,),),1,mul[,1](compare[le](add#44261,-1,),compare[eq](select#43896,select#44256,),),),select[](select[](compare[lt](select#44070,select#44244,),1,mul[,1](compare#44252,compare#44253,),),select[](select[](compare#44197,1,mul#44242,),select[](select#44195,select#44268,select#44271,),select[](select#44132,select#44275,select#44278,),),select[](select[](compare#44023,1,mul#44068,),select[](select#44021,select#44283,select#44286,),select[](select#43958,select#44290,select#44293,),),),select[](select[](compare[lt](select#43638,select#43884,),1,mul[,1](compare#43892,compare#43893,),),select[](select[](compare#43837,1,mul#43882,),select[](select#43835,select#44299,select#44302,),select[](select#43736,select#44306,select#44309,),),select[](select[](compare#43593,1,mul#43636,),select[](select#43591,select#44314,select#44317,),select[](select#43420,select#44321,select#44324,),),),),recip[](add[,1,1](select[](select[](compare#43242,1,mul#43251,),select[](select#43240,select#43229,select#42995,),select[](select#42760,select#42749,select#42515,),),select[](select[](compare#44257,1,mul#44264,),select[](select#44255,select#44280,select#44295,),select[](select#43895,select#44311,select#44326,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 6.700000000359196e-07,
+            "cumulative_elapsed_s": 0.663147331,
+            "left_import_s": 8.719000000001476e-05,
+            "left_normalize_s": 0.00014225000000001042,
+            "parametric_state_s": 2.500000000349445e-07,
+            "piece_union_reuse_s": 9.999999994736442e-08,
+            "piece_union_seal_s": 3.9999999978945766e-08,
+            "right_import_s": 3.6900000000006372e-06,
+            "right_normalize_s": 0.038199941000000015,
+            "state_pattern_s": 9.119999999973594e-06,
+            "unary_reduction_s": 1.6269999999929396e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              10,
+              10
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](5,),),exp[](add[,-1,1](call[,0](5,),read[input\nreal:byte-address:f32](word[,64](add#49380,),),),),recip[](call[,7](5,word[,64](add[,1280,-4](1,call#49402,),),word[,64](add[,1280,-4](1,call#49455,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#51716,select#51705,select#51471,),select[](select#52196,select#52185,select#51951,),),1,mul[,1](compare[le](add#52202,-1,),compare[eq](select#51717,select#52197,),),),select[](select[](compare[lt](select#51951,select#52185,),1,mul[,1](compare#52193,compare#52194,),),select[](select[](compare#52138,1,mul#52183,),select[](select#52136,max#52134,max#52089,),select[](select#52043,max#52041,max#51996,),),select[](select[](compare#51904,1,mul#51949,),select[](select#51902,max#51900,max#51855,),select[](select#51809,max#51807,max#51762,),),),select[](select[](compare[lt](select#51471,select#51705,),1,mul[,1](compare#51713,compare#51714,),),select[](select[](compare#51658,1,mul#51703,),select[](select#51656,max#51654,max#51609,),select[](select#51563,max#51561,max#51516,),),select[](select[](compare#51426,1,mul#51469,),select[](select#51424,max#51422,max#51377,),select[](select#51331,max#51329,max#51284,),),),),recip[](add[,1,1](select[](select[](compare#52198,1,mul#52207,),select[](select#52196,select#52185,select#51951,),select[](select#51716,select#51705,select#51471,),),select[](select[](compare#53213,1,mul#53220,),select[](select#53211,select#53236,select#53251,),select[](select#52851,select#53267,select#53282,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 6.899999999143702e-07,
+            "cumulative_elapsed_s": 0.755233003,
+            "left_import_s": 0.00040770099999998255,
+            "left_normalize_s": 0.00020533099999997528,
+            "parametric_state_s": 3.599999999215342e-07,
+            "piece_union_reuse_s": 9.000000000813912e-08,
+            "piece_union_seal_s": 3.0000000039720476e-08,
+            "right_import_s": 0.0068625620000000165,
+            "right_normalize_s": 0.08342253399999999,
+            "state_pattern_s": 1.1300000000047383e-05,
+            "unary_reduction_s": 5.550999999992534e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              11,
+              11
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](5,),),recip[](call[,7](5,word[,64](add[,1280,-4](1,call#49402,),),word[,64](add[,1280,-4](1,call#49455,),),),),exp[](add[,-1,1](call[,0](5,),read[input\nreal:byte-address:f32](word[,64](add#53345,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#52851,select#52840,select#52594,),select[](select#53211,select#53200,select#53026,),),1,mul[,1](compare[le](add#53217,-1,),compare[eq](select#52852,select#53212,),),),select[](select[](compare[lt](select#53026,select#53200,),1,mul[,1](compare#53208,compare#53209,),),select[](select[](compare#53153,1,mul#53198,),select[](select#53151,select#53224,select#53227,),select[](select#53088,select#53231,select#53234,),),select[](select[](compare#52979,1,mul#53024,),select[](select#52977,select#53239,select#53242,),select[](select#52914,select#53246,select#53249,),),),select[](select[](compare[lt](select#52594,select#52840,),1,mul[,1](compare#52848,compare#52849,),),select[](select[](compare#52793,1,mul#52838,),select[](select#52791,select#53255,select#53258,),select[](select#52692,select#53262,select#53265,),),select[](select[](compare#52549,1,mul#52592,),select[](select#52547,select#53270,select#53273,),select[](select#52376,select#53277,select#53280,),),),),recip[](add[,1,1](select[](select[](compare#52198,1,mul#52207,),select[](select#52196,select#52185,select#51951,),select[](select#51716,select#51705,select#51471,),),select[](select[](compare#53213,1,mul#53220,),select[](select#53211,select#53236,select#53251,),select[](select#52851,select#53267,select#53282,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 5.299999999985872e-07,
+            "cumulative_elapsed_s": 0.794019646,
+            "left_import_s": 8.647000000006066e-05,
+            "left_normalize_s": 0.0001476809999999551,
+            "parametric_state_s": 2.599999999741698e-07,
+            "piece_union_reuse_s": 1.0999999999761201e-07,
+            "piece_union_seal_s": 7.000000001866624e-08,
+            "right_import_s": 3.1099999999728567e-06,
+            "right_normalize_s": 0.03739931799999996,
+            "state_pattern_s": 9.02000000002623e-06,
+            "unary_reduction_s": 1.6130000000003086e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              12,
+              12
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](6,),),exp[](add[,-1,1](call[,0](6,),read[input\nreal:byte-address:f32](word[,64](add#58331,),),),),recip[](call[,7](6,word[,64](add[,1536,-4](1,call#58353,),),word[,64](add[,1536,-4](1,call#58406,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#60667,select#60656,select#60422,),select[](select#61147,select#61136,select#60902,),),1,mul[,1](compare[le](add#61153,-1,),compare[eq](select#60668,select#61148,),),),select[](select[](compare[lt](select#60902,select#61136,),1,mul[,1](compare#61144,compare#61145,),),select[](select[](compare#61089,1,mul#61134,),select[](select#61087,max#61085,max#61040,),select[](select#60994,max#60992,max#60947,),),select[](select[](compare#60855,1,mul#60900,),select[](select#60853,max#60851,max#60806,),select[](select#60760,max#60758,max#60713,),),),select[](select[](compare[lt](select#60422,select#60656,),1,mul[,1](compare#60664,compare#60665,),),select[](select[](compare#60609,1,mul#60654,),select[](select#60607,max#60605,max#60560,),select[](select#60514,max#60512,max#60467,),),select[](select[](compare#60377,1,mul#60420,),select[](select#60375,max#60373,max#60328,),select[](select#60282,max#60280,max#60235,),),),),recip[](add[,1,1](select[](select[](compare#61149,1,mul#61158,),select[](select#61147,select#61136,select#60902,),select[](select#60667,select#60656,select#60422,),),select[](select[](compare#62164,1,mul#62171,),select[](select#62162,select#62187,select#62202,),select[](select#61802,select#62218,select#62233,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 5.799999999167582e-07,
+            "cumulative_elapsed_s": 0.886384438,
+            "left_import_s": 0.0004093310000000683,
+            "left_normalize_s": 0.0002068809999999921,
+            "parametric_state_s": 2.700000000244174e-07,
+            "piece_union_reuse_s": 1.0999999999761201e-07,
+            "piece_union_seal_s": 3.9999999978945766e-08,
+            "right_import_s": 0.00668236099999997,
+            "right_normalize_s": 0.08388400499999993,
+            "state_pattern_s": 1.0370000000037294e-05,
+            "unary_reduction_s": 5.589999999999762e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              13,
+              13
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](6,),),recip[](call[,7](6,word[,64](add[,1536,-4](1,call#58353,),),word[,64](add[,1536,-4](1,call#58406,),),),),exp[](add[,-1,1](call[,0](6,),read[input\nreal:byte-address:f32](word[,64](add#62296,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#61802,select#61791,select#61545,),select[](select#62162,select#62151,select#61977,),),1,mul[,1](compare[le](add#62168,-1,),compare[eq](select#61803,select#62163,),),),select[](select[](compare[lt](select#61977,select#62151,),1,mul[,1](compare#62159,compare#62160,),),select[](select[](compare#62104,1,mul#62149,),select[](select#62102,select#62175,select#62178,),select[](select#62039,select#62182,select#62185,),),select[](select[](compare#61930,1,mul#61975,),select[](select#61928,select#62190,select#62193,),select[](select#61865,select#62197,select#62200,),),),select[](select[](compare[lt](select#61545,select#61791,),1,mul[,1](compare#61799,compare#61800,),),select[](select[](compare#61744,1,mul#61789,),select[](select#61742,select#62206,select#62209,),select[](select#61643,select#62213,select#62216,),),select[](select[](compare#61500,1,mul#61543,),select[](select#61498,select#62221,select#62224,),select[](select#61327,select#62228,select#62231,),),),),recip[](add[,1,1](select[](select[](compare#61149,1,mul#61158,),select[](select#61147,select#61136,select#60902,),select[](select#60667,select#60656,select#60422,),),select[](select[](compare#62164,1,mul#62171,),select[](select#62162,select#62187,select#62202,),select[](select#61802,select#62218,select#62233,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.5700000000062886e-06,
+            "cumulative_elapsed_s": 0.926396015,
+            "left_import_s": 9.243100000000393e-05,
+            "left_normalize_s": 0.000853082000000005,
+            "parametric_state_s": 2.299999999344493e-07,
+            "piece_union_reuse_s": 1.0999999999761201e-07,
+            "piece_union_seal_s": 5.999999996841865e-08,
+            "right_import_s": 3.3400000000183283e-06,
+            "right_normalize_s": 0.037914541000000024,
+            "state_pattern_s": 8.54999999999606e-06,
+            "unary_reduction_s": 1.593999999993656e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              14,
+              14
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](7,),),exp[](add[,-1,1](call[,0](7,),read[input\nreal:byte-address:f32](word[,64](add#67287,),),),),recip[](call[,7](7,word[,64](add[,1792,-4](1,call#67309,),),word[,64](add[,1792,-4](1,call#67362,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#69623,select#69612,select#69378,),select[](select#70103,select#70092,select#69858,),),1,mul[,1](compare[le](add#70109,-1,),compare[eq](select#69624,select#70104,),),),select[](select[](compare[lt](select#69858,select#70092,),1,mul[,1](compare#70100,compare#70101,),),select[](select[](compare#70045,1,mul#70090,),select[](select#70043,max#70041,max#69996,),select[](select#69950,max#69948,max#69903,),),select[](select[](compare#69811,1,mul#69856,),select[](select#69809,max#69807,max#69762,),select[](select#69716,max#69714,max#69669,),),),select[](select[](compare[lt](select#69378,select#69612,),1,mul[,1](compare#69620,compare#69621,),),select[](select[](compare#69565,1,mul#69610,),select[](select#69563,max#69561,max#69516,),select[](select#69470,max#69468,max#69423,),),select[](select[](compare#69333,1,mul#69376,),select[](select#69331,max#69329,max#69284,),select[](select#69238,max#69236,max#69191,),),),),recip[](add[,1,1](select[](select[](compare#70105,1,mul#70114,),select[](select#70103,select#70092,select#69858,),select[](select#69623,select#69612,select#69378,),),select[](select[](compare#71120,1,mul#71127,),select[](select#71118,select#71143,select#71158,),select[](select#70758,select#71174,select#71189,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 5.399999999378124e-07,
+            "cumulative_elapsed_s": 1.019358739,
+            "left_import_s": 0.00039415099999995373,
+            "left_normalize_s": 0.00020129099999999234,
+            "parametric_state_s": 2.6999999991339507e-07,
+            "piece_union_reuse_s": 1.0999999999761201e-07,
+            "piece_union_seal_s": 7.000000001866624e-08,
+            "right_import_s": 0.0067005710000000995,
+            "right_normalize_s": 0.08448216799999986,
+            "state_pattern_s": 1.0480000000034906e-05,
+            "unary_reduction_s": 5.557000000000478e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              15,
+              15
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "mul[,1](recip[](call[,1](7,),),recip[](call[,7](7,word[,64](add[,1792,-4](1,call#67309,),),word[,64](add[,1792,-4](1,call#67362,),),),),exp[](add[,-1,1](call[,0](7,),read[input\nreal:byte-address:f32](word[,64](add#71252,),),),),)",
+            "right": "mul[,1](select[](select[](compare[lt](select[](select#70758,select#70747,select#70501,),select[](select#71118,select#71107,select#70933,),),1,mul[,1](compare[le](add#71124,-1,),compare[eq](select#70759,select#71119,),),),select[](select[](compare[lt](select#70933,select#71107,),1,mul[,1](compare#71115,compare#71116,),),select[](select[](compare#71060,1,mul#71105,),select[](select#71058,select#71131,select#71134,),select[](select#70995,select#71138,select#71141,),),select[](select[](compare#70886,1,mul#70931,),select[](select#70884,select#71146,select#71149,),select[](select#70821,select#71153,select#71156,),),),select[](select[](compare[lt](select#70501,select#70747,),1,mul[,1](compare#70755,compare#70756,),),select[](select[](compare#70700,1,mul#70745,),select[](select#70698,select#71162,select#71165,),select[](select#70599,select#71169,select#71172,),),select[](select[](compare#70456,1,mul#70499,),select[](select#70454,select#71177,select#71180,),select[](select#70283,select#71184,select#71187,),),),),recip[](add[,1,1](select[](select[](compare#70105,1,mul#70114,),select[](select#70103,select#70092,select#69858,),select[](select#69623,select#69612,select#69378,),),select[](select[](compare#71120,1,mul#71127,),select[](select#71118,select#71143,select#71158,),select[](select#70758,select#71174,select#71189,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 4.900000001306637e-07,
+            "cumulative_elapsed_s": 1.058771124,
+            "left_import_s": 8.667100000003813e-05,
+            "left_normalize_s": 0.00015067999999995862,
+            "parametric_state_s": 2.8000000007466497e-07,
+            "piece_union_reuse_s": 1.199999999368373e-07,
+            "piece_union_seal_s": 3.0000000039720476e-08,
+            "right_import_s": 3.1700000000522977e-06,
+            "right_normalize_s": 0.03803068100000018,
+            "state_pattern_s": 8.929999999907068e-06,
+            "unary_reduction_s": 1.5749999999981057e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              16,
+              16
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71590,0,),compare[lt](mul#71590,64,),),signed[,64](word[,64](mul#71590,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#6948,1,mul#6957,),select[](select#6946,select#6899,select#6806,),select[](select#6712,select#6667,select#6574,),),select[](select[](compare#7428,1,mul#7437,),select[](select#7426,select#7379,select#7286,),select[](select#7192,select#7145,select#7052,),),),1,mul[,1](compare[le](add[,-1,1](select#7441,select#7442,),-1,),compare[eq](select[](select#6958,select#6947,select#6713,),select[](select#7438,select#7427,select#7193,),),),),select[](select[](compare[lt](select[](select#7192,select#7145,select#7052,),select[](select#7426,select#7379,select#7286,),),1,mul[,1](compare[le](add#7432,-1,),compare[eq](select#7193,select#7427,),),),select[](select[](compare[lt](select#7286,select#7379,),1,mul[,1](compare#7423,compare#7424,),),select[](select[](compare#7377,1,0,),add[,60,1](1,select#7406,),add[,28,1](1,select#7415,),),select[](select[](compare#7284,1,0,),add[,44,1](1,select#7387,),add[,12,1](1,select#7396,),),),select[](select[](compare[lt](select#7052,select#7145,),1,mul[,1](compare#7189,compare#7190,),),select[](select[](compare#7143,1,0,),add[,52,1](1,select#7172,),add[,20,1](1,select#7181,),),select[](select[](compare#7050,1,0,),add[,36,1](1,select#7153,),add[,4,1](1,select#7162,),),),),select[](select[](compare[lt](select[](select#6712,select#6667,select#6574,),select[](select#6946,select#6899,select#6806,),),1,mul[,1](compare[le](add#6952,-1,),compare[eq](select#6713,select#6947,),),),select[](select[](compare[lt](select#6806,select#6899,),1,mul[,1](compare#6943,compare#6944,),),select[](select[](compare#6897,1,0,),add[,56,1](1,select#6926,),add[,24,1](1,select#6935,),),select[](select[](compare#6804,1,0,),add[,40,1](1,select#6907,),add[,8,1](1,select#6916,),),),select[](select[](compare[lt](select#6574,select#6667,),1,mul[,1](compare#6709,compare#6710,),),select[](select[](compare#6665,1,0,),add[,48,1](1,select#6692,),add[,16,1](1,select#6701,),),select[](select[](compare#6572,1,0,),add[,32,1](1,select#6675,),select[](compare#6678,select#6683,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 4.700000000301685e-07,
+            "cumulative_elapsed_s": 1.06049793,
+            "left_import_s": 2.0539999999957814e-05,
+            "left_normalize_s": 5.83110000000886e-05,
+            "parametric_state_s": 2.8000000007466497e-07,
+            "piece_union_reuse_s": 4.9999999918171056e-08,
+            "piece_union_seal_s": 3.9999999978945766e-08,
+            "right_import_s": 1.5650000000144715e-05,
+            "right_normalize_s": 0.0011939729999999038,
+            "state_pattern_s": 8.199999999014551e-07,
+            "unary_reduction_s": 1.2599999998919031e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              17,
+              17
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71608,0,),compare[lt](mul#71608,64,),),signed[,64](word[,64](mul#71608,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#8083,1,mul#8092,),select[](select#8081,select#8034,select#7935,),select[](select#7835,select#7790,select#7619,),),select[](select[](compare#8443,1,mul#8452,),select[](select#8441,select#8394,select#8331,),select[](select#8267,select#8220,select#8157,),),),1,mul[,1](compare[le](add[,-1,1](select#8456,select#8457,),-1,),compare[eq](select[](select#8093,select#8082,select#7836,),select[](select#8453,select#8442,select#8268,),),),),select[](select[](compare[lt](select[](select#8267,select#8220,select#8157,),select[](select#8441,select#8394,select#8331,),),1,mul[,1](compare[le](add#8447,-1,),compare[eq](select#8268,select#8442,),),),select[](select[](compare[lt](select#8331,select#8394,),1,mul[,1](compare#8438,compare#8439,),),select[](select[](compare#8392,1,0,),add[,60,1](1,select#8421,),add[,28,1](1,select#8430,),),select[](select[](compare#8329,1,0,),add[,44,1](1,select#8402,),add[,12,1](1,select#8411,),),),select[](select[](compare[lt](select#8157,select#8220,),1,mul[,1](compare#8264,compare#8265,),),select[](select[](compare#8218,1,0,),add[,52,1](1,select#8247,),add[,20,1](1,select#8256,),),select[](select[](compare#8155,1,0,),add[,36,1](1,select#8228,),add[,4,1](1,select#8237,),),),),select[](select[](compare[lt](select[](select#7835,select#7790,select#7619,),select[](select#8081,select#8034,select#7935,),),1,mul[,1](compare[le](add#8087,-1,),compare[eq](select#7836,select#8082,),),),select[](select[](compare[lt](select#7935,select#8034,),1,mul[,1](compare#8078,compare#8079,),),select[](select[](compare#8032,1,0,),add[,56,1](1,select#8061,),add[,24,1](1,select#8070,),),select[](select[](compare#7933,1,0,),add[,40,1](1,select#8042,),add[,8,1](1,select#8051,),),),select[](select[](compare[lt](select#7619,select#7790,),1,mul[,1](compare#7832,compare#7833,),),select[](select[](compare#7788,1,0,),add[,48,1](1,select#7815,),add[,16,1](1,select#7824,),),select[](select[](compare#7617,1,0,),add[,32,1](1,select#7798,),select[](compare#7801,select#7806,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.6000000013782767e-07,
+            "cumulative_elapsed_s": 1.0636491,
+            "left_import_s": 1.5680000000184435e-05,
+            "left_normalize_s": 0.00010493000000000308,
+            "parametric_state_s": 1.8999999995550354e-07,
+            "piece_union_reuse_s": 7.999999995789153e-08,
+            "piece_union_seal_s": 2.0000000100495186e-08,
+            "right_import_s": 1.4720000000023603e-05,
+            "right_normalize_s": 0.00196294599999991,
+            "state_pattern_s": 7.799999999225093e-07,
+            "unary_reduction_s": 8.600000001024455e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              18,
+              18
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71627,0,),compare[lt](mul#71627,64,),),signed[,64](word[,64](mul#71627,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#15892,1,mul#15901,),select[](select#15890,select#15843,select#15750,),select[](select#15656,select#15611,select#15518,),),select[](select[](compare#16372,1,mul#16381,),select[](select#16370,select#16323,select#16230,),select[](select#16136,select#16089,select#15996,),),),1,mul[,1](compare[le](add[,-1,1](select#16385,select#16386,),-1,),compare[eq](select[](select#15902,select#15891,select#15657,),select[](select#16382,select#16371,select#16137,),),),),select[](select[](compare[lt](select[](select#16136,select#16089,select#15996,),select[](select#16370,select#16323,select#16230,),),1,mul[,1](compare[le](add#16376,-1,),compare[eq](select#16137,select#16371,),),),select[](select[](compare[lt](select#16230,select#16323,),1,mul[,1](compare#16367,compare#16368,),),select[](select[](compare#16321,1,0,),add[,60,1](1,select#16350,),add[,28,1](1,select#16359,),),select[](select[](compare#16228,1,0,),add[,44,1](1,select#16331,),add[,12,1](1,select#16340,),),),select[](select[](compare[lt](select#15996,select#16089,),1,mul[,1](compare#16133,compare#16134,),),select[](select[](compare#16087,1,0,),add[,52,1](1,select#16116,),add[,20,1](1,select#16125,),),select[](select[](compare#15994,1,0,),add[,36,1](1,select#16097,),add[,4,1](1,select#16106,),),),),select[](select[](compare[lt](select[](select#15656,select#15611,select#15518,),select[](select#15890,select#15843,select#15750,),),1,mul[,1](compare[le](add#15896,-1,),compare[eq](select#15657,select#15891,),),),select[](select[](compare[lt](select#15750,select#15843,),1,mul[,1](compare#15887,compare#15888,),),select[](select[](compare#15841,1,0,),add[,56,1](1,select#15870,),add[,24,1](1,select#15879,),),select[](select[](compare#15748,1,0,),add[,40,1](1,select#15851,),add[,8,1](1,select#15860,),),),select[](select[](compare[lt](select#15518,select#15611,),1,mul[,1](compare#15653,compare#15654,),),select[](select[](compare#15609,1,0,),add[,48,1](1,select#15636,),add[,16,1](1,select#15645,),),select[](select[](compare#15516,1,0,),add[,32,1](1,select#15619,),select[](compare#15622,select#15627,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.0000000011677344e-07,
+            "cumulative_elapsed_s": 1.065369885,
+            "left_import_s": 1.5549999999864283e-05,
+            "left_normalize_s": 5.414999999997505e-05,
+            "parametric_state_s": 2.0000000011677344e-07,
+            "piece_union_reuse_s": 3.9999999978945766e-08,
+            "piece_union_seal_s": 1.999999987845058e-08,
+            "right_import_s": 1.286999999994265e-05,
+            "right_normalize_s": 0.0012036539999999984,
+            "state_pattern_s": 6.500000000464468e-07,
+            "unary_reduction_s": 9.599999999387876e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              19,
+              19
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71645,0,),compare[lt](mul#71645,64,),),signed[,64](word[,64](mul#71645,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#17027,1,mul#17036,),select[](select#17025,select#16978,select#16879,),select[](select#16779,select#16734,select#16563,),),select[](select[](compare#17387,1,mul#17396,),select[](select#17385,select#17338,select#17275,),select[](select#17211,select#17164,select#17101,),),),1,mul[,1](compare[le](add[,-1,1](select#17400,select#17401,),-1,),compare[eq](select[](select#17037,select#17026,select#16780,),select[](select#17397,select#17386,select#17212,),),),),select[](select[](compare[lt](select[](select#17211,select#17164,select#17101,),select[](select#17385,select#17338,select#17275,),),1,mul[,1](compare[le](add#17391,-1,),compare[eq](select#17212,select#17386,),),),select[](select[](compare[lt](select#17275,select#17338,),1,mul[,1](compare#17382,compare#17383,),),select[](select[](compare#17336,1,0,),add[,60,1](1,select#17365,),add[,28,1](1,select#17374,),),select[](select[](compare#17273,1,0,),add[,44,1](1,select#17346,),add[,12,1](1,select#17355,),),),select[](select[](compare[lt](select#17101,select#17164,),1,mul[,1](compare#17208,compare#17209,),),select[](select[](compare#17162,1,0,),add[,52,1](1,select#17191,),add[,20,1](1,select#17200,),),select[](select[](compare#17099,1,0,),add[,36,1](1,select#17172,),add[,4,1](1,select#17181,),),),),select[](select[](compare[lt](select[](select#16779,select#16734,select#16563,),select[](select#17025,select#16978,select#16879,),),1,mul[,1](compare[le](add#17031,-1,),compare[eq](select#16780,select#17026,),),),select[](select[](compare[lt](select#16879,select#16978,),1,mul[,1](compare#17022,compare#17023,),),select[](select[](compare#16976,1,0,),add[,56,1](1,select#17005,),add[,24,1](1,select#17014,),),select[](select[](compare#16877,1,0,),add[,40,1](1,select#16986,),add[,8,1](1,select#16995,),),),select[](select[](compare[lt](select#16563,select#16734,),1,mul[,1](compare#16776,compare#16777,),),select[](select[](compare#16732,1,0,),add[,48,1](1,select#16759,),add[,16,1](1,select#16768,),),select[](select[](compare#16561,1,0,),add[,32,1](1,select#16742,),select[](compare#16745,select#16750,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.29999999992836e-07,
+            "cumulative_elapsed_s": 1.068492815,
+            "left_import_s": 1.3870000000082428e-05,
+            "left_normalize_s": 0.000107591000000129,
+            "parametric_state_s": 1.9999999989472883e-07,
+            "piece_union_reuse_s": 7.999999995789153e-08,
+            "piece_union_seal_s": 1.999999987845058e-08,
+            "right_import_s": 1.4309999999850831e-05,
+            "right_normalize_s": 0.0019390159999999046,
+            "state_pattern_s": 6.400000001072215e-07,
+            "unary_reduction_s": 6.900000000253925e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              20,
+              20
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71664,0,),compare[lt](mul#71664,64,),),signed[,64](word[,64](mul#71664,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#24843,1,mul#24852,),select[](select#24841,select#24794,select#24701,),select[](select#24607,select#24562,select#24469,),),select[](select[](compare#25323,1,mul#25332,),select[](select#25321,select#25274,select#25181,),select[](select#25087,select#25040,select#24947,),),),1,mul[,1](compare[le](add[,-1,1](select#25336,select#25337,),-1,),compare[eq](select[](select#24853,select#24842,select#24608,),select[](select#25333,select#25322,select#25088,),),),),select[](select[](compare[lt](select[](select#25087,select#25040,select#24947,),select[](select#25321,select#25274,select#25181,),),1,mul[,1](compare[le](add#25327,-1,),compare[eq](select#25088,select#25322,),),),select[](select[](compare[lt](select#25181,select#25274,),1,mul[,1](compare#25318,compare#25319,),),select[](select[](compare#25272,1,0,),add[,60,1](1,select#25301,),add[,28,1](1,select#25310,),),select[](select[](compare#25179,1,0,),add[,44,1](1,select#25282,),add[,12,1](1,select#25291,),),),select[](select[](compare[lt](select#24947,select#25040,),1,mul[,1](compare#25084,compare#25085,),),select[](select[](compare#25038,1,0,),add[,52,1](1,select#25067,),add[,20,1](1,select#25076,),),select[](select[](compare#24945,1,0,),add[,36,1](1,select#25048,),add[,4,1](1,select#25057,),),),),select[](select[](compare[lt](select[](select#24607,select#24562,select#24469,),select[](select#24841,select#24794,select#24701,),),1,mul[,1](compare[le](add#24847,-1,),compare[eq](select#24608,select#24842,),),),select[](select[](compare[lt](select#24701,select#24794,),1,mul[,1](compare#24838,compare#24839,),),select[](select[](compare#24792,1,0,),add[,56,1](1,select#24821,),add[,24,1](1,select#24830,),),select[](select[](compare#24699,1,0,),add[,40,1](1,select#24802,),add[,8,1](1,select#24811,),),),select[](select[](compare[lt](select#24469,select#24562,),1,mul[,1](compare#24604,compare#24605,),),select[](select[](compare#24560,1,0,),add[,48,1](1,select#24587,),add[,16,1](1,select#24596,),),select[](select[](compare#24467,1,0,),add[,32,1](1,select#24570,),select[](compare#24573,select#24578,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.799999999110071e-07,
+            "cumulative_elapsed_s": 1.07016246,
+            "left_import_s": 1.4700000000145153e-05,
+            "left_normalize_s": 4.9179999999982016e-05,
+            "parametric_state_s": 2.500000000349445e-07,
+            "piece_union_reuse_s": 4.000000020099037e-08,
+            "piece_union_seal_s": 3.9999999978945766e-08,
+            "right_import_s": 1.2209999999956977e-05,
+            "right_normalize_s": 0.0011673039999999801,
+            "state_pattern_s": 6.999999999646178e-07,
+            "unary_reduction_s": 8.299999998406804e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              21,
+              21
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71682,0,),compare[lt](mul#71682,64,),),signed[,64](word[,64](mul#71682,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#25978,1,mul#25987,),select[](select#25976,select#25929,select#25830,),select[](select#25730,select#25685,select#25514,),),select[](select[](compare#26338,1,mul#26347,),select[](select#26336,select#26289,select#26226,),select[](select#26162,select#26115,select#26052,),),),1,mul[,1](compare[le](add[,-1,1](select#26351,select#26352,),-1,),compare[eq](select[](select#25988,select#25977,select#25731,),select[](select#26348,select#26337,select#26163,),),),),select[](select[](compare[lt](select[](select#26162,select#26115,select#26052,),select[](select#26336,select#26289,select#26226,),),1,mul[,1](compare[le](add#26342,-1,),compare[eq](select#26163,select#26337,),),),select[](select[](compare[lt](select#26226,select#26289,),1,mul[,1](compare#26333,compare#26334,),),select[](select[](compare#26287,1,0,),add[,60,1](1,select#26316,),add[,28,1](1,select#26325,),),select[](select[](compare#26224,1,0,),add[,44,1](1,select#26297,),add[,12,1](1,select#26306,),),),select[](select[](compare[lt](select#26052,select#26115,),1,mul[,1](compare#26159,compare#26160,),),select[](select[](compare#26113,1,0,),add[,52,1](1,select#26142,),add[,20,1](1,select#26151,),),select[](select[](compare#26050,1,0,),add[,36,1](1,select#26123,),add[,4,1](1,select#26132,),),),),select[](select[](compare[lt](select[](select#25730,select#25685,select#25514,),select[](select#25976,select#25929,select#25830,),),1,mul[,1](compare[le](add#25982,-1,),compare[eq](select#25731,select#25977,),),),select[](select[](compare[lt](select#25830,select#25929,),1,mul[,1](compare#25973,compare#25974,),),select[](select[](compare#25927,1,0,),add[,56,1](1,select#25956,),add[,24,1](1,select#25965,),),select[](select[](compare#25828,1,0,),add[,40,1](1,select#25937,),add[,8,1](1,select#25946,),),),select[](select[](compare[lt](select#25514,select#25685,),1,mul[,1](compare#25727,compare#25728,),),select[](select[](compare#25683,1,0,),add[,48,1](1,select#25710,),add[,16,1](1,select#25719,),),select[](select[](compare#25512,1,0,),add[,32,1](1,select#25693,),select[](compare#25696,select#25701,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.0000000011677344e-07,
+            "cumulative_elapsed_s": 1.07316746,
+            "left_import_s": 1.3381000000034504e-05,
+            "left_normalize_s": 0.00010001000000015026,
+            "parametric_state_s": 1.8000000001627825e-07,
+            "piece_union_reuse_s": 5.000000014021566e-08,
+            "piece_union_seal_s": 2.0000000100495186e-08,
+            "right_import_s": 1.4439999999948938e-05,
+            "right_normalize_s": 0.0018325759999999747,
+            "state_pattern_s": 6.900000000253925e-07,
+            "unary_reduction_s": 7.300000000043383e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              22,
+              22
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71701,0,),compare[lt](mul#71701,64,),),signed[,64](word[,64](mul#71701,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#33799,1,mul#33808,),select[](select#33797,select#33750,select#33657,),select[](select#33563,select#33518,select#33425,),),select[](select[](compare#34279,1,mul#34288,),select[](select#34277,select#34230,select#34137,),select[](select#34043,select#33996,select#33903,),),),1,mul[,1](compare[le](add[,-1,1](select#34292,select#34293,),-1,),compare[eq](select[](select#33809,select#33798,select#33564,),select[](select#34289,select#34278,select#34044,),),),),select[](select[](compare[lt](select[](select#34043,select#33996,select#33903,),select[](select#34277,select#34230,select#34137,),),1,mul[,1](compare[le](add#34283,-1,),compare[eq](select#34044,select#34278,),),),select[](select[](compare[lt](select#34137,select#34230,),1,mul[,1](compare#34274,compare#34275,),),select[](select[](compare#34228,1,0,),add[,60,1](1,select#34257,),add[,28,1](1,select#34266,),),select[](select[](compare#34135,1,0,),add[,44,1](1,select#34238,),add[,12,1](1,select#34247,),),),select[](select[](compare[lt](select#33903,select#33996,),1,mul[,1](compare#34040,compare#34041,),),select[](select[](compare#33994,1,0,),add[,52,1](1,select#34023,),add[,20,1](1,select#34032,),),select[](select[](compare#33901,1,0,),add[,36,1](1,select#34004,),add[,4,1](1,select#34013,),),),),select[](select[](compare[lt](select[](select#33563,select#33518,select#33425,),select[](select#33797,select#33750,select#33657,),),1,mul[,1](compare[le](add#33803,-1,),compare[eq](select#33564,select#33798,),),),select[](select[](compare[lt](select#33657,select#33750,),1,mul[,1](compare#33794,compare#33795,),),select[](select[](compare#33748,1,0,),add[,56,1](1,select#33777,),add[,24,1](1,select#33786,),),select[](select[](compare#33655,1,0,),add[,40,1](1,select#33758,),add[,8,1](1,select#33767,),),),select[](select[](compare[lt](select#33425,select#33518,),1,mul[,1](compare#33560,compare#33561,),),select[](select[](compare#33516,1,0,),add[,48,1](1,select#33543,),add[,16,1](1,select#33552,),),select[](select[](compare#33423,1,0,),add[,32,1](1,select#33526,),select[](compare#33529,select#33534,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.8000000001627825e-07,
+            "cumulative_elapsed_s": 1.074874145,
+            "left_import_s": 1.5479999999845617e-05,
+            "left_normalize_s": 5.093000000000458e-05,
+            "parametric_state_s": 1.6999999985500835e-07,
+            "piece_union_reuse_s": 3.9999999978945766e-08,
+            "piece_union_seal_s": 2.0000000100495186e-08,
+            "right_import_s": 1.3579999999846493e-05,
+            "right_normalize_s": 0.001191084000000009,
+            "state_pattern_s": 7.799999999225093e-07,
+            "unary_reduction_s": 8.700000000416708e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              23,
+              23
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71719,0,),compare[lt](mul#71719,64,),),signed[,64](word[,64](mul#71719,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#34934,1,mul#34943,),select[](select#34932,select#34885,select#34786,),select[](select#34686,select#34641,select#34470,),),select[](select[](compare#35294,1,mul#35303,),select[](select#35292,select#35245,select#35182,),select[](select#35118,select#35071,select#35008,),),),1,mul[,1](compare[le](add[,-1,1](select#35307,select#35308,),-1,),compare[eq](select[](select#34944,select#34933,select#34687,),select[](select#35304,select#35293,select#35119,),),),),select[](select[](compare[lt](select[](select#35118,select#35071,select#35008,),select[](select#35292,select#35245,select#35182,),),1,mul[,1](compare[le](add#35298,-1,),compare[eq](select#35119,select#35293,),),),select[](select[](compare[lt](select#35182,select#35245,),1,mul[,1](compare#35289,compare#35290,),),select[](select[](compare#35243,1,0,),add[,60,1](1,select#35272,),add[,28,1](1,select#35281,),),select[](select[](compare#35180,1,0,),add[,44,1](1,select#35253,),add[,12,1](1,select#35262,),),),select[](select[](compare[lt](select#35008,select#35071,),1,mul[,1](compare#35115,compare#35116,),),select[](select[](compare#35069,1,0,),add[,52,1](1,select#35098,),add[,20,1](1,select#35107,),),select[](select[](compare#35006,1,0,),add[,36,1](1,select#35079,),add[,4,1](1,select#35088,),),),),select[](select[](compare[lt](select[](select#34686,select#34641,select#34470,),select[](select#34932,select#34885,select#34786,),),1,mul[,1](compare[le](add#34938,-1,),compare[eq](select#34687,select#34933,),),),select[](select[](compare[lt](select#34786,select#34885,),1,mul[,1](compare#34929,compare#34930,),),select[](select[](compare#34883,1,0,),add[,56,1](1,select#34912,),add[,24,1](1,select#34921,),),select[](select[](compare#34784,1,0,),add[,40,1](1,select#34893,),add[,8,1](1,select#34902,),),),select[](select[](compare[lt](select#34470,select#34641,),1,mul[,1](compare#34683,compare#34684,),),select[](select[](compare#34639,1,0,),add[,48,1](1,select#34666,),add[,16,1](1,select#34675,),),select[](select[](compare#34468,1,0,),add[,32,1](1,select#34649,),select[](compare#34652,select#34657,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.399999999320613e-07,
+            "cumulative_elapsed_s": 1.077878225,
+            "left_import_s": 1.4130999999917293e-05,
+            "left_normalize_s": 9.879000000001525e-05,
+            "parametric_state_s": 1.6999999985500835e-07,
+            "piece_union_reuse_s": 3.9999999978945766e-08,
+            "piece_union_seal_s": 2.0000000100495186e-08,
+            "right_import_s": 1.4399999999969992e-05,
+            "right_normalize_s": 0.0018316750000000326,
+            "state_pattern_s": 7.099999999038431e-07,
+            "unary_reduction_s": 7.699999999832841e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              24,
+              24
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71738,0,),compare[lt](mul#71738,64,),),signed[,64](word[,64](mul#71738,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#42750,1,mul#42759,),select[](select#42748,select#42701,select#42608,),select[](select#42514,select#42469,select#42376,),),select[](select[](compare#43230,1,mul#43239,),select[](select#43228,select#43181,select#43088,),select[](select#42994,select#42947,select#42854,),),),1,mul[,1](compare[le](add[,-1,1](select#43243,select#43244,),-1,),compare[eq](select[](select#42760,select#42749,select#42515,),select[](select#43240,select#43229,select#42995,),),),),select[](select[](compare[lt](select[](select#42994,select#42947,select#42854,),select[](select#43228,select#43181,select#43088,),),1,mul[,1](compare[le](add#43234,-1,),compare[eq](select#42995,select#43229,),),),select[](select[](compare[lt](select#43088,select#43181,),1,mul[,1](compare#43225,compare#43226,),),select[](select[](compare#43179,1,0,),add[,60,1](1,select#43208,),add[,28,1](1,select#43217,),),select[](select[](compare#43086,1,0,),add[,44,1](1,select#43189,),add[,12,1](1,select#43198,),),),select[](select[](compare[lt](select#42854,select#42947,),1,mul[,1](compare#42991,compare#42992,),),select[](select[](compare#42945,1,0,),add[,52,1](1,select#42974,),add[,20,1](1,select#42983,),),select[](select[](compare#42852,1,0,),add[,36,1](1,select#42955,),add[,4,1](1,select#42964,),),),),select[](select[](compare[lt](select[](select#42514,select#42469,select#42376,),select[](select#42748,select#42701,select#42608,),),1,mul[,1](compare[le](add#42754,-1,),compare[eq](select#42515,select#42749,),),),select[](select[](compare[lt](select#42608,select#42701,),1,mul[,1](compare#42745,compare#42746,),),select[](select[](compare#42699,1,0,),add[,56,1](1,select#42728,),add[,24,1](1,select#42737,),),select[](select[](compare#42606,1,0,),add[,40,1](1,select#42709,),add[,8,1](1,select#42718,),),),select[](select[](compare[lt](select#42376,select#42469,),1,mul[,1](compare#42511,compare#42512,),),select[](select[](compare#42467,1,0,),add[,48,1](1,select#42494,),add[,16,1](1,select#42503,),),select[](select[](compare#42374,1,0,),add[,32,1](1,select#42477,),select[](compare#42480,select#42485,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.4999999997655777e-07,
+            "cumulative_elapsed_s": 1.07949859,
+            "left_import_s": 1.5529999999985833e-05,
+            "left_normalize_s": 4.8049999999966175e-05,
+            "parametric_state_s": 1.8000000001627825e-07,
+            "piece_union_reuse_s": 3.9999999978945766e-08,
+            "piece_union_seal_s": 2.0000000100495186e-08,
+            "right_import_s": 1.291000000014364e-05,
+            "right_normalize_s": 0.0011160740000000224,
+            "state_pattern_s": 5.699999998665106e-07,
+            "unary_reduction_s": 9.299999998990671e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              25,
+              25
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71756,0,),compare[lt](mul#71756,64,),),signed[,64](word[,64](mul#71756,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#43885,1,mul#43894,),select[](select#43883,select#43836,select#43737,),select[](select#43637,select#43592,select#43421,),),select[](select[](compare#44245,1,mul#44254,),select[](select#44243,select#44196,select#44133,),select[](select#44069,select#44022,select#43959,),),),1,mul[,1](compare[le](add[,-1,1](select#44258,select#44259,),-1,),compare[eq](select[](select#43895,select#43884,select#43638,),select[](select#44255,select#44244,select#44070,),),),),select[](select[](compare[lt](select[](select#44069,select#44022,select#43959,),select[](select#44243,select#44196,select#44133,),),1,mul[,1](compare[le](add#44249,-1,),compare[eq](select#44070,select#44244,),),),select[](select[](compare[lt](select#44133,select#44196,),1,mul[,1](compare#44240,compare#44241,),),select[](select[](compare#44194,1,0,),add[,60,1](1,select#44223,),add[,28,1](1,select#44232,),),select[](select[](compare#44131,1,0,),add[,44,1](1,select#44204,),add[,12,1](1,select#44213,),),),select[](select[](compare[lt](select#43959,select#44022,),1,mul[,1](compare#44066,compare#44067,),),select[](select[](compare#44020,1,0,),add[,52,1](1,select#44049,),add[,20,1](1,select#44058,),),select[](select[](compare#43957,1,0,),add[,36,1](1,select#44030,),add[,4,1](1,select#44039,),),),),select[](select[](compare[lt](select[](select#43637,select#43592,select#43421,),select[](select#43883,select#43836,select#43737,),),1,mul[,1](compare[le](add#43889,-1,),compare[eq](select#43638,select#43884,),),),select[](select[](compare[lt](select#43737,select#43836,),1,mul[,1](compare#43880,compare#43881,),),select[](select[](compare#43834,1,0,),add[,56,1](1,select#43863,),add[,24,1](1,select#43872,),),select[](select[](compare#43735,1,0,),add[,40,1](1,select#43844,),add[,8,1](1,select#43853,),),),select[](select[](compare[lt](select#43421,select#43592,),1,mul[,1](compare#43634,compare#43635,),),select[](select[](compare#43590,1,0,),add[,48,1](1,select#43617,),add[,16,1](1,select#43626,),),select[](select[](compare#43419,1,0,),add[,32,1](1,select#43600,),select[](compare#43603,select#43608,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.1000000005599873e-07,
+            "cumulative_elapsed_s": 1.082415349,
+            "left_import_s": 1.3649999999865159e-05,
+            "left_normalize_s": 9.692999999999508e-05,
+            "parametric_state_s": 1.7000000007705296e-07,
+            "piece_union_reuse_s": 3.9999999978945766e-08,
+            "piece_union_seal_s": 2.0000000100495186e-08,
+            "right_import_s": 1.433000000017337e-05,
+            "right_normalize_s": 0.0017531060000000043,
+            "state_pattern_s": 5.999999999062311e-07,
+            "unary_reduction_s": 6.699999999248973e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              26,
+              26
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71775,0,),compare[lt](mul#71775,64,),),signed[,64](word[,64](mul#71775,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#51706,1,mul#51715,),select[](select#51704,select#51657,select#51564,),select[](select#51470,select#51425,select#51332,),),select[](select[](compare#52186,1,mul#52195,),select[](select#52184,select#52137,select#52044,),select[](select#51950,select#51903,select#51810,),),),1,mul[,1](compare[le](add[,-1,1](select#52199,select#52200,),-1,),compare[eq](select[](select#51716,select#51705,select#51471,),select[](select#52196,select#52185,select#51951,),),),),select[](select[](compare[lt](select[](select#51950,select#51903,select#51810,),select[](select#52184,select#52137,select#52044,),),1,mul[,1](compare[le](add#52190,-1,),compare[eq](select#51951,select#52185,),),),select[](select[](compare[lt](select#52044,select#52137,),1,mul[,1](compare#52181,compare#52182,),),select[](select[](compare#52135,1,0,),add[,60,1](1,select#52164,),add[,28,1](1,select#52173,),),select[](select[](compare#52042,1,0,),add[,44,1](1,select#52145,),add[,12,1](1,select#52154,),),),select[](select[](compare[lt](select#51810,select#51903,),1,mul[,1](compare#51947,compare#51948,),),select[](select[](compare#51901,1,0,),add[,52,1](1,select#51930,),add[,20,1](1,select#51939,),),select[](select[](compare#51808,1,0,),add[,36,1](1,select#51911,),add[,4,1](1,select#51920,),),),),select[](select[](compare[lt](select[](select#51470,select#51425,select#51332,),select[](select#51704,select#51657,select#51564,),),1,mul[,1](compare[le](add#51710,-1,),compare[eq](select#51471,select#51705,),),),select[](select[](compare[lt](select#51564,select#51657,),1,mul[,1](compare#51701,compare#51702,),),select[](select[](compare#51655,1,0,),add[,56,1](1,select#51684,),add[,24,1](1,select#51693,),),select[](select[](compare#51562,1,0,),add[,40,1](1,select#51665,),add[,8,1](1,select#51674,),),),select[](select[](compare[lt](select#51332,select#51425,),1,mul[,1](compare#51467,compare#51468,),),select[](select[](compare#51423,1,0,),add[,48,1](1,select#51450,),add[,16,1](1,select#51459,),),select[](select[](compare#51330,1,0,),add[,32,1](1,select#51433,),select[](compare#51436,select#51441,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.1000000005599873e-07,
+            "cumulative_elapsed_s": 1.083981144,
+            "left_import_s": 1.4200000000075264e-05,
+            "left_normalize_s": 5.33099999999731e-05,
+            "parametric_state_s": 1.7000000007705296e-07,
+            "piece_union_reuse_s": 3.9999999978945766e-08,
+            "piece_union_seal_s": 3.0000000039720476e-08,
+            "right_import_s": 1.2729999999905317e-05,
+            "right_normalize_s": 0.0010581540000000889,
+            "state_pattern_s": 5.899999999670058e-07,
+            "unary_reduction_s": 8.199999999014551e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              27,
+              27
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71793,0,),compare[lt](mul#71793,64,),),signed[,64](word[,64](mul#71793,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#52841,1,mul#52850,),select[](select#52839,select#52792,select#52693,),select[](select#52593,select#52548,select#52377,),),select[](select[](compare#53201,1,mul#53210,),select[](select#53199,select#53152,select#53089,),select[](select#53025,select#52978,select#52915,),),),1,mul[,1](compare[le](add[,-1,1](select#53214,select#53215,),-1,),compare[eq](select[](select#52851,select#52840,select#52594,),select[](select#53211,select#53200,select#53026,),),),),select[](select[](compare[lt](select[](select#53025,select#52978,select#52915,),select[](select#53199,select#53152,select#53089,),),1,mul[,1](compare[le](add#53205,-1,),compare[eq](select#53026,select#53200,),),),select[](select[](compare[lt](select#53089,select#53152,),1,mul[,1](compare#53196,compare#53197,),),select[](select[](compare#53150,1,0,),add[,60,1](1,select#53179,),add[,28,1](1,select#53188,),),select[](select[](compare#53087,1,0,),add[,44,1](1,select#53160,),add[,12,1](1,select#53169,),),),select[](select[](compare[lt](select#52915,select#52978,),1,mul[,1](compare#53022,compare#53023,),),select[](select[](compare#52976,1,0,),add[,52,1](1,select#53005,),add[,20,1](1,select#53014,),),select[](select[](compare#52913,1,0,),add[,36,1](1,select#52986,),add[,4,1](1,select#52995,),),),),select[](select[](compare[lt](select[](select#52593,select#52548,select#52377,),select[](select#52839,select#52792,select#52693,),),1,mul[,1](compare[le](add#52845,-1,),compare[eq](select#52594,select#52840,),),),select[](select[](compare[lt](select#52693,select#52792,),1,mul[,1](compare#52836,compare#52837,),),select[](select[](compare#52790,1,0,),add[,56,1](1,select#52819,),add[,24,1](1,select#52828,),),select[](select[](compare#52691,1,0,),add[,40,1](1,select#52800,),add[,8,1](1,select#52809,),),),select[](select[](compare[lt](select#52377,select#52548,),1,mul[,1](compare#52590,compare#52591,),),select[](select[](compare#52546,1,0,),add[,48,1](1,select#52573,),add[,16,1](1,select#52582,),),select[](select[](compare#52375,1,0,),add[,32,1](1,select#52556,),select[](compare#52559,select#52564,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.200000001588819e-07,
+            "cumulative_elapsed_s": 1.086837863,
+            "left_import_s": 1.3650000000087203e-05,
+            "left_normalize_s": 9.03509999998775e-05,
+            "parametric_state_s": 1.6999999985500835e-07,
+            "piece_union_reuse_s": 3.9999999978945766e-08,
+            "piece_union_seal_s": 1.999999987845058e-08,
+            "right_import_s": 1.3519999999989096e-05,
+            "right_normalize_s": 0.0016973950000001015,
+            "state_pattern_s": 7.399999999435636e-07,
+            "unary_reduction_s": 7.20000000065113e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              28,
+              28
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71812,0,),compare[lt](mul#71812,64,),),signed[,64](word[,64](mul#71812,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#60657,1,mul#60666,),select[](select#60655,select#60608,select#60515,),select[](select#60421,select#60376,select#60283,),),select[](select[](compare#61137,1,mul#61146,),select[](select#61135,select#61088,select#60995,),select[](select#60901,select#60854,select#60761,),),),1,mul[,1](compare[le](add[,-1,1](select#61150,select#61151,),-1,),compare[eq](select[](select#60667,select#60656,select#60422,),select[](select#61147,select#61136,select#60902,),),),),select[](select[](compare[lt](select[](select#60901,select#60854,select#60761,),select[](select#61135,select#61088,select#60995,),),1,mul[,1](compare[le](add#61141,-1,),compare[eq](select#60902,select#61136,),),),select[](select[](compare[lt](select#60995,select#61088,),1,mul[,1](compare#61132,compare#61133,),),select[](select[](compare#61086,1,0,),add[,60,1](1,select#61115,),add[,28,1](1,select#61124,),),select[](select[](compare#60993,1,0,),add[,44,1](1,select#61096,),add[,12,1](1,select#61105,),),),select[](select[](compare[lt](select#60761,select#60854,),1,mul[,1](compare#60898,compare#60899,),),select[](select[](compare#60852,1,0,),add[,52,1](1,select#60881,),add[,20,1](1,select#60890,),),select[](select[](compare#60759,1,0,),add[,36,1](1,select#60862,),add[,4,1](1,select#60871,),),),),select[](select[](compare[lt](select[](select#60421,select#60376,select#60283,),select[](select#60655,select#60608,select#60515,),),1,mul[,1](compare[le](add#60661,-1,),compare[eq](select#60422,select#60656,),),),select[](select[](compare[lt](select#60515,select#60608,),1,mul[,1](compare#60652,compare#60653,),),select[](select[](compare#60606,1,0,),add[,56,1](1,select#60635,),add[,24,1](1,select#60644,),),select[](select[](compare#60513,1,0,),add[,40,1](1,select#60616,),add[,8,1](1,select#60625,),),),select[](select[](compare[lt](select#60283,select#60376,),1,mul[,1](compare#60418,compare#60419,),),select[](select[](compare#60374,1,0,),add[,48,1](1,select#60401,),add[,16,1](1,select#60410,),),select[](select[](compare#60281,1,0,),add[,32,1](1,select#60384,),select[](compare#60387,select#60392,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.199999999368373e-07,
+            "cumulative_elapsed_s": 1.088214788,
+            "left_import_s": 1.4540000000007325e-05,
+            "left_normalize_s": 4.010000000009839e-05,
+            "parametric_state_s": 2.1999999999522402e-07,
+            "piece_union_reuse_s": 3.9999999978945766e-08,
+            "piece_union_seal_s": 3.0000000039720476e-08,
+            "right_import_s": 1.183000000004597e-05,
+            "right_normalize_s": 0.0008904329999999128,
+            "state_pattern_s": 9.40000000060337e-07,
+            "unary_reduction_s": 7.799999999225093e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              29,
+              29
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71830,0,),compare[lt](mul#71830,64,),),signed[,64](word[,64](mul#71830,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#61792,1,mul#61801,),select[](select#61790,select#61743,select#61644,),select[](select#61544,select#61499,select#61328,),),select[](select[](compare#62152,1,mul#62161,),select[](select#62150,select#62103,select#62040,),select[](select#61976,select#61929,select#61866,),),),1,mul[,1](compare[le](add[,-1,1](select#62165,select#62166,),-1,),compare[eq](select[](select#61802,select#61791,select#61545,),select[](select#62162,select#62151,select#61977,),),),),select[](select[](compare[lt](select[](select#61976,select#61929,select#61866,),select[](select#62150,select#62103,select#62040,),),1,mul[,1](compare[le](add#62156,-1,),compare[eq](select#61977,select#62151,),),),select[](select[](compare[lt](select#62040,select#62103,),1,mul[,1](compare#62147,compare#62148,),),select[](select[](compare#62101,1,0,),add[,60,1](1,select#62130,),add[,28,1](1,select#62139,),),select[](select[](compare#62038,1,0,),add[,44,1](1,select#62111,),add[,12,1](1,select#62120,),),),select[](select[](compare[lt](select#61866,select#61929,),1,mul[,1](compare#61973,compare#61974,),),select[](select[](compare#61927,1,0,),add[,52,1](1,select#61956,),add[,20,1](1,select#61965,),),select[](select[](compare#61864,1,0,),add[,36,1](1,select#61937,),add[,4,1](1,select#61946,),),),),select[](select[](compare[lt](select[](select#61544,select#61499,select#61328,),select[](select#61790,select#61743,select#61644,),),1,mul[,1](compare[le](add#61796,-1,),compare[eq](select#61545,select#61791,),),),select[](select[](compare[lt](select#61644,select#61743,),1,mul[,1](compare#61787,compare#61788,),),select[](select[](compare#61741,1,0,),add[,56,1](1,select#61770,),add[,24,1](1,select#61779,),),select[](select[](compare#61642,1,0,),add[,40,1](1,select#61751,),add[,8,1](1,select#61760,),),),select[](select[](compare[lt](select#61328,select#61499,),1,mul[,1](compare#61541,compare#61542,),),select[](select[](compare#61497,1,0,),add[,48,1](1,select#61524,),add[,16,1](1,select#61533,),),select[](select[](compare#61326,1,0,),add[,32,1](1,select#61507,),select[](compare#61510,select#61515,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.0699999999363996e-06,
+            "cumulative_elapsed_s": 1.090896406,
+            "left_import_s": 1.26400000000082e-05,
+            "left_normalize_s": 7.993000000006134e-05,
+            "parametric_state_s": 1.8999999995550354e-07,
+            "piece_union_reuse_s": 7.999999995789153e-08,
+            "piece_union_seal_s": 2.0000000100495186e-08,
+            "right_import_s": 1.4359999999991047e-05,
+            "right_normalize_s": 0.00153935500000002,
+            "state_pattern_s": 8.099999999622298e-07,
+            "unary_reduction_s": 6.900000000253925e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              30,
+              30
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71849,0,),compare[lt](mul#71849,64,),),signed[,64](word[,64](mul#71849,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#69613,1,mul#69622,),select[](select#69611,select#69564,select#69471,),select[](select#69377,select#69332,select#69239,),),select[](select[](compare#70093,1,mul#70102,),select[](select#70091,select#70044,select#69951,),select[](select#69857,select#69810,select#69717,),),),1,mul[,1](compare[le](add[,-1,1](select#70106,select#70107,),-1,),compare[eq](select[](select#69623,select#69612,select#69378,),select[](select#70103,select#70092,select#69858,),),),),select[](select[](compare[lt](select[](select#69857,select#69810,select#69717,),select[](select#70091,select#70044,select#69951,),),1,mul[,1](compare[le](add#70097,-1,),compare[eq](select#69858,select#70092,),),),select[](select[](compare[lt](select#69951,select#70044,),1,mul[,1](compare#70088,compare#70089,),),select[](select[](compare#70042,1,0,),add[,60,1](1,select#70071,),add[,28,1](1,select#70080,),),select[](select[](compare#69949,1,0,),add[,44,1](1,select#70052,),add[,12,1](1,select#70061,),),),select[](select[](compare[lt](select#69717,select#69810,),1,mul[,1](compare#69854,compare#69855,),),select[](select[](compare#69808,1,0,),add[,52,1](1,select#69837,),add[,20,1](1,select#69846,),),select[](select[](compare#69715,1,0,),add[,36,1](1,select#69818,),add[,4,1](1,select#69827,),),),),select[](select[](compare[lt](select[](select#69377,select#69332,select#69239,),select[](select#69611,select#69564,select#69471,),),1,mul[,1](compare[le](add#69617,-1,),compare[eq](select#69378,select#69612,),),),select[](select[](compare[lt](select#69471,select#69564,),1,mul[,1](compare#69608,compare#69609,),),select[](select[](compare#69562,1,0,),add[,56,1](1,select#69591,),add[,24,1](1,select#69600,),),select[](select[](compare#69469,1,0,),add[,40,1](1,select#69572,),add[,8,1](1,select#69581,),),),select[](select[](compare[lt](select#69239,select#69332,),1,mul[,1](compare#69374,compare#69375,),),select[](select[](compare#69330,1,0,),add[,48,1](1,select#69357,),add[,16,1](1,select#69366,),),select[](select[](compare#69237,1,0,),add[,32,1](1,select#69340,),select[](compare#69343,select#69348,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.8999999995550354e-07,
+            "cumulative_elapsed_s": 1.09211901,
+            "left_import_s": 1.5289999999890114e-05,
+            "left_normalize_s": 3.9620000000128996e-05,
+            "parametric_state_s": 1.8999999995550354e-07,
+            "piece_union_reuse_s": 3.9999999978945766e-08,
+            "piece_union_seal_s": 3.0000000039720476e-08,
+            "right_import_s": 1.1680000000069413e-05,
+            "right_normalize_s": 0.0007397229999999144,
+            "state_pattern_s": 6.300000001679962e-07,
+            "unary_reduction_s": 7.399999999435636e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              31,
+              31
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "signed[,32](word[,32](select[](mul[,1](compare[ge](mul#71867,0,),compare[lt](mul#71867,64,),),signed[,64](word[,64](mul#71867,),),64,),),)",
+            "right": "select[](select[](compare[lt](select[](select[](compare#70748,1,mul#70757,),select[](select#70746,select#70699,select#70600,),select[](select#70500,select#70455,select#70284,),),select[](select[](compare#71108,1,mul#71117,),select[](select#71106,select#71059,select#70996,),select[](select#70932,select#70885,select#70822,),),),1,mul[,1](compare[le](add[,-1,1](select#71121,select#71122,),-1,),compare[eq](select[](select#70758,select#70747,select#70501,),select[](select#71118,select#71107,select#70933,),),),),select[](select[](compare[lt](select[](select#70932,select#70885,select#70822,),select[](select#71106,select#71059,select#70996,),),1,mul[,1](compare[le](add#71112,-1,),compare[eq](select#70933,select#71107,),),),select[](select[](compare[lt](select#70996,select#71059,),1,mul[,1](compare#71103,compare#71104,),),select[](select[](compare#71057,1,0,),add[,60,1](1,select#71086,),add[,28,1](1,select#71095,),),select[](select[](compare#70994,1,0,),add[,44,1](1,select#71067,),add[,12,1](1,select#71076,),),),select[](select[](compare[lt](select#70822,select#70885,),1,mul[,1](compare#70929,compare#70930,),),select[](select[](compare#70883,1,0,),add[,52,1](1,select#70912,),add[,20,1](1,select#70921,),),select[](select[](compare#70820,1,0,),add[,36,1](1,select#70893,),add[,4,1](1,select#70902,),),),),select[](select[](compare[lt](select[](select#70500,select#70455,select#70284,),select[](select#70746,select#70699,select#70600,),),1,mul[,1](compare[le](add#70752,-1,),compare[eq](select#70501,select#70747,),),),select[](select[](compare[lt](select#70600,select#70699,),1,mul[,1](compare#70743,compare#70744,),),select[](select[](compare#70697,1,0,),add[,56,1](1,select#70726,),add[,24,1](1,select#70735,),),select[](select[](compare#70598,1,0,),add[,40,1](1,select#70707,),add[,8,1](1,select#70716,),),),select[](select[](compare[lt](select#70284,select#70455,),1,mul[,1](compare#70497,compare#70498,),),select[](select[](compare#70453,1,0,),add[,48,1](1,select#70480,),add[,16,1](1,select#70489,),),select[](select[](compare#70282,1,0,),add[,32,1](1,select#70463,),select[](compare#70466,select#70471,3,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.4000000003733248e-07,
+            "cumulative_elapsed_s": 1.094631798,
+            "left_import_s": 1.3250000000075701e-05,
+            "left_normalize_s": 7.44299999999587e-05,
+            "parametric_state_s": 1.8999999995550354e-07,
+            "piece_union_reuse_s": 7.000000001866624e-08,
+            "piece_union_seal_s": 3.0000000039720476e-08,
+            "right_import_s": 1.3569999999907267e-05,
+            "right_normalize_s": 0.0013780150000000102,
+            "state_pattern_s": 8.30000000062725e-07,
+            "unary_reduction_s": 6.800000000861672e-07
+          }
+        },
+        {
+          "count": 8,
+          "families": [
+            [
+              32,
+              39
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.189999999873237e-06,
+            "cumulative_elapsed_s": 1.094888689,
+            "left_import_s": 6.176000000013282e-05,
+            "left_normalize_s": 1.5060000000177709e-05,
+            "parametric_state_s": 2.8100000002417858e-06,
+            "piece_union_record_s": 7.309999999760564e-06,
+            "piece_union_seal_s": 2.0999999983395412e-07,
+            "right_import_s": 4.396099999981473e-05,
+            "right_normalize_s": 4.621999999998572e-05
+          }
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 2.2140000000173826e-05,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.004339954000000236,
+        "left_normalize_s": 0.0047493050000003666,
+        "parametric_state_s": 1.0879999999822629e-05,
+        "piece_union_record_s": 7.309999999760564e-06,
+        "piece_union_reuse_s": 3.149999999993436e-06,
+        "piece_union_seal_s": 1.770000000424904e-06,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 0.055489526999999816,
+        "right_normalize_s": 0.9962792369999998,
+        "state_pattern_s": 0.0001764699999997621
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.002536648
+      },
+      "total_output_families": 40,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
     },
     "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 1,
+      "dependency_compression": {},
+      "diagnostic_sample_count": 0,
+      "executed_records": 42184,
       "frontend_assumptions": {
         "assertion_failure_forms": [
           "trap",
@@ -141,6 +1377,7 @@
         "representative_branch_uses": 0,
         "trap_only_equality_assertions_hold": true
       },
+      "implementation": "cpp",
       "input_objects": [
         {
           "bytes": 8,
@@ -171,114 +1408,329 @@
           "source": "declaration"
         }
       ],
-      "required_parameters": [],
+      "lowered_instruction_count": 21328,
+      "reached_opcodes": {
+        "abs.f32": 512,
+        "add.f32": 1552,
+        "add.s32": 1832,
+        "add.s64": 320,
+        "add.u64": 128,
+        "and.b32": 408,
+        "bra": 2072,
+        "cvt.rn.f32.f64": 8,
+        "cvt.s64.s32": 256,
+        "cvt.sat.f32.f32": 512,
+        "cvt.u32.u64": 128,
+        "cvt.u64.u32": 128,
+        "cvta.to.global.u64": 416,
+        "div.rn.f32": 8,
+        "ex2.approx.ftz.f32": 512,
+        "fma.rm.f32": 512,
+        "fma.rn.f32": 1536,
+        "ld.global.f32": 16,
+        "ld.global.v4.f32": 128,
+        "ld.local.v4.f32": 256,
+        "ld.param.f64": 8,
+        "ld.param.s8": 128,
+        "ld.param.u32": 288,
+        "ld.param.u64": 672,
+        "max.f32": 896,
+        "mov.b32": 7304,
+        "mov.f32": 1024,
+        "mov.pred": 1168,
+        "mov.u32": 512,
+        "mov.u64": 128,
+        "mul.f32": 1040,
+        "mul.lo.s32": 136,
+        "mul.wide.s32": 32,
+        "neg.f32": 512,
+        "neg.s32": 136,
+        "or.b64": 128,
+        "rcp.rn.f32": 128,
+        "ret": 128,
+        "selp.b32": 1600,
+        "selp.f32": 3864,
+        "selp.u32": 256,
+        "setp.eq.s16": 24,
+        "setp.eq.s32": 24,
+        "setp.eq.s64": 272,
+        "setp.ge.s32": 400,
+        "setp.gt.f32": 776,
+        "setp.lt.f32": 1024,
+        "setp.lt.s32": 152,
+        "setp.lt.u32": 24,
+        "setp.ne.f32": 512,
+        "setp.ne.s32": 784,
+        "shfl.sync.bfly.b32": 4096,
+        "shl.b32": 1024,
+        "shl.b64": 128,
+        "shr.s32": 384,
+        "shr.u32": 384,
+        "st.global.f32": 32,
+        "st.global.u32": 32,
+        "st.local.v4.f32": 128,
+        "sub.f32": 512,
+        "sub.s32": 144
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 2,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 21328,
+        "stored_bindings": 1600
+      },
+      "source_edge_storage": {
+        "binding_templates": 128,
+        "logical_edges": 21200,
+        "stored_bindings": 128
+      },
+      "thread_count": 128,
+      "unsupported_occurrence_counts": {},
       "user_branch_decisions": []
     },
-    "implementation": "cpp",
-    "location": {
-      "column": 0,
-      "file": "corpus/vllm__moe_topk_softmax__sm_100a.ptx",
-      "line": 352
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      }
     },
-    "memory_analysis_complete": false,
-    "peak_footprint_mib": 17.0234375,
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 4128,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 1523,
+        "affine_member_rows": 0,
+        "candidate_relations": 1006,
+        "hb_frontier_pieces": 0,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 13136
+      },
+      "hb_algorithm": "member-relations",
+      "hb_batches": 6,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 15307,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 4128,
+      "hb_query_seconds": 0.003208079,
+      "overlap_queries": 0,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 0
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 152.37890625,
+    "required_order_domains": 0,
+    "required_orders": 0,
+    "search_complete": true,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
     },
     "semantic_program": {
-      "execution_cohorts": 0,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
-      "memory_linking_templates_used": false,
-      "synchronization_groups": 0,
-      "synchronization_groups_materialized": false,
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 3,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 2736,
+      "memory_binding_templates": 41,
+      "memory_bindings": 3152,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 239,
+      "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 0,
-      "thread_prefix_groups": 0
+      "thread_prefix_groups": 2450,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
-    "stage": "ptx_execution",
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
     "template_execution": {
-      "completed_ctas": 0,
+      "completed_ctas": 1,
       "coordinate_bindings": 0,
-      "logical_thread_steps": 0,
-      "path_entries": 0,
-      "record_bindings": 0,
-      "record_nodes": 0,
-      "splits": 0,
-      "template_steps": 0,
-      "thread_memberships": 0,
-      "value_nodes": 0
+      "logical_thread_steps": 42768,
+      "path_entries": 737,
+      "record_bindings": 764,
+      "record_nodes": 509,
+      "splits": 1,
+      "template_steps": 524,
+      "thread_memberships": 128,
+      "value_nodes": 500
     },
     "thread_record_compression": {
-      "completed_ctas": 0,
+      "completed_ctas": 1,
       "enabled": true,
       "estimated_pool_bytes_sum": 0,
       "intern_calls": 0,
-      "logical_records": 0,
+      "logical_records": 42184,
       "record_handle_bytes": 32,
       "templates": 0,
       "unique_bindings": 0
     },
+    "unresolved_count": 0,
     "value_analysis": {
-      "diagnostics": [
+      "diagnostics": [],
+      "duplicate_write_value_checks": 0,
+      "equivalence_check": "not_proven",
+      "initial_memory_regions": 512,
+      "initial_read_families": 68,
+      "memory_action_storage": {
+        "logical_actions": 3152,
+        "stored_runs": 2736
+      },
+      "output_region_families": 0,
+      "output_regions": 48,
+      "passes": [
         {
-          "code": "prerequisite_check_not_passed",
-          "details": {
-            "prerequisite_checks": {
-              "equivalence": "not_run",
-              "memory": "not_run",
-              "synchronization": "not_run"
-            },
-            "prerequisite_diagnostics": [
-              {
-                "code": "control_predicate_not_static",
-                "details": {
-                  "location": {
-                    "column": 0,
-                    "file": "corpus/vllm__moe_topk_softmax__sm_100a.ptx",
-                    "line": 352
-                  },
-                  "required_parameters": []
-                },
-                "message": "control predicate is not statically determined",
-                "stage": "ptx_execution"
-              }
-            ],
-            "prerequisite_result": "unsupported",
-            "prerequisite_status": "ptx_execution_unsupported"
-          },
-          "stage": "pipeline"
+          "name": "packing",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 17848,
+          "name": "type_edges",
+          "removed_nodes": 313
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 1552,
+          "layouts": 0,
+          "mapping_blocks": 0,
+          "name": "view_normalization",
+          "original_pieces": 0,
+          "reused_initial_reads": 512,
+          "reused_views": 0,
+          "segmented": 0,
+          "slices": 0,
+          "stored_mapping_blocks": 0,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
         }
       ],
-      "equivalence_check": "blocked",
-      "prerequisite_status": "ptx_execution_unsupported",
+      "processed_memory_actions": 3152,
+      "processed_memory_families": 0,
+      "read_substitutions": 2064,
       "scalar_fold": {
-        "diagnostics": [
-          {
-            "code": "memory_elimination_not_completed",
-            "stage": "pipeline"
-          }
-        ]
-      }
+        "construction_collections": 0,
+        "diagnostics": [],
+        "output_count": 48,
+        "output_families_merged": 0,
+        "output_family_count": 40,
+        "output_root_count": 40,
+        "peak_construction_nodes": 24618,
+        "shared_view_projection_hits": 1616,
+        "source_outputs": 48,
+        "spatial_families_projected": 6,
+        "spatial_outputs_projected": 48,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 574,
+          "edges": 52202,
+          "folds": 384,
+          "indices": 3,
+          "initial_cells": 896,
+          "logical_iterations": 1408,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 2,
+          "nodes": 24238,
+          "nodes_before_final_collection": 24618,
+          "nodes_reclaimed": 380,
+          "operations": 22381,
+          "parameters": 0,
+          "range_descriptions": 384,
+          "storage_nodes": 24238,
+          "unique_fold_bodies": 384
+        }
+      },
+      "serialization": {
+        "action_patterns": 2736,
+        "binding_patterns": 2736,
+        "domain_refinements": 77650,
+        "elapsed_seconds": 0.036398745,
+        "event_families": 6336,
+        "expanded_event_records": 0,
+        "largest_batch_members": 120,
+        "logical_actions": 3152,
+        "logical_events": 154320,
+        "peak_rss_mib_at_completion": 89.67578125,
+        "reachability_queries": 0,
+        "relations": 48189,
+        "rss_mib_at_completion": 81.125,
+        "scheduled_batches": 6336,
+        "singleton_batches": 128,
+        "value_families": 1508
+      },
+      "shared_read_families": 0,
+      "shared_read_instances": 0,
+      "stored_read_substitutions": 2064
     },
-    "value_ir_instance_count": 0,
-    "value_ir_node_count": 0,
-    "value_view_complete": false
+    "value_ir_instance_count": 87376,
+    "value_ir_node_count": 1430,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 0.147586518,
+    "verification_result": "race_free"
   },
-  "peak_rss_mib": 75.7734375,
-  "pipeline_elapsed_seconds": 0.023065333,
-  "result": "unsupported",
+  "peak_rss_mib": 152.33203125,
+  "pipeline_elapsed_seconds": 1.749227052,
+  "result": "equivalence_not_proven",
   "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
+  "verification_limitations": [],
+  "warning_count": 0,
+  "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.494
+  "whole_pipeline_timeout_seconds": 498.489
 }

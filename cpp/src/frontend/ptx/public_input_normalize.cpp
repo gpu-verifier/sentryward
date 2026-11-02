@@ -257,10 +257,12 @@ FrontendConfig NormalizeKernelInput(const KernelInput &supplied, const Module &m
   }
   Json resources = Json::array(), pointer_inputs = Json::array(), objects = Json::array();
   std::map<std::string, std::string> object_resources;
+  std::map<std::string, std::vector<std::string>> object_all_resources;  // every resource naming the object
   auto memory = [&](const std::string &id, const std::string &object) {
     resources.push_back({{"id", id}, {"kind", "memory"}, {"space", "global"},
         {"allocation", {{"resolution", "concrete"}, {"object", object}, {"base_byte_offset", 0}}}});
     object_resources[object] = id;
+    object_all_resources[object].push_back(id);
   };
   for (const auto &[key,p] : pointers) {
     const auto id = Resource(key), object = p.object.empty() ? id : p.object;
@@ -427,11 +429,15 @@ FrontendConfig NormalizeKernelInput(const KernelInput &supplied, const Module &m
   }
   if (!tensor_properties.empty()) {
     Json inputs = Json::array(), regions_out = Json::array();
-    for (const auto &[object, record] : tensor_properties) {
-      inputs.push_back(record);
-      regions_out.push_back({{"resource", record["resource"]}, {"allocation", object}, {"byte_offset", 0},
-          {"bytes", "whole_object"}});
-    }
+    // An object's element facts hold for loads through every pointer that names it.
+    for (const auto &[object, record] : tensor_properties)
+      for (const auto &resource : object_all_resources.at(object)) {
+        auto entry = record;
+        entry["resource"] = resource;
+        inputs.push_back(std::move(entry));
+        regions_out.push_back({{"resource", resource}, {"allocation", object}, {"byte_offset", 0},
+            {"bytes", "whole_object"}});
+      }
     raw["fixed_input"]["tensor_property_inputs"] = inputs;
     raw["fixed_input"]["tensor_property_contract"] = {
         {"kind", "fixed_read_only"}, {"origin", "tensor_properties"},

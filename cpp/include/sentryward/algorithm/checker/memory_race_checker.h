@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "sentryward/algorithm/checker/certificate.h"
@@ -60,8 +61,9 @@ struct MemoryRaceOptions final {
   bool continue_after_race = false;
   // Cross-CTA class mode (null otherwise): the program holds the representative units only.
   // Duplicate-store warnings are weighted by class size, and after a search without a
-  // race the cross-unit pass checks every pair with a member unit (cross_unit_races.h); an Unknown
-  // or a work cap there throws UnitClassRestart.
+  // race the cross-unit pass checks every pair with a member unit (cross_unit_races.h); an Unknown,
+  // a work cap, or a write pair that the same-value rule could accept there throws
+  // UnitClassRestart.
   const UnitQuotient* units = nullptr;
   // The launch's units when the per-unit path analyses a multi-unit launch (null otherwise; class
   // mode reads them from `units`): repeated entries are reported per unit (source_json.cpp).
@@ -84,6 +86,17 @@ struct MemoryRaceResult final {
   // Complete equivalence obligations for accepted write/write pairs, not samples.
   std::vector<std::vector<AccessId>> duplicate_write_groups;
   bool duplicate_write_groups_complete = false;
+  // Same-value write obligations (same_value_writes.h): unordered plain generic-proxy writes of
+  // exactly the same bytes. Complete groups (writes connected by such pairs, all with one
+  // footprint) once search_complete; race_free holds only if the value analysis proves each
+  // group's stored bytes equal. Samples: one per pair of write sites and CTA, counted by
+  // same_value_write_count (weighted by class size in class mode).
+  std::vector<std::vector<AccessId>> same_value_write_groups;
+  std::vector<RaceFinding> same_value_write_samples;
+  std::size_t same_value_write_count = 0;
+  // (write, partner) for every write of those groups, in write order: the partner is the other
+  // write of an accepted pair, so it is unordered with the write and covers the same bytes.
+  std::vector<std::pair<AccessId, AccessId>> same_value_write_partners;
   std::vector<UnresolvedMemoryPair> unresolved;
   std::size_t unresolved_count = 0;
   std::size_t candidates_examined = 0;

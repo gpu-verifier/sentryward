@@ -3,7 +3,7 @@
   "entry": "kernel_cutlass_kernel_flash_attncuteflash_bwd_mla_dq_dqv_sm100dQdQvGemmKernel_object_at__Tiled_MMA_Thr_Layout_VMNK_11110000_Permutation_MNK_____MMA_Atom_ThrID_10_Shape_MNK_1286416_TV_Layo_0",
   "launch": {
     "grid_dim": [
-      1,
+      12,
       2,
       1
     ],
@@ -26,7 +26,7 @@
     },
     {
       "field": "shape.3.batch",
-      "value": 1
+      "value": 12
     },
     {
       "field": "shape.7.sequence",
@@ -34,7 +34,7 @@
     },
     {
       "field": "shape.7.batch",
-      "value": 1
+      "value": 12
     },
     {
       "field": "shape.9.sequence",
@@ -42,15 +42,15 @@
     },
     {
       "field": "shape.9.batch",
-      "value": 1
+      "value": 12
     },
     {
       "field": "shape.4.sequence",
-      "value": 256
+      "value": 129
     },
     {
       "field": "shape.4.batch",
-      "value": 1
+      "value": 12
     },
     {
       "field": "stride.4.sequence",
@@ -58,15 +58,15 @@
     },
     {
       "field": "stride.4.batch",
-      "value": 16384
+      "value": 8256
     },
     {
       "field": "shape.5.sequence",
-      "value": 256
+      "value": 129
     },
     {
       "field": "shape.5.batch",
-      "value": 1
+      "value": 12
     },
     {
       "field": "stride.5.sequence",
@@ -74,7 +74,7 @@
     },
     {
       "field": "stride.5.batch",
-      "value": 131072
+      "value": 66048
     },
     {
       "field": "shape.10.sequence",
@@ -82,7 +82,7 @@
     },
     {
       "field": "shape.10.batch",
-      "value": 1
+      "value": 12
     },
     {
       "field": "stride.10.sequence",
@@ -110,7 +110,31 @@
     },
     {
       "field": "seqlen_k",
-      "value": 256
+      "value": 129
+    },
+    {
+      "field": "mma.0.accumulate",
+      "value": 0
+    },
+    {
+      "field": "mma.0.negate_a",
+      "value": 0
+    },
+    {
+      "field": "mma.0.negate_b",
+      "value": 0
+    },
+    {
+      "field": "mma.1.accumulate",
+      "value": 0
+    },
+    {
+      "field": "mma.1.negate_a",
+      "value": 0
+    },
+    {
+      "field": "mma.1.negate_b",
+      "value": 0
     }
   ],
   "declarations": [
@@ -281,6 +305,42 @@
       "offset": 0,
       "type": "pointer",
       "object": "I"
+    },
+    {
+      "name": "mma.0.accumulate",
+      "parameter": 0,
+      "offset": 0,
+      "type": "u8"
+    },
+    {
+      "name": "mma.0.negate_a",
+      "parameter": 0,
+      "offset": 1,
+      "type": "u8"
+    },
+    {
+      "name": "mma.0.negate_b",
+      "parameter": 0,
+      "offset": 2,
+      "type": "u8"
+    },
+    {
+      "name": "mma.1.accumulate",
+      "parameter": 1,
+      "offset": 0,
+      "type": "u8"
+    },
+    {
+      "name": "mma.1.negate_a",
+      "parameter": 1,
+      "offset": 1,
+      "type": "u8"
+    },
+    {
+      "name": "mma.1.negate_b",
+      "parameter": 1,
+      "offset": 2,
+      "type": "u8"
     }
   ],
   "tma_descriptors": [
@@ -293,7 +353,7 @@
         128,
         128,
         1,
-        1
+        12
       ],
       "coordinate_strides_bytes": [
         2,
@@ -303,7 +363,7 @@
       ],
       "box_shape": [
         64,
-        128,
+        64,
         1,
         1
       ],
@@ -326,7 +386,7 @@
         64,
         128,
         1,
-        1
+        12
       ],
       "coordinate_strides_bytes": [
         2,
@@ -335,7 +395,7 @@
         16384
       ],
       "box_shape": [
-        64,
+        32,
         128,
         1,
         1
@@ -346,7 +406,7 @@
         1,
         1
       ],
-      "swizzle": "128B",
+      "swizzle": "64B",
       "interleave": "none",
       "oob_fill": "zero"
     },
@@ -359,7 +419,7 @@
         512,
         128,
         1,
-        1
+        12
       ],
       "coordinate_strides_bytes": [
         2,
@@ -368,7 +428,7 @@
         131072
       ],
       "box_shape": [
-        64,
+        32,
         128,
         1,
         1
@@ -379,7 +439,7 @@
         1,
         1
       ],
-      "swizzle": "128B",
+      "swizzle": "64B",
       "interleave": "none",
       "oob_fill": "zero"
     }
@@ -388,5 +448,19 @@
     "duplicate_tma_store_benign": true,
     "representative_election": true,
     "clc_always_fails": true
-  }
+  },
+  "tensor_properties": [
+    {
+      "object": "I",
+      "element_type": "s32",
+      "property": "lower_bound",
+      "value": 0
+    },
+    {
+      "object": "I",
+      "element_type": "s32",
+      "property": "upper_bound",
+      "value": 127
+    }
+  ]
 }

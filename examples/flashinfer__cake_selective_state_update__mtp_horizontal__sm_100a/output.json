@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -57,11 +65,11 @@
   },
   "diagnostics": [
     {
-      "code": "unsupported_memory_binding_domain",
+      "code": "tma_data_dependent_coordinate",
       "details": {
-        "internal_stage": "memory_effect_binding"
+        "internal_stage": "value_lowering"
       },
-      "message": "No exact native matrix payload mapping",
+      "message": "TMA tile coordinate %r300 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
       "stage": "equivalence"
     }
   ],
@@ -124,50 +132,68 @@
     "equivalence": {
       "diagnostics": [
         {
-          "code": "unsupported_memory_binding_domain",
-          "message": "No exact native matrix payload mapping",
-          "stage": "memory_effect_binding"
+          "code": "tma_data_dependent_coordinate",
+          "message": "TMA tile coordinate %r300 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+          "stage": "value_lowering"
         }
       ],
       "expression_diagnostic": {
         "diagnostics": [
           {
-            "code": "unsupported_memory_binding_domain",
-            "message": "No exact native matrix payload mapping",
-            "stage": "memory_effect_binding"
+            "code": "tma_data_dependent_coordinate",
+            "message": "TMA tile coordinate %r300 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+            "stage": "value_lowering"
           }
         ],
+        "line": 1021,
         "serialization": {
           "action_patterns": 0,
           "binding_patterns": 0,
           "domain_refinements": 0,
-          "elapsed_seconds": 4.46e-06,
+          "elapsed_seconds": 4.874e-05,
           "event_families": 0,
           "expanded_event_records": 0,
           "largest_batch_members": 0,
           "logical_actions": 0,
           "logical_events": 0,
-          "peak_rss_mib_at_completion": 425.46875,
+          "peak_rss_mib_at_completion": 231.828125,
           "reachability_queries": 0,
           "relations": 0,
-          "rss_mib_at_completion": 378.30078125,
+          "rss_mib_at_completion": 227.5625,
           "scheduled_batches": 0,
           "singleton_batches": 0,
           "value_families": 0
         },
-        "stage": "memory_effect_binding"
+        "stage": "value_lowering"
       },
-      "stage": "memory_effect_binding"
+      "stage": "value_lowering"
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [],
+        "diagnostics": [
+          {
+            "code": "tma_data_dependent_coordinate",
+            "details": {
+              "cta": 0,
+              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes [%r298], [%rd97, {%r292, %r292, %r299, %r300}], [%r295];",
+              "instruction_index": 595,
+              "location": {
+                "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+                "line": 1021
+              },
+              "occurrence": 0,
+              "thread": 256
+            },
+            "message": "TMA tile coordinate %r300 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+            "stage": "value_lowering"
+          }
+        ],
         "first_unavailable_reason": "",
         "queries": 0,
         "resolved": 0,
         "source": "value_lowering",
         "unavailable": 0,
-        "value_view_complete": true
+        "value_view_complete": false
       },
       "cluster_completion_joins": 0,
       "cta_count": 1,
@@ -377,7 +403,7 @@
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 146079,
-        "stored_bindings": 21888
+        "stored_bindings": 17968
       },
       "source_edge_storage": {
         "binding_templates": 288,
@@ -390,19 +416,19 @@
     },
     "hb_queries": {
       "memory": {
-        "algorithm": "event-family-relations",
-        "batches": 8,
+        "algorithm": "not-built",
+        "batches": 0,
         "cache_hits": 0,
         "dfs_queries": 0,
-        "edge_visits": 5146742,
-        "filtered_queries": 16,
-        "queries": 469248,
-        "shared_peak_index_bytes": 16777216
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
       }
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 469248,
+      "address_candidates": 81118,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -418,23 +444,31 @@
       },
       "candidate_generation_fallback": false,
       "exhaustive": false,
-      "hb_algorithm": "event-family-relations",
-      "hb_batches": 8,
+      "family_analysis": {
+        "access_families": 17013,
+        "affine_member_rows": 0,
+        "candidate_relations": 14195,
+        "hb_frontier_pieces": 0,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 103698
+      },
+      "hb_algorithm": "member-relations",
+      "hb_batches": 74,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 5146742,
-      "hb_filtered_queries": 16,
-      "hb_peak_index_bytes": 16777216,
-      "hb_queries": 469248,
-      "hb_query_seconds": 2.133800092,
+      "hb_edge_visits": 245487,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 81118,
+      "hb_query_seconds": 0.060110616,
       "overlap_queries": 0,
-      "strategy": "conflict-first",
+      "strategy": "conflict-family",
       "unordered_candidates_examined": 0
     },
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 378.19140625,
+    "peak_footprint_mib": 227.640625,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -442,6 +476,7 @@
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
@@ -450,22 +485,28 @@
       "binding_diagnostic_count": 1,
       "binding_diagnostics": [
         {
-          "code": "unsupported_memory_binding_domain",
-          "message": "No exact native matrix payload mapping"
+          "code": "incomplete_value_semantics",
+          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r300 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
         }
       ],
       "execution_cohorts": 27,
       "mapping_complete": false,
-      "memory_binding_stored_rows": 42157,
-      "memory_binding_templates": 31411,
-      "memory_bindings": 125891,
+      "memory_binding_stored_rows": 0,
+      "memory_binding_templates": 0,
+      "memory_bindings": 0,
       "memory_linking_templates_used": false,
       "synchronization_groups": 6288,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 0,
-      "thread_prefix_groups": 148593,
-      "value_diagnostic_count": 0,
-      "value_diagnostics": []
+      "thread_prefix_groups": 2450,
+      "value_diagnostic_count": 1,
+      "value_diagnostics": [
+        {
+          "code": "tma_data_dependent_coordinate",
+          "line": 1021,
+          "message": "TMA tile coordinate %r300 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
+        }
+      ]
     },
     "source_violations": [],
     "synchronization_input": {
@@ -499,12 +540,13 @@
     "value_analysis": {
       "diagnostics": [
         {
-          "code": "unsupported_memory_binding_domain",
-          "message": "No exact native matrix payload mapping",
-          "stage": "memory_effect_binding"
+          "code": "tma_data_dependent_coordinate",
+          "message": "TMA tile coordinate %r300 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+          "stage": "value_lowering"
         }
       ],
       "equivalence_check": "unsupported",
+      "line": 1021,
       "scalar_fold": {
         "diagnostics": [
           {
@@ -517,30 +559,30 @@
         "action_patterns": 0,
         "binding_patterns": 0,
         "domain_refinements": 0,
-        "elapsed_seconds": 4.46e-06,
+        "elapsed_seconds": 4.874e-05,
         "event_families": 0,
         "expanded_event_records": 0,
         "largest_batch_members": 0,
         "logical_actions": 0,
         "logical_events": 0,
-        "peak_rss_mib_at_completion": 425.46875,
+        "peak_rss_mib_at_completion": 231.828125,
         "reachability_queries": 0,
         "relations": 0,
-        "rss_mib_at_completion": 378.30078125,
+        "rss_mib_at_completion": 227.5625,
         "scheduled_batches": 0,
         "singleton_batches": 0,
         "value_families": 0
       },
-      "stage": "memory_effect_binding"
+      "stage": "value_lowering"
     },
-    "value_ir_instance_count": 2312985,
-    "value_ir_node_count": 105209,
-    "value_view_complete": true,
-    "verification_elapsed_seconds": 3.947784893,
+    "value_ir_instance_count": 18718,
+    "value_ir_node_count": 1532,
+    "value_view_complete": false,
+    "verification_elapsed_seconds": 1.124416298,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 425.46875,
-  "pipeline_elapsed_seconds": 3.97794779,
+  "peak_rss_mib": 231.828125,
+  "pipeline_elapsed_seconds": 1.141791701,
   "result": "unsupported",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -552,5 +594,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.294
+  "whole_pipeline_timeout_seconds": 498.286
 }

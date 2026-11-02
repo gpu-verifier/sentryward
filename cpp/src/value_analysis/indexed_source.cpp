@@ -2428,7 +2428,13 @@ std::shared_ptr<const IndexedSourceUse> bindSourceUse(const v::Graph& graph,
       // WarpMma's result is the collective matrix, not a per-lane register.
       // The separate component children choose each receiver's elements.
       return std::make_shared<U>(U{value,U::Kind::Exact,{},{}});
-    const auto map=graph.threadBindingMap(value,consumer);if(!map)return {};
+    auto map=graph.threadBindingMap(value,consumer);
+    if(!map && value.threadSelector() && !value.pointer())
+      // A selection is indexed in the receiver's domain: its member is the selector's,
+      // evaluated at the receiver's own thread, and it reads the selected source there
+      // (projectMemberTemplate). Bind the selector's own member map, not the source's.
+      map=graph.threadBindingMap(graph.canonicalInterpretation(*value.threadSelector()),consumer);
+    if(!map)return {};
     if(map->fixed)return std::make_shared<U>(U{value,U::Kind::Exact,{},{}});
     const auto first=__int128(map->base)+__int128(map->stride)*base;
     const auto step=__int128(map->stride)*stride;

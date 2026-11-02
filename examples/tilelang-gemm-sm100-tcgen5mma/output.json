@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -345,7 +353,7 @@
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 531306,
-        "stored_bindings": 144616
+        "stored_bindings": 16552
       },
       "source_edge_storage": {
         "binding_templates": 274,
@@ -413,7 +421,7 @@
         "hb_member_enumerations": 0,
         "logical_accesses": 890113
       },
-      "first_race_seconds": 1.059982535,
+      "first_race_seconds": 0.898674678,
       "hb_algorithm": "member-relations",
       "hb_batches": 10,
       "hb_cache_hits": 0,
@@ -422,7 +430,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 17812,
-      "hb_query_seconds": 0.12208655599999998,
+      "hb_query_seconds": 0.09200607000000001,
       "overlap_queries": 1,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 1
@@ -430,7 +438,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 1737.890625,
+    "peak_footprint_mib": 1824.56640625,
     "required_order_domains": 750,
     "required_orders": 24000,
     "search_complete": false,
@@ -438,6 +446,7 @@
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
@@ -530,8 +539,8 @@
     "value_ir_node_count": 53807,
     "value_view_complete": true
   },
-  "peak_rss_mib": 1737.890625,
-  "pipeline_elapsed_seconds": 14.904282202,
+  "peak_rss_mib": 1824.56640625,
+  "pipeline_elapsed_seconds": 11.542471442,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -543,5 +552,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.529
+  "whole_pipeline_timeout_seconds": 498.574
 }

@@ -2,8 +2,8 @@
 #include "sentryward/algorithm/source_ir/ptx_assumptions.h"
 
 #include <cmath>
-#include <fstream>
 #include <set>
+#include <sstream>
 
 namespace sentryward::frontend::ptx {
 using Json = nlohmann::json;
@@ -334,9 +334,9 @@ KernelInput ParseKernelInput(const Json &value) {
   return {std::move(root)};
 }
 
-KernelInput LoadKernelInput(const std::filesystem::path &path) {
-  std::ifstream input(path);
-  if (!input) throw InputError("invalid_input_file", "$", "cannot open " + path.string());
+KernelInput LoadKernelInput(const std::filesystem::path &path, const std::string *contents) {
+  if (!contents) throw InputError("invalid_input_file", "$", "cannot open " + path.string());
+  std::istringstream input(*contents);
   std::vector<std::set<std::string>> keys;
   auto callback = [&](int, Json::parse_event_t event, Json &value) {
     if (event == Json::parse_event_t::object_start) keys.emplace_back();

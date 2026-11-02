@@ -41,6 +41,13 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": null
+    },
+    {
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -202,11 +209,12 @@
       "line": 1067
     },
     "memory_analysis_complete": false,
-    "peak_footprint_mib": 239.20703125,
+    "peak_footprint_mib": 240.4765625,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": true,
       "representative_branches": false,
       "representative_election": true
@@ -292,8 +300,8 @@
     "value_ir_node_count": 0,
     "value_view_complete": false
   },
-  "peak_rss_mib": 240.66796875,
-  "pipeline_elapsed_seconds": 0.179572326,
+  "peak_rss_mib": 241.9375,
+  "pipeline_elapsed_seconds": 0.17636938,
   "result": "unsupported",
   "rss_limit_mib": null,
   "scope": {

@@ -7,19 +7,28 @@
 namespace sentryward::frontend::ptx {
 
 std::optional<RegId> FactSource::Reg(std::string_view exact_name) const {
-  if (!regs_) {
-    auto &table = regs_.emplace();
+  std::call_once(regs_built_, [this] {
     const auto &names = program_->register_names;
-    table.reserve(names.size());
+    regs_.reserve(names.size());
     for (RegId id = 0; id < names.size(); ++id)
-      table.emplace_back(names[id], id);
+      regs_.emplace_back(names[id], id);
     // (name, id) order: a name's first entry carries its first id.
-    std::sort(table.begin(), table.end());
-  }
-  const auto found = std::lower_bound(regs_->begin(), regs_->end(), exact_name,
+    std::sort(regs_.begin(), regs_.end());
+  });
+  const auto found = std::lower_bound(regs_.begin(), regs_.end(), exact_name,
       [](const auto &entry, std::string_view name) { return entry.first < name; });
-  if (found == regs_->end() || found->first != exact_name) return {};
+  if (found == regs_.end() || found->first != exact_name) return {};
   return found->second;
+}
+
+FactSource::WorkerScope::WorkerScope(const FactSource &facts, ConsumerTag tag, QuerySink *tape)
+    : facts_(facts), funnel_{tag, 0, 0, tape} {
+  if (worker_) throw std::logic_error("nested FactSource::WorkerScope");
+  worker_ = this;
+}
+
+void FactSource::RequireSerial() {
+  if (worker_) throw SerialOnly{};
 }
 
 std::vector<LaneRef> FactSource::ProgramLanes() const {
@@ -100,7 +109,11 @@ std::optional<Integer> FactSource::LegacyUniformOnlyValue(RecordRef leader, std:
 
 void FactSource::Note(const QueryEvent &event) const {
   // Every call site is inside `if (recording())`; the check keeps a stray call inert.
-  if (sink_) sink_->On(event, current_, slot_depth_ != 0, partition_depth_ != 0);
+  if (!sink_) return;
+  const auto &funnel = this->funnel();
+  // A worker without a tape cannot note into the consumer's sink: the consumer redoes its work.
+  if (worker_ && !funnel.tape) throw SerialOnly{};
+  (funnel.tape ? funnel.tape : sink_)->On(event, funnel.current, funnel.slot_depth != 0, funnel.partition_depth != 0);
 }
 
 std::pair<unsigned, bool> ShuffleSource(const FactSource &facts, RecordRef at) {
@@ -243,6 +256,7 @@ LaneRef FactSource::RegisterLane(const LaneTrace &trace) const {
 
 ExpandedRecords CtaFacts::ExpandLane(LaneRef lane, ExpansionSite site) const {
   (void)site;
+  RequireSerial();
   const auto &records = TraceOf(lane).instructions.records();
   return ExpandedRecords(records.data(), records.size(), lane);
 }

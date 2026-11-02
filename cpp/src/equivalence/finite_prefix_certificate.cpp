@@ -1,8 +1,8 @@
 #include "sentryward/equivalence/finite_prefix_certificate.h"
 #include "sentryward/equivalence/epoch_work_allowance.h"
+#include "sentryward/algorithm/base/analysis_scope.h"
 
 #include <algorithm>
-#include <atomic>
 #include <bit>
 #include <limits>
 #include <stdexcept>
@@ -40,13 +40,8 @@ std::size_t Builder::RelationHash::operator()(const RelationKey& key) const {
   std::size_t hash=0;std::apply([&](const auto&... item){(hashPart(hash,item),...);},key);return hash;
 }
 Builder::Builder(Resolve resolve,Relate relate,Limits v,WorkCharge shared):resolve_(std::move(resolve)),
-    relate_(std::move(relate)),limits_(bounded(v)),charge_shared_(std::move(shared)) {
-  static std::atomic<std::uint64_t> next{1};auto id=next.load(std::memory_order_relaxed);
-  for(;;) {
-    if(!id)throw std::overflow_error("finite-prefix certificate owner overflow");
-    if(next.compare_exchange_weak(id,id+1,std::memory_order_relaxed)){owner_=id;break;}
-  }
-}
+    relate_(std::move(relate)),limits_(bounded(v)),charge_shared_(std::move(shared)),
+    owner_(algorithm::AnalysisScope::Current().Next(algorithm::AnalysisScope::Ids::kFinitePrefixCertificate)) {}
 bool Builder::charge(std::size_t work,bool shared) {
   if(exhausted_ || statistics_.work>limits_.max_work || work>limits_.max_work-statistics_.work ||
       (shared && charge_shared_ && !charge_shared_(work))) {

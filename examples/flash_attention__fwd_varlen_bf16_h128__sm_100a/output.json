@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -2769,46 +2777,13 @@
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "two_arm_merge_values",
-            "details": {
-              "cta": 0,
-              "instruction": "@%p272 bra \t$L__BB0_136;",
-              "instruction_index": 3319,
-              "location": {
-                "file": "corpus/flash_attention__fwd_varlen_bf16_h128__sm_100a.ptx",
-                "line": 3878
-              },
-              "occurrence": 0,
-              "thread": 256
-            },
-            "message": "Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); values after its join are not exported",
-            "stage": "value_lowering"
-          },
-          {
-            "code": "unknown_execution_predicate",
-            "details": {
-              "cta": 0,
-              "instruction": "@%p272 bra \t$L__BB0_136;",
-              "instruction_index": 3319,
-              "location": {
-                "file": "corpus/flash_attention__fwd_varlen_bf16_h128__sm_100a.ptx",
-                "line": 3878
-              },
-              "occurrence": 0,
-              "thread": 256
-            },
-            "message": "The active instruction path is not fixed",
-            "stage": "value_lowering"
-          }
-        ],
+        "diagnostics": [],
         "first_unavailable_reason": "",
         "queries": 0,
         "resolved": 0,
         "source": "value_lowering",
         "unavailable": 0,
-        "value_view_complete": false
+        "value_view_complete": true
       },
       "cluster_completion_joins": 0,
       "cta_count": 16,
@@ -3012,7 +2987,7 @@
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 209322,
-        "stored_bindings": 9304
+        "stored_bindings": 9276
       },
       "source_edge_storage": {
         "binding_templates": 1396,
@@ -3048,48 +3023,33 @@
     "memory_analysis_complete": false,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 501.625,
+    "peak_footprint_mib": 790.0234375,
     "required_order_domains": 10624,
     "required_orders": 339968,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
     },
     "semantic_program": {
-      "binding_diagnostic_count": 1,
-      "binding_diagnostics": [
-        {
-          "code": "incomplete_value_semantics",
-          "message": "two_arm_merge_values: Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); values after its join are not exported"
-        }
-      ],
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
       "execution_cohorts": 58,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
-      "memory_linking_templates_used": false,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 287614,
+      "memory_binding_templates": 16706,
+      "memory_bindings": 372402,
+      "memory_linking_templates_used": true,
       "synchronization_groups": 3934,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 194,
-      "thread_prefix_groups": 9633,
-      "value_diagnostic_count": 2,
-      "value_diagnostics": [
-        {
-          "code": "two_arm_merge_values",
-          "line": 3878,
-          "message": "Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); values after its join are not exported"
-        },
-        {
-          "code": "unknown_execution_predicate",
-          "line": 3878,
-          "message": "The active instruction path is not fixed"
-        }
-      ]
+      "thread_prefix_groups": 140572,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
     "source_violations": [],
     "stage": "lifecycle_check",
@@ -4025,12 +3985,12 @@
         ]
       }
     },
-    "value_ir_instance_count": 109965,
-    "value_ir_node_count": 7918,
-    "value_view_complete": false
+    "value_ir_instance_count": 2986092,
+    "value_ir_node_count": 115696,
+    "value_view_complete": true
   },
-  "peak_rss_mib": 535.875,
-  "pipeline_elapsed_seconds": 5.844721022,
+  "peak_rss_mib": 825.5390625,
+  "pipeline_elapsed_seconds": 5.371457731,
   "result": "invalid_lifecycle",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -4040,5 +4000,5 @@
   "verification_limitations": [],
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.495
+  "whole_pipeline_timeout_seconds": 498.482
 }

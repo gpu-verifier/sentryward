@@ -26,6 +26,7 @@ void CompactSourceStorage(SourceArtifact& source) {
   CompactVector(source.program.actors);
   CompactVector(source.program.collectives);
   CompactVector(source.program.dependencies);
+  CompactVector(source.program.exit_gates);
   CompactVector(source.addresses);
   CompactVector(source.required_orders);
   CompactVector(source.verification_limitations);

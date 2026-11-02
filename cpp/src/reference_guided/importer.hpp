@@ -4,6 +4,7 @@
 #include "equivalence_context.hpp"
 #include "floating_idiom_pass.hpp"
 #include "packed_decode.hpp"
+#include "sentryward/equivalence/float_from_chars.h"
 #include "xor_coordinate.hpp"
 #include <memory>
 #include <regex>
@@ -147,16 +148,36 @@ struct Importer {
   FloatingIdiomPlan fp_idioms;
   PackedDecodePass packed_decoders;
   XorCoordinateNormalizer xor_coordinates;
-  // Separate caches and entry points: ordinary arithmetic remains Signed4-only.
+  // Separate caches and entry points: ordinary arithmetic admits Signed4 and Affine4 decoders, never FP4.
   PackedDecodePass fp4_boundaries;
   std::unordered_set<Id> fp4_reference_boundaries;
   std::unordered_map<Id,Id> typed_fp4_values;
   std::map<std::pair<Id,std::string>,Id> floating_lane_values;
+  std::map<std::tuple<Id,std::string,std::string>,Id> select_bitcasts;
+  unsigned select_bitcast_depth=0;
+  // Bounds the recursion (stack depth) of a bitcast through nested selections; deeper is refused.
+  static constexpr unsigned select_bitcast_depth_limit=256;
+  // A strided source layout (not a dense permutation) whose axes of extent > 1, in ascending
+  // stride order, nest: every stride is a positive multiple of the element size and of the
+  // next smaller stride, and no axis overlaps the next (stride >= the inner axis's extent x
+  // stride). Then every element offset has exactly one digit expansion: axis j's coordinate
+  // is (offset mod the next larger stride) / stride_j, the outermost one's offset / stride;
+  // and an offset denotes an element exactly when it is a multiple of the innermost stride and
+  // every coordinate is below its extent (typed_read proves both from the offset's bounds).
+  // Per layout key: those axes, innermost first. Strides that do not nest but each cover the
+  // byte extent of all smaller-stride axes are kept too (dominant_layouts); any other non-dense
+  // layout is refused.
+  struct NestedAxis { Z stride, count; size_t dim; };
+  std::unordered_map<std::string, std::vector<NestedAxis>> nested_layouts;
+  // Nested-layout keys whose strides do not divide each other (decoded greedily).
+  std::unordered_set<std::string> dominant_layouts;
   std::unordered_set<std::string> packed_dense_layouts;
   std::unordered_set<std::string> packed_identity_layouts;
   std::unordered_map<Id,Id> power_bit_values;
   std::unordered_set<Id> encoded_powers;
   bool ideal;
+  // The floating range premise of in_range (assumption floating_values_in_range); set by the comparison.
+  bool range_premise = true;
   const InputContract *contract;
   const PreparedContext *context = nullptr;
   std::set<std::pair<std::string,Id>> unresolved_accesses;
@@ -206,11 +227,43 @@ struct Importer {
             dims.emplace_back(jq(l["source_strides_bytes"][k]).numerator(), n);
         }
         std::sort(dims.begin(), dims.end());
+        bool permutation = true;
         for (auto &[s, n] : dims) {
-          if (s != span)
-            throw Unsupported("source input layout is not dense permutation: " +
-                              it.key());
+          if (s != span) permutation = false;
           span *= n;
+        }
+        if (!permutation) {
+          std::vector<NestedAxis> axes;
+          for (size_t k = 0; k < l["shape"].size(); ++k) {
+            Z n = jq(l["shape"][k]).numerator();
+            if (n > 1) axes.push_back({jq(l["source_strides_bytes"][k]).numerator(), n, k});
+          }
+          std::sort(axes.begin(), axes.end(), [](const NestedAxis &x, const NestedAxis &y) {
+            return std::tie(x.stride, x.dim) < std::tie(y.stride, y.dim);
+          });
+          const Z bytes = jq(l["element_bytes"]).numerator();
+          // Strides that do not nest (a larger stride that is no multiple of a smaller one, e.g.
+          // [1040, 256, 2] for shape [., 4, 128]) are exact when each stride is at least the byte
+          // extent of all smaller-stride axes: offsets then decompose greedily from the largest
+          // stride, one element per offset (injective). Padded rows whose stride is a multiple of
+          // the inner stride (e.g. [1536, 256, 2]) nest.
+          bool nests = true;
+          Z inner = bytes;
+          for (size_t j = 0; j < axes.size(); ++j) {
+            const auto &axis = axes[j];
+            if (axis.stride <= 0 || bytes <= 0 || modz(axis.stride, bytes) != 0)
+              throw Unsupported("source input layout stride is not a positive multiple of its element size: " + it.key());
+            inner += (axis.count - 1) * axis.stride;
+            if (j + 1 < axes.size()) {
+              nests = nests && modz(axes[j + 1].stride, axis.stride) == 0;
+              if (axes[j + 1].stride < inner)
+                throw Unsupported(nests ? "source input layout axes overlap: " + it.key()
+                                        : "source input layout is not proved injective (a stride below the extent "
+                                          "of the smaller-stride axes): " + it.key());
+            }
+          }
+          if (!nests) dominant_layouts.insert(it.key());
+          nested_layouts.emplace(it.key(), std::move(axes));
         }
         // The local bit-address representation requires a bijective canonical
         // layout. Typed-coordinate reads may still use other existing layouts;
@@ -761,8 +814,8 @@ struct Importer {
       } else result = empty ? xs[0] : make(n, xs, f.env, body);
       // Restrict local decoder proofs to arithmetic/selection boundaries. Raw
       // transports keep their original provenance for subsequent typed casts.
-      if(n.kind=="Operation" && (n.name=="Add" || n.name=="Subtract" ||
-          n.name=="Multiply" || n.name=="PtxMultiplyAdd" || n.name=="Select")) {
+      if(n.kind=="Operation" && (n.name=="Add" || n.name=="Subtract" || n.name=="Multiply" ||
+          n.name=="PtxMultiplyAdd" || n.name=="Fma" || n.name=="Select")) {
         if(n.name=="Select" && fp4_reference_boundaries.contains(f.i))
           result=fp4_boundaries.normalize_fp4_boundary(result,
               [&](Id source,unsigned lo,unsigned count) {
@@ -1158,6 +1211,13 @@ struct Importer {
           return found->second;
         }
       const auto &n = a.nodes[x];
+      // A floating source holds a real value, not its bits: every rule below would read the value
+      // (or its bounds) as a bit pattern. Only zero has known bits (all zero, or only the sign set),
+      // which read as zero in every IEEE-style format; any other value is refused.
+      if (floating(src)) {
+        if (n.op == "const" && n.data[0] == 0) return a.zero;
+        throw Unsupported("bitcast to floating is not a numeric conversion: " + src + " -> " + dst);
+      }
       if(dst=="e2m1" && src=="b4") {
         if(!ideal)throw Unsupported("FP4 numerical interpretation requires ideal_real");
         auto bounds=n.bounds;
@@ -1210,43 +1270,38 @@ struct Importer {
               "binary32 bitcast payload outside source integer range");
         uint32_t bits =
             modz(value.numerator(), pow2(32)).convert_to<uint32_t>();
-        unsigned exponent = (bits >> 23) & 255u;
-        unsigned fraction = bits & 0x7fffffu;
-        if (exponent == 255) {
-          if(fraction==0)return a.infinity((bits>>31)?-1:1);
+        if (((bits >> 23) & 255u) == 255u) {
+          if((bits & 0x7fffffu)==0)return a.infinity((bits>>31)?-1:1);
           throw Unsupported("NaN binary32 constant bitcast");
         }
         if (bits == 0x80000000u)
           throw Unsupported("negative-zero binary32 constant bitcast requires "
                             "signed-zero semantics");
-        Z significand = fraction + (exponent ? 0x800000u : 0u);
-        int shift = (exponent ? int(exponent) - 127 : -126) - 23;
-        Q decoded = shift >= 0 ? Q(significand << shift)
-                               : Q(significand, pow2(unsigned(-shift)));
-        if (bits >> 31)
-          decoded = -decoded;
         ++a.stats["constant_binary32_bitcasts"];
-        return a.constant(decoded);
+        return a.constant(ieee_value(bits, 32, 23));
       }
-      // Exact binary16/BF16 literal decoding, including reduction sentinels.
-      // A numeric cast of the integer payload would be incorrect.
-      if((dst=="f16" || dst=="bf16") && sw==16 && n.op=="const") {
-        const auto value=n.data[0];const bool signed_source=src=="s16";
-        if(value.denominator()!=1 || value< Q(signed_source?-32768:0) || value>Q(signed_source?32767:65535))
-          throw Unsupported("16-bit floating payload outside source range");
-        const unsigned bits=modz(value.numerator(),pow2(16)).convert_to<unsigned>();
-        const unsigned fraction_bits=dst=="f16"?10:7, bias=dst=="f16"?15:127;
-        const unsigned max_exponent=dst=="f16"?31:255;
+      // Exact binary16/BF16/FP8 literal decoding, including reduction sentinels.
+      // A numeric cast of the integer payload would be incorrect. E5M2 has
+      // IEEE infinities and NaNs; E4M3 has no infinity and one NaN pattern
+      // per sign (S.1111.111), its other all-ones-exponent codes are finite.
+      if((((dst=="f16" || dst=="bf16") && sw==16) || ((dst=="e5m2" || dst=="e4m3") && sw==8)) && n.op=="const") {
+        const auto value=n.data[0];const bool signed_source=src.starts_with("s");
+        const Z range=pow2(sw),half=range/2;
+        const Z lowest=signed_source?Z(-half):Z(0),highest=signed_source?Z(half-1):Z(range-1);
+        if(value.denominator()!=1 || value<Q(lowest) || value>Q(highest))
+          throw Unsupported(std::to_string(sw)+"-bit floating payload outside source range");
+        const unsigned bits=modz(value.numerator(),range).convert_to<unsigned>();
+        const unsigned fraction_bits=dst=="f16"?10:dst=="bf16"?7:dst=="e5m2"?2:3;
+        const unsigned max_exponent=(1u<<(sw-1-fraction_bits))-1;
         const unsigned exponent=(bits>>fraction_bits)&max_exponent, fraction=bits&((1u<<fraction_bits)-1);
-        if(exponent==max_exponent) {
-          if(fraction==0)return a.infinity((bits>>15)?-1:1);
-          throw Unsupported("NaN 16-bit floating constant bitcast");
+        const unsigned sign=bits>>(sw-1);
+        if(dst=="e4m3" ? exponent==max_exponent && fraction==(1u<<fraction_bits)-1 : exponent==max_exponent) {
+          if(dst!="e4m3" && fraction==0)return a.infinity(sign?-1:1);
+          throw Unsupported("NaN "+std::to_string(sw)+"-bit floating constant bitcast");
         }
-        if(bits==0x8000)throw Unsupported("negative-zero 16-bit floating constant bitcast requires signed-zero semantics");
-        Z significand=fraction+(exponent?(1u<<fraction_bits):0u);
-        const int shift=(exponent?int(exponent)-int(bias):1-int(bias))-int(fraction_bits);
-        Q decoded=shift>=0?Q(significand<<shift):Q(significand,pow2(unsigned(-shift)));
-        return a.constant((bits>>15)?-decoded:decoded);
+        if(bits==(1u<<(sw-1)))
+          throw Unsupported("negative-zero "+std::to_string(sw)+"-bit floating constant bitcast requires signed-zero semantics");
+        return a.constant(ieee_value(bits,sw,fraction_bits));
       }
       if (n.op == "floatbits" && n.tag == dst && n.data[0] == Q(dw))
         return n.args[0];
@@ -1282,22 +1337,13 @@ struct Importer {
         if (bound && bound->first >= 0 && bound->second < 65536)
           return cast(bits, "u16", "bf16", true);
       }
+      // A BF16 power of two built in its exponent field, before the field decoders below
+      // (they give the same value with an explicit fraction factor). f32/f16: at the end.
+      if(dst=="bf16")if(auto power=exponent_field_power(x,src,dst,false))return *power;
       // Constructed BF16 values with fixed sign/exponent are affine in their
       // seven fraction bits. No approximate host float or instance enumeration.
-      if (dst == "bf16" && sw == 16) {
-        auto bound = n.bounds;
-        if (bound && bound->first >= 0 && bound->second < 65536 &&
-            floorq(bound->first / Q(128)) == floorq(bound->second / Q(128))) {
-          unsigned header = floorq(bound->first / Q(128)).convert_to<unsigned>();
-          unsigned exponent = header & 255;
-          if (exponent > 0 && exponent < 255) {
-            Id significand = a.add({x, a.constant(Q(128 - int(header * 128)))});
-            int shift = int(exponent) - 134;
-            Q scale = shift >= 0 ? Q(pow2(unsigned(shift))) : Q(1, pow2(unsigned(-shift)));
-            return a.mul({a.constant(header >= 256 ? -scale : scale), significand});
-          }
-        }
-      }
+      if (dst == "bf16")
+        if (auto field = fixed_header_float(x, sw, dst)) return *field;
       if (dst == "bf16" && sw == 16 && n.bounds) {
         auto bound = *n.bounds;
         bool positive = bound.first >= 128 && bound.second < 32640;
@@ -1312,6 +1358,29 @@ struct Importer {
         }
       }
       if(auto lane=floating_lane(x,dst))return *lane;
+      // A bitcast of a selection is the selection of the alternatives'
+      // bitcasts (both are bit patterns of the source type). Memoized per
+      // selection node: O(distinct selections), depth-bounded.
+      if(n.op=="select" && n.args.size()==3) {
+        const auto key=std::tuple(x,src,dst);
+        if(auto it=select_bitcasts.find(key);it!=select_bitcasts.end())return it->second;
+        if(select_bitcast_depth>=select_bitcast_depth_limit)
+          throw Unsupported("bitcast of nested selections exceeds depth limit");
+        const Id p=n.args[0],t=n.args[1],f=n.args[2];
+        ++select_bitcast_depth;
+        struct Depth {unsigned& n;~Depth(){--n;}} depth{select_bitcast_depth};
+        const Id yes=cast(t,src,dst,true),no=cast(f,src,dst,true);
+        ++a.stats["select_floating_bitcasts"];
+        return select_bitcasts.emplace(key,a.select(p,yes,no)).first->second;
+      }
+      // f16 and f32 fields, after the lane and selection rules. A bf16 field already took the same rule
+      // above, before the bf16 range rule; it is not counted in fixed_header_float_bitcasts.
+      if(dst!="bf16")
+        if(auto field=fixed_header_float(x,sw,dst)) {
+          ++a.stats["fixed_header_float_bitcasts"];
+          return *field;
+        }
+      if(auto power=exponent_field_power(x,src,dst,true))return *power;
       throw Unsupported("bitcast to floating is not a numeric conversion: " +
                         src + " -> " + dst);
     }
@@ -1386,30 +1455,89 @@ struct Importer {
     }
     return x;
   }
+  // f16, bf16 or f32 bits whose bounds fix the sign and a normal exponent field (e.g. the uint4
+  // dequantization idiom (w & 0x000F000F) | 0x64006400) are affine in the fraction bits:
+  // +-2^(e-bias-f) (bits - header*2^f + 2^f). O(1).
+  std::optional<Id> fixed_header_float(Id x, unsigned w, const std::string &dst) {
+    unsigned fraction = 0, exponent_bits = 0;
+    if (dst == "f16" && w == 16) { fraction = 10; exponent_bits = 5; }
+    else if (dst == "bf16" && w == 16) { fraction = 7; exponent_bits = 8; }
+    else if (dst == "f32" && w == 32) { fraction = 23; exponent_bits = 8; }
+    else return std::nullopt;
+    const auto &bound = a.nodes[x].bounds;
+    const Q unit = Q(pow2(fraction));
+    if (!bound || bound->first < 0 || bound->second >= Q(pow2(w)) ||
+        floorq(bound->first / unit) != floorq(bound->second / unit)) return std::nullopt;
+    const Z header = floorq(bound->first / unit);
+    const Z exponent = modz(header, pow2(exponent_bits));
+    if (exponent == 0 || exponent == pow2(exponent_bits) - 1) return std::nullopt;
+    const int bias = (1 << (exponent_bits - 1)) - 1;
+    const int shift = exponent.convert_to<int>() - bias - int(fraction);
+    const Q scale = shift >= 0 ? Q(pow2(unsigned(shift))) : Q(1, pow2(unsigned(-shift)));
+    Id significand = a.add({x, a.constant(unit - Q(header) * unit)});
+    return a.mul({a.constant(header >= pow2(exponent_bits) ? -scale : scale), significand});
+  }
+  // An integer word read as f32, f16 or bf16 whose fraction field is zero and whose biased exponent field is
+  // proved inside the normal range [1, 2^E - 2] is exactly 2^(field - bias): the exponent built by integer
+  // arithmetic, e.g. (e + 127) << 23. The word's bits are its residue modulo 2^width (a signed source is the
+  // two's-complement reading of its word). Fraction and field come from the arena's exact residue and quotient
+  // and their interval bounds. With `refuse`, a zero fraction whose field is not proved normal (zero,
+  // subnormal, infinity, NaN or a negative sign) is refused precisely; otherwise none is returned and the
+  // other bitcast rules apply. O(affine terms of the word).
+  std::optional<Id> exponent_field_power(Id x, const std::string &src, const std::string &dst, bool refuse) {
+    const unsigned w = width(src);
+    unsigned fraction_bits = 0, bias = 0;
+    if (dst == "f32" && w == 32) { fraction_bits = 23; bias = 127; }
+    else if (dst == "f16" && w == 16) { fraction_bits = 10; bias = 15; }
+    else if (dst == "bf16" && w == 16) { fraction_bits = 7; bias = 127; }
+    else return std::nullopt;
+    if (!a.known_bits(x).integer) return std::nullopt;
+    const auto &n = a.nodes[x];
+    Id word = n.op == "signed" && n.args.size() == 1 && n.data.size() == 1 && n.data[0] == Q(w) ? n.args[0] : x;
+    Id bits = a.imod(word, pow2(w));
+    if (a.imod(bits, pow2(fraction_bits)) != a.zero) return std::nullopt;
+    Id field = a.idiv(bits, pow2(fraction_bits));
+    const Z top = pow2(w - 1 - fraction_bits) - 2;
+    const auto &range = a.nodes[field].bounds;
+    if (!range || range->first < Q(1) || range->second > Q(top)) {
+      if (!refuse) return std::nullopt;
+      throw Unsupported("integer-built " + dst + " exponent field is not proved in the normal range [1," +
+                        top.str() + "]" + (range ? " (bounds " + str(range->first) + ".." + str(range->second) + ")" : ""));
+    }
+    ++a.stats["exponent_field_powers"];
+    return a.exp2(a.sub(field, a.constant(Q(bias))));
+  }
   Id literal(const std::string &s, const std::string &t) {
     if (s == "-inf" || s == "-infinity" || s == "-Infinity")
       return a.infinity(-1);
     if (s == "inf" || s == "+inf" || s == "infinity" || s == "Infinity")
       return a.infinity(1);
+    if (t == "pred" && (s == "true" || s == "false"))
+      return s == "true" ? a.one : a.zero;
     try {
       Q q;
-      if (t == "f32") {
-        size_t used;
-        float f = std::stof(s, &used);
-        if (used != s.size() || !std::isfinite(f))
+      // A binary32/binary64 literal denotes its nearest IEEE value (as a host float literal does),
+      // not the decimal number spelled. floatFromChars rounds once, directly to the literal's type,
+      // and accepts an exact subnormal; only overflow and underflow to zero are out of range. O(digits).
+      const auto binary = [&](auto parsed, unsigned fraction) {
+        decltype(parsed) f = 0;
+        const auto r = sentryward::equivalence::floatFromChars(s.data(), s.data() + s.size(), f);
+        if (r.ec != std::errc{} || r.ptr != s.data() + s.size() || !std::isfinite(f))
           throw Unsupported("constant " + s + " type " + t);
-        uint32_t bits = std::bit_cast<uint32_t>(f);
-        int ex = int((bits >> 23) & 255);
-        Z sig = (bits & 0x7fffff) + (ex ? 0x800000 : 0);
-        int shift = (ex ? ex - 127 : 1 - 127) - 23;
-        q = shift >= 0 ? Q(sig << shift) : Q(sig, pow2(unsigned(-shift)));
-        if (bits >> 31)
-          q = -q;
-      } else if (s.starts_with("0x") || s.starts_with("0X"))
+        using Word = std::conditional_t<sizeof(f) == 4, uint32_t, uint64_t>;
+        return ieee_value(std::bit_cast<Word>(f), 8 * sizeof(f), fraction);
+      };
+      if (t == "f32") q = binary(float{}, 23);
+      else if (t == "f64") q = binary(double{}, 52);
+      else if (s.starts_with("0x") || s.starts_with("0X"))
         q = Q(Z(s));
       else
         q = decimal(s);
-      if (!floating(t) && t != "pred") {
+      // PTX reads an integer constant used as a predicate as C does: zero is false, nonzero true
+      // (ISA, Predicate Constants), so `mov.pred %p, -1` is true, not the number -1.
+      if (t == "pred")
+        return q == 0 ? a.zero : a.one;
+      if (!floating(t)) {
         Z v = modz(q.numerator() / q.denominator(), pow2(width(t)));
         if (t.starts_with("s") && v >= pow2(width(t) - 1))
           v -= pow2(width(t));
@@ -1422,12 +1550,17 @@ struct Importer {
       throw Unsupported("constant " + s + " type " + t);
     }
   }
+  // The layout mapping below reads each source coordinate as (offset / stride_j) mod extent_j, the
+  // digits of a dense source layout only. A strided source layout (nested_layouts, which holds the
+  // dominant ones too) is refused: with padding, e.g. strides [1536, 256, 2] for shape [7, 4, 128],
+  // that formula maps offset 1536 to (1, 2, 0) instead of (1, 0, 0) and padding bytes to elements.
+  // An identity layout (target strides = source strides, dense) is never strided.
   std::optional<PackedDecodePass::Bits> canonical_packed_slice(Id source,unsigned lo,unsigned count) {
     const auto &read=a.nodes[source];
     if(read.op!="readbits" || read.args.size()!=1 || !count || count>4 ||
        lo%8+count>8 || Q(lo+count)>read.data[0] ||
        !m.contains("layouts") || !m["layouts"].contains(read.tag) ||
-       !packed_dense_layouts.contains(read.tag))return {};
+       !packed_dense_layouts.contains(read.tag) || nested_layouts.contains(read.tag))return {};
     const auto &layout=m["layouts"][read.tag];
     unsigned bytes=layout["element_bytes"].get<unsigned>();
     if(!bytes)return {};
@@ -1512,6 +1645,38 @@ struct Importer {
     auto b = a.nodes[off].bounds;
     bool valid = b && b->first >= 0 &&
         b->second + Q(std::max(1u, width(t) / 8)) <= Q(extent);
+    // A nested strided layout: the offset must be a multiple of the innermost stride and each
+    // inner digit below its axis's extent x stride (the outermost digit is bounded by the
+    // extent above); then its digits are the element's coordinates. O(rank) Arena terms.
+    std::vector<Id> nested_coordinates;
+    if (const auto nested = nested_layouts.find(raw); valid && nested != nested_layouts.end()) {
+      const auto &axes = nested->second;
+      nested_coordinates.assign(l["shape"].size(), a.zero);
+      if (dominant_layouts.contains(raw)) {
+        // Greedy digits from the largest stride: each remainder must lie below its axis's
+        // extent x stride, and the last remainder must be zero. O(rank) Arena terms.
+        Id rest = off;
+        for (size_t j = axes.size(); valid && j-- > 0;) {
+          const auto &bound = a.nodes[rest].bounds;
+          if (j + 1 < axes.size() &&
+              (!bound || bound->first < 0 || bound->second >= Q(axes[j].stride * axes[j].count))) valid = false;
+          nested_coordinates[axes[j].dim] = a.idiv(rest, axes[j].stride);
+          rest = a.imod(rest, axes[j].stride);
+        }
+        if (rest != a.zero) valid = false;
+      } else {
+        if (!axes.empty() && a.imod(off, axes.front().stride) != a.zero) valid = false;
+        for (size_t j = 0; valid && j < axes.size(); ++j) {
+          Id digit = off;
+          if (j + 1 < axes.size()) {
+            digit = a.imod(off, axes[j + 1].stride);
+            const auto &bound = a.nodes[digit].bounds;
+            if (!bound || bound->first < 0 || bound->second >= Q(axes[j].stride * axes[j].count)) valid = false;
+          }
+          nested_coordinates[axes[j].dim] = a.idiv(digit, axes[j].stride);
+        }
+      }
+    }
     if (!valid) {
       if(require_valid || l.value("target_strides_bytes",l["source_strides_bytes"]) != l["source_strides_bytes"])
         throw Unsupported("input offset range not established for layout/constraint: " + alloc);
@@ -1527,11 +1692,12 @@ struct Importer {
       // Object contracts deliberately do not apply outside established coverage.
       return typed_integer_fact(a.read(alloc,{canonical},(floating(t)?"real:byte-address:":"byte-address:")+t,storage),t);
     }
-    std::vector<Id> coords;
-    for (size_t j = 0; j < l["shape"].size(); ++j)
-      coords.push_back(
-          a.imod(a.idiv(off, jq(l["source_strides_bytes"][j]).numerator()),
-                 jq(l["shape"][j]).numerator()));
+    std::vector<Id> coords=std::move(nested_coordinates);
+    if (coords.empty())
+      for (size_t j = 0; j < l["shape"].size(); ++j)
+        coords.push_back(
+            a.imod(a.idiv(off, jq(l["source_strides_bytes"][j]).numerator()),
+                   jq(l["shape"][j]).numerator()));
     if (floating(t) && !ideal)
       throw Unsupported("non-ideal numeric input");
     Bounds bound = ranges.contains(alloc) ? ranges[alloc] : Bounds{};
@@ -1570,29 +1736,45 @@ struct Importer {
     for (unsigned j = 0; j < 2; ++j) {
       const auto &lo = a.nodes[xs[j]];
       const auto &hi = a.nodes[xs[1 - j]];
-      if (lo.op != "extractbits" || lo.data != std::vector<Q>{Q(0), Q(32)} ||
-          hi.op != "mul" || hi.data != std::vector<Q>{Q(pow2(32))} ||
-          hi.args.size() != 1)
+      if (hi.op != "mul" || hi.data != std::vector<Q>{Q(pow2(32))} ||
+          hi.args.size() != 1 || lo.args.size() != 1)
         continue;
       const auto &h = a.nodes[hi.args[0]];
-      if (h.op == "extractbits" && h.data == std::vector<Q>{Q(32), Q(32)} &&
-          h.args == lo.args) {
+      if (h.args != lo.args)
+        continue;
+      const Id source = lo.args[0];
+      if (lo.op == "extractbits" && lo.data == std::vector<Q>{Q(0), Q(32)} &&
+          h.op == "extractbits" && h.data == std::vector<Q>{Q(32), Q(32)}) {
         ++a.stats["exact_word_reconstruction"];
-        return unwrap(word(lo.args[0], 64), 64);
+        return unwrap(word(source, 64), 64);
+      }
+      // The same split in arithmetic form (a u64 shifted right by 32 and
+      // truncated to u32): x mod 2^32 + 2^32*floor(x/2^32) = x for every
+      // integer x, so the sum is congruent to x modulo 2^64.
+      if (lo.op == "word" && lo.data == std::vector<Q>{Q(32)} &&
+          h.op == "idiv" && h.data == std::vector<Q>{Q(pow2(32))} &&
+          a.known_bits(source).integer) {
+        ++a.stats["exact_word_arithmetic_reconstruction"];
+        return unwrap(word(source, 64), 64);
       }
     }
     return {};
   }
-  Id mask32(Id x, uint32_t mask) {
-    std::vector<Id> pieces;
+  // Calls f(lo, count) for each maximal run of set bits of `mask`, lowest first. O(32).
+  template <class F> static void for_each_bit_run(uint32_t mask, F f) {
     for (unsigned lo = 0; lo < 32;) {
       if (!((mask >> lo) & 1u)) { ++lo; continue; }
       unsigned hi = lo + 1;
       while (hi < 32 && ((mask >> hi) & 1u)) ++hi;
-      pieces.push_back(a.mul({a.constant(Q(pow2(lo))),
-          a.imod(a.idiv(x, pow2(lo)), pow2(hi - lo))}));
+      f(lo, hi - lo);
       lo = hi;
     }
+  }
+  Id mask32(Id x, uint32_t mask) {
+    std::vector<Id> pieces;
+    for_each_bit_run(mask, [&](unsigned lo, unsigned count) {
+      pieces.push_back(a.mul({a.constant(Q(pow2(lo))), a.imod(a.idiv(x, pow2(lo)), pow2(count))}));
+    });
     return a.add(pieces);
   }
   Id byte_permute(Id x, Id y, unsigned control) {
@@ -1615,6 +1797,16 @@ struct Importer {
       if (low && high) ones |= uint32_t(1) << i;
       else if (high) positive |= uint32_t(1) << i;
       else if (low) negative |= uint32_t(1) << i;
+    }
+    // (x & positive) | ones with disjoint masks (e.g. lop3 0xEA, the dequantization idiom
+    // (w & 0x00F000F0) | 0x64006400): keep each selected run a bounded bit field of x, so
+    // the fields stay visible to typed slices and packed decoders. O(runs).
+    if (negative == 0) {
+      std::vector<Id> pieces{a.constant(Q(Z(ones)))};
+      for_each_bit_run(positive, [&](unsigned lo, unsigned count) {
+        pieces.push_back(a.mul({a.constant(Q(pow2(lo))), a.bit_slice(x, lo, count)}));
+      });
+      return a.add(std::move(pieces));
     }
     return a.add({a.constant(Q(Z(ones) + Z(negative))), mask32(x, positive),
                   a.neg(mask32(x, negative))});
@@ -1743,6 +1935,24 @@ struct Importer {
     return a.mul({a.exp(argument),a.exp2(residual)});
   }
 
+  // Range premise (assumption floating_values_in_range, docs/assumptions.md): a finite ideal value of
+  // an IEEE type lies within that type's finite range. Hence, beside a finite operand, the type's most
+  // negative finite value never decides a Maximum (nor its largest finite value a Minimum); such
+  // operands are dropped. Without the premise nothing is dropped. O(operands).
+  std::vector<Id> in_range(std::vector<Id> x, const std::string &type, bool maximum) {
+    if (!range_premise) return x;
+    unsigned fraction = 0; int bias = 0;
+    if (type == "f16") { fraction = 10; bias = 15; }
+    else if (type == "bf16") { fraction = 7; bias = 127; }
+    else if (type == "f32") { fraction = 23; bias = 127; }
+    else if (type == "f64") { fraction = 52; bias = 1023; }
+    else return x;
+    const Q largest = Q(pow2(fraction + 1) - 1) * Q(pow2(unsigned(bias) - fraction));
+    const Id bound = a.constant(maximum ? -largest : largest);
+    if (std::none_of(x.begin(), x.end(), [&](Id o) { return o != bound && a.nodes[o].facts.finite; })) return x;
+    if (const auto dropped = std::erase(x, bound)) a.stats["range_premise_bounds_dropped"] += dropped;
+    return x;
+  }
   Id make(const RawNode &n, const std::vector<Id> &x, const Env &ctx,
           const Env &body) {
     const std::string &k = n.kind, &t = n.type, &attr = n.attributes;
@@ -1780,6 +1990,18 @@ struct Importer {
       Id var = body.at(f.level);
       Q count = Q(f.count);
       const std::string &reducer = f.reducer;
+      if (reducer == "Min") {
+        // Ideal-real minimum shares the maximum normal form, as Minimum does:
+        // min(s, b_0, ..., b_{n-1}) = -max(-s, -b_0, ..., -b_{n-1}) exactly,
+        // for integers and extended reals (the +inf identity becomes -inf).
+        Id initial = a.neg(x.at(0)), element = a.neg(x.at(1));
+        return a.neg(a.intern("fold", {initial, element}, {Q(var), count}, "Max",
+                              a.fold_facts(initial, element, count, true, var)));
+      }
+      // The PTX side's artifact bypasses the document reader's reducer check;
+      // every rule below interprets a non-Max fold as a sum.
+      if (reducer != "Sum" && reducer != "Max")
+        throw Unsupported("unsupported Fold reducer " + reducer);
       return a.intern("fold", x, {Q(var), count}, reducer,
                       a.fold_facts(x[0],x[1],count,reducer=="Max",var));
     }
@@ -1939,11 +2161,17 @@ struct Importer {
         throw Unsupported("integer Absolute adapter");
       return a.absolute(x.at(0));
     }
-    if (name == "BitAnd" && t == "pred") {
-      if(x.size()!=2) throw Unsupported("predicate AND arity");
+    if ((name == "BitAnd" || name == "BitOr" || name == "BitXor") && t == "pred") {
+      const std::string logic=name=="BitAnd"?"AND":name=="BitOr"?"OR":"XOR";
+      if(x.size()!=2) throw Unsupported("predicate "+logic+" arity");
       for(Id v:x) if(!a.nodes[v].bounds || a.nodes[v].bounds->first<0 || a.nodes[v].bounds->second>1)
-        throw Unsupported("predicate AND operand outside Boolean range");
-      return a.mul(x);
+        throw Unsupported("predicate "+logic+" operand outside Boolean range");
+      // On {0,1}: x&y = xy, x|y = 1-(1-x)(1-y) (De Morgan over NOT = 1-x), x^y = (x|y)(1-xy).
+      // Each form is exact and keeps the result's bounds within [0,1].
+      const Id both=a.mul(x);
+      if(name=="BitAnd")return both;
+      const Id either=a.sub(a.one,a.mul({a.sub(a.one,x[0]),a.sub(a.one,x[1])}));
+      return name=="BitOr"?either:a.mul({either,a.sub(a.one,both)});
     }
     if (name == "BitAnd") {
       auto m = a.value(x.at(1));
@@ -2069,12 +2297,11 @@ struct Importer {
     if (name == "Select")
       return a.select(x.at(0), x.at(1), x.at(2), !floating(n.type));
     if (name == "Maximum")
-      return a.maximum(x);
+      return a.maximum(in_range(x, n.type, true));
     if (name == "Minimum") {
       // Ideal-real minimum shares the maximum normal form.
       std::vector<Id> negatives;
-      negatives.reserve(x.size());
-      for (Id operand : x)
+      for (Id operand : in_range(x, n.type, false))
         negatives.push_back(a.neg(operand));
       return a.neg(a.maximum(std::move(negatives)));
     }

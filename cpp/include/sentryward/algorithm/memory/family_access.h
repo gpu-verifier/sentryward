@@ -4,10 +4,17 @@
 #include "sentryward/algorithm/analysis/member_relation.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <span>
+#include <stdexcept>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 namespace sentryward::algorithm {
 struct MemoryAccessFamily {
+  // The MemoryAccessCodec binding fields (MemoryAccessCodec::split) of the instruction and actor.
+  static constexpr std::size_t kInstructionField=2,kActorField=3;
   MemoryAccess first;
   MemoryAccessCodec::Delta delta;
   std::size_t count=0, event_family=0, first_member=0, extent=0;
@@ -19,8 +26,62 @@ struct MemoryAccessFamily {
     if(!translated)throw std::overflow_error("access family binding");
     MemoryAccessCodec::bind(result,*translated);return result;
   }
+  // The actor of a member, affine in it, without reconstructing the access.
+  ActorId actor(std::size_t member) const {
+    const auto steps=std::int64_t(member)-std::int64_t(first_member);
+    return ActorId(static_cast<std::uint32_t>(std::int64_t(first.actor.value())+delta[kActorField]*steps));
+  }
   MemberSet members() const { return MemberRange(extent,first_member,first_member+count); }
 };
+// The CTA of each actor of a source program, by actor id (kNoCta for an unknown actor). O(actors).
+// `contiguous`: no actor id of one CTA lies between two actor ids of another, so the members of an
+// affine family that lie in one CTA form one member range (ForEachCtaRange).
+class ActorCtas final {
+ public:
+  static constexpr std::uint32_t kNoCta=UINT32_MAX;
+  explicit ActorCtas(std::span<const ActorInfo> actors) {
+    for(const auto& actor:actors) {
+      if(actor.id.value()>=ctas_.size())ctas_.resize(std::size_t(actor.id.value())+1,kNoCta);
+      ctas_[actor.id.value()]=actor.cta.value();
+    }
+    // The CTA of each run of one CTA in id order: a CTA with two runs is not contiguous.
+    std::vector<std::uint32_t> runs;
+    for(const auto cta:ctas_)if(cta!=kNoCta && (runs.empty() || runs.back()!=cta))runs.push_back(cta);
+    std::sort(runs.begin(),runs.end());
+    contiguous_=std::adjacent_find(runs.begin(),runs.end())==runs.end();
+  }
+  std::uint32_t operator()(ActorId actor) const {
+    return actor.value()<ctas_.size()?ctas_[actor.value()]:kNoCta;
+  }
+  // The CTA of a known actor; throws std::out_of_range for an unknown one.
+  std::uint32_t at(ActorId actor) const {
+    const auto cta=(*this)(actor);
+    if(cta==kNoCta)throw std::out_of_range("actor has no CTA");
+    return cta;
+  }
+  bool contiguous() const noexcept { return contiguous_; }
+ private:
+  std::vector<std::uint32_t> ctas_;
+  bool contiguous_=true;
+};
+// visit(lo, hi) for each maximal member range of [begin, end) on which cta_of(member) is constant,
+// where each value of cta_of holds one range (ActorCtas::contiguous, for the actors of an affine
+// family). O(ranges x log(end - begin)) calls of cta_of.
+template<class CtaOf,class Visit>
+void ForEachCtaRange(std::size_t begin,std::size_t end,const CtaOf& cta_of,const Visit& visit) {
+  while(begin<end) {
+    const auto cta=cta_of(begin);
+    std::size_t lo=begin,hi=end; // the last member of `cta` is in [lo, hi)
+    if(cta_of(end-1)!=cta)
+      while(hi-lo>1) {
+        const auto middle=lo+(hi-lo)/2;
+        (cta_of(middle)==cta?lo:hi)=middle;
+      }
+    else lo=end-1;
+    visit(begin,lo+1);
+    begin=lo+1;
+  }
+}
 // One term of a symbolic suffix that is a tensor-property lookup: coefficient x the element of
 // `object` at byte `arg` (address-model symbol `symbol`). `uniform`: the model constrains every
 // element of the symbol alike (no address invariant names one), so a decision depends only on
@@ -30,6 +91,15 @@ struct GatherTerm {
   address_solver::Int arg=0,coefficient=0;
   bool uniform=false;
 };
+// The storage every member of a family is bound to, known even when its offsets are not.
+struct FamilyStorage {
+  std::string space,allocation,alias;
+};
+// A named address space (not empty, "generic" or "unknown"): accesses in two different known
+// spaces never share storage.
+inline bool KnownSpace(std::string_view space) {
+  return !space.empty() && space!="generic" && space!="unknown";
+}
 struct FamilyFootprint {
   std::string space,allocation,alias,symbolic;
   address_solver::Int offset=0,step=0;

@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": false
     }
   ],
   "checks": {
@@ -110,7 +118,7 @@
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
       "arena_nodes": 4124,
-      "comparison_elapsed_seconds": 0.017321419,
+      "comparison_elapsed_seconds": 0.017678206,
       "context_declaration": {
         "assumptions": [
           {
@@ -240,7 +248,7 @@
         "status": "proved"
       },
       "diagnostics": [],
-      "elapsed_s": 0.015049912,
+      "elapsed_s": 0.015302108,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -278,7 +286,7 @@
         },
         "query_count": 96,
         "reset_s": 0.0,
-        "reuse_cache": false,
+        "reuse_cache": true,
         "shared_evictions": 0
       },
       "equivalence_context": {
@@ -335,7 +343,7 @@
       "normalized_reachable_nodes": 876,
       "numerical_result": "verified",
       "pattern_nodes": 182,
-      "peak_rss_kib": 607848,
+      "peak_rss_kib": 730400,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
       "piece_nodes": 176,
       "piece_union": {
@@ -391,17 +399,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 5.879999999999991e-06,
-            "cumulative_elapsed_s": 0.001627314,
-            "left_import_s": 0.000496801,
-            "left_normalize_s": 0.00011261999999999991,
-            "parametric_state_s": 6.800000000000816e-07,
-            "piece_union_record_s": 1.700000000000746e-07,
-            "piece_union_seal_s": 4.300000000000484e-07,
-            "right_import_s": 0.0001788410000000001,
-            "right_normalize_s": 0.00017042100000000003,
-            "state_pattern_s": 0.00020891000000000009,
-            "unary_reduction_s": 2.1600000000001826e-06
+            "affine_state_pattern_s": 3.3500000000000543e-06,
+            "cumulative_elapsed_s": 0.001578476,
+            "left_import_s": 0.0005004320000000001,
+            "left_normalize_s": 0.00012642099999999983,
+            "parametric_state_s": 7.399999999999421e-07,
+            "piece_union_record_s": 2.2999999999993512e-07,
+            "piece_union_seal_s": 3.2000000000005115e-07,
+            "right_import_s": 0.00017734000000000011,
+            "right_normalize_s": 0.00015811000000000015,
+            "state_pattern_s": 0.00021177000000000001,
+            "unary_reduction_s": 2.6500000000000915e-06
           }
         },
         {
@@ -438,17 +446,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.6300000000002944e-06,
-            "cumulative_elapsed_s": 0.002612007,
-            "left_import_s": 0.00034283100000000004,
-            "left_normalize_s": 8.587000000000004e-05,
-            "parametric_state_s": 2.4999999999981634e-07,
-            "piece_union_record_s": 1.4000000000003593e-07,
-            "piece_union_seal_s": 4.000000000019613e-08,
-            "right_import_s": 0.00016866100000000007,
-            "right_normalize_s": 0.0001408910000000002,
-            "state_pattern_s": 0.00017697000000000025,
-            "unary_reduction_s": 1.6000000000000389e-06
+            "affine_state_pattern_s": 1.5399999999999615e-06,
+            "cumulative_elapsed_s": 0.00257398,
+            "left_import_s": 0.000345412,
+            "left_normalize_s": 7.253100000000024e-05,
+            "parametric_state_s": 2.8000000000007186e-07,
+            "piece_union_record_s": 4.000000000019613e-08,
+            "piece_union_seal_s": 2.199999999999945e-07,
+            "right_import_s": 0.00018356999999999987,
+            "right_normalize_s": 0.00014246000000000007,
+            "state_pattern_s": 0.00017884,
+            "unary_reduction_s": 1.4699999999999436e-06
           }
         },
         {
@@ -485,17 +493,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.0399999999998952e-06,
-            "cumulative_elapsed_s": 0.00356038,
-            "left_import_s": 0.000322831,
-            "left_normalize_s": 6.614000000000012e-05,
-            "parametric_state_s": 2.2999999999993512e-07,
-            "piece_union_record_s": 1.4000000000003593e-07,
-            "piece_union_seal_s": 6.000000000007735e-08,
-            "right_import_s": 0.00018009099999999984,
-            "right_normalize_s": 0.0001480399999999999,
-            "state_pattern_s": 0.00016892099999999983,
-            "unary_reduction_s": 8.399999999997819e-07
+            "affine_state_pattern_s": 1.3499999999997889e-06,
+            "cumulative_elapsed_s": 0.003544494,
+            "left_import_s": 0.00033304100000000007,
+            "left_normalize_s": 6.546000000000026e-05,
+            "parametric_state_s": 3.300000000002086e-07,
+            "piece_union_record_s": 6.000000000007735e-08,
+            "piece_union_seal_s": 1.5999999999991715e-07,
+            "right_import_s": 0.00019475099999999995,
+            "right_normalize_s": 0.00013957100000000023,
+            "state_pattern_s": 0.00017074099999999986,
+            "unary_reduction_s": 1.0100000000000733e-06
           }
         },
         {
@@ -532,17 +540,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 9.499999999995623e-07,
-            "cumulative_elapsed_s": 0.004474872,
-            "left_import_s": 0.00031490100000000024,
-            "left_normalize_s": 6.362999999999942e-05,
-            "parametric_state_s": 2.300000000003688e-07,
-            "piece_union_record_s": 1.4999999999997654e-07,
-            "piece_union_seal_s": 4.000000000062981e-08,
-            "right_import_s": 0.00016162999999999985,
-            "right_normalize_s": 0.00014685099999999993,
-            "state_pattern_s": 0.00016679999999999993,
-            "unary_reduction_s": 9.59999999999503e-07
+            "affine_state_pattern_s": 1.0399999999998952e-06,
+            "cumulative_elapsed_s": 0.004469907,
+            "left_import_s": 0.00032244100000000013,
+            "left_normalize_s": 7.537999999999989e-05,
+            "parametric_state_s": 3.299999999997749e-07,
+            "piece_union_record_s": 4.000000000062981e-08,
+            "piece_union_seal_s": 1.5999999999991715e-07,
+            "right_import_s": 0.0001661410000000003,
+            "right_normalize_s": 0.00013323999999999975,
+            "state_pattern_s": 0.00016328000000000002,
+            "unary_reduction_s": 7.900000000005125e-07
           }
         },
         {
@@ -579,17 +587,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 8.600000000000968e-07,
-            "cumulative_elapsed_s": 0.005379025,
-            "left_import_s": 0.00031325099999999963,
-            "left_normalize_s": 5.8729999999999893e-05,
-            "parametric_state_s": 2.300000000003688e-07,
-            "piece_union_record_s": 3.999999999976245e-08,
-            "piece_union_seal_s": 6.000000000051103e-08,
-            "right_import_s": 0.00015431099999999986,
-            "right_normalize_s": 0.0001370900000000003,
-            "state_pattern_s": 0.000166261,
-            "unary_reduction_s": 1.650000000000002e-05
+            "affine_state_pattern_s": 8.700000000000374e-07,
+            "cumulative_elapsed_s": 0.005380381,
+            "left_import_s": 0.0003192710000000003,
+            "left_normalize_s": 5.684999999999978e-05,
+            "parametric_state_s": 2.7000000000013125e-07,
+            "piece_union_record_s": 2.9999999999821836e-08,
+            "piece_union_seal_s": 3.999999999976245e-08,
+            "right_import_s": 0.00016025099999999928,
+            "right_normalize_s": 0.00014694100000000026,
+            "state_pattern_s": 0.00016690099999999968,
+            "unary_reduction_s": 7.599999999998233e-07
           }
         },
         {
@@ -626,17 +634,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 9.099999999997999e-07,
-            "cumulative_elapsed_s": 0.006267668,
-            "left_import_s": 0.00030838099999999993,
-            "left_normalize_s": 5.673099999999997e-05,
-            "parametric_state_s": 2.400000000003094e-07,
-            "piece_union_record_s": 4.000000000062981e-08,
-            "piece_union_seal_s": 4.999999999970306e-08,
-            "right_import_s": 0.00016273999999999976,
-            "right_normalize_s": 0.00012846000000000038,
-            "state_pattern_s": 0.00017700100000000041,
-            "unary_reduction_s": 7.300000000000015e-07
+            "affine_state_pattern_s": 8.500000000001562e-07,
+            "cumulative_elapsed_s": 0.006288424,
+            "left_import_s": 0.000311291,
+            "left_normalize_s": 5.811099999999958e-05,
+            "parametric_state_s": 2.7000000000013125e-07,
+            "piece_union_record_s": 4.999999999970306e-08,
+            "piece_union_seal_s": 1.9999999999881224e-08,
+            "right_import_s": 0.00016700000000000048,
+            "right_normalize_s": 0.00013371000000000043,
+            "state_pattern_s": 0.0001678409999999993,
+            "unary_reduction_s": 7.799999999997045e-07
           }
         },
         {
@@ -673,17 +681,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 8.499999999992888e-07,
-            "cumulative_elapsed_s": 0.00714254,
-            "left_import_s": 0.0003087000000000003,
-            "left_normalize_s": 5.822999999999939e-05,
-            "parametric_state_s": 1.89999999999739e-07,
-            "piece_union_record_s": 3.999999999976245e-08,
-            "piece_union_seal_s": 3.999999999976245e-08,
-            "right_import_s": 0.00015027099999999956,
-            "right_normalize_s": 0.00013805999999999975,
-            "state_pattern_s": 0.00016591000000000002,
-            "unary_reduction_s": 7.899999999996452e-07
+            "affine_state_pattern_s": 8.600000000000968e-07,
+            "cumulative_elapsed_s": 0.007186257,
+            "left_import_s": 0.00031023099999999935,
+            "left_normalize_s": 5.534000000000008e-05,
+            "parametric_state_s": 2.400000000003094e-07,
+            "piece_union_record_s": 5.000000000057042e-08,
+            "piece_union_seal_s": 5.999999999964367e-08,
+            "right_import_s": 0.000156331,
+            "right_normalize_s": 0.00014502100000000039,
+            "state_pattern_s": 0.0001751999999999995,
+            "unary_reduction_s": 6.700000000003578e-07
           }
         },
         {
@@ -720,17 +728,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 9.500000000004297e-07,
-            "cumulative_elapsed_s": 0.008017592,
-            "left_import_s": 0.00032537099999999965,
-            "left_normalize_s": 5.494100000000019e-05,
-            "parametric_state_s": 2.099999999996202e-07,
-            "piece_union_record_s": 4.999999999970306e-08,
-            "piece_union_seal_s": 2.9999999999821836e-08,
-            "right_import_s": 0.00015595000000000019,
-            "right_normalize_s": 0.00012763999999999918,
-            "state_pattern_s": 0.00015967000000000064,
-            "unary_reduction_s": 7.00000000001047e-07
+            "affine_state_pattern_s": 9.100000000006672e-07,
+            "cumulative_elapsed_s": 0.008066361,
+            "left_import_s": 0.00031499200000000005,
+            "left_normalize_s": 5.564999999999997e-05,
+            "parametric_state_s": 2.3999999999944205e-07,
+            "piece_union_record_s": 3.999999999976245e-08,
+            "piece_union_seal_s": 7.000000000045165e-08,
+            "right_import_s": 0.00015939000000000057,
+            "right_normalize_s": 0.00013178100000000009,
+            "state_pattern_s": 0.00016335100000000081,
+            "unary_reduction_s": 6.899999999993717e-07
           }
         },
         {
@@ -768,16 +776,16 @@
           },
           "timing_s": {
             "affine_state_pattern_s": 8.500000000001562e-07,
-            "cumulative_elapsed_s": 0.008885695,
-            "left_import_s": 0.0003136409999999999,
-            "left_normalize_s": 5.384000000000118e-05,
-            "parametric_state_s": 1.7999999999893102e-07,
+            "cumulative_elapsed_s": 0.008962104,
+            "left_import_s": 0.0003213609999999992,
+            "left_normalize_s": 5.670999999999975e-05,
+            "parametric_state_s": 2.1000000000048757e-07,
             "piece_union_record_s": 2.9999999999821836e-08,
-            "piece_union_seal_s": 2.9999999999821836e-08,
-            "right_import_s": 0.00015513099999999932,
-            "right_normalize_s": 0.0001299999999999999,
-            "state_pattern_s": 0.00015828100000000143,
-            "unary_reduction_s": 7.700000000006313e-07
+            "piece_union_seal_s": 1.9999999999881224e-08,
+            "right_import_s": 0.00016053100000000022,
+            "right_normalize_s": 0.00013168000000000034,
+            "state_pattern_s": 0.0001625110000000006,
+            "unary_reduction_s": 6.600000000012846e-07
           }
         },
         {
@@ -814,17 +822,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 8.700000000000374e-07,
-            "cumulative_elapsed_s": 0.009757517,
-            "left_import_s": 0.00032351099999999855,
-            "left_normalize_s": 5.5039999999999256e-05,
-            "parametric_state_s": 1.9999999999881224e-07,
-            "piece_union_record_s": 2.9999999999821836e-08,
-            "piece_union_seal_s": 2.9999999999821836e-08,
-            "right_import_s": 0.00015163999999999976,
-            "right_normalize_s": 0.00012692100000000033,
-            "state_pattern_s": 0.00015978,
-            "unary_reduction_s": 7.399999999990747e-07
+            "affine_state_pattern_s": 8.100000000003937e-07,
+            "cumulative_elapsed_s": 0.009853057,
+            "left_import_s": 0.000331151,
+            "left_normalize_s": 5.6130000000001457e-05,
+            "parametric_state_s": 2.2999999999863407e-07,
+            "piece_union_record_s": 3.999999999976245e-08,
+            "piece_union_seal_s": 6.00000000013784e-08,
+            "right_import_s": 0.00015683099999999964,
+            "right_normalize_s": 0.0001296909999999995,
+            "state_pattern_s": 0.0001615999999999996,
+            "unary_reduction_s": 7.199999999991935e-07
           }
         },
         {
@@ -861,17 +869,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 8.400000000002156e-07,
-            "cumulative_elapsed_s": 0.01061216,
-            "left_import_s": 0.00029829099999999914,
-            "left_normalize_s": 5.589000000000115e-05,
-            "parametric_state_s": 1.9999999999881224e-07,
+            "affine_state_pattern_s": 8.500000000001562e-07,
+            "cumulative_elapsed_s": 0.010732001,
+            "left_import_s": 0.00031875200000000027,
+            "left_normalize_s": 5.6449999999999556e-05,
+            "parametric_state_s": 2.400000000003094e-07,
             "piece_union_record_s": 2.9999999999821836e-08,
-            "piece_union_seal_s": 5.000000000143778e-08,
-            "right_import_s": 0.00016074099999999897,
-            "right_normalize_s": 0.00012776000000000107,
-            "state_pattern_s": 0.00016005100000000133,
-            "unary_reduction_s": 7.500000000007501e-07
+            "piece_union_seal_s": 3.999999999976245e-08,
+            "right_import_s": 0.00015467999999999905,
+            "right_normalize_s": 0.0001326109999999995,
+            "state_pattern_s": 0.0001618009999999996,
+            "unary_reduction_s": 6.799999999994311e-07
           }
         },
         {
@@ -908,17 +916,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 8.30000000000275e-07,
-            "cumulative_elapsed_s": 0.011507252,
-            "left_import_s": 0.00029929100000000014,
-            "left_normalize_s": 6.682999999999863e-05,
-            "parametric_state_s": 2.0000000000054696e-07,
-            "piece_union_record_s": 3.000000000155656e-08,
-            "piece_union_seal_s": 2.9999999999821836e-08,
-            "right_import_s": 0.00015777999999999973,
-            "right_normalize_s": 0.00015663100000000083,
-            "state_pattern_s": 0.00016190000000000128,
-            "unary_reduction_s": 8.200000000003344e-07
+            "affine_state_pattern_s": 9.099999999997999e-07,
+            "cumulative_elapsed_s": 0.011651034,
+            "left_import_s": 0.000313631,
+            "left_normalize_s": 5.830000000000071e-05,
+            "parametric_state_s": 2.300000000003688e-07,
+            "piece_union_record_s": 3.999999999976245e-08,
+            "piece_union_seal_s": 6.999999999958428e-08,
+            "right_import_s": 0.00017832099999999865,
+            "right_normalize_s": 0.00015079000000000134,
+            "state_pattern_s": 0.00016228999999999896,
+            "unary_reduction_s": 6.699999999994904e-07
           }
         },
         {
@@ -955,17 +963,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 8.79999999999978e-07,
-            "cumulative_elapsed_s": 0.012363425,
-            "left_import_s": 0.0003003409999999991,
-            "left_normalize_s": 5.7569999999999844e-05,
-            "parametric_state_s": 1.500000000008439e-07,
-            "piece_union_record_s": 3.999999999976245e-08,
-            "piece_union_seal_s": 2.9999999999821836e-08,
-            "right_import_s": 0.0001471809999999997,
-            "right_normalize_s": 0.0001248799999999991,
-            "state_pattern_s": 0.00017133100000000026,
-            "unary_reduction_s": 8.100000000003937e-07
+            "affine_state_pattern_s": 9.199999999997405e-07,
+            "cumulative_elapsed_s": 0.012533267,
+            "left_import_s": 0.000302400999999999,
+            "left_normalize_s": 5.728999999999977e-05,
+            "parametric_state_s": 2.300000000003688e-07,
+            "piece_union_record_s": 4.999999999970306e-08,
+            "piece_union_seal_s": 6.999999999958428e-08,
+            "right_import_s": 0.00016568099999999912,
+            "right_normalize_s": 0.00013662099999999996,
+            "state_pattern_s": 0.0001596600000000007,
+            "unary_reduction_s": 7.600000000006907e-07
           }
         },
         {
@@ -1002,17 +1010,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.380000000000478e-06,
-            "cumulative_elapsed_s": 0.013237727,
-            "left_import_s": 0.0003039609999999984,
-            "left_normalize_s": 5.5289999999999506e-05,
+            "affine_state_pattern_s": 1.130000000000228e-06,
+            "cumulative_elapsed_s": 0.013424301,
+            "left_import_s": 0.00030715199999999977,
+            "left_normalize_s": 5.656000000000064e-05,
             "parametric_state_s": 2.1999999999869346e-07,
-            "piece_union_record_s": 4.999999999970306e-08,
-            "piece_union_seal_s": 3.999999999976245e-08,
-            "right_import_s": 0.00014940999999999913,
-            "right_normalize_s": 0.00014040100000000007,
-            "state_pattern_s": 0.00016978999999999952,
-            "unary_reduction_s": 7.699999999988966e-07
+            "piece_union_record_s": 5.999999999964367e-08,
+            "piece_union_seal_s": 1.9999999999881224e-08,
+            "right_import_s": 0.00015434999999999928,
+            "right_normalize_s": 0.00015655099999999957,
+            "state_pattern_s": 0.0001595410000000009,
+            "unary_reduction_s": 6.800000000011658e-07
           }
         },
         {
@@ -1049,17 +1057,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 8.299999999985402e-07,
-            "cumulative_elapsed_s": 0.01408995,
-            "left_import_s": 0.00031108100000000125,
-            "left_normalize_s": 5.448100000000032e-05,
-            "parametric_state_s": 1.699999999989904e-07,
-            "piece_union_record_s": 4.999999999970306e-08,
+            "affine_state_pattern_s": 8.500000000001562e-07,
+            "cumulative_elapsed_s": 0.014316184,
+            "left_import_s": 0.00031717099999999977,
+            "left_normalize_s": 5.608099999999949e-05,
+            "parametric_state_s": 2.1000000000048757e-07,
+            "piece_union_record_s": 3.999999999976245e-08,
             "piece_union_seal_s": 5.999999999964367e-08,
-            "right_import_s": 0.0001495400000000001,
-            "right_normalize_s": 0.0001313600000000005,
-            "state_pattern_s": 0.00015473099999999997,
-            "unary_reduction_s": 7.099999999992529e-07
+            "right_import_s": 0.00015362000000000015,
+            "right_normalize_s": 0.00014823000000000093,
+            "state_pattern_s": 0.00016083100000000017,
+            "unary_reduction_s": 7.900000000005125e-07
           }
         },
         {
@@ -1096,38 +1104,38 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 8.200000000003344e-07,
-            "cumulative_elapsed_s": 0.014942532,
-            "left_import_s": 0.00031182999999999905,
-            "left_normalize_s": 5.416000000000101e-05,
-            "parametric_state_s": 1.9000000000060635e-07,
-            "piece_union_record_s": 2.9999999999821836e-08,
-            "piece_union_seal_s": 6.00000000013784e-08,
-            "right_import_s": 0.0001505510000000005,
-            "right_normalize_s": 0.0001254500000000009,
-            "state_pattern_s": 0.00015916099999999968,
-            "unary_reduction_s": 6.999999999993123e-07
+            "affine_state_pattern_s": 8.79999999999978e-07,
+            "cumulative_elapsed_s": 0.015194707,
+            "left_import_s": 0.00030422100000000035,
+            "left_normalize_s": 6.146000000000103e-05,
+            "parametric_state_s": 2.1999999999869346e-07,
+            "piece_union_record_s": 4.999999999970306e-08,
+            "piece_union_seal_s": 5.000000000143778e-08,
+            "right_import_s": 0.00015614100000000027,
+            "right_normalize_s": 0.00012923100000000048,
+            "state_pattern_s": 0.00017419999999999936,
+            "unary_reduction_s": 6.399999999996686e-07
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 2.0369999999999373e-05,
+        "affine_state_pattern_s": 1.7970000000001266e-05,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.005195013999999995,
-        "left_normalize_s": 0.0010099929999999998,
-        "parametric_state_s": 3.769999999996476e-06,
-        "piece_union_record_s": 1.0599999999999932e-06,
+        "left_import_s": 0.005272950999999998,
+        "left_normalize_s": 0.001024724000000002,
+        "parametric_state_s": 4.4899999999980546e-06,
+        "piece_union_record_s": 8.79999999998677e-07,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 1.0800000000022597e-06,
+        "piece_union_seal_s": 1.4400000000007723e-06,
         "proof_reuse_s": 0.0,
-        "right_import_s": 0.0025344689999999967,
-        "right_normalize_s": 0.0022008560000000023,
-        "state_pattern_s": 0.0026854680000000047
+        "right_import_s": 0.002644928999999997,
+        "right_normalize_s": 0.002246239000000003,
+        "state_pattern_s": 0.002700357999999999
       },
       "timings": {
-        "load_and_scope_analysis": 0.000372521
+        "load_and_scope_analysis": 0.000317502
       },
       "total_output_families": 16,
       "transport": "in_memory_cpp_objects",
@@ -1309,7 +1317,7 @@
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 55020,
-        "stored_bindings": 5325
+        "stored_bindings": 5313
       },
       "source_edge_storage": {
         "binding_templates": 290,
@@ -1389,7 +1397,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 1631016,
-      "hb_query_seconds": 0.08167040599999999,
+      "hb_query_seconds": 0.08320905,
       "overlap_queries": 85312,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 85312
@@ -1397,7 +1405,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 571.58984375,
+    "peak_footprint_mib": 679.578125,
     "required_order_domains": 544,
     "required_orders": 17408,
     "search_complete": true,
@@ -1405,6 +1413,7 @@
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
@@ -1543,16 +1552,16 @@
         "action_patterns": 149794,
         "binding_patterns": 67234,
         "domain_refinements": 177238,
-        "elapsed_seconds": 4.147585027,
+        "elapsed_seconds": 3.923130198,
         "event_families": 112196,
         "expanded_event_records": 0,
         "largest_batch_members": 62,
         "logical_actions": 232714,
         "logical_events": 1093376,
-        "peak_rss_mib_at_completion": 593.6015625,
+        "peak_rss_mib_at_completion": 713.28125,
         "reachability_queries": 0,
         "relations": 354774,
-        "rss_mib_at_completion": 474.82421875,
+        "rss_mib_at_completion": 575.6015625,
         "scheduled_batches": 112196,
         "singleton_batches": 78445,
         "value_families": 45882
@@ -1564,11 +1573,11 @@
     "value_ir_instance_count": 495369,
     "value_ir_node_count": 45201,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 1.711437461,
+    "verification_elapsed_seconds": 1.654026217,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 593.6015625,
-  "pipeline_elapsed_seconds": 6.490272759,
+  "peak_rss_mib": 713.28125,
+  "pipeline_elapsed_seconds": 6.239525455,
   "result": "verified",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -2333,5 +2342,5 @@
     }
   ],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.43
+  "whole_pipeline_timeout_seconds": 498.398
 }

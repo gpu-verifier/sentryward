@@ -163,6 +163,13 @@ conclude that loads of different elements give different values. For example,
 CTAs that read-modify-write the state slot `state[idx[cta]]` are race-free when
 `idx` is injective and the slot arithmetic cannot overflow. Arithmetic in 32
 bits without an upper bound may wrap, so the offset stays unknown.
+A width conversion, or a shift right or division that divides every value
+exactly, stays affine when the bounds prove the value fits the instruction's
+type: `(x << 32) >> 30` is `4x` for `x` in `[0, 63]`. Otherwise a masked,
+shifted or clamped element (`idx[b] & 0xffffff`, `idx[b] >> 24`, `min(idx[b], n)`)
+is a function of that one element: it is a symbol of its own, bounded by its
+range and never injective, and an affine offset in such symbols places the
+access the same way.
 
 ## Tensor-map descriptors
 
@@ -196,6 +203,11 @@ Each record has a unique one-based PTX `line` and `taken` (`true` or `false`).
 `taken: "random"` instead requires a nonnegative integer `seed`; a Boolean choice
 must not include a seed. An optional nonempty `note` explains the choice.
 
+A choice decides only the visits where the branch predicate is not statically
+known. Where the predicate is known (for example a loop guard that is fixed on the
+first iteration and combined with the chosen condition), the analysis follows the
+predicate on that visit and the choice applies to the remaining visits.
+
 These choices restrict the analyzed executions; they are not proofs of branch
 conditions. Representative branches and Bounded computation loops are independent opt-in assumptions, both disabled by default. Neither forces polling waits to complete. See [assumptions](assumptions.md#representative-branches).
 
@@ -217,6 +229,7 @@ Unknown names and non-Boolean values are rejected with distinct diagnostics.
 | `representative_branches` | `false` |
 | `bounded_computation_loops` | `false` |
 | `order_independent_atomics` | `false` |
+| `floating_values_in_range` | `true` |
 
 For example, this fragment opts into representative data-dependent control:
 

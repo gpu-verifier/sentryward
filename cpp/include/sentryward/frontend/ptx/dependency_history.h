@@ -121,5 +121,12 @@ struct DependencyCounts {
     emitted_references += emitted;
     prefix_effects += prefix;
   }
+  // Adds another lowering's counts (a worker lane's, ModelLowerer Absorb).
+  void Merge(const DependencyCounts &other) {
+    consumers += other.consumers;
+    original_references += other.original_references;
+    emitted_references += other.emitted_references;
+    prefix_effects += other.prefix_effects;
+  }
 };
 } // namespace sentryward::frontend::ptx

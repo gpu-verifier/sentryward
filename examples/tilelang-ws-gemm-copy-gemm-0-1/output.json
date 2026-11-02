@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -345,7 +353,7 @@
         "hb_member_enumerations": 0,
         "logical_accesses": 69632
       },
-      "first_race_seconds": 0.020936095,
+      "first_race_seconds": 0.020351619,
       "hb_algorithm": "member-relations",
       "hb_batches": 1,
       "hb_cache_hits": 0,
@@ -354,7 +362,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 23680,
-      "hb_query_seconds": 0.003294784,
+      "hb_query_seconds": 0.003151297,
       "overlap_queries": 1,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 1
@@ -362,7 +370,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 203.7265625,
+    "peak_footprint_mib": 217.0625,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": false,
@@ -370,6 +378,7 @@
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
@@ -462,8 +471,8 @@
     "value_ir_node_count": 69975,
     "value_view_complete": true
   },
-  "peak_rss_mib": 233.44921875,
-  "pipeline_elapsed_seconds": 0.451017819,
+  "peak_rss_mib": 248.3359375,
+  "pipeline_elapsed_seconds": 0.458456604,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -475,5 +484,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.585
+  "whole_pipeline_timeout_seconds": 498.552
 }

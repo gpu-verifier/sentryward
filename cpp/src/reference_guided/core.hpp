@@ -3,6 +3,7 @@
 #include <array>
 #include <bit>
 #include "rational.hpp"
+#include "sentryward/equivalence/ieee_bits.h"
 #include <chrono>
 #include <climits>
 #include <cmath>
@@ -135,6 +136,15 @@ inline Q decimal(std::string s) {
 }
 inline Q jq(const J &j) {
   return decimal(j.is_string() ? j.get<std::string>() : j.dump());
+}
+// The exact rational value of IEEE-style binary bits (sentryward::equivalence::ieeeDyadicValue): an
+// all-ones exponent field is read as a finite exponent; callers exclude infinities and NaNs.
+inline Q ieee_value(uint64_t bits, unsigned width, unsigned fraction) {
+  const auto value = sentryward::equivalence::ieeeDyadicValue(bits, width, fraction);
+  const Z significand(value.significand);
+  const Q magnitude = value.exponent >= 0 ? Q(significand << value.exponent)
+                                          : Q(significand, pow2(unsigned(-value.exponent)));
+  return value.negative ? -magnitude : magnitude;
 }
 using Bounds = std::optional<std::pair<Q, Q>>;
 struct Facts {
@@ -1701,6 +1711,13 @@ struct Arena {
       return lo>=width?zero:bit_slice(n,lo,width-lo);
     }
     if(nodes[n].op=="idiv") return idiv(nodes[n].args[0],d*nodes[n].data[0].numerator());
+    // x = q*(d*m) + r with 0 <= r < d*m gives floor(r/d) = floor(x/d) mod m:
+    // the quotient of a residue is the residue of the quotient.
+    if(nodes[n].op=="imod" && nodes[n].args.size()==1 && nodes[n].data[0].denominator()==1 &&
+       modz(nodes[n].data[0].numerator(),d)==0) {
+      const Id x=nodes[n].args[0];const Z m=nodes[n].data[0].numerator()/d;
+      return imod(idiv(x,d),m);
+    }
     if(nodes[n].op=="readbits" && (d & (d-1))==0) {
       unsigned shift=boost::multiprecision::msb(d);
       unsigned bits=nodes[n].data[0].numerator().convert_to<unsigned>();

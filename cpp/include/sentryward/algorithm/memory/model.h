@@ -27,6 +27,13 @@ class MemoryModel {
   [[nodiscard]] virtual std::optional<FamilyFootprint> familyFootprint(
       const MemoryAccessFamily&) { return std::nullopt; }
 
+  // The address space, allocation and alias scope shared by every member of a family, when each
+  // member's binding names them (its offset may be symbolic); null when any is unknown. Accesses
+  // on storage that no write can reach cannot race (the family checker drops such reads).
+  [[nodiscard]] virtual std::optional<FamilyStorage> familyStorage(const MemoryAccessFamily&) {
+    return std::nullopt;
+  }
+
   // Class mode's cross-unit pass: familyFootprint, plus strided regions with tensor-property
   // lookups (FamilyFootprint::region_axes), which the family checker never receives.
   [[nodiscard]] virtual std::optional<FamilyFootprint> crossUnitFootprint(const MemoryAccessFamily &family) {

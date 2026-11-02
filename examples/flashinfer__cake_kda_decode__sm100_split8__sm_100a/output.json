@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -57,11 +65,11 @@
   },
   "diagnostics": [
     {
-      "code": "dynamic_address_unsupported",
+      "code": "expression_form_unsupported",
       "details": {
-        "internal_stage": "value_analysis.memory_elimination"
+        "internal_stage": "right_import_s"
       },
-      "message": "Memory address remains symbolic",
+      "message": "integer-built f32 exponent field is not proved in the normal range [1,254] (bounds 0..511)",
       "stage": "equivalence"
     }
   ],
@@ -175,105 +183,279 @@
       "solver_timeout_ms": 100
     },
     "counts": {
-      "edges": 692224,
-      "events": 449912,
-      "instructions": 149504,
-      "memory_accesses": 100608,
-      "threads": 256
+      "edges": 86528,
+      "events": 56239,
+      "instructions": 18688,
+      "memory_accesses": 12576,
+      "threads": 32
     },
     "equivalence": {
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 157,
+      "blocked_stage": "right_import_s",
+      "comparison_elapsed_seconds": 0.612341727,
+      "context_declaration": {
+        "assumptions": [
+          {
+            "input": "ssm_state_indices",
+            "interpretation": "s32",
+            "interval": {
+              "lower": "0",
+              "lower_inclusive": true,
+              "upper": "65535",
+              "upper_inclusive": true
+            },
+            "kind": "input_elements",
+            "reason": "tensor_properties"
+          }
+        ],
+        "fixed_inputs": [
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "cu_seqlens",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=02316ebcacbe5bae7711372a8e8a7e6e38d11e434dcdde9e1bb639b9c92acfbb; provenance sha256=242a90f4118717e05546dd5deffc18baeb56ca12ea42202ab698ec13316ad850",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "cu_seqlens",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=02316ebcacbe5bae7711372a8e8a7e6e38d11e434dcdde9e1bb639b9c92acfbb; provenance sha256=242a90f4118717e05546dd5deffc18baeb56ca12ea42202ab698ec13316ad850",
+            "value": "1"
+          }
+        ],
+        "inputs": [],
+        "predicate_nodes": []
+      },
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 121,
+        "affine_state_banks": 1,
+        "coordinate_digit_node_visits": 9,
+        "finite_bilinear_banks": 1,
+        "finite_state_reuse_banks": 1,
+        "fixed_input_reads_substituted": 2,
+        "floating_lane_transport_visits": 1,
+        "fp_idiom_power_constructions": 0,
+        "fp_idiom_rm_producers": 0,
+        "ideal_additive_compiler_exp_sequences": 0,
+        "ideal_compiler_exp_sequences": 0,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_single_constant_exp_sequences": 1,
+        "imported_context_nodes": 173,
+        "importer_scope_banks": 1,
+        "importer_scope_binder_hits": 3,
+        "importer_scope_binders_created": 1,
+        "importer_scope_leaf_lookups": 4,
+        "importer_scope_nested_body_fallbacks": 2,
+        "intern_requests": 714,
+        "known_bits_cache_hits": 9,
+        "known_bits_edges": 10,
+        "known_bits_nodes": 12,
+        "predicate_integer_affine_normalizations": 3,
+        "proved_select_arms_imported": 2,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_calls": 3,
+        "select_max_probe_temporary_nodes": 0,
+        "symbolic_byte_reads_without_extent_proof": 0
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 0,
+        "status": "not_proven"
+      },
       "diagnostics": [
         {
-          "code": "dynamic_address_unsupported",
-          "message": "Memory address remains symbolic",
-          "stage": "value_analysis.memory_elimination"
+          "code": "expression_form_unsupported",
+          "details": {},
+          "message": "integer-built f32 exponent field is not proved in the normal range [1,254] (bounds 0..511)",
+          "stage": "right_import_s"
         }
       ],
-      "expression_diagnostic": {
-        "diagnostics": [
-          {
-            "code": "dynamic_address_unsupported",
-            "message": "Memory address remains symbolic",
-            "stage": "pipeline"
-          }
-        ],
-        "duplicate_write_value_checks": 0,
-        "equivalence_check": "not_run",
-        "equivalence_reason": "reference_expression_not_supplied",
-        "initial_memory_regions": 305,
-        "initial_read_families": 304,
-        "instruction": "ld.global.L1::no_allocate.v4.b32 {%r337, %r340, %r343, %r346}, [%rd36];",
-        "line": 485,
-        "memory_action_storage": {
-          "logical_actions": 20480,
-          "stored_runs": 18288
+      "elapsed_s": 0.081428828,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
         },
-        "output_region_families": 0,
-        "output_regions": 0,
-        "passes": [
-          {
-            "name": "packing",
-            "rewritten_instances": 16384,
-            "rewritten_nodes": 16384,
-            "semantics": "exact_fixed_width"
-          },
-          {
-            "abstraction": "matched approximation and clamp replaced by ideal Exp2",
-            "name": "software_exp2",
-            "rewritten_instances": 0,
-            "rewritten_nodes": 0,
-            "semantics": "ideal_exp2"
-          },
-          {
-            "converted_instances": 174112,
-            "name": "type_edges",
-            "removed_nodes": 132440
-          },
-          {
-            "name": "memory_elimination"
-          },
-          {
-            "elements": 0,
-            "identities": 0,
-            "layouts": 0,
-            "mapping_blocks": 0,
-            "name": "view_normalization",
-            "original_pieces": 0,
-            "reused_initial_reads": 0,
-            "reused_views": 0,
-            "segmented": 0,
-            "slices": 0,
-            "stored_mapping_blocks": 0,
-            "typed_output_pieces": 0,
-            "typed_output_regions": 0
-          }
-        ],
-        "processed_memory_actions": 3392,
-        "processed_memory_families": 0,
-        "read_substitutions": 3392,
-        "serialization": {
-          "action_patterns": 18288,
-          "binding_patterns": 18288,
-          "domain_refinements": 319216,
-          "elapsed_seconds": 1.735068677,
-          "event_families": 418448,
-          "expanded_event_records": 0,
-          "largest_batch_members": 30,
-          "logical_actions": 20480,
-          "logical_events": 1016968,
-          "peak_rss_mib_at_completion": 1187.921875,
-          "reachability_queries": 0,
-          "relations": 772496,
-          "rss_mib_at_completion": 885.12109375,
-          "scheduled_batches": 418448,
-          "singleton_batches": 313240,
-          "value_families": 368384
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
         },
-        "shared_read_families": 48,
-        "shared_read_instances": 944,
-        "stored_read_substitutions": 2448
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "query_count": 0,
+        "reset_s": 0.0,
+        "reuse_cache": true,
+        "shared_evictions": 0
       },
-      "stage": "value_analysis.memory_elimination"
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 1,
+        "fixed_input_elements": 2,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 0,
+      "finished_families": 0,
+      "fixed_input_context": {
+        "applied": [
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "cu_seqlens",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=02316ebcacbe5bae7711372a8e8a7e6e38d11e434dcdde9e1bb639b9c92acfbb; provenance sha256=242a90f4118717e05546dd5deffc18baeb56ca12ea42202ab698ec13316ad850",
+            "side": "left",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "cu_seqlens",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=02316ebcacbe5bae7711372a8e8a7e6e38d11e434dcdde9e1bb639b9c92acfbb; provenance sha256=242a90f4118717e05546dd5deffc18baeb56ca12ea42202ab698ec13316ad850",
+            "side": "left",
+            "value": "0"
+          }
+        ],
+        "applied_elements": 2,
+        "configured": [
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "cu_seqlens",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=02316ebcacbe5bae7711372a8e8a7e6e38d11e434dcdde9e1bb639b9c92acfbb; provenance sha256=242a90f4118717e05546dd5deffc18baeb56ca12ea42202ab698ec13316ad850",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "cu_seqlens",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=02316ebcacbe5bae7711372a8e8a7e6e38d11e434dcdde9e1bb639b9c92acfbb; provenance sha256=242a90f4118717e05546dd5deffc18baeb56ca12ea42202ab698ec13316ad850",
+            "value": "1"
+          }
+        ],
+        "configured_elements": 2
+      },
+      "idealizations_applied": [
+        "compiler Exp2 with binary32 log2(e) multiplier is ideal Exp"
+      ],
+      "input_contract": [
+        {
+          "element_type": "s32",
+          "max_inclusive": 65535,
+          "min_inclusive": 0,
+          "object": "ssm_state_indices",
+          "region": "whole_object",
+          "source": "tensor_properties"
+        }
+      ],
+      "input_contract_applied_reads": [
+        {
+          "element_type": "s32",
+          "object": "ssm_state_indices",
+          "side": "left"
+        },
+        {
+          "element_type": "s32",
+          "object": "ssm_state_indices",
+          "side": "right"
+        }
+      ],
+      "legacy_scalar_fallback": false,
+      "mapping_input_memory_constraints": {},
+      "native_context": {
+        "elements": 2,
+        "input_sha256": "02316ebcacbe5bae7711372a8e8a7e6e38d11e434dcdde9e1bb639b9c92acfbb",
+        "kind": "verified_current_fixed_input",
+        "provenance_sha256": "242a90f4118717e05546dd5deffc18baeb56ca12ea42202ab698ec13316ad850"
+      },
+      "normalized_reachable_nodes": 0,
+      "numerical_result": "unsupported",
+      "pattern_nodes": 2,
+      "peak_rss_kib": 451760,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 0,
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        376,
+        181060
+      ],
+      "reference_term_patterns": 0,
+      "row_groups": [
+        {
+          "count": 1,
+          "families": [
+            [
+              0,
+              0
+            ]
+          ],
+          "record": {},
+          "timing_s": {
+            "left_import_s": 0.0005211120000000041
+          }
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 0.0,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.0005211120000000041,
+        "left_normalize_s": 0.0,
+        "parametric_state_s": 0.0,
+        "piece_union_record_s": 0.0,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 0.0,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 0.0,
+        "right_normalize_s": 0.0,
+        "state_pattern_s": 0.0
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.029204657
+      },
+      "total_output_families": 4160,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
     },
     "frontend": {
       "address_value_bridge": {
@@ -470,7 +652,7 @@
           "source": "declaration"
         }
       ],
-      "lowered_instruction_count": 149504,
+      "lowered_instruction_count": 18688,
       "reached_opcodes": {
         "add.f32": 22016,
         "add.s32": 3136,
@@ -528,17 +710,17 @@
         "validation": "pending_backend"
       },
       "source_binding_storage": {
-        "binding_templates": 16,
+        "binding_templates": 2,
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
-        "logical_instructions": 149504,
-        "stored_bindings": 14120
+        "logical_instructions": 18688,
+        "stored_bindings": 1765
       },
       "source_edge_storage": {
-        "binding_templates": 256,
-        "logical_edges": 149248,
-        "stored_bindings": 256
+        "binding_templates": 32,
+        "logical_edges": 18656,
+        "stored_bindings": 32
       },
       "thread_count": 256,
       "unsupported_occurrence_counts": {},
@@ -558,7 +740,7 @@
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 31896,
+      "address_candidates": 3987,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -575,22 +757,22 @@
       "candidate_generation_fallback": false,
       "exhaustive": false,
       "family_analysis": {
-        "access_families": 9536,
-        "affine_member_rows": 1216,
-        "candidate_relations": 2792,
+        "access_families": 1192,
+        "affine_member_rows": 152,
+        "candidate_relations": 349,
         "hb_frontier_pieces": 0,
         "hb_member_enumerations": 0,
-        "logical_accesses": 100608
+        "logical_accesses": 12576
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 39,
+      "hb_batches": 5,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 185180,
+      "hb_edge_visits": 22746,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
-      "hb_queries": 31896,
-      "hb_query_seconds": 0.024665054999999995,
+      "hb_queries": 3987,
+      "hb_query_seconds": 0.002991103,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -598,7 +780,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 1185.02734375,
+    "peak_footprint_mib": 436.51171875,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -606,6 +788,7 @@
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
@@ -613,16 +796,16 @@
     "semantic_program": {
       "binding_diagnostic_count": 0,
       "binding_diagnostics": [],
-      "execution_cohorts": 24,
+      "execution_cohorts": 3,
       "mapping_complete": true,
-      "memory_binding_stored_rows": 18288,
-      "memory_binding_templates": 280,
-      "memory_bindings": 20480,
+      "memory_binding_stored_rows": 2286,
+      "memory_binding_templates": 35,
+      "memory_bindings": 2560,
       "memory_linking_templates_used": true,
-      "synchronization_groups": 7448,
+      "synchronization_groups": 931,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 0,
-      "thread_prefix_groups": 593232,
+      "thread_prefix_groups": 74810,
       "value_diagnostic_count": 0,
       "value_diagnostics": []
     },
@@ -656,30 +839,22 @@
     },
     "unresolved_count": 0,
     "value_analysis": {
-      "diagnostics": [
-        {
-          "code": "dynamic_address_unsupported",
-          "message": "Memory address remains symbolic",
-          "stage": "pipeline"
-        }
-      ],
+      "diagnostics": [],
       "duplicate_write_value_checks": 0,
-      "equivalence_check": "unsupported",
-      "initial_memory_regions": 305,
-      "initial_read_families": 304,
-      "instruction": "ld.global.L1::no_allocate.v4.b32 {%r337, %r340, %r343, %r346}, [%rd36];",
-      "line": 485,
+      "equivalence_check": "translation_or_supported_fragment_blocked",
+      "initial_memory_regions": 341,
+      "initial_read_families": 81,
       "memory_action_storage": {
-        "logical_actions": 20480,
-        "stored_runs": 18288
+        "logical_actions": 2560,
+        "stored_runs": 2286
       },
       "output_region_families": 0,
-      "output_regions": 0,
+      "output_regions": 1040,
       "passes": [
         {
           "name": "packing",
-          "rewritten_instances": 16384,
-          "rewritten_nodes": 16384,
+          "rewritten_instances": 2048,
+          "rewritten_nodes": 2048,
           "semantics": "exact_fixed_width"
         },
         {
@@ -690,21 +865,21 @@
           "semantics": "ideal_exp2"
         },
         {
-          "converted_instances": 174112,
+          "converted_instances": 24836,
           "name": "type_edges",
-          "removed_nodes": 132440
+          "removed_nodes": 16747
         },
         {
           "name": "memory_elimination"
         },
         {
           "elements": 0,
-          "identities": 0,
+          "identities": 1024,
           "layouts": 0,
           "mapping_blocks": 0,
           "name": "view_normalization",
           "original_pieces": 0,
-          "reused_initial_reads": 0,
+          "reused_initial_reads": 360,
           "reused_views": 0,
           "segmented": 0,
           "slices": 0,
@@ -713,47 +888,71 @@
           "typed_output_regions": 0
         }
       ],
-      "processed_memory_actions": 3392,
+      "processed_memory_actions": 2560,
       "processed_memory_families": 0,
-      "read_substitutions": 3392,
+      "read_substitutions": 1520,
       "scalar_fold": {
-        "diagnostics": [
-          {
-            "code": "memory_elimination_not_completed",
-            "stage": "pipeline"
-          }
-        ]
+        "construction_collections": 0,
+        "diagnostics": [],
+        "output_count": 8320,
+        "output_families_merged": 6208,
+        "output_family_count": 2112,
+        "output_root_count": 2112,
+        "peak_construction_nodes": 154362,
+        "shared_view_projection_hits": 1680,
+        "source_outputs": 1040,
+        "spatial_families_projected": 0,
+        "spatial_outputs_projected": 0,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 8285,
+          "edges": 327763,
+          "folds": 0,
+          "indices": 1,
+          "initial_cells": 29731,
+          "logical_iterations": 0,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 0,
+          "nodes": 168378,
+          "nodes_before_final_collection": 291768,
+          "nodes_reclaimed": 137623,
+          "operations": 130361,
+          "parameters": 0,
+          "range_descriptions": 0,
+          "storage_nodes": 168378,
+          "unique_fold_bodies": 0
+        }
       },
       "serialization": {
-        "action_patterns": 18288,
-        "binding_patterns": 18288,
-        "domain_refinements": 319216,
-        "elapsed_seconds": 1.735068677,
-        "event_families": 418448,
+        "action_patterns": 2286,
+        "binding_patterns": 2286,
+        "domain_refinements": 39902,
+        "elapsed_seconds": 0.174349384,
+        "event_families": 52306,
         "expanded_event_records": 0,
         "largest_batch_members": 30,
-        "logical_actions": 20480,
-        "logical_events": 1016968,
-        "peak_rss_mib_at_completion": 1187.921875,
+        "logical_actions": 2560,
+        "logical_events": 127121,
+        "peak_rss_mib_at_completion": 202.953125,
         "reachability_queries": 0,
-        "relations": 772496,
-        "rss_mib_at_completion": 885.12109375,
-        "scheduled_batches": 418448,
-        "singleton_batches": 313240,
-        "value_families": 368384
+        "relations": 96562,
+        "rss_mib_at_completion": 176.58984375,
+        "scheduled_batches": 52306,
+        "singleton_batches": 39155,
+        "value_families": 46048
       },
-      "shared_read_families": 48,
-      "shared_read_instances": 944,
-      "stored_read_substitutions": 2448
+      "shared_read_families": 24,
+      "shared_read_instances": 136,
+      "stored_read_substitutions": 1384
     },
-    "value_ir_instance_count": 458673,
-    "value_ir_node_count": 294977,
+    "value_ir_instance_count": 64759,
+    "value_ir_node_count": 37337,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 3.215772039,
+    "verification_elapsed_seconds": 0.330219582,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 1187.921875,
-  "pipeline_elapsed_seconds": 5.743402216,
+  "peak_rss_mib": 441.171875,
+  "pipeline_elapsed_seconds": 2.523361252,
   "result": "unsupported",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -765,5 +964,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.447
+  "whole_pipeline_timeout_seconds": 498.421
 }

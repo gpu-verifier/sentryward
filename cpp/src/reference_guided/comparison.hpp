@@ -12,7 +12,10 @@ enum class ComparisonStatus { Equivalent, PartialScopeEquivalent, NotProven, Blo
 enum class TotalDefinedness { Proved, NotProven, Unreported };
 struct ComparisonOptions {
   double seconds=100; std::size_t family_limit=0;
-  bool ep_profile=false, ep_reuse_cache=false;
+  bool ep_profile=false;
+  // The documented floating range premise (assumption floating_values_in_range,
+  // docs/assumptions.md); without it the importers drop no range bound.
+  bool floating_range_premise=true;
 };
 struct ComparisonResult {
   ComparisonStatus status;

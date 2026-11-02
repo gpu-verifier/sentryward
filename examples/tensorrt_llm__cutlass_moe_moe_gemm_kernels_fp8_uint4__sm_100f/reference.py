@@ -17,7 +17,9 @@ def _weights(expert_weights, experts, k, n):
     return nibbles.permute(0, 2, 4, 7, 5, 8, 6, 1, 3).reshape(experts, k, n).to(torch.float16)
 
 
-def reference(activations, expert_weights, weight_scales, row_end_0, row_end_1, row_end_2, row_end_3):
+def reference(activations, expert_weights, weight_scales, row_end_0, row_end_1, row_end_2, row_end_3, table_last_row_for_problem):
+    # table_last_row_for_problem: the fixed shape-array table, passed for the binding and not used
+    # by the computation; its values enter through row_end_0..3.
     experts, n = weight_scales.shape
     weights = _weights(expert_weights, experts, activations.shape[1], n)
     parts = []

@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -26,7 +27,19 @@ enum class CheckStatus {
 enum class UnsupportedReason {
   kSourceFeature,
   kSignedTransactionCertificateUnsupported,
+  kExitGateOrderUnproven,
 };
+
+// The report `reason` (the public diagnostic code) of a reason that has its own code; empty for
+// the others, whose report gives only the message.
+[[nodiscard]] constexpr std::string_view UnsupportedReasonCode(UnsupportedReason reason) {
+  switch (reason) {
+    case UnsupportedReason::kExitGateOrderUnproven: return "exit_gate_order_unproven";
+    case UnsupportedReason::kSourceFeature:
+    case UnsupportedReason::kSignedTransactionCertificateUnsupported: break;
+  }
+  return {};
+}
 
 struct UnsupportedInput final {
   UnsupportedReason reason = UnsupportedReason::kSourceFeature;

@@ -5,29 +5,31 @@
   },
   "diagnostics": [
     {
-      "code": "timeout",
+      "code": "process_memory_budget_exceeded",
       "details": {
-        "cta_progress": 75,
+        "cta_progress": 146,
         "internal_stage": "value_view_construction",
+        "peak_rss_mib": 85281.82421875,
         "resource": {
-          "kind": "time",
-          "limit": 500.0,
-          "origin": "configured_budget",
-          "unit": "seconds"
-        }
+          "kind": "memory",
+          "limit": 85274.0,
+          "origin": "default_budget",
+          "unit": "MiB"
+        },
+        "rss_limit_mib": null
       },
       "stage": "equivalence"
     }
   ],
-  "elapsed_seconds": 500.021584135,
+  "elapsed_seconds": 347.936402703,
   "internal": {
-    "active_stage": "semantic_ir.cta75",
+    "active_stage": "semantic_ir.cta146",
     "equivalence": {
       "diagnostics": [
         {
           "code": "prerequisite_check_not_passed",
           "details": {
-            "cta_progress": 75,
+            "cta_progress": 146,
             "prerequisite_checks": {
               "equivalence": "not_run",
               "memory": "not_run",
@@ -35,40 +37,42 @@
             },
             "prerequisite_diagnostics": [
               {
-                "code": "timeout",
+                "code": "process_memory_budget_exceeded",
                 "details": {
-                  "cta_progress": 75,
+                  "cta_progress": 146,
+                  "peak_rss_mib": 85281.82421875,
                   "resource": {
-                    "kind": "time",
-                    "limit": 500.0,
-                    "origin": "configured_budget",
-                    "unit": "seconds"
-                  }
+                    "kind": "memory",
+                    "limit": 85274.0,
+                    "origin": "default_budget",
+                    "unit": "MiB"
+                  },
+                  "rss_limit_mib": null
                 },
                 "stage": "value_view_construction"
               }
             ],
-            "prerequisite_result": "timeout",
-            "prerequisite_status": "timeout"
+            "prerequisite_result": "memory_budget_exceeded",
+            "prerequisite_status": "memory_limit_exceeded"
           },
           "stage": "value_view_construction"
         }
       ],
-      "prerequisite_status": "timeout",
-      "stage": "semantic_ir.cta75"
+      "prerequisite_status": "memory_limit_exceeded",
+      "stage": "semantic_ir.cta146"
     },
     "implementation": "cpp",
     "memory_analysis_complete": false,
-    "peak_footprint_mib": 54426.03125
+    "peak_footprint_mib": 85281.82421875
   },
-  "peak_rss_mib": 54426.03125,
+  "peak_rss_mib": 85281.82421875,
   "resource": {
-    "kind": "time",
-    "limit": 500.0,
-    "origin": "configured_budget",
-    "unit": "seconds"
+    "kind": "memory",
+    "limit": 85274.0,
+    "origin": "default_budget",
+    "unit": "MiB"
   },
-  "result": "timeout",
+  "result": "memory_budget_exceeded",
   "rss_limit_mib": null,
   "schema": "spverify.native-ptx-run/v1",
   "scope": {

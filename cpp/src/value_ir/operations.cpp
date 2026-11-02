@@ -149,6 +149,8 @@ void printMemory(std::ostream& output, const MemoryAttributes& attributes) {
   }
   for (const auto& modifier : attributes.native_modifiers) output << '.' << modifier;
   if (attributes.guarded) output << " guarded";
+  if (attributes.reduction)
+    output << " reduction=" << attributes.reduction->operation << '.' << attributes.reduction->element.toString();
   if (attributes.layout) {
     output << ' ';
     printLayout(output, *attributes.layout);
@@ -408,6 +410,7 @@ std::string SelectOp::operandLabel(std::size_t index) const {
 LoadOp::LoadOp(ValueType type, MemoryAttributes attributes)
     : TypedOperation({std::move(type)}), attributes_(std::move(attributes)) {
   validateMemory(attributes_);
+  require(!attributes_.reduction, "a Load does not reduce");
   validateMemoryValue(attributes_, resultType());
 }
 void LoadOp::validateOperands(std::span<const ValueType> operands) const {
@@ -424,6 +427,8 @@ void StoreOp::validateOperands(std::span<const ValueType> operands) const {
   arity(operands, attributes_.guarded ? 3 : 2);
   validateAddress(operands[0], operands[1]);
   validateMemoryValue(attributes_, operands[1]);
+  if (attributes_.reduction) require(!attributes_.guarded && !attributes_.layout && !attributes_.descriptor &&
+      operands[1].element() == attributes_.reduction->element, "a reduction Store stores its reduction element type");
   if (attributes_.guarded) require(operands[2].element().kind() == ElementKind::Predicate &&
       (operands[2].isScalar() || (operands[1].isMatrix() &&
        (!operands[1].hasStaticShape() || !operands[2].hasStaticShape() || sameShape(operands[1], operands[2])))),

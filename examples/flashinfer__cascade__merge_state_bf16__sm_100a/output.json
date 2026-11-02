@@ -49,74 +49,33 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "not_run",
-    "synchronization": "failed"
+    "equivalence": "incomplete",
+    "synchronization": "passed"
   },
   "diagnostics": [
     {
-      "code": "conflicting_accesses_unordered",
+      "code": "not_proven",
       "details": {
-        "count": 1,
-        "internal_stage": "memory_check",
-        "witnesses_path": "races"
+        "internal_stage": "equivalence_check"
       },
-      "message": "Conflicting accesses have no proven required ordering",
-      "stage": "synchronization"
+      "stage": "equivalence"
     }
   ],
   "evidence": {
-    "race_count": 1,
+    "race_count": 0,
     "race_samples_truncated": false,
-    "races": [
-      {
-        "first": {
-          "access_index": 0,
-          "actor": 1,
-          "bytes": 4,
-          "effect_index": 0,
-          "endpoint": {
-            "address": 5,
-            "kind": "memory"
-          },
-          "event": 23,
-          "instruction": 11,
-          "location": {
-            "column": 2,
-            "file": "corpus/flashinfer__cascade__merge_state_bf16__sm_100a.ptx",
-            "line": 197
-          },
-          "mode": "write"
-        },
-        "overlap": "constant byte ranges intersect",
-        "region": {
-          "address_space": "global",
-          "allocation": "s_merged",
-          "bytes": 4,
-          "offset": 0
-        },
-        "second": {
-          "access_index": 0,
-          "actor": 0,
-          "bytes": 4,
-          "effect_index": 0,
-          "endpoint": {
-            "address": 5,
-            "kind": "memory"
-          },
-          "event": 11,
-          "instruction": 5,
-          "location": {
-            "column": 2,
-            "file": "corpus/flashinfer__cascade__merge_state_bf16__sm_100a.ptx",
-            "line": 197
-          },
-          "mode": "write"
-        }
-      }
-    ]
+    "races": []
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -165,31 +124,322 @@
       "threads": 64
     },
     "equivalence": {
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 2812,
+      "comparison_elapsed_seconds": 0.013048514,
+      "context_declaration": {
+        "assumptions": [],
+        "fixed_inputs": [],
+        "inputs": [],
+        "predicate_nodes": []
+      },
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 9151,
+        "affine_state_banks": 1,
+        "canonical_node_visits": 1581,
+        "ep_cross_products": 80,
+        "ep_decline_nonfinite_or_undefined": 4,
+        "ep_fraction_proofs": 80,
+        "ep_scalar_attempts": 84,
+        "ep_scalar_proofs": 80,
+        "exact_proof_reuse_attempts": 8,
+        "exact_proof_reuse_certificates": 80,
+        "exact_proof_reuse_node_visits": 83,
+        "finite_bilinear_banks": 1,
+        "finite_state_reuse_ambiguous_anchor_declines": 48,
+        "finite_state_reuse_banks": 1,
+        "fold_alpha_root_cache_hits": 1524,
+        "fold_alpha_signature_edges": 975,
+        "fold_alpha_signatures": 486,
+        "fold_alpha_states": 486,
+        "fp_idiom_power_constructions": 0,
+        "fp_idiom_rm_producers": 0,
+        "ideal_additive_compiler_exp_sequences": 0,
+        "ideal_compiler_exp_sequences": 0,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_single_constant_exp_sequences": 0,
+        "imported_context_nodes": 2038,
+        "intern_requests": 43193,
+        "known_bits_cache_hits": 48,
+        "known_bits_edges": 0,
+        "known_bits_nodes": 96,
+        "normalization_node_visits": 2157,
+        "parametric_state_attempts": 0,
+        "proved_select_arms_imported": 112,
+        "select_complementary_polarities": 20,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_calls": 20,
+        "select_max_probe_hits": 20,
+        "select_max_probe_temporary_nodes": 0,
+        "symbolic_byte_reads_without_extent_proof": 0,
+        "unary_reduction_composition_attempts": 4
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 80,
+        "status": "not_proven"
+      },
       "diagnostics": [
         {
-          "code": "prerequisite_check_not_passed",
-          "details": {
-            "prerequisite_checks": {
-              "equivalence": "not_run",
-              "memory": "failed",
-              "synchronization": "passed"
-            },
-            "prerequisite_diagnostics": [
-              {
-                "code": "conflicting_accesses_unordered",
-                "details": {
-                  "count": 1,
-                  "witnesses_path": "races"
-                },
-                "message": "Conflicting accesses have no proven required ordering",
-                "stage": "memory_check"
-              }
-            ],
-            "prerequisite_result": "potential_race"
-          },
+          "code": "not_proven",
           "stage": "equivalence_check"
         }
-      ]
+      ],
+      "elapsed_s": 0.010236455,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 832,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 448,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 542,
+          "unique_query_nodes": 0
+        },
+        "query_count": 84,
+        "reset_s": 0.0,
+        "reuse_cache": true,
+        "shared_evictions": 0
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 0,
+        "fixed_input_elements": 0,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 80,
+      "finished_families": 84,
+      "idealizations_applied": [],
+      "input_contract_applied_reads": [],
+      "legacy_scalar_fallback": false,
+      "mapping_input_memory_constraints": {},
+      "native_context": null,
+      "normalized_reachable_nodes": 1101,
+      "numerical_result": "equivalence_not_proven",
+      "pattern_nodes": 2,
+      "peak_rss_kib": 51348,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 0,
+      "piece_union": {
+        "abstract_optimized_replacements": 0,
+        "abstract_reference_replacements": 0,
+        "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+        "collected_pieces": 0,
+        "late_certificates": "accepted_until_each_schema_is_complete",
+        "method": "complete_output_equalities_with_finite_piece_union",
+        "replacements": 0,
+        "schemas": [],
+        "stored_dag_work": 0,
+        "work_limit": 2000000
+      },
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        65,
+        855
+      ],
+      "reference_term_patterns": 0,
+      "row_groups": [
+        {
+          "count": 80,
+          "families": [
+            [
+              0,
+              79
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.8900000000004363e-05,
+            "cumulative_elapsed_s": 0.009697633,
+            "left_import_s": 0.0021298509999999964,
+            "left_normalize_s": 0.0013313509999999993,
+            "parametric_state_s": 4.776000000000037e-05,
+            "piece_union_record_s": 0.00013340099999999925,
+            "piece_union_seal_s": 2.1999999999987524e-06,
+            "right_import_s": 0.002837659999999997,
+            "right_normalize_s": 0.0008086500000000008
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              80,
+              80
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "add_raw[,1,1](mul[,1](log[](add[,1,1](exp2[](add#2726,),exp2[](add#2728,),),),recip[](log[](2,),),),max[](read[s_a\nreal:f32](0,var[output:0,0,3](),),read[s_b\nreal:f32](0,var[output:0,0,3](),),),)",
+            "right": "add[,1,1](max[](read[s_a\nreal:f32](0,var[output:0,0,3](),),read[s_b\nreal:f32](0,var[output:0,0,3](),),),log2[](mul[,1](exp2[](mul[,-1](max#2724,),),add[,1,1](exp2[](read#2720,),exp2[](read#2721,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "not_proven"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.400000000009033e-07,
+            "cumulative_elapsed_s": 0.009841494,
+            "left_import_s": 2.826099999999991e-05,
+            "left_normalize_s": 1.1989999999999917e-05,
+            "parametric_state_s": 9.999999999940612e-08,
+            "piece_union_reuse_s": 2.399999999985747e-07,
+            "piece_union_seal_s": 2.9999999999821836e-08,
+            "proof_reuse_s": 6.270000000000928e-06,
+            "right_import_s": 1.56999999999987e-05,
+            "right_normalize_s": 7.840000000000277e-06,
+            "state_pattern_s": 4.040000000000293e-06,
+            "unary_reduction_s": 1.8699999999993028e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              81,
+              81
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "add_raw[,1,1](mul[,1](recip[](log[](2,),),log[](add[,1,1](exp2[](add#2751,),exp2[](add#2753,),),),),max[](read[s_a\nreal:f32](1,var[output:0,0,3](),),read[s_b\nreal:f32](1,var[output:0,0,3](),),),)",
+            "right": "add[,1,1](max[](read[s_a\nreal:f32](1,var[output:0,0,3](),),read[s_b\nreal:f32](1,var[output:0,0,3](),),),log2[](mul[,1](exp2[](mul[,-1](max#2749,),),add[,1,1](exp2[](read#2745,),exp2[](read#2746,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "not_proven"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.0999999999934673e-07,
+            "cumulative_elapsed_s": 0.009925814,
+            "left_import_s": 2.4450000000000513e-05,
+            "left_normalize_s": 1.1260000000000783e-05,
+            "parametric_state_s": 8.999999999946551e-08,
+            "piece_union_reuse_s": 2.9999999999821836e-08,
+            "piece_union_seal_s": 2.9999999999821836e-08,
+            "proof_reuse_s": 3.7900000000000433e-06,
+            "right_import_s": 1.8250000000000904e-05,
+            "right_normalize_s": 7.0299999999998836e-06,
+            "state_pattern_s": 4.5999999999900287e-07,
+            "unary_reduction_s": 2.0999999999875285e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              82,
+              82
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "add_raw[,1,1](mul[,1](recip[](log[](2,),),log[](add[,1,1](exp2[](add#2774,),exp2[](add#2776,),),),),max[](read[s_a\nreal:f32](2,var[output:0,0,3](),),read[s_b\nreal:f32](2,var[output:0,0,3](),),),)",
+            "right": "add[,1,1](max[](read[s_a\nreal:f32](2,var[output:0,0,3](),),read[s_b\nreal:f32](2,var[output:0,0,3](),),),log2[](mul[,1](exp2[](mul[,-1](max#2772,),),add[,1,1](exp2[](read#2768,),exp2[](read#2769,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "not_proven"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 7.99999999995249e-08,
+            "cumulative_elapsed_s": 0.010001864,
+            "left_import_s": 2.3279999999998788e-05,
+            "left_normalize_s": 1.1080000000000118e-05,
+            "parametric_state_s": 9.999999999940612e-08,
+            "piece_union_reuse_s": 2.9999999999821836e-08,
+            "piece_union_seal_s": 2.9999999999821836e-08,
+            "proof_reuse_s": 3.569999999999615e-06,
+            "right_import_s": 1.8059999999998563e-05,
+            "right_normalize_s": 7.22000000000049e-06,
+            "state_pattern_s": 3.5999999999959675e-07,
+            "unary_reduction_s": 1.2999999999922796e-07
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              83,
+              83
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "left": "add_raw[,1,1](mul[,1](recip[](log[](2,),),log[](add[,1,1](exp2[](add#2797,),exp2[](add#2799,),),),),max[](read[s_a\nreal:f32](3,var[output:0,0,3](),),read[s_b\nreal:f32](3,var[output:0,0,3](),),),)",
+            "right": "add[,1,1](max[](read[s_a\nreal:f32](3,var[output:0,0,3](),),read[s_b\nreal:f32](3,var[output:0,0,3](),),),log2[](mul[,1](exp2[](mul[,-1](max#2795,),),add[,1,1](exp2[](read#2791,),exp2[](read#2792,),),),),)",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "not_proven",
+            "total_definedness": "not_proven"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 8.999999999946551e-08,
+            "cumulative_elapsed_s": 0.010085235,
+            "left_import_s": 2.2279999999999522e-05,
+            "left_normalize_s": 1.1040000000000355e-05,
+            "parametric_state_s": 9.999999999940612e-08,
+            "piece_union_reuse_s": 2.9999999999821836e-08,
+            "piece_union_seal_s": 1.9999999999881224e-08,
+            "proof_reuse_s": 3.1600000000003153e-06,
+            "right_import_s": 1.768000000000082e-05,
+            "right_normalize_s": 6.769999999999693e-06,
+            "state_pattern_s": 3.099999999998937e-07,
+            "unary_reduction_s": 1.1999999999928734e-07
+          }
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 1.9320000000003603e-05,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.002228121999999995,
+        "left_normalize_s": 0.0013767210000000005,
+        "parametric_state_s": 4.814999999999805e-05,
+        "piece_union_record_s": 0.00013340099999999925,
+        "piece_union_reuse_s": 3.299999999980402e-07,
+        "piece_union_seal_s": 2.309999999998099e-06,
+        "proof_reuse_s": 1.67900000000009e-05,
+        "right_import_s": 0.002907349999999996,
+        "right_normalize_s": 0.0008375100000000012,
+        "state_pattern_s": 5.169999999998787e-06
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.000185701
+      },
+      "total_output_families": 84,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
     },
     "frontend": {
       "address_value_bridge": {
@@ -372,7 +622,6 @@
         "hb_member_enumerations": 0,
         "logical_accesses": 384
       },
-      "first_race_seconds": 0.000111361,
       "hb_algorithm": "member-relations",
       "hb_batches": 0,
       "hb_cache_hits": 0,
@@ -381,22 +630,30 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 1088,
-      "hb_query_seconds": 1.288e-05,
-      "overlap_queries": 1,
+      "hb_query_seconds": 1.324e-05,
+      "overlap_queries": 64,
       "strategy": "conflict-family",
-      "unordered_candidates_examined": 1
+      "unordered_candidates_examined": 64
     },
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 19.11328125,
+    "peak_footprint_mib": 50.62109375,
     "required_order_domains": 0,
     "required_orders": 0,
-    "search_complete": false,
+    "same_value_writes": {
+      "groups": 4,
+      "site_pairs": 4,
+      "status": "proven",
+      "warnings": 4,
+      "writes": 64
+    },
+    "search_complete": true,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
@@ -418,7 +675,6 @@
       "value_diagnostics": []
     },
     "source_violations": [],
-    "stage": "memory_check",
     "synchronization_input": {
       "compute_access_binding": "after_happens_before",
       "kind": "ordering_endpoints",
@@ -448,59 +704,178 @@
     },
     "unresolved_count": 0,
     "value_analysis": {
-      "diagnostics": [
+      "diagnostics": [],
+      "duplicate_write_value_checks": 60,
+      "equivalence_check": "not_proven",
+      "initial_memory_regions": 520,
+      "initial_read_families": 72,
+      "memory_action_storage": {
+        "logical_actions": 960,
+        "stored_runs": 176
+      },
+      "output_region_families": 0,
+      "output_regions": 260,
+      "passes": [
         {
-          "code": "prerequisite_check_not_passed",
-          "details": {
-            "prerequisite_checks": {
-              "equivalence": "not_run",
-              "memory": "failed",
-              "synchronization": "passed"
-            },
-            "prerequisite_diagnostics": [
-              {
-                "code": "conflicting_accesses_unordered",
-                "details": {
-                  "count": 1,
-                  "witnesses_path": "races"
-                },
-                "message": "Conflicting accesses have no proven required ordering",
-                "stage": "memory_check"
-              }
-            ],
-            "prerequisite_result": "potential_race",
-            "prerequisite_status": "potential_race"
-          },
-          "stage": "pipeline"
+          "name": "packing",
+          "rewritten_instances": 512,
+          "rewritten_nodes": 8,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 7232,
+          "name": "type_edges",
+          "removed_nodes": 113
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 0,
+          "layouts": 0,
+          "mapping_blocks": 0,
+          "name": "view_normalization",
+          "original_pieces": 0,
+          "reused_initial_reads": 520,
+          "reused_views": 0,
+          "segmented": 0,
+          "slices": 0,
+          "stored_mapping_blocks": 0,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
         }
       ],
-      "equivalence_check": "blocked",
-      "prerequisite_status": "potential_race",
+      "processed_memory_actions": 960,
+      "processed_memory_families": 0,
+      "read_substitutions": 640,
       "scalar_fold": {
-        "diagnostics": [
-          {
-            "code": "memory_elimination_not_completed",
-            "stage": "pipeline"
-          }
-        ]
-      }
+        "construction_collections": 0,
+        "diagnostics": [],
+        "output_count": 1040,
+        "output_families_merged": 987,
+        "output_family_count": 29,
+        "output_root_count": 29,
+        "peak_construction_nodes": 12635,
+        "shared_view_projection_hits": 128,
+        "source_outputs": 260,
+        "spatial_families_projected": 4,
+        "spatial_outputs_projected": 10,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 62,
+          "edges": 1343,
+          "folds": 0,
+          "indices": 1,
+          "initial_cells": 144,
+          "logical_iterations": 0,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 0,
+          "nodes": 821,
+          "nodes_before_final_collection": 12635,
+          "nodes_reclaimed": 11814,
+          "operations": 614,
+          "parameters": 0,
+          "range_descriptions": 0,
+          "storage_nodes": 821,
+          "unique_fold_bodies": 0
+        }
+      },
+      "serialization": {
+        "action_patterns": 176,
+        "binding_patterns": 120,
+        "domain_refinements": 980,
+        "elapsed_seconds": 0.001023463,
+        "event_families": 266,
+        "expanded_event_records": 0,
+        "largest_batch_members": 64,
+        "logical_actions": 960,
+        "logical_events": 17024,
+        "peak_rss_mib_at_completion": 35.84765625,
+        "reachability_queries": 0,
+        "relations": 811,
+        "rss_mib_at_completion": 36.29296875,
+        "scheduled_batches": 266,
+        "singleton_batches": 0,
+        "value_families": 242
+      },
+      "shared_read_families": 8,
+      "shared_read_instances": 120,
+      "stored_read_substitutions": 520
     },
-    "value_ir_instance_count": 16064,
-    "value_ir_node_count": 251,
-    "value_view_complete": true
+    "value_ir_instance_count": 8833,
+    "value_ir_node_count": 139,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 0.010722737,
+    "verification_result": "race_free"
   },
-  "peak_rss_mib": 75.7734375,
-  "pipeline_elapsed_seconds": 0.011299864,
-  "result": "potential_race",
+  "peak_rss_mib": 50.14453125,
+  "pipeline_elapsed_seconds": 0.098864037,
+  "result": "equivalence_not_proven",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
   "verification_limitations": [],
-  "warning_count": 0,
-  "warning_samples_truncated": false,
-  "warnings": [],
+  "warning_count": 4,
+  "warning_samples_truncated": true,
+  "warnings": [
+    {
+      "code": "same-value-writes",
+      "first": {
+        "access_index": 0,
+        "actor": 0,
+        "bytes": 4,
+        "effect_index": 0,
+        "endpoint": {
+          "address": 5,
+          "kind": "memory"
+        },
+        "event": 11,
+        "instruction": 5,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__cascade__merge_state_bf16__sm_100a.ptx",
+          "line": 197
+        },
+        "mode": "write"
+      },
+      "message": "Unordered plain writes cover the same bytes; the value analysis proved that they store equal values, so they do not race (docs/assumptions.md, Same-value writes).",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "global",
+        "allocation": "s_merged",
+        "bytes": 4,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 1,
+        "bytes": 4,
+        "effect_index": 0,
+        "endpoint": {
+          "address": 5,
+          "kind": "memory"
+        },
+        "event": 23,
+        "instruction": 11,
+        "location": {
+          "column": 2,
+          "file": "corpus/flashinfer__cascade__merge_state_bf16__sm_100a.ptx",
+          "line": 197
+        },
+        "mode": "write"
+      }
+    }
+  ],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.534
+  "whole_pipeline_timeout_seconds": 498.509
 }

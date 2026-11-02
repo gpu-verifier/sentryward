@@ -13,6 +13,7 @@ class Unsupported(ValueError):
 TYPES = {torch.float16: "f16", torch.bfloat16: "bf16", torch.float32: "f32",
          torch.float64: "f64", torch.float8_e4m3fn: "e4m3", torch.float8_e5m2: "e5m2",
          torch.uint8: "u8", torch.int32: "s32", torch.int64: "s64", torch.bool: "pred"}
+FLOATING = {"f16", "bf16", "f32", "f64", "e4m3", "e5m2"}
 
 
 def tensor_type(value):
@@ -193,11 +194,21 @@ class Lowering:
                     # PyTorch clamp preserves NaN, unlike default PTX min/max.
                     # Match the existing ValueIR ArithmeticAttributes spelling;
                     # do not expose this head to NaN-ignoring rewrites.
-                    attributes = "propagate_nan " if dtype in {"f16", "bf16", "f32", "f64", "e4m3", "e5m2"} else ""
+                    attributes = "propagate_nan " if dtype in FLOATING else ""
                     result = g.node("Operation", dtype,
                                     "Maximum" if key == "min" else "Minimum",
                                     (result, (yield from operand(value))), attributes)
             return result
+        if op in {"aten.maximum.default", "aten.minimum.default"}:
+            # torch.maximum/minimum: elementwise, and "If one of the elements being
+            # compared is a NaN, then that element is returned": the NaN rule of
+            # clamp above. Operands of another dtype (type promotion) are refused.
+            if dtype == "pred" or not all(isinstance(x, torch.fx.Node) and tensor_type(x.meta["val"]) == dtype
+                                          for x in args[:2]):
+                raise Unsupported(f"{op} needs two tensor operands of its numeric result type")
+            return g.node("Operation", dtype, "Maximum" if op == "aten.maximum.default" else "Minimum",
+                          ((yield from operand(args[0])), (yield from operand(args[1]))),
+                          "propagate_nan " if dtype in FLOATING else "")
         if op == "aten.square.default" or (op == "aten.pow.Tensor_Scalar" and args[1] == 2):
             v = yield from operand(args[0])
             return g.op("Multiply", v, v, dtype=dtype)

@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -74,44 +82,44 @@
       {
         "first": {
           "access_index": 0,
-          "actor": 0,
-          "bytes": 4,
-          "effect_index": 0,
+          "actor": 192,
+          "bytes": 16,
+          "effect_index": 1,
           "endpoint": {
-            "address": 1,
+            "address": 2,
             "kind": "memory"
           },
-          "event": 149,
-          "instruction": 59,
+          "event": 151129,
+          "instruction": 37725,
           "location": {
-            "column": 1,
+            "column": 9,
             "file": "/raid/user_data/ziweizho/wasp-cand-20260927/worktrees/triton-c01b6774/python/tutorials/gluon/10-tcgen05-copy.py",
-            "line": 335
+            "line": 286
           },
           "mode": "write"
         },
         "overlap": "constant byte ranges intersect",
         "region": {
-          "address_space": "shared",
-          "allocation": "cta:(0, 0, 0):shared:physical.shared.cta.0",
-          "bytes": 4,
-          "offset": 229496
+          "address_space": "tensor",
+          "allocation": "cta:(0, 0, 0):tensor:tmem.alloc.W0.I11.O0",
+          "bytes": 16,
+          "offset": 0
         },
         "second": {
-          "access_index": 0,
-          "actor": 1,
-          "bytes": 4,
-          "effect_index": 0,
+          "access_index": 1,
+          "actor": 192,
+          "bytes": 512,
+          "effect_index": 115,
           "endpoint": {
-            "address": 1,
+            "address": 2,
             "kind": "memory"
           },
-          "event": 1320,
-          "instruction": 350,
+          "event": 159524,
+          "instruction": 37755,
           "location": {
-            "column": 1,
+            "column": 13,
             "file": "/raid/user_data/ziweizho/wasp-cand-20260927/worktrees/triton-c01b6774/python/tutorials/gluon/10-tcgen05-copy.py",
-            "line": 335
+            "line": 295
           },
           "mode": "write"
         }
@@ -345,7 +353,7 @@
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 63273,
-        "stored_bindings": 9589
+        "stored_bindings": 8353
       },
       "source_edge_storage": {
         "binding_templates": 401,
@@ -397,7 +405,7 @@
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 834,
+      "address_candidates": 181776,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -415,30 +423,30 @@
       "exhaustive": false,
       "family_analysis": {
         "access_families": 169244,
-        "affine_member_rows": 0,
-        "candidate_relations": 92,
-        "hb_frontier_pieces": 40,
+        "affine_member_rows": 8274227,
+        "candidate_relations": 14133,
+        "hb_frontier_pieces": 1769,
         "hb_member_enumerations": 0,
         "logical_accesses": 251297
       },
-      "first_race_seconds": 0.153707027,
+      "first_race_seconds": 0.388451333,
       "hb_algorithm": "member-relations",
-      "hb_batches": 1,
+      "hb_batches": 12,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 7274,
+      "hb_edge_visits": 54700,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
-      "hb_queries": 834,
-      "hb_query_seconds": 0.001453045,
-      "overlap_queries": 1,
+      "hb_queries": 181776,
+      "hb_query_seconds": 0.010350119000000001,
+      "overlap_queries": 261,
       "strategy": "conflict-family",
-      "unordered_candidates_examined": 1
+      "unordered_candidates_examined": 261
     },
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 1043.9140625,
+    "peak_footprint_mib": 1115.9921875,
     "required_order_domains": 650,
     "required_orders": 8400,
     "search_complete": false,
@@ -446,6 +454,7 @@
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
@@ -538,8 +547,8 @@
     "value_ir_node_count": 210665,
     "value_view_complete": true
   },
-  "peak_rss_mib": 1043.9140625,
-  "pipeline_elapsed_seconds": 8.05677091,
+  "peak_rss_mib": 1127.5546875,
+  "pipeline_elapsed_seconds": 8.091376526,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -551,5 +560,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.549
+  "whole_pipeline_timeout_seconds": 498.559
 }

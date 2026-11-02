@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <limits>
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -27,6 +28,11 @@ struct ScalarFoldOptions {
   // parameter and every body is instantiated for its unit before the output
   // tail. Null: no lifting (BlockIndex values are literals).
   const UnitLifting* unit_lifting = nullptr;
+  // Equivalence runs: per allocation, the bytes the binding compares. Stores
+  // into such an allocation are projected only at those bytes. Allocations
+  // without an entry, and lifting mode (representative regions), project
+  // every stored byte. Null: no binding.
+  const std::map<std::string, scalar_fold::ComparedOutput>* compared_outputs = nullptr;
 };
 struct ScalarFoldOutput {
   ConstantRegion region;

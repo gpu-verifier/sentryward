@@ -329,6 +329,10 @@ void PutAffine(Canon &canon, const std::string &object, const AbstractAffine &af
     Put(out, term.object);
     Put(out, term.element_type);
     Put(out, std::to_string(term.coefficient));
+    // An element function: its operator tree and bounds (functions of shifted elements).
+    Put(out, term.function);
+    Put(out, std::to_string(term.lower));
+    Put(out, std::to_string(term.upper));
     canon.shifts.emplace_back(term.object, term.offset);
   }
 }
@@ -377,9 +381,10 @@ void PutTmaTail(std::string &out, const ResolvedTma &resolved) {
 // form, its placement (offset 0 of the target allocation) an anchor; the other steps (shared
 // bindings, completions) as usual. The structure (element objects, types, byte coefficients)
 // must be equal; the region's constant (the allocation's δ) and each element read's byte
-// offset (its object's δ) are compared up to δ. False (canon unchanged): not this form.
+// offset (its object's δ) are compared up to δ. A gather has one form per row: a segment's
+// row is fixed by its logical offset (PutTmaTail). False (canon unchanged): not this form.
 bool CanonicalizeAffineTma(const ResolvedTma &resolved, Canon &canon) {
-  if (!resolved.region_affine) return false;
+  if (resolved.region_affine.empty()) return false;
   Canon local = canon;
   auto &out = local.shape;
   out += 'Y';
@@ -407,7 +412,7 @@ bool CanonicalizeAffineTma(const ResolvedTma &resolved, Canon &canon) {
     PutStep(local, step);
   }
   if (object.empty() || !local.unliftable.empty()) return false;
-  PutAffine(local, object, *resolved.region_affine);
+  for (const auto &form : resolved.region_affine) PutAffine(local, object, form);
   PutTmaTail(out, resolved);
   canon = std::move(local);
   return true;
@@ -1060,19 +1065,26 @@ UnitClasses::~UnitClasses() = default;
 // ---- class mode -------------------------------------------------------------
 UnitClasses::PreAdmission UnitClasses::PreAdmit(std::span<const CtaFacts *const> facts,
                                                 const std::vector<StructureKey> &keys) const {
+  return PreAdmit(facts, keys, PreAdmission{});
+}
+UnitClasses::PreAdmission UnitClasses::PreAdmit(std::span<const CtaFacts *const> facts,
+                                                const std::vector<StructureKey> &keys, PreAdmission previous) const {
+  if (previous.joined) return previous;
   const auto &s = *impl_;
   std::shared_ptr<const Impl::Snapshot> snapshot;
   {
     std::lock_guard lock(s.snapshot_mutex);
     snapshot = s.snapshot;
   }
+  if (snapshot->classes < previous.classes)
+    throw std::logic_error("internal error: CTA class bookkeeping (look-ahead admission saw fewer classes)");
   PreAdmission result;
   result.classes = snapshot->classes;
   const auto size = s.plan.UnitSize();
   if (facts.size() != size || keys.size() != size)
     throw std::logic_error("internal error: CTA class bookkeeping (look-ahead admission without every CTA of the unit)");
   for (const auto &candidate : snapshot->logged) {
-    if (!SameStructure(*candidate.keys, keys)) continue;
+    if (candidate.klass < previous.classes || !SameStructure(*candidate.keys, keys)) continue;
     UnitDelta delta;
     if (Admits(*candidate.log, facts, delta)) {
       result.joined = candidate.klass;

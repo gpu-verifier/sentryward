@@ -52,7 +52,7 @@
     {
       "parameter": 0,
       "type": "u32",
-      "value": 1,
+      "value": 384,
       "offset": 20
     },
     {
@@ -124,7 +124,7 @@
     {
       "parameter": 0,
       "type": "s64",
-      "value": 1,
+      "value": 0,
       "offset": 216
     },
     {
@@ -144,6 +144,12 @@
       "type": "bool",
       "value": true,
       "offset": 233
+    },
+    {
+      "parameter": 0,
+      "type": "pointer",
+      "value": null,
+      "offset": 192
     }
   ],
   "declarations": [
@@ -222,12 +228,6 @@
     {
       "parameter": 0,
       "type": "pointer",
-      "object": "dst_state_batch_indices",
-      "offset": 192
-    },
-    {
-      "parameter": 0,
-      "type": "pointer",
       "object": "rand_seed",
       "offset": 240
     }
@@ -245,22 +245,15 @@
       "value": 0
     },
     {
-      "object": "dst_state_batch_indices",
+      "object": "state_batch_indices",
       "element_type": "s64",
-      "property": "lower_bound",
-      "value": 0
+      "property": "upper_bound",
+      "value": 383
     },
     {
       "object": "state_batch_indices",
       "element_type": "s64",
-      "property": "upper_bound",
-      "value": 2147483647
-    },
-    {
-      "object": "dst_state_batch_indices",
-      "element_type": "s64",
-      "property": "upper_bound",
-      "value": 2147483647
+      "property": "injective"
     }
   ]
 }

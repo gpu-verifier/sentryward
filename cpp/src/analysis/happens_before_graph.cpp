@@ -181,7 +181,7 @@ const DerivedEdgeJustifications& HappensBeforeGraph::justifications()
 std::optional<EventOrder> HappensBeforeGraph::topologicalOrder()
     const {
   if(forward_ordered_)return EventOrder::identity(eventCount());
-  if (events_.storedBindingCount() * 2 < eventCount())
+  if (events_.unrolledBindingCount() * 2 < eventCount())
     return TemplateTopologicalOrder(events_, edges_,relationStorage());
   std::vector<std::size_t> indegree(events_.size());
   for (std::size_t index = 0; index < events_.size(); ++index) {
@@ -223,7 +223,7 @@ std::optional<EventOrder> HappensBeforeGraph::topologicalOrder()
 bool HappensBeforeGraph::isAcyclic() const {
   if (acyclic_cache_ && acyclic_cache_->first == version_)
     return acyclic_cache_->second;
-  if (events_.storedBindingCount() * 2 < eventCount()) {
+  if (events_.unrolledBindingCount() * 2 < eventCount()) {
     const bool acyclic = TemplateTopologicalOrder(events_, edges_,relationStorage()).has_value();
     acyclic_cache_ = std::pair{version_, acyclic};
     return acyclic;

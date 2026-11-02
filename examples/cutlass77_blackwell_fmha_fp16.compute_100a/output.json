@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -855,7 +863,7 @@
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 339091,
-        "stored_bindings": 15225
+        "stored_bindings": 15079
       },
       "source_edge_storage": {
         "binding_templates": 946,
@@ -926,13 +934,14 @@
     "memory_analysis_complete": false,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 839.375,
+    "peak_footprint_mib": 925.71875,
     "required_order_domains": 7706,
     "required_orders": 246592,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": true,
       "representative_branches": false,
       "representative_election": true
@@ -954,7 +963,7 @@
       "synchronization_groups": 8230,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 233,
-      "thread_prefix_groups": 7199,
+      "thread_prefix_groups": 7200,
       "value_diagnostic_count": 1,
       "value_diagnostics": [
         {
@@ -1041,12 +1050,12 @@
         ]
       }
     },
-    "value_ir_instance_count": 70974,
-    "value_ir_node_count": 4684,
+    "value_ir_instance_count": 71098,
+    "value_ir_node_count": 4685,
     "value_view_complete": false
   },
-  "peak_rss_mib": 839.375,
-  "pipeline_elapsed_seconds": 6.07598457,
+  "peak_rss_mib": 925.71875,
+  "pipeline_elapsed_seconds": 5.464684841,
   "result": "not_wellsynced",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -1056,5 +1065,5 @@
   "verification_limitations": [],
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.537
+  "whole_pipeline_timeout_seconds": 498.536
 }

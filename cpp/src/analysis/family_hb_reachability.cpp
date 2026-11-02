@@ -226,7 +226,7 @@ class FamilyIndex final : public FamilyHbReachability {
 std::unique_ptr<FamilyHbReachability> TryFamilyHbReachability(const HappensBeforeGraph& graph,const HbReachabilityOptions& options,bool reverse) {
   if(options.max_batch_sources==0)throw std::invalid_argument("max_batch_sources must be positive");
   if(options.index_budget_bytes<1024*1024)return nullptr;
-  if(graph.events().storedBindingCount()*2>=graph.eventCount())return nullptr;
+  if(graph.events().unrolledBindingCount()*2>=graph.eventCount())return nullptr;
   const EventFamilies families(graph.events());if(families.families().size()*2>=graph.eventCount())return nullptr;
   return std::make_unique<FamilyIndex>(graph,options,reverse);
 }

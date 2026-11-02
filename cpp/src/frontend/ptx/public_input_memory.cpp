@@ -88,7 +88,16 @@ void ValidateConstantInputs(const FrontendConfig &config,
             "cannot prove that an abstract write preserves fixed shape input bytes", "ptx_execution_unsupported");
     }
   };
-  for (const auto &instruction : artifact.program.instructions)
+  // Only stores and asynchronous operations write: the others are skipped by their headers,
+  // without reconstructing their operands. O(instructions) headers + O(writes).
+  const auto &instructions = artifact.program.instructions;
+  const auto writes = [](const SourceInstruction &prototype, const SourceRecordCodec::Binding *,
+                         const SourceRecordCodec::Delta *, std::size_t, const SourceRecordCodec::Delta *,
+                         std::size_t) {
+    return std::holds_alternative<ImmediateStore>(prototype.op) || std::holds_alternative<AsyncOp>(prototype.op);
+  };
+  for (std::size_t index = 0; index < instructions.size(); ++index) {
+    if (!instructions.header(index, writes)) continue;
     std::visit([&](const auto &op) {
       using T = std::decay_t<decltype(op)>;
       if constexpr (std::is_same_v<T,ImmediateStore>) check(op.address, op.bytes);
@@ -97,6 +106,7 @@ void ValidateConstantInputs(const FrontendConfig &config,
           for (const auto &access : effect.accesses)
             if (access.mode == AccessMode::kWrite)
               if (const auto *address = std::get_if<AddressId>(&access.endpoint)) check(*address, access.bytes);
-    }, instruction.op);
+    }, instructions[index].op);
+  }
 }
 } // namespace sentryward::frontend::ptx

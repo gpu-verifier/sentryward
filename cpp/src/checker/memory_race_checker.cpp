@@ -4,9 +4,6 @@
 #include <algorithm>
 #include <chrono>
 #include <utility>
-#include <unordered_map>
-#include <numeric>
-#include <map>
 #include <optional>
 #include <span>
 #include <vector>
@@ -15,6 +12,7 @@
 #include "sentryward/algorithm/checker/cross_unit_races.h"
 #include "sentryward/algorithm/checker/duplicate_tma_stores.h"
 #include "sentryward/algorithm/checker/family_memory_checker.h"
+#include "sentryward/algorithm/checker/same_value_writes.h"
 #include "sentryward/algorithm/diagnostics/performance_profile.h"
 
 namespace sentryward::algorithm {
@@ -37,11 +35,14 @@ bool validResult(const OverlapResult& result) {
 
 }  // namespace
 
+// `complete_candidates`: the rescan after a same-value write pair in a reduced candidate stream
+// (order constraints or exemptions), with every conflicting pair; the family check declined.
 static Result<MemoryRaceResult, MemoryAnalysisError> RunQuotientMemoryCheck(
     const SourceProgram& source, const PassCertificate& certificate,
     MemoryModel& memory, const MemoryRaceOptions& options, StaticHbQueries* shared_hb,
     const MemoryAccessRecords* supplied_accesses = nullptr,
-    std::optional<std::span<const MemoryAccessFamily>> supplied_families = std::nullopt) {
+    std::optional<std::span<const MemoryAccessFamily>> supplied_families = std::nullopt,
+    bool complete_candidates = false) {
   using Output = Result<MemoryRaceResult, MemoryAnalysisError>;
   if (shared_hb && &shared_hb->graph() != &certificate.happensBeforeGraph)
     return Output::Failure({"HB index must refer to the certificate graph", {}, {}});
@@ -66,7 +67,7 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunQuotientMemoryCheck(
   if (auto error = memory.validate()) {
     return Output::Failure(std::move(*error));
   }
-  try {
+  if (!complete_candidates) try {
     if(auto family=TryFamilyMemoryCheck(source,certificate,memory,options,supplied_families,shared_hb))return std::move(*family);
   } catch(const std::logic_error& error) {
     return Output::Failure({error.what(),{}, {}});
@@ -89,23 +90,14 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunQuotientMemoryCheck(
   // pair in every unit of the CTA's class.
   std::optional<ActorWeights> weights;
   if (options.units) weights.emplace(*options.units, source.actors);
-  std::unordered_map<std::uint32_t, CtaId> actor_ctas;
-  for (const auto& actor : source.actors) actor_ctas.emplace(actor.id.value(), actor.cta);
+  const ActorCtas ctas(source.actors);
   MemoryRaceResult result;
-  std::vector<std::size_t> duplicate_parents;
-  std::vector<bool> duplicate_members;
-  if (options.collect_duplicate_write_groups) {
-    duplicate_parents.resize(accesses.size());
-    std::iota(duplicate_parents.begin(),duplicate_parents.end(),0);
-    duplicate_members.resize(accesses.size());
-  }
-  const auto duplicate_root=[&](std::size_t id) {
-    while (duplicate_parents[id]!=id) {
-      duplicate_parents[id]=duplicate_parents[duplicate_parents[id]];
-      id=duplicate_parents[id];
-    }
-    return id;
-  };
+  WriteObligationGroups duplicates, same_values;
+  SameValueWrites same_value(source, &ctas, weights ? &*weights : nullptr, options.max_warning_samples);
+  // The continued conflict-order search, a diagnostic mode that needs strict order
+  // constraints, records no same-value obligations: such pairs are races there.
+  const bool same_value_rule = !options.continue_after_race;
+  bool rescan = false;
   ProfileScope scan("memory.scan");
   try {
     bool order_only = false;
@@ -128,7 +120,7 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunQuotientMemoryCheck(
         case OverlapStatus::kOverlap:
           if (first.atomic_scope && second.atomic_scope && first.bytes == second.bytes &&
               ((*first.atomic_scope != AtomicScope::kCta && *second.atomic_scope != AtomicScope::kCta) ||
-               actor_ctas.at(first.actor.value()) == actor_ctas.at(second.actor.value()))) {
+               ctas.at(first.actor) == ctas.at(second.actor))) {
             const auto& region = overlap.evidence->constant_region;
             if (!region) {
               ++result.unresolved_count;
@@ -144,16 +136,19 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunQuotientMemoryCheck(
             const std::size_t weight = weights ? (*weights)(first.actor) : 1;
             if (weight > SIZE_MAX - result.warning_count) throw std::overflow_error("warning count overflow");
             result.warning_count += weight;
-            if (options.collect_duplicate_write_groups) {
-              const auto x=first.id.value(),y=second.id.value();
-              duplicate_members[x]=duplicate_members[y]=true;
-              const auto a=duplicate_root(x),b=duplicate_root(y);
-              duplicate_parents[std::max(a,b)]=std::min(a,b);
-            }
+            if (options.collect_duplicate_write_groups) duplicates.pair(first.id, second.id);
             if (result.duplicate_tma_store_warnings.size() < options.max_warning_samples) {
               result.duplicate_tma_store_warnings.push_back(
                   {first, second, std::move(*overlap.evidence)});
             }
+            break;
+          }
+          if (same_value_rule && same_value.pair(first, second, *overlap.evidence)) {
+            // A reduced stream certifies orders through write/write gaps; with this pair
+            // unordered its other pairs on the storage may be missing. Rescan them all.
+            if (order_only || hybrid) { rescan = true; return true; }
+            same_values.pair(first.id, second.id);
+            same_value.sample(first, second, *overlap.evidence, result);
             break;
           }
           ++result.race_count;
@@ -192,6 +187,7 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunQuotientMemoryCheck(
     };
     auto stream = ProfileCall("memory.candidate_index", [&]() -> std::unique_ptr<MemoryConflictCandidates> {
       if (options.search_strategy != MemorySearchStrategy::kAuto) return nullptr;
+      if (complete_candidates) return memory.conflictCandidates(accesses);
       if (!options.exhaustive && options.max_races == 1 && !options.warn_duplicate_tma_stores && !has_atomics) {
         prepare_ranks();
         auto constraints = memory.conflictOrder(accesses, ranks);
@@ -266,8 +262,12 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunQuotientMemoryCheck(
             // After saving the witness, continue all HB work but do not pretend
             // repeated constraints across slabs are distinct race pairs.
             if (options.continue_after_race && result.race_count != 0) continue;
-            if (evaluate(accesses[pairs[i].first.value()], accesses[pairs[i].second.value()]))
+            if (evaluate(accesses[pairs[i].first.value()], accesses[pairs[i].second.value()])) {
+              if (rescan)
+                return RunQuotientMemoryCheck(source, certificate, memory, options, shared_hb,
+                                              &accesses, supplied_families, true);
               return Output::Success(std::move(result));
+            }
           }
         }
         ProfileSnapshot();
@@ -295,12 +295,11 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunQuotientMemoryCheck(
   }
   result.search_complete = true;
   if (options.collect_duplicate_write_groups) {
-    std::map<std::size_t,std::vector<AccessId>> groups;
-    for (std::size_t index=0;index<accesses.size();++index)
-      if (duplicate_members[index]) groups[duplicate_root(index)].push_back(accesses[index].id);
-    for (auto& [root,members]:groups) result.duplicate_write_groups.push_back(std::move(members));
+    result.duplicate_write_groups=duplicates.groups();
     result.duplicate_write_groups_complete=true;
   }
+  result.same_value_write_groups=same_values.groups();
+  result.same_value_write_partners=same_values.partners();
   result.status = result.race_count != 0 ? MemoryRaceStatus::kRaceFound
                   : result.unresolved_count != 0 ? MemoryRaceStatus::kUnresolved
                                                  : MemoryRaceStatus::kRaceFree;
@@ -309,8 +308,10 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunQuotientMemoryCheck(
 
 // Cross-CTA class mode: after the quotient search ended without a race, every global pair with an
 // access in a member unit (cross_unit_races.h). A race found there is reported as the first race; an
-// Unknown, a work cap, or a race behind an unresolved quotient search (whose first finding on the
-// per-unit path could be either) restarts the launch per unit.
+// Unknown, a work cap, a race behind an unresolved quotient search (whose first finding on the
+// per-unit path could be either), or a write pair that the same-value rule could accept (an
+// obligation on the per-unit path, which only its value analysis decides) restarts the launch per
+// unit.
 static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
     const SourceProgram& source, const PassCertificate& certificate,
     MemoryModel& memory, const MemoryRaceOptions& options, StaticHbQueries* shared_hb,
@@ -327,29 +328,18 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
     extracted = std::move(families).value();
   }
   const auto families = supplied_families.value_or(std::span<const MemoryAccessFamily>(extracted));
-  const ActorWeights actors(*options.units, source.actors);
-  // Representative family parts, split at CTA boundaries (actors of one CTA are contiguous and a
-  // family's actor is affine in its member, so each CTA holds one member range).
+  // Representative family parts, split at CTA boundaries (a family's actor is affine in its member
+  // and the actor ids of one CTA are contiguous, so each CTA holds one member range).
+  const ActorCtas ctas(source.actors);
+  if (!ctas.contiguous()) throw std::logic_error("cross-unit pass: the actor ids of a CTA are not contiguous");
   std::vector<CrossUnitPart> parts;
   for (const auto& family : families) {
     if (!family.count) continue;
     const bool write = family.first.mode == AccessMode::kWrite;
-    const auto cta_of = [&](std::size_t member) { return actors.Cta(family.at(member).actor); };
+    const auto cta_of = [&](std::size_t member) { return ctas(family.actor(member)); };
     std::vector<std::pair<std::size_t, std::size_t>> ranges; // [begin, end) member ranges, one CTA each
-    std::size_t begin = family.first_member;
-    const std::size_t end = family.first_member + family.count;
-    while (begin < end) {
-      const auto cta = cta_of(begin);
-      std::size_t lo = begin, hi = end; // the last member of `cta` is in [lo, hi)
-      if (cta_of(end - 1) != cta)
-        while (hi - lo > 1) {
-          const auto middle = lo + (hi - lo) / 2;
-          (cta_of(middle) == cta ? lo : hi) = middle;
-        }
-      else lo = end - 1;
-      ranges.emplace_back(begin, lo + 1);
-      begin = lo + 1;
-    }
+    ForEachCtaRange(family.first_member, family.first_member + family.count, cta_of,
+                    [&](std::size_t begin, std::size_t end) { ranges.emplace_back(begin, end); });
     for (const auto& [first, stop] : ranges) {
       auto part = family;
       part.first = family.at(first);
@@ -387,6 +377,13 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
   if (result.status == MemoryRaceStatus::kUnresolved) throw UnitClassRestart{"cross_unit_tie_break"};
   const auto& a = parts.at(outcome.first_part);
   const auto& b = parts.at(outcome.second_part);
+  auto first = a.family.at(outcome.first_member), second = b.family.at(outcome.second_member);
+  // A write pair that the same-value rule could accept is an obligation of the per-unit search. The
+  // representatives may be one write; its instances in two units are distinct writes, as
+  // SameValueWrites::pair requires of the pair, so only the event test is left out.
+  if (!options.continue_after_race && a.write && b.write &&
+      SameValueWrites(source).sameBytes(first, second, outcome.region_bytes))
+    throw UnitClassRestart{"cross_unit_same_value"};
   const auto& q = *options.units;
   OverlapEvidence evidence;
   // Units are clusters, or single CTAs when the launch has no clusters (kappa is then the CTA id).
@@ -404,7 +401,7 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
                                           q.units.at(outcome.second_unit).kappa,
                                           q.CtaCoordinates(q.units.at(outcome.second_unit).ctas.at(rank_b)),
                                           outcome.allocation, outcome.first_delta, outcome.second_delta};
-  RaceFinding race{a.family.at(outcome.first_member), b.family.at(outcome.second_member), std::move(evidence)};
+  RaceFinding race{std::move(first), std::move(second), std::move(evidence)};
   result.status = MemoryRaceStatus::kRaceFound;
   result.race_count = 1;
   result.races.assign(1, race);

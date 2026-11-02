@@ -17,12 +17,14 @@ public:
 
 // A value whose bits this IR does not determine: the content PTX leaves
 // unspecified to the model, such as a tensor map after a field edit (the
-// CUtensorMap byte layout is opaque). It names its producer. No evaluator gives
+// CUtensorMap byte layout is opaque) or a register read before its first
+// assignment (PTX gives it no value). It names its producer. No evaluator gives
 // it a value, so anything computed from it stays unresolved.
 class OpaqueValueOp final : public TypedOperation {
 public:
   OpaqueValueOp(ValueType type, std::string provenance);
   std::string_view name() const noexcept override { return "OpaqueValue"; }
+  [[nodiscard]] const std::string& provenance() const noexcept { return provenance_; }
   void validateOperands(std::span<const ValueType>) const override;
   void printAttributes(std::ostream&) const override;
 private:

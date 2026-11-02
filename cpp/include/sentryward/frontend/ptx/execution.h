@@ -21,6 +21,37 @@ struct LocalMemoryDeclaration {
   std::uint64_t bytes;
 };
 std::vector<LocalMemoryDeclaration> LocalMemoryDeclarations(const Module&, const Function&);
+// A st.local whose address is a .local array plus `offset` plus the sum of the integer registers
+// `index_terms`, through registers of one static definition each (`chain`: mov of the array
+// symbol, add, mov), all in the store's scope. It writes `components` elements of
+// `element_bytes`. Inside a skipped forward region (an opaque compute region) such a store is
+// lifted as an update of every element slot of the array: the executor admits it only when it
+// proves the byte offset an aligned access inside the array, so exactly one slot per component
+// takes the stored value and every other slot keeps its own.
+struct LocalRegionStore {
+  LocalMemoryDeclaration declaration;
+  Integer offset = 0;
+  std::vector<std::string> index_terms;
+  std::vector<std::uint32_t> chain;
+  unsigned element_bytes = 0, components = 0;
+  [[nodiscard]] std::uint64_t Slots() const { return declaration.bytes / element_bytes; }
+};
+// The most slots a lifted store updates (each costs one slot read and one slot write).
+constexpr std::uint64_t kLiftedLocalSlots = 64;
+// Whether `i` is a plain store to .local memory (not atomic, not asynchronous).
+[[nodiscard]] bool LocalStoreInstruction(const Instruction &i);
+// The shapes of a function's st.local instructions, built once in O(instructions); a store
+// without a shape is absent.
+class LocalRegionStores {
+public:
+  LocalRegionStores(const Module &, const Function &);
+  [[nodiscard]] const LocalRegionStore *Shape(std::uint32_t instruction) const {
+    const auto found = shapes_.find(instruction);
+    return found == shapes_.end() ? nullptr : &found->second;
+  }
+private:
+  std::map<std::uint32_t, LocalRegionStore> shapes_;
+};
 struct ExecutionError : std::runtime_error {
   std::string code;
   std::uint32_t line;
@@ -61,15 +92,23 @@ struct DescriptorFragment {
   unsigned offset{}, bytes{};
   bool operator==(const DescriptorFragment &) const = default;
 };
-// One element of an input object with tensor_properties, as an address-model atom.
+// One element of an input object with tensor_properties, as an address-model atom. A
+// nonempty `function` makes it an element function: the exact integer that this canonical
+// operator tree over the element's value x yields (deterministic: equal atoms are equal
+// values), within [lower, upper] for every element value the object's bounds allow.
 struct ElementAtom {
   std::string object, element_type;
   Integer byte_offset;
+  std::string function = {};
+  Integer lower = 0, upper = 0;
   bool operator==(const ElementAtom &) const = default;
   bool operator<(const ElementAtom &other) const {
     if (object != other.object) return object < other.object;
     if (element_type != other.element_type) return element_type < other.element_type;
-    return byte_offset < other.byte_offset;
+    if (byte_offset != other.byte_offset) return byte_offset < other.byte_offset;
+    if (function != other.function) return function < other.function;
+    if (lower != other.lower) return lower < other.lower;
+    return upper < other.upper;
   }
 };
 // constant + sum of coefficient x atom; terms sorted by atom, coefficients nonzero.
@@ -89,13 +128,16 @@ struct BoundedTable {
 // with trusted tensor_properties (or simple arithmetic on one). Exact, like Integer.
 // Equal identities denote equal values in every execution; `sources` names the objects;
 // `affine` is the exact value in element atoms when it is affine in them; `table`, the
-// exact value as a function of a small-domain key (non-affine values only).
+// exact value as a function of a small-domain key (non-affine values only); `abstract`, the
+// exact value as an affine form that also has element functions (non-affine values only;
+// the identity determines it).
 struct BoundedValue {
   Integer lower, upper;
   std::string identity;
   std::vector<std::string> sources;
   std::optional<AffineForm> affine;
   std::optional<BoundedTable> table = std::nullopt;
+  std::optional<AffineForm> abstract = std::nullopt;
 };
 struct BoundedInteger {
   std::shared_ptr<const BoundedValue> value;
@@ -107,7 +149,8 @@ struct BoundedInteger {
 };
 // A pointer into `resource` at a byte offset affine in element atoms, with the offset's
 // exact range [lower, upper] within [0, 2^63). A non-affine offset has a nonempty
-// `offset_identity` (`offset` is then 0) and its exact byte offsets over a small-domain key.
+// `offset_identity` (`offset` is then 0) and its exact byte offsets over a small-domain key
+// (`table`), as an affine form that also has element functions (`abstract`), or both.
 struct BoundedPointerValue {
   std::string resource;
   std::optional<std::uint64_t> extent_bytes;
@@ -116,6 +159,7 @@ struct BoundedPointerValue {
   std::vector<std::string> sources;
   std::string offset_identity = {};
   std::optional<BoundedTable> table = std::nullopt;
+  std::optional<AffineForm> abstract = std::nullopt;
 };
 struct BoundedAllocationPointer {
   std::shared_ptr<const BoundedPointerValue> value;
@@ -356,6 +400,11 @@ struct DataBranchDecision {
   std::string rule;  // fallthrough, body_iteration_bound or guard_executes
   std::uint64_t taken{}, not_taken{};
 };
+// tensor_properties: per object, the instructions whose control or loaded value an element bound
+// decided. Shared by an executor's run and the program it produced: template values evaluated
+// after the run (consumers reading records, on several threads at once) add decisions.
+// Defined in execution.cpp; read through TensorPropertyDecisionSnapshot.
+class TensorPropertyDecisions;
 struct LaneTrace {
   std::uint32_t warp_id{}, lane_id{};
   InstructionSequence instructions;
@@ -387,13 +436,36 @@ struct ExecutionProgram {
   // thread_template_groups. Both empty on the lane path.
   std::vector<TemplatePathNode> template_paths;
   std::vector<PathId> group_paths;
-  // tensor_properties: per object, the instructions whose control value was decided
-  // by an element bound.
-  std::map<std::string, std::set<std::uint32_t>> tensor_property_sites;
+  // The decisions of the run that produced this program; null in a default-constructed or
+  // moved-from program.
+  std::shared_ptr<const TensorPropertyDecisions> tensor_property_decisions;
+  // branch_decisions: the PTX lines where a statically known predicate decided a visit
+  // instead of the user choice (the choice applies only to unknown predicates).
+  std::set<std::uint32_t> static_branch_choice_lines;
   // Template execution: drops the arena's value caches of one thread (a
   // lane_traces index) or, for nullopt, of every thread: the memoization of
   // lazy record reads (a later read recomputes). Empty on the lane path.
   std::function<void(std::optional<std::size_t>)> release_value_caches;
+};
+// A copy of the program's tensor_property_decisions as recorded so far (empty for null).
+// Thread-safe; O(decisions).
+[[nodiscard]] std::map<std::string, std::set<std::uint32_t>> TensorPropertyDecisionSnapshot(
+    const ExecutionProgram &program);
+namespace detail { struct TemplateOverlay; }
+// While alive, the template arenas' value caches and evaluation scratch state are private to the
+// constructing thread: the arenas' own caches are only read, by every thread holding one, so
+// several threads may read the records of one program at once (each needs its own scope; the
+// arenas' caches must not be written meanwhile, e.g. by a thread without one or by a release).
+// Pure memos: every read returns what it returns without the scope. Not nestable.
+class PrivateTemplateValues {
+public:
+  PrivateTemplateValues();
+  ~PrivateTemplateValues();
+  PrivateTemplateValues(const PrivateTemplateValues &) = delete;
+  PrivateTemplateValues &operator=(const PrivateTemplateValues &) = delete;
+
+private:
+  std::unique_ptr<detail::TemplateOverlay> overlay_;
 };
 namespace detail {
 // The storage reads for producer code that cannot be befriended by name: the

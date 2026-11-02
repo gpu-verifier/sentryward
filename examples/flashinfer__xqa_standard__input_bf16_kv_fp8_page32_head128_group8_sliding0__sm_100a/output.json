@@ -1,41 +1,33 @@
 {
-  "assumption_hints": [
-    {
-      "key": "representative_branches",
-      "label": "Representative branches",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    },
-    {
-      "key": "bounded_computation_loops",
-      "label": "Bounded computation loops",
-      "message": "Supply the missing control input for exact analysis. This assumption applies only if CFG classification identifies the corresponding structured control; polling and unclassified loops remain unsupported.",
-      "suggested_value": true
-    }
-  ],
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
   "assumptions": [
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "duplicate_tma_store_benign",
       "label": "Duplicate TMA stores",
       "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "representative_election",
       "label": "Representative election",
       "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "clc_always_fails",
       "label": "Failed launch cancellation",
       "text": "Every cluster launch cancellation request fails.",
-      "triggered": null
+      "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "representative_branches",
       "label": "Representative branches",
@@ -43,6 +35,7 @@
       "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": false,
       "key": "bounded_computation_loops",
       "label": "Bounded computation loops",
@@ -50,69 +43,417 @@
       "triggered": false
     },
     {
+      "category": "analysis assumption",
       "enabled": true,
       "key": "order_independent_atomics",
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
       "triggered": null
     }
   ],
   "checks": {
-    "equivalence": "not_run",
-    "synchronization": "not_run"
+    "equivalence": "incomplete",
+    "synchronization": "passed"
   },
   "diagnostics": [
     {
-      "code": "control_predicate_not_static",
+      "code": "expression_form_unsupported",
       "details": {
-        "internal_stage": "ptx_execution",
-        "location": {
-          "column": 0,
-          "file": "corpus/flashinfer__xqa_standard__input_bf16_kv_fp8_page32_head128_group8_sliding0__sm_100a.ptx",
-          "line": 5209
-        },
-        "required_parameters": []
+        "internal_stage": "right_import_s"
       },
-      "message": "control predicate is not statically determined",
-      "stage": "synchronization"
+      "message": "nonconstant mask",
+      "stage": "equivalence"
     }
   ],
-  "internal": {
-    "details": {
-      "required_parameters": []
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
     },
+    "election_uses": 0,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "shape_input_contract": {
+      "kind": "fixed_read_only",
+      "origin": "shape_arrays",
+      "regions": [
+        {
+          "allocation": "seqLenList",
+          "byte_offset": 0,
+          "bytes": 4,
+          "resource": "input.arg6.24"
+        }
+      ],
+      "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+    },
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "s32",
+          "object": "kvCachePageList",
+          "property": "lower_bound",
+          "value": 0
+        },
+        {
+          "element_type": "s32",
+          "object": "kvCachePageList",
+          "property": "upper_bound",
+          "value": 0
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "kvCachePageList",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg6.16"
+        }
+      ],
+      "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [
+      {
+        "lines": [
+          265,
+          4397
+        ],
+        "object": "kvCachePageList"
+      }
+    ],
+    "trap_only_equality_assertions_hold": true
+  },
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "counts": {
+      "edges": 177271,
+      "events": 97295,
+      "instructions": 29907,
+      "memory_accesses": 37136,
+      "threads": 256
+    },
+    "eliminated_synchronization": [
+      {
+        "barrier": 12,
+        "barrier_kind": "mbarrier",
+        "count": 64,
+        "file": "corpus/flashinfer__xqa_standard__input_bf16_kv_fp8_page32_head128_group8_sliding0__sm_100a.ptx",
+        "line": 4766
+      },
+      {
+        "barrier": 8,
+        "barrier_kind": "mbarrier",
+        "count": 64,
+        "file": "corpus/flashinfer__xqa_standard__input_bf16_kv_fp8_page32_head128_group8_sliding0__sm_100a.ptx",
+        "line": 5173
+      }
+    ],
     "equivalence": {
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 23641,
+      "blocked_stage": "right_import_s",
+      "comparison_elapsed_seconds": 0.200392488,
+      "context_declaration": {
+        "assumptions": [
+          {
+            "input": "kvCachePageList",
+            "interpretation": "s32",
+            "interval": {
+              "lower": "0",
+              "lower_inclusive": true,
+              "upper": "0",
+              "upper_inclusive": true
+            },
+            "kind": "input_elements",
+            "reason": "tensor_properties"
+          }
+        ],
+        "fixed_inputs": [
+          {
+            "coordinates": [
+              "0",
+              "0"
+            ],
+            "input": "seqLenList",
+            "interpretation": "u32",
+            "reason": "current verified fixed-read-only input; input sha256=b647ff13b43d6e07c999018c5e5111992cf6ddca70c23b4a12c78696af9a91c0; provenance sha256=6bc50bcf81ea811988f3032972d773c91b0cb64db9b1f2594d57ae5f9a13db59",
+            "value": "32"
+          }
+        ],
+        "inputs": [],
+        "predicate_nodes": []
+      },
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 34418,
+        "affine_state_banks": 1,
+        "constant_binary32_bitcasts": 320,
+        "coordinate_digit_node_visits": 262,
+        "disjoint_integer_or_fields": 30,
+        "finite_bilinear_banks": 1,
+        "finite_state_reuse_banks": 1,
+        "fp_idiom_numeric_replacements": 1,
+        "fp_idiom_power_constructions": 64,
+        "fp_idiom_power_instances": 1,
+        "fp_idiom_rm_producers": 64,
+        "fp_idiom_rounding_instances": 1,
+        "ideal_additive_compiler_exp_sequences": 0,
+        "ideal_compiler_exp_sequences": 0,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_single_constant_exp_sequences": 0,
+        "imported_context_nodes": 30398,
+        "importer_scope_banks": 2,
+        "importer_scope_binder_hits": 9474,
+        "importer_scope_binders_created": 4,
+        "importer_scope_leaf_lookups": 9478,
+        "importer_scope_nested_body_fallbacks": 4,
+        "input_index_radix_quotients": 6,
+        "intern_requests": 110974,
+        "known_bits_cache_hits": 1279,
+        "known_bits_edges": 335,
+        "known_bits_nodes": 609,
+        "maximum_dominated_operands": 1,
+        "packed_radix_probes": 6,
+        "packed_radix_rewrites": 6,
+        "predicate_integer_affine_normalizations": 640,
+        "proved_select_arms_imported": 32,
+        "select_complementary_polarities": 608,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_calls": 608,
+        "select_max_probe_temporary_nodes": 0,
+        "signed_input_transport_reads": 1,
+        "symbolic_byte_reads_without_extent_proof": 0
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 0,
+        "status": "not_proven"
+      },
       "diagnostics": [
         {
-          "code": "prerequisite_check_not_passed",
-          "details": {
-            "prerequisite_checks": {
-              "equivalence": "not_run",
-              "memory": "not_run",
-              "synchronization": "not_run"
-            },
-            "prerequisite_diagnostics": [
-              {
-                "code": "control_predicate_not_static",
-                "details": {
-                  "location": {
-                    "column": 0,
-                    "file": "corpus/flashinfer__xqa_standard__input_bf16_kv_fp8_page32_head128_group8_sliding0__sm_100a.ptx",
-                    "line": 5209
-                  },
-                  "required_parameters": []
-                },
-                "message": "control predicate is not statically determined",
-                "stage": "ptx_execution"
-              }
-            ],
-            "prerequisite_result": "unsupported"
-          },
-          "stage": "equivalence_check"
+          "code": "expression_form_unsupported",
+          "details": {},
+          "message": "nonconstant mask",
+          "stage": "right_import_s"
         }
-      ]
+      ],
+      "elapsed_s": 0.098830548,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "query_count": 0,
+        "reset_s": 0.0,
+        "reuse_cache": true,
+        "shared_evictions": 0
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 1,
+        "fixed_input_elements": 1,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 0,
+      "finished_families": 0,
+      "fixed_input_context": {
+        "applied": [],
+        "applied_elements": 0,
+        "configured": [
+          {
+            "coordinates": [
+              "0",
+              "0"
+            ],
+            "input": "seqLenList",
+            "interpretation": "u32",
+            "reason": "current verified fixed-read-only input; input sha256=b647ff13b43d6e07c999018c5e5111992cf6ddca70c23b4a12c78696af9a91c0; provenance sha256=6bc50bcf81ea811988f3032972d773c91b0cb64db9b1f2594d57ae5f9a13db59",
+            "value": "32"
+          }
+        ],
+        "configured_elements": 1
+      },
+      "idealizations_applied": [],
+      "input_contract": [
+        {
+          "element_type": "s32",
+          "max_inclusive": 0,
+          "min_inclusive": 0,
+          "object": "kvCachePageList",
+          "region": "whole_object",
+          "source": "tensor_properties"
+        }
+      ],
+      "input_contract_applied_reads": [
+        {
+          "element_type": "s32",
+          "object": "kvCachePageList",
+          "side": "left"
+        }
+      ],
+      "legacy_scalar_fallback": false,
+      "mapping_input_memory_constraints": {},
+      "native_context": {
+        "elements": 1,
+        "input_sha256": "b647ff13b43d6e07c999018c5e5111992cf6ddca70c23b4a12c78696af9a91c0",
+        "kind": "verified_current_fixed_input",
+        "provenance_sha256": "6bc50bcf81ea811988f3032972d773c91b0cb64db9b1f2594d57ae5f9a13db59"
+      },
+      "normalized_reachable_nodes": 0,
+      "numerical_result": "unsupported",
+      "pattern_nodes": 2,
+      "peak_rss_kib": 2290372,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 0,
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        155,
+        37075
+      ],
+      "reference_term_patterns": 0,
+      "row_groups": [
+        {
+          "count": 1,
+          "families": [
+            [
+              0,
+              0
+            ]
+          ],
+          "record": {},
+          "timing_s": {
+            "left_import_s": 0.00044392400000000005
+          }
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 0.0,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.00044392400000000005,
+        "left_normalize_s": 0.0,
+        "parametric_state_s": 0.0,
+        "piece_union_record_s": 0.0,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 0.0,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 0.0,
+        "right_normalize_s": 0.0,
+        "state_pattern_s": 0.0
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.007329202
+      },
+      "total_output_families": 16,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
     },
     "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 1,
+      "cta_wide_exit_gates": {
+        "gates": 128,
+        "phases": 1
+      },
+      "dependency_compression": {
+        "cp_async_mbarrier": {
+          "consumers": 320,
+          "emitted_references": 2176,
+          "original_references": 2304,
+          "prefix_effects": 320
+        },
+        "cp_async_wait": {
+          "consumers": 32,
+          "emitted_references": 576,
+          "original_references": 576,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "executed_records": 332335,
       "frontend_assumptions": {
         "assertion_failure_forms": [
           "trap",
@@ -179,9 +520,18 @@
           ],
           "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
         },
-        "tensor_property_decisions": [],
+        "tensor_property_decisions": [
+          {
+            "lines": [
+              265,
+              4397
+            ],
+            "object": "kvCachePageList"
+          }
+        ],
         "trap_only_equality_assertions_hold": true
       },
+      "implementation": "cpp",
       "input_objects": [
         {
           "bytes": 8,
@@ -247,114 +597,396 @@
           "source": "declaration"
         }
       ],
-      "required_parameters": [],
-      "user_branch_decisions": []
+      "lowered_instruction_count": 29907,
+      "reached_opcodes": {
+        "add.f32": 416,
+        "add.rn.bf16x2": 2048,
+        "add.s32": 27936,
+        "add.s64": 14517,
+        "add.u64": 1024,
+        "and.b16": 8320,
+        "and.b32": 11328,
+        "and.b64": 128,
+        "bar.sync": 896,
+        "bra": 8017,
+        "bra.uni": 101,
+        "cp.async.cg.shared.global": 4352,
+        "cp.async.commit_group": 160,
+        "cp.async.mbarrier.arrive.noinc.shared.b64": 320,
+        "cp.async.wait_group": 32,
+        "createpolicy.fractional.L2::evict_last.b64": 256,
+        "cvt.f32.f16": 16384,
+        "cvt.rn.bf16.f32": 64,
+        "cvt.rn.bf16.s32": 128,
+        "cvt.rn.bf16x2.f32": 2592,
+        "cvt.rn.f16x2.e4m3x2": 16384,
+        "cvt.rz.bf16.f32": 16384,
+        "cvt.sat.f32.f32": 352,
+        "cvt.u16.u32": 24704,
+        "cvt.u32.u16": 288,
+        "cvt.u64.u32": 10631,
+        "cvta.shared.u64": 775,
+        "cvta.to.global.u64": 896,
+        "ex2.approx.f32": 1024,
+        "ex2.approx.ftz.f32": 352,
+        "fma.rm.f32": 352,
+        "fma.rn.f32": 1216,
+        "griddepcontrol.launch_dependents": 256,
+        "griddepcontrol.wait": 256,
+        "ld.global.b32": 128,
+        "ld.global.nc.L1::evict_last.L2::cache_hint.L2::256B.b32": 256,
+        "ld.local.b32": 4096,
+        "ld.param.b32": 2048,
+        "ld.param.b64": 2816,
+        "ld.shared.b32": 512,
+        "ld.shared.v2.b32": 128,
+        "ld.shared.v4.b32": 800,
+        "ldmatrix.sync.aligned.m8n8.x4.shared.b16": 1024,
+        "ldmatrix.sync.aligned.m8n8.x4.trans.shared.b16": 512,
+        "mad.lo.s32": 768,
+        "max.f32": 1472,
+        "max.u32": 704,
+        "mbarrier.arrive.release.cta.b64": 544,
+        "mbarrier.init.b64": 15,
+        "mbarrier.test_wait.parity.acquire.cta.b64": 128,
+        "mbarrier.try_wait.parity.acquire.cta.b64": 480,
+        "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32": 4224,
+        "mov.b16": 512,
+        "mov.b32": 25934,
+        "mov.b64": 4864,
+        "mov.pred": 64,
+        "mov.u32": 2368,
+        "mul.f32": 13248,
+        "mul.lo.s32": 2752,
+        "mul.wide.u32": 5130,
+        "neg.f32": 352,
+        "not.b32": 192,
+        "not.pred": 64,
+        "or.b32": 5920,
+        "or.pred": 288,
+        "rcp.rn.f32": 128,
+        "ret": 256,
+        "rsqrt.approx.f32": 128,
+        "selp.b16": 192,
+        "selp.b32": 9696,
+        "selp.f32": 1024,
+        "setp.eq.b16": 256,
+        "setp.eq.b32": 768,
+        "setp.eq.b64": 640,
+        "setp.ge.u32": 2080,
+        "setp.gt.f32": 64,
+        "setp.gt.u32": 1051,
+        "setp.lt.s32": 4096,
+        "setp.lt.u32": 5216,
+        "setp.ne.b32": 1408,
+        "setp.ne.b64": 4224,
+        "setp.neu.f32": 64,
+        "shfl.sync.bfly.b32": 256,
+        "shfl.sync.idx.b32": 1536,
+        "shl.b32": 13408,
+        "shl.b64": 640,
+        "shr.u16": 4096,
+        "shr.u32": 13248,
+        "st.global.v4.b32": 128,
+        "st.local.b32": 352,
+        "st.local.b64": 1024,
+        "st.local.v2.b32": 352,
+        "st.shared.b32": 672,
+        "st.shared.v2.b32": 256,
+        "st.shared.v4.b16": 1024,
+        "st.shared.v4.b32": 272,
+        "stmatrix.sync.aligned.m8n8.x4.shared.b16": 128,
+        "sub.f32": 1376,
+        "sub.s32": 704,
+        "sub.s64": 4,
+        "vote.sync.ballot.b32": 128,
+        "xor.b16": 160,
+        "xor.b32": 6048
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 13,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 29907,
+        "stored_bindings": 6166
+      },
+      "source_edge_storage": {
+        "binding_templates": 333,
+        "logical_edges": 29651,
+        "stored_bindings": 333
+      },
+      "thread_count": 256,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": [
+        {
+          "line": 5209,
+          "note": "Always take the O-rescale path at the needRescaleMask warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice.",
+          "taken": false
+        },
+        {
+          "line": 7983,
+          "note": "Always take the O-rescale path at the needRescaleMask warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice.",
+          "taken": false
+        }
+      ]
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      },
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 1,
+        "edge_visits": 2081,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 130,
+          "family_requests": 8,
+          "logical_orders": 128,
+          "owner_bindings": 8,
+          "stored_orders": 2
+        }
+      }
     },
     "implementation": "cpp",
-    "location": {
-      "column": 0,
-      "file": "corpus/flashinfer__xqa_standard__input_bf16_kv_fp8_page32_head128_group8_sliding0__sm_100a.ptx",
-      "line": 5209
+    "memory_analysis": {
+      "address_candidates": 33150,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 16486,
+        "affine_member_rows": 21669,
+        "candidate_relations": 21885,
+        "hb_frontier_pieces": 23359,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 37136
+      },
+      "hb_algorithm": "member-relations",
+      "hb_batches": 53,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 753092,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 33150,
+      "hb_query_seconds": 0.148903265,
+      "overlap_queries": 0,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 0
     },
-    "memory_analysis_complete": false,
-    "peak_footprint_mib": 321.03515625,
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 2224.609375,
+    "required_order_domains": 2,
+    "required_orders": 128,
+    "search_complete": true,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": true,
       "representative_branches": false,
       "representative_election": true
     },
     "semantic_program": {
-      "execution_cohorts": 0,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
-      "memory_linking_templates_used": false,
-      "synchronization_groups": 0,
-      "synchronization_groups_materialized": false,
-      "synthetic_synchronization_nodes": 0,
-      "thread_prefix_groups": 0
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 23,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 28398,
+      "memory_binding_templates": 1749,
+      "memory_bindings": 31104,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 1408,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 52,
+      "thread_prefix_groups": 768956,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
-    "stage": "ptx_execution",
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
     "template_execution": {
-      "completed_ctas": 0,
+      "completed_ctas": 1,
       "coordinate_bindings": 0,
-      "logical_thread_steps": 0,
-      "path_entries": 0,
-      "record_bindings": 0,
-      "record_nodes": 0,
-      "splits": 0,
-      "template_steps": 0,
-      "thread_memberships": 0,
-      "value_nodes": 0
+      "logical_thread_steps": 335129,
+      "path_entries": 26127,
+      "record_bindings": 30927,
+      "record_nodes": 18282,
+      "splits": 11,
+      "template_steps": 18420,
+      "thread_memberships": 256,
+      "value_nodes": 17525
     },
     "thread_record_compression": {
-      "completed_ctas": 0,
+      "completed_ctas": 1,
       "enabled": true,
       "estimated_pool_bytes_sum": 0,
       "intern_calls": 0,
-      "logical_records": 0,
+      "logical_records": 332335,
       "record_handle_bytes": 32,
       "templates": 0,
       "unique_bindings": 0
     },
+    "unresolved_count": 0,
     "value_analysis": {
-      "diagnostics": [
+      "diagnostics": [],
+      "duplicate_write_value_checks": 0,
+      "equivalence_check": "translation_or_supported_fragment_blocked",
+      "initial_memory_regions": 650,
+      "initial_read_families": 1047,
+      "memory_action_storage": {
+        "logical_actions": 31104,
+        "stored_runs": 28514
+      },
+      "output_region_families": 0,
+      "output_regions": 512,
+      "passes": [
         {
-          "code": "prerequisite_check_not_passed",
-          "details": {
-            "prerequisite_checks": {
-              "equivalence": "not_run",
-              "memory": "not_run",
-              "synchronization": "not_run"
-            },
-            "prerequisite_diagnostics": [
-              {
-                "code": "control_predicate_not_static",
-                "details": {
-                  "location": {
-                    "column": 0,
-                    "file": "corpus/flashinfer__xqa_standard__input_bf16_kv_fp8_page32_head128_group8_sliding0__sm_100a.ptx",
-                    "line": 5209
-                  },
-                  "required_parameters": []
-                },
-                "message": "control predicate is not statically determined",
-                "stage": "ptx_execution"
-              }
-            ],
-            "prerequisite_result": "unsupported",
-            "prerequisite_status": "ptx_execution_unsupported"
-          },
-          "stage": "pipeline"
+          "name": "packing",
+          "rewritten_instances": 65920,
+          "rewritten_nodes": 45320,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 507840,
+          "name": "type_edges",
+          "removed_nodes": 282991
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 4036,
+          "layouts": 0,
+          "mapping_blocks": 15744,
+          "name": "view_normalization",
+          "original_pieces": 4096,
+          "reused_initial_reads": 694,
+          "reused_views": 1407,
+          "segmented": 3584,
+          "slices": 8576,
+          "stored_mapping_blocks": 14337,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
         }
       ],
-      "equivalence_check": "blocked",
-      "prerequisite_status": "ptx_execution_unsupported",
+      "processed_memory_actions": 31104,
+      "processed_memory_families": 0,
+      "read_substitutions": 17280,
       "scalar_fold": {
-        "diagnostics": [
-          {
-            "code": "memory_elimination_not_completed",
-            "stage": "pipeline"
-          }
-        ]
-      }
+        "construction_collections": 0,
+        "diagnostics": [],
+        "output_count": 512,
+        "output_families_merged": 504,
+        "output_family_count": 8,
+        "output_root_count": 8,
+        "peak_construction_nodes": 239766,
+        "shared_view_projection_hits": 130925,
+        "source_outputs": 512,
+        "spatial_families_projected": 0,
+        "spatial_outputs_projected": 0,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 1276,
+          "edges": 70957,
+          "folds": 4737,
+          "indices": 2,
+          "initial_cells": 1353,
+          "logical_iterations": 19008,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 1,
+          "nodes": 37066,
+          "nodes_before_final_collection": 239766,
+          "nodes_reclaimed": 202700,
+          "operations": 29698,
+          "parameters": 0,
+          "range_descriptions": 4737,
+          "storage_nodes": 37066,
+          "unique_fold_bodies": 4737
+        }
+      },
+      "serialization": {
+        "action_patterns": 28514,
+        "binding_patterns": 28398,
+        "domain_refinements": 228048,
+        "elapsed_seconds": 2.702034848,
+        "event_families": 675464,
+        "expanded_event_records": 0,
+        "largest_batch_members": 96,
+        "logical_actions": 31104,
+        "logical_events": 1336722,
+        "peak_rss_mib_at_completion": 1807.203125,
+        "reachability_queries": 0,
+        "relations": 994153,
+        "rss_mib_at_completion": 1317.9453125,
+        "scheduled_batches": 675464,
+        "singleton_batches": 545682,
+        "value_families": 652407
+      },
+      "shared_read_families": 50,
+      "shared_read_instances": 390,
+      "stored_read_substitutions": 16890
     },
-    "value_ir_instance_count": 0,
-    "value_ir_node_count": 0,
-    "value_view_complete": false
+    "value_ir_instance_count": 797762,
+    "value_ir_node_count": 380184,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 2.760848707,
+    "verification_result": "race_free"
   },
-  "peak_rss_mib": 321.03515625,
-  "pipeline_elapsed_seconds": 1.771523889,
+  "peak_rss_mib": 2236.69140625,
+  "pipeline_elapsed_seconds": 19.681978915,
   "result": "unsupported",
   "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
+  "verification_limitations": [],
+  "warning_count": 0,
+  "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.504
+  "whole_pipeline_timeout_seconds": 498.503
 }

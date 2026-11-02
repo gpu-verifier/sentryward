@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -196,35 +204,19 @@
       "address_value_bridge": {
         "diagnostics": [
           {
-            "code": "two_arm_merge_values",
+            "code": "tma_data_dependent_coordinate",
             "details": {
               "cta": 0,
-              "instruction": "@%p38 bra \t$L__BB0_58;",
-              "instruction_index": 2779,
+              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes [%r3562], [%rd1062, {%r3563, %r3564, %r3563, %r3746}], [%r3560];",
+              "instruction_index": 4682,
               "location": {
                 "file": "corpus/flashinfer__cake_vsa__ultrasparse_bsr__sm_100a.ptx",
-                "line": 6054
+                "line": 9389
               },
               "occurrence": 0,
-              "thread": 256
+              "thread": 480
             },
-            "message": "Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); values after its join are not exported",
-            "stage": "value_lowering"
-          },
-          {
-            "code": "unknown_execution_predicate",
-            "details": {
-              "cta": 0,
-              "instruction": "@%p38 bra \t$L__BB0_58;",
-              "instruction_index": 2779,
-              "location": {
-                "file": "corpus/flashinfer__cake_vsa__ultrasparse_bsr__sm_100a.ptx",
-                "line": 6054
-              },
-              "occurrence": 0,
-              "thread": 256
-            },
-            "message": "The active instruction path is not fixed",
+            "message": "TMA tile coordinate %r3564 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
             "stage": "value_lowering"
           }
         ],
@@ -462,14 +454,14 @@
     },
     "hb_queries": {
       "memory": {
-        "algorithm": "event-family-relations",
-        "batches": 172,
-        "cache_hits": 5,
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
         "dfs_queries": 0,
-        "edge_visits": 1087212898,
-        "filtered_queries": 414567,
-        "queries": 11272192,
-        "shared_peak_index_bytes": 16777216
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
       },
       "required_orders": {
         "algorithm": "member-relations",
@@ -488,7 +480,7 @@
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 11272192,
+      "address_candidates": 608,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -504,24 +496,32 @@
       },
       "candidate_generation_fallback": false,
       "exhaustive": false,
-      "first_race_seconds": 108.201666342,
-      "hb_algorithm": "event-family-relations",
-      "hb_batches": 172,
-      "hb_cache_hits": 5,
+      "family_analysis": {
+        "access_families": 71451,
+        "affine_member_rows": 0,
+        "candidate_relations": 77,
+        "hb_frontier_pieces": 505,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 960229
+      },
+      "first_race_seconds": 0.29998535,
+      "hb_algorithm": "member-relations",
+      "hb_batches": 1,
+      "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 1087212898,
-      "hb_filtered_queries": 414567,
-      "hb_peak_index_bytes": 16777216,
-      "hb_queries": 11272192,
-      "hb_query_seconds": 105.27234988000001,
+      "hb_edge_visits": 111851,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 608,
+      "hb_query_seconds": 0.02058517,
       "overlap_queries": 1,
-      "strategy": "conflict-first",
+      "strategy": "conflict-family",
       "unordered_candidates_examined": 1
     },
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 766.20703125,
+    "peak_footprint_mib": 803.11328125,
     "required_order_domains": 19193,
     "required_orders": 611200,
     "search_complete": false,
@@ -529,6 +529,7 @@
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
@@ -538,7 +539,7 @@
       "binding_diagnostics": [
         {
           "code": "incomplete_value_semantics",
-          "message": "two_arm_merge_values: Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); values after its join are not exported"
+          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r3564 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
         }
       ],
       "execution_cohorts": 21,
@@ -550,18 +551,13 @@
       "synchronization_groups": 2311,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 321,
-      "thread_prefix_groups": 8147,
-      "value_diagnostic_count": 2,
+      "thread_prefix_groups": 7698,
+      "value_diagnostic_count": 1,
       "value_diagnostics": [
         {
-          "code": "two_arm_merge_values",
-          "line": 6054,
-          "message": "Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); values after its join are not exported"
-        },
-        {
-          "code": "unknown_execution_predicate",
-          "line": 6054,
-          "message": "The active instruction path is not fixed"
+          "code": "tma_data_dependent_coordinate",
+          "line": 9389,
+          "message": "TMA tile coordinate %r3564 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
         }
       ]
     },
@@ -633,12 +629,12 @@
         ]
       }
     },
-    "value_ir_instance_count": 133933,
-    "value_ir_node_count": 7217,
+    "value_ir_instance_count": 87742,
+    "value_ir_node_count": 6788,
     "value_view_complete": false
   },
-  "peak_rss_mib": 766.20703125,
-  "pipeline_elapsed_seconds": 116.710007797,
+  "peak_rss_mib": 803.11328125,
+  "pipeline_elapsed_seconds": 7.903749086,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -650,5 +646,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.474
+  "whole_pipeline_timeout_seconds": 498.483
 }
