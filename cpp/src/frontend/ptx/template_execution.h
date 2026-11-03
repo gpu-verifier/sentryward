@@ -7,6 +7,24 @@
 #include <unordered_set>
 
 namespace sentryward::frontend::ptx::detail {
+// One thread's private template values (PrivateTemplateValues, execution.h): per arena, per member
+// value caches that shadow the arena's own, which are then only read; and private copies of the
+// evaluators' scratch state (PrivateScratch). Both are memos of pure values, so a read returns
+// what it returns without them.
+struct TemplateOverlay {
+  std::unordered_map<const void*,std::vector<std::unordered_map<std::size_t,Scalar>>> caches;
+  std::unordered_map<const void*,std::shared_ptr<void>> scratch;
+};
+inline thread_local TemplateOverlay* template_overlay=nullptr;
+// The calling thread's copy of an evaluator's scratch state while it holds an overlay (copied from
+// `shared` at its first use; an evaluation resets every register the previous one set), else `shared`.
+template<class T> T& PrivateScratch(T& shared) {
+  auto* overlay=template_overlay;
+  if(!overlay)return shared;
+  auto& slot=overlay->scratch[&shared];
+  if(!slot)slot=std::make_shared<T>(shared);
+  return *std::static_pointer_cast<T>(slot);
+}
 struct TemplateFallback {};
 struct TemplatePending {};
 struct TemplateExchange {
@@ -99,25 +117,43 @@ struct TemplateArena {
     }
     node.uniform=std::move(first);
   }
+  using MemberCaches=std::vector<std::unordered_map<std::size_t,Scalar>>;
+  // The member caches a read fills: the calling thread's own while it holds a TemplateOverlay
+  // (the arena's are then only read, by every thread), else the arena's.
+  MemberCaches& WritableCaches() {
+    auto* overlay=template_overlay;
+    if(!overlay)return caches;
+    auto& own=overlay->caches[this];
+    if(own.size()!=caches.size())own.resize(caches.size());
+    return own;
+  }
+  // `value` of `member`, if computed: in `writable`, else (an overlay's) in the arena's caches.
+  const Scalar* Cached(const MemberCaches& writable,std::size_t member,std::size_t value) const {
+    if(const auto found=writable[member].find(value);found!=writable[member].end())return &found->second;
+    if(&writable!=&caches)
+      if(const auto found=caches[member].find(value);found!=caches[member].end())return &found->second;
+    return nullptr;
+  }
   const Scalar &Value(std::size_t id, std::size_t thread) {
     if (values[id].uniform) return *values[id].uniform;
+    auto& writable=WritableCaches();
     std::vector<std::pair<std::size_t,std::size_t>> pending{{id,thread}};
     std::size_t steps=0;
     while (!pending.empty()) {
       if ((steps++&1023)==0 && poll) poll();
       const auto [current,member]=pending.back();
-      auto& cache=caches.at(member);
-      if (cache.contains(current)) {pending.pop_back(); continue;}
+      auto& cache=writable.at(member);
+      if (Cached(writable,member,current)) {pending.pop_back(); continue;}
       const auto &node=values[current];
       if (node.uniform) cache[current]=*node.uniform;
       else if(node.member_value)cache[current]=node.member_value(member);
       else if (!node.coordinates.empty()) cache[current]=node.coordinates.at(member);
       else {
         bool ready=true;
-        for (auto operand:node.operands) if (!values[operand].uniform && !cache.contains(operand)) {pending.emplace_back(operand,member); ready=false;}
+        for (auto operand:node.operands) if (!values[operand].uniform && !Cached(writable,member,operand)) {pending.emplace_back(operand,member); ready=false;}
         if (!ready) continue;
         std::vector<Scalar> inputs; inputs.reserve(node.operands.size());
-        for (auto operand:node.operands) inputs.push_back(values[operand].uniform ? *values[operand].uniform : cache.at(operand));
+        for (auto operand:node.operands) inputs.push_back(values[operand].uniform ? *values[operand].uniform : *Cached(writable,member,operand));
         if(node.vote) {
           const auto actor=std::get<Integer>(inputs.at(0)).convert_to<std::uint32_t>();
           const auto integer=[](const Scalar& value)->std::optional<Integer> {
@@ -134,8 +170,7 @@ struct TemplateArena {
             bool complete=true,unknown=false,unequal=false;
             const auto lookup=[&](std::size_t value,std::size_t peer)->const Scalar* {
               if(values[value].uniform)return &*values[value].uniform;
-              auto entry=caches[peer].find(value);
-              if(entry!=caches[peer].end())return &entry->second;
+              if(const auto* entry=Cached(writable,peer,value))return entry;
               pending.emplace_back(value,peer);complete=false;return nullptr;
             };
             const Scalar* own=nullptr;
@@ -184,14 +219,14 @@ struct TemplateArena {
             const auto source=node.exchange->Source(source_member);
             if(!source)throw TemplatePending{};
             if(values[*source].uniform)cache[current]=*values[*source].uniform;
-            else if(auto found=caches[source_member].find(*source);found!=caches[source_member].end())cache[current]=found->second;
+            else if(const auto* found=Cached(writable,source_member,*source))cache[current]=*found;
             else {pending.emplace_back(*source,source_member);continue;}
           }
         } else cache[current]=node.evaluate(inputs);
       }
       pending.pop_back();
     }
-    return caches.at(thread).at(id);
+    return *Cached(writable,thread,id);
   }
   std::size_t Constant(Scalar value) {
     if (std::holds_alternative<std::monostate>(value) && !values.empty()) return 0;
@@ -274,8 +309,8 @@ struct TemplateArena {
     // 8192 + 2048, so at least 2048 insertions separate two scans (amortized
     // O(1) per insertion instead of a full scan on every Read once a cache
     // holds its reused values). The cache is a memo of pure values, so
-    // the policy changes no result.
-    auto& cache=caches.at(thread);
+    // the policy changes no result. Only the caches this read fills are evicted.
+    auto& cache=WritableCaches().at(thread);
     if (cache.size() > 8192 + 2048) {
       std::vector<std::size_t> ids;
       ids.reserve(cache.size());

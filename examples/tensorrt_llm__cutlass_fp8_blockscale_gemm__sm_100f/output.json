@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -74,19 +82,19 @@
       {
         "first": {
           "access_index": 0,
-          "actor": 0,
-          "bytes": 4,
+          "actor": 1,
+          "bytes": 8,
           "effect_index": 0,
           "endpoint": {
-            "address": 30,
+            "address": 33,
             "kind": "memory"
           },
-          "event": 61,
-          "instruction": 30,
+          "event": 852,
+          "instruction": 208,
           "location": {
             "column": 2,
             "file": "corpus/tensorrt_llm__cutlass_fp8_blockscale_gemm__sm_100f.ptx",
-            "line": 21572
+            "line": 21575
           },
           "mode": "write"
         },
@@ -95,23 +103,23 @@
           "address_space": "shared",
           "allocation": "cta:(0, 0, 0):shared:physical.shared.cta.0",
           "bytes": 4,
-          "offset": 61440
+          "offset": 61824
         },
         "second": {
           "access_index": 0,
-          "actor": 32,
+          "actor": 0,
           "bytes": 4,
-          "effect_index": 0,
+          "effect_index": 1,
           "endpoint": {
-            "address": 30,
+            "address": 33,
             "kind": "memory"
           },
-          "event": 25181,
-          "instruction": 5630,
+          "event": 129,
+          "instruction": 46,
           "location": {
             "column": 2,
             "file": "corpus/tensorrt_llm__cutlass_fp8_blockscale_gemm__sm_100f.ptx",
-            "line": 21572
+            "line": 21730
           },
           "mode": "write"
         }
@@ -393,7 +401,7 @@
         "hb_member_enumerations": 0,
         "logical_accesses": 56704
       },
-      "first_race_seconds": 0.01983081,
+      "first_race_seconds": 0.02151359,
       "hb_algorithm": "member-relations",
       "hb_batches": 1,
       "hb_cache_hits": 0,
@@ -402,15 +410,15 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 213888,
-      "hb_query_seconds": 0.009865359,
-      "overlap_queries": 1,
+      "hb_query_seconds": 0.010369273,
+      "overlap_queries": 549,
       "strategy": "conflict-family",
-      "unordered_candidates_examined": 1
+      "unordered_candidates_examined": 549
     },
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 148.79296875,
+    "peak_footprint_mib": 148.6953125,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": false,
@@ -418,6 +426,7 @@
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
@@ -510,8 +519,8 @@
     "value_ir_node_count": 31872,
     "value_view_complete": true
   },
-  "peak_rss_mib": 153.28125,
-  "pipeline_elapsed_seconds": 0.326496586,
+  "peak_rss_mib": 177.13671875,
+  "pipeline_elapsed_seconds": 0.337809135,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -523,5 +532,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.53
+  "whole_pipeline_timeout_seconds": 498.528
 }

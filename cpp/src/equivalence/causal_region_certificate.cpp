@@ -1,21 +1,15 @@
 #include "sentryward/equivalence/causal_region_certificate.h"
 #include "sentryward/equivalence/epoch_work_allowance.h"
+#include "sentryward/algorithm/base/analysis_scope.h"
 
 #include <algorithm>
-#include <atomic>
 #include <unordered_map>
 
 namespace sentryward::equivalence::causal_region_certificate {
 namespace linear=bounded_linear_reduction;
 namespace {
-std::atomic<std::uint64_t> next_owner{1};
 std::uint64_t allocateOwner() {
-  auto value=next_owner.load();
-  for(;;) {
-    if(!value)return 0;
-    const auto next=value==UINT64_MAX?std::uint64_t{0}:value+1;
-    if(next_owner.compare_exchange_weak(value,next))return value;
-  }
+  return algorithm::AnalysisScope::Current().Next(algorithm::AnalysisScope::Ids::kCausalRegionCertificate);
 }
 Limits bounded(Limits limits) {
   limits.max_nodes=std::min(limits.max_nodes,epoch_work_allowance::maximum_retained_headers);

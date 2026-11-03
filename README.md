@@ -115,7 +115,7 @@ result = verify(
     reference="reference.py",                    # optional
     reference_binding="reference_binding.json",  # optional
     timeout_seconds=500,
-    memory_limit_mib=None,                       # unlimited
+    memory_limit_mib=None,                       # default budget: 90% of the memory the process may use
     assumptions={"order_independent_atomics": True},  # optional
 )
 print(result["result"], result["checks"])
@@ -128,7 +128,7 @@ print(summarize(result), end="")
 | `--reference` | `reference` | Optional. A Python file that defines a `reference(...)` function. |
 | `--reference-binding` | `reference_binding` | Optional. Maps the reference to the kernel's inputs and outputs. Defaults to `reference_binding.json` next to the reference, then in its parent directory. |
 | `--timeout` | `timeout_seconds` | Total budget for the whole call, including reference capture. Default: 600 seconds. |
-| `--memory-limit-mib` | `memory_limit_mib` | Memory budget as a positive integer in MiB, e.g. 81920 for 80 GiB. Default: unlimited. |
+| `--memory-limit-mib` | `memory_limit_mib` | Memory budget as a positive integer in MiB, e.g. 81920 for 80 GiB. Default: 90% of the memory the process may use (physical memory, bounded by its cgroup limit on Linux) for verification, none for reference capture. |
 | `--output` | | Optional. Write the JSON result object to this path. stdout still prints `--format`. |
 | `--format` | `summarize(result)` | Optional. `json` (default) writes the result object to stdout. `summary` writes a compact text listing of `result`, `checks`, diagnostics, and warning counts. |
 | `--fail-on` | | Optional, repeatable. Exit 1 when `result` matches a public category. `findings` selects `not_wellsynced`, `potential_race`, `invalid_lifecycle`, and `equivalence_not_proven`. `any` selects every category other than `verified` and `race_free`. Default exit codes are unchanged. |

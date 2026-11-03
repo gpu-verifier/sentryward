@@ -18,7 +18,7 @@ import time
 
 import ijson
 
-from sentryward.frontend.ptx_native import ROOT, native_executable
+from sentryward.frontend.ptx_native import ROOT, DEFAULT_MEMORY_BUDGET_PERCENT, native_executable
 
 
 TIMEOUTS = {"timeout", "native_timeout", "runner_timeout", "wellsync_timeout"}
@@ -241,6 +241,7 @@ def _file_sha256(path: Path) -> str:
 
 def _native_command(case: Path, ptx: Path, destination: Path, *, timeout: int,
                 wellsync_timeout: int, rss_limit: int | None,
+                default_budget_jobs: int | None = None,
                 analyze_values: bool = False, scalar_fold: bool = False,
                 reference: bytes | None = None, mapping: Path | None = None,
                 reference_provenance: Path | None = None,
@@ -257,6 +258,8 @@ def _native_command(case: Path, ptx: Path, destination: Path, *, timeout: int,
                "--timeout-seconds", format(timeout, "g"), "--report", str(raw)]
     if rss_limit is not None:
         command += ["--rss-limit-mib", str(rss_limit)]
+    if default_budget_jobs is not None:
+        command += ["--default-budget-jobs", str(default_budget_jobs)]
     if analyze_values:
         command.append("--analyze-values")
     if scalar_fold:
@@ -361,10 +364,12 @@ def publish_report(source: Path, destination: Path, root: Path) -> None:
 
 
 def run_case(case: Path, corpus: Path, archive: Path, *, include_timeouts=False,
-             timeout=300, wellsync_timeout=120, rss_limit=None,
+             timeout=300, wellsync_timeout=120, rss_limit=None, default_budget_jobs=None,
              analyze_values: bool = False, check_equivalence: bool = True,
              equivalence_timeout: int = 1200,
              export_expressions: bool = False) -> dict:
+    """`rss_limit` bounds the reference capture and the verifier; without it, `default_budget_jobs`
+    (the verifiers of a parallel run) shares the verifier's native default budget among them."""
     previous = read_result(case)
     if not include_timeouts and previous.get("result") in TIMEOUTS:
         return {"name": case.name, "result": verification_status(previous),
@@ -411,6 +416,7 @@ def run_case(case: Path, corpus: Path, archive: Path, *, include_timeouts=False,
     remaining = max(0.001, timeout - capture_seconds)
     result, process, report = _run_native(case, ptx, destination, timeout=remaining,
                                         wellsync_timeout=wellsync_timeout, rss_limit=rss_limit,
+                                        default_budget_jobs=None if rss_limit is not None else default_budget_jobs,
                                         analyze_values=analyze_values or check_equivalence,
                                         scalar_fold=check_equivalence,
                                         reference=reference, mapping=mapping,
@@ -563,10 +569,16 @@ def main(argv=None) -> int:
     parser.add_argument("--jobs", type=int, default=1)
     parser.add_argument("--timeout", type=int, default=300)
     parser.add_argument("--wellsync-timeout", type=int, default=120)
-    parser.add_argument("--rss-limit", type=int, help="optional positive memory budget in MiB; default: unlimited")
+    parser.add_argument("--rss-limit", type=int,
+                        help="optional positive memory budget in MiB; default: the native default, "
+                             f"{DEFAULT_MEMORY_BUDGET_PERCENT}%% of the memory the process may use (physical "
+                             "memory, bounded by its cgroup limit), shared by the --jobs verifiers")
     args = parser.parse_args(argv)
     if min(args.jobs, args.timeout, args.wellsync_timeout, args.equivalence_timeout) <= 0 or (args.rss_limit is not None and args.rss_limit <= 0):
         parser.error("limits and jobs must be positive")
+    # Each verifier's own default would assume the whole machine: without --rss-limit, parallel
+    # verifiers share the native default budget (--default-budget-jobs); one job passes nothing.
+    default_budget_jobs = args.jobs if args.rss_limit is None and args.jobs > 1 else None
     examples = ROOT / "examples"
     cases = sorted(path for path in examples.iterdir()
                    if path.is_dir() and path.name not in {"_reference", "__pycache__"})
@@ -588,13 +600,17 @@ def main(argv=None) -> int:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     archive = ROOT / "build/artifacts" / ("example-regression-" + stamp)
     archive.mkdir(parents=True)
-    (archive / "selection.json").write_text(json.dumps({"cases": [p.name for p in cases],
+    selection = {"cases": [p.name for p in cases],
         "status_filter": args.status, "timeout_seconds": args.timeout,
-        "rss_limit_mib": args.rss_limit, "equivalence_timeout_seconds": args.equivalence_timeout}, indent=2)+"\n")
+        "rss_limit_mib": args.rss_limit, "equivalence_timeout_seconds": args.equivalence_timeout}
+    if default_budget_jobs is not None:
+        selection["default_budget_jobs"] = default_budget_jobs
+    (archive / "selection.json").write_text(json.dumps(selection, indent=2)+"\n")
     records = []
     def run(case):
         return run_case(case, ROOT / "corpus", archive, include_timeouts=args.include_timeouts,
                         timeout=args.timeout, wellsync_timeout=args.wellsync_timeout, rss_limit=args.rss_limit,
+                        default_budget_jobs=default_budget_jobs,
                         analyze_values=args.analyze_values, check_equivalence=not args.verification_only,
                         equivalence_timeout=args.equivalence_timeout,
                         export_expressions=False)

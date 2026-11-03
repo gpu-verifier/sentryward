@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -81,12 +89,12 @@
             "address": 4,
             "kind": "memory"
           },
-          "event": 266,
-          "instruction": 95,
+          "event": 347,
+          "instruction": 123,
           "location": {
             "column": 2,
             "file": "corpus/flashinfer__norm__fused_add_rmsnorm_bf16__sm_100a.ptx",
-            "line": 617
+            "line": 653
           },
           "mode": "write"
         },
@@ -106,14 +114,14 @@
             "address": 4,
             "kind": "memory"
           },
-          "event": 86,
-          "instruction": 30,
+          "event": 90,
+          "instruction": 32,
           "location": {
             "column": 2,
             "file": "corpus/flashinfer__norm__fused_add_rmsnorm_bf16__sm_100a.ptx",
-            "line": 617
+            "line": 626
           },
-          "mode": "write"
+          "mode": "read"
         }
       }
     ]
@@ -364,7 +372,7 @@
         "hb_member_enumerations": 0,
         "logical_accesses": 3844
       },
-      "first_race_seconds": 0.000673346,
+      "first_race_seconds": 0.000713043,
       "hb_algorithm": "member-relations",
       "hb_batches": 2,
       "hb_cache_hits": 0,
@@ -373,15 +381,15 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 15840,
-      "hb_query_seconds": 0.000256202,
-      "overlap_queries": 1,
+      "hb_query_seconds": 0.000249141,
+      "overlap_queries": 6,
       "strategy": "conflict-family",
-      "unordered_candidates_examined": 1
+      "unordered_candidates_examined": 6
     },
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 26.2421875,
+    "peak_footprint_mib": 34.1328125,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": false,
@@ -389,6 +397,7 @@
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
@@ -481,8 +490,8 @@
     "value_ir_node_count": 1888,
     "value_view_complete": true
   },
-  "peak_rss_mib": 51.6015625,
-  "pipeline_elapsed_seconds": 0.06290889,
+  "peak_rss_mib": 77.01953125,
+  "pipeline_elapsed_seconds": 0.068716478,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -494,5 +503,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.528
+  "whole_pipeline_timeout_seconds": 498.535
 }

@@ -1,3 +1,4 @@
+#include "sentryward/algorithm/base/analysis_scope.h"
 #include "sentryward/algorithm/diagnostics/development_trace.h"
 #include "sentryward/equivalence/egraph.h"
 #include "sentryward/equivalence/float_from_chars.h"
@@ -22,7 +23,6 @@
 #include "sentryward/equivalence/scoped_work_budget.h"
 
 #include <algorithm>
-#include <atomic>
 #include <bit>
 #include <charconv>
 #include <cmath>
@@ -6510,11 +6510,7 @@ class Engine {
       bool operator()(const Context& a,const Context& b) const {return owner->lessContext(a,b);}
     };
     static std::uint64_t nextContextEpoch() {
-      static std::atomic<std::uint64_t> next{1};auto value=next.load(std::memory_order_relaxed);
-      for(;;) {
-        if(!value)throw std::overflow_error("scoped context epoch overflow");
-        if(next.compare_exchange_weak(value,value+1,std::memory_order_relaxed))return value;
-      }
+      return algorithm::AnalysisScope::Current().Next(algorithm::AnalysisScope::Ids::kEGraphContext);
     }
     static constexpr std::size_t default_retained_records=4096,max_depth=8;
     BodyHeadIndex& heads;

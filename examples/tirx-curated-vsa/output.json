@@ -5,29 +5,29 @@
   },
   "diagnostics": [
     {
-      "code": "timeout",
+      "code": "process_memory_budget_exceeded",
       "details": {
-        "cta_progress": 1,
-        "internal_stage": "value_view_construction",
+        "internal_stage": "ptx_execution.cta94",
+        "peak_rss_mib": 85419.91796875,
         "resource": {
-          "kind": "time",
-          "limit": 498.511,
-          "origin": "configured_budget",
-          "unit": "seconds"
-        }
+          "kind": "memory",
+          "limit": 85274.0,
+          "origin": "default_budget",
+          "unit": "MiB"
+        },
+        "rss_limit_mib": null
       },
-      "stage": "equivalence"
+      "stage": "synchronization"
     }
   ],
-  "elapsed_seconds": 498.610912173,
+  "elapsed_seconds": 490.184124133,
   "internal": {
-    "active_stage": "semantic_ir.cta1",
+    "active_stage": "ptx_execution.cta94",
     "equivalence": {
       "diagnostics": [
         {
           "code": "prerequisite_check_not_passed",
           "details": {
-            "cta_progress": 1,
             "prerequisite_checks": {
               "equivalence": "not_run",
               "memory": "not_run",
@@ -35,40 +35,41 @@
             },
             "prerequisite_diagnostics": [
               {
-                "code": "timeout",
+                "code": "process_memory_budget_exceeded",
                 "details": {
-                  "cta_progress": 1,
+                  "peak_rss_mib": 85419.91796875,
                   "resource": {
-                    "kind": "time",
-                    "limit": 498.511,
-                    "origin": "configured_budget",
-                    "unit": "seconds"
-                  }
+                    "kind": "memory",
+                    "limit": 85274.0,
+                    "origin": "default_budget",
+                    "unit": "MiB"
+                  },
+                  "rss_limit_mib": null
                 },
-                "stage": "value_view_construction"
+                "stage": "ptx_execution.cta94"
               }
             ],
-            "prerequisite_result": "timeout",
-            "prerequisite_status": "timeout"
+            "prerequisite_result": "memory_budget_exceeded",
+            "prerequisite_status": "memory_limit_exceeded"
           },
-          "stage": "value_view_construction"
+          "stage": "ptx_execution.cta94"
         }
       ],
-      "prerequisite_status": "timeout",
-      "stage": "semantic_ir.cta1"
+      "prerequisite_status": "memory_limit_exceeded",
+      "stage": "ptx_execution.cta94"
     },
     "implementation": "cpp",
     "memory_analysis_complete": false,
-    "peak_footprint_mib": 24755.30078125
+    "peak_footprint_mib": 85419.9609375
   },
-  "peak_rss_mib": 24755.30078125,
+  "peak_rss_mib": 85419.91796875,
   "resource": {
-    "kind": "time",
-    "limit": 498.511,
-    "origin": "configured_budget",
-    "unit": "seconds"
+    "kind": "memory",
+    "limit": 85274.0,
+    "origin": "default_budget",
+    "unit": "MiB"
   },
-  "result": "timeout",
+  "result": "memory_budget_exceeded",
   "rss_limit_mib": null,
   "schema": "spverify.native-ptx-run/v1",
   "scope": {

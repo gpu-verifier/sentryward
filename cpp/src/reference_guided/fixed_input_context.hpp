@@ -1,5 +1,6 @@
 #pragma once
 #include "equivalence_context.hpp"
+#include "sentryward/value_analysis/memory_actions.h"
 #include <array>
 #include <filesystem>
 #include <iterator>
@@ -69,18 +70,13 @@ class Sha256 {
 inline void reject(const std::string &reason) {
   throw Unsupported("comparison context: "+reason);
 }
-inline J metadata(const std::filesystem::path &path,std::string &hash) {
-  std::ifstream stream(path,std::ios::binary);
-  if(!stream)reject("cannot open "+path.string());
+// `contents`: the file's bytes, null when it cannot be opened.
+inline J metadata(const std::filesystem::path &path,const std::string *contents,std::string &hash) {
+  if(!contents)reject("cannot open "+path.string());
   constexpr size_t maximum=32*1024*1024;
-  Sha256 sha;std::array<char,65536> block{};std::string bytes;
-  while(stream) {
-    stream.read(block.data(),block.size());const auto size=static_cast<size_t>(stream.gcount());
-    if(size>maximum-bytes.size())reject("metadata size cap");
-    bytes.append(block.data(),size);sha.update(block.data(),size);
-  }
-  if(stream.bad() || !stream.eof())reject("source read failed");
-  hash=sha.finish();return J::parse(bytes);
+  if(contents->size()>maximum)reject("metadata size cap");
+  Sha256 sha;sha.update(contents->data(),contents->size());
+  hash=sha.finish();return J::parse(*contents);
 }
 inline void fields(const J &value,std::initializer_list<const char*> allowed) {
   if(!value.is_object())reject("expected object");
@@ -199,7 +195,7 @@ inline std::vector<FixedInputElement> decode_verified(const J &input,const J &re
     if(object.empty() || object.size()>4096 || pointer==pointers.end() ||
        pointer->second->value("object","")!=object || !recorded.contains({object,offset}))
       reject("pointer identity missing");
-    const auto raw="6:global"+std::to_string(object.size())+":"+object;
+    const auto raw=sentryward::value_analysis::AllocationIdentity("global",object);
     if(!right.contains(raw) || !reference.contains(right.at(raw)))reject("fixed input lacks common identity");
     const auto &shared=right.at(raw),&left_raw=reference.at(shared);
     const auto optimized=layout(mapping.at("right_inputs").at("layouts").at(raw));

@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string>
@@ -21,6 +22,23 @@ struct AllocationInfo final {
   bool output = false;
 };
 
+// A trusted tensor_properties record of a read-only input object (docs/input-json.md):
+// every element, read as `element_type`, lies in [lower, upper]; an absent bound is one
+// outside the signed 64-bit range (never used). Injective: distinct elements differ.
+struct TensorPropertyFact final {
+  std::string object, element_type;
+  std::optional<std::int64_t> lower, upper;
+  bool injective = false;
+};
+// The record that describes a symbolic term's atoms: the first one listed for its object
+// read as its element type, or null. The one lookup of every consumer. O(records).
+[[nodiscard]] inline const TensorPropertyFact* findTensorProperty(std::span<const TensorPropertyFact> facts,
+    const SymbolicAddressTerm& term) noexcept {
+  for (const auto& fact : facts)
+    if (fact.object == term.object && fact.element_type == term.element_type) return &fact;
+  return nullptr;
+}
+
 enum class MemoryOrderBasis { Verified, TrustedReference };
 
 // The caller supplies a complete execution order and its correctness basis.
@@ -30,6 +48,12 @@ struct CheckedOrderContract final {
   bool lifetimes_checked = false;
   std::vector<AllocationInfo> allocations;
   MemoryOrderBasis basis = MemoryOrderBasis::Verified;
+  // Write-obligation groups (OrderedMemoryAction::duplicate_write_group) from this index on are
+  // same-value write obligations (docs/assumptions.md, "Same-value writes"); the earlier ones
+  // are duplicate TMA stores. SIZE_MAX when there are none.
+  std::size_t same_value_groups_begin = SIZE_MAX;
+  // Decide aliasing between symbolic segments (SymbolicPosition); empty without properties.
+  std::vector<TensorPropertyFact> tensor_properties = {};
   [[nodiscard]] bool permitsElimination() const noexcept {
     return basis == MemoryOrderBasis::TrustedReference ||
         (synchronization_checked && race_free && lifetimes_checked);
@@ -177,7 +201,21 @@ struct PartitionedRead final {
 using NormalizedRead = std::variant<value_ir::Value, InitialMemorySymbol, MemoryView, PartitionedRead>;
 using NormalizedReadReference = std::variant<const value_ir::Value*, const InitialMemorySymbol*, const MemoryView*, const PartitionedRead*>;
 
+// The contents of a cell that reduction stores combined into: base (op)
+// contributions..., elementwise over elements of `element`. The base is the cell's
+// prior stored bytes (a value at a byte offset), or absent for the initial contents. Every
+// contribution is a stored payload at a byte offset. The order of contributions is
+// immaterial: add (ideal-real or modulo 2^w), min and max are commutative and associative.
+struct ReducedContents final {
+  std::string operation;
+  value_ir::ElementType element;
+  std::optional<std::pair<value_ir::Value, std::uint64_t>> base;
+  std::vector<std::pair<value_ir::Value, std::uint64_t>> contributions;
+};
+
 struct OutputWrite final {
+  // With a nonempty `base`, region.offset is the constant part of a symbolic position
+  // (SymbolicPosition): the bytes lie at region.offset + sum(coefficient x element).
   ConstantRegion region;
   value_ir::Value value;
   MemoryInstance writer;
@@ -185,6 +223,9 @@ struct OutputWrite final {
   // Numerical interpretation recovered from a byte-storage view. Keep the
   // range and its source mapping intact instead of exporting scalar pieces.
   std::optional<value_ir::ElementType> element_type = {};
+  std::vector<SymbolicAddressTerm> base = {};
+  // Set for a reduced cell; `value` is then its last contribution (provenance only).
+  std::shared_ptr<const ReducedContents> reduced = {};
 };
 
 // A numerical output domain planned from existing finite read-substitution
@@ -273,12 +314,19 @@ struct MemoryEliminationDiagnostic final {
   std::string code;
   std::string message;
   std::optional<MemoryInstance> operation;
+  // Chosen by the order-free failure identity (eliminateMemory): the
+  // dynamic-address failure with the least static key, every failing action
+  // having a complete key. Independent of the order the actions came in.
+  bool order_free = false;
 };
 
 struct MemoryEliminationResult final {
   // Original Load leaves, retained only after the complete action census has
   // excluded writes to their allocation. Addresses and occurrences stay in IR.
   std::map<MemoryInstance, ConstantRegion> symbolic_initial_reads;
+  // The subset read at a symbolic position of a written allocation, with that exact
+  // position: the bytes are at constant.offset + sum(coefficient x element).
+  std::map<MemoryInstance, SymbolicPosition> symbolic_read_positions;
   bool complete = false;
   std::map<MemoryInstance, ReadReplacement> reads;
   std::map<MemoryInstance, SharedReadFamily> shared_read_families;
@@ -289,12 +337,20 @@ struct MemoryEliminationResult final {
   std::size_t shared_read_instances = 0;
   std::vector<OutputWrite> outputs;
   std::vector<OutputWriteFamily> output_families;
+  // The contract's premises, for outputs at symbolic positions (OutputWrite::base).
+  std::vector<TensorPropertyFact> tensor_properties;
   std::vector<InitialMemorySymbol> initial_memory;
   std::map<MemoryInstance,InitialReadFamily> initial_read_families;
   std::size_t processed_families = 0;
   std::optional<MemoryEliminationDiagnostic> diagnostic;
   std::size_t processed_actions = 0;
   std::size_t duplicate_write_value_checks = 0;
+  // Same-value write obligations: their store actions not yet processed when elimination
+  // stopped (SIZE_MAX before the action census, 0 once complete). A failed comparison names
+  // the write whose bytes were not proven equal; it is kept when the diagnostic takes another
+  // failure's identity.
+  std::size_t pending_same_value_writes = 0;
+  std::optional<MemoryInstance> unproven_same_value_write;
   bool views_normalized = false;
   std::map<MemoryInstance, NormalizedRead> normalized_reads;
   std::map<MemoryInstance,MemoryInstance> normalized_read_aliases;

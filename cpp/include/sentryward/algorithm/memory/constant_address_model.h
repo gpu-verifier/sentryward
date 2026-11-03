@@ -54,6 +54,7 @@ class ConstantAddressModel final : public MemoryModel {
                                          const MemoryAccess& second) override;
   [[nodiscard]] ConstantAddressCacheStats cacheStats() const noexcept;
   [[nodiscard]] std::optional<FamilyFootprint> familyFootprint(const MemoryAccessFamily&) override;
+  [[nodiscard]] std::optional<FamilyStorage> familyStorage(const MemoryAccessFamily&) override;
   [[nodiscard]] std::unique_ptr<MemoryStorageFilter> storageFilter(
       MemoryAccessView accesses) override;
   [[nodiscard]] std::unique_ptr<MemoryConflictCandidates> conflictCandidates(

@@ -11,7 +11,8 @@
    "6:global5:A_log": "A_log",
    "6:global7:dt_bias": "dt_bias",
    "6:global5:state": "state",
-   "6:global17:ssm_state_indices": "ssm_state_indices"
+   "6:global17:ssm_state_indices": "ssm_state_indices",
+   "6:global10:cu_seqlens": "cu_seqlens"
   },
   "parameters": {},
   "layouts": {
@@ -172,6 +173,20 @@
     "element_bytes": 4,
     "shape": [
      1
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global10:cu_seqlens": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     2
     ],
     "source_strides_bytes": [
      4
@@ -192,7 +207,8 @@
    "6:global5:A_log": "A_log",
    "6:global7:dt_bias": "dt_bias",
    "6:global5:state": "state",
-   "6:global17:ssm_state_indices": "ssm_state_indices"
+   "6:global17:ssm_state_indices": "ssm_state_indices",
+   "6:global10:cu_seqlens": "cu_seqlens"
   },
   "parameters": {},
   "layouts": {
@@ -353,6 +369,20 @@
     "element_bytes": 4,
     "shape": [
      1
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global10:cu_seqlens": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     2
     ],
     "source_strides_bytes": [
      4
@@ -460,21 +490,14 @@
     "dtype": "bfloat16"
    },
    {
-    "name": "ssm_state_indices",
-    "allocation": "6:global17:ssm_state_indices",
+    "name": "cu_seqlens",
+    "allocation": "6:global10:cu_seqlens",
     "dtype": "int32"
    },
    {
-    "name": "seq_start",
-    "value": {
-     "input": "/shape_arrays/0/shapes/0/0"
-    }
-   },
-   {
-    "name": "seq_end",
-    "value": {
-     "input": "/shape_arrays/0/shapes/1/0"
-    }
+    "name": "ssm_state_indices",
+    "allocation": "6:global17:ssm_state_indices",
+    "dtype": "int32"
    },
    {
     "name": "scale",
@@ -503,9 +526,10 @@
   "upstream": [
    "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/kda/cake_kda_decode_d128_t1_unbounded_softplus_direct_split8.cu",
    "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/kda/cake_kda_decode_binding_common.cuh",
-   "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/kda_decode.py"
+   "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/kda_decode.py",
+   "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/kda_kernels/recurrent_kda.py"
   ],
-  "scope": "One sequence (cu_seqlens shape array [0,1]), one token, H=HV=head_ratio=1, K=V=128, beta_is_logit=0; grid 8 value tiles x 1 value head. State slot dimension sized 65536 from the ssm_state_indices upper_bound 65535; the full slot buffer is compared, unselected slots unchanged.",
+  "scope": "One sequence (cu_seqlens shape array [0,1], mapped as the read-only allocation cu_seqlens on both sides and read by the reference as bos = cu_seqlens[0], seq_len = cu_seqlens[1] - bos), one token, H=HV=head_ratio=1, K=V=128, beta_is_logit=0; grid 8 value tiles x 1 value head. State slot dimension sized 65536 from the ssm_state_indices upper_bound 65535; the full slot buffer is compared, unselected slots unchanged.",
   "optimized_input_sha256": "02316ebcacbe5bae7711372a8e8a7e6e38d11e434dcdde9e1bb639b9c92acfbb",
   "ptx_sha256": "1e99014fd45e90ff38c6e6f3f134059ce3a0c3f74c09af6594c65551911b997e",
   "scope_branch_choices": [],

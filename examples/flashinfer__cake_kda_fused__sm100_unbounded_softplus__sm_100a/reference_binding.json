@@ -541,10 +541,21 @@
    "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/kda.py",
    "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/kda/test_recurrent_kda_prefill.py"
   ],
-  "scope": "One packed sequence of 131 tokens (the longer sequence of the upstream test_frozen_unbounded_softplus_tp_shapes_strided_beta_state_and_checkpoints case, H = 1), one head, grid 1, use_initial_state 0, store_final_state 1, use_state_indices 0, checkpoint every 128 tokens (rows 0 and 1), seq_order bounded to [0, 0]. beta_padded is the head-padded TMA copy of beta (separate object); cu_seqlens and checkpoint_cu_starts are bound on both sides as fixed shape arrays.",
-  "optimized_input_sha256": "61c6158e271731e3ce5486cdd5b06417df370d201cec8ee22ec54cc57a7128b8",
+  "scope": "One packed sequence of 131 tokens (the longer sequence of the upstream test_frozen_unbounded_softplus_tp_shapes_strided_beta_state_and_checkpoints case, H = 1), one head, grid 1, use_initial_state 0, store_final_state 1, use_state_indices 0, checkpoint every 128 tokens (rows 0 and 1), seq_order bounded to [0, 0]. beta_padded is the head-padded TMA copy of beta (separate object); cu_seqlens and checkpoint_cu_starts are bound on both sides as fixed shape arrays. Branch choices (2026-10-28): at both underflow guards `restore_min_factor[_1] >= FLT_MIN` (cake_kda_bf16_fused_m128_unbounded_softplus.cu:2215 and :2580) always take the recomputing path: PTX 6133 and 7070 are not taken; they decide only visits whose predicate is not statically known.",
+  "optimized_input_sha256": "46dc8d76442f75dd9bfe045d3a59918b6d36b4ef5892105cbbcb192269a04041",
+  "scope_branch_choices": [
+   {
+    "line": 6133,
+    "taken": false,
+    "note": "Always take the recomputing path at the underflow guard. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 7070,
+    "taken": false,
+    "note": "Always take the recomputing path at the underflow guard. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   }
+  ],
   "ptx_sha256": "1ec1d4af7151a3fb17623d0c309f9e2665acd8881ca875962c9414c452365d7f",
-  "scope_branch_choices": [],
   "scope_shape_arrays": [
    {
     "parameter": 12,

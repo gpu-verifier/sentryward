@@ -22,16 +22,22 @@ struct PackedDecodePass {
     std::optional<Bits> bits;
     unsigned bit_shift = 0;
   };
-  enum Decoder { Unknown, Signed4, FP4 };
+  // Affine4: scale * field + offset on all sixteen field values (e.g. offset-binary uint4, field - 8).
+  enum Decoder { Unknown, Signed4, FP4, Affine4 };
+  // A program signature's truth-table verdict; scale and offset define an Affine4 decode.
+  struct Pattern { Decoder decoder; Q scale, offset; };
   Arena &a;
-  // Unknown enables both decoder kinds for bounded component experiments.
+  // The pass's decoder kind; admits() gives the decoders it may introduce.
   // Keep the target immutable because normalized results are cached by DAG ID.
   const Decoder target;
+  // Signed4 also admits Affine4 (an exact affine field decode, e.g. offset-binary uint4); FP4 admits
+  // only FP4; Unknown admits every kind (bounded component experiments).
+  bool admits(Decoder d) const { return target==Unknown || d==target || (target==Signed4 && d==Affine4); }
   std::unordered_map<Id, std::optional<Slice>> slices;
   std::unordered_map<Id, Id> normalized;
   std::unordered_set<Id> known_integers;
   std::map<std::tuple<Id,unsigned,unsigned>,std::optional<Bits>> resolved;
-  std::unordered_map<std::string, Decoder> patterns;
+  std::unordered_map<std::string, Pattern> patterns;
   static constexpr unsigned max_nodes = 32, max_depth = 24;
   explicit PackedDecodePass(Arena &arena, Decoder kind = Unknown) : a(arena), target(kind) {}
 
@@ -276,8 +282,8 @@ struct PackedDecodePass {
        n.args.size()>8 || !n.facts.finite || !n.bounds || n.bounds->first < -32 || n.bounds->second > 32)return root;
     // A full four-bit decoder must be capable of its entire output range.
     // Reject other bounded arithmetic before allocating or inspecting producers.
-    bool signed_candidate=target!=FP4 && n.bounds->first<=-8 && n.bounds->second>=7;
-    bool fp4_candidate=target!=Signed4 && n.bounds->first<=-6 && n.bounds->second>=6;
+    bool signed_candidate=admits(Signed4) && n.bounds->first<=-8 && n.bounds->second>=7;
+    bool fp4_candidate=admits(FP4) && n.bounds->first<=-6 && n.bounds->second>=6;
     if(!signed_candidate && !fp4_candidate)return root;
     return prove_decoder(root,mapper,signed_candidate,fp4_candidate);
   }
@@ -290,12 +296,39 @@ struct PackedDecodePass {
     if(target!=FP4 || n.op!="select" || n.args.size()!=3 || !n.facts.finite)return root;
     return prove_decoder(root,mapper,false,true);
   }
+  // The canonical affine field decode: scale * packedbits + offset, plain Arena arithmetic.
+  Id affine_decode(Id bits,const Q &scale,const Q &offset) {
+    return a.add({a.mul({a.constant(scale),bits}),a.constant(offset)});
+  }
+  struct AffineField {Id bits;Q scale,offset;};
+  // Recognize affine_decode's result (scale * packedbits[4] + offset). O(1).
+  std::optional<AffineField> affine_field(Id id) const {
+    const auto &n=a.nodes[id];
+    const auto packed=[&](Id x){const auto &p=a.nodes[x];return p.op=="packedbits" && p.args.size()==1 && p.data==std::vector<Q>{Q(4)};};
+    if(packed(id))return AffineField{id,Q(1),Q(0)};
+    if(n.op!="add" || n.args.size()!=2 || n.data.size()!=2)return {};
+    for(unsigned j=0;j<2;++j)if(n.args[1-j]==a.one && packed(n.args[j]))
+      return AffineField{n.args[j],n.data[j],n.data[1-j]};
+    return {};
+  }
   Id prove_decoder(Id root,const Resolve &mapper,bool signed_candidate,bool fp4_candidate) {
     const auto &n=a.nodes[root];
     if(auto it=normalized.find(root);it!=normalized.end())return it->second;
     normalized.emplace(root,root);++a.stats["packed_decoder_candidates"];
     // A pure decoder commutes with selecting its storage bits. Reference INT4
     // commonly decodes both nibbles before selecting by the reduction parity.
+    if(n.op=="select" && n.args.size()==3 && admits(Affine4)) {
+      const auto yes=affine_field(n.args[1]),no=affine_field(n.args[2]);
+      if(yes && no && yes->scale==no->scale && yes->offset==no->offset) {
+        const auto &yb=a.nodes[yes->bits],&nb=a.nodes[no->bits];
+        if(yb.tag==nb.tag) {
+          Id address=select_address(n.args[0],yb.args[0],nb.args[0]);
+          Id bits=a.intern("packedbits",{address},{Q(4)},yb.tag,{true,false,true},std::pair(Q(0),Q(15)));
+          Id result=affine_decode(bits,yes->scale,yes->offset);
+          normalized[root]=result;++a.stats["packed_decoder_selected_reads"];return result;
+        }
+      }
+    }
     if(n.op=="select" && n.args.size()==3) {
       const auto &yes=a.nodes[n.args[1]],&no=a.nodes[n.args[2]];
       if(((signed_candidate && yes.op=="decode_s4") || (fp4_candidate && yes.op=="decode_fp4")) && yes.op==no.op &&
@@ -338,26 +371,39 @@ struct PackedDecodePass {
         for(unsigned arg:step.args)field(std::to_string(arg));
       }
     }
-    Decoder decoder=Unknown;
-    if(auto it=patterns.find(signature);it!=patterns.end()) {decoder=it->second;++a.stats["packed_decoder_pattern_cache_hits"];}
+    Pattern pattern{Unknown,0,0};
+    if(auto it=patterns.find(signature);it!=patterns.end()) {pattern=it->second;++a.stats["packed_decoder_pattern_cache_hits"];}
     else {
-      bool signed4=true,fp4=true;const Q magnitudes[]={Q(0),Q(1,2),Q(1),Q(3,2),Q(2),Q(3),Q(4),Q(6)};
-      for(unsigned input=0;input<16 && (signed4 || fp4);++input) {
+      bool signed4=true,fp4=true,affine=true;const Q magnitudes[]={Q(0),Q(1,2),Q(1),Q(3,2),Q(2),Q(3),Q(4),Q(6)};
+      Q first_value=0,slope=0;
+      for(unsigned input=0;input<16 && (signed4 || fp4 || affine);++input) {
         std::vector<Q> values;values.reserve(ops.size());
         for(const auto &step:ops) {
           auto value=evaluate(step,values,input);
-          if(!value || !small(*value)) {signed4=fp4=false;break;}
+          if(!value || !small(*value)) {signed4=fp4=affine=false;break;}
           values.push_back(*value);
         }
-        if(!signed4 && !fp4)break;
+        if(!signed4 && !fp4 && !affine)break;
         Q observed=values.back();
         signed4 &= observed==Q(input<8?int(input):int(input)-16);
         fp4 &= observed==(input<8?magnitudes[input]:-magnitudes[input-8]);
+        if(input==0)first_value=observed;
+        else if(input==1)slope=observed-first_value;
+        affine &= observed==first_value+slope*Q(int(input));
       }
-      decoder=signed4?Signed4:(fp4?FP4:Unknown);patterns.emplace(std::move(signature),decoder);
+      affine &= slope!=0;
+      pattern={signed4?Signed4:(fp4?FP4:(affine?Affine4:Unknown)),slope,first_value};
+      patterns.emplace(std::move(signature),pattern);
       ++a.stats["packed_decoder_truth_tables"];
     }
-    if(decoder==Unknown || (target!=Unknown && decoder!=target))return root;
+    const Decoder decoder=pattern.decoder;
+    if(decoder==Affine4) {
+      if(!admits(Affine4))return root;
+      Id bits=a.intern("packedbits",{base},{Q(4)},first->allocation,{true,false,true},std::pair(Q(0),Q(15)));
+      Id result=affine_decode(bits,pattern.scale,pattern.offset);
+      normalized[root]=result;++a.stats["packed_decoder_affine_replacements"];return result;
+    }
+    if(decoder==Unknown || !admits(decoder))return root;
     Id bits=a.intern("packedbits",{base},{Q(4)},first->allocation,{true,false,true},std::pair(Q(0),Q(15)));
     Id result=a.intern(decoder==Signed4?"decode_s4":"decode_fp4",{bits},{},"",{true,false,false},
                        decoder==Signed4?Bounds(std::pair(Q(-8),Q(7))):Bounds(std::pair(Q(-6),Q(6))));

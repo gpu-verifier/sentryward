@@ -29,7 +29,10 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
   Arena a(options.seconds);
   Checker checker(a, true);
   checker.scalar.profiling=options.ep_profile;
-  checker.scalar.reuse_cache=options.ep_reuse_cache;
+  // Reuse EP normal forms across scalar queries. They are exact functions of
+  // immutable Arena nodes (partial-domain queries clear the shared memo before
+  // and after); the memo is bounded by the EP cached-term budget.
+  checker.scalar.reuse_cache=true;
   // This is a memoized DAG traversal, not a combinatorial search. Production
   // uses the Arena deadline and process memory limit; an arbitrary visit cap
   // must not truncate a valid large certificate. Explicit diagnostic budgets
@@ -118,6 +121,7 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
     phase = "scope_analysis";
     Importer l(a, std::move(left), mapping, "left", *prepared),
         o(a, std::move(right), mapping, "right", *prepared);
+    l.range_premise = o.range_premise = options.floating_range_premise;
     FiniteStateReuse piece_equalities(checker, mapping);
     UnaryReductionComposition unary_reductions(checker);
     AffineStatePattern affine_states(checker);

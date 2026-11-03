@@ -56,6 +56,14 @@ not itself mean failure.
 samples is not evidence of no warnings; `true` means it completed before the
 run stopped. Early failures may omit count/sample fields; absence is not zero.
 
+A warning with code `same-value-writes` names unordered writes of exactly the
+same bytes whose stored values the value analysis proved equal; such writes do
+not race ([Same-value writes](assumptions.md#same-value-writes)). There is one
+warning per pair of write sites and CTA; writes in two CTAs count under the CTA
+of the write whose (site, CTA) is the lesser. When the values are not proven equal,
+or the value analysis does not decide them, the pair is a `potential_race` with
+diagnostic `same_value_writes_unproven` or `same_value_writes_unchecked`.
+
 `evidence` holds witnesses and their counts. Once the memory analysis has run,
 it contains `races`, `race_count` and `race_samples_truncated`, so it also
 appears on passing runs. A failed synchronization check adds the witnesses
@@ -95,7 +103,7 @@ mbarrier arrival must follow the barrier's initialization
 | invalid_input | Malformed PTX/configuration/mapping or invalid invocation. |
 | missing_input | A required file, reference or mapping is absent. |
 | timeout | The configured time budget expired. |
-| memory_budget_exceeded | The configured process memory budget was exceeded. |
+| memory_budget_exceeded | The process memory budget (configured, or the default) was exceeded. |
 | analysis_budget_exceeded | An algorithm work/node/iteration/output-family budget was reached. |
 | allocation_failed | An allocator reported failure; physical OOM is not inferred. |
 | tool_failure | Process crash, invalid process output, I/O failure or unexpected implementation failure. |
@@ -106,7 +114,7 @@ Each check is `passed`, `failed`, `incomplete`, `not_run` or `not_requested`.
 
 | Check | Meaning |
 | --- | --- |
-| `synchronization` | `passed`: the kernel is well synchronized, race free and its lifecycles are valid. `failed`: not_wellsynced, potential_race or invalid_lifecycle. `incomplete`: the analysis started but did not finish, for example because an operation was unsupported or the memory analysis could not decide an access pair. `not_run`: verification stopped before the check, for example at invalid input, unsupported PTX or a timeout. |
+| `synchronization` | `passed`: the kernel is well synchronized, race free (unordered writes of the same bytes are allowed when their values are proven equal) and its lifecycles are valid. `failed`: not_wellsynced, potential_race or invalid_lifecycle. `incomplete`: the analysis started but did not finish, for example because an operation was unsupported or the memory analysis could not decide an access pair. `not_run`: verification stopped before the check, for example at invalid input, unsupported PTX or a timeout. |
 | `equivalence` | `passed`: the reference equivalence was proved. `incomplete`: the check ran without a proof, for example because the value analysis stopped, a budget was reached or no proof was found. `not_run`: a prerequisite failed or an input is missing. `not_requested`: no reference was given. |
 
 Example: after the synchronization check passes, an equivalence timeout
@@ -121,6 +129,9 @@ stable output field repeats the choices: they appear only under
 keep the input with its result. `frontend_assumptions.data_branch_decisions`
 lists decisions made under Representative branches or Bounded computation
 loops, not the supplied choices.
+`frontend_assumptions.branch_choices_with_static_visits`, present only when
+nonempty, lists the PTX lines of supplied choices that a statically known
+predicate overrode on some visit.
 
 Nested `definedness.status` and per-family proof receipts describe mathematical
 properties, not alternative top-level result categories.
@@ -152,9 +163,9 @@ that a check passed, a count was zero or a resource was unused.
 | `elapsed_seconds` | Wall time, in seconds, of the whole call (Python verify and the CLI) or of a run stopped by its time or memory budget |
 | `wellsync_timeout_seconds`, `whole_pipeline_timeout_seconds` | Time budgets, in seconds, of the synchronization check and of the whole verification pipeline. With Python verify and the CLI, both are the part of the total budget left after reference capture |
 | `timeout_scope` | Which time budget expired: `whole_pipeline`, or `wellsync` for the synchronization check's budget |
-| `resource` | The budget or resource that stopped the run: `kind` (such as `time` or `memory`), `origin` (such as `configured_budget`, `algorithm_budget` or `allocator`) and, where known, `limit` and `unit` |
+| `resource` | The budget or resource that stopped the run: `kind` (such as `time` or `memory`), `origin` (such as `configured_budget`, `default_budget`, `algorithm_budget` or `allocator`) and, where known, `limit` and `unit` |
 | `peak_rss_mib` | Reported peak resident memory, in MiB |
-| `rss_limit_mib` | Configured memory limit; null means no Sentryward memory budget |
+| `rss_limit_mib` | Configured memory limit; null means none was given, and the default budget applies (see [Resource limits](#resource-limits)) |
 
 Timing and memory fields are producer-specific measurements, not a guarantee
 that every nested subprocess is included in a single figure.
@@ -196,7 +207,9 @@ meet. `region` gives the overlapping bytes (`address_space`, `allocation`,
 `offset`, `bytes`) when they form a constant range. The search stops at the
 first race, so `race_count` is not the number of racing pairs in the kernel.
 `race_samples_truncated` is true when `races` lists fewer races than
-`race_count`.
+`race_count`. A race reported with diagnostic `same_value_writes_unproven` or
+`same_value_writes_unchecked` is a pair of unordered writes of the same bytes
+whose values were not proven equal; its `region` is their common footprint.
 
 Clusters that behave alike, or CTAs when the launch has no clusters, may be
 analyzed once for all of them. A race between two such units carries
@@ -223,12 +236,74 @@ such as `warning_count` remain totals.
 ## Resource limits
 
 The CLI accepts `--timeout` and `--memory-limit-mib`; Python accepts
-`timeout_seconds` and `memory_limit_mib`. Omitting the memory option or using
-Python None imposes no Sentryward memory budget. Explicit memory limits must be
+`timeout_seconds` and `memory_limit_mib`. Explicit memory limits must be
 positive integer MiB values within the supported range; operating-system limits
 still apply. `--fail-on` does not change the result object; it only selects when
 a finding or other requested category becomes exit status 1. See
 [invocation options](../README.md#verify-a-kernel).
+
+Omitting the memory option or using Python None applies the default budget:
+90% of the memory the verifier process may use, enforced on it like a
+configured limit. That memory is the machine's physical memory, bounded on
+Linux by the memory limit of the process's cgroup (`memory.max`, or
+`memory.limit_in_bytes` with cgroup v1). A run that reaches it ends with
+`memory_budget_exceeded` instead of being stopped by the operating system; its
+`resource` names the `default_budget` origin and the effective `limit` in MiB,
+while `rss_limit_mib` stays null. The default therefore differs between
+machines, and it does not count other processes. The default only stops a run:
+budgets that scale with a configured limit (the look-ahead below, and class
+mode's internal logs) stay as without a limit.
+
+Verifiers that run at the same time can share the default budget. The native
+option `--default-budget-jobs N` (a positive integer, default 1; not combined
+with `--rss-limit-mib`) enforces one Nth of the default on each; `resource`
+then also gives `default_budget_jobs`. It changes only the enforced limit: the
+origin stays `default_budget`, `rss_limit_mib` stays null and the budgets above
+stay as without a limit. `tools/rerun_examples.py --jobs N` passes it when N > 1
+and `--rss-limit` is not given.
+
+The memory limit also bounds work that runs ahead on worker threads. When CTAs
+form classes, later CTAs are executed while earlier ones are analyzed. At most
+the worker count of them are held in flight and, where the allocator reports
+its usage, only as many (at least one) as fit in a quarter of the memory limit
+at the first CTA's allocation (without a configured limit, a quarter of the
+memory the process may use). The threads of one analyzed CTA are also lowered on the
+workers. Neither changes a result; only time and peak memory differ.
+
+When the analysis of CTA classes cannot finish exactly, the verifier analyzes
+the launch again without classes, in the same process.
+`internal.frontend.unit_restart` records the `reason` and whether the class
+analysis's synchronization verdict was kept (`kept_synchronization_verdict`;
+see [same-value writes](assumptions.md#same-value-writes)). Without a kept
+verdict, the result is that of the analysis without classes. A verdict is kept
+only when the classes failed because the values of the analyzed CTAs do not
+stand for the others' (reason `value_lifting`) and the synchronization check
+passed without needing those values. The second analysis then repeats the
+well-synchronization check, whose order the value analysis uses, but not the
+race search or the lifecycle order checks, and reports the class analysis's
+synchronization result as is. That result has no races and no memory warnings,
+so what comes from the class analysis is `checks.synchronization`,
+`verification_elapsed_seconds`, the warnings of a recovered program
+(`duplicate-barrier-initialization`) and the synchronization statistics in
+`internal`, which count only the analyzed CTAs. The value analysis and the
+equivalence check are the second analysis's.
+Elapsed time and peak memory include both attempts and the release of the
+first attempt's memory between them.
+
+The second analysis is not started for `value_lifting` when its value view,
+estimated from the class analysis's by scaling to every CTA of the launch,
+exceeds 2^26 value instances. The synchronization result is then the class
+analysis's, and the stage that refused ends with `analysis_budget_exceeded`:
+diagnostic `unit_restart_limit_exceeded`, with `resource` `origin`
+`algorithm_budget`, `kind` `per_unit_value_instances`, the `limit` and the
+`estimate`. Two kinds of stage refuse:
+
+- The value analysis, before memory elimination finishes: it ends so, and
+  unordered writes of the same bytes stay unchecked
+  (`same_value_writes_unchecked`).
+- The scalar fold, after memory elimination finished: memory elimination has
+  already decided those writes, and the scalar fold
+  (`internal.value_analysis.scalar_fold`) ends so.
 
 The public result categories are listed above. They are maintained in
 [config/result-categories.json](../config/result-categories.json).

@@ -161,7 +161,9 @@ struct Checker {
       return hash;
     }
   };
-  std::unordered_map<ReadAnchorKey,std::vector<std::vector<Id>>,ReadAnchorHash> read_anchor_matches;
+  // A set of candidate captures: per candidate, one Id per pattern slot (invalid when unbound).
+  using Captures = std::vector<std::vector<Id>>;
+  std::unordered_map<ReadAnchorKey,Captures,ReadAnchorHash> read_anchor_matches;
   using PayloadSource = std::tuple<std::string, std::string, std::vector<Q>>;
   struct PayloadAdmission {
     bool positive_shell = true;
@@ -683,8 +685,7 @@ struct Checker {
     }
     return predicate_coordinate_slots.emplace(root, std::move(result)).first->second;
   }
-  std::vector<std::vector<Id>> matches(Id pat, Id target,
-                                       std::vector<Id> captures, bool fixed_parameters = false) {
+  Captures matches(Id pat, Id target, std::vector<Id> captures, bool fixed_parameters = false) {
     struct Task {
       Id pattern, target;
       size_t child = SIZE_MAX;
@@ -703,7 +704,7 @@ struct Checker {
     };
     std::vector<State> states{
         {{{pat, target, SIZE_MAX, {}}}, std::move(captures), {}, {}, {}, {}, {}}};
-    std::vector<std::vector<Id>> out;
+    Captures out;
     uint64_t work = 0;
     // Arena orders addends by local node Id. Substitution can change that
     // order, so small sums match by (coefficient, child), not by position.
@@ -949,9 +950,81 @@ struct Checker {
     return out;
   }
 
+  // A read anchor with more coordinates is matched only by the general matcher (no cached or
+  // scoped matching). scoped_read_anchor visits at most scoped_anchor_visit_limit + 1 pattern nodes
+  // of an anchor's coordinates; an anchor whose walk needs more is not scoped.
+  static constexpr size_t read_anchor_coordinate_limit = 8, scoped_anchor_visit_limit = 64;
+  // Bounded body-candidate search: at most this many distinct captures per anchor and this many
+  // anchor/target attempts per search; beyond either the search declines (proposes no candidate).
+  static constexpr size_t body_candidate_limit = 32, body_candidate_attempts = 256;
+  // Anchor discovery per body (body_candidates): at most this many anchors, edges followed and
+  // distinct nodes queued; a cut discovery is counted in ep_body_anchor_limited.
+  static constexpr size_t anchor_limit = 16, anchor_edge_limit = 2048, anchor_node_limit = 512;
+  // A read anchor (not cacheable_read_anchor) whose coordinates are integer additions and
+  // constant multiples of derived coordinates, slots and constants, with every derived
+  // coordinate's captured axis an integer inside its scope. O(pattern coordinate nodes).
+  bool scoped_read_anchor(Id pattern,const std::vector<Id> &cap) {
+    const auto &p=patterns.nodes[pattern];
+    if((p.op!="read" && p.op!="readbits" && p.op!="packedbits") || p.args.size()>read_anchor_coordinate_limit)
+      return false;
+    std::vector<Id> todo(p.args.begin(),p.args.end());
+    for(size_t visits=0;!todo.empty();++visits) {
+      if(visits>scoped_anchor_visit_limit)return false;
+      const auto &n=patterns.nodes[todo.back()];todo.pop_back();
+      if(n.op=="derived_coordinate") {
+        if(!n.args.empty() || !CoordinateRelations::valid(n.data))return false;
+        const auto axis=n.data[0].numerator().convert_to<size_t>();
+        if(axis>=cap.size() || cap[axis]==invalid || !CoordinateRelations::within_axis(a,cap[axis],n.data))return false;
+      } else if(n.op=="add" || n.op=="mul") {
+        for(const auto &q:n.data)if(q.denominator()!=1)return false;
+        todo.insert(todo.end(),n.args.begin(),n.args.end());
+      } else if((n.op!="slot" && n.op!="const") || !n.args.empty())return false;
+    }
+    return true;
+  }
+  // The captures under which a scoped read anchor may name a target: `cap` itself when every
+  // slot is captured; otherwise, for one missing slot that is a plain term c * slot of a
+  // single-coordinate address, the integer value (target address - rest) / c per same-kind
+  // target. Each target solved for the slot is one attempt of the body-candidate search
+  // (`attempts`); none when that budget is spent. O(targets).
+  std::optional<Captures> scoped_read_captures(Id pattern,const std::vector<Id> &cap,const std::vector<Id> &ts,
+                                               size_t &attempts) {
+    const auto missing=std::count(cap.begin(),cap.end(),invalid);
+    if(!missing)return Captures{cap};
+    const auto &p=patterns.nodes[pattern];
+    if(missing!=1 || p.args.size()!=1)return Captures{};
+    const auto slot=size_t(std::find(cap.begin(),cap.end(),invalid)-cap.begin());
+    const auto &address=patterns.nodes[p.args[0]];
+    if(address.op!="add" || address.args.size()!=address.data.size())return Captures{};
+    std::optional<Q> coefficient;
+    for(size_t j=0;j<address.args.size();++j) {
+      const auto &term=patterns.nodes[address.args[j]];
+      if(term.op=="slot" && term.data.size()==1 && term.data[0]==Q(slot)) {
+        if(coefficient)return Captures{};
+        coefficient=address.data[j];
+      }
+    }
+    if(!coefficient || *coefficient==0)return Captures{};
+    auto zero=cap;zero[slot]=a.zero;
+    const Id rest=instantiate_body(pattern,zero);
+    if(rest==invalid || a.nodes[rest].args.size()!=1)return Captures{};
+    const Id rest_address=a.nodes[rest].args[0];
+    const auto rest_data=a.nodes[rest].data;
+    Captures result;
+    for(Id t:ts) {
+      if(a.nodes[t].op!=p.op || a.nodes[t].tag!=p.tag || a.nodes[t].data!=rest_data || a.nodes[t].args.size()!=1)continue;
+      if(++attempts>body_candidate_attempts)return std::nullopt;
+      const Id target_address=a.nodes[t].args[0];
+      Id value=a.mul({a.constant(Q(1)/ *coefficient),a.sub(target_address,rest_address)});
+      if(!CoordinateRelations::integer(a,value))continue;
+      auto solved=cap;solved[slot]=value;result.push_back(std::move(solved));
+    }
+    return result;
+  }
   bool cacheable_read_anchor(Id pattern) const {
     const auto &p=patterns.nodes[pattern];
-    if((p.op!="read" && p.op!="readbits" && p.op!="packedbits") || p.args.size()>8)return false;
+    if((p.op!="read" && p.op!="readbits" && p.op!="packedbits") || p.args.size()>read_anchor_coordinate_limit)
+      return false;
     for(Id coordinate:p.args) {
       const auto &n=patterns.nodes[coordinate];
       if(n.op=="coordinate_sum") {
@@ -967,7 +1040,7 @@ struct Checker {
     }
     return true;
   }
-  std::vector<std::vector<Id>> match_anchor(Id pattern,Id target,const std::vector<Id> &captures) {
+  Captures match_anchor(Id pattern,Id target,const std::vector<Id> &captures) {
     // These are closed local constraints: no opaque lookup, deferred
     // predicate, Call registration or new Arena nodes can change the result.
     // Cache the exact existing matcher result, including an empty result.
@@ -1097,8 +1170,7 @@ struct Checker {
   }
   // Anchor matching proposes coordinates only; ScalarEqual checks the entire
   // body. Bounded DAG traversal never enumerates the reduction domain.
-  std::vector<std::vector<Id>> body_candidates(const Spec &s,Id target,
-                                             const std::vector<Id> &initial) {
+  Captures body_candidates(const Spec &s,Id target,const std::vector<Id> &initial) {
     if(initial.size()!=s.slots)return {};
     auto anchors=[&](Arena &arena,Id root,bool pattern)->const std::vector<Id>&{
       auto &cache=pattern?pattern_anchor_cache:target_anchor_cache;
@@ -1112,7 +1184,7 @@ struct Checker {
       // Bound discovery itself, including wide operand arrays and the queue.
       std::vector<Id> out,todo{root};std::unordered_set<Id> seen{root};
       size_t cursor=0,edges=0;bool limited=false;
-      while(cursor<todo.size() && out.size()<16){
+      while(cursor<todo.size() && out.size()<anchor_limit){
         Id id=todo[cursor++];
         const auto &n=arena.nodes[id];
         if(n.op=="slot" || n.op=="var" || n.op=="read" || n.op=="readbits" || n.op=="packedbits" || n.op=="call" || n.op=="certified_state")out.push_back(id);
@@ -1127,10 +1199,10 @@ struct Checker {
           const size_t children=binder?std::min<size_t>(1,n.args.size()):n.args.size();
           for(size_t j=0;j<children;++j){
             Id child=n.args[j];
-            if(edges==2048){limited=true;break;}
+            if(edges==anchor_edge_limit){limited=true;break;}
             ++edges;
             if(seen.contains(child))continue;
-            if(seen.size()==512){limited=true;continue;}
+            if(seen.size()==anchor_node_limit){limited=true;continue;}
             seen.insert(child);todo.push_back(child);
           }
         }
@@ -1148,10 +1220,10 @@ struct Checker {
     // disappeared from the actual body. A redundant bare slot is not another
     // required occurrence of that coordinate. This orders candidate discovery,
     // never proof: instantiate_body + ScalarEqual still check the whole body.
-    std::vector<std::vector<Id>> caps{initial};
+    Captures caps{initial};
     size_t attempts=0;
     for(Id pat:ps){
-      std::vector<std::vector<Id>> next;
+      Captures next;
       const auto &pn=patterns.nodes[pat];
       for(const auto &cap:caps){
         // Only abstract anchors may have a different registered spelling of
@@ -1182,16 +1254,39 @@ struct Checker {
           // A miss is not a failed constraint. The general anchor matcher
           // remains available; no unchecked reconstruction is accepted.
           ++a.stats["ep_body_bound_read_matcher_fallbacks"];
+        } else if(scoped_read_anchor(pat,cap)) {
+          // Coordinates that combine derived digits arithmetically (a packed nibble address)
+          // are not matched structurally. With every captured axis an integer inside each
+          // digit's recorded scope, their exact instantiation names one target read or none.
+          // One uncaptured slot that is a plain term of the address is solved exactly from a
+          // target address (integer, then re-instantiated). Candidates only; the body proof
+          // remains the complete EP equality. The general matcher's budgets apply.
+          const auto candidates=scoped_read_captures(pat,cap,ts,attempts);
+          if(!candidates){++a.stats["ep_body_candidate_budget"];return {};}
+          bool hit=false;
+          for(const auto &candidate:*candidates) {
+            Id expected=instantiate_body(pat,candidate);
+            if(expected!=invalid && std::find(ts.begin(),ts.end(),expected)!=ts.end()) {
+              ++a.stats["ep_body_bound_read_scoped_hits"];
+              if(std::find(next.begin(),next.end(),candidate)==next.end()) {
+                next.push_back(candidate);
+                if(next.size()>body_candidate_limit){++a.stats["ep_body_candidate_budget"];return {};}
+              }
+              hit=true;
+            }
+          }
+          if(hit)continue;
         }
         bool discovered=false;
         for(Id t:ts){
-        if(++attempts>256){++a.stats["ep_body_candidate_budget"];return {};}
+        if(++attempts>body_candidate_attempts){++a.stats["ep_body_candidate_budget"];return {};}
         const auto &tn=a.nodes[t];
         if(pn.op=="slot" ? tn.op!="var" : (pn.op!=tn.op || pn.tag!=tn.tag))continue;
         for(auto c:match_anchor(pat,t,cap)) {
           discovered=true;
           if(std::find(next.begin(),next.end(),c)==next.end()) {
-            next.push_back(std::move(c));if(next.size()>32){++a.stats["ep_body_candidate_budget"];return {};}}
+            next.push_back(std::move(c));
+            if(next.size()>body_candidate_limit){++a.stats["ep_body_candidate_budget"];return {};}}
         }
         }
         // A Call can be rebound only after independent anchors supply its
@@ -1206,7 +1301,7 @@ struct Checker {
           next.push_back(cap);
           ++a.stats["ep_body_deferred_unmatched_anchors"];
           ++a.stats["ep_body_deferred_call_anchors"];
-          if(next.size()>32){++a.stats["ep_body_candidate_budget"];return {};}
+          if(next.size()>body_candidate_limit){++a.stats["ep_body_candidate_budget"];return {};}
         }
       }
       if(next.empty())return {};

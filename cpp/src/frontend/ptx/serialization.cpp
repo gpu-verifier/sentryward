@@ -3,7 +3,9 @@
 #include "sentryward/algorithm/base/affine_index.h"
 #include "sentryward/algorithm/semantics/affine_template_schedule.h"
 #include "sentryward/algorithm/diagnostics/performance_profile.h"
+#include "sentryward/algorithm/memory/symbolic_address_model.h"
 #include "sentryward/value_ir/operations.h"
+#include <nlohmann/json.hpp>
 #include <deque>
 #include <map>
 #include <set>
@@ -44,8 +46,7 @@ using AccessKey=std::tuple<a::AccessOperand,std::uint32_t,std::uint32_t>;
 AccessKey Key(const SourceMemoryKey& key){return {key.operand,key.effect_index,key.access_index};}
 AccessKey Key(const a::MemoryAccess& key){return {key.operand,key.effect_index,key.access_index};}
 std::string Allocation(const a::ConstantAddressBinding& x) {
-  return std::to_string(x.address_space.size())+':'+x.address_space+
-      std::to_string(x.allocation.size())+':'+x.allocation;
+  return va::AllocationIdentity(x.address_space,x.allocation);
 }
 struct ActionColumn {
   va::OrderedMemoryAction first;va::MemoryActionCodec::Delta delta;
@@ -93,9 +94,55 @@ class ActorIndex {
   }
 };
 
+// The constant part and terms of a tensor_properties footprint (slot_resolver.cpp
+// AffineOffsetJson): {"operator":"add","operands":[constant, {"operator":"mul","operands":
+// [{"operator":"gather","symbol":TensorPropertySymbol(object,type),"args":[element byte
+// offset]}, coefficient]}...]}, the symbol read back by ParseTensorPropertySymbol. Any other
+// expression has no position. O(terms).
+struct AbstractAffinePosition {std::int64_t constant=0;std::vector<va::SymbolicAddressTerm> base;};
+std::optional<AbstractAffinePosition> ParseAbstractAffine(const a::ConstantAddressBinding& address) {
+  if(address.expression.empty() || address.offset || !address.alias_scope.empty())return {};
+  const auto json=nlohmann::json::parse(address.expression,nullptr,false);
+  if(!json.is_object() || !json.contains("address") || !json["address"].is_object())return {};
+  const auto& where=json["address"];
+  const auto base=where.find("base");const auto offset=where.find("offset");
+  if(base==where.end() || offset==where.end() || !base->is_object() ||
+     base->value("identity",std::string())!=address.allocation || !offset->is_object() ||
+     offset->value("operator",std::string())!="add" || !offset->contains("operands"))return {};
+  const auto integer=[](const nlohmann::json& x)->std::optional<std::int64_t> {
+    if(x.is_number_integer() && (x.is_number_unsigned()?x.get<std::uint64_t>()<=std::uint64_t(INT64_MAX):true))
+      return x.get<std::int64_t>();
+    return {};
+  };
+  const auto& operands=(*offset)["operands"];
+  if(!operands.is_array() || operands.size()<2)return {};
+  AbstractAffinePosition result;
+  const auto constant=integer(operands[0]);if(!constant)return {};
+  result.constant=*constant;
+  for(std::size_t i=1;i<operands.size();++i) {
+    const auto& term=operands[i];
+    if(!term.is_object() || term.value("operator",std::string())!="mul" || !term.contains("operands") ||
+       !term["operands"].is_array() || term["operands"].size()!=2)return {};
+    const auto& gather=term["operands"][0];const auto coefficient=integer(term["operands"][1]);
+    if(!coefficient || !*coefficient || !gather.is_object() || gather.value("operator",std::string())!="gather" ||
+       !gather.contains("args") || !gather["args"].is_array() || gather["args"].size()!=1)return {};
+    const auto element=integer(gather["args"][0]);
+    auto symbol=a::ParseTensorPropertySymbol(gather.value("symbol",std::string()));
+    if(!element || !symbol)return {};
+    result.base.push_back({std::move(symbol->first),std::move(symbol->second),*element,*coefficient});
+  }
+  return result;
+}
+
 // An explicit address table is already part of the input. Index its affine
 // metadata once; do not decode it again for each logical memory binding.
-struct AddressRun {a::ConstantAddressBinding first;std::int64_t offset_step=0;std::size_t count=1;};
+struct AddressRun {
+  a::ConstantAddressBinding first;std::int64_t offset_step=0;std::size_t count=1;
+  std::optional<AbstractAffinePosition> position=std::nullopt;  // one per run: equal expressions
+};
+// A piece of a symbolic binding column: `count` bindings from `begin` with one base and the
+// constant part `constant + step * i` at the piece's i-th binding.
+struct SymbolicPiece {std::size_t begin,count;std::int64_t constant,step;const std::vector<va::SymbolicAddressTerm>* base;};
 class AddressIndex {
   std::vector<AddressRun> runs_;a::AffineIndex index_;
   struct SignedMatch {
@@ -136,8 +183,41 @@ class AddressIndex {
       }
       runs_.push_back({value});
     }
+    for(auto& run:runs_)if(!run.offset_step)run.position=ParseAbstractAffine(run.first);
     for(std::size_t i=0;i<runs_.size();++i)index_.add({runs_[i].first.address.value(),1,runs_[i].count},i);
     index_.seal();
+  }
+  // The column split into pieces of affine symbolic positions, in binding order; empty when
+  // some binding's address has no abstract affine position, the column is not symbolic, or
+  // its matches interleave. O(address runs met) per column.
+  std::vector<SymbolicPiece> symbolicPieces(const BindingColumn& binding) const {
+    std::vector<SymbolicPiece> pieces;
+    if(binding.first.region || binding.delta[10] || binding.first.value_byte_offset)return pieces;
+    std::vector<SymbolicPiece> matches;bool valid=true;std::size_t covered=0;
+    intersect(binding,[&](auto id,auto m) {
+      const auto& run=runs_[id];
+      if(!run.position || (m.count>1 && m.left_step!=1) || m.left<0){valid=false;return;}
+      const auto constant=__int128(run.position->constant)+binding.first.component_offset;
+      if(constant<0 || constant>INT64_MAX){valid=false;return;}
+      matches.push_back({static_cast<std::size_t>(m.left),m.count,static_cast<std::int64_t>(constant),0,&run.position->base});
+      covered+=m.count;
+    });
+    if(!valid || covered!=binding.count)return {};
+    std::sort(matches.begin(),matches.end(),[](const auto& x,const auto& y){return x.begin<y.begin;});
+    for(const auto& match:matches) {
+      if(!pieces.empty()) {
+        auto& piece=pieces.back();
+        if(piece.begin+piece.count!=match.begin){pieces.clear();return pieces;}
+        const auto delta=__int128(match.constant)-piece.constant;
+        if(*piece.base==*match.base && (match.count==1 || delta==0)) {
+          if(piece.count==1 && delta>=INT64_MIN && delta<=INT64_MAX && (match.count==1 || !delta))
+            piece.step=static_cast<std::int64_t>(delta);
+          if(delta==__int128(piece.step)*piece.count && (match.count==1 || !piece.step)){piece.count+=match.count;continue;}
+        }
+      } else if(match.begin){return pieces;}
+      pieces.push_back(match);
+    }
+    return pieces;
   }
   void validate(const BindingColumn& binding) const {
     if(!binding.first.region)return;
@@ -187,6 +267,20 @@ class Serializer {
   std::unordered_map<std::size_t,std::uint32_t> load_inputs_;
   std::optional<SelectorPatterns> selectors_;
   std::map<std::uint32_t,std::size_t> duplicate_groups_;
+  // Groups from this index on are same-value write obligations.
+  std::size_t same_value_groups_begin_=SIZE_MAX;
+  // The checked access of `length` actions of a same-value obligation write, from the action at
+  // `begin` of `action`'s column: one run, resolved only to name an unproven write. O(1).
+  void sameValueWrites(const va::OrderedMemoryAction& action,
+      const va::MemoryActionCodec::Delta& delta,std::size_t begin,std::size_t length,std::uint32_t access) {
+    if(!length)return;
+    const auto first=__int128(action.operation.instance)+__int128(delta[0])*begin;
+    const auto last=first+__int128(delta[0])*(length-1);
+    Require(first>=0 && last>=0 && first<=SIZE_MAX && last<=SIZE_MAX,"invalid_template_binding",
+        "Affine binding exceeds its domain");
+    result_.same_value_writes.push_back({{action.operation.node,static_cast<std::size_t>(first)},delta[0],length,
+        a::AccessId(access)});
+  }
   struct Partition {Domain offsets;std::uint64_t bytes;};
   std::map<std::uint32_t,std::vector<Partition>> duplicate_parts_;
   struct MembershipRun {std::size_t begin;Domain threads;};
@@ -210,7 +304,7 @@ class Serializer {
     Require(count && count<=UINT32_MAX-events_.size(),"serialization_size_limit","Event identities exceed their finite domain");
     const auto first=std::uint32_t(events_.size());
     events_.appendAffine(a::Event{a::EventId(first),a::EventSchedulingClass::kNormal,{}, {},a::OperationCompleteEvent{}},
-        a::EventRecordCodec::Delta{1,0,0,0,0,0},count);return first;
+        a::EventRecordCodec::Delta{1,0,0,0,0,0,0},count);return first;
   }
   void edge(Domain from,Domain to) {
     Require(from.count==to.count,"invalid_template_dependency","Dependency domains differ");
@@ -307,6 +401,7 @@ class Serializer {
         Require(found!=access_index_.end(),"missing_checked_memory_mapping","Mapped effect is absent from the checked accesses");
         address_index.validate(b);
         const auto symbolic_region=address_index.symbolic(b);
+        const auto symbolic_pieces=symbolic_region?address_index.symbolicPieces(b):std::vector<SymbolicPiece>{};
         std::size_t source_covered=0;
         source_index.intersect({b.first.source.instruction.value(),std::uint64_t(b.delta[0]),b.count},[&](auto id,auto match) {
           if(!b.delta[0]){match.count=b.count;match.left_step=1;match.right_step=0;}
@@ -362,12 +457,48 @@ class Serializer {
               b.delta[9]*std::int64_t(match.left_step),b.delta[11]*std::int64_t(match.left_step)};
           const Domain access_ids{access.id.value(),std::uint64_t(column.delta[0])*match.right_step,match.count};
           std::size_t next=0;
+          // The payload bytes of a positioned action (as for symbolic_region: a Load's result,
+          // a Store's value); a fragmented native access has no position.
+          std::uint64_t payload=0;
+          if(!symbolic_pieces.empty() && !binding.value_byte_offset) {
+            const auto& node=program_.values.node(binding.value.node);
+            const auto value=dynamic_cast<const v::LoadOp*>(&node.operation())?node.result(0,binding.value.instance):
+                dynamic_cast<const v::StoreOp*>(&node.operation())?node.instanceOperands(binding.value.instance).at(1):v::Value{};
+            if(program_.values.contains(value)) {
+              const auto bits=program_.values.type(value).bitSize();
+              if(bits && bits%8==0)payload=bits/8;
+            }
+          }
+          const auto emit=[&](va::OrderedMemoryAction part,const va::MemoryActionCodec::Delta& delta,
+              std::size_t begin,std::size_t length) {
+            actions_.push_back({std::move(part),delta,{endpoints.first+endpoints.step*begin,endpoints.step,length},length});
+          };
+          // A symbolic column is cut where its binding pieces change base or constant progression.
+          // Binding index of match member j: match.left + j*match.left_step (left_step >= 1).
           const auto append=[&](std::size_t begin,std::size_t length,std::optional<std::size_t> group) {
             if(!length)return;
             auto part=Advance<va::OrderedMemoryAction,va::MemoryActionCodec>(action,action_delta,begin);
             part.duplicate_write_group=group;
-            actions_.push_back({std::move(part),action_delta,
-                {endpoints.first+endpoints.step*begin,endpoints.step,length},length});
+            if(!payload){emit(std::move(part),action_delta,begin,length);return;}
+            const auto step=std::max<std::size_t>(match.left_step,1);
+            for(std::size_t j=begin;j<begin+length;) {
+              const auto index=std::size_t(match.left)+j*step;
+              auto piece=std::upper_bound(symbolic_pieces.begin(),symbolic_pieces.end(),index,
+                  [](std::size_t x,const SymbolicPiece& p){return x<p.begin;});
+              Require(piece!=symbolic_pieces.begin(),"invalid_template_binding","Symbolic binding piece is missing");
+              --piece;
+              const auto last=std::min(begin+length,j+(piece->begin+piece->count-index+step-1)/step);
+              auto member=Advance<va::OrderedMemoryAction,va::MemoryActionCodec>(action,action_delta,j);
+              member.duplicate_write_group=group;
+              const auto constant=__int128(piece->constant)+__int128(piece->step)*(index-piece->begin);
+              const auto stride=__int128(piece->step)*step;
+              Require(constant>=0 && constant<=INT64_MAX && stride>=INT64_MIN && stride<=INT64_MAX,
+                  "invalid_template_binding","Symbolic position progression overflows");
+              member.symbolic_position=va::SymbolicPosition{{symbolic_region->allocation,
+                  static_cast<std::uint64_t>(constant),payload},*piece->base};
+              auto delta=action_delta;delta[1]=static_cast<std::int64_t>(stride);
+              emit(std::move(member),delta,j,last-j);j=last;
+            }
           };
           for(auto it=duplicate_groups_.lower_bound(std::uint32_t(access_ids.first));
               it!=duplicate_groups_.end() && it->first<=access_ids.last();++it) {
@@ -375,6 +506,8 @@ class Serializer {
             append(next,m.left-next,{});
             const auto length=access_ids.step?1:match.count;
             append(m.left,length,it->second);next=m.left+length;
+            if(it->second>=same_value_groups_begin_) [[unlikely]]
+              sameValueWrites(action,action_delta,m.left,length,it->first);
             Require(binding.region.has_value(),"dynamic_address_unsupported","Duplicate-store byte regions are not constant");
             Require(b.delta[10]>=0,"invalid_template_binding","Duplicate-store component progression decreases");
             duplicate_parts_[it->first].push_back({{binding.component_offset+std::uint64_t(b.delta[10])*match.left_step*m.left,
@@ -579,6 +712,23 @@ class Serializer {
         first=access;
       }
     }
+    // Same-value write obligations: the race check established one footprint per group from
+    // the address overlap, not from address identity (each thread binds its own address).
+    const auto begin=race_.duplicate_write_groups.size();
+    for(std::size_t k=0;k<race_.same_value_write_groups.size();++k) {
+      const auto& members=race_.same_value_write_groups[k];
+      Require(members.size()>=2,"invalid_duplicate_write_group","Same-value write group has fewer than two accesses");
+      std::optional<std::uint64_t> bytes;
+      for(auto id:members) {
+        Require(id.value()<accesses_.size(),"invalid_duplicate_write_group","Same-value write access is missing");
+        const auto access=accesses_.at(id.value());
+        Require(access.id==id && access.mode==a::AccessMode::kWrite && access.bytes && (!bytes || *bytes==*access.bytes) &&
+            duplicate_groups_.emplace(id.value(),begin+k).second,"invalid_duplicate_write_group","Same-value write footprints differ");
+        bytes=access.bytes;
+      }
+    }
+    if(!race_.same_value_write_groups.empty())
+      same_value_groups_begin_=result_.contract.same_value_groups_begin=begin;
     orderingSkeleton();bindMemory();numericalDependencies();schedule();
     std::map<std::string,va::AllocationInfo> allocations;
     for(const auto& address:checked_.addresses) {
@@ -587,6 +737,22 @@ class Serializer {
       allocations.try_emplace(id,va::AllocationInfo{id,global || address.address_space=="const",global});
     }
     for(auto& [key,allocation]:allocations){(void)key;result_.contract.allocations.push_back(std::move(allocation));}
+    // The trusted properties the race check used decide symbolic-segment aliasing too.
+    const auto properties=nlohmann::json::parse(checked_.tensor_properties_json,nullptr,false);
+    Require(properties.is_array(),"invalid_tensor_properties","Tensor properties are not an array");
+    for(const auto& record:properties) {
+      Require(record.is_object() && record.contains("object") && record.contains("element_type"),
+          "invalid_tensor_properties","Tensor property record has no object or element type");
+      const auto bound=[&](const char* key)->std::optional<std::int64_t> {
+        const auto found=record.find(key);
+        if(found==record.end() || !found->is_number_integer())return {};
+        if(found->is_number_unsigned() && found->get<std::uint64_t>()>std::uint64_t(INT64_MAX))return {};
+        return found->get<std::int64_t>();
+      };
+      result_.contract.tensor_properties.push_back({record["object"].get<std::string>(),
+          record["element_type"].get<std::string>(),bound("lower_bound"),bound("upper_bound"),
+          record.value("injective",false)});
+    }
   }
 };
 }

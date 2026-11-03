@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -60,7 +68,7 @@
       "code": "saturation_input_finiteness_not_proven",
       "details": {
         "conversion": "Convert rounding=nearest-even saturate_finite (f32 -> e2m1)",
-        "input_expression": "mul[,1](read[B\nreal:f16](0,11,),select[](compare[eq](select#193,0,),recip[](mul#195,),0,),)",
+        "input_expression": "mul[,1](read[B\nreal:f16](0,11,),select[](compare[eq](select#196,0,),recip[](mul#198,),0,),)",
         "internal_stage": "equivalence_import",
         "source_type": "f32",
         "target_type": "e2m1"
@@ -122,9 +130,9 @@
     },
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
-      "arena_nodes": 201,
+      "arena_nodes": 204,
       "blocked_stage": "right_import_s",
-      "comparison_elapsed_seconds": 0.001268135,
+      "comparison_elapsed_seconds": 0.001240492,
       "context_declaration": {
         "assumptions": [],
         "fixed_inputs": [],
@@ -151,7 +159,7 @@
         "importer_scope_binder_hits": 1,
         "importer_scope_binders_created": 1,
         "importer_scope_leaf_lookups": 2,
-        "intern_requests": 702,
+        "intern_requests": 719,
         "known_bits_cache_hits": 3,
         "known_bits_edges": 96,
         "known_bits_nodes": 90,
@@ -175,7 +183,7 @@
           "code": "saturation_input_finiteness_not_proven",
           "details": {
             "conversion": "Convert rounding=nearest-even saturate_finite (f32 -> e2m1)",
-            "input_expression": "mul[,1](read[B\nreal:f16](0,11,),select[](compare[eq](select#193,0,),recip[](mul#195,),0,),)",
+            "input_expression": "mul[,1](read[B\nreal:f16](0,11,),select[](compare[eq](select#196,0,),recip[](mul#198,),0,),)",
             "source_type": "f32",
             "target_type": "e2m1"
           },
@@ -183,7 +191,7 @@
           "stage": "equivalence_import"
         }
       ],
-      "elapsed_s": 0.000714603,
+      "elapsed_s": 0.000688426,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -221,7 +229,7 @@
         },
         "query_count": 0,
         "reset_s": 0.0,
-        "reuse_cache": false,
+        "reuse_cache": true,
         "shared_evictions": 0
       },
       "equivalence_context": {
@@ -241,7 +249,7 @@
       "normalized_reachable_nodes": 0,
       "numerical_result": "unsupported",
       "pattern_nodes": 2,
-      "peak_rss_kib": 77592,
+      "peak_rss_kib": 130400,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
       "piece_nodes": 0,
       "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
@@ -261,7 +269,7 @@
           ],
           "record": {},
           "timing_s": {
-            "left_import_s": 0.000309641
+            "left_import_s": 0.000307543
           }
         }
       ],
@@ -270,7 +278,7 @@
       "stages_s": {
         "affine_state_pattern_s": 0.0,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.000309641,
+        "left_import_s": 0.000307543,
         "left_normalize_s": 0.0,
         "parametric_state_s": 0.0,
         "piece_union_record_s": 0.0,
@@ -282,7 +290,7 @@
         "state_pattern_s": 0.0
       },
       "timings": {
-        "load_and_scope_analysis": 0.000138511
+        "load_and_scope_analysis": 0.000110921
       },
       "total_output_families": 9,
       "transport": "in_memory_cpp_objects",
@@ -476,7 +484,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 1024,
-      "hb_query_seconds": 1.279e-05,
+      "hb_query_seconds": 1.2961e-05,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -484,7 +492,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 33.51953125,
+    "peak_footprint_mib": 37.0078125,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -492,6 +500,7 @@
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
@@ -630,16 +639,16 @@
         "action_patterns": 27,
         "binding_patterns": 27,
         "domain_refinements": 5130,
-        "elapsed_seconds": 0.00490475,
+        "elapsed_seconds": 0.005016286,
         "event_families": 556,
         "expanded_event_records": 0,
         "largest_batch_members": 511,
         "logical_actions": 522,
         "logical_events": 11236,
-        "peak_rss_mib_at_completion": 75.7734375,
+        "peak_rss_mib_at_completion": 127.34375,
         "reachability_queries": 0,
         "relations": 3198,
-        "rss_mib_at_completion": 37.671875,
+        "rss_mib_at_completion": 41.17578125,
         "scheduled_batches": 556,
         "singleton_batches": 505,
         "value_families": 456
@@ -651,11 +660,11 @@
     "value_ir_instance_count": 10457,
     "value_ir_node_count": 242,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 0.024871205,
+    "verification_elapsed_seconds": 0.029485844,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 75.7734375,
-  "pipeline_elapsed_seconds": 0.033678313,
+  "peak_rss_mib": 127.34375,
+  "pipeline_elapsed_seconds": 0.039264844,
   "result": "unsupported",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -667,5 +676,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.489
+  "whole_pipeline_timeout_seconds": 498.477
 }

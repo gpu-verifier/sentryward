@@ -169,9 +169,17 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
   std::optional<ActorId> previous_actor;
   std::optional<std::pair<std::uint64_t,std::uintptr_t>> previous_cohort;
   std::size_t event_begin=0;
+  // Loop iterations of the current thread: an instruction whose PTX site precedes the previous
+  // one follows a back edge; its header and the first event lowered from it.
+  std::vector<std::pair<std::size_t,std::uint32_t>> iteration_starts;
+  std::optional<std::uint32_t> previous_site;
   const auto finish_thread=[&] {
     graph.endEdgeGroup();
-    if(previous_cohort)graph.compressThreadTail(event_begin,previous_cohort->first,previous_cohort->second);
+    if(previous_cohort) {
+      graph.compressIterations(event_begin,iteration_starts);
+      graph.compressThreadTail(event_begin,previous_cohort->first,previous_cohort->second);
+    }
+    iteration_starts.clear();previous_site.reset();
   };
   // Later passes visit only what they act on: the thread transitions (by step), the
   // requirement holders (step, position) and the state waits (position).
@@ -195,6 +203,11 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
       previous_actor=instruction->actor;previous_cohort=cohort;
       if(cohort)graph.beginEdgeGroup(cohort->first,cohort->second);
       transitions.push_back({step,cohort});
+    }
+    if(instruction->ptx_origin) {
+      const auto site=instruction->ptx_origin->instruction_index;
+      if(previous_site && site<*previous_site)iteration_starts.emplace_back(graph.eventCount()-event_begin,site);
+      previous_site=site;
     }
     std::optional<Diagnostic> lowering_error;
     const LoweredInstruction lowered = std::visit(

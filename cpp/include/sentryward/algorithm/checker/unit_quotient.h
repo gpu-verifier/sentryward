@@ -95,22 +95,14 @@ public:
   ActorWeights(const UnitQuotient &quotient, std::span<const ActorInfo> actors) {
     std::uint32_t size = 0;
     for (const auto &actor : actors) size = std::max(size, actor.id.value() + 1);
-    ctas_.assign(size, UINT32_MAX);
     weights_.assign(size, 1);
-    for (const auto &actor : actors) {
-      ctas_[actor.id.value()] = actor.cta.value();
-      weights_[actor.id.value()] = quotient.Weight(actor.cta.value());
-    }
+    for (const auto &actor : actors) weights_[actor.id.value()] = quotient.Weight(actor.cta.value());
   }
   [[nodiscard]] std::uint64_t operator()(ActorId actor) const {
     return actor.value() < weights_.size() ? weights_[actor.value()] : 1;
   }
-  [[nodiscard]] std::uint32_t Cta(ActorId actor) const {
-    return actor.value() < ctas_.size() ? ctas_[actor.value()] : UINT32_MAX;
-  }
 
 private:
-  std::vector<std::uint32_t> ctas_;
   std::vector<std::uint64_t> weights_;
 };
 

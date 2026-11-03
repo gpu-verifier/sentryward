@@ -12,6 +12,7 @@
 #include <span>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <utility>
 #include "sentryward/algorithm/base/template_records.h"
@@ -23,12 +24,36 @@ struct MemoryInstance final {
   friend auto operator<=>(const MemoryInstance&, const MemoryInstance&) = default;
 };
 
+// The allocation identity of ConstantRegion: the length-prefixed address space and allocation
+// name, e.g. "6:global3:out" for the global input object "out".
+inline std::string AllocationIdentity(std::string_view space, std::string_view allocation) {
+  return std::to_string(space.size()) + ':' + std::string(space) + std::to_string(allocation.size()) + ':' +
+         std::string(allocation);
+}
+
 // Allocation identity includes address space, owner, and lifetime.
 struct ConstantRegion final {
   std::string allocation;
   std::uint64_t offset = 0;
   std::uint64_t bytes = 0;
   friend auto operator<=>(const ConstantRegion&, const ConstantRegion&) = default;
+};
+
+// One term of a symbolic byte offset: coefficient x the element at `element_offset` (bytes)
+// of a read-only input object with tensor_properties, read as `element_type` (the
+// frontend's abstract affine footprint term).
+struct SymbolicAddressTerm final {
+  std::string object, element_type;
+  std::int64_t element_offset = 0, coefficient = 0;
+  friend auto operator<=>(const SymbolicAddressTerm&, const SymbolicAddressTerm&) = default;
+};
+// The memory position of an access whose allocation-relative byte offset is affine in
+// such elements: constant.offset + sum(coefficient x element), over constant.bytes.
+// `base` holds the terms in the frontend's order (sorted by atom); it is never empty.
+struct SymbolicPosition final {
+  ConstantRegion constant;
+  std::vector<SymbolicAddressTerm> base;
+  friend bool operator==(const SymbolicPosition&, const SymbolicPosition&) = default;
 };
 
 struct OrderedMemoryAction final {
@@ -41,6 +66,8 @@ struct OrderedMemoryAction final {
   // Object identity and payload size only: offset is relative to the original
   // Load address operand, NOT a constant allocation-relative memory region.
   std::optional<ConstantRegion> symbolic_region = std::nullopt;
+  // Set with symbolic_region when the frontend's footprint is an abstract affine form.
+  std::optional<SymbolicPosition> symbolic_position = std::nullopt;
   friend bool operator==(const OrderedMemoryAction&,const OrderedMemoryAction&)=default;
 };
 
@@ -50,26 +77,33 @@ struct MemoryActionCodec final {
   using Fields=std::array<std::uint64_t,3>;
   using Binding=Fields;
   using Delta=std::array<std::int64_t,3>;
+  // A symbolic position's constant part takes the region offset's field (they never coexist).
   static Fields fields(const OrderedMemoryAction& action) {
-    return {action.operation.instance,action.region?action.region->offset:0,action.value_byte_offset.value_or(0)};
+    return {action.operation.instance,action.region?action.region->offset:
+        action.symbolic_position?action.symbolic_position->constant.offset:0,action.value_byte_offset.value_or(0)};
   }
   static bool compatible(const OrderedMemoryAction& a,const OrderedMemoryAction& b) {
     return a.operation.node==b.operation.node && a.region.has_value()==b.region.has_value() &&
       (!a.region || (a.region->allocation==b.region->allocation && a.region->bytes==b.region->bytes)) &&
       a.value_byte_offset.has_value()==b.value_byte_offset.has_value() &&
       a.unsupported_reason==b.unsupported_reason && a.duplicate_write_group==b.duplicate_write_group &&
-      a.symbolic_region==b.symbolic_region;
+      a.symbolic_region==b.symbolic_region && a.symbolic_position.has_value()==b.symbolic_position.has_value() &&
+      (!a.symbolic_position || (a.symbolic_position->constant.allocation==b.symbolic_position->constant.allocation &&
+          a.symbolic_position->constant.bytes==b.symbolic_position->constant.bytes &&
+          a.symbolic_position->base==b.symbolic_position->base));
   }
   static bool split(OrderedMemoryAction& action,Binding& binding) {
     binding=fields(action);
     action.operation.instance=0;
     if(action.region)action.region->offset=0;
+    if(action.symbolic_position)action.symbolic_position->constant.offset=0;
     if(action.value_byte_offset)action.value_byte_offset=0;
     return true;
   }
   static void bind(OrderedMemoryAction& action,const Binding& binding) {
     action.operation.instance=binding[0];
     if(action.region)action.region->offset=binding[1];
+    if(action.symbolic_position)action.symbolic_position->constant.offset=binding[1];
     if(action.value_byte_offset)action.value_byte_offset=binding[2];
   }
   static std::size_t hash(const OrderedMemoryAction& action) {
@@ -82,6 +116,13 @@ struct MemoryActionCodec final {
     if(action.duplicate_write_group)add(*action.duplicate_write_group);
     add(action.symbolic_region.has_value());
     if(action.symbolic_region){add(action.symbolic_region->allocation);add(action.symbolic_region->offset);add(action.symbolic_region->bytes);}
+    add(action.symbolic_position.has_value());
+    if(action.symbolic_position) {
+      add(action.symbolic_position->constant.allocation);add(action.symbolic_position->constant.bytes);
+      for(const auto& term:action.symbolic_position->base) {
+        add(term.object);add(term.element_type);add(term.element_offset);add(term.coefficient);
+      }
+    }
     return h;
   }
   static std::optional<Delta> difference(const Fields& a,const Fields& b) {

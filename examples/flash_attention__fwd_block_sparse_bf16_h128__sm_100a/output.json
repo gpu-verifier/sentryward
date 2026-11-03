@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -2771,35 +2779,19 @@
       "address_value_bridge": {
         "diagnostics": [
           {
-            "code": "two_arm_merge_values",
+            "code": "tma_data_dependent_coordinate",
             "details": {
               "cta": 0,
-              "instruction": "@%p1082 bra \t$L__BB0_323;",
-              "instruction_index": 11474,
+              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.L2::cache_hint [%r25+134144], [%rd601, {%r1574, %r26, %r9887, %r9886}], [%r27], %rd602;",
+              "instruction_index": 414,
               "location": {
                 "file": "corpus/flash_attention__fwd_block_sparse_bf16_h128__sm_100a.ptx",
-                "line": 12960
+                "line": 521
               },
               "occurrence": 0,
-              "thread": 256
+              "thread": 448
             },
-            "message": "Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); values after its join are not exported",
-            "stage": "value_lowering"
-          },
-          {
-            "code": "unknown_execution_predicate",
-            "details": {
-              "cta": 0,
-              "instruction": "@%p1082 bra \t$L__BB0_323;",
-              "instruction_index": 11474,
-              "location": {
-                "file": "corpus/flash_attention__fwd_block_sparse_bf16_h128__sm_100a.ptx",
-                "line": 12960
-              },
-              "occurrence": 0,
-              "thread": 256
-            },
-            "message": "The active instruction path is not fixed",
+            "message": "TMA tile coordinate %r26 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
             "stage": "value_lowering"
           }
         ],
@@ -3031,7 +3023,7 @@
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 3003104,
-        "stored_bindings": 84480
+        "stored_bindings": 83808
       },
       "source_edge_storage": {
         "binding_templates": 14112,
@@ -3067,13 +3059,14 @@
     "memory_analysis_complete": false,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 6396.4296875,
+    "peak_footprint_mib": 6712.31640625,
     "required_order_domains": 169984,
     "required_orders": 5439488,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
@@ -3083,7 +3076,7 @@
       "binding_diagnostics": [
         {
           "code": "incomplete_value_semantics",
-          "message": "two_arm_merge_values: Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); values after its join are not exported"
+          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r26 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
         }
       ],
       "execution_cohorts": 336,
@@ -3095,18 +3088,13 @@
       "synchronization_groups": 39568,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 3088,
-      "thread_prefix_groups": 27246,
-      "value_diagnostic_count": 2,
+      "thread_prefix_groups": 27218,
+      "value_diagnostic_count": 1,
       "value_diagnostics": [
         {
-          "code": "two_arm_merge_values",
-          "line": 12960,
-          "message": "Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); values after its join are not exported"
-        },
-        {
-          "code": "unknown_execution_predicate",
-          "line": 12960,
-          "message": "The active instruction path is not fixed"
+          "code": "tma_data_dependent_coordinate",
+          "line": 521,
+          "message": "TMA tile coordinate %r26 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
         }
       ]
     },
@@ -4044,12 +4032,12 @@
         ]
       }
     },
-    "value_ir_instance_count": 536306,
-    "value_ir_node_count": 25035,
+    "value_ir_instance_count": 536230,
+    "value_ir_node_count": 25019,
     "value_view_complete": false
   },
-  "peak_rss_mib": 6585.28125,
-  "pipeline_elapsed_seconds": 130.75338631,
+  "peak_rss_mib": 7080.05078125,
+  "pipeline_elapsed_seconds": 103.462132197,
   "result": "invalid_lifecycle",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -4059,5 +4047,5 @@
   "verification_limitations": [],
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.487
+  "whole_pipeline_timeout_seconds": 498.484
 }

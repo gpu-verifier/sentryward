@@ -91,7 +91,7 @@ std::optional<EventOrder> EventDag::topologicalOrder() const {
   if (!acyclic_) {
     return std::nullopt;
   }
-  if (events_.storedBindingCount() * 2 < eventCount())
+  if (events_.unrolledBindingCount() * 2 < eventCount())
     return TemplateTopologicalOrder(events_, edges_,adjacency_->relationStorage());
   std::vector<std::size_t> indegree(events_.size());
   for (std::size_t index = 0; index < events_.size(); ++index) {
@@ -132,7 +132,7 @@ std::optional<EventOrder> EventDag::topologicalOrder() const {
 }
 
 bool EventDag::computeAcyclic() const {
-  if (events_.storedBindingCount() * 2 < eventCount())
+  if (events_.unrolledBindingCount() * 2 < eventCount())
     return TemplateTopologicalOrder(events_, edges_,adjacency_->relationStorage()).has_value();
   std::vector<std::size_t> indegree(events_.size());
   std::vector<EventId> ready;

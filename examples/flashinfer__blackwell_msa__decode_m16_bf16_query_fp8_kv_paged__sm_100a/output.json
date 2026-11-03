@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -956,19 +964,19 @@
       "address_value_bridge": {
         "diagnostics": [
           {
-            "code": "unsupported_operation",
+            "code": "tma_data_dependent_coordinate",
             "details": {
               "cta": 0,
-              "instruction": "atom.shared.max.u32 \t%r293, [%r20], %r292;",
-              "instruction_index": 317,
+              "instruction": "cp.async.bulk.tensor.3d.shared::cta.global.mbarrier::complete_tx::bytes [%r2166], [%rd208, {%r2446, %r2446, %r2167}], [%r2164];",
+              "instruction_index": 1597,
               "location": {
                 "file": "corpus/flashinfer__blackwell_msa__decode_m16_bf16_query_fp8_kv_paged__sm_100a.ptx",
-                "line": 567
+                "line": 2349
               },
               "occurrence": 0,
-              "thread": 32
+              "thread": 448
             },
-            "message": "No value-IR model for 'atom' (including its memory effects/results)",
+            "message": "TMA tile coordinate %r2167 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
             "stage": "value_lowering"
           }
         ],
@@ -1401,7 +1409,7 @@
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 835653,
-        "stored_bindings": 117161
+        "stored_bindings": 97333
       },
       "source_edge_storage": {
         "binding_templates": 1554,
@@ -1421,13 +1429,14 @@
     "memory_analysis_complete": false,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 1771.26171875,
+    "peak_footprint_mib": 2043.6015625,
     "required_order_domains": 13183,
     "required_orders": 413920,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": true,
       "representative_branches": false,
       "representative_election": true
@@ -1437,7 +1446,7 @@
       "binding_diagnostics": [
         {
           "code": "incomplete_value_semantics",
-          "message": "unsupported_operation: No value-IR model for 'atom' (including its memory effects/results)"
+          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r2167 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
         }
       ],
       "execution_cohorts": 37,
@@ -1449,13 +1458,13 @@
       "synchronization_groups": 31925,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 521,
-      "thread_prefix_groups": 10809,
+      "thread_prefix_groups": 5982,
       "value_diagnostic_count": 1,
       "value_diagnostics": [
         {
-          "code": "unsupported_operation",
-          "line": 567,
-          "message": "No value-IR model for 'atom' (including its memory effects/results)"
+          "code": "tma_data_dependent_coordinate",
+          "line": 2349,
+          "message": "TMA tile coordinate %r2167 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
         }
       ]
     },
@@ -1522,12 +1531,12 @@
         ]
       }
     },
-    "value_ir_instance_count": 206640,
-    "value_ir_node_count": 7271,
+    "value_ir_instance_count": 96838,
+    "value_ir_node_count": 3814,
     "value_view_complete": false
   },
-  "peak_rss_mib": 1804.09375,
-  "pipeline_elapsed_seconds": 11.553221551,
+  "peak_rss_mib": 2112.2578125,
+  "pipeline_elapsed_seconds": 10.800378605,
   "result": "not_wellsynced",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -1537,5 +1546,5 @@
   "verification_limitations": [],
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.458
+  "whole_pipeline_timeout_seconds": 498.464
 }

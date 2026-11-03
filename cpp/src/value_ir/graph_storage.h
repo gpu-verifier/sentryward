@@ -1,9 +1,8 @@
 #pragma once
+#include "sentryward/algorithm/base/analysis_scope.h"
 #include "sentryward/value_ir/graph.h"
 
-#include <atomic>
 #include <algorithm>
-#include <limits>
 #include <stdexcept>
 #include <utility>
 #include <map>
@@ -24,16 +23,7 @@ inline Instance makeInstance(SourceOrigin origin, std::vector<Value> operands, c
 }
 
 inline std::uint64_t nextIdentity() {
-  static std::atomic<std::uint64_t> next{1};
-  auto candidate = next.load(std::memory_order_relaxed);
-  for (;;) {
-    if (candidate == std::numeric_limits<std::uint64_t>::max()) {
-      throw std::overflow_error("value graph identity space exhausted");
-    }
-    if (next.compare_exchange_weak(candidate, candidate + 1, std::memory_order_relaxed)) {
-      return candidate;
-    }
-  }
+  return algorithm::AnalysisScope::Current().Next(algorithm::AnalysisScope::Ids::kValueGraph);
 }
 
 inline bool hasOccurrence(const SourceOrigin& origin) {

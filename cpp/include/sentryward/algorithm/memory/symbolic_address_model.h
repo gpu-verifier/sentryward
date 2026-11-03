@@ -6,16 +6,36 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "sentryward/algorithm/memory/constant_address_model.h"
 
 namespace sentryward::algorithm {
 
+// The prefix of a TensorPropertySymbol.
+inline constexpr std::string_view kTensorPropertySymbolPrefix = "tensor_property:";
 // The internal table-lookup symbol of an input object's elements under tensor_properties:
 // an address offset term {"operator":"gather","symbol":S,"args":[element byte offset]}.
 inline std::string TensorPropertySymbol(std::string_view object, std::string_view element_type) {
-  return "tensor_property:" + std::string(object) + ":" + std::string(element_type);
+  return std::string(kTensorPropertySymbolPrefix) + std::string(object) + ":" + std::string(element_type);
+}
+// The object and element type of a TensorPropertySymbol (the element type has no ':'), else nullopt.
+inline std::optional<std::pair<std::string, std::string>> ParseTensorPropertySymbol(std::string_view symbol) {
+  constexpr auto prefix = kTensorPropertySymbolPrefix;
+  if (!symbol.starts_with(prefix)) return std::nullopt;
+  const auto split = symbol.rfind(':');
+  if (split < prefix.size()) return std::nullopt;
+  return std::pair{std::string(symbol.substr(prefix.size(), split - prefix.size())),
+                   std::string(symbol.substr(split + 1))};
+}
+// The symbol of an element function of those elements (a canonical operator tree `function`
+// over the element value): {"operator":"gather","symbol":S,"args":[element byte offset],
+// "object":O,"lower":L,"upper":U}, an exact deterministic value within [L, U].
+inline std::string TensorPropertyFunctionSymbol(std::string_view object, std::string_view element_type,
+                                                std::string_view function) {
+  return "tensor_property_function:" + std::to_string(object.size()) + ":" + std::string(object) + ":" +
+         std::string(element_type) + ":" + std::string(function);
 }
 
 struct SymbolicSolverOptions final {
@@ -90,6 +110,7 @@ class SymbolicAddressModel final : public MemoryModel {
 
   [[nodiscard]] const ConstantAddressModel& constantModel() const noexcept;
   [[nodiscard]] std::optional<FamilyFootprint> familyFootprint(const MemoryAccessFamily&) override;
+  [[nodiscard]] std::optional<FamilyStorage> familyStorage(const MemoryAccessFamily&) override;
   // Also a TMA region whose offset's symbolic part is tensor-property lookups (region_axes set).
   [[nodiscard]] std::optional<FamilyFootprint> crossUnitFootprint(const MemoryAccessFamily&) override;
   // Footprints whose symbolic suffix is tensor-property lookups (FamilyFootprint::gathers): each

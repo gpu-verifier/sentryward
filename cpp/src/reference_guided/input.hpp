@@ -50,7 +50,7 @@ struct RawNode {
       level = input_id(f.at("binder_level"));
       count = input_unsigned(f.at("count"));
       reducer = f.at("reducer");
-      if (reducer != "Sum" && reducer != "Max")
+      if (reducer != "Sum" && reducer != "Max" && reducer != "Min")
         throw Unsupported("unsupported Fold reducer " + reducer);
     }
   }

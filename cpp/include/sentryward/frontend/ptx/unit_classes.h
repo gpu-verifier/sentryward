@@ -50,9 +50,6 @@ struct UnitGates {
   bool value_thread_range = false, trusted_reference = false, value_dump = false;
   bool branch_scope = false, scalar_fold_dump = false;
   bool exhaustive_search = false, continue_search = false, development_exports = false;
-  // A stdin reference that could not be kept for a per-unit restart (an exec
-  // of the binary re-reads it from a spooled copy; run.cpp).
-  bool reference_stdin = false;
 };
 
 struct UnitPlan {

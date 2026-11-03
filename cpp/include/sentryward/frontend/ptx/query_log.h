@@ -47,9 +47,12 @@ public:
   };
   // Admit's checks (below) of a unit against the classes founded so far, off the main thread (class
   // logs never change once founded; the snapshot shares them). Admit takes its result:
-  // those classes are decided by it, later ones replayed there.
+  // those classes are decided by it, later ones replayed there. `previous`: an earlier PreAdmit
+  // of these facts, whose classes stay decided (its admission, if any, stands).
   [[nodiscard]] PreAdmission PreAdmit(std::span<const CtaFacts *const> facts,
                                       const std::vector<StructureKey> &keys) const;
+  [[nodiscard]] PreAdmission PreAdmit(std::span<const CtaFacts *const> facts,
+                                      const std::vector<StructureKey> &keys, PreAdmission previous) const;
   // Every rank of `unit` executed (`facts` in rank order, accounting done), none
   // consumed: equal structure keys on every rank, then equal answers to the
   // logged questions, equal slot outcomes up to δ and the logged alignment

@@ -10,7 +10,7 @@
 namespace sentryward::algorithm {
 FamilyConflictOrder::FamilyConflictOrder(const std::vector<MemoryAccessFamily>& families,
     const std::vector<FamilyFootprint>& footprints,const TraceOrder* order,
-    std::span<const std::uint8_t> exempt_families)
+    std::span<const std::uint8_t> blocked_families)
     :buckets_(families.size(),SIZE_MAX),peers_(families.size()) {
   if(!order)return;
   using I=address_solver::Int;
@@ -29,12 +29,12 @@ FamilyConflictOrder::FamilyConflictOrder(const std::vector<MemoryAccessFamily>& 
     const auto& p=footprints[i];if(p.empty)continue;
     const Storage key{p.space,p.allocation};spaces[key].push_back(i);
     const bool aliased=!p.alias.empty() && alias_allocations.at({p.space,p.alias}).size()>1;
-    // A tolerated write/write gap cannot certify adjacent conflict orders.
+    // A tolerated write/write gap (a blocked family) cannot certify adjacent conflict orders.
     // Disable reduction only for its storage; other allocations stay reduced.
     // Members of one family must be disjoint: a descending progression is
     // as exact as an ascending one, but self-overlapping members are not.
     // Every allocation of a shared alias scope is blocked by its own footprints.
-    if((!exempt_families.empty() && exempt_families[i]) ||
+    if((!blocked_families.empty() && blocked_families[i]) ||
         !p.affine || aliased || !p.symbolic.empty() ||
         (families[i].count>1 && (p.step<0?-p.step:p.step)<I(p.bytes) &&
          !(families[i].first.mode==AccessMode::kRead && p.step==0)))blocked[key]=true;

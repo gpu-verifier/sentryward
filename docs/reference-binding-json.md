@@ -26,6 +26,11 @@ indexed by side-specific allocation ID. A layout describes `source_offset`,
 `target_offset`, `element_bytes`, `shape`, `source_strides_bytes`, and
 `target_strides_bytes`. Offsets and strides are bytes. The target is the common
 logical layout used for comparison. The two sides must agree on that layout.
+Source strides need not be dense: sorted by size, each stride must be a positive
+multiple of `element_bytes` and at least the byte extent of all smaller-stride
+axes, so that every byte offset denotes at most one element. For example, shape
+`[7, 4, 128]` with 2-byte elements and strides `[1040, 256, 2]` pads each
+1024-byte block by 16 bytes. Other layouts are refused.
 Allocation IDs identify the expression producer's storage; they are not CUDA
 pointer values and should not be invented independently of that producer.
 
@@ -34,6 +39,10 @@ A single dense output uses `outputs.kind: "dense_tensor"`, with
 `element_bytes`, `shape`, `left_strides_bytes`, and `right_strides_bytes`.
 Multiple outputs use `kind: "dense_tensors"` and a `tensors` array containing
 these records. Output coverage must be complete for an overall `verified` result.
+Only the bytes a record compares matter: stores into a mapped allocation are
+analyzed at those bytes only, so padding, other fields and bytes outside the
+tensor may hold any value, including a never-written one. Each compared byte
+must be written by the kernel.
 
 See the complete [WeightNorm binding](../examples/pytorch__aten_WeightNorm__sm_100a/reference_binding.json)
 for two tensor inputs and two outputs. It pairs with this [kernel input](../examples/pytorch__aten_WeightNorm__sm_100a/input.json)
@@ -111,6 +120,44 @@ The current numerical model uses ideal real arithmetic with storage and index
 interpretation. It does not prove bit-for-bit floating-point equality. Input
 layouts do not imply nonzero values or other mathematical premises. A failed
 proof is `equivalence_not_proven`, not a counterexample.
+
+Operations on exact constants (literals, fixed launch parameters and values
+computed only from them) are evaluated exactly as the instruction rounds, not as
+ideal reals: binary32/binary64 `add`, `sub`, `mul`, `div` and `fma` with
+round-to-nearest-even (explicit `.rn` or PTX's default rounding; `.ftz`
+flushes binary32 subnormals, and a `.ftz` result that may round up to the
+smallest normal magnitude from below stays ideal, since its flush depends on
+when the hardware detects tininess), and `cvt` to `f16`, `bf16`, `f32` or
+`f64` with `.rn`, `.rz`, `.rm` or `.rp`. A default-rounding `add`/`sub` with a
+default-rounding `mul` operand stays ideal: PTX may contract the pair into an
+`fma`. Saturating, flushing or other conversions, approximate instructions and
+non-finite results stay ideal, as do all operations with a non-constant operand.
+Reference literals of type `f32` and `f64` denote their nearest binary32/binary64
+value. The numerical model also uses one range premise, configurable as the
+assumption `floating_values_in_range` (enabled by default;
+[assumptions](assumptions.md#floating-values-stay-in-range)).
+
+Reduction stores combine into memory instead of overwriting it.
+`cp.reduce.async.bulk` combines each element of its shared-memory payload into
+the global element at the same offset. The compared value of such an element is
+its prior contents combined with every contribution. The prior contents are the
+last plain store, or else the initial input value. A floating-point `add` is an
+ideal real sum, so the order in which the contributions arrive does not matter.
+An integer `add` is modulo 2^w. Integer `min` and `max` are exact. The value
+analysis models no other combination. Building the value view accepts `add` on
+`f32`, `u32`, `s32` and `u64`, and `min` and `max` on `u32`, `s32`, `u64` and
+`s64`; it refuses any other operator or type (`reduction_operation_unsupported`).
+A floating `min` or `max`, or another operator, that reaches expression
+construction is refused there (`scalar_fold_operation_unsupported`). The value
+analysis also refuses:
+
+- a read of an element that a reduction combined into (`reduced_read_unsupported`);
+- different operators on one element (`mixed_reduction_operations`);
+- a reduction or store that overlaps a reduced element only in part
+  (`reduction_partial_overlap_unsupported`);
+- a reduction at a symbolic position (`symbolic_reduction_unsupported`);
+- a reduction into an allocation without initial contents before any store
+  covers the element (`uninitialized_memory_read`).
 
 See [output.json](output-json.md) for check statuses and diagnostics.
 

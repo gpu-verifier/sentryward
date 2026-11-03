@@ -289,6 +289,20 @@ std::optional<FamilyFootprint> ConstantAddressModel::familyFootprint(const Memor
   return result;
 }
 
+std::optional<FamilyStorage> ConstantAddressModel::familyStorage(const MemoryAccessFamily& family) {
+  // Every member's binding (O(members)); `compare` separates bindings by these names alone.
+  std::optional<FootprintKey> first;
+  for(std::size_t k=0;k<family.count;++k) {
+    const auto current=footprint(family.at(family.first_member+k));
+    if(current.kind==FootprintKind::kRegister || current.address_space==0 || current.allocation==0)return std::nullopt;
+    if(first && (current.address_space!=first->address_space || current.allocation!=first->allocation ||
+        current.alias_scope!=first->alias_scope))return std::nullopt;
+    if(!first)first=current;
+  }
+  if(!first)return std::nullopt;
+  return FamilyStorage{names_[first->address_space],names_[first->allocation],names_[first->alias_scope]};
+}
+
 OverlapResult ConstantAddressModel::mayOverlap(const MemoryAccess& first,
                                                const MemoryAccess& second) {
   ++stats_.queries;

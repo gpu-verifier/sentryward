@@ -31,6 +31,7 @@
 #include <deque>
 #include <functional>
 #include <map>
+#include <mutex>
 #include <optional>
 #include <set>
 #include <span>
@@ -79,6 +80,12 @@ class CtaFacts;
 class ExecutorFacts;
 class RecordHolder;
 class ExpandedRecords;
+class EventTape;
+// Thrown on a thread inside a FactSource::WorkerScope by an operation that must run on the consuming
+// thread, in program order (FactSource::RequireSerial): the worker's result for that unit of work is
+// discarded and the consumer redoes it. Deliberately not a std::exception, so no handler converts it
+// into a diagnostic or a slot error that outlives the unit of work.
+struct SerialOnly {};
 
 // Which object a view reads at a site. Value reads depend only on this
 // object; metadata is shared by every representation of one record.
@@ -128,6 +135,7 @@ private:
   friend class ExecutorFacts;
   friend class RecordHolder;
   friend class ExpandedRecords;
+  friend class EventTape; // replays a worker's views (resources.h)
   RecordView(const ExecutedInstruction *record, RecordRef at, RecordKind kind,
              std::span<const RegId> slice = {}) noexcept
       : record_(record), pos_(at.pos), slice_(slice), lane_(at.lane), kind_(kind), has_ref_(true) {}
@@ -554,7 +562,11 @@ public:
   class ConsumerScope;                      // sets/restores the consumer tag only
   class SlotScope;                          // ++/-- the slot depth only
   class PartitionScope;                     // ++/-- the partition depth only
+  class WorkerScope;                        // a worker thread's own tag, depths and event tape
+  // Consuming thread only (a WorkerScope's Resources carries an id taken there).
   [[nodiscard]] std::uint16_t NewResourcesId() const noexcept { return ++resources_ids_; }
+  // Throws SerialOnly on a thread inside a WorkerScope; nothing elsewhere.
+  static void RequireSerial();
 
 protected:
   // `registered`: ExecutorFacts' lane registry; null for CtaFacts (lane_traces indices).
@@ -578,15 +590,27 @@ protected:
   const std::deque<const LaneTrace *> *registered_;
   LaunchView launch_;
   QuerySink *sink_ = nullptr;
-  mutable ConsumerTag current_;
-  mutable unsigned slot_depth_ = 0;
-  mutable unsigned partition_depth_ = 0;
+  // The event funnel's state: the consumer tag and slot/partition depths a noted event carries,
+  // and, on a worker, the tape that takes its events instead of the sink.
+  struct Funnel {
+    ConsumerTag current;
+    unsigned slot_depth = 0;
+    unsigned partition_depth = 0;
+    QuerySink *tape = nullptr;
+  };
+  // The calling thread's: its WorkerScope's on these facts, else the facts' own.
+  [[nodiscard]] Funnel &funnel() const noexcept;
+  mutable Funnel funnel_;
+  static inline thread_local WorkerScope *worker_ = nullptr;
   mutable std::uint16_t resources_ids_ = 0;
-  // Sorted by (name, id); views into program_->register_names.
-  mutable std::optional<std::vector<std::pair<std::string_view, RegId>>> regs_;
+  // Sorted by (name, id); views into program_->register_names. Built once, on first use, by
+  // whichever thread reads first.
+  mutable std::once_flag regs_built_;
+  mutable std::vector<std::pair<std::string_view, RegId>> regs_;
 
 private:
   friend class SlotResolver; // TensorMaps: SlotResolver::TensorMap only (inside Tma)
+  friend class EventTape;    // replays a worker's events into sink_
   // == config.tma_descriptors, including the executed.* and runtime.* maps.
   [[nodiscard]] const nlohmann::json &TensorMaps() const noexcept { return program_->config.tma_descriptors; }
   // The LaneRef of a trace: its lane_traces index, or ExecutorFacts::Register.
@@ -602,10 +626,10 @@ private:
 
 class FactSource::ConsumerScope {
 public:
-  ConsumerScope(const FactSource &facts, ConsumerTag tag) noexcept : facts_(facts), saved_(facts.current_) {
-    facts.current_ = tag;
+  ConsumerScope(const FactSource &facts, ConsumerTag tag) noexcept : facts_(facts), saved_(facts.funnel().current) {
+    facts.funnel().current = tag;
   }
-  ~ConsumerScope() { facts_.current_ = saved_; }
+  ~ConsumerScope() { facts_.funnel().current = saved_; }
   ConsumerScope(const ConsumerScope &) = delete;
   ConsumerScope &operator=(const ConsumerScope &) = delete;
 
@@ -621,12 +645,12 @@ public:
   // noted inside the slot (depth already raised); if Note throws, the destructor
   // does not run, so the increment is undone before rethrowing.
   explicit SlotScope(const FactSource &facts) : facts_(facts) {
-    ++facts.slot_depth_;
+    ++facts.funnel().slot_depth;
     if (facts.recording()) [[unlikely]] {
       try {
         facts.Note(query::SlotBegin{});
       } catch (...) {
-        --facts.slot_depth_;
+        --facts.funnel().slot_depth;
         throw;
       }
     }
@@ -634,7 +658,7 @@ public:
   ~SlotScope() {
     if (facts_.recording()) [[unlikely]]
       facts_.Note(query::SlotEnd{});
-    --facts_.slot_depth_;
+    --facts_.funnel().slot_depth;
   }
   SlotScope(const SlotScope &) = delete;
   SlotScope &operator=(const SlotScope &) = delete;
@@ -647,13 +671,31 @@ private:
 // not these reads). The consumer stage between two members is outside it.
 class FactSource::PartitionScope {
 public:
-  explicit PartitionScope(const FactSource &facts) noexcept : facts_(facts) { ++facts.partition_depth_; }
-  ~PartitionScope() { --facts_.partition_depth_; }
+  explicit PartitionScope(const FactSource &facts) noexcept : facts_(facts) { ++facts.funnel().partition_depth; }
+  ~PartitionScope() { --facts_.funnel().partition_depth; }
   PartitionScope(const PartitionScope &) = delete;
   PartitionScope &operator=(const PartitionScope &) = delete;
 
 private:
   const FactSource &facts_;
+};
+// A worker thread's share of the facts while it reads them alongside the consuming thread (which
+// keeps the facts' own funnel): on this thread, scopes change this object's tag and depths and,
+// while a sink is attached, events go to `tape` (EventTape, resources.h) instead of the sink; the
+// consumer replays the tape in order. `tag`: the consumer tag the work runs under (read on the
+// consuming thread, which may change its own meanwhile). Values a worker reads are its own
+// (PrivateTemplateValues, execution.h). One per thread at a time.
+class FactSource::WorkerScope {
+public:
+  WorkerScope(const FactSource &facts, ConsumerTag tag, QuerySink *tape);
+  ~WorkerScope() { worker_ = nullptr; }
+  WorkerScope(const WorkerScope &) = delete;
+  WorkerScope &operator=(const WorkerScope &) = delete;
+
+private:
+  friend class FactSource;
+  const FactSource &facts_;
+  Funnel funnel_;
 };
 
 // The fact stage of one Partition call, evaluated member by
@@ -746,8 +788,8 @@ public:
   [[nodiscard]] const ThreadRecordStatistics &RecordCompression() const noexcept {
     return program_->record_compression;
   }
-  [[nodiscard]] const std::map<std::string, std::set<std::uint32_t>> &TensorPropertySites() const noexcept {
-    return program_->tensor_property_sites;
+  [[nodiscard]] const std::set<std::uint32_t> &StaticBranchChoiceLines() const noexcept {
+    return program_->static_branch_choice_lines;
   }
   struct LaneAggregates {
     const std::uint64_t &assumed_assertions;
@@ -760,6 +802,12 @@ public:
   }
   [[nodiscard]] std::span<const std::uint64_t> StaticCounts() const noexcept {
     return program_->static_execution_counts;
+  }
+  // driver accounting (a copy): the run's tensor_properties decisions so far. Template values the
+  // consumers read (lowering, class admission) add decisions, so read it after this CTA's last
+  // consumer. O(decisions).
+  [[nodiscard]] std::map<std::string, std::set<std::uint32_t>> PropertyDecisionsSnapshot() const {
+    return TensorPropertyDecisionSnapshot(*program_);
   }
 
   // The only consumer path to records(): expands the whole lane when called
@@ -817,6 +865,11 @@ private:
 
 
 // ---- inline definitions -----------------------------------------------------
+inline FactSource::Funnel &FactSource::funnel() const noexcept {
+  if (worker_ && &worker_->facts_ == this) [[unlikely]]
+    return worker_->funnel_;
+  return funnel_;
+}
 inline LaneRef FactSource::LaneOf(const LaneTrace &trace) const {
   if (registered_) [[unlikely]]
     return RegisterLane(trace);

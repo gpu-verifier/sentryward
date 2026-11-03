@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -240,30 +248,13 @@
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "tma_gather4_dynamic_rows",
-            "details": {
-              "cta": 0,
-              "instruction": "cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::1.L2::cache_hint [%r345], [%rd103, {%r346, %r347, %r348, %r349, %r350}], [%r351], %rd104;",
-              "instruction_index": 3313,
-              "location": {
-                "file": "corpus/flashmla__flashmla_sm100_sparse_decode_v32_h64__sm_100f.ptx",
-                "line": 14646
-              },
-              "occurrence": 0,
-              "thread": 192
-            },
-            "message": "TMA tile::gather4 coordinates are not statically known (data-dependent rows); the gathered values are not modeled",
-            "stage": "value_lowering"
-          }
-        ],
-        "first_unavailable_reason": "memory occurrence has no value node",
+        "diagnostics": [],
+        "first_unavailable_reason": "",
         "queries": 64,
-        "resolved": 0,
+        "resolved": 64,
         "source": "value_lowering",
-        "unavailable": 64,
-        "value_view_complete": false
+        "unavailable": 0,
+        "value_view_complete": true
       },
       "cluster_completion_joins": 0,
       "cta_count": 148,
@@ -610,14 +601,14 @@
     },
     "hb_queries": {
       "memory": {
-        "algorithm": "event-family-relations",
-        "batches": 4,
+        "algorithm": "not-built",
+        "batches": 0,
         "cache_hits": 0,
         "dfs_queries": 0,
-        "edge_visits": 3019012,
-        "filtered_queries": 7969,
-        "queries": 262144,
-        "shared_peak_index_bytes": 16267200
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
       },
       "required_orders": {
         "algorithm": "member-relations",
@@ -636,7 +627,7 @@
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 262144,
+      "address_candidates": 173,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -652,24 +643,32 @@
       },
       "candidate_generation_fallback": false,
       "exhaustive": false,
-      "first_race_seconds": 0.635489015,
-      "hb_algorithm": "event-family-relations",
-      "hb_batches": 4,
+      "family_analysis": {
+        "access_families": 61742,
+        "affine_member_rows": 0,
+        "candidate_relations": 143,
+        "hb_frontier_pieces": 1,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 139607
+      },
+      "first_race_seconds": 0.085567025,
+      "hb_algorithm": "member-relations",
+      "hb_batches": 3,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 3019012,
-      "hb_filtered_queries": 7969,
-      "hb_peak_index_bytes": 16267200,
-      "hb_queries": 262144,
-      "hb_query_seconds": 0.393431305,
+      "hb_edge_visits": 235,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 173,
+      "hb_query_seconds": 0.0057070590000000004,
       "overlap_queries": 1,
-      "strategy": "conflict-first",
+      "strategy": "conflict-family",
       "unordered_candidates_examined": 1
     },
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 367.47265625,
+    "peak_footprint_mib": 477.72265625,
     "required_order_domains": 682,
     "required_orders": 20460,
     "search_complete": false,
@@ -677,36 +676,99 @@
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
     },
     "semantic_program": {
-      "binding_diagnostic_count": 1,
+      "binding_diagnostic_count": 18,
       "binding_diagnostics": [
         {
-          "code": "incomplete_value_semantics",
-          "message": "tma_gather4_dynamic_rows: TMA tile::gather4 coordinates are not statically known (data-dependent rows); the gathered values are not modeled"
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
+        },
+        {
+          "code": "unsupported_mma_value_mapping",
+          "message": ".ws MMA per-lane-group TMEM-A operand layout is not decoded"
         }
       ],
       "execution_cohorts": 48,
       "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
-      "memory_linking_templates_used": false,
+      "memory_binding_stored_rows": 97239,
+      "memory_binding_templates": 8279,
+      "memory_bindings": 136970,
+      "memory_linking_templates_used": true,
       "synchronization_groups": 1001,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 26,
-      "thread_prefix_groups": 5178,
-      "value_diagnostic_count": 1,
-      "value_diagnostics": [
-        {
-          "code": "tma_gather4_dynamic_rows",
-          "line": 14646,
-          "message": "TMA tile::gather4 coordinates are not statically known (data-dependent rows); the gathered values are not modeled"
-        }
-      ]
+      "thread_prefix_groups": 67673,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
     "source_violations": [],
     "stage": "memory_check",
@@ -776,12 +838,12 @@
         ]
       }
     },
-    "value_ir_instance_count": 60835,
-    "value_ir_node_count": 3642,
-    "value_view_complete": false
+    "value_ir_instance_count": 1357571,
+    "value_ir_node_count": 57479,
+    "value_view_complete": true
   },
-  "peak_rss_mib": 390.83203125,
-  "pipeline_elapsed_seconds": 4.027527513,
+  "peak_rss_mib": 501.58203125,
+  "pipeline_elapsed_seconds": 3.51788216,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -793,5 +855,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.458
+  "whole_pipeline_timeout_seconds": 498.464
 }

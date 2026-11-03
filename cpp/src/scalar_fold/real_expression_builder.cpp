@@ -16,10 +16,13 @@
 #include <iostream>
 #include <limits>
 #include <map>
+#include <optional>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 
 #if defined(SENTRYWARD_ENABLE_COMPRESSION_AUDIT)
 #define UPDATE_STAT(code) do { code; } while(false)
@@ -61,7 +64,198 @@ bool merge(Powers& target,const Powers& source,std::int64_t sign) {
   }
   return target.size()<=kSummaryAtoms;
 }
+// A clean use of an ideal Add of `type`: the terms it adds are flattened into its consumer's sum.
+bool flattens(const Graph& graph,const Ref& r,const std::string& type) {
+  const auto& n=graph.node(r);
+  return clean(r) && n.name=="Add" && n.type==type && ideal(n) && n.operands.size()==2;
 }
+// The canonical-form rewrites (RealExpressionBuilder::canonicalize): typed bf16 field reads
+// always, canonical sums with CanonicalForms::SumsAndBf16Fields.
+struct TermCanonicalizer {
+  // Terms one canonical sum sorts: the bound on the sort's cost per sum. A larger sum keeps
+  // its tree, which is exact as well.
+  static constexpr std::size_t kMaxSumTerms=4096;
+  TermCanonicalizer(Graph& g,CanonicalForms forms):graph(g),sums(forms==CanonicalForms::SumsAndBf16Fields) {}
+  Graph& graph;
+  bool sums;
+  std::unordered_map<Id,std::size_t> shapes;
+  std::unordered_map<Id,Ref> rebuilt;
+  // A structural hash that ignores literal values (their types count): shifted copies agree.
+  std::size_t shape(Id root) {
+    std::vector<std::pair<Id,bool>> work{{root,false}};
+    while(!work.empty()) {
+      const auto [id,ready]=work.back();work.pop_back();
+      if(shapes.contains(id))continue;
+      const auto& n=graph.node(id);
+      if(!ready) {
+        work.emplace_back(id,true);
+        for(const auto& operand:n.operands)if(!shapes.contains(operand.node))work.emplace_back(operand.node,false);
+        continue;
+      }
+      std::size_t h=std::hash<std::string>{}(n.type)^(std::size_t(n.kind)*0x9e3779b97f4a7c15ULL);
+      const auto mix=[&](std::size_t v){h^=v+0x9e3779b9+(h<<6)+(h>>2);};
+      if(n.kind!=Kind::Constant)mix(std::hash<std::string>{}(n.name));
+      mix(std::hash<std::string>{}(n.attributes));mix(n.index_level);
+      if(n.fold)mix(std::size_t(n.fold->reducer)*31+n.fold->binder_level*7+n.fold->count);
+      for(const auto& operand:n.operands) {
+        mix(shapes.at(operand.node));mix(std::hash<std::string>{}(operand.conversion));
+        mix(std::hash<std::string>{}(operand.converted_type));mix(std::hash<std::string>{}(operand.pointer_provenance));
+      }
+      shapes.emplace(id,h);
+    }
+    return shapes.at(root);
+  }
+  // Term order: by shape, then lexicographically by the terms' depth-first serialization
+  // (operand order; equal subterms compare equal): at the first position where they differ,
+  // two literals compare integers first and numerically, others by text; any other
+  // difference compares the nodes' own fields. A strict weak order, so terms that are
+  // shifted copies keep the relative order of their shifts.
+  static auto literalKey(const std::string& text) {
+    std::int64_t value=0;
+    const auto parsed=std::from_chars(text.data(),text.data()+text.size(),value);
+    const bool integer=parsed.ec==std::errc{} && parsed.ptr==text.data()+text.size();
+    return std::tuple{!integer,integer?value:0,std::string_view(text)};
+  }
+  static auto fields(const Node& n) {
+    return std::tuple{n.kind,std::string_view(n.type),n.kind==Kind::Constant?std::string_view():std::string_view(n.name),
+        std::string_view(n.attributes),n.operands.size(),n.index_level,n.fold?std::tuple{int(n.fold->reducer),n.fold->binder_level,n.fold->count}:std::tuple{-1,0u,std::uint64_t{0}}};
+  }
+  bool before(const Ref& a,const Ref& b) {
+    const auto sa=shape(a.node),sb=shape(b.node);
+    if(sa!=sb)return sa<sb;
+    std::vector<std::pair<Id,Id>> work{{a.node,b.node}};
+    std::set<std::pair<Id,Id>> seen;
+    while(!work.empty()) {
+      const auto [x,y]=work.back();work.pop_back();
+      if(x==y || !seen.emplace(x,y).second)continue;
+      const auto& p=graph.node(x);const auto& q=graph.node(y);
+      if(fields(p)!=fields(q))return fields(p)<fields(q);
+      if(p.kind==Kind::Constant) {
+        if(p.name!=q.name)return literalKey(p.name)<literalKey(q.name);
+        continue;
+      }
+      for(std::size_t i=p.operands.size();i-->0;) {
+        const auto& u=p.operands[i];const auto& v=q.operands[i];
+        const auto du=std::tie(u.conversion,u.converted_type,u.pointer_provenance);
+        const auto dv=std::tie(v.conversion,v.converted_type,v.pointer_provenance);
+        if(du!=dv)return du<dv;
+      }
+      for(std::size_t i=p.operands.size();i-->0;)work.emplace_back(p.operands[i].node,q.operands[i].node);
+    }
+    return false;
+  }
+  // An ideal Add whose sum is canonicalized: only when `sums`.
+  bool sum(const Node& n) const {
+    return sums && n.name=="Add" && ideal(n) && n.operands.size()==2;
+  }
+  // A bf16 field of a raw b32 cell widened by its bits, Bitcast(ShiftLeft(c, 16)) (low half) or
+  // Bitcast(BitAnd(c, 0xffff0000)) (high half) to f32, is exactly the typed read of that field
+  // converted bf16 -> f32 (bf16 is the upper half of f32; little-endian fields at byte 0 and 2).
+  std::optional<Ref> bf16Field(const Ref& old) {
+    if(!old.pointer_provenance.empty() || old.converted_type!="f32")return std::nullopt;
+    const auto& n=graph.node(old);
+    if(n.kind!=Kind::Operation || n.type!="b32" || !n.attributes.empty() || n.operands.size()!=2 ||
+       !clean(n.operands[0]) || !clean(n.operands[1]))return std::nullopt;
+    // The use is exactly one same-width reinterpretation of the b32 bits as f32.
+    const auto step=equivalence::leadingConversion(n.type,old.conversion);
+    if(!step || step->operation!="Bitcast" || step->target!="f32" || !step->remainder.empty())return std::nullopt;
+    const auto& cell=graph.node(n.operands[0]);const auto& operand=graph.node(n.operands[1]);
+    if(cell.kind!=Kind::InitialCell || cell.type!="b32" || operand.kind!=Kind::Constant || !clean(cell.operands.at(0)))
+      return std::nullopt;
+    // The constant's value, whatever its PTX spelling.
+    const auto constant=equivalence::constantValue(operand.type,operand.name);
+    if(!constant)return std::nullopt;
+    constexpr std::uint32_t kHighField=0xffff0000u;  // the high 16 bits: the bf16 field at byte 2
+    std::uint64_t byte=0;
+    if(n.name=="ShiftLeft" && constant->literal=="16")byte=0;
+    else if(n.name=="BitAnd" && operand.type==n.type && constant->literal==std::to_string(kHighField))byte=2;
+    else return std::nullopt;
+    auto offset=cell.operands.at(0);const auto allocation=cell.name;
+    if(byte) {
+      const auto& at=graph.node(offset);
+      std::uint64_t base=0;
+      const auto parsed=std::from_chars(at.name.data(),at.name.data()+at.name.size(),base);
+      if(at.kind==Kind::Constant && at.type=="u64" && parsed.ec==std::errc{} &&
+         parsed.ptr==at.name.data()+at.name.size() && base<=UINT64_MAX-byte)
+        offset=graph.constant("u64",std::to_string(base+byte));
+      else offset=graph.operation("Add","u64",{offset,graph.constant("u64",std::to_string(byte))});
+    }
+    return graph.convert(graph.initialCell(allocation,offset,"bf16"),"f32","Convert ");
+  }
+  Ref use(const Ref& old) {
+    if(auto field=bf16Field(old))return *field;
+    auto value=rebuilt.at(old.node);
+    value.conversion=old.conversion;value.converted_type=old.converted_type;value.pointer_provenance=old.pointer_provenance;
+    return value;
+  }
+  void run(std::span<Ref> roots) {
+    // Reachable nodes, rebuilt in ascending order (IDs are topological), so that operands come
+    // first; hash-consing returns a node itself when nothing below it changed. A node is
+    // rebuilt when some use of it does not flatten into a canonical sum (a root, a non-Add or
+    // decorated consumer); without `sums`, every reachable node is.
+    std::vector<Id> order;std::unordered_set<Id> reached;std::unordered_set<Id> needed;
+    std::vector<Id> work;
+    for(const auto& root:roots){needed.insert(root.node);if(reached.insert(root.node).second)work.push_back(root.node);}
+    while(!work.empty()) {
+      const auto id=work.back();work.pop_back();order.push_back(id);
+      const auto& n=graph.node(id);
+      const bool flattening=sum(n);
+      for(const auto& operand:n.operands) {
+        if(!flattening || !flattens(graph,operand,n.type))needed.insert(operand.node);
+        if(reached.insert(operand.node).second)work.push_back(operand.node);
+      }
+    }
+    std::sort(order.begin(),order.end());
+    for(const auto id:order) {
+      if(!needed.contains(id))continue;
+      if(sum(graph.node(id))) {
+        const auto n=graph.node(id); // a copy: rebuilding appends nodes
+        std::vector<Ref> terms;bool bounded=true;
+        std::vector<Ref> pending{n.operands[1],n.operands[0]};
+        while(!pending.empty() && bounded) {
+          const auto r=pending.back();pending.pop_back();
+          if(flattens(graph,r,n.type)) {
+            const auto& inner=graph.node(r);
+            pending.push_back(inner.operands[1]);pending.push_back(inner.operands[0]);
+          } else terms.push_back(use(r));
+          bounded=terms.size()+pending.size()<=kMaxSumTerms;
+        }
+        if(!bounded){rebuilt.emplace(id,graph.ref(id));continue;} // the original sum, unchanged below
+        std::stable_sort(terms.begin(),terms.end(),[&](const Ref& x,const Ref& y){return before(x,y);});
+        auto total=terms.front();
+        for(std::size_t i=1;i<terms.size();++i)
+          total=graph.operation("Add",n.type,{total,terms[i]},n.attributes);
+        rebuilt.emplace(id,total);continue;
+      }
+      // A node whose operands all stay is itself: interning it again would return its own ID
+      // (every node's fields are exactly those its constructor below sets), so it is neither
+      // copied nor interned.
+      const auto arity=graph.node(id).operands.size();
+      std::vector<Ref> operands;operands.reserve(arity);
+      bool changed=false;
+      for(std::size_t i=0;i<arity;++i) {
+        auto old=graph.node(id).operands[i]; // a copy: use() may append nodes
+        operands.push_back(use(old));
+        changed=changed || !(operands.back()==old);
+      }
+      if(!changed){rebuilt.emplace(id,graph.ref(id));continue;}
+      const auto n=graph.node(id); // a copy: rebuilding appends nodes
+      Ref value;
+      switch(n.kind) {
+        case Kind::Constant:value=graph.constant(n.type,n.name);break;
+        case Kind::Parameter:value=graph.parameter(n.type,n.name);break;
+        case Kind::Index:value=graph.index(n.index_level);break;
+        case Kind::InitialCell:value=graph.initialCell(n.name,operands.at(0),n.type);break;
+        case Kind::Operation:value=graph.operation(n.name,n.type,std::move(operands),n.attributes);break;
+        case Kind::Fold:value=graph.fold(n.fold->reducer,operands.at(0),operands.at(1),n.fold->binder_level,n.fold->count,n.type);break;
+      }
+      rebuilt.emplace(id,value);
+    }
+    for(auto& root:roots)root=use(root);
+  }
+};
+}
+
 struct RealExpressionBuilder::Impl {
   Graph& graph;
   ReductionBuilder& reductions;
@@ -415,6 +609,10 @@ Ref RealExpressionBuilder::constant(std::string type,std::string literal) {
 Ref RealExpressionBuilder::operation(std::string name,std::string type,std::vector<Ref> operands,
     std::string attributes,std::uint32_t level) {
   return impl_->operation(std::move(name),std::move(type),std::move(operands),std::move(attributes),level);
+}
+void RealExpressionBuilder::canonicalize(std::span<Ref> roots,CanonicalForms forms) {
+  impl_->refresh();
+  TermCanonicalizer(impl_->graph,forms).run(roots);
 }
 std::size_t RealExpressionBuilder::collect(std::span<Ref> roots){return collect(roots,roots);}
 std::size_t RealExpressionBuilder::collect(std::span<Ref> roots,std::span<const Ref> extendable,

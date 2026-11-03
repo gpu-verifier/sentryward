@@ -238,16 +238,10 @@ std::vector<OutputFamily> tensorize(Graph& graph,const std::vector<OutputFamily>
   return result;
 }
 }
-std::size_t consolidateOutputs(Artifact& artifact,bool tensor_families,
-                               std::span<std::optional<Id>> weak_nodes) {
-  auto& graph=artifact.graph;
-  std::map<std::uint32_t,std::vector<Ref>> validation_roots;
-  for(const auto& output:artifact.outputs)validation_roots[0].push_back(output.value);
-  for(const auto& f:artifact.output_families)validation_roots[f.shape.size()].push_back(f.body);
-  for(const auto& [depth,roots]:validation_roots)graph.validateRoots(roots,depth);
+std::size_t mergeOutputFamilies(Graph& graph,std::vector<OutputFamily>& families,bool tensor_families) {
   Forms affine;
   extendForms(graph,affine);
-  auto families=artifact.output_families;
+  const auto before=families.size();
   recoverCells(graph,families,affine);
   std::stable_sort(families.begin(),families.end(),[](const auto& a,const auto& b){
     return std::tie(a.allocation,a.offset)<std::tie(b.allocation,b.offset);
@@ -271,8 +265,17 @@ std::size_t consolidateOutputs(Artifact& artifact,bool tensor_families,
     merged.push_back(family);
   }
   if(tensor_families)merged=tensorize(graph,merged,affine);
-  const auto removed=artifact.output_families.size()-merged.size();
-  artifact.output_families=std::move(merged);
+  families=std::move(merged);
+  return before-families.size();
+}
+std::size_t consolidateOutputs(Artifact& artifact,bool tensor_families,
+                               std::span<std::optional<Id>> weak_nodes) {
+  auto& graph=artifact.graph;
+  std::map<std::uint32_t,std::vector<Ref>> validation_roots;
+  for(const auto& output:artifact.outputs)validation_roots[0].push_back(output.value);
+  for(const auto& f:artifact.output_families)validation_roots[f.shape.size()].push_back(f.body);
+  for(const auto& [depth,roots]:validation_roots)graph.validateRoots(roots,depth);
+  const auto removed=mergeOutputFamilies(graph,artifact.output_families,tensor_families);
   std::vector<Ref> roots;
   for(const auto& output:artifact.outputs)roots.push_back(output.value);
   for(const auto& family:artifact.output_families)roots.push_back(family.body);

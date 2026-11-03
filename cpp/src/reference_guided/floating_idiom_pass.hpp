@@ -4,6 +4,12 @@ namespace rg {
 // Structural analysis before import; no kernel-name or magic-constant-only rules.
 // The producer must retain explicit fma.rm semantics and a saturating input edge.
 struct FloatingIdiomPlan {
+  // The low 32 bits of an integer literal (decimal digits after an optional '-'); none for any other spelling.
+  static std::optional<std::uint32_t> binary32_bits(const std::string &literal) {
+    const size_t first=!literal.empty() && literal[0]=='-'?1:0;
+    if(literal.size()==first || literal.find_first_not_of("0123456789",first)!=std::string::npos)return std::nullopt;
+    return modz(Z(literal),pow2(32)).convert_to<std::uint32_t>();
+  }
   std::vector<bool> rounded;
   std::vector<Id> power_source;
   std::vector<Id> log2_source;
@@ -11,10 +17,18 @@ struct FloatingIdiomPlan {
   FloatingIdiomPlan() = default;
   FloatingIdiomPlan(const std::vector<RawNode> &nodes, Arena &arena)
       : rounded(nodes.size(),false),power_source(nodes.size(),invalid),log2_source(nodes.size(),invalid) {
+    // A literal of `type`, or the same binary32 bits written as a 32-bit integer constant and reinterpreted
+    // on this edge (`mov.b32 %r, 0f4B400001` feeding an f32 operand): compared as exact rationals.
     auto constant=[&](const Edge &e,const char *value,const char *type) {
-      if(!e.conversion.empty() || e.node>=nodes.size())return false;
+      if(e.node>=nodes.size())return false;
       const auto &n=nodes[e.node];
-      return n.kind=="Constant" && n.name==value && n.type==type && n.operands.empty() && n.attributes.empty();
+      if(n.kind!="Constant" || !n.operands.empty() || !n.attributes.empty())return false;
+      if(e.conversion.empty())return n.name==value && n.type==type;
+      if(std::string_view(type)!="f32" || (n.type!="b32" && n.type!="u32" && n.type!="s32") ||
+         e.conversion!="Bitcast("+n.type+" -> f32)" || (!e.converted_type.empty() && e.converted_type!="f32"))return false;
+      // An all-ones exponent field (infinity or NaN) equals no decimal literal.
+      const auto bits=binary32_bits(n.name);
+      return bits && ((*bits>>23)&255u)!=255u && ieee_value(*bits,32,23)==decimal(value);
     };
     for(size_t i=0;i<nodes.size();++i) {
       if((i&4095)==0)arena.check();

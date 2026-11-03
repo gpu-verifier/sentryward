@@ -49,74 +49,25 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "not_run",
-    "synchronization": "failed"
+    "equivalence": "passed",
+    "synchronization": "passed"
   },
-  "diagnostics": [
-    {
-      "code": "conflicting_accesses_unordered",
-      "details": {
-        "count": 1,
-        "internal_stage": "memory_check",
-        "witnesses_path": "races"
-      },
-      "message": "Conflicting accesses have no proven required ordering",
-      "stage": "synchronization"
-    }
-  ],
+  "diagnostics": [],
   "evidence": {
-    "race_count": 1,
+    "race_count": 0,
     "race_samples_truncated": false,
-    "races": [
-      {
-        "first": {
-          "access_index": 0,
-          "actor": 0,
-          "bytes": 4,
-          "effect_index": 1,
-          "endpoint": {
-            "address": 0,
-            "kind": "memory"
-          },
-          "event": 284,
-          "instruction": 138,
-          "location": {
-            "column": 5,
-            "file": "/raid/user_data/ziweizho/wasp-cand-20260927/worktrees/triton-c01b6774/python/tutorials/gluon/10-tcgen05-copy.py",
-            "line": 133
-          },
-          "mode": "write"
-        },
-        "overlap": "constant byte ranges intersect",
-        "region": {
-          "address_space": "shared",
-          "allocation": "cta:(0, 0, 0):shared:physical.shared.cta.0",
-          "bytes": 4,
-          "offset": 0
-        },
-        "second": {
-          "access_index": 0,
-          "actor": 64,
-          "bytes": 4,
-          "effect_index": 1,
-          "endpoint": {
-            "address": 0,
-            "kind": "memory"
-          },
-          "event": 106004,
-          "instruction": 27857,
-          "location": {
-            "column": 5,
-            "file": "/raid/user_data/ziweizho/wasp-cand-20260927/worktrees/triton-c01b6774/python/tutorials/gluon/10-tcgen05-copy.py",
-            "line": 133
-          },
-          "mode": "write"
-        }
-      }
-    ]
+    "races": []
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -165,31 +116,176 @@
       "threads": 128
     },
     "equivalence": {
-      "diagnostics": [
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 1502,
+      "comparison_elapsed_seconds": 0.005847517,
+      "context_declaration": {
+        "assumptions": [],
+        "fixed_inputs": [],
+        "inputs": [],
+        "predicate_nodes": []
+      },
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 2953,
+        "affine_state_banks": 1,
+        "canonical_node_visits": 260,
+        "ep_identity_proofs": 129,
+        "ep_scalar_attempts": 129,
+        "ep_scalar_proofs": 129,
+        "finite_bilinear_banks": 1,
+        "finite_state_reuse_banks": 1,
+        "fp_idiom_power_constructions": 0,
+        "fp_idiom_rm_producers": 0,
+        "ideal_additive_compiler_exp_sequences": 0,
+        "ideal_compiler_exp_sequences": 0,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_single_constant_exp_sequences": 0,
+        "imported_context_nodes": 1690,
+        "intern_requests": 10648,
+        "normalization_node_visits": 648,
+        "parametric_state_attempts": 0,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_temporary_nodes": 0,
+        "symbolic_byte_reads_without_extent_proof": 0,
+        "typed_output_transport_reads": 129
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 129,
+        "status": "proved"
+      },
+      "diagnostics": [],
+      "elapsed_s": 0.003768912,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "query_count": 129,
+        "reset_s": 0.0,
+        "reuse_cache": true,
+        "shared_evictions": 0
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 0,
+        "fixed_input_elements": 0,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 129,
+      "finished_families": 129,
+      "idealizations_applied": [],
+      "input_contract_applied_reads": [],
+      "legacy_scalar_fallback": false,
+      "mapping_input_memory_constraints": {},
+      "native_context": null,
+      "normalized_reachable_nodes": 260,
+      "numerical_result": "verified",
+      "pattern_nodes": 2,
+      "peak_rss_kib": 307424,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 0,
+      "piece_union": {
+        "abstract_optimized_replacements": 0,
+        "abstract_reference_replacements": 0,
+        "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+        "collected_pieces": 0,
+        "late_certificates": "accepted_until_each_schema_is_complete",
+        "method": "complete_output_equalities_with_finite_piece_union",
+        "replacements": 0,
+        "schemas": [],
+        "stored_dag_work": 0,
+        "work_limit": 2000000
+      },
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        268,
+        262
+      ],
+      "reference_term_patterns": 0,
+      "row_groups": [
         {
-          "code": "prerequisite_check_not_passed",
-          "details": {
-            "prerequisite_checks": {
-              "equivalence": "not_run",
-              "memory": "failed",
-              "synchronization": "passed"
-            },
-            "prerequisite_diagnostics": [
-              {
-                "code": "conflicting_accesses_unordered",
-                "details": {
-                  "count": 1,
-                  "witnesses_path": "races"
-                },
-                "message": "Conflicting accesses have no proven required ordering",
-                "stage": "memory_check"
-              }
-            ],
-            "prerequisite_result": "potential_race"
+          "count": 129,
+          "families": [
+            [
+              0,
+              128
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "equivalent",
+            "total_definedness": "proved"
           },
-          "stage": "equivalence_check"
+          "timing_s": {
+            "affine_state_pattern_s": 1.74599999999992e-05,
+            "cumulative_elapsed_s": 0.003604681,
+            "left_import_s": 0.0014645760000000004,
+            "left_normalize_s": 8.08500000000001e-05,
+            "parametric_state_s": 9.000000000000002e-06,
+            "piece_union_record_s": 3.199999999999915e-06,
+            "piece_union_seal_s": 3.1900000000002456e-06,
+            "right_import_s": 0.0013609319999999987,
+            "right_normalize_s": 3.655999999999744e-05
+          }
         }
-      ]
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 1.74599999999992e-05,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.0014645760000000004,
+        "left_normalize_s": 8.08500000000001e-05,
+        "parametric_state_s": 9.000000000000002e-06,
+        "piece_union_record_s": 3.199999999999915e-06,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 3.1900000000002456e-06,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 0.0013609319999999987,
+        "right_normalize_s": 3.655999999999744e-05,
+        "state_pattern_s": 0.0
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.000136501
+      },
+      "total_output_families": 129,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
     },
     "frontend": {
       "address_value_bridge": {
@@ -376,7 +472,7 @@
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 321,
+      "address_candidates": 153224,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -394,64 +490,65 @@
       "exhaustive": false,
       "family_analysis": {
         "access_families": 31118,
-        "affine_member_rows": 0,
-        "candidate_relations": 73,
-        "hb_frontier_pieces": 1,
+        "affine_member_rows": 6679700,
+        "candidate_relations": 74188,
+        "hb_frontier_pieces": 27924,
         "hb_member_enumerations": 0,
         "logical_accesses": 114050
       },
-      "first_race_seconds": 0.031820664,
       "hb_algorithm": "member-relations",
-      "hb_batches": 2,
+      "hb_batches": 104,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 130,
+      "hb_edge_visits": 619864,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
-      "hb_queries": 321,
-      "hb_query_seconds": 0.001756985,
-      "overlap_queries": 1,
+      "hb_queries": 153224,
+      "hb_query_seconds": 0.055099149,
+      "overlap_queries": 4224,
       "strategy": "conflict-family",
-      "unordered_candidates_examined": 1
+      "unordered_candidates_examined": 4224
     },
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 164.4296875,
+    "peak_footprint_mib": 299.8828125,
     "required_order_domains": 240,
     "required_orders": 3650,
-    "search_complete": false,
+    "same_value_writes": {
+      "groups": 8192,
+      "site_pairs": 1,
+      "status": "proven",
+      "warnings": 1,
+      "writes": 16384
+    },
+    "search_complete": true,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
     },
     "semantic_program": {
-      "binding_diagnostic_count": 1,
-      "binding_diagnostics": [
-        {
-          "code": "unsupported_memory_binding_domain",
-          "message": "Source and Value domains have different coverage"
-        }
-      ],
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
       "execution_cohorts": 7,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 17286,
-      "memory_binding_templates": 12710,
-      "memory_bindings": 36993,
-      "memory_linking_templates_used": false,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 44167,
+      "memory_binding_templates": 22981,
+      "memory_bindings": 77954,
+      "memory_linking_templates_used": true,
       "synchronization_groups": 1176,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 261,
-      "thread_prefix_groups": 25714,
+      "thread_prefix_groups": 25716,
       "value_diagnostic_count": 0,
       "value_diagnostics": []
     },
     "source_violations": [],
-    "stage": "memory_check",
     "synchronization_input": {
       "compute_access_binding": "after_happens_before",
       "kind": "ordering_endpoints",
@@ -481,59 +578,178 @@
     },
     "unresolved_count": 0,
     "value_analysis": {
-      "diagnostics": [
+      "diagnostics": [],
+      "duplicate_write_value_checks": 8192,
+      "equivalence_check": "equivalent",
+      "initial_memory_regions": 8192,
+      "initial_read_families": 512,
+      "memory_action_storage": {
+        "logical_actions": 77954,
+        "stored_runs": 52231
+      },
+      "output_region_families": 0,
+      "output_regions": 8192,
+      "passes": [
         {
-          "code": "prerequisite_check_not_passed",
-          "details": {
-            "prerequisite_checks": {
-              "equivalence": "not_run",
-              "memory": "failed",
-              "synchronization": "passed"
-            },
-            "prerequisite_diagnostics": [
-              {
-                "code": "conflicting_accesses_unordered",
-                "details": {
-                  "count": 1,
-                  "witnesses_path": "races"
-                },
-                "message": "Conflicting accesses have no proven required ordering",
-                "stage": "memory_check"
-              }
-            ],
-            "prerequisite_result": "potential_race",
-            "prerequisite_status": "potential_race"
-          },
-          "stage": "pipeline"
+          "name": "packing",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 4828,
+          "name": "type_edges",
+          "removed_nodes": 265
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 4,
+          "layouts": 0,
+          "mapping_blocks": 19456,
+          "name": "view_normalization",
+          "original_pieces": 16384,
+          "reused_initial_reads": 16384,
+          "reused_views": 8192,
+          "segmented": 136,
+          "slices": 16384,
+          "stored_mapping_blocks": 11264,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
         }
       ],
-      "equivalence_check": "blocked",
-      "prerequisite_status": "potential_race",
+      "processed_memory_actions": 77954,
+      "processed_memory_families": 0,
+      "read_substitutions": 33032,
       "scalar_fold": {
-        "diagnostics": [
-          {
-            "code": "memory_elimination_not_completed",
-            "stage": "pipeline"
-          }
-        ]
-      }
+        "construction_collections": 0,
+        "diagnostics": [],
+        "output_count": 8192,
+        "output_families_merged": 1726,
+        "output_family_count": 2,
+        "output_root_count": 2,
+        "peak_construction_nodes": 5058,
+        "shared_view_projection_hits": 0,
+        "source_outputs": 8192,
+        "spatial_families_projected": 512,
+        "spatial_outputs_projected": 8064,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 2,
+          "edges": 6,
+          "folds": 0,
+          "indices": 1,
+          "initial_cells": 2,
+          "logical_iterations": 0,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 0,
+          "nodes": 7,
+          "nodes_before_final_collection": 5058,
+          "nodes_reclaimed": 5051,
+          "operations": 2,
+          "parameters": 0,
+          "range_descriptions": 0,
+          "storage_nodes": 7,
+          "unique_fold_bodies": 0
+        }
+      },
+      "serialization": {
+        "action_patterns": 52231,
+        "binding_patterns": 44167,
+        "domain_refinements": 203381,
+        "elapsed_seconds": 0.500609126,
+        "event_families": 36581,
+        "expanded_event_records": 0,
+        "largest_batch_members": 64,
+        "logical_actions": 77954,
+        "logical_events": 651209,
+        "peak_rss_mib_at_completion": 300.21875,
+        "reachability_queries": 0,
+        "relations": 178552,
+        "rss_mib_at_completion": 251.12109375,
+        "scheduled_batches": 36581,
+        "singleton_batches": 12219,
+        "value_families": 21360
+      },
+      "shared_read_families": 3,
+      "shared_read_instances": 124,
+      "stored_read_substitutions": 32908
     },
-    "value_ir_instance_count": 399154,
-    "value_ir_node_count": 21388,
-    "value_view_complete": true
+    "value_ir_instance_count": 394328,
+    "value_ir_node_count": 21125,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 1.025488756,
+    "verification_result": "race_free"
   },
-  "peak_rss_mib": 168.91796875,
-  "pipeline_elapsed_seconds": 0.68469878,
-  "result": "potential_race",
+  "peak_rss_mib": 300.21875,
+  "pipeline_elapsed_seconds": 1.867735613,
+  "result": "verified",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
   "verification_limitations": [],
-  "warning_count": 0,
+  "warning_count": 1,
   "warning_samples_truncated": false,
-  "warnings": [],
+  "warnings": [
+    {
+      "code": "same-value-writes",
+      "first": {
+        "access_index": 0,
+        "actor": 0,
+        "bytes": 4,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 0,
+          "kind": "memory"
+        },
+        "event": 284,
+        "instruction": 138,
+        "location": {
+          "column": 5,
+          "file": "/raid/user_data/ziweizho/wasp-cand-20260927/worktrees/triton-c01b6774/python/tutorials/gluon/10-tcgen05-copy.py",
+          "line": 133
+        },
+        "mode": "write"
+      },
+      "message": "Unordered plain writes cover the same bytes; the value analysis proved that they store equal values, so they do not race (docs/assumptions.md, Same-value writes).",
+      "overlap": "constant byte ranges intersect",
+      "region": {
+        "address_space": "shared",
+        "allocation": "cta:(0, 0, 0):shared:physical.shared.cta.0",
+        "bytes": 4,
+        "offset": 0
+      },
+      "second": {
+        "access_index": 0,
+        "actor": 64,
+        "bytes": 4,
+        "effect_index": 1,
+        "endpoint": {
+          "address": 0,
+          "kind": "memory"
+        },
+        "event": 106004,
+        "instruction": 27857,
+        "location": {
+          "column": 5,
+          "file": "/raid/user_data/ziweizho/wasp-cand-20260927/worktrees/triton-c01b6774/python/tutorials/gluon/10-tcgen05-copy.py",
+          "line": 133
+        },
+        "mode": "write"
+      }
+    }
+  ],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.589
+  "whole_pipeline_timeout_seconds": 498.587
 }

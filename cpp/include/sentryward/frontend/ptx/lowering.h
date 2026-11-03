@@ -34,18 +34,22 @@ struct LoweringResult {
   std::vector<TensormapRegion> tensormap_destinations;
 };
 // One CTA's execution/provenance is consumed at a time; model storage is
-// native.
+// native. `threads` (--sync-threads): with more than one, a CTA's lanes are
+// lowered on that many worker threads and applied in lowering order; the result
+// is the one-thread result for every thread count.
 class ModelLowerer {
 public:
   explicit ModelLowerer(const Module &, const Function &,
                         std::function<void()> poll = {}, bool retain_matrix_layout = false,
-                        bool atomics = false);
+                        bool atomics = false, std::size_t threads = 0);
   ~ModelLowerer();
   // The address bridge: (lane of the CTA's facts, record, operand text).
   using ValueAddresses = std::function<std::optional<nlohmann::json>(
       LaneRef, const RecordView&, std::string_view)>;
   // The CTA id is facts.Linear(); the coordinates are facts.frame().SelfCoordinates().
-  void AddCta(const CtaFacts &, ValueAddresses = {});
+  // `lane_workers`: whether lanes may be lowered on worker threads; false when a
+  // bridge query may still build state the workers read (an on-demand value view).
+  void AddCta(const CtaFacts &, ValueAddresses = {}, bool lane_workers = true);
   [[nodiscard]] const algorithm::SourceProgram &currentProgram() const noexcept;
   // Cross-CTA class mode, before the first AddCta: only representative CTAs are added, and
   // `quotient` (complete by Finish) says how many units each stands for. Lowering keeps per-CTA

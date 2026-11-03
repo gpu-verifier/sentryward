@@ -17,7 +17,9 @@ def verify(ptx, *, input, reference=None,
     Paths identify PTX, kernel input JSON and an optional Python reference.
     Reference arguments are derived from kernel input and reference_binding.json.
     timeout_seconds covers this entire call, including reference capture.
-    The default total time budget is 600 seconds; memory is unlimited by default.
+    The default total time budget is 600 seconds; without memory_limit_mib, verification
+    is budgeted at the native default: 90% of the memory the process may use (physical
+    memory, bounded by its cgroup limit on Linux).
     assumptions maps configuration keys to booleans and overrides the same keys
     in the kernel input for this invocation only.
     """

@@ -56,6 +56,11 @@ class EventDagBuilder final {
   EventDagBuilder()=default;
   explicit EventDagBuilder(EventRecords events);
   std::size_t beginThread(){return events_.beginThread();}
+  [[nodiscard]] std::size_t eventCount() const noexcept{return events_.size();}
+  // Ordered iterations of the current thread's events (TemplateRecords::compressIterations).
+  void compressIterations(std::size_t begin,const std::vector<std::pair<std::size_t,std::uint32_t>>& starts) {
+    events_.compressIterations(begin,starts);
+  }
   bool compressThreadTail(std::size_t begin,std::uint64_t scope,std::uintptr_t history) {
     return events_.extendThreadFamily(begin,scope,history);
   }

@@ -41,6 +41,18 @@ class UnitInterner;
 // Written only through UnitInterner; consumers read a
 // binding through UnitInterner::Binding / Resources::Binding.
 class AddressTable {
+public:
+  // A worker's table (ModelLowerer's lanes on worker threads, which intern into tables of their
+  // own): it also keeps each binding's intern key and which fields later steps overwrote.
+  void KeepWrites() noexcept { keep_writes_ = true; }
+  // The effect on this table of the steps that built `local` (a KeepWrites table), applied in
+  // their order: local bindings are interned in local id order (the order their keys first
+  // occurred, so new ids come out as one in-order application would assign them), then each
+  // field a step overwrote gets the local value (its last write). Returns the local -> own id
+  // map, or nullopt, writing nothing, when one of those interns would have thrown
+  // alias_scope_conflict here. O(local bindings x lookup).
+  [[nodiscard]] std::optional<std::vector<AddressId>> Absorb(const AddressTable &local);
+
 private:
   friend class UnitInterner;
   std::vector<ConstantAddressBinding> bindings;
@@ -58,12 +70,24 @@ private:
   };
   std::map<std::pair<std::string, std::string>, std::uint32_t> names_;
   std::unordered_map<Key, AddressId, Hash> ids_;
+  // KeepWrites only: per binding its intern key and overwritten fields (kWrote*); per name its key.
+  enum : std::uint8_t { kWroteAllocation = 1, kWroteOffset = 2, kWroteExpression = 4 };
+  void Wrote(AddressId id, std::uint8_t fields) {
+    if (keep_writes_) written_.at(id.value()) |= fields;
+  }
+  bool keep_writes_ = false;
+  std::vector<Key> keys_;
+  std::vector<std::uint8_t> written_;
+  std::vector<const std::pair<std::string, std::string> *> name_keys_;
 };
 class BarrierTable {
 public:
   std::tuple<std::string, Coordinates, std::string> Location(BarrierLifetimeId) const;
   // Every lifetime's owner CTA (class mode's unit-closure check); O(lifetimes).
   [[nodiscard]] std::vector<Coordinates> Owners() const;
+  // The effect on this table of the interns that built `local`, in their order (local id order):
+  // the local -> own id map. O(local lifetimes x lookup).
+  [[nodiscard]] std::vector<BarrierLifetimeId> Absorb(const BarrierTable &local);
 
 private:
   friend class UnitInterner;
@@ -181,11 +205,14 @@ template <class T> struct SlotOutcome {
 };
 enum class FootprintKind : std::uint8_t { Constant, Abstract, Unresolved };
 // The offset of a bounded-pointer footprint (tensor_properties) in its allocation:
-// constant + sum(coefficient x element of `object` at byte `offset`, read as `element_type`).
+// constant + sum(coefficient x element of `object` at byte `offset`, read as `element_type`,
+// or an element function of it: a nonempty `function`, within [lower, upper]).
 struct AbstractAffine {
   struct Term {
     std::string object, element_type;
     std::int64_t offset = 0, coefficient = 0;
+    std::string function = {};
+    std::int64_t lower = 0, upper = 0;
   };
   std::int64_t constant = 0;
   std::vector<Term> terms;
@@ -214,9 +241,10 @@ struct ResolvedTma {
   std::vector<std::pair<std::size_t, std::uint64_t>> completions;
   bool store = false;
   std::string descriptor;  // the matched map key, or "explicit:" + the contract's descriptor
-  // Symbolic coordinates that are all affine in tensor-property elements: the region's
-  // first byte in its global allocation, base + sum of coordinate x stride (bytes).
-  std::optional<AbstractAffine> region_affine = std::nullopt;
+  // Symbolic coordinates that are all affine in tensor-property elements (and element
+  // functions): the region's first byte in its global allocation, base + sum of coordinate x
+  // stride (bytes); one form per gather row (a tile::gather4), else one. Empty otherwise.
+  std::vector<AbstractAffine> region_affine;
 };
 // The recorder's query of one slot (a SlotMemory or SlotTma event); built only while recording.
 // `active_lane`: the Resources' lane at the call (Definition and local owners read it).
@@ -297,6 +325,10 @@ public:
   // consumer and its address bridge.
   Resources(const FactSource &, const UnitFrame &, AddressTable &,
             BarrierTable &, SlotConfig slots);
+  // A worker's Resources for `like`'s facts, frame and resource records over its own tables
+  // (built on the consuming thread): its events carry `like`'s id, so a recorder logs the
+  // worker's slots as `like`'s, as if `like` had resolved them.
+  Resources(const Resources &like, AddressTable &, BarrierTable &, SlotConfig slots);
   ~Resources();
   const FactSource &facts;
   const UnitFrame &frame;
@@ -304,6 +336,13 @@ public:
   // A consumer read of a binding (a BindingRead event).
   const ConstantAddressBinding &Binding(AddressId id) const { return interner_.Binding(id); }
   void SetLane(LaneRef);
+  // SetLane at the start of a lane's lowering. It first drops every lane's cached answers and
+  // copies (lane_indices_): another lane's shfl or matrix rows fill a peer's entries, and a hit
+  // skips the reads the lane would note. So a lane notes the same reads whichever lanes this
+  // Resources served before. It clears also when nothing records: that keeps one code path and
+  // bounds the caches to about one lane's entries, at the cost of rebuilding a peer's entries
+  // that a later lane reads again. O(the dropped entries).
+  void BeginLane(LaneRef);
   std::optional<std::uint32_t> SharedOwner(const RecordView &e, std::string_view token) {
     return Owner(e, token);
   }
@@ -349,7 +388,7 @@ private:
   };
   // The facts' lane records are immutable for this CTA. Matrix accesses
   // repeatedly switch supplying lanes; build each index once and keep each
-  // lane's provenance answers in its own cache. unordered_map rehash preserves
+  // lane's provenance answers in its own cache (until BeginLane). unordered_map rehash preserves
   // references to elements, so active_index_ remains valid as lanes are
   // added.
   struct OccurrenceIndex {
@@ -393,5 +432,67 @@ private:
   static ExpressionStep AbstractExpression(const std::string &space, const std::string &allocation,
                                            const std::string &alias, const nlohmann::json &offset,
                                            std::optional<std::uint64_t> bytes);
+};
+// A worker's query events (FactSource::WorkerScope), deep-copied in the order it noted them, with
+// their tag and depths. Replay hands them to the consumer's sink on the consuming thread, so the
+// sink sees the events the worker's unit of work would have noted there. Replayed views carry the
+// noted position, kind and slice; their record is the position's metadata (a sink reads views'
+// positions, kinds, slices and instructions, never their values: a value read's answer is copied).
+// AddressIds in BindingRead and AbsoluteCheck are the worker's table's: Replay maps them.
+// O(event size) per event both ways.
+class EventTape final : public QuerySink {
+public:
+  void On(const QueryEvent &event, ConsumerTag consumer, bool in_slot, bool in_partition) noexcept override;
+  // Whether every event was copied (a failed copy leaves the tape incomplete).
+  [[nodiscard]] bool Complete() const noexcept { return complete_; }
+  // Into `facts`' sink (none: nothing), on the consuming thread.
+  void Replay(const FactSource &facts, std::span<const AddressId> addresses) const;
+  void Clear() noexcept {
+    entries_.clear();
+    complete_ = true;
+  }
+
+private:
+  struct View {
+    RecordRef at;
+    std::vector<RegId> slice;
+    RecordKind kind = RecordKind::Full;
+    bool positioned = false;
+  };
+  struct ValueRead { View view; RegId reg; std::optional<Scalar> answer; };
+  struct LegacyUniform { RecordRef leader; bool expanded; std::string name; std::optional<Integer> answer;
+                         std::vector<LaneRef> members; };
+  struct SpecialRead { std::string name; std::optional<Integer> answer; };
+  struct MemoryCopy { std::string operand; nlohmann::json contract; std::uint64_t bytes; std::string space; };
+  struct TmaCopy { nlohmann::json contract; bool store; const nlohmann::json *dynamic_tensor_maps; };
+  struct Slot {
+    ConsumerTag consumer;
+    View site;
+    std::optional<MemoryCopy> memory;
+    std::optional<TmaCopy> tma;
+    std::optional<LaneRef> active_lane;
+    std::variant<SlotOutcome<ResolvedFootprint>, SlotOutcome<ResolvedTma>> outcome;
+  };
+  struct UniformBodySkip { LaneRef lane; std::vector<std::size_t> positions, varying_slots; };
+  struct AbsoluteCheck { AddressId id; std::uint64_t modulus; std::optional<ConstantAddressBinding> binding; };
+  struct PartitionRead { RecordRef leader; std::size_t evaluated; std::uint32_t instruction;
+                         std::vector<std::uint32_t> classes; query::PartitionEnd end; std::vector<LaneRef> members;
+                         const PartitionSpec *spec; std::vector<std::optional<std::pair<unsigned, bool>>> shuffles; };
+  struct ReportBearing { query::ReportKind kind; std::string code; };
+  // A Slot, several times larger than the rest, is held out of line: an entry is then about the
+  // size of a ValueRead, the most frequent event.
+  using Event = std::variant<ValueRead, query::ValueAtRead, LegacyUniform, query::UniformBinding, SpecialRead,
+                             query::SlotBegin, query::SlotEnd, std::unique_ptr<const Slot>, query::MemoFill,
+                             query::MemoHit, UniformBodySkip, query::BindingRead, AbsoluteCheck, PartitionRead,
+                             ReportBearing>;
+  struct Entry {
+    ConsumerTag consumer;
+    bool in_slot, in_partition;
+    Event event;
+  };
+  static View Copy(const RecordView &view);
+  static RecordView Rebuild(const FactSource &facts, const View &view);
+  std::vector<Entry> entries_;
+  bool complete_ = true;
 };
 } // namespace sentryward::frontend::ptx

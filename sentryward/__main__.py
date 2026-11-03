@@ -2,7 +2,7 @@
 import json
 from .api import verify
 from .assumptions import add_assumption_arguments, assumption_arguments, assumption_listing
-from .frontend.ptx_native import _exit_code
+from .frontend.ptx_native import DEFAULT_MEMORY_BUDGET_PERCENT, _exit_code
 from .results import (
     ResultArgumentParser,
     apply_fail_on,
@@ -21,7 +21,9 @@ def main(argv=None):
     parser.add_argument('--reference', help='Python reference defining reference(...)')
     parser.add_argument('--reference-binding', help='reference correspondence JSON; default: adjacent reference_binding.json or parent')
     parser.add_argument('--timeout', type=float, dest='timeout_seconds', default=600, help='total call budget in seconds; default: 600')
-    parser.add_argument('--memory-limit-mib', type=int, help='memory budget in MiB; default: unlimited')
+    parser.add_argument('--memory-limit-mib', type=int,
+                        help=f'memory budget in MiB; default: {DEFAULT_MEMORY_BUDGET_PERCENT}%% of the memory '
+                             'the process may use, physical memory bounded by its cgroup limit (verification)')
     parser.add_argument('--output', help='write the JSON result object to this path')
     parser.add_argument('--format', dest='result_format', choices=('json', 'summary'), default='json',
                         help='stdout representation; default: json. summary is compact text; JSON is unchanged')

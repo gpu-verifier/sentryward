@@ -12,8 +12,7 @@
       "6:global1:C": "C",
       "6:global1:D": "D",
       "6:global1:z": "z",
-      "6:global19:state_batch_indices": "state_batch_indices",
-      "6:global23:dst_state_batch_indices": "dst_state_batch_indices"
+      "6:global19:state_batch_indices": "state_batch_indices"
     },
     "parameters": {},
     "layouts": {
@@ -22,7 +21,7 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
+          384,
           1,
           64,
           128
@@ -180,20 +179,6 @@
         ]
       },
       "6:global19:state_batch_indices": {
-        "source_offset": 0,
-        "target_offset": 0,
-        "element_bytes": 8,
-        "shape": [
-          1
-        ],
-        "source_strides_bytes": [
-          8
-        ],
-        "target_strides_bytes": [
-          8
-        ]
-      },
-      "6:global23:dst_state_batch_indices": {
         "source_offset": 0,
         "target_offset": 0,
         "element_bytes": 8,
@@ -220,8 +205,7 @@
       "6:global1:C": "C",
       "6:global1:D": "D",
       "6:global1:z": "z",
-      "6:global19:state_batch_indices": "state_batch_indices",
-      "6:global23:dst_state_batch_indices": "dst_state_batch_indices"
+      "6:global19:state_batch_indices": "state_batch_indices"
     },
     "parameters": {},
     "layouts": {
@@ -230,7 +214,7 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
+          384,
           1,
           64,
           128
@@ -388,20 +372,6 @@
         ]
       },
       "6:global19:state_batch_indices": {
-        "source_offset": 0,
-        "target_offset": 0,
-        "element_bytes": 8,
-        "shape": [
-          1
-        ],
-        "source_strides_bytes": [
-          8
-        ],
-        "target_strides_bytes": [
-          8
-        ]
-      },
-      "6:global23:dst_state_batch_indices": {
         "source_offset": 0,
         "target_offset": 0,
         "element_bytes": 8,
@@ -449,7 +419,7 @@
         "right_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
+          384,
           1,
           64,
           128
@@ -523,7 +493,7 @@
       },
       {
         "name": "dst_state_batch_indices",
-        "allocation": "6:global23:dst_state_batch_indices",
+        "allocation": "6:global19:state_batch_indices",
         "dtype": "int64"
       },
       {
@@ -561,9 +531,9 @@
       "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/include/flashinfer/mamba/common.cuh",
       "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/selective_state_update.cu"
     ],
-    "optimized_input_sha256": "40d14765923e4cd04404efd45b318487f0fa73b580c01c12c4f1d00e5ee691dc",
+    "optimized_input_sha256": "a3db0a1e17dc29c2cfa0d0ae1e8666fd39c54e63b655019bb5874c09445a72d6",
     "ptx_sha256": "66e8de66f82097ccc97c5e70044b5ae5b999b1d0587a88a68116d9dd50e351a6",
-    "scope": "selective_state_update_kernel_simple<bf16,bf16,float,bf16,int64,void,64,128,4,4,0>; batch=nheads=ngroups=state_cache_size=1; dim=64; dstate=128; dt_softplus=1; update_state=1; pad_slot_id=-1; z, D, dt_bias, state_batch_indices and dst_state_batch_indices present; no state_scale (void) and no stochastic rounding. Outputs: output [1,1,64] and the full state cache [1,1,64,128] (new state only in slot dst_state_batch_indices[0] when state_batch_indices[0] != pad_slot_id).",
+    "scope": "selective_state_update_kernel_simple<bf16,bf16,float,bf16,int64,void,64,128,4,4,0>; batch=nheads=ngroups=1; state_cache_size=384; dim=64; dstate=128; dt_softplus=1; update_state=1; pad_slot_id=-1; z, D, dt_bias and state_batch_indices present; dst_state_batch_indices null; no state_scale (void) and no stochastic rounding. Outputs: output [1,1,64] and the full state cache [384,1,64,128] (new state only in slot state_batch_indices[0], the kernel's destination when dst_state_batch_indices is null, when state_batch_indices[0] != pad_slot_id). Slot indices (2026-10-29) as upstream's test builds them (tests/mamba/utils.py:98, 196-198: randperm(max(384, batch*10))[:batch]): state_batch_indices in [0, 383], injective, no -1 padding; no dst table is passed (test_selective_state_update_stp.py:87-105).",
     "scope_branch_choices": [],
     "scope_shape_arrays": []
   }

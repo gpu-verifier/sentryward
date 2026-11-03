@@ -7,6 +7,7 @@
 #include "sentryward/frontend/ptx/dependency_history.h"
 #include "sentryward/frontend/ptx/group2_lifetime.h"
 #include "sentryward/frontend/ptx/layouts.h"
+#include "sentryward/frontend/ptx/look_ahead.h"
 #include "sentryward/frontend/ptx/matrix.h"
 #include "sentryward/frontend/ptx/refinement.h"
 #include "sentryward/frontend/ptx/resources.h"
@@ -14,11 +15,13 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <mutex>
 #include <numeric>
 #include <regex>
 #include <set>
 #include <sstream>
 #include <tuple>
+#include <type_traits>
 #include <unordered_map>
 namespace sentryward::frontend::ptx {
 using Json = nlohmann::json;
@@ -106,6 +109,18 @@ std::vector<std::string> Brackets(const std::vector<std::string> &v) {
       r.push_back(x);
   return r;
 }
+// cp.async.bulk's modifiers (bulk_complete_tx, bulk_copy): each one of `allowed`, at most once.
+// Returns the state-space modifiers among them, in order.
+std::vector<std::string> BulkSpaces(const std::vector<std::string> &modifiers, const std::set<std::string> &allowed) {
+  std::set<std::string> seen;
+  std::vector<std::string> spaces;
+  for (const auto &m : modifiers) {
+    if (!allowed.contains(m) || !seen.insert(m).second)
+      throw SemanticError("bulk_copy_variant", "unsupported bulk copy modifier");
+    if (m == "shared::cta" || m == "shared::cluster" || m == "global") spaces.push_back(m);
+  }
+  return spaces;
+}
 Json AccessContract(const Json &c, const char *resource, const char *region) {
   Json r = Json::object();
   if (c.contains(resource))
@@ -170,6 +185,111 @@ struct TmemAddress {
   std::string resource;
   std::optional<std::uint32_t> columns;
 };
+// A worker's lane in the consumer's ids (ModelLowerer::Impl::Absorb): the ids derived from
+// instruction ids (InstId, AsyncOpId, StateId) shift by the lane's first instruction id;
+// addresses, barriers and collectives map through the absorbed tables. O(1) per id.
+struct LaneIds {
+  std::uint32_t base = 0;
+  std::span<const AddressId> addresses;
+  std::span<const BarrierLifetimeId> barriers;
+  std::span<const SyncId> syncs;
+  InstId operator()(InstId id) const { return InstId(base + id.value()); }
+  AddressId operator()(AddressId id) const { return addresses[id.value()]; }
+  BarrierLifetimeId operator()(BarrierLifetimeId id) const { return barriers[id.value()]; }
+  MilestoneRef operator()(MilestoneRef ref) const {
+    ref.instruction = (*this)(ref.instruction);
+    return ref;
+  }
+  void Apply(std::vector<MilestoneRef> &refs) const {
+    for (auto &ref : refs) ref = (*this)(ref);
+  }
+  void Apply(std::vector<std::pair<std::uint32_t, MilestoneRef>> &links) const {
+    for (auto &link : links) link.second = (*this)(link.second);
+  }
+  void Apply(AsyncEffect &effect) const {
+    if (std::any_of(effect.accesses.begin(), effect.accesses.end(),
+                    [](const MemoryEffect &access) { return std::holds_alternative<AddressId>(access.endpoint); }))
+      effect.accesses = effect.accesses.transformed([&](std::size_t, MemoryEffect access) {
+        if (auto *address = std::get_if<AddressId>(&access.endpoint)) *address = (*this)(*address);
+        return access;
+      });
+    if (effect.completion)
+      std::visit([&](auto &action) { action.barrier = (*this)(action.barrier); }, *effect.completion);
+    Apply(effect.predecessors);
+  }
+  void Apply(std::vector<AsyncEffect> &effects) const {
+    for (auto &effect : effects) Apply(effect);
+  }
+  // The ids a split prototype keeps (SourceRecordCodec::split moves every other id into the
+  // binding, a collective's SyncId included): barriers and completion barriers.
+  void ApplyPrototype(SourceOp &op) const {
+    std::visit([&](auto &o) {
+      using T = std::decay_t<decltype(o)>;
+      if constexpr (std::is_same_v<T, AsyncLoad> || std::is_same_v<T, AsyncStore>) {
+        if (o.completion) o.completion->barrier = (*this)(o.completion->barrier);
+      } else if constexpr (std::is_same_v<T, AsyncOp>) {
+        for (auto &effect : o.effects)
+          if (effect.completion)
+            std::visit([&](auto &action) { action.barrier = (*this)(action.barrier); }, *effect.completion);
+      } else if constexpr (requires { o.barrier; }) { // the mbarrier and named-barrier operations
+        o.barrier = (*this)(o.barrier);
+      }
+    }, op);
+  }
+  // A split binding's ids: the instruction id; the address of a load or store prototype
+  // (`addressed`); each operand by its kind (SplitLane), in split's visiting order.
+  SourceRecordCodec::Binding Apply(const SourceRecordCodec::Binding &binding, bool addressed,
+                                   const std::vector<std::uint8_t> &kinds) const;
+  void Apply(MmaPlan &plan) const {
+    Apply(plan.effects);
+    Apply(plan.links);
+    Apply(plan.operand_links);
+    Apply(plan.copy_links);
+    Apply(plan.contained_copy_links);
+  }
+  void Apply(TcgenCopyPlan &plan) const {
+    Apply(plan.effects);
+    Apply(plan.operand_links);
+  }
+  void Apply(TcgenHistory &history) const {
+    for (auto &record : history.records) record.id += base;
+    for (auto *ids : {&history.work, &history.commits})
+      for (auto &[group, list] : *ids) {
+        (void)group;
+        for (auto &id : list) id += base;
+      }
+  }
+};
+// The kinds of a split prototype's binding operands, in split's visiting order: an id derived
+// from an instruction id (InstId, AsyncOpId, StateId), an address, an actor, or a collective.
+enum OperandKind : std::uint8_t { kInstructionOperand, kAddressOperand, kActorOperand, kSyncOperand };
+std::vector<std::uint8_t> OperandKinds(SourceInstruction &prototype) {
+  std::vector<std::uint8_t> kinds;
+  SourceRecordCodec::visitOperands(prototype.op, [&](auto &id) {
+    using T = std::decay_t<decltype(id)>;
+    kinds.push_back(std::is_same_v<T, AddressId> ? kAddressOperand
+                    : std::is_same_v<T, ActorId> ? kActorOperand
+                    : std::is_same_v<T, SyncId> ? kSyncOperand : kInstructionOperand);
+  });
+  return kinds;
+}
+SourceRecordCodec::Binding LaneIds::Apply(const SourceRecordCodec::Binding &binding, bool addressed,
+                                          const std::vector<std::uint8_t> &kinds) const {
+  if (binding.operands.size() != kinds.size()) throw std::logic_error("split lane binding width");
+  auto result = binding;
+  result.id = (*this)(binding.id);
+  if (addressed) result.address = (*this)(binding.address);
+  if (!kinds.empty())
+    result.operands = binding.operands.transformed([&](std::size_t index, std::uint32_t value) {
+      switch (kinds[index]) {
+      case kInstructionOperand: return base + value;
+      case kAddressOperand: return addresses[value].value();
+      case kSyncOperand: return syncs[value].value();
+      default: return value;
+      }
+    });
+  return result;
+}
 // The MemoHit/MemoFill event of the evaluated-address memo, out of line and cold so
 // that the hot generated-memory loop keeps only the recording() branch (O(1) per
 // hit/fill).
@@ -218,6 +338,8 @@ struct ModelLowerer::Impl {
     std::vector<std::string> exposed;
   };
   std::map<std::uint32_t, MergedArmFacts> merged_arm_facts;
+  // st.local shapes (execution.h), built when a skipped region first holds one.
+  std::unique_ptr<LocalRegionStores> local_region_stores;
   std::map<std::string, DependencyCounts> dependency_counts;
   std::vector<std::vector<std::string>> operands;
   std::vector<std::string> opcode_texts;
@@ -231,6 +353,16 @@ struct ModelLowerer::Impl {
   std::map<std::string, std::uint64_t> errors, counts;
   std::map<ClusterKey, std::map<ActorId, InstId>> cluster_arrivals;
   std::vector<ClusterWait> cluster_waits;
+  // The current CTA's named barriers (CtaWideExits): whether every use is a blocking one
+  // without a thread count, and then its arrivals in lowering order, which lists each
+  // thread's arrivals contiguously and in program order.
+  struct CtaWideBarrier {
+    bool cta_wide = true;
+    std::vector<std::pair<ActorId, InstId>> arrivals;
+  };
+  std::map<BarrierLifetimeId, CtaWideBarrier> cta_wide_barriers;
+  // Per thread of the current CTA, the await standing for its exit (Terminal).
+  std::map<ActorId, InstId> terminals;
   std::set<Coordinates> clc_requests;
   std::map<ActorId, std::uint32_t> cluster_phases;
   std::map<BarrierLifetimeId,std::vector<InstId>> barrier_invalidations;
@@ -262,6 +394,43 @@ struct ModelLowerer::Impl {
   TmemLifetimeAnalysis *tmem = nullptr;
   MatrixResolver *matrix = nullptr;
   std::optional<LaneRef> current_lane; // the lane being lowered (Add)
+  std::size_t lane_position = 0;       // its position in the CTA's lowering order (MatrixResolver)
+  // A CTA's lanes on worker threads (LowerLanes): the --sync-threads count; at most one lowers
+  // every lane on the calling thread.
+  std::size_t threads = 0;
+  // A thread's loop iterations, in order: (position of the first instruction lowered from the
+  // iteration, relative to the thread's first one; the loop header's PTX instruction).
+  using IterationStarts = std::vector<std::pair<std::size_t, std::uint32_t>>;
+  // A worker's Impl (`lane` set) lowers one lane of the consumer's current CTA into state of its
+  // own: instruction ids from 0 in `instructions`, its own address and barrier tables (which keep
+  // their writes) and collectives, and every per-CTA map of the Impl holding only that lane's
+  // entries. The consumer's Absorb applies that state in the CTA's lowering order.
+  struct LaneWork {
+    std::vector<SourceInstruction> instructions; // emptied by SplitLane into the four below
+    // The instructions as SourceInstructions stores them (SourceRecordCodec::split): the lane's
+    // distinct prototypes with their binding operands' kinds (OperandKinds) and whether a load or
+    // store holds the binding's address, and one (prototype, binding) row per instruction.
+    std::vector<SourceInstruction> prototypes;
+    std::vector<std::vector<std::uint8_t>> operand_kinds;
+    std::vector<bool> addressed;
+    std::vector<std::pair<std::uint32_t, SourceRecordCodec::Binding>> rows;
+    std::vector<CollectiveSpec> collectives; // SyncIds from 0, in creation order
+    struct Diagnosed {
+      std::string code, message;
+      std::optional<std::uint32_t> actor, line;
+      Json details;
+      std::uint64_t weight;
+    };
+    std::vector<Diagnosed> diagnostics; // AddDiagnostic's arguments, in call order
+    EventTape tape;                     // the lane's query events while a recorder is attached
+    std::optional<Resources> resources; // per CTA, over the Impl's tables
+    std::vector<std::uint32_t> counted; // the instructions whose occurrence_counts entry is nonzero
+    IterationStarts iteration_starts;   // with template execution
+    TcgenHistory history;
+    bool lowered = false; // false: the consumer lowers the lane itself
+  };
+  std::unique_ptr<LaneWork> lane;
+  std::vector<std::unique_ptr<Impl>> shadows; // the consumer's worker Impls
   Impl(const Module &m, const Function &f, std::function<void()> p)
       : module(m), function(f), poll(std::move(p)), source_name(m.source_name), registers(m, f) {
     for (const auto& [id, path] : m.file_table) debug_files.emplace(id, path);
@@ -303,14 +472,25 @@ struct ModelLowerer::Impl {
   void Diagnostic(std::string code, std::string message,
                   const Thread *t = nullptr,
                   const RecordView *e = nullptr, Json details = Json::object(), std::uint64_t weight = 1) {
-    errors[code] += weight;
-    if (units && facts) diagnostic_ctas.insert(facts->Linear());
     // A ReportBearing event: per-CTA report evidence (closes the recording class); never after Add
     // (facts is null).
     if (facts && facts->recording()) [[unlikely]]
       facts->Note(query::ReportBearing{query::ReportKind::LoweringDiagnostic, code});
+    std::optional<std::uint32_t> actor, line;
+    if (t) actor = t->actor.id.value();
+    if (e) line = function.instructions[e->instruction_id()].line;
+    if (lane) {
+      lane->diagnostics.push_back({std::move(code), std::move(message), actor, line, std::move(details), weight});
+      return;
+    }
+    AddDiagnostic(std::move(code), std::move(message), actor, line, std::move(details), weight);
+  }
+  void AddDiagnostic(std::string code, std::string message, std::optional<std::uint32_t> actor,
+                     std::optional<std::uint32_t> line, Json details, std::uint64_t weight) {
+    errors[code] += weight;
+    if (units && facts) diagnostic_ctas.insert(facts->Linear());
     Json d{{"code",code},{"message",message},{"stage","event_view_construction"},{"details",std::move(details)}};
-    if(e)d["details"]["ptx_line"]=function.instructions[e->instruction_id()].line;
+    if(line)d["details"]["ptx_line"]=*line;
     const auto key=d.dump();
     const auto [it,added]=diagnostic_groups.try_emplace(key,diagnostics.size());
     if(added) {
@@ -320,11 +500,10 @@ struct ModelLowerer::Impl {
     }
     auto& evidence=diagnostics[it->second]["details"];
     evidence["occurrence_count"]=evidence["occurrence_count"].get<std::size_t>()+weight;
-    if(t) {
-      const auto actor=t->actor.id.value();
+    if(actor) {
       auto& ranges=evidence["actor_ranges"];
-      if(!ranges.empty() && ranges.back()[1].get<std::uint32_t>()+1==actor)ranges.back()[1]=actor;
-      else if(ranges.empty() || ranges.back()[1]!=actor)ranges.push_back({actor,actor});
+      if(!ranges.empty() && ranges.back()[1].get<std::uint32_t>()+1==*actor)ranges.back()[1]=*actor;
+      else if(ranges.empty() || ranges.back()[1]!=*actor)ranges.push_back({*actor,*actor});
     }
   }
 
@@ -338,9 +517,14 @@ struct ModelLowerer::Impl {
     return {source_name, i.line, i.column};
   }
   InstId Next() const {
-    if (source.program.instructions.size() >= UINT32_MAX)
+    const auto size = lane ? lane->instructions.size() : source.program.instructions.size();
+    if (size >= UINT32_MAX)
       throw SemanticError("model_size", "source instruction IDs exhausted");
-    return InstId(source.program.instructions.size());
+    return InstId(size);
+  }
+  // An instruction this Impl emitted (a worker's: by its lane-local id).
+  SourceInstruction Emitted(InstId id) const {
+    return lane ? lane->instructions.at(id.value()) : source.instruction(id);
   }
   void SharedValueEndpoint(const ActorInfo &actor,const DynamicKey &key,InstId id,const SourceOp &op) {
     if(shared_value_instructions.empty() || !shared_value_instructions.at(key.instruction))return;
@@ -359,12 +543,15 @@ struct ModelLowerer::Impl {
   }
   InstId Emit(Thread &t, const RecordView &e, SourceOp op) {
     const auto &i = function.instructions[e.instruction_id()];
-    auto id = source.append(t.actor.id, Location(i), std::move(op),
-                            PtxOrigin{source_name, i.id,
-                                      static_cast<std::uint32_t>(e.occurrence()),
-                                      origin_opcodes[i.id]});
+    PtxOrigin origin{source_name, i.id, static_cast<std::uint32_t>(e.occurrence()), origin_opcodes[i.id]};
+    InstId id;
+    if (lane) {
+      id = Next();
+      lane->instructions.push_back({id, t.actor.id, Location(i), std::move(op), std::move(origin)});
+    } else
+      id = source.append(t.actor.id, Location(i), std::move(op), std::move(origin));
     if(!shared_value_instructions.empty() && shared_value_instructions.at(e.instruction_id()))
-      SharedValueEndpoint(t.actor,e.Key(),id,source.instruction(id).op);
+      SharedValueEndpoint(t.actor,e.Key(),id,Emitted(id).op);
     if (index_sites) {
       t.origins.try_emplace(e.Key(), id);
       sites[Key(t.actor.warp.value(), e)].push_back(id);
@@ -378,6 +565,34 @@ struct ModelLowerer::Impl {
   std::uint64_t Scalar(const RecordView &e, std::string_view s,
                        std::string_view field, std::uint64_t max = UINT64_MAX) {
     return Unsigned(resources->ScalarValue(e, s, field), field, max);
+  }
+  // cp.async.bulk's size operand: a positive u32 multiple of 16.
+  std::uint64_t BulkSize(const RecordView &e, std::string_view operand) {
+    const auto size = Scalar(e, operand, "bulk transfer size");
+    if (!size || size % 16 || size > UINT32_MAX)
+      throw SemanticError("invalid_bulk_transfer_size", "size must be positive multiple of 16");
+    return size;
+  }
+  // A linear bulk transfer's footprints (copy and reduction): `source` read, then `destination`
+  // written, each one fragment of its request's bytes; otherwise SemanticError(code, message).
+  std::pair<Fragment, Fragment> BulkFootprints(const RecordView &e, const MemoryRequest &source,
+                                               const MemoryRequest &destination, const char *code,
+                                               const char *message) {
+    const auto read = resources->Memory(e, source);
+    const auto write = resources->Memory(e, destination);
+    if (read.second != source.bytes || write.second != destination.bytes) throw SemanticError(code, message);
+    return {read, write};
+  }
+  // cp.async.bulk's copy footprints (`spaces`: BulkSpaces): brackets[1] read in spaces[1], then
+  // brackets[0] written in spaces[0], under the contract's source and destination entries.
+  std::pair<Fragment, Fragment> BulkCopyFootprints(const RecordView &e, const std::vector<std::string> &brackets,
+                                                   const Json &contract, std::uint64_t size,
+                                                   const std::vector<std::string> &spaces) {
+    const auto source = AccessContract(contract, "source_resource", "source_region");
+    const auto destination = AccessContract(contract, "destination_resource", "destination_region");
+    return BulkFootprints(e, MemoryRequest(brackets[1], source, size, spaces[1]),
+                          MemoryRequest(brackets[0], destination, size, spaces[0]), "bulk_copy_fragment_size",
+                          "bulk footprints disagree with size");
   }
   // A 64-bit descriptor operand, read as its bit pattern.
   std::uint64_t Descriptor(const RecordView &e, std::string_view s, std::string_view field) {
@@ -418,6 +633,9 @@ struct ModelLowerer::Impl {
   void Mbarrier(Thread &, const RecordView &, const Json &);
   void Tcgen(Thread &, const RecordView &, const Json &);
   void Lifetime(Thread &, const RecordView &);
+  std::optional<RecordView> ExitRecord(const CtaFacts &, std::size_t lane_index) const;
+  std::optional<InstId> Terminal(const CtaFacts &, std::size_t lane_index, const ActorInfo &);
+  void CtaWideExits(const CtaFacts &, std::size_t actor_begin);
   void LifetimeOrders();
   void CollectGroup2();
   void Matrix(Thread &, const RecordView &, bool);
@@ -428,7 +646,22 @@ struct ModelLowerer::Impl {
               std::vector<Fragment>,
               std::optional<CompletionAction> completion = {});
   void Instruction(Thread &, const RecordView &);
-  void Add(const CtaFacts &, ValueAddresses);
+  void LowerThread(const CtaFacts &, LaneRef, Thread &, const std::vector<std::size_t> *positions,
+                   std::span<const std::optional<std::uint32_t>> collective_masks, std::uint64_t &visits,
+                   IterationStarts *iteration_starts = nullptr);
+  void LowerLanes(const CtaFacts &, Resources &, const ValueAddresses &, std::span<const std::size_t> order,
+                  std::span<const ActorInfo> lane_actors,
+                  std::span<const std::optional<std::uint32_t>> collective_masks,
+                  std::span<const std::uintptr_t> member_cohorts, bool template_execution, std::uint64_t &visits);
+  void BeginLaneWork(const Impl &consumer, Resources &like, const ValueAddresses &bridge);
+  void EndLaneWork();
+  void ClearLane(bool release);
+  void LowerLane(const CtaFacts &, LaneRef, std::size_t position, const ActorInfo &,
+                 std::span<const std::optional<std::uint32_t>> collective_masks,
+                 const std::function<void()> &worker_poll);
+  void SplitLane();
+  bool Absorb(Impl &shadow);
+  void Add(const CtaFacts &, ValueAddresses, bool lane_workers);
   LoweringResult Finish();
 };
 // Lift only a memory instruction that intersects pending register accesses.
@@ -549,8 +782,8 @@ void ModelLowerer::Impl::Collective(Thread &t, const RecordView &e,
                           "issuer not in nonempty u32 mask");
     auto key = std::tuple{warp, e.instruction_id(), e.occurrence(),
                           static_cast<std::uint32_t>(mask)};
-    auto [it, added] = warp_collectives.try_emplace(
-        key, SyncId(source.program.collectives.size()));
+    auto &specs = this->lane ? this->lane->collectives : source.program.collectives;
+    auto [it, added] = warp_collectives.try_emplace(key, SyncId(specs.size()));
     if (added) {
       std::vector<ActorId> participants;
       for (std::uint32_t l = 0; l < 32; ++l)
@@ -561,8 +794,7 @@ void ModelLowerer::Impl::Collective(Thread &t, const RecordView &e,
                                 "mask names missing lane");
           participants.push_back(found->second);
         }
-      source.program.collectives.push_back({it->second, std::move(participants),
-                                            static_cast<std::uint32_t>(mask)});
+      specs.push_back({it->second, std::move(participants), static_cast<std::uint32_t>(mask)});
     }
     Emit(t, e, SyncWarp{it->second, static_cast<std::uint32_t>(mask), operation == "warp_sync"});
     return;
@@ -571,8 +803,9 @@ void ModelLowerer::Impl::Collective(Thread &t, const RecordView &e,
       operation == "named_reduce") {
     bool reduced = operation == "named_reduce";
     auto slot = Scalar(e, ops.at(reduced ? 1 : 0), "named slot", 15);
+    const bool counted = ops.size() == (reduced ? 4u : 2u);
     auto expected =
-        ops.size() == (reduced ? 4u : 2u)
+        counted
             ? Scalar(e, ops.at(reduced ? 2 : 1), "named count", UINT32_MAX)
             : facts->launch().Threads();
     if (!expected || expected % 32 || expected > facts->launch().Threads())
@@ -580,10 +813,19 @@ void ModelLowerer::Impl::Collective(Thread &t, const RecordView &e,
                           "invalid named barrier thread count");
     const auto barrier = resources->interner().Apply(
         BarrierStep{{BarrierKey::Kind::Named, resources->frame.self(), std::to_string(slot)}});
+    auto &use = cta_wide_barriers[barrier];
+    InstId id;
     if (operation == "named_arrive")
-      Emit(t, e, NamedBarrierArrive{barrier, static_cast<std::uint32_t>(expected)});
+      id = Emit(t, e, NamedBarrierArrive{barrier, static_cast<std::uint32_t>(expected)});
     else
-      Emit(t, e, NamedBarrierSync{barrier, static_cast<std::uint32_t>(expected)});
+      id = Emit(t, e, NamedBarrierSync{barrier, static_cast<std::uint32_t>(expected)});
+    // bar.arrive always has a count (PTX ISA), so only blocking uses can be CTA-wide.
+    if (counted || operation == "named_arrive") {
+      use.cta_wide = false;
+      use.arrivals.clear();
+    } else if (use.cta_wide) {
+      use.arrivals.emplace_back(t.actor.id, id);
+    }
     return;
   }
   if (operation == "cluster_arrive" || operation == "cluster_wait") {
@@ -677,7 +919,7 @@ void ModelLowerer::Impl::Mbarrier(Thread &t, const RecordView &e,
       if (!origin || !t.origins.contains(*origin))
         throw SemanticError("unresolved_state_token",
                             "state wait has no retained arrival token");
-      const auto &op = source.instruction(t.origins.at(*origin)).op;
+      const auto op = Emitted(t.origins.at(*origin)).op;
       std::optional<StateId> state;
       if (auto p = std::get_if<MBarrierArrive>(&op))
         state = p->result;
@@ -1439,12 +1681,12 @@ void ModelLowerer::Impl::LifetimeOrders() {
       from.push_back(allocations.at(source_key));
     else if (sites.contains(source_key))
       for (auto id : sites.at(source_key))
-        if (std::holds_alternative<AsyncOp>(source.instruction(id).op))
+        if (source.program.instructions.holdsOperation<AsyncOp>(id.value()))
           from.push_back(id);
     std::set<ActorId> seen;
     if (sites.contains(target_key))
       for (auto id : sites.at(target_key))
-        if (seen.insert(source.instruction(id).actor).second)
+        if (seen.insert(source.program.instructions.actor(id.value())).second)
           to.push_back(id);
     if (from.empty() || to.empty()) {
       Diagnostic("lifecycle_order_endpoint_missing", obligation.message, nullptr, nullptr,
@@ -1637,6 +1879,25 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
       WarpData(t, e);
     } else
       Compute(t, e);
+    // A skipped region's st.local stores (LocalRegionStore, one array per region): the region
+    // reads and writes the whole array once; the value IR lifts each element slot as one read and
+    // one write of it.
+    const LocalRegionStore *array = nullptr;
+    for (const auto index : e.opaque_compute_diamond_indices()) {
+      if (!LocalStoreInstruction(function.instructions.at(index))) continue;
+      if (!local_region_stores) local_region_stores = std::make_unique<LocalRegionStores>(module, function);
+      const auto *store = local_region_stores->Shape(index);
+      if (!store || (array && (array->declaration.resource != store->declaration.resource ||
+                               array->element_bytes != store->element_bytes)))
+        throw SemanticError("lifted_region_local_store", "A skipped region's st.local has no element-slot shape of "
+                            "the region's one .local array");
+      array = store;
+    }
+    if (array) {
+      const auto address = resources->Bind("local", array->declaration.resource, 0, array->declaration.bytes).first;
+      Emit(t, e, ImmediateLoad{address, static_cast<std::uint32_t>(array->declaration.bytes)});
+      Emit(t, e, ImmediateStore{address, static_cast<std::uint32_t>(array->declaration.bytes)});
+    }
     return;
   }
   if (e.canonical_wait_probe())
@@ -1658,7 +1919,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
           throw SemanticError("async_register_dependency_unsupported",
                               "Register dependency for this instruction is not modeled",
                               {{"register",name},{"consumer_opcode",Opcode(i)},
-                               {"producer_line",source.instruction(t.writes.at(name).instruction).location.line},
+                               {"producer_line",Emitted(t.writes.at(name).instruction).location.line},
                                {"dependency","pending_register_write"}});
       }
     }
@@ -1667,7 +1928,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
         throw SemanticError("async_register_overwrite_unsupported",
                             "Register overwrite during an asynchronous read is not modeled for this instruction",
                             {{"register",reg},{"consumer_opcode",Opcode(i)},
-                             {"reader_line",source.instruction(t.reads.at(reg).front().instruction).location.line},
+                             {"reader_line",Emitted(t.reads.at(reg).front().instruction).location.line},
                              {"dependency","pending_register_read"}});
   }
   // atom/red that order_independent_atomics models: one synchronous read-modify-write
@@ -1768,36 +2029,63 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     auto size = Scalar(e, ops[2], "cp.async size");
     if (size != 4 && size != 8 && size != 16)
       throw SemanticError("cp_async_size", "copy size must be 4,8,16");
-    auto source_size = size;
+    // The copy reads `least` to `source_size` source bytes and zero-fills the rest of
+    // `size` (ISA: src-size > cp-size is undefined). A data-dependent operand reads the
+    // counts its known bits allow: an ignore-src predicate 0 or `size` bytes.
+    const std::string_view control = "source size/ignore source";
+    auto source_size = size, least = size;
     if (ops.size() == 4) {
-      auto value = Scalar(e, ops[3], "source size/ignore source");
       auto reg = Register(i, ops[3]);
       bool immediate = ParseInteger(ops[3]).has_value();
+      const bool predicate = !immediate && registers.Width(reg) == 1;
+      const auto full = predicate ? 1ULL : 0xffffffffULL;
+      const auto [fixed, known] = immediate ? Resources::KnownBits{0, full}
+                                            : resources->FixedBits(e, ops[3], predicate ? 1 : 32);
+      const auto value = known == full ? std::optional(Scalar(e, ops[3], control)) : std::nullopt;
       if (!immediate &&
           (!ops[3].starts_with('%') || ambiguous_registers.contains(ops[3])))
         throw SemanticError("cp_async_operand_scope",
                             "size register lacks unambiguous scope");
-      if (!immediate && registers.Width(reg) == 1) {
+      if (predicate) {
         if (value > 1)
           throw SemanticError("cp_async_ignore_source",
                               "ignore source must be predicate");
-        source_size = value ? 0 : size;
+        source_size = value == 1 ? 0 : size;
+        least = value ? source_size : 0;
       } else {
         if (!immediate && registers.Width(reg) != 4)
           throw SemanticError("cp_async_operand_type",
                               "source size needs 32-bit register");
-        source_size = value;
+        source_size = value.value_or(fixed | (~known & full));
+        least = value.value_or(fixed);
+        if (!value && source_size > size)
+          throw SemanticError("async_copy_source_control_not_static",
+                              "Data-dependent source size is not provably at most the copy size",
+                              {{"operand_role", control}, {"operand", ops[3]}});
       }
     }
     if (source_size > size)
       throw SemanticError("cp_async_source_size",
                           "source size exceeds copy size");
     std::vector<Fragment> reads;
-    if (source_size)
-      reads.push_back(resources->Memory(
-          e, MemoryRequest(ops[1],
-          AccessContract(contract, "source_resource", "source_region"),
-          source_size, "global")));
+    // With a data-dependent count the read is possible, not certain: it is modeled as a
+    // read of the largest count. A count of 0 reads nothing, so the source may then be
+    // invalid; a source that does not resolve is a refusal, not an access error.
+    if (source_size) {
+      const auto source_contract = AccessContract(contract, "source_resource", "source_region");
+      const MemoryRequest source(ops[1], source_contract, source_size, "global");
+      if (least == source_size)
+        reads.push_back(resources->Memory(e, source));
+      else
+        try {
+          reads.push_back(resources->Memory(e, source));
+        } catch (const SemanticError &error) {
+          throw SemanticError("async_copy_source_control_not_static",
+                              "Source of a data-dependent source size is not resolved: " +
+                                  std::string(error.what()),
+                              {{"operand_role", control}, {"operand", ops[3]}, {"source_error", error.code}});
+        }
+    }
     std::vector<Fragment> writes{resources->Memory(
         e, MemoryRequest(ops[0],
         AccessContract(contract, "destination_resource", "destination_region"),
@@ -1932,9 +2220,9 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     const auto bytes=Scalar(e,ops[2],"bulk reduction size",UINT32_MAX);
     if (bytes%16) throw SemanticError("bulk_reduction_variant","reduction size must be a u32 multiple of 16");
     const auto element=std::stoul(type.substr(type.find_first_of("0123456789")))/8;
-    const auto read=resources->Memory(e,MemoryRequest(brackets[1],Json::object(),bytes,"shared"));
-    const auto write=resources->Memory(e,MemoryRequest(brackets[0],Json::object(),bytes,"global"));
-    if (read.second!=bytes || write.second!=bytes) throw SemanticError("bulk_reduction_fragmentation","nonlinear reduction footprint");
+    const auto [read, write] = BulkFootprints(e, MemoryRequest(brackets[1], Json::object(), bytes, "shared"),
+                                              MemoryRequest(brackets[0], Json::object(), bytes, "global"),
+                                              "bulk_reduction_fragmentation", "nonlinear reduction footprint");
     const auto read_base=resources->Binding(read.first), write_base=resources->Binding(write.first);
     auto fragment=[&](const ConstantAddressBinding &base,AddressId base_id,std::uint64_t offset) {
       if (base.expression.empty()) {
@@ -1960,23 +2248,9 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     Async(t,e,std::move(effects)); t.bulk.Issue(id); return;
   }
   if (operation == "bulk_complete_tx") {
-    std::set<std::string> allowed{"async",
-                                  "bulk",
-                                  "weak",
-                                  "shared::cta",
-                                  "shared::cluster",
-                                  "global",
-                                  "mbarrier::complete_tx::bytes",
-                                  "L2::cache_hint"},
-        seen;
-    std::vector<std::string> spaces;
-    for (const auto &m : i.modifiers) {
-      if (!allowed.contains(m) || !seen.insert(m).second)
-        throw SemanticError("bulk_copy_variant",
-                            "unsupported bulk copy modifier");
-      if (m == "shared::cta" || m == "shared::cluster" || m == "global")
-        spaces.push_back(m);
-    }
+    static const std::set<std::string> allowed{"async", "bulk", "weak", "shared::cta", "shared::cluster", "global",
+                                               "mbarrier::complete_tx::bytes", "L2::cache_hint"};
+    const auto spaces = BulkSpaces(i.modifiers, allowed);
     if ((spaces != std::vector<std::string>{"shared::cta", "global"} &&
          spaces != std::vector<std::string>{"shared::cluster", "global"} &&
          spaces != std::vector<std::string>{"shared::cluster", "shared::cta"}) ||
@@ -1988,28 +2262,32 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     auto b = Brackets(ops);
     if (b.size() != 3)
       throw SemanticError("bulk_copy_variant", "bulk copy address count");
-    auto size = Scalar(e, ops[2], "bulk transfer size");
-    if (!size || size % 16 || size>UINT32_MAX)
-      throw SemanticError("invalid_bulk_transfer_size",
-                          "size must be positive multiple of16");
+    const auto size = BulkSize(e, ops[2]);
     if (spaces[1]=="shared::cta") {
       auto destination=resources->Shared(e,b[0]);
       if (!destination || destination->first==resources->frame.self())
         throw SemanticError("bulk_copy_variant","shared bulk copy requires a resolved remote destination");
     }
-    std::vector<Fragment> reads{resources->Memory(
-        e, MemoryRequest(b[1], AccessContract(contract, "source_resource", "source_region"),
-        size, spaces[1]))},
-        writes{
-            resources->Memory(e, MemoryRequest(b[0],
-                              AccessContract(contract, "destination_resource",
-                                             "destination_region"),
-                              size, spaces[0]))};
-    if (reads[0].second != size || writes[0].second != size)
-      throw SemanticError("bulk_copy_fragment_size",
-                          "bulk footprints disagree with size");
-    Copy(t, e, std::move(reads), std::move(writes),
-         CompleteTxEffect{resources->Barrier(e, b[2], contract), size});
+    const auto [read, write] = BulkCopyFootprints(e, b, contract, size, spaces);
+    Copy(t, e, {read}, {write}, CompleteTxEffect{resources->Barrier(e, b[2], contract), size});
+    return;
+  }
+  if (operation == "bulk_copy") {
+    // cp.async.bulk.global.shared::cta.bulk_group: a linear copy from the executing CTA's
+    // shared memory to global memory, completed through bulk async-groups like a TMA store.
+    static const std::set<std::string> allowed{"async", "bulk", "global", "shared::cta", "bulk_group",
+                                               "L2::cache_hint"};
+    const auto spaces = BulkSpaces(i.modifiers, allowed);
+    if (spaces != std::vector<std::string>{"global", "shared::cta"} ||
+        !Has(i, "async") || !Has(i, "bulk") || !Has(i, "bulk_group") ||
+        ops.size() != (Has(i, "L2::cache_hint") ? 4u : 3u))
+      throw SemanticError("bulk_copy_variant", "unmodeled bulk copy variant");
+    auto b = Brackets(ops);
+    if (b.size() != 2)
+      throw SemanticError("bulk_copy_variant", "bulk copy address count");
+    const auto size = BulkSize(e, ops[2]);
+    const auto [read, write] = BulkCopyFootprints(e, b, contract, size, spaces);
+    t.bulk.Issue(Copy(t, e, {read}, {write}));
     return;
   }
   if (operation == "bulk_commit_group") {
@@ -2091,6 +2369,8 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     return;
   }
   if (operation == "try_cancel_complete_tx") {
+    // clc_requests spans the cluster's lanes: a worker leaves it to the consumer.
+    FactSource::RequireSerial();
     if (facts->launch().ClusterLaunchCancellation())
       throw SemanticError("cluster_launch_control_outcome",
                           "CLC needs fixed no-cancellation scenario");
@@ -2237,7 +2517,7 @@ void ModelLowerer::Impl::CollectGroup2() {
     auto found = sites.find(Key(site));
     if (found != sites.end())
       for (auto id : found->second) {
-        auto actor = source.instruction(id).actor;
+        auto actor = source.program.instructions.actor(id.value());
         auto [it, added] = ends.try_emplace(actor, std::pair{id, id});
         (void)added;
         it->second.second = id;
@@ -2267,7 +2547,7 @@ void ModelLowerer::Impl::Matrix(Thread &t, const RecordView &e,
   const auto &i = function.instructions[e.instruction_id()];
   const auto &contract = facts->launch().InstructionContract(
       i.line, i.id, t.actor.warp.value(), e.occurrence());
-  auto fragments = matrix->Resolve(*current_lane, e, *resources, contract);
+  auto fragments = matrix->Resolve(*current_lane, lane_position, e, *resources, contract);
   std::vector<std::string> regs;
   for (const auto &op : operands[i.id])
     if (op.starts_with('{'))
@@ -2313,7 +2593,76 @@ void ModelLowerer::Impl::Matrix(Thread &t, const RecordView &e,
   auto tail = Emit(t, e, Await{{Ref(id)}});
   aligned[Key(t.actor.warp.value(), e)].calls[t.actor.lane] = {id, tail};
 }
-void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_addresses) {
+// The terminal ret/exit record of the CTA's `lane_index`-th thread; none when its
+// trace ends elsewhere.
+std::optional<RecordView> ModelLowerer::Impl::ExitRecord(const CtaFacts &cta_facts,
+                                                         std::size_t lane_index) const {
+  const auto lane = cta_facts.Lane(lane_index);
+  const auto size = cta_facts.Size(lane);
+  if (size == 0) return std::nullopt;
+  const auto last = cta_facts.Meta({lane, size - 1});
+  const auto &control = function.instructions[last.instruction_id()].control;
+  if (control != "return" && control != "exit") return std::nullopt;
+  return last;
+}
+// The await standing for that thread's exit: emitted once, after its last instruction,
+// at its exit record.
+std::optional<InstId> ModelLowerer::Impl::Terminal(const CtaFacts &cta_facts, std::size_t lane_index,
+                                                   const ActorInfo &actor) {
+  if (const auto found = terminals.find(actor.id); found != terminals.end()) return found->second;
+  const auto last = ExitRecord(cta_facts, lane_index);
+  if (!last) return std::nullopt;
+  Thread terminal;
+  terminal.actor = actor;
+  return terminals.emplace(actor.id, Emit(terminal, *last, Await{})).first->second;
+}
+// PTX ISA (bar, barrier; exit): without a thread count all threads of the CTA participate;
+// bar.sync and bar.red wait for the non-exited threads, and barriers waiting only on exited
+// threads are released. On a barrier whose every use is of that form, each use blocks until
+// its phase completes, so thread u's k-th arrival belongs to phase k. With n_u arrivals per
+// thread, phase k expects the threads with n_u > k; every other thread must exit before it
+// completes. That obligation becomes one exit gate per thread at its first missed phase n_u
+// (later phases complete after it), at the thread's terminal await, discharged by the
+// well-synchronization checker. It is not an ordering edge: an exiting thread releases
+// nothing, and its pending asynchronous operations stay unordered. If a thread with fewer
+// arrivals does not end at ret/exit, the barrier keeps the full CTA count. Uniform counts
+// change nothing. O(lanes + arrivals) per barrier; one edit per arrival whose count changes.
+void ModelLowerer::Impl::CtaWideExits(const CtaFacts &cta_facts, std::size_t actor_begin) {
+  ProfileScope profile("frontend.model.cta_wide_exits");
+  const auto lanes = cta_facts.LaneCount();
+  const auto threads = cta_facts.launch().Threads();
+  for (auto &[barrier, use] : cta_wide_barriers) {
+    if (!use.cta_wide || use.arrivals.empty() || lanes != threads) continue;
+    std::vector<std::uint32_t> counts(lanes, 0);
+    for (const auto &[actor, id] : use.arrivals) {
+      (void)id;
+      ++counts.at(actor.value() - actor_begin);
+    }
+    const auto most = *std::max_element(counts.begin(), counts.end());
+    if (*std::min_element(counts.begin(), counts.end()) == most) continue;
+    bool exits = true;
+    for (std::size_t k = 0; k < lanes && exits; ++k)
+      exits = counts[k] == most || ExitRecord(cta_facts, k);
+    if (!exits) continue;
+    // expected[k] = |{u : n_u > k}|, by suffix sums over the arrival-count histogram.
+    std::vector<std::uint32_t> expected(most + 1, 0);
+    for (const auto n : counts) ++expected[n];
+    for (auto k = most; k-- > 0;) expected[k] += expected[k + 1];
+    expected.erase(expected.begin());
+    std::vector<std::uint32_t> seen(lanes, 0);
+    for (const auto &[actor, id] : use.arrivals) {
+      const auto k = seen[actor.value() - actor_begin]++;
+      if (expected[k] != threads)
+        std::get<NamedBarrierSync>(source.editInstruction(id).op).expected_arrivals = expected[k];
+    }
+    for (std::size_t k = 0; k < lanes; ++k)
+      if (counts[k] != most)
+        source.program.exit_gates.push_back(
+            {barrier, counts[k], *Terminal(cta_facts, k, source.program.actors[actor_begin + k])});
+  }
+  cta_wide_barriers.clear();
+}
+void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_addresses, bool lane_workers) {
   ProfileScope profile("frontend.model.cta");
   const FactSource::ConsumerScope consumer(cta_facts, {Consumer::Lowering, 0});
   const auto cta = cta_facts.Linear();
@@ -2334,6 +2683,7 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_add
       tensor_map_dependencies.push_back({{coordinates,write.writer_warp*32,write.write},{coordinates,read.first,read.second}});
       tensor_map_copies.insert(tensor_map_dependencies.back().write);
     }
+  const auto bridge = value_addresses; // the workers' Resources resolve as `r` does
   Resources r(cta_facts, cta_facts.frame(), addresses, barriers,
               SlotConfig{Consumer::Lowering, std::move(value_addresses)});
   resources = &r;
@@ -2418,13 +2768,30 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_add
     std::shared_ptr<std::vector<std::size_t>> variable_columns;
   };
   std::map<ProjectionKey, Projection> projections;
-  const bool synchronous_template=template_execution &&
+  bool synchronous_template=template_execution &&
       std::all_of(function.instructions.begin(),function.instructions.end(),[](const auto &i) {
         const auto &s=i.semantics;
         if(IsWarpDataCollective(i))return false;
         return s.category=="compute" || s.category=="control" ||
             (s.category=="memory" && s.modeled && (s.memory_mode=="read" || s.memory_mode=="write"));
       });
+  // That path takes memory events from memory records only; a skipped region's st.local is
+  // lowered at the region's branch record (Instruction()). One scan per projection, and only
+  // in functions with a st.local.
+  if(synchronous_template &&
+      std::any_of(function.instructions.begin(),function.instructions.end(),[](const auto &i) { return LocalStoreInstruction(i); })) {
+    std::set<ProjectionKey> scanned;
+    for(std::size_t k=0;k<lane_count && synchronous_template;++k) {
+      const auto lane_ref=cta_facts.Lane(k);
+      if(!scanned.insert(cta_facts.Projection(lane_ref)).second)continue;
+      for(std::size_t index=0;index<cta_facts.Size(lane_ref) && synchronous_template;++index) {
+        if((index&1023)==0)Poll();
+        const auto record=cta_facts.Meta({lane_ref,index});
+        for(const auto region:record.opaque_compute_diamond_indices())
+          if(LocalStoreInstruction(function.instructions.at(region))){synchronous_template=false;break;}
+      }
+    }
+  }
   index_sites = !synchronous_template;
   const bool generated_memory=synchronous_template &&
       std::all_of(function.instructions.begin(),function.instructions.end(),[](const auto& i) {
@@ -2469,11 +2836,21 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_add
       return first_thread.at(member_cohorts[a]) < first_thread.at(member_cohorts[b]);
     });
   }
-  for (const auto k : thread_order) {
+  // Lanes on worker threads, applied in this order: not with synchronous-template projections
+  // (their address memo and generated families span lanes), nor while a bridge query may still
+  // build the value view the workers' records come from.
+  if (threads > 1 && lane_workers && !synchronous_template && lane_count > 1) {
+    const std::vector<ActorInfo> lane_actors(source.program.actors.begin() + actor_begin, source.program.actors.end());
+    LowerLanes(cta_facts, r, bridge, thread_order, lane_actors, collective_masks, member_cohorts, template_execution,
+               visits);
+  } else
+  for (std::size_t position = 0; position < thread_order.size(); ++position) {
+    const auto k = thread_order[position];
     const auto lane_ref = cta_facts.Lane(k);
     const auto binding_begin=template_execution ? source.program.instructions.beginThread() : 0;
     current_lane = lane_ref;
-    ProfileCall("frontend.resources.index_lane", [&] { r.SetLane(lane_ref); });
+    lane_position = position;
+    ProfileCall("frontend.resources.index_lane", [&] { r.BeginLane(lane_ref); });
     Thread thread;
     thread.actor = source.program.actors[actor_begin + k];
     Projection* projection=nullptr;
@@ -2649,42 +3026,14 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_add
         continue;
       }
     }
-    const auto count=projection ? projection->positions.size() : cta_facts.Size(lane_ref);
-    for (std::size_t ordinal=0; ordinal<count; ++ordinal) {
-      const auto index=projection ? projection->positions[ordinal] : ordinal;
-      const auto metadata=cta_facts.Meta({lane_ref,index});
-      const auto &semantics=function.instructions[metadata.instruction_id()].semantics;
-      RecordHolder concrete; // Slice{mask} or Full; the metadata record otherwise
-      if (!cta_facts.Expanded(lane_ref)) {
-        const auto& mask=collective_masks[metadata.instruction_id()];
-        if(mask)
-          concrete=cta_facts.ReadSlice({lane_ref,index},std::span(&*mask,1));
-        else if(semantics.category!="compute" && semantics.category!="control")
-          concrete=cta_facts.ReadFull({lane_ref,index});
-      }
-      const auto e=concrete ? concrete.view() : metadata;
-      if (e.predicate_value() == false)
-        continue;
-      if ((++visits & 1023) == 0)
-        Poll();
-      const auto &i = function.instructions[e.instruction_id()];
-      ++occurrence_counts[i.id];
-      try {
-        Instruction(thread, e);
-      } catch (const SemanticError &error) {
-        Diagnostic(error.code, error.what(), &thread, &e, error.details);
-      } catch (const LayoutError &error) {
-        Diagnostic(error.code, error.what(), &thread, &e, error.details);
-      } catch (const std::bad_alloc &) {
-        throw;
-      } catch (const std::exception &error) {
-        Diagnostic("unexpected_exception", error.what(), &thread, &e,
-                   {{"exception_type",typeid(error).name()}});
-      }
-    }
+    IterationStarts iteration_starts;
+    LowerThread(cta_facts, lane_ref, thread, projection ? &projection->positions : nullptr, collective_masks, visits,
+                template_execution ? &iteration_starts : nullptr);
     histories.push_back(std::move(thread.history));
-    if(template_execution)
+    if(template_execution) {
+      source.program.instructions.compressIterations(binding_begin,iteration_starts);
       source.program.instructions.extendThreadFamily(binding_begin,cta,member_cohorts[k]);
+    }
   }
   for(const auto& [identity,projection]:projections) {
     (void)identity;
@@ -2695,7 +3044,6 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_add
   }
   LifetimeOrders();
   CollectGroup2();
-  std::map<ActorId,InstId> terminals;
   for (const auto &[key,entries] : cluster_warp_rendezvous) {
     const auto warp=std::get<0>(key);
     std::vector<MilestoneRef> requirements;
@@ -2708,17 +3056,11 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_add
       if (cta_facts.Warp(lane)!=warp) continue;
       const auto actor=source.program.actors[actor_begin+k];
       if (entries.contains(actor.id)) continue;
-      if (!terminals.contains(actor.id)) {
-        const auto size=cta_facts.Size(lane);
-        if (size==0 ||
-            (function.instructions[cta_facts.Meta({lane,size-1}).instruction_id()].control!="return" &&
-             function.instructions[cta_facts.Meta({lane,size-1}).instruction_id()].control!="exit")) {
-          Diagnostic("incomplete_cluster_warp","warp peer has no cluster operation or terminal return"); continue;
-        }
-        Thread terminal; terminal.actor=actor;
-        terminals.emplace(actor.id,Emit(terminal,cta_facts.Meta({lane,size-1}),Await{}));
+      const auto terminal=Terminal(cta_facts,k,actor);
+      if (!terminal) {
+        Diagnostic("incomplete_cluster_warp","warp peer has no cluster operation or terminal return"); continue;
       }
-      requirements.push_back(Ref(terminals.at(actor.id)));
+      requirements.push_back(Ref(*terminal));
     }
     for (const auto &[actor,id] : entries) {
       (void)actor;
@@ -2726,6 +3068,8 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_add
       for (auto ref : requirements) UniquePush(target,ref);
     }
   }
+  CtaWideExits(cta_facts, actor_begin);
+  terminals.clear();
   {
     ProfileScope joins("frontend.model.cta_joins");
     for (auto &[site, entry] : aligned) {
@@ -2772,6 +3116,395 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_add
   warp_collectives.clear();
   Poll();
 }
+// One lane's records in order (`positions`: a synchronous-template projection's, else every
+// record), lowered into this Impl's state (a worker's: the lane's own).
+void ModelLowerer::Impl::LowerThread(const CtaFacts &cta_facts, LaneRef lane_ref, Thread &thread,
+                                     const std::vector<std::size_t> *positions,
+                                     std::span<const std::optional<std::uint32_t>> collective_masks,
+                                     std::uint64_t &visits, IterationStarts *iteration_starts) {
+  const auto count=positions ? positions->size() : cta_facts.Size(lane_ref);
+  const auto emitted=[&] { return lane ? lane->instructions.size() : source.program.instructions.size(); };
+  const auto first=emitted();
+  // A record whose PTX instruction precedes the previous one follows a back edge.
+  std::optional<std::uint32_t> previous_instruction;
+  for (std::size_t ordinal=0; ordinal<count; ++ordinal) {
+    const auto index=positions ? (*positions)[ordinal] : ordinal;
+    const auto metadata=cta_facts.Meta({lane_ref,index});
+    const auto &semantics=function.instructions[metadata.instruction_id()].semantics;
+    if (iteration_starts) {
+      const auto instruction=static_cast<std::uint32_t>(metadata.instruction_id());
+      if (previous_instruction && instruction < *previous_instruction)
+        iteration_starts->emplace_back(emitted()-first, instruction);
+      previous_instruction=instruction;
+    }
+    RecordHolder concrete; // Slice{mask} or Full; the metadata record otherwise
+    if (!cta_facts.Expanded(lane_ref)) {
+      const auto& mask=collective_masks[metadata.instruction_id()];
+      if(mask)
+        concrete=cta_facts.ReadSlice({lane_ref,index},std::span(&*mask,1));
+      else if(semantics.category!="compute" && semantics.category!="control")
+        concrete=cta_facts.ReadFull({lane_ref,index});
+    }
+    const auto e=concrete ? concrete.view() : metadata;
+    if (e.predicate_value() == false)
+      continue;
+    if ((++visits & 1023) == 0)
+      Poll();
+    const auto &i = function.instructions[e.instruction_id()];
+    if (occurrence_counts[i.id]++ == 0 && lane) lane->counted.push_back(i.id);
+    try {
+      Instruction(thread, e);
+    } catch (const SemanticError &error) {
+      Diagnostic(error.code, error.what(), &thread, &e, error.details);
+    } catch (const LayoutError &error) {
+      Diagnostic(error.code, error.what(), &thread, &e, error.details);
+    } catch (const std::bad_alloc &) {
+      throw;
+    } catch (const std::exception &error) {
+      Diagnostic("unexpected_exception", error.what(), &thread, &e,
+                 {{"exception_type",typeid(error).name()}});
+    }
+  }
+}
+// A worker Impl's view of the consumer's current CTA: the read-only per-CTA state its lanes
+// consult, a Resources of its own standing for `like` (same facts, frame, records and bridge, so
+// the same resolution path) over its own tables, and the consumer's matrix resolver (it built
+// every lane's expansion already; its row cache is shared by position, MatrixResolver). On the
+// consuming thread.
+void ModelLowerer::Impl::BeginLaneWork(const Impl &consumer, Resources &like, const ValueAddresses &bridge) {
+  facts = consumer.facts;
+  tmem = consumer.tmem;
+  matrix = consumer.matrix;
+  current_coordinates = consumer.current_coordinates;
+  shared_value_sites = consumer.shared_value_sites;
+  shared_value_instructions = consumer.shared_value_instructions;
+  tensor_map_copies = consumer.tensor_map_copies;
+  actors = consumer.actors;
+  index_sites = consumer.index_sites;
+  lane->resources.emplace(like, addresses, barriers, SlotConfig{Consumer::Lowering, bridge});
+  resources = &*lane->resources;
+}
+// At the end of the CTA's lane phase: the lane state is released too (ClearLane), so that no
+// worker Impl holds a lane's results, or buffers sized by its largest lane, past the phase.
+void ModelLowerer::Impl::EndLaneWork() {
+  poll = nullptr; // the CTA's LookAhead poll, which ends with it
+  resources = nullptr;
+  lane->resources.reset();
+  matrix = nullptr;
+  facts = nullptr;
+  tmem = nullptr;
+  current_lane.reset();
+  ClearLane(true);
+}
+// Empties a worker Impl's lane state: the LaneWork and every per-CTA map holding one lane's
+// entries. `release`: also frees the buffers a next lane would reuse. O(the state's size).
+void ModelLowerer::Impl::ClearLane(bool release) {
+  addresses = AddressTable{};
+  barriers = BarrierTable{};
+  sites.clear();
+  aligned.clear();
+  allocations.clear();
+  warp_collectives.clear();
+  cluster_arrivals.clear();
+  cluster_waits.clear();
+  cluster_phases.clear();
+  cluster_warp_rendezvous.clear();
+  cta_wide_barriers.clear();
+  barrier_invalidations.clear();
+  shared_value_writes.clear();
+  shared_value_reads.clear();
+  tensormap_destinations.clear();
+  violations.clear();
+  limitations.clear();
+  dependency_counts.clear();
+  plans.clear();
+  copy_plans.clear();
+  mma_layouts.clear();
+  auto &work = *lane;
+  for (const auto id : work.counted) occurrence_counts[id] = 0;
+  if (release) {
+    cluster_waits = {};
+    mma_layouts = {};
+    lane = std::make_unique<LaneWork>();
+    return;
+  }
+  work.counted.clear();
+  work.iteration_starts.clear();
+  work.instructions.clear();
+  work.prototypes.clear();
+  work.operand_kinds.clear();
+  work.addressed.clear();
+  work.rows.clear();
+  work.collectives.clear();
+  work.diagnostics.clear();
+  work.tape.Clear();
+  work.history = {};
+  work.lowered = false;
+}
+// On a worker: lowers `lane_ref`, at `position` in the CTA's lowering order, into fresh lane
+// state. Its query events go to the lane's tape and its template values are private (the consumer
+// and the other workers read the same facts). A lane that needs the consumer (SerialOnly), fails,
+// or could not tape an event is left to the consumer, which lowers it again and so meets the same
+// exception there.
+void ModelLowerer::Impl::LowerLane(const CtaFacts &cta_facts, LaneRef lane_ref, std::size_t position,
+                                   const ActorInfo &actor,
+                                   std::span<const std::optional<std::uint32_t>> collective_masks,
+                                   const std::function<void()> &worker_poll) {
+  ClearLane(false);
+  addresses.KeepWrites();
+  auto &work = *lane;
+  poll = worker_poll;
+  const FactSource::WorkerScope scope(cta_facts, {Consumer::Lowering, 0}, &work.tape);
+  const PrivateTemplateValues values;
+  current_lane = lane_ref;
+  lane_position = position;
+  // As the consumer's serial path does: the lane's notes do not depend on which lanes this shadow
+  // lowered before (timing).
+  resources->BeginLane(lane_ref);
+  Thread thread;
+  thread.actor = actor;
+  std::uint64_t visits = 0;
+  try {
+    LowerThread(cta_facts, lane_ref, thread, nullptr, collective_masks, visits,
+                cta_facts.TemplateExecution() ? &work.iteration_starts : nullptr);
+    work.history = std::move(thread.history);
+    SplitLane();
+    work.lowered = work.tape.Complete();
+  } catch (...) {
+    work.lowered = false;
+  }
+}
+// On a worker, after its lane: the lane's instructions split as SourceInstructions stores them,
+// the prototypes interned within the lane, so that Absorb interns each distinct prototype once
+// and appends rows. O(instructions x their operands) plus a hash probe each.
+void ModelLowerer::Impl::SplitLane() {
+  auto &work = *lane;
+  std::unordered_map<std::size_t, std::vector<std::uint32_t>> index;
+  work.rows.reserve(work.instructions.size());
+  for (auto &instruction : work.instructions) {
+    SourceRecordCodec::Binding binding;
+    SourceRecordCodec::split(instruction, binding);
+    auto &candidates = index[SourceRecordCodec::hash(instruction)];
+    std::optional<std::uint32_t> prototype;
+    for (const auto candidate : candidates)
+      if (work.prototypes[candidate] == instruction) {
+        prototype = candidate;
+        break;
+      }
+    if (!prototype) {
+      prototype = static_cast<std::uint32_t>(work.prototypes.size());
+      candidates.push_back(*prototype);
+      work.addressed.push_back(std::holds_alternative<ImmediateLoad>(instruction.op) ||
+                               std::holds_alternative<ImmediateStore>(instruction.op));
+      work.operand_kinds.push_back(OperandKinds(instruction));
+      work.prototypes.push_back(std::move(instruction));
+    }
+    work.rows.emplace_back(*prototype, std::move(binding));
+  }
+  work.instructions.clear();
+}
+// The CTA's lanes in `order`, lowered on `threads` workers (LookAhead) and applied here in that
+// order. A worker lowers a lane without reading or writing this Impl, so its result does not depend
+// on the other lanes; Absorb then performs the lane's writes here as lowering it here would have.
+// A lane a worker leaves (or Absorb refuses) is lowered here, at its turn, while the workers go on:
+// its lowering writes only this Impl, `r` and this thread's private values (no lane expansion or
+// value-view build happens here: lane workers are off while the bridge could build one).
+// Look-ahead: at most 2 x threads lanes beyond the one being applied, so their shadows
+// (window + 1 Impls, kept across CTAs) bound the memory in flight to that many lanes' results.
+void ModelLowerer::Impl::LowerLanes(const CtaFacts &cta_facts, Resources &r, const ValueAddresses &bridge,
+                                    std::span<const std::size_t> order, std::span<const ActorInfo> lane_actors,
+                                    std::span<const std::optional<std::uint32_t>> collective_masks,
+                                    std::span<const std::uintptr_t> member_cohorts, bool template_execution,
+                                    std::uint64_t &visits) {
+  const auto window = 2 * threads;
+  while (shadows.size() < window + 1) {
+    auto shadow = std::make_unique<Impl>(module, function, nullptr);
+    shadow->retain_matrix_layout = retain_matrix_layout;
+    shadow->atomics = atomics;
+    shadow->lane = std::make_unique<LaneWork>();
+    shadows.push_back(std::move(shadow));
+  }
+  struct End {
+    std::vector<std::unique_ptr<Impl>> &shadows;
+    MatrixResolver &matrix;
+    ~End() {
+      for (auto &shadow : shadows) shadow->EndLaneWork();
+      matrix.EndConcurrent();
+    }
+  } end{shadows, *matrix};
+  matrix->BeginConcurrent(order);
+  for (auto &shadow : shadows) shadow->BeginLaneWork(*this, r, bridge);
+  // The free shadows; a lane's handle returns its shadow when the lane is applied or dropped.
+  std::mutex mutex;
+  std::vector<Impl *> free;
+  for (auto &shadow : shadows) free.push_back(shadow.get());
+  struct Handle {
+    Impl *shadow = nullptr;
+    std::mutex *mutex = nullptr;
+    std::vector<Impl *> *free = nullptr;
+    Handle(Impl *s, std::mutex *m, std::vector<Impl *> *f) noexcept : shadow(s), mutex(m), free(f) {}
+    Handle(Handle &&other) noexcept
+        : shadow(std::exchange(other.shadow, nullptr)), mutex(other.mutex), free(other.free) {}
+    Handle &operator=(Handle &&) = delete;
+    ~Handle() {
+      if (!shadow) return;
+      const std::lock_guard lock(*mutex);
+      free->push_back(shadow);
+    }
+  };
+  const auto acquire = [&] {
+    const std::lock_guard lock(mutex);
+    if (free.empty()) throw std::logic_error("lane look-ahead exceeds its shadows");
+    auto *shadow = free.back();
+    free.pop_back();
+    return shadow;
+  };
+  const PrivateTemplateValues values; // this thread's, while the workers read the same records
+  LookAhead<Handle> lanes(order.size(), threads, window,
+                          [&](std::size_t index, const std::function<void()> &worker_poll) {
+                            Handle handle(acquire(), &mutex, &free);
+                            const auto k = order[index];
+                            // The lane's end, however it ends, for the matrix rows' waits.
+                            struct Finished {
+                              MatrixResolver &matrix;
+                              std::size_t index;
+                              ~Finished() { matrix.Finished(index); }
+                            } finished{*matrix, index};
+                            handle.shadow->LowerLane(cta_facts, cta_facts.Lane(k), index, lane_actors[k],
+                                                     collective_masks, worker_poll);
+                            return handle;
+                          },
+                          poll);
+  const auto cta = cta_facts.Linear();
+  for (std::size_t index = 0; index < order.size(); ++index) {
+    const auto handle = lanes.Take();
+    const auto k = order[index];
+    const auto lane_ref = cta_facts.Lane(k);
+    const auto binding_begin = template_execution ? source.program.instructions.beginThread() : 0;
+    IterationStarts consumer_starts;
+    const IterationStarts *iteration_starts = &handle.shadow->lane->iteration_starts;
+    if (!handle.shadow->lane->lowered || !Absorb(*handle.shadow)) {
+      current_lane = lane_ref;
+      lane_position = index;
+      r.BeginLane(lane_ref);
+      Thread thread;
+      thread.actor = lane_actors[k];
+      LowerThread(cta_facts, lane_ref, thread, nullptr, collective_masks, visits,
+                  template_execution ? &consumer_starts : nullptr);
+      histories.push_back(std::move(thread.history));
+      iteration_starts = &consumer_starts;
+    }
+    if (template_execution) {
+      source.program.instructions.compressIterations(binding_begin, *iteration_starts);
+      source.program.instructions.extendThreadFamily(binding_begin, cta, member_cohorts[k]);
+    }
+  }
+}
+// Applies a worker's lowered lane (`shadow`) here: the same writes, in the same order, as lowering
+// the lane here, with the lane's ids mapped to ours (LaneIds). The lane's lowering read nothing of
+// this Impl, and every input it read is the one lowering here would read: the facts (pure reads),
+// the read-only per-CTA state, and its own bindings, whose fields are its own writes (an
+// expression binding is written by the step that interns it, and its key names the lane's site)
+// or come from its key. So its writes are lowering-here's, up to ids; per map below, merging the
+// lane's own entries reproduces the in-order writes (appends append, assignments assign, |= ors,
+// first-wins keeps the first). False, writing nothing, if lowering here could differ: an intern
+// that would meet another lane's binding with another alias scope (alias_scope_conflict here), or
+// the instruction id space. The query events replay in order (EventTape), so a recorder logs the
+// one-thread log. O(the lane's instructions + entries) plus the table and builder costs.
+bool ModelLowerer::Impl::Absorb(Impl &shadow) {
+  auto &work = *shadow.lane;
+  const auto base = source.program.instructions.size();
+  if (base + work.rows.size() >= UINT32_MAX) return false;
+  const auto lane_addresses = addresses.Absorb(shadow.addresses);
+  if (!lane_addresses) return false;
+  const auto lane_barriers = barriers.Absorb(shadow.barriers);
+  // New collectives in the lane's creation order (a collective another lane created first is
+  // that lane's).
+  std::vector<SyncId> lane_syncs(work.collectives.size());
+  {
+    std::vector<const decltype(warp_collectives)::key_type *> keys(work.collectives.size());
+    for (const auto &[key, id] : shadow.warp_collectives) keys.at(id.value()) = &key;
+    for (std::size_t local = 0; local < keys.size(); ++local) {
+      const auto [it, added] = warp_collectives.try_emplace(*keys[local], SyncId(source.program.collectives.size()));
+      if (added) {
+        auto spec = work.collectives[local];
+        spec.sync_id = it->second;
+        source.program.collectives.push_back(std::move(spec));
+      }
+      lane_syncs[local] = it->second;
+    }
+  }
+  const LaneIds ids{static_cast<std::uint32_t>(base), *lane_addresses, lane_barriers, lane_syncs};
+  // Each distinct prototype with its kept ids mapped, interned once; then each row with its
+  // binding's ids mapped: what appending each mapped instruction would store.
+  std::vector<std::uint32_t> prototypes;
+  prototypes.reserve(work.prototypes.size());
+  for (auto &prototype : work.prototypes) {
+    ids.ApplyPrototype(prototype.op);
+    prototypes.push_back(source.program.instructions.internSplit(std::move(prototype)));
+  }
+  for (const auto &[prototype, binding] : work.rows)
+    source.appendSplit(prototypes[prototype],
+                       ids.Apply(binding, work.addressed[prototype], work.operand_kinds[prototype]));
+  for (const auto &[key, list] : shadow.sites) {
+    auto &to = sites[key];
+    for (const auto id : list) to.push_back(ids(id));
+  }
+  for (const auto &[key, entry] : shadow.aligned) {
+    auto &to = aligned[key];
+    for (const auto &[lane_id, call] : entry.calls) to.calls[lane_id] = {ids(call.first), ids(call.second)};
+    to.completions |= entry.completions;
+    to.merged_arm |= entry.merged_arm;
+  }
+  for (const auto &[key, id] : shadow.allocations) allocations[key] = ids(id);
+  for (const auto &[key, arrivals] : shadow.cluster_arrivals)
+    for (const auto &[actor, id] : arrivals) cluster_arrivals[key].emplace(actor, ids(id));
+  for (const auto &wait : shadow.cluster_waits) cluster_waits.push_back({wait.key, ids(wait.id), wait.expected});
+  for (const auto &[actor, phase] : shadow.cluster_phases) cluster_phases[actor] = phase;
+  for (const auto &[key, entries] : shadow.cluster_warp_rendezvous)
+    for (const auto &[actor, id] : entries) cluster_warp_rendezvous[key][actor] = ids(id);
+  for (const auto &[barrier, use] : shadow.cta_wide_barriers) {
+    // A counted use clears the arrivals and ends CTA-wide use; then nothing is appended.
+    auto &to = cta_wide_barriers[ids(barrier)];
+    if (!use.cta_wide) {
+      to.cta_wide = false;
+      to.arrivals.clear();
+    } else if (to.cta_wide)
+      for (const auto &[actor, id] : use.arrivals) to.arrivals.emplace_back(actor, ids(id));
+  }
+  for (const auto &[barrier, list] : shadow.barrier_invalidations) {
+    auto &to = barrier_invalidations[ids(barrier)];
+    for (const auto id : list) to.push_back(ids(id));
+  }
+  for (const auto &[site, refs] : shadow.shared_value_writes) {
+    auto &to = shared_value_writes[site];
+    for (const auto &ref : refs) to.push_back(ids(ref));
+  }
+  for (const auto &[site, ref] : shadow.shared_value_reads) shared_value_reads.emplace(site, ids(ref));
+  tensormap_destinations.insert(shadow.tensormap_destinations.begin(), shadow.tensormap_destinations.end());
+  violations.insert(shadow.violations.begin(), shadow.violations.end());
+  for (const auto &[key, text] : shadow.limitations) limitations[key] = text;
+  for (const auto &[key, lane_counts] : shadow.dependency_counts) dependency_counts[key].Merge(lane_counts);
+  for (auto &[id, plan] : shadow.plans) {
+    ids.Apply(plan);
+    plans.emplace(ids(InstId(id)).value(), std::move(plan));
+  }
+  for (auto &[id, plan] : shadow.copy_plans) {
+    ids.Apply(plan);
+    copy_plans[ids(InstId(id)).value()] = std::move(plan);
+  }
+  for (auto &layout : shadow.mma_layouts) {
+    layout.instruction = ids(layout.instruction);
+    mma_layouts.push_back(std::move(layout));
+  }
+  for (const auto id : work.counted) occurrence_counts[id] += shadow.occurrence_counts[id];
+  for (auto &d : work.diagnostics)
+    AddDiagnostic(std::move(d.code), std::move(d.message), d.actor, d.line, std::move(d.details), d.weight);
+  work.tape.Replay(*facts, *lane_addresses);
+  ids.Apply(work.history);
+  histories.push_back(std::move(work.history));
+  return true;
+}
 LoweringResult ModelLowerer::Impl::Finish() {
   ProfileScope profile("frontend.model.finalize");
   // Class mode: the class size of an occurrence's unit (by its actor's CTA, or by a CTA's coordinates).
@@ -2780,7 +3513,7 @@ LoweringResult ModelLowerer::Impl::Finish() {
     return units->Weight(source.program.actors.at(actor.value()).cta.value());
   };
   const auto instruction_weight = [&](InstId id) -> std::uint64_t {
-    return actor_weight(source.instruction(id).actor);
+    return actor_weight(source.program.instructions.actor(id.value()));
   };
   if (units) {
     // A CTA whose lowering emitted a diagnostic closed its class (a ReportBearing event), so it
@@ -2965,6 +3698,11 @@ LoweringResult ModelLowerer::Impl::Finish() {
       {"implementation", "cpp"}};
   result.metadata["shared_constant_propagation"]={{"read_from_dependencies",shared_value_dependencies.size()},
       {"validation","pending_backend"},{"representation","sparse_known_bytes"}};
+  if(!source.program.exit_gates.empty()) {
+    std::set<std::pair<BarrierLifetimeId,std::uint32_t>> phases;
+    for(const auto &gate:source.program.exit_gates)phases.emplace(gate.barrier,gate.phase);
+    result.metadata["cta_wide_exit_gates"]={{"gates",source.program.exit_gates.size()},{"phases",phases.size()}};
+  }
   if(!tensor_map_dependencies.empty())
     result.metadata["runtime_tensor_maps"]={{"read_from_dependencies",tensor_map_dependencies.size()},
         {"copies",tensor_map_targets.size()},{"locations",tensormap_destinations.size()}};
@@ -3044,14 +3782,15 @@ LoweringResult ModelLowerer::Impl::Finish() {
 }
 ModelLowerer::ModelLowerer(const Module &m, const Function &f,
                            std::function<void()> poll, bool retain_matrix_layout,
-                           bool atomics)
+                           bool atomics, std::size_t threads)
     : impl_(std::make_unique<Impl>(m, f, std::move(poll))) {
   impl_->retain_matrix_layout = retain_matrix_layout;
   impl_->atomics = atomics;
+  impl_->threads = threads;
 }
 ModelLowerer::~ModelLowerer() = default;
-void ModelLowerer::AddCta(const CtaFacts &facts, ValueAddresses value_addresses) {
-  impl_->Add(facts, std::move(value_addresses));
+void ModelLowerer::AddCta(const CtaFacts &facts, ValueAddresses value_addresses, bool lane_workers) {
+  impl_->Add(facts, std::move(value_addresses), lane_workers);
 }
 const algorithm::SourceProgram &ModelLowerer::currentProgram() const noexcept {
   return impl_->source.program;

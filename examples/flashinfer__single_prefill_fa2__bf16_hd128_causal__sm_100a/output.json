@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -193,30 +201,13 @@
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "missing_definition",
-            "details": {
-              "cta": 0,
-              "instruction": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 {%f2298,  _,  %f2299,  _},{%r1449,  %r1450,  %r1451,  %r1452},{%r1528,  %r1528},{%f2300,  0.,  %f2301,  0.};",
-              "instruction_index": 1742,
-              "location": {
-                "file": "corpus/flashinfer__single_prefill_fa2__bf16_hd128_causal__sm_100a.ptx",
-                "line": 2787
-              },
-              "occurrence": 0,
-              "thread": 32
-            },
-            "message": "No recorded definition for operand '0.' in scope /",
-            "stage": "value_lowering"
-          }
-        ],
+        "diagnostics": [],
         "first_unavailable_reason": "",
         "queries": 0,
         "resolved": 0,
         "source": "value_lowering",
         "unavailable": 0,
-        "value_view_complete": false
+        "value_view_complete": true
       },
       "cluster_completion_joins": 0,
       "cta_count": 1,
@@ -414,7 +405,7 @@
         "hb_member_enumerations": 0,
         "logical_accesses": 236544
       },
-      "first_race_seconds": 0.27463111,
+      "first_race_seconds": 0.280180095,
       "hb_algorithm": "member-relations",
       "hb_batches": 10,
       "hb_cache_hits": 0,
@@ -423,7 +414,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 274560,
-      "hb_query_seconds": 0.160570651,
+      "hb_query_seconds": 0.161688682,
       "overlap_queries": 1,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 1
@@ -431,7 +422,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 426.14453125,
+    "peak_footprint_mib": 989.39453125,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": false,
@@ -439,36 +430,26 @@
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
     },
     "semantic_program": {
-      "binding_diagnostic_count": 1,
-      "binding_diagnostics": [
-        {
-          "code": "incomplete_value_semantics",
-          "message": "missing_definition: No recorded definition for operand '0.' in scope /"
-        }
-      ],
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
       "execution_cohorts": 1,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
-      "memory_linking_templates_used": false,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 95048,
+      "memory_binding_templates": 31322,
+      "memory_bindings": 152576,
+      "memory_linking_templates_used": true,
       "synchronization_groups": 542,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 704,
-      "thread_prefix_groups": 43485,
-      "value_diagnostic_count": 1,
-      "value_diagnostics": [
-        {
-          "code": "missing_definition",
-          "line": 2787,
-          "message": "No recorded definition for operand '0.' in scope /"
-        }
-      ]
+      "thread_prefix_groups": 228252,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
     "source_violations": [],
     "stage": "memory_check",
@@ -538,12 +519,12 @@
         ]
       }
     },
-    "value_ir_instance_count": 1365376,
-    "value_ir_node_count": 61591,
-    "value_view_complete": false
+    "value_ir_instance_count": 7077504,
+    "value_ir_node_count": 308295,
+    "value_view_complete": true
   },
-  "peak_rss_mib": 426.14453125,
-  "pipeline_elapsed_seconds": 1.914799686,
+  "peak_rss_mib": 989.39453125,
+  "pipeline_elapsed_seconds": 2.652797006,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -555,5 +536,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.518
+  "whole_pipeline_timeout_seconds": 498.52
 }

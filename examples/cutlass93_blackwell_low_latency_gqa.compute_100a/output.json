@@ -49,6 +49,14 @@
       "label": "Order-independent atomics",
       "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
       "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
     }
   ],
   "checks": {
@@ -2000,16 +2008,16 @@
             "code": "unsupported_operation",
             "details": {
               "cta": 0,
-              "instruction": "redux.sync.max.NaN.f32 %r81, %r822, 0xffffffff;",
-              "instruction_index": 1671,
+              "instruction": "st.async.shared::cluster.mbarrier::complete_tx::bytes.f32 [%r949], %r1123, [%r952];",
+              "instruction_index": 1941,
               "location": {
                 "file": "corpus/cutlass93_blackwell_low_latency_gqa.compute_100a.ptx",
-                "line": 6969
+                "line": 7347
               },
               "occurrence": 0,
-              "thread": 224
+              "thread": 192
             },
-            "message": "No exact per-thread value model for compute operation 'redux'",
+            "message": "No value-IR model for 'st' (including its memory effects/results)",
             "stage": "value_lowering"
           }
         ],
@@ -2275,13 +2283,14 @@
     "memory_analysis_complete": false,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 1544.73828125,
+    "peak_footprint_mib": 1593.37890625,
     "required_order_domains": 16544,
     "required_orders": 188160,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
       "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
       "order_independent_atomics": false,
       "representative_branches": false,
       "representative_election": true
@@ -2291,7 +2300,7 @@
       "binding_diagnostics": [
         {
           "code": "incomplete_value_semantics",
-          "message": "unsupported_operation: No exact per-thread value model for compute operation 'redux'"
+          "message": "unsupported_operation: No value-IR model for 'st' (including its memory effects/results)"
         }
       ],
       "execution_cohorts": 248,
@@ -2303,13 +2312,13 @@
       "synchronization_groups": 22368,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 177,
-      "thread_prefix_groups": 19994,
+      "thread_prefix_groups": 45427,
       "value_diagnostic_count": 1,
       "value_diagnostics": [
         {
           "code": "unsupported_operation",
-          "line": 6969,
-          "message": "No exact per-thread value model for compute operation 'redux'"
+          "line": 7347,
+          "message": "No value-IR model for 'st' (including its memory effects/results)"
         }
       ]
     },
@@ -2991,12 +3000,12 @@
         ]
       }
     },
-    "value_ir_instance_count": 62923,
-    "value_ir_node_count": 15780,
+    "value_ir_instance_count": 345932,
+    "value_ir_node_count": 37303,
     "value_view_complete": false
   },
-  "peak_rss_mib": 1544.73828125,
-  "pipeline_elapsed_seconds": 8.54836174,
+  "peak_rss_mib": 1593.37890625,
+  "pipeline_elapsed_seconds": 8.081716724,
   "result": "invalid_lifecycle",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -3006,5 +3015,5 @@
   "verification_limitations": [],
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.54
+  "whole_pipeline_timeout_seconds": 498.53
 }

@@ -8,6 +8,7 @@
 #include "sentryward/development/runner/export_headers.inc"
 #endif
 #include "sentryward/result.h"
+#include "sentryward/algorithm/base/analysis_scope.h"
 #include "sentryward/algorithm/diagnostics/performance_profile.h"
 #include "sentryward/algorithm/diagnostics/ir_size_profile.h"
 #include "sentryward/algorithm/diagnostics/memory_profile.h"
@@ -48,20 +49,13 @@
 #include <charconv>
 #include <chrono>
 #include <cmath>
-#include <cerrno>
 #include <condition_variable>
 #include <cstdlib>
-#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <mutex>
 #include <sstream>
-#include <cstdio>
-#include <fcntl.h>
 #include <sys/resource.h>
-#ifdef __linux__
-#include <sys/mman.h>
-#endif
 #include <thread>
 #include <unistd.h>
 #ifdef __APPLE__
@@ -92,6 +86,9 @@ struct Options {
   bool continue_memory_search = false;
   double timeout = 0, sync_timeout = 600;
   std::optional<std::uint64_t> rss_mib;
+  // --default-budget-jobs: the number of verifiers that run at once and share the default memory
+  // budget (no --rss-limit-mib); each enforces that share only (EnforcedMemoryMib).
+  std::optional<std::uint64_t> default_budget_jobs;
   std::size_t threads = 8;
   bool require_equivalence = false;
   std::string reference_failure_json;
@@ -114,6 +111,13 @@ double Seconds(const std::string &text) {
     throw std::invalid_argument("expected finite timeout: " + text);
   return n;
 }
+// How often the monitor samples memory and elapsed time (Monitor::Watch).
+constexpr auto kMonitorInterval = std::chrono::milliseconds(100);
+// The default memory budget's share of the memory the process may use (UsableMemory,
+// EnforcedMemoryMib), as numerator / denominator. The rest is headroom for what the budget does
+// not see in time (the monitor samples every kMonitorInterval) and for the operating system, so
+// that a run reaching the budget is stopped by the monitor rather than by the operating system.
+constexpr std::uint64_t kDefaultBudgetNumerator = 9, kDefaultBudgetDenominator = 10;
 Options Arguments(int argc, char **argv) {
   Options o;
   for (int k = 1; k < argc; ++k) {
@@ -186,6 +190,8 @@ Options Arguments(int argc, char **argv) {
       o.sync_timeout = Seconds(value());
     else if (a == "--rss-limit-mib")
       o.rss_mib = Count(value());
+    else if (a == "--default-budget-jobs")
+      o.default_budget_jobs = Count(value());
     else if (a == "--value-thread-range") {
       const auto text = value();
       const auto colon = text.find(':');
@@ -210,7 +216,12 @@ Options Arguments(int argc, char **argv) {
              "\n  --wellsync-timeout-seconds "
              "600  WellSync-only budget (default)\n  --timeout-seconds SECONDS "
              "     Optional whole-process diagnostic budget\n  --rss-limit-mib "
-             "MIB  Optional positive memory budget (default unlimited)\n  --sync-threads 8\n  "
+             "MIB  Optional positive memory budget (default: "
+          << kDefaultBudgetNumerator * 100 / kDefaultBudgetDenominator
+          << "% of the memory the process may use: physical memory,\n"
+             "                     bounded by its cgroup limit)\n"
+             "  --default-budget-jobs N  Without --rss-limit-mib: N verifiers run at once and share the\n"
+             "                     default budget; each enforces 1/N of it (default 1)\n  --sync-threads 8\n  "
              "--exhaustive-memory-search  Enumerate/count all race pairs\n"
 #ifdef SENTRYWARD_DEVELOPMENT_EXPORTS
 #include "sentryward/development/runner/value_help.inc"
@@ -268,6 +279,11 @@ Options Arguments(int argc, char **argv) {
       (o.extract || o.semantic || o.exhaustive_memory_search))
     throw std::invalid_argument(
         "--continue-memory-search requires verification and cannot be combined with exhaustive search");
+  if (o.default_budget_jobs && *o.default_budget_jobs == 0)
+    throw std::invalid_argument("--default-budget-jobs must be positive");
+  if (o.default_budget_jobs && o.rss_mib)
+    throw std::invalid_argument("--default-budget-jobs shares the default memory budget; it cannot be combined "
+                                "with --rss-limit-mib");
   if (o.timeout < 0 || o.sync_timeout <= 0 || (o.rss_mib && (*o.rss_mib == 0 || *o.rss_mib > UINT64_MAX / (1024 * 1024))) || o.threads < 1 ||
       o.threads > 64 || o.max_steps_per_thread == 0 || (o.extract && o.semantic))
     throw std::invalid_argument("invalid timeout/RSS/thread option");
@@ -283,12 +299,6 @@ Json FileFailure(const FileError& error) {
   return {{"schema","spverify.native-ptx-run/v1"}, {"status",error.writing ? "output_file_error" : "input_file_error"},
       {"stage","file_io"}, {"reason",error.writing ? "file_write_failed" : "file_read_failed"},
       {"path",error.path}, {"message",error.what()}, {"memory_analysis_complete",false},{"warnings_complete",false}};
-}
-std::string Read(const std::string &path) {
-  std::ifstream file(path, std::ios::binary);
-  if (!file)
-    throw FileError(path, false);
-  return {std::istreambuf_iterator<char>(file), {}};
 }
 void Write(const std::string &path, const Json &result) {
   if (path.empty())
@@ -328,9 +338,92 @@ std::uint64_t MemoryFootprint() {
 #endif
   return Rss();
 }
+// The physical memory, sysconf(_SC_PHYS_PAGES) x _SC_PAGESIZE; nullopt when unknown.
+std::optional<std::uint64_t> PhysicalMemory() {
+  const auto pages = sysconf(_SC_PHYS_PAGES), page = sysconf(_SC_PAGESIZE);
+  if (pages <= 0 || page <= 0) return std::nullopt;
+  return std::uint64_t(pages) * std::uint64_t(page);
+}
+#ifdef __linux__
+// A cgroup memory limit at or above this is no limit: cgroup v1 reports none as its largest page
+// counter (close to 2^63 bytes), far above any machine's memory.
+constexpr std::uint64_t kUnlimitedCgroupBytes = std::uint64_t(1) << 60;
+#endif
+// The memory limit of this process's cgroup on Linux: the least limit among its cgroups and their
+// ancestors, cgroup v2 memory.max under /sys/fs/cgroup and cgroup v1 memory.limit_in_bytes under
+// /sys/fs/cgroup/memory, at the paths /proc/self/cgroup names. "max", unreadable files and
+// kUnlimitedCgroupBytes and above are no limit; a path outside the visible hierarchy ("..") reads
+// only the mount's root. nullopt when no limit is found. O(cgroup depth^2) file reads.
+std::optional<std::uint64_t> CgroupMemoryLimit() {
+  std::optional<std::uint64_t> least;
+#ifdef __linux__
+  std::ifstream cgroups("/proc/self/cgroup");
+  for (std::string line; std::getline(cgroups, line);) {
+    const auto first = line.find(':');
+    const auto second = first == std::string::npos ? first : line.find(':', first + 1);
+    if (second == std::string::npos) continue;
+    const auto controllers = "," + line.substr(first + 1, second - first - 1) + ",";
+    std::filesystem::path root;
+    const char *file = nullptr;
+    if (line.compare(0, first, "0") == 0 && controllers == ",,") {
+      root = "/sys/fs/cgroup";
+      file = "memory.max";
+    } else if (controllers.find(",memory,") != std::string::npos) {
+      root = "/sys/fs/cgroup/memory";
+      file = "memory.limit_in_bytes";
+    } else
+      continue;
+    std::vector<std::string> components;
+    std::istringstream path(line.substr(second + 1));
+    for (std::string part; std::getline(path, part, '/');) {
+      if (part == "..") {
+        components.clear();
+        break;
+      }
+      if (!part.empty() && part != ".") components.push_back(part);
+    }
+    for (std::size_t depth = components.size() + 1; depth-- > 0;) {
+      auto directory = root;
+      for (std::size_t k = 0; k < depth; ++k) directory /= components[k];
+      std::ifstream limit(directory / file);
+      std::string text;
+      if (!(limit >> text)) continue;
+      std::uint64_t bytes{};
+      const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), bytes);
+      if (error != std::errc{} || end != text.data() + text.size() || !bytes || bytes >= kUnlimitedCgroupBytes)
+        continue;
+      least = least ? std::min(*least, bytes) : bytes;
+    }
+  }
+#endif
+  return least;
+}
+// The memory the process may use: the physical memory, bounded by its cgroup's limit; nullopt
+// when neither is known.
+std::optional<std::uint64_t> UsableMemory() {
+  const auto physical = PhysicalMemory(), cgroup = CgroupMemoryLimit();
+  if (physical && cgroup) return std::min(*physical, *cgroup);
+  return physical ? physical : cgroup;
+}
+// The memory budget the monitor enforces, in MiB: --rss-limit-mib, or without it the default
+// budget, kDefaultBudgetNumerator / kDefaultBudgetDenominator of UsableMemory, divided by
+// --default-budget-jobs, so that a run reaching it ends with memory_budget_exceeded instead of
+// being killed by the operating system (docs/output-json.md, "Resource limits"); nullopt when the
+// usable memory is unknown. Only enforcement uses the default and its share: rss_limit_mib reports
+// the given limit, and the budgets derived from it (class logs, LookAheadBudget) see none.
+std::optional<std::uint64_t> EnforcedMemoryMib(const Options &options) {
+  if (options.rss_mib) return options.rss_mib;
+  const auto usable = UsableMemory();
+  if (!usable) return std::nullopt;
+  return *usable / kDefaultBudgetDenominator * kDefaultBudgetNumerator / 1048576 /
+         options.default_budget_jobs.value_or(1);
+}
 struct Monitor {
   const Options &options;
-  Clock::time_point start = Clock::now();
+  const std::optional<std::uint64_t> memory_limit_mib = EnforcedMemoryMib(options);
+  // The enforced budget's origin: given (--rss-limit-mib) or the default.
+  const char *memory_origin = options.rss_mib ? "configured_budget" : "default_budget";
+  Clock::time_point start;
   std::mutex mutex;
   std::condition_variable changed;
   bool finished = false;
@@ -338,12 +431,21 @@ struct Monitor {
   Json frontend_checkpoint = Json::object();
   std::atomic<std::uint64_t> peak = 0;
   std::atomic<std::uint64_t> peak_footprint = 0;
+  // The per-unit attempt's internal.frontend.unit_restart record, else null.
+  const Json unit_restart;
   std::thread worker;
-  // `carried_s`: time a class-mode attempt already spent before this re-run (TakeUnitRestart).
-  explicit Monitor(const Options &o, double carried_s = 0)
-      : options(o), start(Clock::now() - std::chrono::duration_cast<Clock::duration>(
-                                             std::chrono::duration<double>(carried_s))),
+  // `started`: when the call's class-mode attempt started, for a per-unit attempt, whose clock
+  // continues from it (PerUnitRestart::started); else now.
+  Monitor(const Options &o, std::optional<Clock::time_point> started, Json restart)
+      : options(o), start(started.value_or(Clock::now())), unit_restart(std::move(restart)),
         worker([this] { Watch(); }) {}
+  // The memory resource of a report stopped by the memory budget; `limit` keeps the caller's
+  // number type. A shared default budget also names its verifier count (--default-budget-jobs).
+  Json MemoryResource(Json limit) const {
+    Json resource{{"kind", "memory"}, {"origin", memory_origin}, {"limit", std::move(limit)}, {"unit", "MiB"}};
+    if (options.default_budget_jobs) resource["default_budget_jobs"] = *options.default_budget_jobs;
+    return resource;
+  }
   ~Monitor() { Stop(); }
   double Elapsed() const {
     return std::chrono::duration<double>(Clock::now() - start).count();
@@ -363,7 +465,8 @@ struct Monitor {
       checkpoint["verification_limitations"].push_back(
           {{"code", limitation.code}, {"message", limitation.message}});
     std::lock_guard lock(mutex);
-    frontend_checkpoint = std::move(checkpoint);
+    // Merged: a per-unit attempt's checkpoint already holds the kept verdict (MemoryVerified).
+    frontend_checkpoint.update(checkpoint);
   }
   void MemoryStrategy(const std::string &strategy, bool fallback) {
     std::lock_guard lock(mutex);
@@ -376,22 +479,46 @@ struct Monitor {
           {"code", "memory_conflict_candidate_generation_unavailable"},
           {"message", alg::kMemoryCandidateFallback}};
   }
-  void MemoryVerified(std::string_view verified_report) {
+  // `at`: when the verdict was reached (a kept class-mode verdict's own time), else now.
+  void MemoryVerified(std::string_view verified_report, std::optional<double> at = std::nullopt) {
     // One small report snapshot, not another graph traversal or verification.
     // Preserve counts, warning samples and assumption usage on a later timeout.
     auto checkpoint = Json::parse(verified_report);
-    checkpoint["verification_status"] = checkpoint.at("status");
+    // Same-value write obligations not yet proven by the value analysis leave an unordered
+    // write pair (source_json.cpp): not race free until SameValueWritesProven.
+    const bool pending = checkpoint.value("same_value_writes", Json::object()).value("status", "") == "pending";
+    checkpoint["verification_status"] = pending ? Json("potential_race") : checkpoint.at("status");
     checkpoint.erase("status");
     checkpoint.erase("schema");
-    checkpoint["verification_elapsed_seconds"] = Elapsed();
+    checkpoint["verification_elapsed_seconds"] = at ? *at : Elapsed();
     checkpoint["warnings_complete"] = true;
     std::lock_guard lock(mutex);
     stage = "value_analysis.memory_effect_binding";
     frontend_checkpoint.update(checkpoint);
   }
+  void SameValueWritesProven() {
+    std::lock_guard lock(mutex);
+    frontend_checkpoint["verification_status"] = "race_free";
+    frontend_checkpoint["same_value_writes"]["status"] = "proven";
+  }
+  // The settled verification report: its warnings, or the unproven pair as the race.
+  void SameValueWritesSettled(const Json &report) {
+    std::lock_guard lock(mutex);
+    if (!frontend_checkpoint.contains("verification_status")) return;
+    frontend_checkpoint["verification_status"] = report.at("status");
+    for (const auto *key : {"same_value_writes", "warnings", "warning_count", "warning_samples_truncated",
+                            "races", "race_count", "race_samples_truncated", "diagnostics"})
+      if (report.contains(key)) frontend_checkpoint[key] = report[key];
+  }
   void Serialized(const Json& statistics,bool complete) {
     std::lock_guard lock(mutex);
     frontend_checkpoint["value_analysis"]={{"serialization",statistics},{"serialization_complete",complete}};
+  }
+  void RecordUnitRestart(Json &report) const {
+    if (unit_restart.is_null()) return;
+    auto &frontend = report["frontend"];
+    if (frontend.is_null()) frontend = Json::object();
+    if (frontend.is_object()) frontend["unit_restart"] = unit_restart;
   }
   void Stop() {
     {
@@ -407,8 +534,7 @@ struct Monitor {
   void Watch() {
     std::unique_lock lock(mutex);
     while (!finished) {
-      if (changed.wait_for(lock, std::chrono::milliseconds(100),
-                           [this] { return finished; }))
+      if (changed.wait_for(lock, kMonitorInterval, [this] { return finished; }))
         break;
       auto rss = Rss();
       peak.store(std::max(peak.load(), rss));
@@ -416,16 +542,16 @@ struct Monitor {
       peak_footprint.store(std::max(peak_footprint.load(), footprint));
       double elapsed = Elapsed();
       bool timeout = options.timeout > 0 && elapsed >= options.timeout,
-           limit = options.rss_mib && std::max(rss, footprint) > *options.rss_mib * 1024 * 1024;
+           limit = memory_limit_mib && std::max(rss, footprint) > *memory_limit_mib * 1024 * 1024;
       if (!timeout && !limit)
         continue;
       Json result{
           {"schema", "spverify.native-ptx-run/v1"},
           {"status", limit ? "memory_limit_exceeded" : "timeout"},
           {"timeout_scope", "whole_pipeline"},
-          {"resource",{{"kind",limit ? "memory" : "time"},{"origin","configured_budget"},
-                       {"limit",limit ? double(*options.rss_mib) : options.timeout},
-                       {"unit",limit ? "MiB" : "seconds"}}},
+          {"resource", limit ? MemoryResource(double(*memory_limit_mib))
+                             : Json{{"kind", "time"}, {"origin", "configured_budget"},
+                                    {"limit", options.timeout}, {"unit", "seconds"}}},
           {"elapsed_seconds", elapsed},
           {"peak_rss_mib", peak.load() / 1048576.0},
           {"peak_footprint_mib", peak_footprint.load() / 1048576.0},
@@ -435,6 +561,7 @@ struct Monitor {
           {"implementation", "cpp"},
           {"rss_limit_mib", options.rss_mib ? Json(*options.rss_mib) : Json(nullptr)}};
       result.update(frontend_checkpoint);
+      RecordUnitRestart(result);
       if(options.require_equivalence || options.reference_stdin) {
         if(stage=="equivalence.object_comparison")
           result["equivalence"]={{"status",limit?"memory_limit_exceeded":"timeout"},
@@ -457,11 +584,39 @@ struct Monitor {
   }
 };
 
+// The value stage's verdict on same-value write obligations (MemoryRaceResult::
+// same_value_write_groups, docs/assumptions.md): nullopt when memory elimination
+// processed every obligation write and proved its bytes equal; the unproven write
+// when a comparison failed; otherwise undecided, with the reason the value stage
+// stopped. A write's checked access is that of the first run of `writes` holding
+// it: O(runs).
+std::optional<alg::SameValueFailure> SameValueOutcome(
+    const std::optional<sentryward::value_analysis::MemoryEliminationResult> &eliminated,
+    const Json &value_analysis, const std::vector<ptx::SameValueWriteRun> &writes) {
+  if (eliminated && eliminated->unproven_same_value_write) {
+    const auto &write = *eliminated->unproven_same_value_write;
+    std::optional<alg::AccessId> access;
+    for (const auto &run : writes)
+      if (run.Holds(write)) {
+        access = run.access;
+        break;
+      }
+    if (access)
+      return alg::SameValueFailure{"same_value_writes_unproven",
+          "Unordered writes cover the same bytes, and the value analysis could not prove that they "
+          "store equal values.", access};
+  }
+  if (eliminated && eliminated->pending_same_value_writes == 0) return std::nullopt;
+  const auto reason = value_analysis.value("reason", std::string("value_analysis_incomplete"));
+  return alg::SameValueFailure{"same_value_writes_unchecked",
+      "Unordered writes cover the same bytes and are not races only if they store equal values; "
+      "the value analysis stopped before proving this (" + reason + ").", std::nullopt};
+}
+
 // Cross-CTA value lifting in class mode: the class tables the scalar fold
 // instantiates members from. A unit is named by its origin (rank 0's
-// coordinates); δ is keyed as ConstantRegion::allocation (the length-prefixed
-// space "global" and allocation object, semantic_program.cpp
-// AllocationIdentity); CTA ids are linear, renamed rank by rank.
+// coordinates); δ is keyed as ConstantRegion::allocation (AllocationIdentity);
+// CTA ids are linear, renamed rank by rank.
 // O(units x unit size + δ entries).
 sentryward::value_analysis::UnitLifting ClassLifting(const alg::UnitQuotient &q) {
   namespace va = sentryward::value_analysis;
@@ -474,9 +629,6 @@ sentryward::value_analysis::UnitLifting ClassLifting(const alg::UnitQuotient &q)
     const auto c = q.CtaCoordinates(q.units.at(unit).ctas.at(0));
     return va::UnitLifting::Origin{c[0], c[1], c[2]};
   };
-  const auto key = [](const std::string &object) {
-    return "6:global" + std::to_string(object.size()) + ':' + object;
-  };
   for (const auto &c : q.classes) {
     if (c.units.size() < 2) continue;
     const auto &rep = q.units.at(c.units.front());
@@ -484,7 +636,8 @@ sentryward::value_analysis::UnitLifting ClassLifting(const alg::UnitQuotient &q)
     for (std::size_t i = 1; i < c.units.size(); ++i) {
       va::UnitLifting::Member member;
       member.origin = origin(c.units[i]);
-      for (const auto &[object, d] : c.delta.at(i)) member.delta.emplace(key(object), d);
+      for (const auto &[object, d] : c.delta.at(i))
+        member.delta.emplace(sentryward::value_analysis::AllocationIdentity("global", object), d);
       const auto &unit = q.units.at(c.units[i]);
       for (std::size_t rank = 0; rank < unit.ctas.size(); ++rank)
         member.ctas.emplace(rep.ctas.at(rank), unit.ctas[rank]);
@@ -576,10 +729,16 @@ bool FirstFailureMatchesPerUnit(const sentryward::value_ir::Graph &values,
 // produced CTA by CTA (the linker visits occurrences in (cta, ...) order) or
 // are all equal (code and message carry no CTA). incomplete_value_semantics
 // summarizes the launch's first value diagnostic once, in the per-unit run too: not
-// weighted. An entry without a CTA, or an order that cannot be expanded, is
-// not expandable (per-unit run). O(entries + CTAs).
+// weighted. So does the domain link's stop at its first failing group as the
+// list's only entry: the per-unit link visits groups in CTA order, the least
+// CTA with a failing group founds its class, and no earlier group raised an
+// entry. Any other entry without a CTA, or an order that cannot be expanded, is
+// not expandable (per-unit run). In CTA order, the list's first entry is the
+// per-unit run's first: the least CTA with entries founds its class
+// (launch_order). O(entries + CTAs).
 struct BindingExpansion {
   bool expandable = true;
+  bool launch_order = false;
   std::uint64_t count = 0;
 };
 BindingExpansion BindingEvidence(const ptx::SemanticProgram &program, const alg::UnitQuotient &q,
@@ -588,12 +747,13 @@ BindingExpansion BindingEvidence(const ptx::SemanticProgram &program, const alg:
   const auto &diagnostics = program.diagnostics;
   std::map<std::uint32_t, std::vector<std::size_t>> by_cta;
   std::vector<std::size_t> plain;
-  bool ordered = true, uniform = true;
+  bool ordered = true, uniform = true, stop = false;
   std::optional<std::uint32_t> last;
   const ptx::SemanticDiagnostic *first = nullptr;
   for (std::size_t i = 0; i < diagnostics.size(); ++i) {
     const auto &d = diagnostics[i];
-    if (d.code == "incomplete_value_semantics") {
+    if (d.code == "incomplete_value_semantics" || (d.first_group && diagnostics.size() == 1)) {
+      stop = d.first_group;
       plain.push_back(i);
       continue;
     }
@@ -612,6 +772,7 @@ BindingExpansion BindingEvidence(const ptx::SemanticProgram &program, const alg:
     result.expandable = false;
     return result;
   }
+  result.launch_order = ordered && (plain.empty() || stop);
   result.count = plain.size();
   for (const auto &[cta, entries] : by_cta) result.count += q.Weight(cta) * entries.size();
   if (list) {
@@ -628,13 +789,97 @@ BindingExpansion BindingEvidence(const ptx::SemanticProgram &program, const alg:
   }
   return result;
 }
+// A per-unit restart caused only by value lifting (UnitClassRestart "value_lifting") keeps the
+// class-mode synchronization verdict, and the re-run redoes only the value side. Class mode
+// reports exactly the per-unit run's synchronization result, and its check
+// (well-synchronization, lifecycle, the race search with the cross-unit pass) was complete and race
+// free before any value stage ran. Lifting adds no admission condition (UnitClasses::Admit): class
+// membership rests on structure keys, logged answers and slot replay up to δ, none of which reads a
+// lifted value; a value_lifting refusal only says that the representatives' values do not stand
+// for the members'. So the per-unit synchronization verdict is the kept one.
+// The re-run builds the per-unit program and runs its well-synchronization check, whose
+// happens-before certificate orders the value side's memory actions (a failure there is an
+// internal error), and its source lifecycle check; it skips the required-order lifecycle check,
+// the race search and the frontend value validations (AnalyzeSourceArtifact's established
+// verdict). Its synchronization report is the class-mode verified report as is: race free and
+// without memory warnings, so what comes from class mode is verification_elapsed_seconds, the
+// warnings of a recovered program (duplicate barrier initializations), and the program,
+// memory-analysis and happens-before statistics, which count only the analysed units. The frontend
+// metadata, the value analysis, the scalar fold and the equivalence check are the re-run's.
+// Kept only when the verdict does not depend on the value side (no same-value write obligations)
+// and the value side needs nothing from the per-unit race search (no accepted unordered writes: no
+// duplicate-write groups or warnings); otherwise the re-run checks synchronization itself. O(1).
+bool KeepsVerdict(const alg::MemoryRaceResult &memory) {
+  return memory.status == alg::MemoryRaceStatus::kRaceFree && memory.search_complete &&
+         memory.duplicate_write_groups.empty() && memory.same_value_write_groups.empty() &&
+         memory.warning_count == 0 && memory.duplicate_tma_store_warnings.empty();
+}
+// The class-mode diagnostic at which a value stage refused lifting, when it names one.
+struct LiftingStop {
+  std::string code, message;
+};
+template <class Diagnostic>
+std::optional<LiftingStop> LiftingStopOf(const std::optional<Diagnostic> &diagnostic) {
+  if (!diagnostic) return std::nullopt;
+  return LiftingStop{diagnostic->code, diagnostic->message};
+}
+// The per-unit re-run's value view, estimated from the class-mode one: its value instances
+// scaled from the analysed units to all units of the launch (members of one class have equal
+// shapes, so equal instance counts). Above kPerUnitRestartValueInstances the re-run is not
+// started: the refusing stage ends with the budget refusal unit_restart_limit_exceeded, which
+// names the class-mode stop. O(value nodes).
+// The limit is a fixed algorithm budget, not a share of the memory budget, so that whether a launch
+// re-runs does not depend on the host. The re-run holds the value view of every unit at once, and
+// its value passes, memory elimination and scalar fold keep state per value instance; about 2^26
+// instances is where that state outgrows the memory of a large analysis host, so a re-run above it
+// would more likely end late at the memory budget than finish.
+constexpr std::uint64_t kPerUnitRestartValueInstances = std::uint64_t(1) << 26;
+std::optional<Json> PerUnitRestartBudget(const sentryward::value_ir::Graph& values,
+    const sentryward::value_analysis::UnitLifting& lifting, std::string_view stage,
+    const std::optional<LiftingStop>& stop) {
+  unsigned __int128 units = 1, members = 0, instances = 0;
+  for (unsigned axis = 0; axis < 3; ++axis) {
+    if (!lifting.unit_shape[axis] || lifting.grid[axis] % lifting.unit_shape[axis]) return std::nullopt;
+    units *= lifting.grid[axis] / lifting.unit_shape[axis];
+  }
+  for (const auto& [origin, list] : lifting.members) members += list.size();
+  if (members >= units) return std::nullopt;
+  for (const auto& node : values.nodes()) instances += node.instanceCount();
+  const auto estimate = instances * units / (units - members);
+  if (estimate <= kPerUnitRestartValueInstances) return std::nullopt;
+  const auto clamp = [](unsigned __int128 x) { return x > UINT64_MAX ? UINT64_MAX : std::uint64_t(x); };
+  std::string message = "The class-mode " + std::string(stage) + " refused lifting";
+  Json report = {{"status", "analysis_budget_exceeded"}};
+  if (stop) {
+    message += " at " + stop->code + " (" + stop->message + ")";
+    report["class_mode_diagnostic"] = {{"code", stop->code}, {"message", stop->message}};
+  }
+  message += "; the per-unit re-run would build about " +
+      std::to_string(clamp(estimate)) + " value instances (" + std::to_string(clamp(units)) + " units from " +
+      std::to_string(clamp(units - members)) + " analysed), above the limit " +
+      std::to_string(kPerUnitRestartValueInstances) + ".";
+  report["diagnostic"] = {{"code", "unit_restart_limit_exceeded"}, {"message", message}};
+  report["resource"] = {{"origin", "algorithm_budget"}, {"kind", "per_unit_value_instances"},
+      {"limit", kPerUnitRestartValueInstances}, {"estimate", clamp(estimate)}};
+  return report;
+}
+// A value stage of the class-mode attempt whose result cannot stand for the members refuses
+// lifting; every such refusal (UnitClassRestart "value_lifting") comes here. It throws for the
+// per-unit re-run, or, above the re-run's budget (PerUnitRestartBudget), returns the budget
+// refusal, which the refusing stage reports as its result. `stage` names that stage.
+Json RefuseLifting(const sentryward::value_ir::Graph& values, const sentryward::value_analysis::UnitLifting& lifting,
+                   std::string_view stage, const std::optional<LiftingStop>& stop = std::nullopt) {
+  if (auto refused = PerUnitRestartBudget(values, lifting, stage, stop)) return std::move(*refused);
+  throw alg::UnitClassRestart{"value_lifting"};
+}
 // `lifting`: cross-CTA value lifting mode (unit_lifting.h), else null; a
-// refusal throws UnitClassRestart.
+// refusal throws UnitClassRestart, unless the per-unit re-run exceeds its budget.
 Json AnalyzeScalarFold(const sentryward::value_ir::Graph& values,
                        const sentryward::value_analysis::MemoryEliminationResult& eliminated,
                        const Options& options, Monitor& monitor,
                        std::optional<sentryward::scalar_fold::Artifact>& artifact,
-                       const sentryward::value_analysis::UnitLifting* lifting) {
+                       const sentryward::value_analysis::UnitLifting* lifting,
+                       const std::map<std::string, sentryward::scalar_fold::ComparedOutput>* compared) {
   namespace sf = sentryward::scalar_fold;
   Json report;
   try {
@@ -643,6 +888,7 @@ Json AnalyzeScalarFold(const sentryward::value_ir::Graph& values,
       sentryward::value_analysis::ScalarFoldOptions fold_options;
       fold_options.compact_output_families=true;
       fold_options.unit_lifting=lifting;
+      fold_options.compared_outputs=compared;
       return sentryward::value_analysis::lowerScalarFold(values, eliminated,fold_options);
     });
     if (lifting) {
@@ -651,10 +897,10 @@ Json AnalyzeScalarFold(const sentryward::value_ir::Graph& values,
         // run's first failure is reported as computed; any other refusal restarts.
         bool matches = false;
         if (folded.diagnostic) matches = FirstFailureMatchesPerUnit(values, eliminated, folded, *lifting);
-        if (!matches) throw alg::UnitClassRestart{"value_lifting"};
+        if (!matches) return RefuseLifting(values, *lifting, "lowering", LiftingStopOf(folded.diagnostic));
       }
       // The fold's own row maps (audited row widths) after the value passes' ones.
-      if (RowModulusViolation(*lifting)) throw alg::UnitClassRestart{"value_lifting"};
+      if (RowModulusViolation(*lifting)) return RefuseLifting(values, *lifting, "lowering");
     }
     report = {{"status", folded.complete ? "ready" : "unsupported"},
               {"source_outputs", folded.source_outputs},
@@ -743,53 +989,106 @@ Json AnalyzeScalarFold(const sentryward::value_ir::Graph& values,
   }
   return report;
 }
-} // namespace
-// Per-unit restart: a class-mode run that cannot finish exactly (unit
-// closure, the tensormap locality rule, a cross-unit Unknown or work cap)
-// re-executes this binary (same pid, same arguments) with class mode off, so
-// the per-unit run is exactly a fresh run without classes, process-global ids
-// included. The environment
-// variable SENTRYWARD_UNIT_RESTART alone selects the per-unit run (TakeUnitRestart;
-// no option): it carries the time already spent (the watchdog keeps counting).
-struct UnitRestartState {
-  double elapsed_s = 0;
-};
-std::optional<UnitRestartState> TakeUnitRestart() {
-  const char *text = std::getenv("SENTRYWARD_UNIT_RESTART");
-  if (!text) return std::nullopt;
-  const auto state = Json::parse(text);
-  unsetenv("SENTRYWARD_UNIT_RESTART");
-  return UnitRestartState{state.at("elapsed_s").get<double>()};
+// The bounds of tensor_properties are equivalence premises too, as input-contract ranges of
+// the mapped objects on both sides (the same trusted premises the race check and memory
+// elimination use; injectivity is not one). Records without a bound beyond their type's
+// range, objects the mapping does not name on both sides, and objects/types the mapping
+// already declares are skipped.
+void AppendTensorPropertyContract(Json& mapping, const Json& properties) {
+  if (!properties.is_array() || properties.empty() || !mapping.is_object()) return;
+  auto& context = mapping["checker_context"];
+  if (!context.is_object()) context = Json::object();
+  auto& contract = context["input_contract"];
+  if (!contract.is_array()) contract = Json::array();
+  std::set<std::pair<std::string, std::string>> declared;
+  for (const auto& entry : contract)
+    if (entry.is_object() && entry.contains("object") && entry.contains("element_type"))
+      declared.emplace(entry["object"].get<std::string>(), entry["element_type"].get<std::string>());
+  const auto mapped = [&](const char* side, const std::string& identity) -> std::optional<std::string> {
+    if (!mapping.contains(side) || !mapping[side].contains("allocations")) return std::nullopt;
+    const auto& table = mapping[side]["allocations"];
+    const auto found = table.find(identity);
+    if (found == table.end() || !found->is_string()) return std::nullopt;
+    return found->get<std::string>();
+  };
+  for (const auto& record : properties) {
+    const auto object = record.at("object").get<std::string>(), type = record.at("element_type").get<std::string>();
+    const auto bits = record.at("element_bits").get<unsigned>();
+    const bool sign = record.at("signed").get<bool>();
+    const auto lower = ptx::JsonInteger(record.at("lower_bound")), upper = ptx::JsonInteger(record.at("upper_bound"));
+    const ptx::Integer type_lower = sign ? ptx::Integer(-(ptx::Integer(1) << (bits - 1))) : ptx::Integer(0);
+    const ptx::Integer type_upper = (ptx::Integer(1) << (bits - unsigned(sign))) - 1;
+    if (lower <= type_lower && upper >= type_upper) continue;
+    const auto identity = sentryward::value_analysis::AllocationIdentity("global", object);
+    const auto left = mapped("left_inputs", identity), right = mapped("right_inputs", identity);
+    if (!left || !right || *left != *right || !declared.emplace(*left, type).second) continue;
+    contract.push_back({{"object", *left}, {"element_type", type}, {"source", "tensor_properties"},
+        {"region", "whole_object"}, {"min_inclusive", record.at("lower_bound")}, {"max_inclusive", record.at("upper_bound")}});
+  }
+  if (contract.empty()) context.erase("input_contract");
+  if (context.empty()) mapping.erase("checker_context");
 }
-// A --reference-stdin reference is read once, before execution; a class-mode
-// run keeps its bytes in an anonymous file (a memfd on Linux) so that the
-// re-executed per-unit run reads exactly the same bytes as its stdin.
-// Returns the descriptor, or -1 when the bytes could not be kept.
-int SpoolReference(const std::string &bytes) {
-#ifdef __linux__
-  int fd = memfd_create("sentryward-reference", MFD_CLOEXEC);
-#else
-  int fd = -1;
-  if (std::FILE *file = std::tmpfile()) {
-    fd = dup(fileno(file));
-    std::fclose(file); // unlinked; the duplicate keeps it until it is closed
-    if (fd >= 0) fcntl(fd, F_SETFD, FD_CLOEXEC);
+} // namespace
+// Per-unit restart: a class-mode attempt that cannot finish exactly throws
+// UnitClassRestart, and main analyses the launch again in a second attempt with
+// class mode off (RunAttempt). The reasons: the class tables cannot stand for
+// the members (unit_closure, tensormap_locality, executed_global_atomic,
+// binding_evidence, repeated_entries), the cross-unit race pass is undecided
+// (cross_unit_unknown:*, cross_unit_cap:*, cross_unit_tie_break,
+// cross_unit_same_value), or the representatives' values cannot stand for the
+// members' (value_lifting, RefuseLifting). Each attempt owns its process-level
+// state (AnalysisScope). Without a kept verdict the per-unit attempt analyses
+// exactly as a run without classes; a value_lifting restart may also carry the
+// class-mode synchronization verdict (KeepsVerdict), which the per-unit attempt
+// reports while it redoes the value side. Its clock continues from the
+// class-mode attempt's start, so the time budget and the elapsed times also
+// count the release of the class-mode attempt. Like UnitClassRestart, not a
+// std::exception, so that no stage of the attempt converts it into a report.
+struct PerUnitRestart {
+  std::string reason; // UnitClassRestart::reason
+  // When the class-mode attempt started (Monitor::start).
+  Clock::time_point started;
+  // The class-mode verified report and when it was reached, in seconds from
+  // `started`; empty when the per-unit attempt checks synchronization itself.
+  std::string verdict;
+  double verdict_elapsed_s = 0;
+};
+// What one call reads once and both attempts share: input files by path and
+// the stdin reference, so the per-unit attempt checks exactly the bytes the
+// class-mode attempt checked. Retains O(input bytes) for the call.
+class CallInputs {
+public:
+  // The file's bytes, or null when it cannot be opened (not cached; each reader
+  // reports its own error).
+  const std::string *File(const std::string &path) {
+    if (const auto found = files_.find(path); found != files_.end()) return &found->second;
+    std::ifstream file(path, std::ios::binary);
+    if (!file) return nullptr;
+    return &files_.emplace(path, std::string{std::istreambuf_iterator<char>(file), {}}).first->second;
   }
-#endif
-  if (fd < 0) return -1;
-  for (std::size_t done = 0; done < bytes.size();) {
-    const auto n = write(fd, bytes.data() + done, bytes.size() - done);
-    if (n <= 0) {
-      close(fd);
-      return -1;
-    }
-    done += static_cast<std::size_t>(n);
+  // The file's bytes; FileError when it cannot be opened.
+  const std::string &Read(const std::string &path) {
+    if (const auto *bytes = File(path)) return *bytes;
+    throw FileError(path, false);
   }
-  if (lseek(fd, 0, SEEK_SET) != 0) {
-    close(fd);
-    return -1;
+  // The stdin reference, read on first use.
+  const std::string &ReferenceStdin() {
+    if (!reference_stdin_)
+      reference_stdin_.emplace(std::istreambuf_iterator<char>(std::cin), std::istreambuf_iterator<char>());
+    return *reference_stdin_;
   }
-  return fd;
+
+private:
+  std::map<std::string, std::string> files_;
+  std::optional<std::string> reference_stdin_;
+};
+// The memory class mode's look-ahead may hold in executed units: a quarter of
+// --rss-limit-mib, or without a limit a quarter of the memory the process may use (UsableMemory;
+// docs/output-json.md, "Resource limits"). UINT64_MAX when neither is known.
+std::uint64_t LookAheadBudget(const std::optional<std::uint64_t> &rss_mib) {
+  if (rss_mib) return *rss_mib * 1048576 / 4;
+  const auto usable = UsableMemory();
+  return usable ? *usable / 4 : UINT64_MAX;
 }
 // Bytes the allocator has handed out (glibc), which sizes class mode's
 // look-ahead window; nullopt elsewhere (the window is then the worker count).
@@ -801,47 +1100,31 @@ std::optional<std::uint64_t> AllocatedBytes() {
   return std::nullopt;
 #endif
 }
-[[noreturn]] void RestartPerUnit(char **argv, const UnitRestartState &state, int stdin_spool) {
-  const Json carried{{"elapsed_s", state.elapsed_s}};
-  if (setenv("SENTRYWARD_UNIT_RESTART", carried.dump().c_str(), 1)) {
-    const int error = errno;
-    throw std::runtime_error(std::string("could not restart the analysis without CTA classes (set environment): ") +
-                             std::strerror(error));
-  }
-  // The spooled reference becomes the re-run's stdin (dup2 clears close-on-exec).
-  if (stdin_spool >= 0 && (lseek(stdin_spool, 0, SEEK_SET) != 0 || dup2(stdin_spool, STDIN_FILENO) < 0)) {
-    const int error = errno;
-    throw std::runtime_error(
-        std::string("could not restart the analysis without CTA classes (restore the stdin reference): ") +
-        std::strerror(error));
-  }
-  std::cout.flush();
-  std::cerr.flush();
-  // The same executable by its resolved path, so the re-run keeps the process
-  // name (host tools find runs by it); /proc/self/exe if the file is gone.
-  char self[4096];
-  if (const auto n = readlink("/proc/self/exe", self, sizeof self - 1); n > 0) {
-    self[n] = '\0';
-    if (!std::string_view(self, static_cast<std::size_t>(n)).ends_with(" (deleted)")) execv(self, argv);
-  }
-  execv("/proc/self/exe", argv);
-  execv(argv[0], argv);
-  const int error = errno;
-  throw std::runtime_error(std::string("could not restart the analysis without CTA classes (exec): ") +
-                           std::strerror(error));
-}
-
-int main(int argc, char **argv) {
+// One analysis attempt of the launch: the class-mode attempt, or with
+// `unit_restart` the per-unit attempt after it (PerUnitRestart). Prints the
+// report and returns the exit status; a class-mode attempt that restarts throws
+// PerUnitRestart instead, after its state is released.
+int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<PerUnitRestart> &unit_restart) {
   bool parsing_arguments = true;
   try {
     auto options = Arguments(argc, argv);
     parsing_arguments = false;
-    const auto unit_restart = TakeUnitRestart();
-    Monitor monitor(options, unit_restart ? unit_restart->elapsed_s : 0.0);
+    alg::AnalysisScope attempt_scope;
+    Json restart_record;
+    if (unit_restart)
+      restart_record = {{"reason", unit_restart->reason},
+                        {"kept_synchronization_verdict", !unit_restart->verdict.empty()}};
+    Monitor monitor(options, unit_restart ? std::optional(unit_restart->started) : std::nullopt,
+                    std::move(restart_record));
+    // A per-unit attempt that keeps the class-mode synchronization verdict reports it
+    // from the start, also when the value side stops early.
+    const bool kept_verdict = unit_restart && !unit_restart->verdict.empty();
+    if (kept_verdict) monitor.MemoryVerified(unit_restart->verdict, unit_restart->verdict_elapsed_s);
     std::optional<rg::Document> reference;
-    int reference_spool = -1; // the stdin reference kept for a per-unit restart (SpoolReference)
     std::optional<sentryward::scalar_fold::Artifact> expression;
     Json equivalence_mapping, reference_error={{"status","missing_reference"},{"reason","reference_expression_not_supplied"}};
+    // The bytes the binding compares: the scalar fold projects only those.
+    std::map<std::string, sentryward::scalar_fold::ComparedOutput> compared_outputs;
     if(!options.reference_failure_json.empty()) {
       reference_error=Json::parse(options.reference_failure_json);
       if(!reference_error.is_object() || !reference_error.contains("result") ||
@@ -854,18 +1137,16 @@ int main(int argc, char **argv) {
       try {
         if (!std::isfinite(options.equivalence_timeout) || options.equivalence_timeout <= 0)
           throw std::invalid_argument("invalid equivalence timeout");
-        if (!unit_restart) {
-          // A class-mode run may restart per unit; keep the bytes for it.
-          std::string bytes{std::istreambuf_iterator<char>(std::cin), {}};
-          reference_spool = SpoolReference(bytes);
-          std::istringstream in(std::move(bytes));
-          reference = rg::Document::load(in);
-        } else reference = rg::Document::load(std::cin);
-        std::ifstream input(options.equivalence_mapping);
-        if (!input) throw std::invalid_argument("missing equivalence mapping");
-        input >> equivalence_mapping;
+        std::istringstream in(inputs.ReferenceStdin());
+        reference = rg::Document::load(in);
+        const auto *mapping = inputs.File(options.equivalence_mapping);
+        if (!mapping) throw std::invalid_argument("missing equivalence mapping");
+        std::istringstream mapping_in(*mapping);
+        mapping_in >> equivalence_mapping;
+        compared_outputs = rg::comparedOutputs(equivalence_mapping);
       } catch (const std::exception& error) {
         reference.reset();
+        compared_outputs.clear();
         reference_error = {{"status","unsupported"},{"reason","reference_import_failed"},{"message",error.what()}};
       }
     }
@@ -873,6 +1154,8 @@ int main(int argc, char **argv) {
     alg::ProfileScope total("pipeline.total");
     auto poll = [] { alg::ProfileSnapshot(); };
     Json metadata, input_metadata = Json::object();
+    // Normalized tensor_properties records: trusted premises of the equivalence check too.
+    Json tensor_property_inputs = Json::array();
     std::uint64_t records = 0;
     ptx::ThreadRecordStatistics record_compression;
     ptx::TemplateExecutionStatistics template_execution;
@@ -889,17 +1172,26 @@ int main(int argc, char **argv) {
     Json serialization_statistics;
     Json cache_provenance;
     bool replayed_correctness=false;
-    // Cross-CTA class mode: the quotient tables; a run that cannot finish
-    // exactly re-executes per unit (UnitRestartState). Value lifting (class
+    // Cross-CTA class mode: the quotient tables; an attempt that cannot finish
+    // exactly restarts per unit (PerUnitRestart). Value lifting (class
     // mode with values): the class tables. Whether units share their analysis
     // does not change the results; analysis statistics (program counts such as
     // threads, dependency-compression statistics) count only the units analysed.
     std::unique_ptr<alg::UnitQuotient> quotient;
     std::optional<sentryward::value_analysis::UnitLifting> unit_lifting;
-    const auto restart_per_unit = [&] {
+    // Class mode with value lifting: the verified report of the class-mode synchronization
+    // check and when it was reached, when a value_lifting restart may keep it (KeepsVerdict).
+    std::string class_verdict;
+    double class_verdict_elapsed_s = 0;
+    const auto restart_per_unit = [&](const alg::UnitClassRestart &restart) {
       if (unit_restart)
         throw std::logic_error("internal error: CTA class bookkeeping (restart requested by the run without classes)");
-      RestartPerUnit(argv, UnitRestartState{monitor.Elapsed()}, reference_spool);
+      PerUnitRestart next{restart.reason, monitor.start};
+      if (restart.reason == "value_lifting") {
+        next.verdict = class_verdict;
+        next.verdict_elapsed_s = class_verdict_elapsed_s;
+      }
+      throw next;
     };
 #ifdef SENTRYWARD_DEVELOPMENT_EXPORTS
 #include "sentryward/development/runner/dot_options.inc"
@@ -911,10 +1203,16 @@ int main(int argc, char **argv) {
     }
     auto effective_assumptions = alg::DefaultPtxAssumptions();
     std::function<void(ptx::CheckedMemoryActions)> run_values;
-    // Value lifting: a value stage of the class-mode quotient
-    // whose result cannot stand for the members refuses lifting; the launch
-    // re-runs per unit before the later (more expensive) stages.
-    const auto refuse_lifting = [] { throw alg::UnitClassRestart{"value_lifting"}; };
+    // Value lifting: a value stage of the class-mode quotient whose result
+    // cannot stand for the members refuses lifting (RefuseLifting); the launch
+    // re-runs per unit before the later (more expensive) stages, or, above the
+    // re-run's budget, the value analysis ends with the budget refusal.
+    const auto refuse_lifting = [&](const std::optional<LiftingStop> &stop = std::nullopt) {
+      value_analysis = RefuseLifting(semantic_program->values, *unit_lifting, "value analysis", stop);
+      value_analysis["reason"] = value_analysis["diagnostic"]["code"];
+      value_analysis["message"] = value_analysis["diagnostic"]["message"];
+      value_analysis["stage"] = "value_lifting";
+    };
     const auto class_lifting = [&] { return unit_lifting.has_value(); };
     run_values = [&](ptx::CheckedMemoryActions actions) {
       monitor.Stage("value_analysis.prepare");
@@ -927,8 +1225,12 @@ int main(int argc, char **argv) {
       }
       if (!actions.complete()) {
         const auto& diagnostic = actions.diagnostics.front();
-        // Its first diagnostic is the quotient's, not necessarily the per-unit run's.
-        if (class_lifting()) refuse_lifting();
+        // A binding diagnostic (it names its occurrence, or is the domain
+        // link's stop) heading a list in CTA order is the per-unit run's
+        // first; any other first diagnostic of the quotient need not be.
+        if (class_lifting() && !((diagnostic.occurrence || diagnostic.first_group) && quotient &&
+                                 BindingEvidence(*semantic_program, *quotient).launch_order))
+          return refuse_lifting(LiftingStop{diagnostic.code, diagnostic.message});
         value_analysis = {{"status", "unsupported"}, {"reason", diagnostic.code},
             {"message", diagnostic.message}, {"stage", "memory_effect_binding"}};
         if (diagnostic.occurrence) value_analysis["instruction_index"] = diagnostic.occurrence->instruction;
@@ -953,9 +1255,15 @@ int main(int argc, char **argv) {
           return sites[std::size_t(site)] - sites_before[std::size_t(site)];
         };
         const auto read = numeric(va::UnitSite::ValueSpecialization) + numeric(va::UnitSite::ValueTemplateLeaf);
-        if (read) refuse_lifting();
-        if (!pipeline.memory.complete) refuse_lifting();
-        if (RowModulusViolation(*unit_lifting)) refuse_lifting();
+        if (read) return refuse_lifting();
+        // A memory-elimination failure with the order-free identity is the
+        // per-unit run's. Members fail on their addresses at the
+        // representative's positions (admission compared their slot shapes,
+        // and they write the same allocations), and the static key names no
+        // unit. Any other failure restarts.
+        const auto &stop = pipeline.memory.diagnostic;
+        if (!pipeline.memory.complete && !(stop && stop->order_free)) return refuse_lifting(LiftingStopOf(stop));
+        if (RowModulusViolation(*unit_lifting)) return refuse_lifting();
       }
       const auto packing = pipeline.packing, exp2 = pipeline.ideal_exp2;
       eliminated = std::move(pipeline.memory);
@@ -1032,7 +1340,7 @@ int main(int argc, char **argv) {
     try {
       monitor.Stage("ptx_input.read");
       auto text = alg::ProfileCall("ptx_input.read",
-                                   [&] { return Read(options.ptx); });
+                                   [&] { return inputs.Read(options.ptx); });
 
 #ifdef SENTRYWARD_DEVELOPMENT_EXPORTS
 #include "sentryward/development/runner/checkpoint_identity.inc"
@@ -1043,7 +1351,7 @@ int main(int argc, char **argv) {
       });
       monitor.Stage("input_configuration");
       auto config = alg::ProfileCall("input_configuration", [&] {
-        auto supplied = ptx::LoadKernelInput(options.config);
+        auto supplied = ptx::LoadKernelInput(options.config, inputs.File(options.config));
         auto supplied_flags = effective_assumptions;
         const auto overrides = supplied.fields.value("assumptions", Json::object());
         alg::OverridePtxAssumptions(supplied_flags, overrides.get<alg::PtxAssumptions>());
@@ -1169,28 +1477,29 @@ int main(int argc, char **argv) {
       unit_gates.scalar_fold_dump = !options.dump_scalar_fold.empty();
       unit_gates.exhaustive_search = options.exhaustive_memory_search;
       unit_gates.continue_search = options.continue_memory_search;
-      // A stdin reference that could not be spooled keeps class mode off (in the
-      // per-unit re-run, class mode is off anyway).
-      unit_gates.reference_stdin = options.reference_stdin && reference_spool < 0;
 #ifdef SENTRYWARD_DEVELOPMENT_EXPORTS
       unit_gates.development_exports = true;
 #endif
       auto unit_plan = ptx::PlanUnits(config, *function, unit_gates);
-      if (unit_restart) unit_plan.class_mode = false; // the per-unit re-run
-      // Class mode's memory budget, min(2 GiB, 10% of --rss-limit-mib): the class logs'
-      // and the look-ahead's executed units in flight.
+      if (unit_restart) unit_plan.class_mode = false; // the per-unit attempt
+      // Class mode's log budget, min(2 GiB, 10% of --rss-limit-mib).
       const std::uint64_t class_budget = std::min<std::uint64_t>(
           std::uint64_t(2) << 30, options.rss_mib ? *options.rss_mib * 1048576 / 10 : UINT64_MAX);
       if (options.analyze_values || (!options.extract && !options.semantic && !values)) {
         semantic_builder = std::make_unique<ptx::SemanticProgramBuilder>(module, *function, poll,
-            ptx::SemanticProgramOptions{options.analyze_values && !options.trusted_reference,
-                                       true, options.analyze_values, !options.trusted_reference,
-                                       !options.dump_branch_scope.empty(),
-                                       effective_assumptions.at("order_independent_atomics")});
+            ptx::SemanticProgramOptions{
+                .collect_synchronization_groups = options.analyze_values && !options.trusted_reference,
+                .compact_memory_linking = true,
+                .link_numerical_memory = options.analyze_values,
+                .defer_address_serialization = !options.trusted_reference,
+                .capture_branch_scope = !options.dump_branch_scope.empty(),
+                .atomics = effective_assumptions.at("order_independent_atomics"),
+                .values_on_demand = !options.analyze_values,
+                .threads = options.threads});
       } else if (!options.semantic && !values)
         lowerer = alg::ProfileCall("frontend.static_lowering_prepare", [&] {
           return std::make_unique<ptx::ModelLowerer>(module, *function, poll, false,
-              effective_assumptions.at("order_independent_atomics"));
+              effective_assumptions.at("order_independent_atomics"), options.threads);
         });
       // The classes of this launch (class mode only).
       std::unique_ptr<ptx::UnitClasses> classes;
@@ -1211,6 +1520,7 @@ int main(int argc, char **argv) {
         std::map<std::uint64_t, ptx::DataBranchDecision> data_branch_decisions;
         std::map<std::uint64_t, std::uint64_t> opaque_regions;
         std::map<std::string, std::set<std::uint64_t>> property_lines;
+        std::set<std::uint64_t> static_choice_lines;
         // The driver's accounting of one executed CTA (every CTA, members included).
         const auto account = [&](const ptx::CtaFacts &cta_facts) {
               const ptx::FactSource::ConsumerScope driver(cta_facts, {ptx::Consumer::Driver, 0});
@@ -1255,8 +1565,8 @@ int main(int argc, char **argv) {
                       decision.taken + decision.not_taken;
                 }
               }
-              for (const auto &[object, sites] : cta_facts.TensorPropertySites())
-                for (const auto id : sites) property_lines[object].insert(function->instructions[id].line);
+              static_choice_lines.insert(cta_facts.StaticBranchChoiceLines().begin(),
+                                         cta_facts.StaticBranchChoiceLines().end());
               const auto static_counts = cta_facts.StaticCounts();
               for (std::size_t id=0;id<static_counts.size();++id) {
                 auto &facts=input_metadata["frontend_assumptions"];
@@ -1271,6 +1581,12 @@ int main(int argc, char **argv) {
                 for (const auto id : unit_plan.precondition.atomic_sites)
                   if (id < static_counts.size() && static_counts[id] != 0)
                     throw alg::UnitClassRestart{"executed_global_atomic"};
+        };
+        // A CTA's tensor_properties decisions, read once every consumer is done with it: template
+        // values evaluated after its run (lowering, class admission) are decided by bounds too.
+        const auto account_properties = [&](const ptx::CtaFacts &cta_facts) {
+          for (const auto &[object, sites] : cta_facts.PropertyDecisionsSnapshot())
+            for (const auto id : sites) property_lines[object].insert(function->instructions[id].line);
         };
         const auto linear_id = [&](const ptx::Coordinates &c) {
           return static_cast<std::uint32_t>((std::uint64_t(c[2]) * grid[1] + c[1]) * grid[0] + c[0]);
@@ -1336,7 +1652,7 @@ int main(int argc, char **argv) {
           // at that unit, and leaving the loop (a restart included) joins the workers.
           // The first unit runs inline: the bytes it allocates bound the workers (each
           // keeps its own allocator arena at about one execution) and the executed units
-          // in flight to min(2 GiB, 10% of --rss-limit-mib), the class logs' budget.
+          // in flight to LookAheadBudget (a quarter of the memory limit).
           const std::size_t workers = options.threads > 1 ? options.threads : 0;
           std::unique_ptr<ExecutedUnit> first;
           std::size_t window = workers;
@@ -1346,8 +1662,8 @@ int main(int argc, char **argv) {
             first = execute(0, poll);
             const auto after = AllocatedBytes();
             if (before && after && *after > *before)
-              window = static_cast<std::size_t>(
-                  std::clamp<std::uint64_t>(class_budget / (*after - *before), 1, workers));
+              window = static_cast<std::size_t>(std::clamp<std::uint64_t>(
+                  LookAheadBudget(options.rss_mib) / (*after - *before), 1, workers));
           }
           const std::size_t skip = first ? 1 : 0;
           [[maybe_unused]] std::size_t released_units = 0;
@@ -1368,6 +1684,7 @@ int main(int argc, char **argv) {
               ++ctas;
             }
             const auto release = [&](std::size_t rank) {
+              account_properties(*unit_facts[rank]);
               unit_facts[rank].reset();
               auto &program = programs[rank];
               alg::ProfileCall("frontend.release_execution",
@@ -1406,6 +1723,15 @@ int main(int argc, char **argv) {
               classes->Recorded(unit.index, static_cast<std::uint32_t>(rank));
               release(rank);
             }
+            // The units executed while this one was consumed were pre-admitted without its class:
+            // try it on them now, in parallel (Admit would replay it here, one unit at a time).
+            if (workers)
+              executions->RefreshReady(workers, [&](std::unique_ptr<ExecutedUnit> &waiting) {
+                std::vector<const ptx::CtaFacts *> waiting_view;
+                for (const auto &facts : waiting->facts) waiting_view.push_back(facts.get());
+                waiting->pre = classes->PreAdmit(waiting_view, waiting->keys, std::move(waiting->pre));
+                for (const auto &facts : waiting->facts) facts->ReleaseValues();
+              });
           }
           executions.reset();
 #if defined(__GLIBC__)
@@ -1470,6 +1796,7 @@ int main(int argc, char **argv) {
                 monitor.Stage("semantic_ir.cta" + std::to_string(ctas));
                 semantic_builder->AddCta(cta_facts);
               }
+              account_properties(cta_facts);
               }
               alg::ProfileCall("frontend.release_execution",
                                [&] { program = ptx::ExecutionProgram{}; });
@@ -1482,6 +1809,9 @@ int main(int argc, char **argv) {
         for (const auto &[object, lines] : property_lines)
           input_metadata["frontend_assumptions"]["tensor_property_decisions"].push_back(
               {{"object", object}, {"lines", lines}});
+        // Choices that a statically known predicate overrode on some visit (listed only when any).
+        if (!static_choice_lines.empty())
+          input_metadata["frontend_assumptions"]["branch_choices_with_static_visits"] = static_choice_lines;
         auto &decisions = input_metadata["frontend_assumptions"]["data_branch_decisions"];
         for (const auto &[line, decision] : data_branch_decisions)
           decisions.push_back({{"line", line}, {"assumption", decision.assumption}, {"rule", decision.rule},
@@ -1551,8 +1881,8 @@ int main(int argc, char **argv) {
         lowered.artifact.frontend_assumptions_json = input_metadata["frontend_assumptions"].dump();
         lowered.artifact.address_invariants_json =
             config.raw.value("address_invariants", Json::array()).dump();
-        lowered.artifact.tensor_properties_json =
-            config.fixed_input.value("tensor_property_inputs", Json::array()).dump();
+        tensor_property_inputs = config.fixed_input.value("tensor_property_inputs", Json::array());
+        lowered.artifact.tensor_properties_json = tensor_property_inputs.dump();
         metadata["executed_records"] = records;
         const auto assumptions =
             config.raw.value("semantic_assumptions", Json::object());
@@ -1610,8 +1940,14 @@ int main(int argc, char **argv) {
           if (semantic_program && options.analyze_values) {
             on_verified = [&](const alg::SourceArtifact& checked, const alg::PassCertificate& certificate,
                               const alg::MemoryRaceResult& memory_result,
-                              const alg::MemoryAccessRecords& accesses, std::string_view verified_report) {
-              monitor.MemoryVerified(verified_report);
+                              const alg::MemoryAccessRecords& accesses, std::string_view verified_report)
+                -> std::optional<alg::SameValueFailure> {
+              monitor.MemoryVerified(verified_report,
+                  kept_verdict ? std::optional(unit_restart->verdict_elapsed_s) : std::nullopt);
+              if (unit_lifting && KeepsVerdict(memory_result)) {
+                class_verdict.assign(verified_report);
+                class_verdict_elapsed_s = monitor.Elapsed();
+              }
               const auto serialization_start=Clock::now();
               auto actions = alg::ProfileCall("value_analysis.memory_effect_binding", [&] {
                 alg::ProfileSnapshot();
@@ -1635,7 +1971,12 @@ int main(int argc, char **argv) {
 #include "sentryward/development/runner/checkpoint_save.inc"
 #endif
 
+              const auto same_value_writes = std::move(actions.same_value_writes);
               run_values(std::move(actions));
+              if (memory_result.same_value_write_groups.empty()) return std::nullopt;
+              auto failure = SameValueOutcome(eliminated, value_analysis, same_value_writes);
+              if (!failure) monitor.SameValueWritesProven();
+              return failure;
             };
           }
           if (options.trusted_reference) {
@@ -1658,13 +1999,14 @@ int main(int argc, char **argv) {
                       ptx::MaterializeValueAddresses(addresses, semantic_program->values, canonical_addresses);
                     });
                   return std::move(addresses);
-                }));
+                }, kept_verdict ? std::string_view(unit_restart->verdict) : std::string_view()));
+            if (result.contains("same_value_writes")) monitor.SameValueWritesSettled(result);
           }
         }
         result["frontend"] = std::move(metadata);
       }
-      } catch (const alg::UnitClassRestart &) {
-        restart_per_unit();
+      } catch (const alg::UnitClassRestart &restart) {
+        restart_per_unit(restart);
       }
       } // fresh PTX path; checkpoint replay already supplied the checked value inputs
     } catch (const FileError &error) {
@@ -1721,10 +2063,10 @@ int main(int argc, char **argv) {
         if (options.analyze_scalar_fold && eliminated && eliminated->complete) {
           try {
             result["value_analysis"]["scalar_fold"] = AnalyzeScalarFold(*graph, *eliminated, options, monitor, expression,
-                unit_lifting ? &*unit_lifting : nullptr);
-          } catch (const alg::UnitClassRestart &) {
+                unit_lifting ? &*unit_lifting : nullptr, reference ? &compared_outputs : nullptr);
+          } catch (const alg::UnitClassRestart &restart) {
             // A lifting refusal re-runs per unit from execution.
-            restart_per_unit();
+            restart_per_unit(restart);
           }
         }
         std::size_t instances = 0;
@@ -1846,10 +2188,11 @@ int main(int argc, char **argv) {
         context = [&](rg::Arena&, const Json& mapping,
             rg::EquivalenceContext& scope, Json& receipt) {
           std::string input_hash, provenance_hash;
-          const auto input = rg::fixed_input::metadata(options.config, input_hash);
+          const auto input = rg::fixed_input::metadata(options.config, inputs.File(options.config), input_hash);
           if(input.value("shape_arrays",Json::array()).empty())return;
           if (!mapping.contains("provenance") && !options.reference_provenance.empty()) {
-            const auto provenance = rg::fixed_input::metadata(options.reference_provenance, provenance_hash);
+            const auto provenance = rg::fixed_input::metadata(
+                options.reference_provenance, inputs.File(options.reference_provenance), provenance_hash);
             scope.fixed_inputs = rg::fixed_input::decode(input, result, provenance, mapping,
                 input_hash, provenance_hash);
           } else scope.fixed_inputs = rg::fixed_input::decode_binding(input,result,mapping,input_hash,provenance_hash);
@@ -1859,9 +2202,13 @@ int main(int argc, char **argv) {
           receipt = {{"kind","verified_current_fixed_input"},{"input_sha256",input_hash},
                      {"provenance_sha256",provenance_hash},{"elements",scope.fixed_inputs.size()}};
         };
+        AppendTensorPropertyContract(equivalence_mapping, tensor_property_inputs);
         result["equivalence"] = alg::ProfileCall("equivalence.object_comparison", [&] {
           return rg::compareArtifact(std::move(*reference), *expression,
-              std::move(equivalence_mapping), {options.equivalence_timeout, 0}, context).report;
+              std::move(equivalence_mapping),
+              {.seconds = options.equivalence_timeout,
+               .floating_range_premise = effective_assumptions.at("floating_values_in_range")},
+              context).report;
         });
         result["equivalence"]["comparison_elapsed_seconds"] = std::chrono::duration<double>(Clock::now()-started).count();
         result["equivalence"]["transport"] = "in_memory_cpp_objects";
@@ -1883,11 +2230,12 @@ int main(int argc, char **argv) {
       result["verification_status"] = monitor.frontend_checkpoint["verification_status"];
       result["verification_elapsed_seconds"] = monitor.frontend_checkpoint["verification_elapsed_seconds"];
     }
-    if (options.rss_mib && std::max(monitor.peak.load(), monitor.peak_footprint.load()) > *options.rss_mib * 1024 * 1024) {
+    if (monitor.memory_limit_mib &&
+        std::max(monitor.peak.load(), monitor.peak_footprint.load()) > *monitor.memory_limit_mib * 1024 * 1024) {
       Json partial = std::move(result);
       result = {{"schema", "spverify.native-ptx-run/v1"},
                 {"status", "memory_limit_exceeded"},
-                {"resource",{{"kind","memory"},{"origin","configured_budget"},{"limit",*options.rss_mib},{"unit","MiB"}}},
+                {"resource", monitor.MemoryResource(*monitor.memory_limit_mib)},
                 {"message", "Memory budget exceeded (RSS or physical footprint) before final monitor sample"},
                 {"partial_report", std::move(partial)},
                 {"memory_analysis_complete", false},
@@ -1924,6 +2272,21 @@ int main(int argc, char **argv) {
         {"estimated_pool_bytes_sum", record_compression.estimated_owned_bytes}};
     result["pipeline_elapsed_seconds"] = monitor.Elapsed();
     result["semantic_assumptions"] = effective_assumptions;
+    // Floating values stay in range: the equivalence import uses the premise where it drops a range
+    // bound (counter range_premise_bounds_dropped). Unused only when the comparison imported every
+    // output family without a drop; unmeasured (null) when it did not run or stopped early.
+    std::optional<Json> floating_range_used;
+    if (effective_assumptions.at("floating_values_in_range")) {
+      floating_range_used = Json(nullptr);
+      if (const auto equivalence = result.find("equivalence");
+          equivalence != result.end() && equivalence->is_object() && equivalence->contains("counters")) {
+        if (equivalence->at("counters").value("range_premise_bounds_dropped", std::uint64_t{0}) > 0)
+          floating_range_used = Json(true);
+        else if (equivalence->contains("total_output_families") &&
+                 equivalence->value("finished_families", Json()) == equivalence->at("total_output_families"))
+          floating_range_used = Json(false);
+      }
+    }
     if (!result.contains("assumptions")) {
       result["assumptions"] = Json::array();
       for (const auto& entry : alg::AssumptionPool()) {
@@ -1936,10 +2299,15 @@ int main(int argc, char **argv) {
           if (entry.key == "bounded_computation_loops") triggered = facts.value("bounded_loop_uses", 0) > 0;
           if (entry.key == "order_independent_atomics") triggered = facts.value("atomic_uses", 0) > 0;
         }
+        if (entry.key == "floating_values_in_range" && floating_range_used) triggered = *floating_range_used;
         result["assumptions"].push_back({{"label",entry.label},{"key",entry.key},{"text",entry.text},
             {"enabled",effective_assumptions.at(entry.key)},
             {"triggered",triggered}});
       }
+    } else if (floating_range_used && result["assumptions"].is_array()) {
+      // The verification report's list (source_json.cpp RenderReport) saw no comparison.
+      for (auto& entry : result["assumptions"])
+        if (entry.value("key", "") == "floating_values_in_range") entry["triggered"] = *floating_range_used;
     }
     const auto reason = result.value("reason", "");
     if (reason == "branch_not_static" || reason == "missing_parameter_value") {
@@ -1960,6 +2328,7 @@ int main(int argc, char **argv) {
     result["implementation"] = "cpp";
     result["wellsync_timeout_seconds"] = options.sync_timeout;
     result["whole_pipeline_timeout_seconds"] = options.timeout;
+    monitor.RecordUnitRestart(result);
     const auto exit_status = result.value("status", "");
     result = sentryward::results::PublicReport(
         std::move(result), options.extract ? "extraction" : options.semantic ? "semantic_analysis" : "kernel_verification");
@@ -1996,5 +2365,24 @@ int main(int argc, char **argv) {
         {"message",error.what()},{"memory_analysis_complete",false},{"warnings_complete",false}}, "kernel_verification").dump() << '\n';
     std::cerr << "sentryward-ptx: " << error.what() << '\n';
     return parsing_arguments ? 1 : 2;
+  }
+}
+
+// At most two attempts: a class-mode attempt that restarts per unit leaves the
+// call's inputs, its start time and its verdict to the per-unit attempt.
+int main(int argc, char **argv) {
+  CallInputs inputs;
+  std::optional<PerUnitRestart> unit_restart;
+  for (;;) {
+    try {
+      return RunAttempt(argc, argv, inputs, unit_restart);
+    } catch (PerUnitRestart &restart) {
+      unit_restart = std::move(restart);
+#if defined(__GLIBC__)
+      // The class-mode attempt's pages, freed by its unwinding, go back before
+      // the per-unit attempt.
+      malloc_trim(0);
+#endif
+    }
   }
 }

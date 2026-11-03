@@ -7,8 +7,7 @@
     {
       "code": "timeout",
       "details": {
-        "cta_progress": 10,
-        "internal_stage": "value_view_construction",
+        "internal_stage": "verification",
         "resource": {
           "kind": "time",
           "limit": 500.0,
@@ -16,18 +15,17 @@
           "unit": "seconds"
         }
       },
-      "stage": "equivalence"
+      "stage": "synchronization"
     }
   ],
-  "elapsed_seconds": 500.049688172,
+  "elapsed_seconds": 500.087423764,
   "internal": {
-    "active_stage": "semantic_ir.cta10",
+    "active_stage": "verification",
     "equivalence": {
       "diagnostics": [
         {
           "code": "prerequisite_check_not_passed",
           "details": {
-            "cta_progress": 10,
             "prerequisite_checks": {
               "equivalence": "not_run",
               "memory": "not_run",
@@ -37,7 +35,6 @@
               {
                 "code": "timeout",
                 "details": {
-                  "cta_progress": 10,
                   "resource": {
                     "kind": "time",
                     "limit": 500.0,
@@ -45,23 +42,439 @@
                     "unit": "seconds"
                   }
                 },
-                "stage": "value_view_construction"
+                "stage": "verification"
               }
             ],
             "prerequisite_result": "timeout",
             "prerequisite_status": "timeout"
           },
-          "stage": "value_view_construction"
+          "stage": "verification"
         }
       ],
       "prerequisite_status": "timeout",
-      "stage": "semantic_ir.cta10"
+      "stage": "verification"
     },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [
+          {
+            "code": "tma_data_dependent_coordinate",
+            "details": {
+              "cta": 0,
+              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes.L2::cache_hint [%r1934], [%rd653, {%r1935, %r1935, %r1935, %r1936}], [%r1932], %rd652;",
+              "instruction_index": 3869,
+              "location": {
+                "file": "corpus/flashinfer__blackwell_msa__long_prefill_paged_bf16_gqa16_sm100__sm_100a.ptx",
+                "line": 7034
+              },
+              "occurrence": 0,
+              "thread": 480
+            },
+            "message": "TMA tile coordinate %r1936 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+            "stage": "value_lowering"
+          }
+        ],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": false
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 586,
+      "dependency_compression": {
+        "tcgen_commit": {
+          "consumers": 2676,
+          "emitted_references": 15990,
+          "original_references": 776688,
+          "prefix_effects": 2676
+        },
+        "tcgen_load_wait": {
+          "consumers": 171264,
+          "emitted_references": 685056,
+          "original_references": 12606976,
+          "prefix_effects": 0
+        },
+        "tcgen_store_wait": {
+          "consumers": 171264,
+          "emitted_references": 256896,
+          "original_references": 4770432,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 3570590730,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 5841728,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [
+          {
+            "lanes": 327872,
+            "line": 376
+          },
+          {
+            "lanes": 323616,
+            "line": 3331
+          }
+        ],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "shape_input_contract": {
+          "kind": "fixed_read_only",
+          "origin": "shape_arrays",
+          "regions": [
+            {
+              "allocation": "scheduler_metadata",
+              "byte_offset": 0,
+              "bytes": 14064,
+              "resource": "input.arg3.0"
+            },
+            {
+              "allocation": "k2q_row_ptr",
+              "byte_offset": 0,
+              "bytes": 516,
+              "resource": "input.arg4.0"
+            },
+            {
+              "allocation": "cu_seqlens_q",
+              "byte_offset": 0,
+              "bytes": 8,
+              "resource": "input.arg11.0"
+            },
+            {
+              "allocation": "cu_seqlens_k",
+              "byte_offset": 0,
+              "bytes": 8,
+              "resource": "input.arg12.0"
+            },
+            {
+              "allocation": "q_offsets",
+              "byte_offset": 0,
+              "bytes": 8,
+              "resource": "input.arg13.0"
+            },
+            {
+              "allocation": "kv_lens",
+              "byte_offset": 0,
+              "bytes": 4,
+              "resource": "input.arg14.0"
+            }
+          ],
+          "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+        },
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "s32",
+              "object": "k2q_qsplit_indices",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s32",
+              "object": "k2q_qsplit_indices",
+              "property": "upper_bound",
+              "value": 520101887
+            },
+            {
+              "element_type": "s32",
+              "object": "page_table",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s32",
+              "object": "page_table",
+              "property": "upper_bound",
+              "value": 127
+            }
+          ],
+          "regions": [
+            {
+              "allocation": "k2q_qsplit_indices",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg5.0"
+            },
+            {
+              "allocation": "page_table",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg15.0"
+            }
+          ],
+          "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+        },
+        "tensor_property_decisions": [
+          {
+            "lines": [
+              1198,
+              2780,
+              4153,
+              5735
+            ],
+            "object": "k2q_qsplit_indices"
+          }
+        ],
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "scheduler_metadata",
+          "offset": 0,
+          "parameter": "kernel_minimax_sparse_reverse_prefill_paged_bf16_gqa4_qload4_nobar_sm100_param_3",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "k2q_row_ptr",
+          "offset": 0,
+          "parameter": "kernel_minimax_sparse_reverse_prefill_paged_bf16_gqa4_qload4_nobar_sm100_param_4",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "k2q_qsplit_indices",
+          "offset": 0,
+          "parameter": "kernel_minimax_sparse_reverse_prefill_paged_bf16_gqa4_qload4_nobar_sm100_param_5",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "partial_o",
+          "offset": 0,
+          "parameter": "kernel_minimax_sparse_reverse_prefill_paged_bf16_gqa4_qload4_nobar_sm100_param_6",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "partial_scale",
+          "offset": 0,
+          "parameter": "kernel_minimax_sparse_reverse_prefill_paged_bf16_gqa4_qload4_nobar_sm100_param_7",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "partial_lse",
+          "offset": 0,
+          "parameter": "kernel_minimax_sparse_reverse_prefill_paged_bf16_gqa4_qload4_nobar_sm100_param_8",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "partial_temperature_lse",
+          "offset": 0,
+          "parameter": "kernel_minimax_sparse_reverse_prefill_paged_bf16_gqa4_qload4_nobar_sm100_param_9",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "out",
+          "offset": 0,
+          "parameter": "kernel_minimax_sparse_reverse_prefill_paged_bf16_gqa4_qload4_nobar_sm100_param_10",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "cu_seqlens_q",
+          "offset": 0,
+          "parameter": "kernel_minimax_sparse_reverse_prefill_paged_bf16_gqa4_qload4_nobar_sm100_param_11",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "cu_seqlens_k",
+          "offset": 0,
+          "parameter": "kernel_minimax_sparse_reverse_prefill_paged_bf16_gqa4_qload4_nobar_sm100_param_12",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "q_offsets",
+          "offset": 0,
+          "parameter": "kernel_minimax_sparse_reverse_prefill_paged_bf16_gqa4_qload4_nobar_sm100_param_13",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "kv_lens",
+          "offset": 0,
+          "parameter": "kernel_minimax_sparse_reverse_prefill_paged_bf16_gqa4_qload4_nobar_sm100_param_14",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "page_table",
+          "offset": 0,
+          "parameter": "kernel_minimax_sparse_reverse_prefill_paged_bf16_gqa4_qload4_nobar_sm100_param_15",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 57120727,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 10704
+      },
+      "reached_opcodes": {
+        "add.f32": 2103808,
+        "add.f32x2": 134643712,
+        "add.rm.ftz.f32x2": 16830464,
+        "add.s32": 115367310,
+        "add.s64": 28781732,
+        "add.u32": 14726656,
+        "and.b32": 26938912,
+        "bar.sync": 300032,
+        "bar.warp.sync": 300032,
+        "bra": 33226130,
+        "bra.uni": 1264160,
+        "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes": 262976,
+        "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes.L2::cache_hint": 4688,
+        "cvt.rn.bf16x2.f32": 138838016,
+        "cvt.rn.satfinite.e4m3x2.f32": 134217728,
+        "cvt.s64.s32": 8530176,
+        "cvt.u32.u16": 134217728,
+        "cvt.u64.u32": 8544834,
+        "cvta.param.u64": 66916,
+        "cvta.to.global.u64": 12852352,
+        "elect.sync": 5841728,
+        "ex2.approx.ftz.f32": 235626496,
+        "fence.mbarrier_init.release.cluster": 586,
+        "fma.rn.f32": 2097152,
+        "fma.rn.ftz.f32x2": 185135104,
+        "griddepcontrol.launch_dependents": 586,
+        "ld.global.nc.b32": 2512800,
+        "ld.param.b32": 11999296,
+        "ld.param.b64": 10665088,
+        "ld.volatile.shared.b32": 318784,
+        "lg2.approx.ftz.f32": 2097152,
+        "mad.lo.s32": 479104,
+        "mad.lo.s64": 4194304,
+        "max.f32": 591170048,
+        "max.s32": 2122560,
+        "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64": 66916,
+        "mbarrier.arrive.release.cta.shared::cta.b64": 8415232,
+        "mbarrier.init.shared::cta.b64": 13478,
+        "mbarrier.try_wait.parity.acquire.cta.shared::cta.b64": 11117888,
+        "min.f32": 260872192,
+        "min.s32": 2245376,
+        "mov.b32": 112999066,
+        "mov.b64": 768053578,
+        "mov.pred": 4200960,
+        "mov.s32": 67502,
+        "mov.u32": 562560,
+        "mul.f32": 5662336,
+        "mul.lo.s32": 243776,
+        "mul.rn.ftz.f32x2": 134217728,
+        "mul.wide.s32": 666078,
+        "mul.wide.u32": 243776,
+        "neg.f32": 9883264,
+        "neg.s32": 14560,
+        "not.b32": 2103808,
+        "not.pred": 8388608,
+        "or.b32": 68328256,
+        "or.pred": 2103808,
+        "rcp.approx.ftz.f32": 2097152,
+        "ret": 300032,
+        "selp.b32": 4733120,
+        "selp.f32": 6514304,
+        "setmaxnreg.dec.sync.aligned.u32": 150016,
+        "setmaxnreg.inc.sync.aligned.u32": 150016,
+        "setp.eq.b32": 11086720,
+        "setp.eq.f32": 1468032,
+        "setp.ge.s32": 6304768,
+        "setp.ge.u32": 487552,
+        "setp.gt.f32": 4194304,
+        "setp.gt.s32": 251648,
+        "setp.gt.u32": 2103808,
+        "setp.leu.f32": 8415232,
+        "setp.lt.s32": 2306080,
+        "setp.lt.u32": 301248,
+        "setp.ne.b32": 27221888,
+        "shfl.sync.idx.b32": 3981696,
+        "shl.b32": 115692720,
+        "shl.b64": 7422690,
+        "shr.s32": 150016,
+        "shr.u32": 5420512,
+        "st.global.b32": 6291456,
+        "st.global.v4.b32": 16777216,
+        "sub.rn.ftz.f32x2": 33660928,
+        "sub.s32": 1485792,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 18752,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 65744,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 18752,
+        "tcgen05.fence::after_thread_sync": 300032,
+        "tcgen05.ld.sync.aligned.32x32b.x32.b32": 16830464,
+        "tcgen05.mma.cta_group::1.kind::f16": 262976,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 18752,
+        "tcgen05.st.sync.aligned.32x32b.x16.b32": 4207616,
+        "tcgen05.st.sync.aligned.32x32b.x32.b32": 2103808,
+        "tcgen05.wait::ld.sync.aligned": 4207616,
+        "tcgen05.wait::st.sync.aligned": 4207616,
+        "xor.b32": 2629760
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 1031,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 57120727,
+        "stored_bindings": 1887057
+      },
+      "source_edge_storage": {
+        "binding_templates": 87444,
+        "logical_edges": 57086935,
+        "stored_bindings": 87444
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 2676,
+        "operations": 10704
+      },
+      "thread_count": 300032,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "frontend_source_violations": [],
     "implementation": "cpp",
     "memory_analysis_complete": false,
-    "peak_footprint_mib": 54005.55859375
+    "peak_footprint_mib": 25716.53515625
   },
-  "peak_rss_mib": 54005.55859375,
+  "peak_rss_mib": 25716.53515625,
   "resource": {
     "kind": "time",
     "limit": 500.0,
@@ -75,5 +488,6 @@
     "operation": "kernel_verification"
   },
   "timeout_scope": "whole_pipeline",
+  "verification_limitations": [],
   "warnings_complete": false
 }

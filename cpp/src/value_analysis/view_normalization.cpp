@@ -713,7 +713,7 @@ class Normalizer {
       region.offset=add(region.offset,block.result_offset-begin);
       region.bytes=block.bytes;
       // Storage bitcasts preserve these bytes; numeric conversions stay on the value.
-      pieces.push_back({std::move(region),*numeric,output.writer,0});
+      pieces.push_back({std::move(region),*numeric,output.writer,0,{},output.base});
       }
     }
     std::sort(pieces.begin(),pieces.end(),[](const auto& a,const auto& b) {
@@ -790,6 +790,8 @@ class Normalizer {
     std::vector<OutputWrite> outputs;
     outputs.reserve(r.outputs.size());
     for(const auto& output:r.outputs) {
+      // A reduced element keeps its record; the fold combines its contents.
+      if(output.reduced){outputs.push_back(output);continue;}
       if(auto element=compactOutputType(output)) {
         auto typed=output;typed.element_type=*element;
         outputs.push_back(std::move(typed));
@@ -926,11 +928,13 @@ class Normalizer {
     // Physical address order can interleave CTAs (e.g. [row,head,column]).
     // Bucket only the already explicit records; never merge CTA semantics or
     // enumerate an indexed view. Within a bucket, addresses remain sorted.
-    using Bucket=std::pair<std::string,std::optional<std::size_t>>;
+    // A symbolic base is part of the bucket: positions of different bases never form one run.
+    using Bucket=std::tuple<std::string,std::vector<SymbolicAddressTerm>,std::optional<std::size_t>>;
     std::map<Bucket,std::vector<std::size_t>> buckets;
     for(std::size_t i=0;i<r.outputs.size();++i) {
       const auto& output=r.outputs[i];
-      buckets[{output.region.allocation,g.definingNode(output.value).origin().cta}].push_back(i);
+      if(output.reduced)continue;
+      buckets[{output.region.allocation,output.base,g.definingNode(output.value).origin().cta}].push_back(i);
     }
     r.normalized_output_members.assign(r.outputs.size(),false);
     struct Run {
@@ -1031,7 +1035,7 @@ class Normalizer {
             std::vector<std::uint64_t> shape{count},strides{width};
             if(full_rows>1 && stride!=first.bytes) {shape={full_rows,columns};strides={stride,width};}
             const auto offset=add(first.offset,add((at/columns)*stride,column*width));
-            group.domains.push_back({{bucket.first,offset,count*width},first.element,std::move(view),
+            group.domains.push_back({{std::get<0>(bucket),offset,count*width},first.element,std::move(view),
                 std::move(shape),std::move(strides),(at-domain.begin)*width});
             at+=count;left-=count;
           }

@@ -4,7 +4,8 @@
     "allocations": {
       "6:global11:activations": "activations",
       "6:global14:expert_weights": "expert_weights",
-      "6:global13:weight_scales": "weight_scales"
+      "6:global13:weight_scales": "weight_scales",
+      "6:global20:last_row_for_problem": "last_row_for_problem"
     },
     "parameters": {},
     "layouts": {
@@ -57,6 +58,20 @@
         "target_strides_bytes": [
           512,
           2
+        ]
+      },
+      "6:global20:last_row_for_problem": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          4
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
         ]
       }
     }
@@ -65,7 +80,8 @@
     "allocations": {
       "6:global11:activations": "activations",
       "6:global14:expert_weights": "expert_weights",
-      "6:global13:weight_scales": "weight_scales"
+      "6:global13:weight_scales": "weight_scales",
+      "6:global20:last_row_for_problem": "last_row_for_problem"
     },
     "parameters": {},
     "layouts": {
@@ -118,6 +134,20 @@
         "target_strides_bytes": [
           512,
           2
+        ]
+      },
+      "6:global20:last_row_for_problem": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          4
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
         ]
       }
     }
@@ -183,6 +213,11 @@
         "value": {
           "input": "/shape_arrays/0/shapes/3/0"
         }
+      },
+      {
+        "name": "table_last_row_for_problem",
+        "dtype": "int64",
+        "allocation": "6:global20:last_row_for_problem"
       }
     ]
   },

@@ -1,11 +1,14 @@
 #include "sentryward/equivalence/constant_values.h"
 #include "sentryward/equivalence/float_from_chars.h"
+#include "sentryward/equivalence/ieee_bits.h"
 #include <algorithm>
 #include <bit>
 #include <charconv>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 namespace sentryward::equivalence {
@@ -28,29 +31,23 @@ std::optional<Type> typeOf(const std::string& type) {
 }
 std::uint64_t mask(unsigned width) {return width==64?UINT64_MAX:(std::uint64_t(1)<<width)-1;}
 struct Bits { Type type; std::uint64_t bits; };
-struct Binary { bool negative; std::uint64_t significand; int exponent; };
-Binary normalized(Binary value) {
+DyadicValue normalized(DyadicValue value) {
   if(value.significand)while(!(value.significand&1)){value.significand>>=1;++value.exponent;}
   return value;
 }
-std::optional<Binary> binary(Bits value) {
+std::optional<DyadicValue> binary(Bits value) {
   const auto t=value.type;const auto raw=value.bits&mask(t.width);
   // CUDA FP4 E2M1 is finite; UE8M0 is exponent-only (255 is NaN).
-  if(t.encoding==Encoding::UE8M0)return raw==255?std::nullopt:std::optional<Binary>({false,1,int(raw)-127});
+  if(t.encoding==Encoding::UE8M0)return raw==255?std::nullopt:std::optional<DyadicValue>({false,1,int(raw)-127});
   if(t.encoding==Encoding::UE4M3 && (raw&128 || raw==127))return {};
   if(!t.exponent) {
     const bool negative=t.sign && (raw>>(t.width-1));
     return normalized({negative,negative?((~raw+1)&mask(t.width)):raw,0});
   }
-  const auto exponent=(raw>>t.fraction)&mask(t.exponent);
-  if(t.encoding==Encoding::Ieee && exponent==mask(t.exponent))return {};
-  const int bias=(1<<(t.exponent-1))-1;
-  auto significand=raw&mask(t.fraction);
-  if(exponent)significand|=std::uint64_t(1)<<t.fraction;
-  return normalized({bool(raw>>(t.width-1)),significand,
-      (exponent?int(exponent)-bias:1-bias)-int(t.fraction)});
+  if(t.encoding==Encoding::Ieee && ((raw>>t.fraction)&mask(t.exponent))==mask(t.exponent))return {};
+  return normalized(ieeeDyadicValue(raw,t.width,t.fraction));
 }
-std::optional<Bits> encode(Binary value,Type target) {
+std::optional<Bits> encode(DyadicValue value,Type target) {
   value=normalized(value);
   if(!target.exponent)return {};
   if(target.encoding!=Encoding::Ieee) {
@@ -75,6 +72,36 @@ std::optional<Bits> encode(Binary value,Type target) {
   const int shift=value.exponent-(minimum-int(target.fraction));
   if(shift<0 || unsigned(shift)+length>target.fraction)return {};
   return Bits{target,sign|(value.significand<<shift)};
+}
+// IEEE rounding of an exact binary value: keep the bits above the quantum (the last bit of a
+// normal significand, or the fixed subnormal quantum), then round the dropped bits.
+std::optional<Bits> rounded(DyadicValue value,Type target,Rounding mode) {
+  if(target.encoding!=Encoding::Ieee || !target.exponent)return {};
+  const auto sign=value.negative?(std::uint64_t(1)<<(target.width-1)):0;
+  if(!value.significand)return Bits{target,sign};
+  const int fraction=int(target.fraction),bias=(1<<(target.exponent-1))-1,minimum=1-bias;
+  const int highest=int(std::bit_width(value.significand))-1+value.exponent;
+  int quantum=std::max(highest-fraction,minimum-fraction);
+  unsigned __int128 kept=value.significand;
+  if(const int shift=quantum-value.exponent;shift>0) {
+    const unsigned __int128 full=value.significand;
+    const unsigned __int128 rest=shift>=128?full:full-((full>>shift)<<shift);
+    kept=shift>=128?0:full>>shift;
+    if(rest) {
+      bool up=false;
+      if(mode==Rounding::NearestEven && shift<128) {
+        const unsigned __int128 half=static_cast<unsigned __int128>(1)<<(shift-1);
+        up=rest>half || (rest==half && (kept&1));
+      } else if(mode==Rounding::TowardNegative)up=value.negative;
+      else if(mode==Rounding::TowardPositive)up=!value.negative;
+      if(up)++kept;
+    }
+  } else kept<<=-shift;
+  if(kept>>(fraction+1)){kept>>=1;++quantum;}
+  if(!(kept>>fraction))return Bits{target,sign|std::uint64_t(kept)};
+  const int biased=quantum+fraction+bias;
+  if(biased>=(1<<target.exponent)-1)return {};
+  return Bits{target,sign|(std::uint64_t(biased)<<target.fraction)|(std::uint64_t(kept)&mask(target.fraction))};
 }
 std::optional<Bits> parse(const std::string& type,const std::string& literal) {
   const auto spec=typeOf(type);if(!spec || literal.empty())return {};
@@ -163,6 +190,19 @@ std::optional<Bits> convert(Bits value,Type target,const std::string& op) {
     if(magnitude>edge || (!b->negative && magnitude==edge))return {};
   } else if((b->negative && magnitude) || magnitude>mask(target.width))return {};
   return Bits{target,(b->negative?0-magnitude:magnitude)&mask(target.width)};
+}
+// Whether binary32 `name` on finite operands x, rounded to r, may round up to the smallest normal
+// magnitude from an unrounded magnitude below it. There a flush-to-zero result depends on when the
+// hardware detects tininess (before or after rounding), not on the rounded value. A product is exact in
+// binary64; an exact sum or difference below the smallest normal is a subnormal, never rounded up; a
+// quotient or fused result is bounded by its single binary64 rounding (ambiguous when that equals the
+// smallest normal). O(1).
+bool mayRoundUpToNormal(const std::string& name,const float* x,float r) {
+  const double smallest=std::numeric_limits<float>::min();
+  if(std::fabs(double(r))!=smallest || name=="Add" || name=="Subtract")return false;
+  if(name=="Multiply")return std::fabs(double(x[0])*double(x[1]))<smallest;
+  const double wide=name=="Fma"?std::fma(double(x[0]),double(x[1]),double(x[2])):double(x[0])/double(x[1]);
+  return std::fabs(wide)<=smallest;
 }
 }
 std::optional<ConstantValue> constantValue(std::string type,std::string text,
@@ -301,5 +341,43 @@ std::optional<ConstantValue> constantOperation(const std::string& name,const std
     else return {};
   }
   return literal(Bits{*target,result&mask(width)},type);
+}
+std::optional<ConstantValue> ieeeArithmetic(const std::string& name,const std::string& type,
+    std::span<const ConstantValue> operands,bool flush_to_zero) {
+  const bool fma=name=="Fma";
+  if(operands.size()!=(fma?3u:2u) || (!fma && name!="Add" && name!="Subtract" && name!="Multiply" && name!="Divide"))return {};
+  const auto evaluate=[&]<class T,class U>(T,U)->std::optional<ConstantValue> {
+    T x[3]{};
+    for(std::size_t i=0;i<operands.size();++i) {
+      if(operands[i].type!=type)return {};
+      const auto bits=parse(type,operands[i].literal);if(!bits)return {};
+      x[i]=std::bit_cast<T>(static_cast<U>(bits->bits));
+      if(!std::isfinite(x[i]))return {};
+      if(flush_to_zero && std::fpclassify(x[i])==FP_SUBNORMAL)x[i]=std::copysign(T(0),x[i]);
+    }
+    // One IEEE operation per evaluation on already rounded operands: nothing to contract.
+    T r;
+    if(fma)r=std::fma(x[0],x[1],x[2]);
+    else if(name=="Add")r=x[0]+x[1];
+    else if(name=="Subtract")r=x[0]-x[1];
+    else if(name=="Multiply")r=x[0]*x[1];
+    else {if(x[1]==T(0))return {};r=x[0]/x[1];}
+    if(!std::isfinite(r))return {};
+    if constexpr(std::is_same_v<T,float>)
+      if(flush_to_zero && mayRoundUpToNormal(name,x,r))return {};
+    if(flush_to_zero && std::fpclassify(r)==FP_SUBNORMAL)r=std::copysign(T(0),r);
+    return literal(Bits{*typeOf(type),static_cast<std::uint64_t>(std::bit_cast<U>(r))},type);
+  };
+  if(type=="f32")return evaluate(float{},std::uint32_t{});
+  if(type=="f64" && !flush_to_zero)return evaluate(double{},std::uint64_t{});
+  return {};
+}
+std::optional<ConstantValue> roundedConversion(const ConstantValue& value,const std::string& target,
+    Rounding rounding) {
+  const auto spec=typeOf(target);if(!spec)return {};
+  const auto bits=parse(value.type,value.literal);if(!bits)return {};
+  const auto exact=binary(*bits);if(!exact)return {};
+  const auto result=rounded(*exact,*spec,rounding);if(!result)return {};
+  return literal(*result,target);
 }
 }

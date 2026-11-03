@@ -2,6 +2,8 @@
 
 #include "sentryward/frontend/ptx/layouts.h"
 
+#include <algorithm>
+
 namespace sentryward::frontend::ptx {
 namespace {
 // Resource provenance lookup is lane-specific. Restore it for the caller even
@@ -48,7 +50,7 @@ MatrixResolver::MatrixResolver(const CtaFacts &facts)
   }
 }
 std::vector<Fragment>
-MatrixResolver::Resolve(LaneRef current,
+MatrixResolver::Resolve(LaneRef current, std::size_t position,
                         const RecordView &execution,
                         Resources &resources, const nlohmann::json &contract) {
   (void)contract; // Contracts cannot override the instruction's lane mapping.
@@ -56,6 +58,7 @@ MatrixResolver::Resolve(LaneRef current,
     Participation("matrix resources belong to another execution program");
   const auto &instruction =
       facts_.function().instructions.at(execution.instruction_id());
+  std::unique_lock lock(mutex_);
   auto shape_it = shapes_.find(execution.instruction_id());
   if (shape_it == shapes_.end()) {
     try {
@@ -69,7 +72,8 @@ MatrixResolver::Resolve(LaneRef current,
       throw SemanticError("matrix_memory_variant", error.what());
     }
   }
-  const auto &shape = shape_it->second;
+  const auto &shape = shape_it->second; // map nodes are stable and never changed
+  lock.unlock();
   const auto current_lane_id = facts_.LaneId(current);
   if (current_lane_id >= 32)
     Participation("matrix data lane is outside 0..31");
@@ -85,7 +89,13 @@ MatrixResolver::Resolve(LaneRef current,
       execution.ref() == RecordRef{*recorded, occurrence.positions[current_lane_id]} && *recorded == current;
   if (!recorded_here)
     Participation("matrix atom is not its physical lane's recorded occurrence");
-  if (occurrence.rows.empty()) {
+  // Rows an earlier lane resolved (immutable once set); otherwise this lane
+  // resolves them. Concurrent lanes first wait for the earlier lanes of the warp.
+  lock.lock();
+  changed_.wait(lock, [&] { return occurrence.resolved_by < position || !EarlierPending(occurrence, position); });
+  const bool cached = occurrence.resolved_by < position;
+  lock.unlock();
+  if (!cached) {
     for (std::size_t lane = 0; lane < occurrence.lanes.size(); ++lane) {
       if (!occurrence.lanes[lane])
         Participation("aligned matrix memory requires the same occurrence in "
@@ -122,7 +132,12 @@ MatrixResolver::Resolve(LaneRef current,
         rows.push_back(offset);
       }
     }
-    occurrence.rows = std::move(rows);
+    {
+      const std::lock_guard guard(mutex_);
+      if (occurrence.resolved_by == SIZE_MAX) occurrence.rows = std::move(rows);
+      occurrence.resolved_by = std::min(occurrence.resolved_by, position);
+    }
+    changed_.notify_all();
   }
   const auto intervals = MatrixLaneFootprint(shape.count, shape.transpose,
                                              current_lane_id, occurrence.rows);
@@ -135,5 +150,32 @@ MatrixResolver::Resolve(LaneRef current,
     result.emplace_back(resources.interner().Apply(shared, interval.offset),
                         interval.size);
   return result;
+}
+bool MatrixResolver::EarlierPending(const Occurrence &occurrence, std::size_t position) const {
+  if (finished_.empty()) return false; // lanes in order: every earlier lane has ended
+  for (const auto &lane : occurrence.lanes) {
+    if (!lane) continue;
+    const auto other = position_of_.at(lane->index);
+    if (other < position && !finished_[other]) return true;
+  }
+  return false;
+}
+void MatrixResolver::BeginConcurrent(std::span<const std::size_t> order) {
+  const std::lock_guard guard(mutex_);
+  position_of_.assign(facts_.LaneCount(), SIZE_MAX);
+  for (std::size_t position = 0; position < order.size(); ++position) position_of_.at(order[position]) = position;
+  finished_.assign(order.size(), 0);
+}
+void MatrixResolver::Finished(std::size_t position) {
+  {
+    const std::lock_guard guard(mutex_);
+    finished_.at(position) = 1;
+  }
+  changed_.notify_all();
+}
+void MatrixResolver::EndConcurrent() {
+  const std::lock_guard guard(mutex_);
+  position_of_.clear();
+  finished_.clear();
 }
 } // namespace sentryward::frontend::ptx

@@ -63,10 +63,22 @@ struct SourceArtifact final {
   SymbolicSolverOptions address_solver;
 };
 
+// The value stage's verdict on the same-value write obligations of a race-free memory check
+// (MemoryRaceResult::same_value_write_groups) when it did not prove them all: the diagnostic,
+// and the failing write when the value stage compared it. Without it the obligations were not
+// decided. The reported race pairs the failing write with its partner
+// (MemoryRaceResult::same_value_write_partners).
+struct SameValueFailure final {
+  std::string code, message;
+  std::optional<AccessId> write;
+};
+
 // Invoked while the checked program and its certificate are still alive.
 // The finalized verification report (including warnings) is available before
 // the consumer starts numerical work; the string view is valid for this call.
-using VerifiedProgramObserver = std::function<void(
+// With same-value obligations it is the report of their failure (they are not
+// yet proven); the consumer returns nullopt when it proved them all.
+using VerifiedProgramObserver = std::function<std::optional<SameValueFailure>(
     const SourceArtifact&, const PassCertificate&, const MemoryRaceResult&,
     const MemoryAccessRecords&, std::string_view)>;
 
@@ -79,6 +91,11 @@ using MemoryInputProvider = std::function<std::vector<ConstantAddressBinding>()>
 
 // Returns a JSON validation or verification report.
 // Native producers transfer ownership directly; no source JSON is materialized.
+// `established_verdict`: a race-free verified report that already holds for this program (a
+// per-unit re-run keeping its class-mode verdict, run.cpp KeepsVerdict). The program's
+// happens-before certificate is still built (synchronization must pass), but lifecycle, the race
+// search and the frontend value validations are not repeated: `on_verified` receives a complete
+// race-free memory result without findings and the established report, which is returned.
 [[nodiscard]] std::string AnalyzeSourceArtifact(SourceArtifact input,
                                                bool verify = false,
                                                const MemoryRaceOptions& memory = {},
@@ -86,7 +103,8 @@ using MemoryInputProvider = std::function<std::vector<ConstantAddressBinding>()>
                                                ReachabilityOptions reachability = {},
                                                std::optional<double> wellsync_timeout_seconds = std::nullopt,
                                                const VerifiedProgramObserver& on_verified = {},
-                                               const MemoryInputProvider& memory_input = {});
+                                               const MemoryInputProvider& memory_input = {},
+                                               std::string_view established_verdict = {});
 [[nodiscard]] std::string AnalyzeSourceArtifact(std::string_view text,
                                                bool verify = false,
                                                const MemoryRaceOptions& memory = {},

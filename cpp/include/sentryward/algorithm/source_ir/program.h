@@ -5,6 +5,7 @@
 #include <array>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "sentryward/algorithm/base/source_location.h"
@@ -100,6 +101,37 @@ struct SourceRecordCodec {
     }
     return Binding{InstId(fields[0]),ActorId(fields[1]),AddressId(fields[2]),fields[3],std::move(operands)};
   }
+  // base + i*a + j*b, field by field, with the operands rewritten once; nullopt when a final field
+  // is out of range. It agrees with translate(translate(base, a, i), b, j) whenever that succeeds,
+  // and also accepts an out-of-range intermediate translate(base, a, i).
+  static std::optional<Binding> translate(const Binding& base,const Delta& a,std::size_t i,const Delta& b,std::size_t j) {
+    const auto shifted=[&](std::uint32_t value,std::int64_t x,std::int64_t y)->std::optional<std::uint32_t> {
+      const auto result=static_cast<__int128>(value)+static_cast<__int128>(x)*static_cast<__int128>(i)+
+                        static_cast<__int128>(y)*static_cast<__int128>(j);
+      if(result<0 || result>UINT32_MAX)return {};
+      return static_cast<std::uint32_t>(result);
+    };
+    std::array<std::uint32_t,4> fields{base.id.value(),base.actor.value(),base.address.value(),base.occurrence};
+    for(std::size_t k=0;k<fields.size();++k) {
+      const auto value=shifted(fields[k],a[k],b[k]);
+      if(!value)return {};
+      fields[k]=*value;
+    }
+    auto operands=base.operands;
+    const auto moves=[&](const Delta& delta,std::size_t index) {
+      return index && std::any_of(delta.operands.begin(),delta.operands.end(),[](auto step){return step!=0;});
+    };
+    const bool by_a=moves(a,i),by_b=moves(b,j);
+    if((by_a && a.operands.size()!=operands.size()) || (by_b && b.operands.size()!=operands.size()))return {};
+    if(by_a || by_b) {
+      for(std::size_t k=0;k<operands.size();++k)
+        if(!shifted(operands[k],by_a?a.operands[k]:0,by_b?b.operands[k]:0))return {};
+      operands=operands.transformed([&](std::size_t k,std::uint32_t value) {
+        return *shifted(value,by_a?a.operands[k]:0,by_b?b.operands[k]:0);
+      });
+    }
+    return Binding{InstId(fields[0]),ActorId(fields[1]),AddressId(fields[2]),fields[3],std::move(operands)};
+  }
   template<class Visit>
   static void visitOperands(SourceOp& operation, Visit visit) {
     const auto references = [&](auto& refs) { for (auto& ref : refs) visit(ref.instruction); };
@@ -107,6 +139,7 @@ struct SourceRecordCodec {
       if constexpr (requires { op.async_id; }) visit(op.async_id);
       if constexpr (requires { op.source; op.destination; }) { visit(op.source); visit(op.destination); }
       if constexpr (requires { op.state; }) visit(op.state);
+      if constexpr (requires { op.sync_id; }) visit(op.sync_id);
       if constexpr (requires { op.result; }) { if (op.result) visit(*op.result); }
       if constexpr (requires { op.requirements; }) references(op.requirements);
       if constexpr (requires { op.completion_requires; }) references(op.completion_requires);
@@ -141,6 +174,14 @@ struct SourceRecordCodec {
     else if(auto* store=std::get_if<ImmediateStore>(&inst.op))store->address=binding.address;
     std::size_t i = 0;
     visitOperands(inst.op, [&](auto& id) { id = std::remove_reference_t<decltype(id)>(binding.operands.at(i++)); });
+  }
+  // The binding split() returns for bind(prototype, binding) of a split prototype: bind()
+  // ignores the fields the prototype has no slot for and split() clears them.
+  static void normalize(const SourceInstruction& prototype, Binding& binding) {
+    if (!std::holds_alternative<ImmediateLoad>(prototype.op) &&
+        !std::holds_alternative<ImmediateStore>(prototype.op))
+      binding.address = AddressId{};
+    if (!prototype.ptx_origin) binding.occurrence = 0;
   }
   static SharedString opcode(const SourceInstruction& inst) {
     return inst.ptx_origin ? inst.ptx_origin->opcode : SharedString{};
@@ -182,6 +223,36 @@ struct SourceRecordCodec {
   }
 };
 using SourceInstructions=TemplateRecords<SourceInstruction,SourceRecordCodec>;
+
+// The identity fields of one source record, read without reconstructing its operands
+// (the record's at() would copy and rebind every operand). O(log segments).
+struct SourceHeader final {
+  InstId id;
+  ActorId actor;
+  std::size_t operation = 0; // the SourceOp alternative
+  // The PTX instruction index and occurrence, for a record with a PTX origin.
+  std::optional<std::pair<std::uint32_t, std::uint32_t>> origin;
+};
+inline SourceHeader HeaderOf(const SourceInstructions& instructions, std::size_t index) {
+  return instructions.header(index, [](const SourceInstruction& prototype, const SourceRecordCodec::Binding* binding,
+                                       const SourceRecordCodec::Delta* delta, std::size_t member,
+                                       const SourceRecordCodec::Delta* step, std::size_t iteration) {
+    SourceHeader header{prototype.id, prototype.actor, prototype.op.index(), std::nullopt};
+    std::uint32_t occurrence = prototype.ptx_origin ? prototype.ptx_origin->occurrence : 0;
+    if (binding) {
+      // As SourceRecordCodec::translate (member, then iteration repetition), then bind.
+      const auto moved = [&](std::uint32_t base, std::size_t field) {
+        return static_cast<std::uint32_t>(base + (delta ? (*delta)[field] * std::int64_t(member) : 0) +
+                                          (step ? (*step)[field] * std::int64_t(iteration) : 0));
+      };
+      header.id = InstId(moved(binding->id.value(), 0));
+      header.actor = ActorId(moved(binding->actor.value(), 1));
+      occurrence = moved(binding->occurrence, 3);
+    }
+    if (prototype.ptx_origin) header.origin = std::pair{prototype.ptx_origin->instruction_index, occurrence};
+    return header;
+  });
+}
 
 enum class SourceEdgeKind {
   kProgramOrder,
@@ -226,12 +297,26 @@ struct CollectiveSpec final {
                          const CollectiveSpec&) = default;
 };
 
+// A thread that exits instead of arriving at `phase` (and every later phase) of
+// a CTA-wide named barrier: bar.sync, barrier.sync or bar.red without a thread
+// count. The phase cannot complete before the thread exits after `exit`, its
+// terminal instruction. Exits release nothing, so the gate is a scheduling
+// obligation for the well-synchronization checker, never an ordering edge.
+struct ExitGate final {
+  BarrierLifetimeId barrier;
+  std::uint32_t phase;
+  InstId exit;
+
+  friend bool operator==(const ExitGate&, const ExitGate&) = default;
+};
+
 struct SourceProgram final {
   std::vector<ActorInfo> actors = {};
   SourceInstructions instructions = {};
   SourceEdges edges = {};
   std::vector<CollectiveSpec> collectives = {};
   std::vector<EndpointDependency> dependencies = {};
+  std::vector<ExitGate> exit_gates = {};
 
   friend bool operator==(const SourceProgram&, const SourceProgram&) = default;
 };

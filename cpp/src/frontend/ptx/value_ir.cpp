@@ -1,4 +1,5 @@
 #include "sentryward/frontend/ptx/value_ir.h"
+#include "sentryward/algorithm/base/analysis_scope.h"
 #include "sentryward/frontend/ptx/branch_scope_capture.h"
 #include "sentryward/frontend/ptx/address_expression.h"
 #include "sentryward/frontend/ptx/operands.h"
@@ -9,12 +10,13 @@
 #include "sentryward/value_ir/ptx_operation.h"
 #include "sentryward/value_ir/native_matrix.h"
 #include "sentryward/algorithm/diagnostics/memory_profile.h"
+#include "sentryward/equivalence/float_from_chars.h"
 
 #include <algorithm>
 #include <array>
-#include <atomic>
 #include <bit>
 #include <cctype>
+#include <iomanip>
 #include <map>
 #include <regex>
 #include <set>
@@ -82,6 +84,9 @@ struct Expression {
   Type type;
   std::vector<Expression> components;
   std::optional<std::string> missing_definition;
+  // With missing_definition: the register had not been assigned on this thread's path when it was
+  // read, so the value is its unspecified initial one (Unassigned), built once a consumer needs it.
+  std::optional<Key> unassigned;
   Expression(v::Value value, Type type, std::vector<Expression> components = {})
       : value(std::move(value)), type(std::move(type)), components(std::move(components)) {}
 };
@@ -93,6 +98,8 @@ struct FunctionContext {
   std::set<Key> symbols;
   std::map<Key, std::string> symbol_spaces;
   std::map<std::uint32_t, std::uint32_t> loop_ends;
+  // The st.local shapes a lifted region's stores follow (execution.h).
+  LocalRegionStores local_stores;
 
   FunctionContext(const Module&, const Function&);
 };
@@ -201,7 +208,7 @@ public:
         module_(facts.module()), function_(facts.function()), cta_(cta), frame_(frame),
         declarations_(context.declarations), symbols_(context.symbols), symbol_spaces_(context.symbol_spaces),
         loop_ends_(context.loop_ends), source_file_(context.source_file), function_name_(context.function_name),
-        instruction_origins_(context.instruction_origins) {
+        instruction_origins_(context.instruction_origins), local_stores_(context.local_stores) {
     live_ = std::move(live);
     if (!live_->empty()) return;
     live_->assign(facts_.Size(lane_), true);
@@ -221,10 +228,12 @@ public:
       }
       if (!record.opaque_compute_diamond_indices().empty()) {
         // A lifted region assigns its writes on some paths only: they stay needed, and its
-        // reads and guard are needed once any write is.
+        // reads and guard are needed once any write is, or always when it stores to .local memory.
         std::uint8_t used = 0;
         for (const auto& name : record.opaque_compute_register_writes())
           if (auto found = needed.find(Resolve(name, instruction.scope)); found != needed.end()) used |= found->second;
+        for (const auto index : record.opaque_compute_diamond_indices())
+          if (index < function_.instructions.size() && LocalStoreInstruction(function_.instructions[index])) used |= 1;
         (*live_)[cursor] = used;
         if (!used) continue;
         auto reads = record.opaque_compute_register_reads();
@@ -233,17 +242,23 @@ public:
           if (const auto key = Resolve(name, instruction.scope); declarations_.contains(key)) needed[key] |= used;
         continue;
       }
+      // A merged branch's predicate selects the values after its join.
+      if (record.merged_arm_join() && instruction.predicate) {
+        needed[Resolve(*instruction.predicate, instruction.scope)] |= 1;
+        continue;
+      }
       if (instruction.control != "none" && instruction.control != "call") continue;
       const bool pure = instruction.semantics.category == "compute" &&
           !instruction.semantics.memory_effect && instruction.control == "none" &&
-          !In(instruction.opcode, {"shfl", "vote", "mma", "addc", "subc", "madc"}) && !Has(instruction, "cc");
+          !In(instruction.opcode, {"shfl", "vote", "redux", "mma", "addc", "subc", "madc"}) && !Has(instruction, "cc");
       std::uint8_t used=0;
       for(const auto& name:instruction.destinations)
         if(auto found=needed.find(Resolve(name,instruction.scope));found!=needed.end())used|=found->second;
       if (pure && !used) { (*live_)[cursor] = false; continue; }
       const std::uint8_t demand=pure?used:std::uint8_t(used|1);
       (*live_)[cursor]=demand;
-      if (instruction.opcode == "mbarrier") {
+      // mbarrier.inval also writes the object's bytes (MbarrierInvalidate): kept like a store.
+      if (instruction.opcode == "mbarrier" && instruction.semantics.operation != "inval") {
         (*live_)[cursor] = used;
         for (const auto& name : instruction.destinations) needed.erase(Resolve(name, instruction.scope));
         continue;
@@ -287,6 +302,14 @@ public:
     if (child->carry_) rebind(rebind,*child->carry_);
     if (child->shuffle_source_) rebind(rebind,*child->shuffle_source_);
     if (child->shuffle_selector_) rebind(rebind,*child->shuffle_selector_);
+    if (child->merged_) {
+      rebind(rebind,child->merged_->runs);
+      for (auto& [key,value]:child->merged_->before) if (value) rebind(rebind,*value);
+      for (auto& loaded:child->merged_->loads) {
+        loaded.base=graph_.bindThread(loaded.base,cta_,from,to);
+        for (auto& value:loaded.registers) rebind(rebind,value);
+      }
+    }
     return child;
   }
   std::vector<std::vector<LaneRef>> Partition() const;
@@ -300,7 +323,7 @@ public:
   unsigned demand_depth = 0;
   bool Step();
   [[nodiscard]] bool Done() const { return cursor_ >= facts_.Size(lane_); }
-  void Abandon() { Fail("unresolved_cross_thread_value", "Cross-thread operand has no matching extracted occurrence"); Invalidate(); shuffle_source_.reset(); shuffle_selector_.reset(); matrix_pending_ = false; warp_mma_pending_ = false; vote_pending_ = false; ++cursor_; }
+  void Abandon() { Fail("unresolved_cross_thread_value", "Cross-thread operand has no matching extracted occurrence"); Invalidate(); shuffle_source_.reset(); shuffle_selector_.reset(); matrix_pending_ = false; warp_mma_pending_ = false; reduction_pending_ = false; ++cursor_; }
 
 
 private:
@@ -336,7 +359,10 @@ private:
                                       const std::vector<std::pair<std::uint32_t, std::uint32_t>>& sources);
   bool MatrixMemory();
   bool WarpMma();
-  bool Vote();
+  // vote.sync and redux.sync: a combination of every membermask lane's operand.
+  bool LaneReduction();
+  // RunCollective's diagnostic code for the LaneReduction at instruction_.
+  const char* LaneReductionCode() const { return instruction_->opcode == "redux" ? "unsupported_redux" : "unsupported_vote"; }
   // One Step of a collective: false while `run` waits for its peers; otherwise
   // a thrown exception is reported as `code`, `pending` clears and the cursor
   // advances.
@@ -350,6 +376,11 @@ private:
 
   Key Resolve(std::string_view name, const Scope &scope) const;
   std::optional<Expression> Operand(std::string text, const Type &type, bool defer_missing = false);
+  // The value of declared register `key` before any instruction on this thread's path assigns it.
+  Expression Unassigned(const Key& key);
+  // `key`'s value on this thread's path: its binding, else its unspecified initial value while no
+  // instruction on the path has assigned it (Unassigned); none for an invalidated or undeclared register.
+  std::optional<Expression> CurrentValue(const Key& key);
   std::optional<Expression> Address(std::string text);
   std::optional<Expression> Bits(Expression expression);
   std::optional<Expression> Part(Expression expression, const Type& type, std::uint32_t bit);
@@ -361,12 +392,38 @@ private:
   void InstructionValue();
   // The opaque compute region of record_ (instruction_ is its branch), if-converted.
   bool LiftRegion();
+  // select(condition, value, other), the alternatives met in one type; `value` itself when both
+  // are the same value; none when a multi-component alternative has no bit form.
+  std::optional<Expression> Choose(const Expression& condition, const Expression& value, const Expression& other);
+  // The merged one-armed diamond being read (execution.cpp, two-arm merge): every thread ran its
+  // fall-through arm, which runs exactly when `runs` holds. A register the arm writes keeps its
+  // value from before the arm (`before`) and becomes select(runs, with the arm, without it) at the
+  // join. A tcgen05.st in the arm stores select(runs, data, the cells' current values); those are
+  // the registers of a tcgen05.ld of the same cells in the arm since its last tcgen05.st (`loads`).
+  struct MergedArmValues {
+    std::uint32_t branch, join;
+    Expression runs;
+    std::map<Key, std::optional<Expression>> before;
+    struct TmemLoad {
+      std::string address;
+      v::Value base;
+      std::vector<Expression> registers;
+    };
+    std::vector<TmemLoad> loads;
+  };
+  std::optional<MergedArmValues> merged_;
+  // At the first record outside the arm: the selects of the arm's registers.
+  void FinishMergedArm();
   void Compute();
   void Memory();
   void AsyncCopy();
   void BulkCopy();
+  void BulkReduce();
+  std::optional<v::Value> LinearBulkEndpoint(unsigned operand, std::uint64_t size, const std::string& space,
+                                             bool cluster_source);
   void Tma();
   void TensorMap();
+  void MbarrierInvalidate();
   // A bracketed operand's address in `space` ("shared" or "global"), plus `extra` bytes.
   std::optional<v::Value> SpaceAddress(std::string_view operand, std::string_view space,
                                        std::optional<Expression> extra);
@@ -410,12 +467,13 @@ private:
   const std::map<std::uint32_t, std::uint32_t>& loop_ends_;
   const algorithm::SharedString &source_file_, &function_name_;
   const std::vector<v::SourceOrigin>& instruction_origins_;
+  const LocalRegionStores& local_stores_;
   std::optional<Expression> shuffle_source_, shuffle_selector_;
   std::uint32_t shuffle_from_ = 0;
   bool shuffle_valid_ = false;
   bool matrix_pending_ = false;
   bool warp_mma_pending_ = false;
-  bool vote_pending_ = false;
+  bool reduction_pending_ = false;
   // Inside LiftRegion: record_ is the region's branch, whose known registers predate the region.
   bool lifting_ = false;
 public:
@@ -448,7 +506,7 @@ public:
 // on a fact or on a published value.
 struct PartitionKinds {
   bool tensor=false, bulk=false, copy=false, mma=false, matrix=false, shuffle=false, election=false,
-       allocation=false, tc_mma=false, parameter=false, vote=false;
+       allocation=false, tc_mma=false, parameter=false, reduction=false;
 };
 PartitionKinds PartitionKindsOf(const Instruction& i) {
   PartitionKinds kind;
@@ -462,7 +520,7 @@ PartitionKinds PartitionKindsOf(const Instruction& i) {
   kind.allocation=i.opcode=="tcgen05" && Has(i,"alloc");
   kind.tc_mma=i.opcode=="tcgen05" && Has(i,"mma");
   kind.parameter=i.opcode=="ld" && Has(i,"param");
-  kind.vote=i.opcode=="vote";
+  kind.reduction=In(i.opcode,{"vote","redux"});
   return kind;
 }
 
@@ -512,14 +570,14 @@ std::optional<PartitionSpec> BuildPartitionSpec(const Module& module, const Inst
   // leader's); source validity and producers are per-member parts of the read.
   if (kind.shuffle)
     for (unsigned operand=2;operand<5;++operand) if (!tokens(operand)) return spec;
-  if (kind.vote) tokens(2);
+  if (kind.reduction) tokens(2);
   return spec;
 }
 
 const PartitionSpec* ValueTemplateExtractor::PartitionRule(const Instruction& i) const {
   // Only an opcode some rule can whitelist gets an entry (the cache stays
   // sparse); its flags and rule are computed once per function.
-  if (!In(i.opcode,{"cp","ld","mma","ldmatrix","stmatrix","shfl","elect","tcgen05","vote"})) return nullptr;
+  if (!In(i.opcode,{"cp","ld","mma","ldmatrix","stmatrix","shfl","elect","tcgen05","vote","redux"})) return nullptr;
   if (!partition_specs) throw std::logic_error("Partition without the value view's rule cache");
   auto& rules=partition_specs->rules;
   auto found=rules.find(i.id);
@@ -527,7 +585,7 @@ const PartitionSpec* ValueTemplateExtractor::PartitionRule(const Instruction& i)
     std::unique_ptr<const PartitionSpec> rule;
     const auto kind=PartitionKindsOf(i);
     if (kind.bulk || kind.copy || kind.mma || kind.matrix || kind.shuffle || kind.election || kind.allocation ||
-        kind.tc_mma || kind.parameter || kind.vote)
+        kind.tc_mma || kind.parameter || kind.reduction)
       if (auto spec=BuildPartitionSpec(module_,i,kind)) rule=std::make_unique<const PartitionSpec>(std::move(*spec));
     found=rules.emplace(i.id,std::move(rule)).first;
   }
@@ -586,7 +644,7 @@ std::vector<std::vector<LaneRef>> ValueTemplateExtractor::Partition() const {
 }
 
 FunctionContext::FunctionContext(const Module& module, const Function& function)
-    : source_file(module.source_name), function_name(function.name) {
+    : source_file(module.source_name), function_name(function.name), local_stores(module, function) {
   instruction_origins.reserve(function.instructions.size());
   for (const auto& instruction : function.instructions) {
     auto& origin = instruction_origins.emplace_back();
@@ -719,6 +777,16 @@ std::optional<Expression> ValueTemplateExtractor::Special(std::string text) {
   }
   if (text == "%cluster_ctarank")
     return Expression{Add(std::make_unique<v::CoordinateOp>(v::CoordinateKind::ClusterRank), {}, origin_).result(), U32()};
+  // %clusterid = %ctaid / %cluster_nctaid per axis (ConfigForCta; the grid holds whole clusters): a coordinate
+  // expression like %ctaid, not the CTA's own constant, so a unit's value view does not depend on its unit.
+  if (text.starts_with("%clusterid.") && text.size() == 12 && std::string("xyz").find(text.back()) < 3) {
+    const auto axis = std::string("xyz").find(text.back());
+    Expression block{Add(std::make_unique<v::CoordinateOp>(v::CoordinateKind::BlockIndex, static_cast<v::Axis>(axis)), {}, origin_).result(), U32()};
+    const auto width = frame_.cluster_dim()[axis];
+    if (width == 1) return block;
+    auto divisor = Constant(U32(), std::to_string(width));
+    return Expression{Add(std::make_unique<v::BinaryOp>(v::BinaryOpcode::Divide, U32().value), {block.value, divisor.value}, origin_).result(), U32()};
+  }
   if (text == "%laneid" || text == "%warpid") {
     auto thread = LinearThread(), width = Constant(U32(), std::to_string(facts_.launch().warp_size()));
     return Expression{Add(std::make_unique<v::BinaryOp>(text == "%laneid" ? v::BinaryOpcode::Remainder : v::BinaryOpcode::Divide, U32().value),
@@ -734,6 +802,7 @@ std::optional<Expression> ValueTemplateExtractor::Special(std::string text) {
   return {};
 }
 std::optional<Expression> ValueTemplateExtractor::Bits(Expression expression) {
+  if (expression.unassigned) expression = Unassigned(*expression.unassigned);
   if (expression.missing_definition) { Fail("missing_definition",*expression.missing_definition); return {}; }
   const auto bits = expression.type.value.bitSize();
   auto integer = PtxType("u" + std::to_string(bits));
@@ -788,6 +857,7 @@ std::optional<Expression> ValueTemplateExtractor::Part(Expression expression, co
   return Reinterpret(*bits, type);
 }
 std::optional<Expression> ValueTemplateExtractor::Reinterpret(Expression expression, const Type &type) {
+  if (expression.unassigned) expression = Unassigned(*expression.unassigned);
   if (expression.missing_definition) { Fail("missing_definition",*expression.missing_definition); return {}; }
   if (!expression.components.empty() && type.value.isScalar()) {
     auto bits = Bits(expression);
@@ -877,9 +947,23 @@ v::NodeUse ValueTemplateExtractor::Operation(std::string name, std::string attri
   } else if (op == "cvt") {
     // PTX rni/rzi/rmi/rpi round a floating result to an integral value;
     // ordinary conversion rounding modes are not equivalent.
-    check_modifiers({"rn", "rz", "rm", "rp", "rna", "ftz", "sat", "satfinite"});
+    // https://docs.nvidia.com/cuda/parallel-thread-execution/#data-movement-and-conversion-instructions-cvt
+    // .relu (here on f16/bf16 results; a packed cvt arrives per component) clamps a negative
+    // result to 0 and makes a NaN result the canonical NaN: max.NaN(result, +0.0), since max
+    // orders +0.0 above -0.0.
+    const bool relu = Has(i, "relu") && In(results[0].spelling, {"f16", "bf16"});
+    if (relu) check_modifiers({"rn", "rz", "rm", "rp", "rna", "ftz", "sat", "satfinite", "relu"});
+    else check_modifiers({"rn", "rz", "rm", "rp", "rna", "ftz", "sat", "satfinite"});
     operation = std::make_unique<v::ConvertOp>(results[0].value,
         v::ConversionAttributes{arithmetic.rounding, arithmetic.saturate, arithmetic.flush_to_zero, Has(i, "satfinite")});
+    if (relu) {
+      const auto converted = Add(std::move(operation), std::move(values), origin_).result();
+      const auto zero = Add(std::make_unique<v::ConstantOp>(results[0].value, "0"), {}, origin_).result();
+      v::ArithmeticAttributes clamp;
+      clamp.propagate_nan = true;
+      return Add(std::make_unique<v::BinaryOp>(v::BinaryOpcode::Maximum, results[0].value, clamp),
+                 {converted, zero}, origin_);
+    }
   } else if (op == "fma") {
     check_modifiers({"rn", "rz", "rm", "rp", "ftz", "sat"});
     operation = std::make_unique<v::FmaOp>(results[0].value, arithmetic);
@@ -935,6 +1019,24 @@ std::optional<Expression> ValueTemplateExtractor::Operand(std::string text, cons
   // Preserve PTX hexadecimal floating encodings verbatim; no host float roundtrip.
   static const std::regex floating_bits("0([fF][0-9a-fA-F]{8}|[dD][0-9a-fA-F]{16})");
   if (std::regex_match(text, floating_bits)) return Constant(type, text);
+  // A decimal floating literal is a double, converted to the type at its use (PTX ISA 4.5.2). The
+  // ISA states no rounding for that conversion, so a value .f32 cannot hold exactly is refused.
+  static const std::regex floating_decimal("-?(([0-9]+\\.[0-9]*|\\.[0-9]+)([eE][+-]?[0-9]+)?|[0-9]+[eE][+-]?[0-9]+)");
+  if (In(type.spelling, {"f32", "f64"}) && std::regex_match(text, floating_decimal)) {
+    double value = 0;
+    const auto parsed = sentryward::equivalence::floatFromChars(text.data(), text.data() + text.size(), value);
+    const auto single = static_cast<float>(value);
+    if (parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size() ||
+        (type.spelling == "f32" && static_cast<double>(single) != value)) {
+      Fail("inexact_floating_constant", "Decimal floating constant '" + text + "' has no exact " + type.spelling + " value");
+      return {};
+    }
+    std::ostringstream bits;
+    bits << std::hex << std::setfill('0');
+    if (type.spelling == "f64") bits << "0d" << std::setw(16) << std::bit_cast<std::uint64_t>(value);
+    else bits << "0f" << std::setw(8) << std::bit_cast<std::uint32_t>(single);
+    return Constant(type, bits.str());
+  }
   const auto key = Resolve(text, instruction_->scope);
   if (demand_mode && declarations_.contains(key)) return DemandOperand(text, type);
   if (auto found = registers_.find(key); found != registers_.end()) return found->second;
@@ -969,14 +1071,44 @@ std::optional<Expression> ValueTemplateExtractor::Operand(std::string text, cons
         registers_.emplace(key, result);
         return result;
       }
+  // Neither bound nor invalidated: no instruction on this thread's path has assigned the register.
+  const bool unassigned = declarations_.contains(key) && !invalidated_.contains(key);
+  if (unassigned && !defer_missing) return Unassigned(key);
   const auto message="No recorded definition for operand '" + text + "' in scope " + ScopeText(key.first);
   if (defer_missing && declarations_.contains(key)) {
     Expression result{{},declarations_.at(key)};
     result.missing_definition=message;
+    if (unassigned) result.unassigned=key;
     return result;
   }
   Fail("missing_definition", message);
   return {};
+}
+// A .reg variable has no initializer (PTX ISA 5.4.4: only .const and .global variables are
+// initialized), so a read before any assignment sees a value PTX does not specify. It is one
+// OpaqueValue of the declared type: no evaluator gives it a value, so equivalence must hold for
+// every value it may take. The node is a thread template, one instance per member thread, so each
+// thread's value is its own. It is bound while the register is unassigned, so later reads see the
+// same value; a deferred read materialized after an assignment gets its own, independent value.
+Expression ValueTemplateExtractor::Unassigned(const Key& key) {
+  const auto provenance = "unassigned register " + key.second + " in scope " + ScopeText(key.first);
+  if (const auto bound = registers_.find(key); bound != registers_.end() && !bound->second.missing_definition &&
+      bound->second.components.empty()) {
+    const auto& held = bound->second.value;
+    const auto* opaque = dynamic_cast<const v::OpaqueValueOp*>(&graph_.definingNode(held).operation());
+    if (opaque && opaque->provenance() == provenance && !held.pointer() && !held.conversion() &&
+        held.indices().empty() && !held.threadSelector())
+      return bound->second;
+  }
+  const auto& type = declarations_.at(key);
+  Expression value{Add(std::make_unique<v::OpaqueValueOp>(type.value, provenance), {}, origin_).result(), type};
+  if (!registers_.contains(key) && !invalidated_.contains(key)) registers_.emplace(key, value);
+  return value;
+}
+std::optional<Expression> ValueTemplateExtractor::CurrentValue(const Key& key) {
+  if (const auto found = registers_.find(key); found != registers_.end()) return found->second;
+  if (declarations_.contains(key) && !invalidated_.contains(key)) return Unassigned(key);
+  return std::nullopt;
 }
 std::optional<Expression> ValueTemplateExtractor::Address(std::string text) {
   text = Trim(text);
@@ -1300,33 +1432,62 @@ bool ValueTemplateExtractor::WarpMma() {
   return true;
 }
 
-// vote.sync.{ballot.b32,any.pred,all.pred,uni.pred} d, {!}a, membermask: each
-// member lane publishes its predicate as for shfl; once every lane of the
-// membermask has published, each member reads lane j's predicate as an idx
-// shuffle from lane j (selector (thread & ~31) | j) and combines them.
+// vote.sync.{ballot.b32,any.pred,all.pred,uni.pred} d, {!}a, membermask and
+// redux.sync.op.type d, a, membermask: each member lane publishes its operand as
+// for shfl; once every lane of the membermask has published, each member reads
+// lane j's operand as an idx shuffle from lane j (selector (thread & ~31) | j) and
+// combines them. A lane that never publishes leaves its readers unresolved.
 // Partition keys the members by the membermask's value (BuildPartitionSpec); the
 // sources, from whichever cohorts published them, are one SourceValue.
-bool ValueTemplateExtractor::Vote() {
+// redux.sync (https://docs.nvidia.com/cuda/parallel-thread-execution/#parallel-synchronization-and-communication-instructions-redux-sync)
+// "performs a reduction operation .op of the 32 bit source register src across all
+// non-exited threads in the membermask"; "For the .add operation result is truncated
+// to 32 bits" (the type's wrapping Add). For .f32, "+0.0 > -0.0", .abs reduces the
+// inputs' absolute values, and with .NaN "the result of the reduction operation is
+// canonical NaN if the input to the reduction operation from any participating thread
+// is NaN": exactly min.NaN/max.NaN (propagate_nan), associative and commutative on that
+// order, so a balanced tree over the lanes is exact; a single lane is reduced with
+// itself, which makes its NaN canonical. Without .NaN "the result will be canonical NaN
+// when all inputs are NaNs", which plain Minimum/Maximum do not state: refused.
+bool ValueTemplateExtractor::LaneReduction() {
   const auto& i = *instruction_;
-  const auto mode = i.modifiers.size() == 3 ? i.modifiers[1] : std::string();
-  const bool ballot = mode == "ballot";
-  if (i.operands.size() != 3 || i.modifiers.size() != 3 || i.modifiers[0] != "sync" ||
-      !In(mode, {"ballot", "any", "all", "uni"}) || i.modifiers[2] != (ballot ? "b32" : "pred"))
+  const bool redux = i.opcode == "redux";
+  const auto mode = i.modifiers.size() >= 3 ? i.modifiers[1] : std::string();
+  const bool ballot = !redux && mode == "ballot";
+  std::optional<Type> type;
+  bool absolute = false, propagate_nan = false;
+  if (redux) {
+    std::size_t at = 2;
+    if (at < i.modifiers.size() && i.modifiers[at] == "abs") { absolute = true; ++at; }
+    if (at < i.modifiers.size() && i.modifiers[at] == "NaN") { propagate_nan = true; ++at; }
+    const auto spelling = at + 1 == i.modifiers.size() ? i.modifiers[at] : std::string();
+    const bool floating = spelling == "f32";
+    if (i.operands.size() != 3 || i.modifiers.empty() || i.modifiers[0] != "sync" ||
+        !((In(mode, {"add", "min", "max"}) && In(spelling, {"u32", "s32"})) ||
+          (In(mode, {"and", "or", "xor"}) && spelling == "b32") || (In(mode, {"min", "max"}) && floating)) ||
+        (!floating && (absolute || propagate_nan)))
+      throw std::invalid_argument("Unsupported redux form");
+    if (floating && !propagate_nan)
+      throw std::invalid_argument("redux .f32 without .NaN has no exact value model (canonical NaN when every input is NaN)");
+    type = PtxType(spelling);
+  } else if (i.operands.size() != 3 || i.modifiers.size() != 3 || i.modifiers[0] != "sync" ||
+             !In(mode, {"ballot", "any", "all", "uni"}) || i.modifiers[2] != (ballot ? "b32" : "pred"))
     throw std::invalid_argument("Unsupported vote form");
   const auto raw = Known(std::string(module_.view(i.operands[2])));
   if (!raw || *raw < -(Integer(1) << 31) || *raw > UINT32_MAX || !(*raw & 0xffffffff))
-    throw std::invalid_argument("Vote membermask is invalid or not statically determined");
+    throw std::invalid_argument(std::string(redux ? "Redux" : "Vote") + " membermask is invalid or not statically determined");
   const auto mask = (*raw & 0xffffffff).convert_to<std::uint32_t>();
-  if (!vote_pending_) {
-    auto predicate = Operand(std::string(module_.view(i.operands[1])), Pred());
-    if (!predicate) { Invalidate(); return true; }
+  if (!reduction_pending_) {
+    auto operand = Operand(std::string(module_.view(i.operands[1])), type ? *type : Pred());
+    if (operand && type) operand = Reinterpret(*operand, *type);
+    if (!operand) { Invalidate(); return true; }
     for (const auto member:members) {
       const auto lane = facts_.LaneId(member);
       if (lane >= 32 || !(mask & (std::uint32_t{1} << lane)))
-        throw std::invalid_argument("Vote issuer is outside the membermask");
-      shuffle_values->insert_or_assign(ShuffleKey{facts_.Warp(member),i.id,record_->occurrence(),lane,origin_.unroll_context},*predicate);
+        throw std::invalid_argument(std::string(redux ? "Redux" : "Vote") + " issuer is outside the membermask");
+      shuffle_values->insert_or_assign(ShuffleKey{facts_.Warp(member),i.id,record_->occurrence(),lane,origin_.unroll_context},*operand);
     }
-    vote_pending_ = true;
+    reduction_pending_ = true;
     ++publications;
     return false;
   }
@@ -1344,25 +1505,47 @@ bool ValueTemplateExtractor::Vote() {
   };
   const auto warp_base = binary(v::BinaryOpcode::BitAnd, U32(), LinearThread().value, Constant(U32(), std::to_string(~31u)).value);
   std::optional<v::Value> any, all, none;
+  std::vector<v::Value> lanes;
   for (unsigned lane = 0; lane < 32; ++lane) {
     if (!(mask & (std::uint32_t{1} << lane))) continue;
     const auto selector = binary(v::BinaryOpcode::BitOr, U32(), warp_base, Constant(U32(), std::to_string(lane)).value);
-    const auto predicate = graph_.fromThread(*base, selector);
+    const auto value = graph_.fromThread(*base, selector);
+    if (redux) { lanes.push_back(value); continue; }
     if (ballot) {
-      const auto bit = Add(std::make_unique<v::SelectOp>(U32().value), {predicate,
+      const auto bit = Add(std::make_unique<v::SelectOp>(U32().value), {value,
           Constant(U32(), std::to_string(std::uint32_t{1} << lane)).value, Constant(U32(), "0").value}, origin_).result();
       any = any ? binary(v::BinaryOpcode::BitOr, U32(), *any, bit) : bit;
       continue;
     }
-    any = any ? binary(v::BinaryOpcode::BitOr, Pred(), *any, predicate) : predicate;
-    all = all ? binary(v::BinaryOpcode::BitAnd, Pred(), *all, predicate) : predicate;
+    any = any ? binary(v::BinaryOpcode::BitOr, Pred(), *any, value) : value;
+    all = all ? binary(v::BinaryOpcode::BitAnd, Pred(), *all, value) : value;
     if (mode == "uni") {
-      const auto negated = Add(std::make_unique<v::UnaryOp>(v::UnaryOpcode::BitNot, Pred().value), {predicate}, origin_).result();
+      const auto negated = Add(std::make_unique<v::UnaryOp>(v::UnaryOpcode::BitNot, Pred().value), {value}, origin_).result();
       none = none ? binary(v::BinaryOpcode::BitAnd, Pred(), *none, negated) : negated;
     }
   }
   const auto destination = Trim(module_.view(i.operands[0]));
-  if (ballot) {
+  if (redux) {
+    const auto opcode = mode == "add" ? v::BinaryOpcode::Add : mode == "min" ? v::BinaryOpcode::Minimum :
+        mode == "max" ? v::BinaryOpcode::Maximum : mode == "and" ? v::BinaryOpcode::BitAnd :
+        mode == "or" ? v::BinaryOpcode::BitOr : v::BinaryOpcode::BitXor;
+    v::ArithmeticAttributes attributes;
+    attributes.propagate_nan = propagate_nan;
+    if (absolute)
+      for (auto& value : lanes)
+        value = Add(std::make_unique<v::UnaryOp>(v::UnaryOpcode::Absolute, type->value), {value}, origin_).result();
+    if (lanes.size() == 1 && propagate_nan) lanes.push_back(lanes.front());
+    // Pairs of adjacent lanes, then pairs of those results: log2 of the lane count levels.
+    while (lanes.size() > 1) {
+      std::vector<v::Value> level;
+      for (std::size_t k = 0; k + 1 < lanes.size(); k += 2)
+        level.push_back(Add(std::make_unique<v::BinaryOp>(opcode, type->value, attributes),
+                            {lanes[k], lanes[k + 1]}, origin_).result());
+      if (lanes.size() % 2) level.push_back(lanes.back());
+      lanes = std::move(level);
+    }
+    Bind(destination, Expression{lanes.front(), *type});
+  } else if (ballot) {
     auto result = Reinterpret(Expression{*any, U32()}, *PtxType("b32"));
     if (!result) { Invalidate(); return true; }
     Bind(destination, *result);
@@ -1401,8 +1584,9 @@ bool ValueTemplateExtractor::Step() {
                    : facts_.ViewPrototypeCopy(current_record_, {lane_, cursor_});
   }
   const auto record = *record_;
+  if (merged_ && (record.instruction_id() <= merged_->branch || record.instruction_id() >= merged_->join)) FinishMergedArm();
   if (warp_mma_pending_) return RunCollective(&ValueTemplateExtractor::WarpMma, "unsupported_warp_mma", warp_mma_pending_);
-  if (vote_pending_) return RunCollective(&ValueTemplateExtractor::Vote, "unsupported_vote", vote_pending_);
+  if (reduction_pending_) return RunCollective(&ValueTemplateExtractor::LaneReduction, LaneReductionCode(), reduction_pending_);
   if (matrix_pending_) return RunCollective(&ValueTemplateExtractor::MatrixMemory, "unsupported_matrix_memory", matrix_pending_);
   if (shuffle_source_) {
     if (!Shuffle()) return false;
@@ -1433,9 +1617,19 @@ bool ValueTemplateExtractor::Step() {
     origin_.executed = record.predicate_value().value_or(true);
     const auto reached_group = graph_.observeOccurrence(origin_);
     if (!(*live_)[cursor_]) { ++cursor_; return true; }
-    if (record.merged_arm_join())
-      Fail("two_arm_merge_values", "Execution merged an unresolved one-armed diamond (every thread ran the fall-through arm); "
-           "values after its join are not exported");
+    if (const auto join = record.merged_arm_join()) {
+      // The arm runs when the branch is not taken.
+      std::optional<Expression> runs;
+      if (instruction_->predicate) {
+        runs = Operand(*instruction_->predicate, Pred());
+        if (runs) runs = Reinterpret(*runs, Pred());
+        if (runs && !instruction_->predicate_negated)
+          runs = Expression{Operation("ptx.not", "not.pred", {Pred()}, {*runs}).result(), Pred()};
+      }
+      if (runs) merged_.emplace(MergedArmValues{instruction_->id, *join, *runs, {}, {}});
+      else Fail("two_arm_merge_values", "The predicate of a merged one-armed diamond has no value");
+      ++cursor_; return true;
+    }
     if (!record.opaque_compute_diamond_indices().empty()) {
       const auto branch = instruction_;
       const auto origin = origin_;
@@ -1505,14 +1699,48 @@ bool ValueTemplateExtractor::Step() {
       } catch (const std::exception& error) { Fail("unsupported_shuffle", error.what()); Invalidate(); }
       shuffle_source_.reset(); shuffle_selector_.reset(); ++cursor_; return true;
     }
-    if (instruction_->opcode == "vote" && shuffle_values && !demand_mode)
-      return RunCollective(&ValueTemplateExtractor::Vote, "unsupported_vote", vote_pending_);
+    if (In(instruction_->opcode, {"vote", "redux"}) && shuffle_values && !demand_mode)
+      return RunCollective(&ValueTemplateExtractor::LaneReduction, LaneReductionCode(), reduction_pending_);
+    if (merged_)
+      for (const auto& name : instruction_->destinations)
+        if (name != "_")
+          if (const auto key = Resolve(name, instruction_->scope); !merged_->before.contains(key))
+            merged_->before.emplace(key, CurrentValue(key));
     try { InstructionValue(); }
     catch (const std::invalid_argument &error) {
       Fail("invalid_value_operation", error.what()); Invalidate();
     }
   }
   ++cursor_; return true;
+}
+void ValueTemplateExtractor::FinishMergedArm() {
+  const auto arm = std::move(*merged_);
+  merged_.reset();
+  for (const auto& [key, prior] : arm.before) {
+    const auto found = registers_.find(key);
+    if (found == registers_.end()) continue;
+    if (const auto merged = prior ? Choose(arm.runs, found->second, *prior) : std::nullopt) found->second = *merged;
+    else { registers_.erase(found); invalidated_.insert(key); }
+  }
+}
+std::optional<Expression> ValueTemplateExtractor::Choose(const Expression& condition, const Expression& value,
+                                                         const Expression& other) {
+  const bool scalar = value.components.empty() && other.components.empty() && !value.missing_definition &&
+      !other.missing_definition;
+  if (scalar && value.value == other.value) return value;
+  auto updated = scalar ? std::optional<Expression>(value) : Bits(value);
+  auto previous = scalar ? std::optional<Expression>(other) : Bits(other);
+  // The alternatives meet in the typed one of the two (b32 and f32 meet in f32).
+  if (updated && previous && previous->type.value != updated->type.value) {
+    if (updated->type.value.element().kind() == v::ElementKind::Bit) updated = Reinterpret(*updated, previous->type);
+    else previous = Reinterpret(*previous, updated->type);
+  }
+  if (!updated || !previous) return {};
+  auto selected = Add(std::make_unique<v::SelectOp>(updated->type.value),
+      {condition.value, updated->value, previous->value}, origin_).result();
+  if (const auto& pointer = updated->value.pointer(); pointer && previous->value.pointer() && *pointer == *previous->value.pointer())
+    selected = graph_.asPointer(selected, *pointer);
+  return Expression{selected, updated->type};
 }
 // Execution skipped the region from a forward branch to its join on an unresolved predicate;
 // every edge inside is forward. One program-order pass gives each instruction its path: the
@@ -1542,24 +1770,6 @@ bool ValueTemplateExtractor::LiftRegion() {
   std::map<std::tuple<Key, std::size_t, GuardPath>, std::optional<Expression>> values;
   std::size_t splits = 0;
   bool limited = false;
-  const auto choose = [&](const Expression& condition, const Expression& value, const Expression& other) -> std::optional<Expression> {
-    const bool scalar = value.components.empty() && other.components.empty() && !value.missing_definition &&
-        !other.missing_definition;
-    if (scalar && value.value == other.value) return value;
-    auto updated = scalar ? std::optional<Expression>(value) : Bits(value);
-    auto previous = scalar ? std::optional<Expression>(other) : Bits(other);
-    // The alternatives meet in the typed one of the two (b32 and f32 meet in f32).
-    if (updated && previous && previous->type.value != updated->type.value) {
-      if (updated->type.value.element().kind() == v::ElementKind::Bit) updated = Reinterpret(*updated, previous->type);
-      else previous = Reinterpret(*previous, updated->type);
-    }
-    if (!updated || !previous) return {};
-    auto selected = Add(std::make_unique<v::SelectOp>(updated->type.value),
-        {condition.value, updated->value, previous->value}, origin_).result();
-    if (const auto& pointer = updated->value.pointer(); pointer && previous->value.pointer() && *pointer == *previous->value.pointer())
-      selected = graph_.asPointer(selected, *pointer);
-    return Expression{selected, updated->type};
-  };
   // `key` on a nonempty `path` after its first `count` assignments: the last assignment that
   // covers the path, the earlier value where it is disjoint, else a select on the first guard
   // the path leaves open (the region's own branch structure, gated-SSA form).
@@ -1575,7 +1785,7 @@ bool ValueTemplateExtractor::LiftRegion() {
     if (!open || ++splits > kLiftedValueSplits) { limited = true; return {}; }
     const auto taken = self(self, key, entry, count, Conjoin(path, {*open, true}));
     const auto other = taken ? self(self, key, entry, count, Conjoin(path, {*open, false})) : std::nullopt;
-    const auto result = other ? choose(guards.at(*open), *taken, *other) : std::nullopt;
+    const auto result = other ? Choose(guards.at(*open), *taken, *other) : std::nullopt;
     return values.emplace(cached, result).first->second;
   };
   // A nonempty path's value of `key` (lifted), or a refusal.
@@ -1606,6 +1816,95 @@ bool ValueTemplateExtractor::LiftRegion() {
            refuse("lifted_region_path_limit", "A path of the lifted region exceeds " + std::to_string(kLiftedPathTerms) +
                   " guard terms");
   };
+  // A st.local the executor proved (LocalRegionStore): its path, byte offset and data. After the
+  // walk every element slot j of the array is read once, takes each store in program order as
+  // select(offset == (j - c) * e, component c, the slot) under the gated form of the store's path,
+  // and is written once: the one read and one write of the array lowering records for the region.
+  // O(stores x components x slots) nodes.
+  struct LocalStoreEffect {
+    const Instruction* instruction;
+    const LocalRegionStore* store;
+    GuardPath path;
+    Expression offset;
+    std::vector<Expression> data;
+  };
+  std::vector<LocalStoreEffect> local_effects;
+  const auto store_local = [&](const Instruction& instruction, const GuardPath& executed) {
+    const auto* store = local_stores_.Shape(instruction.id);
+    std::optional<Type> type;
+    for (const auto& modifier : instruction.modifiers)
+      if (auto parsed = PtxType(modifier)) type = *parsed;
+    auto text = Trim(module_.view(instruction.operands.at(1)));
+    if (text.starts_with('{') && text.ends_with('}')) text = text.substr(1, text.size() - 2);
+    const auto parts = Split(text, ',');
+    const auto* first = local_effects.empty() ? store : local_effects.front().store;
+    if (!store || !type || type->elements != 1 || parts.size() != store->components ||
+        type->bits != 8 * store->element_bytes || first->declaration.resource != store->declaration.resource ||
+        first->element_bytes != store->element_bytes)
+      return refuse("lifted_region_local_store", "The st.local inside the lifted region has no element-slot shape of "
+                    "the region's one .local array");
+    const auto diagnostics = diagnostics_.size();
+    const auto failed = [&] {
+      if (diagnostics_.size() == diagnostics)
+        refuse("lifted_region_local_store", "The st.local inside the lifted region has no value for its offset or data");
+      return false;
+    };
+    const auto u64 = U64();
+    auto offset = Constant(u64, Integer(store->offset & ((Integer(1) << 64) - 1)).convert_to<std::string>());
+    for (const auto& term : store->index_terms) {
+      const auto key = Resolve(term, instruction.scope);
+      auto part = lifted.contains(key) ? read(key, executed, term) : Operand(term, u64);
+      if (part) part = Reinterpret(*part, u64);
+      if (!part) return failed();
+      offset = {Add(std::make_unique<v::BinaryOp>(v::BinaryOpcode::Add, u64.value), {offset.value, part->value}, origin_).result(), u64};
+    }
+    std::vector<Expression> data;
+    for (const auto& part : parts) {
+      auto component = Operand(Trim(part), *type);
+      if (component && type->value.isScalar() && type->value.element().isBitLike() &&
+          component->type.value.bitSize() > type->value.bitSize())
+        component = Part(*component, *type, 0);
+      if (component) component = Reinterpret(*component, *type);
+      if (!component) return failed();
+      data.push_back(*component);
+    }
+    local_effects.push_back({&instruction, store, executed, offset, std::move(data)});
+    return true;
+  };
+  const auto apply_local = [&]() {
+    const auto& array = *local_effects.front().store;
+    instruction_ = local_effects.front().instruction;
+    const auto type = local_effects.front().data.front().type;
+    const auto bytes = array.element_bytes;
+    for (std::uint64_t slot = 0; slot < array.Slots(); ++slot) {
+      auto address = Address("[" + array.declaration.name + "+" + std::to_string(slot * bytes) + "]");
+      if (!address) return false;
+      Expression current{Add(std::make_unique<v::LoadOp>(type.value), {address->value}, origin_).result(), type};
+      for (std::size_t n = 0; n < local_effects.size(); ++n) {
+        const auto& effect = local_effects[n];
+        for (unsigned component = 0; component < effect.store->components && component <= slot; ++component) {
+          const auto target = Constant(U64(), std::to_string((slot - component) * bytes));
+          const auto hit = Add(std::make_unique<v::CompareOp>(v::ComparePredicate::Equal, Pred().value),
+                               {effect.offset.value, target.value}, origin_).result();
+          auto data = Reinterpret(effect.data[component], type);
+          if (!data) return false;
+          const Expression updated{Add(std::make_unique<v::SelectOp>(type.value), {hit, data->value, current.value}, origin_).result(),
+                                   type};
+          const Lifted entry{current, {{effect.path, updated}}};
+          const Key key{effect.instruction->scope, "local-slot:" + std::to_string(n) + ':' + std::to_string(component) +
+                                                   ':' + std::to_string(slot)};
+          auto next = value(value, key, entry, 1, GuardPath{GuardTerm{}});
+          if (next) next = Reinterpret(*next, type);
+          if (!next)
+            return limited ? refuse("lifted_region_path_limit", "A path or value of the lifted region exceeds its size limit")
+                           : refuse("lifted_region_local_store", "A slot of the region's .local array has no merged value");
+          current = *next;
+        }
+      }
+      Add(std::make_unique<v::StoreOp>(), {address->value, current.value}, origin_);
+    }
+    return true;
+  };
   if (!guard(branch, GuardPath{GuardTerm{}}) ||
       !flow(*branch.branch_target, GuardPath{GuardTerm{GuardLiteral{branch.id, !branch.predicate_negated}}}) ||
       !flow(branch.id + 1, GuardPath{GuardTerm{GuardLiteral{branch.id, branch.predicate_negated}}}))
@@ -1635,11 +1934,13 @@ bool ValueTemplateExtractor::LiftRegion() {
     const auto& semantics = instruction.semantics;
     const bool parameter = semantics.category == "memory" && In(instruction.opcode, {"ld", "ldu"}) &&
         semantics.memory_space == "param";
-    if (semantics.category == "memory" && !parameter)
+    const bool local_store = LocalStoreInstruction(instruction);
+    if (semantics.category == "memory" && !parameter && !local_store)
       return refuse("lifted_region_memory_access", "'" + instruction.opcode + "' inside the lifted region has no recorded "
-                    "memory access; only parameter reads are lowered");
+                    "memory access; only parameter reads and .local stores are lowered");
     // Warp-level operations read other lanes or the active mask, which the region's paths do not determine.
-    if (!parameter && (semantics.category != "compute" || semantics.memory_effect || WarpLevelOpcode(instruction.opcode)))
+    if (!parameter && !local_store &&
+        (semantics.category != "compute" || semantics.memory_effect || WarpLevelOpcode(instruction.opcode)))
       return refuse("lifted_region_unsupported_instruction", "'" + instruction.opcode + "' inside the lifted region is not "
                     "per-thread register computation");
     if (Has(instruction, "cc") || In(instruction.opcode, {"addc", "subc", "madc"}))
@@ -1667,14 +1968,12 @@ bool ValueTemplateExtractor::LiftRegion() {
     for (const auto& name : instruction.destinations)
       if (name != "_") {
         const auto key = Resolve(name, instruction.scope);
-        if (!lifted.contains(key)) {
-          const auto prior = registers_.find(key);
-          lifted[key].prior = prior == registers_.end() ? std::nullopt : std::optional<Expression>(prior->second);
-        }
+        if (!lifted.contains(key)) lifted[key].prior = CurrentValue(key);
         written.push_back(key);
       }
     const auto diagnostics = diagnostics_.size();
-    InstructionValue();
+    if (local_store) { if (!store_local(instruction, executed)) return false; }
+    else InstructionValue();
     std::vector<std::optional<Expression>> results;
     for (const auto& key : written) {
       const auto found = registers_.find(key);
@@ -1688,6 +1987,7 @@ bool ValueTemplateExtractor::LiftRegion() {
       lifted.at(written[n]).assignments.push_back({executed, *results[n]});
     }
   }
+  if (!local_effects.empty() && !apply_local()) return false;
   for (const auto& [key, entry] : lifted) {
     const auto result = value(value, key, entry, entry.assignments.size(), GuardPath{GuardTerm{}});
     if (limited) return refuse("lifted_region_path_limit", "A path or value of the lifted region exceeds its size limit");
@@ -1697,6 +1997,7 @@ bool ValueTemplateExtractor::LiftRegion() {
 }
 void ValueTemplateExtractor::InstructionValue() {
   const auto &i = *instruction_;
+  if (i.opcode == "cp" && Has(i, "reduce") && Has(i, "bulk") && !Has(i, "tensor")) { BulkReduce(); return; }
   if (i.semantics.atomic_add) {
     Fail("atomic_add_value_semantics_unsupported", "Atomic add numerical semantics are unsupported");
     Invalidate(); return;
@@ -1779,8 +2080,9 @@ void ValueTemplateExtractor::InstructionValue() {
     Memory(); return;
   }
   if (i.opcode == "cp" && i.semantics.operation == "copy") { AsyncCopy(); return; }
-  if (i.opcode == "cp" && i.semantics.operation == "bulk_complete_tx") { BulkCopy(); return; }
+  if (i.opcode == "cp" && In(i.semantics.operation, {"bulk_complete_tx", "bulk_copy"})) { BulkCopy(); return; }
   if (i.opcode == "tensormap") { TensorMap(); return; }
+  if (i.opcode == "mbarrier" && i.semantics.operation == "inval") { MbarrierInvalidate(); return; }
   if (i.semantics.category == "compute") { Compute(); return; }
   if (i.semantics.memory_effect || !i.destinations.empty() || !i.semantics.modeled) {
     Fail("unsupported_operation", "No value-IR model for '" + i.opcode + "' (including its memory effects/results)");
@@ -1960,10 +2262,13 @@ void ValueTemplateExtractor::Compute() {
     // The reference conversion (cuda_fp8.hpp, __nv_cvt_float_to_e8m0 and __nv_cvt_bfloat16raw_to_e8m0):
     // .rz keeps the biased exponent field and ignores the sign, so zero and subnormals give 0 (2^-127)
     // and NaN or infinity give 0xFF (NaN); .satfinite turns an infinity into 0xFE. Source a fills the
-    // upper byte. .rp (round the magnitude up to a power of two) has no model here.
+    // upper byte. .rp rounds |x| up to bf16 (an f32 NaN becomes 0x7FFF; __internal_float_to_bf16raw_ru),
+    // then increments the exponent field when the bf16 mantissa is nonzero and 2^-127 < |x| < infinity;
+    // .satfinite then turns a non-NaN 0xFF into 0xFE. (.relu is not defined for .ue8m0x2.)
     const bool f32 = source_type.spelling == "f32" && operands.size() == 2;
-    if (!Has(i, "rz") || Has(i, "relu") || !(f32 || (source_type.spelling == "bf16x2" && operands.size() == 1))) {
-      Fail("unsupported_ue8m0_conversion", "Only cvt.rz{.satfinite}.ue8m0x2 from .f32 or .bf16x2 has an exact value model");
+    const bool up = Has(i, "rp");
+    if (!(Has(i, "rz") || up) || Has(i, "relu") || !(f32 || (source_type.spelling == "bf16x2" && operands.size() == 1))) {
+      Fail("unsupported_ue8m0_conversion", "Only cvt.{rz,rp}{.satfinite}.ue8m0x2 from .f32 or .bf16x2 has an exact value model");
       Invalidate(); return;
     }
     std::vector<Expression> sources;
@@ -1983,15 +2288,52 @@ void ValueTemplateExtractor::Compute() {
         return Expression{Add(std::make_unique<v::BinaryOp>(opcode, type.value), {a.value, b.value}, origin_).result(), type};
       };
       const bool wide = type.bits == 32;
-      auto exponent = binary(v::BinaryOpcode::BitAnd, binary(v::BinaryOpcode::ShiftRight, *bits, Constant(U32(), wide ? "23" : "7")),
-                             Constant(type, "255"));
-      if (Has(i, "satfinite")) {
-        const auto infinity = Expression{Add(std::make_unique<v::CompareOp>(v::ComparePredicate::Equal, Pred().value),
-            {binary(v::BinaryOpcode::BitAnd, *bits, Constant(type, wide ? "2147483647" : "32767")).value,
-             Constant(type, wide ? "2139095040" : "32640").value}, origin_).result(), Pred()};
-        exponent = Expression{Add(std::make_unique<v::SelectOp>(type.value),
-            {infinity.value, Constant(type, "254").value, exponent.value}, origin_).result(), type};
-      }
+      const auto compare = [&](v::ComparePredicate predicate, const Expression &a, const char *b) {
+        return Expression{Add(std::make_unique<v::CompareOp>(predicate, Pred().value),
+                              {a.value, Constant(type, b).value}, origin_).result(), Pred()};
+      };
+      const auto select = [&](const Expression &condition, const Expression &a, const Expression &b) {
+        return Expression{Add(std::make_unique<v::SelectOp>(type.value),
+                              {condition.value, a.value, b.value}, origin_).result(), type};
+      };
+      // .rp: the bf16 pattern of |x| rounded up (an f32 source; a bf16 source is that pattern),
+      // then its exponent field plus one when the mantissa is nonzero and 0x40 < |pattern| < 0x7F80.
+      const auto rounded_up = [&] {
+        const auto one = Constant(type, "1"), zero = Constant(type, "0");
+        auto half = *bits;
+        if (wide) {
+          const auto magnitude = binary(v::BinaryOpcode::BitAnd, *bits, Constant(type, "2147483647"));
+          const auto carry = select(compare(v::ComparePredicate::Less, magnitude, "2139095040"),
+              select(compare(v::ComparePredicate::NotEqual, binary(v::BinaryOpcode::BitAnd, magnitude, Constant(type, "65535")), "0"),
+                     one, zero), zero);
+          half = select(compare(v::ComparePredicate::Greater, magnitude, "2139095040"), Constant(type, "32767"),
+                        binary(v::BinaryOpcode::Add, binary(v::BinaryOpcode::ShiftRight, magnitude, Constant(U32(), "16")), carry));
+        }
+        const auto field = binary(v::BinaryOpcode::BitAnd, half, Constant(type, "32767"));
+        const auto increment = select(compare(v::ComparePredicate::NotEqual, binary(v::BinaryOpcode::BitAnd, half, Constant(type, "127")), "0"),
+            select(compare(v::ComparePredicate::Greater, field, "64"),
+                   select(compare(v::ComparePredicate::Less, field, "32640"), one, zero), zero), zero);
+        auto exponent = binary(v::BinaryOpcode::Add, binary(v::BinaryOpcode::BitAnd,
+            binary(v::BinaryOpcode::ShiftRight, half, Constant(U32(), "7")), Constant(type, "255")), increment);
+        if (Has(i, "satfinite"))
+          exponent = select(compare(v::ComparePredicate::Equal, exponent, "255"),
+                            select(compare(v::ComparePredicate::LessEqual, field, "32640"), Constant(type, "254"), exponent),
+                            exponent);
+        return exponent;
+      };
+      const auto toward_zero = [&] {
+        auto exponent = binary(v::BinaryOpcode::BitAnd, binary(v::BinaryOpcode::ShiftRight, *bits, Constant(U32(), wide ? "23" : "7")),
+                               Constant(type, "255"));
+        if (Has(i, "satfinite")) {
+          const auto infinity = Expression{Add(std::make_unique<v::CompareOp>(v::ComparePredicate::Equal, Pred().value),
+              {binary(v::BinaryOpcode::BitAnd, *bits, Constant(type, wide ? "2147483647" : "32767")).value,
+               Constant(type, wide ? "2139095040" : "32640").value}, origin_).result(), Pred()};
+          exponent = Expression{Add(std::make_unique<v::SelectOp>(type.value),
+              {infinity.value, Constant(type, "254").value, exponent.value}, origin_).result(), type};
+        }
+        return exponent;
+      };
+      const auto exponent = up ? rounded_up() : toward_zero();
       auto byte = Part(exponent, element, 0);
       if (!byte) { Invalidate(); return; }
       packed.components.push_back(*byte);
@@ -2252,18 +2594,22 @@ void ValueTemplateExtractor::BulkCopy() {
   const auto& i = *instruction_;
   std::vector<std::string> spaces;
   std::set<std::string> seen;
+  // A load completes on an mbarrier; a store (shared::cta to global) through bulk async-groups.
+  const bool store = i.semantics.operation == "bulk_copy";
   for (const auto& modifier : i.modifiers) {
     if (!In(modifier, {"async", "bulk", "weak", "shared::cta", "shared::cluster", "global",
-                       "mbarrier::complete_tx::bytes", "L2::cache_hint"}) || !seen.insert(modifier).second) {
+                       store ? "bulk_group" : "mbarrier::complete_tx::bytes", "L2::cache_hint"}) ||
+        !seen.insert(modifier).second) {
       Fail("unsupported_bulk_copy", "Unsupported linear bulk-copy modifier"); return;
     }
     if (In(modifier, {"shared::cta", "shared::cluster", "global"})) spaces.push_back(modifier);
   }
   if (spaces.size() != 2 ||
-      !((In(spaces[0], {"shared::cta", "shared::cluster"}) && spaces[1] == "global") ||
-        (spaces[0] == "shared::cluster" && spaces[1] == "shared::cta")) ||
-      (Has(i, "L2::cache_hint") && spaces[1] != "global") ||
-      i.operands.size() != (Has(i, "L2::cache_hint") ? 5u : 4u)) {
+      !(store ? spaces[0] == "global" && spaces[1] == "shared::cta" && Has(i, "bulk_group")
+              : (In(spaces[0], {"shared::cta", "shared::cluster"}) && spaces[1] == "global") ||
+                (spaces[0] == "shared::cluster" && spaces[1] == "shared::cta")) ||
+      (Has(i, "L2::cache_hint") && !store && spaces[1] != "global") ||
+      i.operands.size() != (Has(i, "L2::cache_hint") ? 1u : 0u) + (store ? 3u : 4u)) {
     Fail("unsupported_bulk_copy", "Unsupported linear bulk-copy operands or spaces"); return;
   }
   const auto bytes = Known(Trim(module_.view(i.operands[2])));
@@ -2271,30 +2617,80 @@ void ValueTemplateExtractor::BulkCopy() {
     Fail("unsupported_bulk_copy", "Bulk-copy byte count must be a positive constant multiple of 16"); return;
   }
   const auto size = bytes->convert_to<std::uint64_t>();
-  const auto endpoint = [&](unsigned index) -> std::optional<v::Value> {
-    auto text = Trim(module_.view(i.operands[index]));
-    if (!text.starts_with('[') || !text.ends_with(']')) return {};
-    if (resources) {
-      resources->SetLane(lane_);
-      const auto fragment = resources->Memory(*record_, MemoryRequest(text.substr(1, text.size()-2),
-                                             nlohmann::json::object(), size, spaces[index]));
-      const auto& binding = resources->Binding(fragment.first);
-      if (fragment.second == size && binding.expression.empty() && binding.alias_scope.empty())
-        return SlotAddressValue(binding);
-    }
-    if (spaces[1] == "shared::cta") return {};
-    auto address = Address(text);
-    if (!address) return {};
-    return index == 0 ? graph_.asPointer(address->value, {"", "shared", cta_, {}}) :
-                        graph_.asPointer(address->value, {"", "global", {}, {}});
-  };
-  const auto destination = endpoint(0), source = endpoint(1);
+  const bool cluster = spaces[0] == "shared::cluster" && spaces[1] == "shared::cta";
+  const auto destination = LinearBulkEndpoint(0, size, spaces[0], cluster),
+             source = LinearBulkEndpoint(1, size, spaces[1], cluster);
   if (!destination || !source) {
     Fail("unsupported_bulk_copy", "Bulk-copy endpoint requires a resolved allocation and byte range"); return;
   }
   const auto type = v::ValueType::matrix(v::ElementType::bit(8), {size});
   auto data = Add(std::make_unique<v::LoadOp>(type), {*source}, origin_).result();
   Add(std::make_unique<v::StoreOp>(), {*destination, data}, origin_);
+}
+
+// The address of a linear bulk operand (`[...]` of `size` bytes in `space`): the slot value
+// of its resolved constant binding, else the operand as a pointer of that space. A shared::cluster
+// to shared::cta copy has no pointer fallback.
+std::optional<v::Value> ValueTemplateExtractor::LinearBulkEndpoint(unsigned operand, std::uint64_t size,
+                                                                   const std::string& space, bool cluster_source) {
+  const auto& i = *instruction_;
+  auto text = Trim(module_.view(i.operands[operand]));
+  if (!text.starts_with('[') || !text.ends_with(']')) return {};
+  if (resources) {
+    resources->SetLane(lane_);
+    const auto fragment = resources->Memory(*record_, MemoryRequest(text.substr(1, text.size()-2),
+                                           nlohmann::json::object(), size, space));
+    const auto& binding = resources->Binding(fragment.first);
+    if (fragment.second == size && binding.expression.empty() && binding.alias_scope.empty())
+      return SlotAddressValue(binding);
+  }
+  if (cluster_source) return {};
+  auto address = Address(text);
+  if (!address) return {};
+  return space == "global" ? graph_.asPointer(address->value, {"", "global", {}, {}}) :
+                             graph_.asPointer(address->value, {"", "shared", cta_, {}});
+}
+
+// cp.reduce.async.bulk[.relaxed.scope].global.shared::cta.bulk_group[.L2::cache_hint].{add,min,max}.type
+// [dst], [src], size: each element of the shared payload combines into the global element at the same
+// offset; completion through bulk async-groups (PTX ISA, cp.reduce.async.bulk). The synchronization side
+// models each element as an atomic read-modify-write (lowering.cpp bulk_reduce). Value: a Load of the
+// payload as elements of the reduction type, then a reduction Store (MemoryAttributes::reduction).
+// add on f32 (ideal-real, order-free) and on u32/s32/u64 (modulo 2^w); min/max on u32/s32/u64/s64.
+void ValueTemplateExtractor::BulkReduce() {
+  const auto& i = *instruction_;
+  std::optional<std::string> operation, element;
+  std::vector<std::string> spaces;
+  std::set<std::string> seen;
+  for (const auto& modifier : i.modifiers) {
+    if (!seen.insert(modifier).second) { Fail("reduction_operation_unsupported", "Repeated bulk-reduction modifier"); return; }
+    if (In(modifier, {"reduce", "async", "bulk", "bulk_group", "L2::cache_hint", "relaxed", "gpu", "sys"})) continue;
+    if (In(modifier, {"global", "shared::cta"})) { spaces.push_back(modifier); continue; }
+    if (!operation && In(modifier, {"add", "min", "max"})) { operation = modifier; continue; }
+    if (!element && In(modifier, {"f32", "u32", "s32", "u64", "s64"})) { element = modifier; continue; }
+    Fail("reduction_operation_unsupported", "Unsupported bulk-reduction operation, type or modifier"); return;
+  }
+  if (!operation || !element || spaces != std::vector<std::string>{"global", "shared::cta"} ||
+      (*operation == "add" && *element == "s64") || (*operation != "add" && *element == "f32") ||
+      i.operands.size() != (Has(i, "L2::cache_hint") ? 4u : 3u)) {
+    Fail("reduction_operation_unsupported", "Unsupported bulk-reduction operation, type or operands"); return;
+  }
+  const auto type = PtxType(*element);
+  const auto bytes = Known(Trim(module_.view(i.operands[2])));
+  if (!type || !bytes || *bytes <= 0 || *bytes > UINT32_MAX || *bytes % 16 != 0) {
+    Fail("reduction_operation_unsupported", "Bulk-reduction byte count must be a positive constant multiple of 16"); return;
+  }
+  const auto size = bytes->convert_to<std::uint64_t>();
+  const auto destination = LinearBulkEndpoint(0, size, "global", false),
+             source = LinearBulkEndpoint(1, size, "shared::cta", false);
+  if (!destination || !source) {
+    Fail("reduction_operation_unsupported", "Bulk-reduction endpoint requires a resolved allocation and byte range"); return;
+  }
+  const auto payload = v::ValueType::matrix(type->value.element(), {size / (type->bits / 8)});
+  auto data = Add(std::make_unique<v::LoadOp>(payload), {*source}, origin_).result();
+  v::MemoryAttributes attributes;
+  attributes.reduction = v::MemoryAttributes::Reduction{*operation, type->value.element()};
+  Add(std::make_unique<v::StoreOp>(std::move(attributes)), {*destination, data}, origin_);
 }
 
 std::optional<v::Value> ValueTemplateExtractor::SpaceAddress(std::string_view operand, std::string_view space,
@@ -2376,6 +2772,25 @@ void ValueTemplateExtractor::TensorMap() {
   Fail("unsupported_tensormap", "Unsupported tensormap operation"); Invalidate();
 }
 
+// mbarrier.inval ends the object's lifetime; its location may then serve another purpose (PTX ISA,
+// mbarrier.inval), so its 8 bytes are unspecified afterwards. Lowering records the same 8-byte
+// shared write (ImmediateStore); here the written value is opaque. Generic addressing is not placed.
+void ValueTemplateExtractor::MbarrierInvalidate() {
+  const auto& i = *instruction_;
+  constexpr std::uint64_t kBytes = 8;
+  const auto type = v::ValueType::matrix(v::ElementType::bit(8), {kBytes});
+  const bool shared = i.modifiers == std::vector<std::string>{"inval", "shared", "b64"} ||
+      i.modifiers == std::vector<std::string>{"inval", "shared::cta", "b64"};
+  const auto target = shared && i.operands.size() == 1 ?
+      SpaceAddress(module_.view(i.operands[0]), "shared", std::nullopt) : std::nullopt;
+  if (!target) {
+    Fail("unsupported_mbarrier_invalidation", "mbarrier.inval needs a .shared::cta address of the object");
+    Invalidate(); return;
+  }
+  const auto opaque = Add(std::make_unique<v::OpaqueValueOp>(type, "mbarrier.inval"), {}, origin_).result();
+  Add(std::make_unique<v::StoreOp>(), {*target, opaque}, origin_);
+}
+
 void ValueTemplateExtractor::AsyncCopy() {
   const auto &i = *instruction_;
   if (i.operands.size() < 3 || i.operands.size() > 4 ||
@@ -2399,6 +2814,11 @@ void ValueTemplateExtractor::AsyncCopy() {
         }
         source_bytes = *source_bytes != 0 ? std::optional<Integer>(Integer(0)) : bytes;
       }
+      // The destination would be select(src-size > 0, loaded, 0) per byte; not modeled.
+      if (!source_bytes) {
+        Fail("unsupported_async_copy", "cp.async source size or ignore-source is data-dependent; "
+             "its zero-filled destination is not modeled in the value analysis"); return;
+      }
     }
   }
   if (!bytes || !source_bytes || (*bytes != 4 && *bytes != 8 && *bytes != 16) || *source_bytes < 0 || *source_bytes > *bytes) {
@@ -2411,7 +2831,6 @@ void ValueTemplateExtractor::AsyncCopy() {
   if (source) source->value = graph_.asPointer(source->value, {"", "global", {}, {}});
   const auto count = bytes->convert_to<std::uint32_t>();
   const auto valid_count = source_bytes->convert_to<std::uint32_t>();
-  const auto byte_type = *PtxType("b8");
   // A cp.async has one contiguous source payload, not unrelated byte reads.
   // Keep that payload identity so wider numerical consumers can select its
   // components even when the global address contains a dynamic page index.
@@ -2420,16 +2839,18 @@ void ValueTemplateExtractor::AsyncCopy() {
     const auto data=Add(std::make_unique<v::LoadOp>(type),{source->value},origin_).result();
     Add(std::make_unique<v::StoreOp>(),{destination->value,data},origin_);
   }
-  // The ISA source-size operand specifies an exact zero-filled suffix.
-  // At most sixteen bytes; no source read is issued for these bytes.
-  for (std::uint32_t n = valid_count; n < count; ++n) {
-    auto address_at = [&](Expression base) {
-      if (!n) return base;
-      auto offset = Constant(base.type, std::to_string(n));
-      return Expression{Operation("ptx.address_add", "", {base.type}, {base, offset}).result(), base.type};
-    };
-    auto value = Constant(byte_type, "0");
-    Add(std::make_unique<v::StoreOp>(), {address_at(*destination).value, value.value}, origin_);
+  // The ISA source-size operand specifies an exact zero-filled suffix, for which no source read is
+  // issued: one whole-byte zero literal of its length after the copied prefix, the representation of
+  // a TMA tile's zero fill, so that a consumer may read any element range of it.
+  if (valid_count < count) {
+    auto suffix = *destination;
+    if (valid_count) {
+      const auto offset = Constant(suffix.type, std::to_string(valid_count));
+      suffix = Expression{Operation("ptx.address_add", "", {suffix.type}, {suffix, offset}).result(), suffix.type};
+    }
+    const auto zero = Add(std::make_unique<v::ConstantOp>(
+        v::ValueType::matrix(v::ElementType::bit(8), {count - valid_count}), "0"), {}, origin_).result();
+    Add(std::make_unique<v::StoreOp>(), {suffix.value, zero}, origin_);
   }
 }
 
@@ -2566,13 +2987,39 @@ bool ValueTemplateExtractor::ResolvedTma() {
     if (!Has(*instruction_, "tile::gather4")) throw;
     Fail(error.code, error.what()); Invalidate(); return true;
   }
+  std::optional<algorithm::AddressId> region;
   for (const auto& pair : transfer.pairs)
     for (const auto* endpoint : {&pair.source, &pair.destination})
       if (*endpoint) {
         const auto& [id, bytes] = **endpoint;
         const auto& binding = resources->Binding(id);
-        if (!bytes || !*bytes || !binding.expression.empty() || !binding.alias_scope.empty()) return false;
+        if (!bytes || !*bytes || !binding.alias_scope.empty()) return false;
+        if (!region && !binding.expression.empty()) region = id;
       }
+  // Lowering gives a tile at a non-constant global region an abstract address, the region
+  // expression of slot_resolver.cpp (TmaBody). Its values need an index function over that
+  // region, including the zero fill of out-of-bounds elements; the descriptor-shaped form in
+  // Tma() has no byte payload a memory binding can map either. Name the cause from the
+  // expression itself (no further fact queries). A gather4 keeps its own refusal in Tma().
+  if (region && !Has(*instruction_, "tile::gather4")) {
+    const auto expression = nlohmann::json::parse(resources->Binding(*region).expression, nullptr, false);
+    const auto tensor = Trim(module_.view(instruction_->operands.at(Has(*instruction_, "bulk_group") ? 0 : 1)));
+    const auto open = tensor.find('{'), close = tensor.find('}');
+    const auto tokens = open != std::string::npos && close != std::string::npos && open < close
+        ? Split(std::string_view(tensor).substr(open + 1, close - open - 1), ',') : std::vector<std::string>{};
+    const auto coordinates = expression.is_object() ? expression.value("coordinates", nlohmann::json()) : nlohmann::json();
+    std::string dynamic;
+    if (coordinates.is_array() && coordinates.size() == tokens.size())
+      for (std::size_t k = 0; k < tokens.size(); ++k)
+        if (!coordinates[k].is_number_integer()) dynamic += (dynamic.empty() ? "" : ", ") + tokens[k];
+    if (!dynamic.empty())
+      Fail("tma_data_dependent_coordinate", "TMA tile coordinate " + dynamic + " is data-dependent (not a "
+           "constant of the execution); the values of its tile region are not modeled (no index function)");
+    else
+      Fail("tma_nonconstant_tensor_map", "TMA tile region is not a constant of the execution (tensor-map global "
+           "address, shape or stride); the values of its tile region are not modeled");
+    Invalidate(); return true;
+  }
   const auto address = [&](const Fragment& fragment) {
     return SlotAddressValue(resources->Binding(fragment.first));
   };
@@ -2776,6 +3223,27 @@ void ValueTemplateExtractor::Tcgen() {
     const auto data_type = *PtxType("b32");
     const bool packed=Has(i,"pack::16b") || Has(i,"unpack::16b");
     const auto element=packed ? *PtxType("b16") : data_type;
+    // Inside a merged arm: the cells (address operands, shape, the address register's value) and,
+    // for a store, their registers from the arm's tcgen05.ld of them since its last store.
+    std::optional<std::pair<std::string, v::Value>> cells;
+    std::vector<Expression> prior;
+    if (merged_ && !packed && !Has(i,"16x32bx2")) {
+      const auto address = text(load ? 1 : 0);
+      std::string spelling = address;
+      for (const auto& modifier : i.modifiers) if (modifier != "ld" && modifier != "st") spelling += '.' + modifier;
+      const auto split = SplitAddress(std::string_view(address).substr(1, address.size() - 2));
+      if (const auto found = split ? registers_.find(Resolve(split->first, i.scope)) : registers_.end(); found != registers_.end())
+        cells = {spelling, found->second.value};
+      if (cells && !load)
+        for (const auto& loaded : merged_->loads)
+          if (loaded.address == cells->first && loaded.base == cells->second) prior = loaded.registers;
+    }
+    if (merged_ && !load && prior.size() != registers) {
+      Fail("two_arm_merge_values", "A tcgen05.st in a merged arm writes TMEM cells that the arm did not load since its last "
+           "store; their values without the arm are not known");
+      return;
+    }
+    std::vector<Expression> loaded_registers;
     std::optional<v::Value> loaded_components;
     if(load) {
       // One native instruction produces an indexed register payload, not a
@@ -2794,7 +3262,12 @@ void ValueTemplateExtractor::Tcgen() {
     }
     for (unsigned n = 0; n < registers; ++n) {
       std::optional<Expression> source, combined;
-      if (!load) { source=Operand(components[n],data_type); if (source) source=Reinterpret(*source,data_type); if (!source) continue; }
+      if (!load) {
+        source=Operand(components[n],data_type); if (source) source=Reinterpret(*source,data_type);
+        // The arm does not run: the cells keep their values.
+        if (source && merged_) source=Choose(merged_->runs,*source,prior[n]);
+        if (!source) continue;
+      }
       for (unsigned half=0; half < (packed ? 2u : 1u); ++half) {
         v::NativeMatrixAttributes attrs{i.modifiers}; attrs.register_index = n;
         if (packed) attrs.packed_half=half;
@@ -2819,8 +3292,14 @@ void ValueTemplateExtractor::Tcgen() {
           Add(std::make_unique<v::StoreOp>(),{addr,value->value},origin_);
         }
       }
-      if (load && combined) { auto value=Reinterpret(*combined,data_type); if (value) Bind(components[n],*value); }
+      if (load && combined) {
+        auto value=Reinterpret(*combined,data_type);
+        if (value) { Bind(components[n],*value); if (cells) loaded_registers.push_back(*value); }
+      }
     }
+    if (merged_ && !load) merged_->loads.clear();
+    if (merged_ && load && cells && loaded_registers.size() == registers)
+      merged_->loads.push_back({cells->first, cells->second, std::move(loaded_registers)});
     return;
   }
   if (Has(i,"cp")) {
@@ -2948,8 +3427,7 @@ class AddressDagWriter {
 public:
   explicit AddressDagWriter(const v::Graph& graph, bool canonical = false)
       : graph(graph), canonical_terms(canonical) {
-    static std::atomic<std::uint64_t> next_pool{1};
-    if (canonical) pool_id = next_pool.fetch_add(1, std::memory_order_relaxed);
+    if (canonical) pool_id = algorithm::AnalysisScope::Current().Next(algorithm::AnalysisScope::Ids::kAddressPool);
   }
   std::optional<std::uint64_t> Selector(v::Value value, unsigned depth = 0) const {
     if (depth > 64) return {};

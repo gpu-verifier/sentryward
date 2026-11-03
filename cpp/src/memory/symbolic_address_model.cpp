@@ -102,10 +102,6 @@ std::optional<Int> Integer(const Json& value) {
   return std::nullopt;
 }
 
-bool KnownSpace(std::string_view space) {
-  return !space.empty() && space != "generic" && space != "unknown";
-}
-
 }  // namespace
 
 struct SymbolicAddressModel::Impl {
@@ -276,10 +272,22 @@ struct SymbolicAddressModel::Impl {
       return Single(Intern("param:" + symbol));
     }
     if (op == "gather") {
-      if (!only({"symbol", "args"}) || !value.at("symbol").is_string() || !value.at("args").is_array())
+      // An element function's lookup (TensorPropertyFunctionSymbol) also names its object and
+      // bounds: the function's exact values lie in [lower, upper]; it is never injective.
+      const bool function = value.contains("lower");
+      if (!(function ? only({"symbol", "args", "object", "lower", "upper"}) : only({"symbol", "args"})) ||
+          !value.at("symbol").is_string() || !value.at("args").is_array())
         return std::nullopt;
       const auto symbol = value.at("symbol").get<std::string>();
       if (symbol.empty()) return std::nullopt;
+      if (function) {
+        const auto lower = Integer(value.at("lower")), upper = Integer(value.at("upper"));
+        if (!value.at("object").is_string() || !lower || !upper || *lower > *upper) return std::nullopt;
+        auto& policy = gather_policies[symbol];
+        policy.lower = policy.lower ? std::max(*policy.lower, *lower) : *lower;
+        policy.upper = policy.upper ? std::min(*policy.upper, *upper) : *upper;
+        gather_objects[symbol] = value.at("object").get<std::string>();
+      }
       std::vector<Int> args;
       for (const auto& arg : value.at("args")) {
         const auto number = Integer(arg);
@@ -941,6 +949,9 @@ std::unique_ptr<MemoryConflictCandidates> SymbolicAddressModel::conflictOrder(
 std::optional<FamilyFootprint> SymbolicAddressModel::familyFootprint(const MemoryAccessFamily& family) {
   if(auto constant=impl_->constants.familyFootprint(family))return constant;
   return impl_->Footprint(family,false);
+}
+std::optional<FamilyStorage> SymbolicAddressModel::familyStorage(const MemoryAccessFamily& family) {
+  return impl_->error ? std::nullopt : impl_->constants.familyStorage(family);
 }
 std::optional<FamilyFootprint> SymbolicAddressModel::crossUnitFootprint(const MemoryAccessFamily& family) {
   if(auto constant=impl_->constants.familyFootprint(family))return constant;

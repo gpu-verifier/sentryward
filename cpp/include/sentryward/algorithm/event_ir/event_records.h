@@ -10,10 +10,12 @@ struct EventRecordCodec {
     EventId id; InstId origin; ActorId actor; AddressId address;
     AsyncOpId async_id{}; AddressId destination{};
     SharedArray<std::uint32_t> extra_endpoints{};
+    // The payload's fresh identity: a collective's SyncId, a waited state or a produced state.
+    std::uint32_t token = 0;
     friend bool operator==(const Binding&,const Binding&)=default;
   };
   struct Delta {
-    std::array<std::int64_t, 6> fields{};
+    std::array<std::int64_t, 7> fields{};
     std::vector<std::int64_t> extra_endpoints;
     Delta() = default;
     Delta(std::initializer_list<std::int64_t> values) {
@@ -23,22 +25,26 @@ struct EventRecordCodec {
     std::int64_t operator[](std::size_t i) const { return fields[i]; }
     friend bool operator==(const Delta&, const Delta&) = default;
   };
+  // Members (threads) of one column share their token, as when it was part of the prototype;
+  // it advances only across ordered iterations.
+  static bool memberStep(const Delta& delta) { return delta[6]==0; }
   static std::optional<Delta> difference(const Binding& a,const Binding& b) {
     Delta delta{std::int64_t(b.id.value())-a.id.value(),
       std::int64_t(b.origin.value())-a.origin.value(),
       std::int64_t(b.actor.value())-a.actor.value(),
       std::int64_t(b.address.value())-a.address.value(),
       std::int64_t(b.async_id.value())-a.async_id.value(),
-      std::int64_t(b.destination.value())-a.destination.value()};
+      std::int64_t(b.destination.value())-a.destination.value(),
+      std::int64_t(b.token)-a.token};
     if (a.extra_endpoints.size() != b.extra_endpoints.size()) return {};
     for (std::size_t i = 0; i < a.extra_endpoints.size(); ++i)
       delta.extra_endpoints.push_back(std::int64_t(b.extra_endpoints[i]) - a.extra_endpoints[i]);
     return delta;
   }
   static std::optional<Binding> translate(const Binding& base,const Delta& delta,std::size_t index) {
-    std::array<std::uint32_t,6> fields{base.id.value(),base.origin.value(),
+    std::array<std::uint32_t,7> fields{base.id.value(),base.origin.value(),
                                      base.actor.value(),base.address.value(),
-                                     base.async_id.value(),base.destination.value()};
+                                     base.async_id.value(),base.destination.value(),base.token};
     for(std::size_t i=0;i<fields.size();++i) {
       if(delta[i]>=0) {
         auto step=static_cast<std::uint64_t>(delta[i]);
@@ -66,7 +72,40 @@ struct EventRecordCodec {
         });
     }
     return Binding{EventId(fields[0]),InstId(fields[1]),ActorId(fields[2]),AddressId(fields[3]),
-        AsyncOpId(fields[4]),AddressId(fields[5]), std::move(extra)};
+        AsyncOpId(fields[4]),AddressId(fields[5]), std::move(extra), fields[6]};
+  }
+  // base + i*a + j*b, field by field, with the extra endpoints rewritten once; nullopt when a final
+  // field is out of range. It agrees with translate(translate(base, a, i), b, j) whenever that
+  // succeeds, and also accepts an out-of-range intermediate translate(base, a, i).
+  static std::optional<Binding> translate(const Binding& base,const Delta& a,std::size_t i,const Delta& b,std::size_t j) {
+    __extension__ typedef __int128 Wide;
+    const auto shifted=[&](std::uint32_t value,std::int64_t x,std::int64_t y)->std::optional<std::uint32_t> {
+      const auto result=Wide(value)+Wide(x)*Wide(i)+Wide(y)*Wide(j);
+      if(result<0 || result>UINT32_MAX)return {};
+      return static_cast<std::uint32_t>(result);
+    };
+    std::array<std::uint32_t,7> fields{base.id.value(),base.origin.value(),base.actor.value(),base.address.value(),
+                                     base.async_id.value(),base.destination.value(),base.token};
+    for(std::size_t k=0;k<fields.size();++k) {
+      const auto value=shifted(fields[k],a[k],b[k]);
+      if(!value)return {};
+      fields[k]=*value;
+    }
+    auto extra=base.extra_endpoints;
+    const auto moves=[&](const Delta& delta,std::size_t index) {
+      return index && std::any_of(delta.extra_endpoints.begin(),delta.extra_endpoints.end(),[](auto step){return step!=0;});
+    };
+    const bool by_a=moves(a,i),by_b=moves(b,j);
+    if((by_a && a.extra_endpoints.size()!=extra.size()) || (by_b && b.extra_endpoints.size()!=extra.size()))return {};
+    if(by_a || by_b) {
+      for(std::size_t k=0;k<extra.size();++k)
+        if(!shifted(extra[k],by_a?a.extra_endpoints[k]:0,by_b?b.extra_endpoints[k]:0))return {};
+      extra=extra.transformed([&](std::size_t k,std::uint32_t value) {
+        return *shifted(value,by_a?a.extra_endpoints[k]:0,by_b?b.extra_endpoints[k]:0);
+      });
+    }
+    return Binding{EventId(fields[0]),InstId(fields[1]),ActorId(fields[2]),AddressId(fields[3]),
+        AsyncOpId(fields[4]),AddressId(fields[5]),std::move(extra),fields[6]};
   }
   static bool split(Event& event,Binding& binding){
     auto* issue=std::get_if<ImmediateMemoryIssueEvent>(&event.payload);
@@ -80,6 +119,10 @@ struct EventRecordCodec {
         binding.address=payload.source;binding.destination=payload.destination;
         payload.source=AddressId{};payload.destination=AddressId{};
       }
+      if constexpr(requires { payload.sync_id.value(); }) { binding.token=payload.sync_id.value();payload.sync_id=SyncId{}; }
+      if constexpr(requires { payload.state.value(); }) { binding.token=payload.state.value();payload.state=StateId{}; }
+      if constexpr(requires { payload.produced_state->value(); })
+        if(payload.produced_state) { binding.token=payload.produced_state->value();payload.produced_state=StateId{}; }
     },event.payload);
     event.id=EventId{};
     if (auto* effect = std::get_if<GenericAsyncEffectEvent>(&event.payload)) {
@@ -114,6 +157,10 @@ struct EventRecordCodec {
       if constexpr(requires { payload.source; payload.destination; }) {
         payload.source=binding.address;payload.destination=binding.destination;
       }
+      if constexpr(requires { payload.sync_id.value(); }) payload.sync_id=SyncId(binding.token);
+      if constexpr(requires { payload.state.value(); }) payload.state=StateId(binding.token);
+      if constexpr(requires { payload.produced_state->value(); })
+        if(payload.produced_state) payload.produced_state=StateId(binding.token);
     },event.payload);
     if(auto* issue=std::get_if<ImmediateMemoryIssueEvent>(&event.payload))issue->address=binding.address;
     else if(auto* exec=std::get_if<ImmediateMemoryExecEvent>(&event.payload))exec->address=binding.address;

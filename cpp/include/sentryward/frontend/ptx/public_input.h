@@ -2,6 +2,7 @@
 
 #include "sentryward/frontend/ptx/config.h"
 #include <stdexcept>
+#include <string>
 
 namespace sentryward::algorithm { struct SourceArtifact; }
 
@@ -30,7 +31,8 @@ struct InferredPointer {
 };
 
 [[nodiscard]] KernelInput ParseKernelInput(const nlohmann::json &);
-[[nodiscard]] KernelInput LoadKernelInput(const std::filesystem::path &);
+// `contents`: the file's bytes, null when it cannot be opened.
+[[nodiscard]] KernelInput LoadKernelInput(const std::filesystem::path &, const std::string *contents);
 [[nodiscard]] FrontendConfig NormalizeKernelInput(
     const KernelInput &, const Module &, const InputOptions & = {},
     const std::vector<InferredPointer> & = {});

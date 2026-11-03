@@ -3,6 +3,7 @@
 #include <compare>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -34,6 +35,10 @@ struct SemanticDiagnostic final {
   std::optional<SemanticOccurrence> occurrence;
   std::optional<algorithm::InstId> instruction;
   std::optional<value_analysis::MemoryInstance> value;
+  // Raised at the first failing binding group, in (CTA, instruction,
+  // occurrence) order, of the domain link, which stops there: one
+  // diagnostic for the launch, naming no CTA.
+  bool first_group = false;
 };
 
 struct SemanticMemoryBinding final {
@@ -159,6 +164,12 @@ struct SemanticProgramOptions final {
   bool defer_address_serialization = false;
   bool capture_branch_scope = false;
   bool atomics = false;  // order_independent_atomics: lower atom/red as atomic accesses
+  // Verification only: the value view serves just the address bridge. A CTA's
+  // value view is then built at its first bridge query, and every later CTA's
+  // as without this option; CTAs consumed before that query get none.
+  bool values_on_demand = false;
+  // --sync-threads: the lowering's lane workers (ModelLowerer); at most one lowers on the calling thread.
+  std::size_t threads = 0;
 };
 
 // Both views consume the same specialized instruction occurrences.
@@ -184,6 +195,28 @@ class SemanticProgramBuilder final {
   std::unique_ptr<Impl> impl_;
 };
 
+// `count` store actions of a same-value write obligation that bind one checked access: the
+// instances first.instance + step * k, k < count, of value node first.node.
+struct SameValueWriteRun final {
+  value_analysis::MemoryInstance first;
+  std::int64_t step = 0;
+  std::size_t count = 0;
+  algorithm::AccessId access;
+  // Whether `instance` is one of the run's actions. O(1).
+  [[nodiscard]] bool Holds(const value_analysis::MemoryInstance& instance) const noexcept {
+    if (instance.node != first.node || !count) return false;
+    if (!step) return instance.instance == first.instance;
+    const bool ascending = step > 0;
+    if (ascending ? instance.instance < first.instance : instance.instance > first.instance) return false;
+    const std::size_t distance =
+        ascending ? instance.instance - first.instance : first.instance - instance.instance;
+    // |step| in unsigned arithmetic (exact for INT64_MIN too).
+    const auto wrapped = static_cast<std::size_t>(step);
+    const std::size_t stride = ascending ? wrapped : std::size_t{0} - wrapped;
+    return distance % stride == 0 && distance / stride < count;
+  }
+};
+
 struct CheckedMemoryActions final {
   struct Statistics {
     std::size_t event_families=0, value_families=0, relations=0;
@@ -194,6 +227,10 @@ struct CheckedMemoryActions final {
   } statistics;
   value_analysis::CheckedOrderContract contract;
   value_analysis::MemoryActions actions;
+  // The checked access of each store action of a same-value write obligation
+  // (MemoryRaceResult::same_value_write_groups), in runs, to name an unproven pair;
+  // only a named write is resolved (run.cpp SameValueOutcome).
+  std::vector<SameValueWriteRun> same_value_writes;
   std::vector<SemanticDiagnostic> diagnostics;
   [[nodiscard]] bool complete() const noexcept { return diagnostics.empty(); }
 };

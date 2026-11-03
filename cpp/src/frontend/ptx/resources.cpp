@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <regex>
 #include <stdexcept>
+#include <type_traits>
 namespace sentryward::frontend::ptx {
 using Json = nlohmann::json;
 std::string Trim(std::string_view x) {
@@ -62,22 +63,69 @@ AddressId AddressTable::Intern(std::string space, std::string allocation,
                                std::uint64_t offset, std::string alias_scope) {
   auto [name, inserted] =
       names_.try_emplace({space, allocation}, names_.size());
-  (void)inserted;
+  if (inserted && keep_writes_) name_keys_.push_back(&name->first);
   auto [it, added] =
       ids_.try_emplace({name->second, offset}, AddressId(bindings.size()));
-  if (added)
+  if (added) {
     bindings.push_back({it->second, std::move(space), std::move(allocation),
                         offset, std::move(alias_scope)});
-  else if (bindings[it->second.value()].alias_scope != alias_scope)
+    if (keep_writes_) {
+      keys_.push_back(it->first);
+      written_.push_back(0);
+    }
+  } else if (bindings[it->second.value()].alias_scope != alias_scope)
     throw SemanticError("alias_scope_conflict",
                         "inconsistent allocation alias domain");
   return it->second;
+}
+std::optional<std::vector<AddressId>> AddressTable::Absorb(const AddressTable &local) {
+  if (!local.keep_writes_) throw std::logic_error("AddressTable::Absorb needs a KeepWrites table");
+  const auto count = local.bindings.size();
+  // Each local name's index here, if it has one (one name lookup per local name).
+  std::vector<std::optional<std::uint32_t>> names(local.name_keys_.size());
+  for (std::size_t index = 0; index < names.size(); ++index)
+    if (const auto found = names_.find(*local.name_keys_[index]); found != names_.end()) names[index] = found->second;
+  // First every lookup (an existing binding with another alias scope: the conflict), then the writes.
+  std::vector<std::optional<AddressId>> existing(count);
+  for (std::size_t index = 0; index < count; ++index) {
+    const auto &key = local.keys_[index];
+    const auto &name = names.at(key.name);
+    if (!name) continue;
+    const auto found = ids_.find({*name, key.offset});
+    if (found == ids_.end()) continue;
+    if (bindings[found->second.value()].alias_scope != local.bindings[index].alias_scope) return std::nullopt;
+    existing[index] = found->second;
+  }
+  std::vector<AddressId> ids;
+  ids.reserve(count);
+  for (std::size_t index = 0; index < count; ++index) {
+    const auto &from = local.bindings[index];
+    const auto &[space, allocation] = *local.name_keys_[local.keys_[index].name];
+    const auto id = existing[index] ? *existing[index]
+                                    : Intern(space, allocation, local.keys_[index].offset, from.alias_scope);
+    auto &to = bindings[id.value()];
+    const auto fields = local.written_[index];
+    if (fields & kWroteAllocation) to.allocation = from.allocation;
+    if (fields & kWroteOffset) to.offset = from.offset;
+    if (fields & kWroteExpression) to.expression = from.expression;
+    Wrote(id, fields);
+    ids.push_back(id);
+  }
+  return ids;
 }
 BarrierLifetimeId BarrierTable::Intern(std::string kind, Coordinates owner,
                                        std::string id) {
   const auto [it, added] = ids_.try_emplace({std::move(kind), owner, std::move(id)},
                                             BarrierLifetimeId(ids_.size()));
   return it->second;
+}
+std::vector<BarrierLifetimeId> BarrierTable::Absorb(const BarrierTable &local) {
+  std::vector<const std::tuple<std::string, Coordinates, std::string> *> keys(local.ids_.size());
+  for (const auto &[key, id] : local.ids_) keys.at(id.value()) = &key;
+  std::vector<BarrierLifetimeId> ids;
+  ids.reserve(keys.size());
+  for (const auto *key : keys) ids.push_back(Intern(std::get<0>(*key), std::get<1>(*key), std::get<2>(*key)));
+  return ids;
 }
 AddressId UnitInterner::Constant(FormattedAllocation &&formatted, std::uint64_t offset) {
   return addresses_.Intern(std::move(formatted.space), std::move(formatted.allocation), offset,
@@ -104,6 +152,8 @@ AddressId UnitInterner::Apply(ExpressionStep &&step) {
   auto &binding = addresses_.bindings.at(id.value());
   binding.allocation = Allocation(std::move(step.allocation));
   if (step.expression) binding.expression = std::move(*step.expression);
+  addresses_.Wrote(id, static_cast<std::uint8_t>(AddressTable::kWroteAllocation |
+                                                 (step.expression ? AddressTable::kWroteExpression : 0)));
   return id;
 }
 void UnitInterner::Apply(PatchStep &&step, AddressId target) {
@@ -114,6 +164,9 @@ void UnitInterner::Apply(PatchStep &&step, AddressId target) {
   }
   if (step.offset) addresses_.bindings.at(target.value()).offset = *step.offset;
   addresses_.bindings.at(target.value()).expression = std::move(step.expression);
+  addresses_.Wrote(target, static_cast<std::uint8_t>((step.allocation ? AddressTable::kWroteAllocation : 0) |
+                                                     (step.offset ? AddressTable::kWroteOffset : 0) |
+                                                     AddressTable::kWroteExpression));
 }
 BarrierLifetimeId UnitInterner::Apply(BarrierStep &&step) {
   return barriers_.Intern(std::string(KindText(step.key.kind)), frame_.Cta(step.key.owner),
@@ -213,6 +266,10 @@ Resources::Resources(const FactSource &f, const UnitFrame &u, AddressTable &a,
     records_.emplace(local.resource, Json{{"id",local.resource},{"kind","memory"},{"space","local"},
         {"allocation",{{"resolution","concrete"},{"base_byte_offset",0},{"object",local.resource}}}});
 }
+Resources::Resources(const Resources &like, AddressTable &a, BarrierTable &b, SlotConfig slots)
+    : facts(like.facts), frame(like.frame), interner_(like.facts, like.frame, a, b), id_(like.id_),
+      slots_(std::make_unique<SlotResolver>(*this, std::move(slots))), records_(like.records_),
+      shared_symbols_(like.shared_symbols_) {}
 Resources::~Resources() = default;
 std::vector<Coordinates> BarrierTable::Owners() const {
   std::vector<Coordinates> owners;
@@ -227,6 +284,10 @@ std::tuple<std::string, Coordinates, std::string> BarrierTable::Location(Barrier
 void Resources::SetLane(LaneRef lane) {
   active_lane_ = lane;
   active_index_ = &lane_indices_[lane];
+}
+void Resources::BeginLane(LaneRef lane) {
+  lane_indices_.clear();
+  SetLane(lane); // a new active index: the old one was cleared
 }
 std::optional<RecordView> Resources::Definition(DynamicKey key, bool address_slice) const {
   if (!active_lane_) return {};
@@ -539,6 +600,101 @@ SlotOutcome<ResolvedFootprint> Resources::ReplayMemory(const RecordView &e, cons
 }
 SlotOutcome<ResolvedTma> Resources::ReplayTma(const RecordView &e, const TmaRequest &request) {
   return slots_->Tma(e, request);
+}
+EventTape::View EventTape::Copy(const RecordView &view) {
+  const auto ref = view.ref();
+  View copy{ref.value_or(RecordRef{}), {}, view.kind(), ref.has_value()};
+  copy.slice.assign(view.slice().begin(), view.slice().end());
+  return copy;
+}
+RecordView EventTape::Rebuild(const FactSource &facts, const View &view) {
+  static const ExecutedInstruction unpositioned;
+  if (!view.positioned) return RecordView(&unpositioned, LaneRef{}, view.kind);
+  return RecordView(facts.Meta(view.at).record_, view.at, view.kind, view.slice);
+}
+void EventTape::On(const QueryEvent &event, ConsumerTag consumer, bool in_slot, bool in_partition) noexcept {
+  if (!complete_) return;
+  try {
+    const auto copy = [](const auto &e) -> Event {
+      using T = std::decay_t<decltype(e)>;
+      if constexpr (std::is_same_v<T, query::ValueRead>)
+        return ValueRead{Copy(e.view), e.reg, e.answer ? std::optional<Scalar>(*e.answer) : std::nullopt};
+      else if constexpr (std::is_same_v<T, query::LegacyUniform>)
+        return LegacyUniform{e.leader, e.expanded, std::string(e.name), e.answer,
+                             std::vector<LaneRef>(e.members.begin(), e.members.end())};
+      else if constexpr (std::is_same_v<T, query::SpecialRead>)
+        return SpecialRead{std::string(e.name), e.answer};
+      else if constexpr (std::is_same_v<T, query::SlotMemory> || std::is_same_v<T, query::SlotTma>) {
+        const auto &q = *e.query;
+        Slot slot{q.consumer, Copy(q.site), std::nullopt, std::nullopt, q.active_lane, *e.outcome};
+        if (q.memory)
+          slot.memory = MemoryCopy{std::string(q.memory->operand), q.memory->contract, q.memory->bytes,
+                                   q.memory->space};
+        if (q.tma) slot.tma = TmaCopy{q.tma->contract, q.tma->store, q.tma->dynamic_tensor_maps};
+        return std::make_unique<const Slot>(std::move(slot));
+      } else if constexpr (std::is_same_v<T, query::UniformBodySkip>)
+        return UniformBodySkip{e.lane, std::vector<std::size_t>(e.positions.begin(), e.positions.end()),
+                               std::vector<std::size_t>(e.varying_slots.begin(), e.varying_slots.end())};
+      else if constexpr (std::is_same_v<T, query::AbsoluteCheck>)
+        return AbsoluteCheck{e.id, e.modulus,
+                             e.binding ? std::optional<ConstantAddressBinding>(*e.binding) : std::nullopt};
+      else if constexpr (std::is_same_v<T, query::PartitionRead>)
+        return PartitionRead{e.leader, e.evaluated, e.instruction, e.classes, e.end,
+                             std::vector<LaneRef>(e.members.begin(), e.members.end()), e.spec, e.shuffles};
+      else if constexpr (std::is_same_v<T, query::ReportBearing>)
+        return ReportBearing{e.kind, std::string(e.code)};
+      else
+        return e; // self-contained
+    };
+    entries_.push_back({consumer, in_slot, in_partition, std::visit(copy, event)});
+  } catch (...) {
+    complete_ = false;
+  }
+}
+void EventTape::Replay(const FactSource &facts, std::span<const AddressId> addresses) const {
+  if (!complete_) throw std::logic_error("replay of an incomplete event tape");
+  if (!facts.sink_) return;
+  auto &sink = *facts.sink_;
+  for (const auto &entry : entries_) {
+    const auto note = [&](const QueryEvent &event) { sink.On(event, entry.consumer, entry.in_slot, entry.in_partition); };
+    std::visit([&](const auto &e) {
+      using T = std::decay_t<decltype(e)>;
+      if constexpr (std::is_same_v<T, ValueRead>)
+        note(query::ValueRead{Rebuild(facts, e.view), e.reg, e.answer ? &*e.answer : nullptr});
+      else if constexpr (std::is_same_v<T, LegacyUniform>)
+        note(query::LegacyUniform{e.leader, e.expanded, e.name, e.answer, e.members});
+      else if constexpr (std::is_same_v<T, SpecialRead>)
+        note(query::SpecialRead{e.name, e.answer});
+      else if constexpr (std::is_same_v<T, std::unique_ptr<const Slot>>) {
+        const auto &slot = *e;
+        std::optional<MemoryRequest> memory;
+        std::optional<TmaRequest> tma;
+        if (slot.memory)
+          memory.emplace(slot.memory->operand, slot.memory->contract, slot.memory->bytes, slot.memory->space);
+        if (slot.tma) tma.emplace(slot.tma->contract, slot.tma->store, slot.tma->dynamic_tensor_maps);
+        const SlotQuery query{slot.consumer, Rebuild(facts, slot.site), memory ? &*memory : nullptr,
+                              tma ? &*tma : nullptr, slot.active_lane};
+        if (const auto *outcome = std::get_if<SlotOutcome<ResolvedFootprint>>(&slot.outcome))
+          note(query::SlotMemory{&query, outcome});
+        else
+          note(query::SlotTma{&query, &std::get<SlotOutcome<ResolvedTma>>(slot.outcome)});
+      } else if constexpr (std::is_same_v<T, UniformBodySkip>)
+        note(query::UniformBodySkip{e.lane, e.positions, e.varying_slots});
+      else if constexpr (std::is_same_v<T, query::BindingRead>)
+        note(query::BindingRead{addresses[e.id.value()]});
+      else if constexpr (std::is_same_v<T, AbsoluteCheck>) {
+        std::optional<ConstantAddressBinding> binding = e.binding;
+        if (binding) binding->address = addresses[binding->address.value()];
+        note(query::AbsoluteCheck{addresses[e.id.value()], e.modulus, binding ? &*binding : nullptr});
+      } else if constexpr (std::is_same_v<T, PartitionRead>)
+        note(query::PartitionRead{e.leader, e.evaluated, e.instruction, e.classes, e.end, e.members, e.spec,
+                                  e.shuffles});
+      else if constexpr (std::is_same_v<T, ReportBearing>)
+        note(query::ReportBearing{e.kind, e.code});
+      else
+        note(e);
+    }, entry.event);
+  }
 }
 void Resources::AdmitGrid(const Instruction &i) const {
   const auto &f = facts.launch();

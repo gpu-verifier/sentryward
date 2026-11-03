@@ -15,6 +15,9 @@ class SourceProgramBuilder final {
   [[nodiscard]] InstId append(ActorId actor, SourceLocation location, SourceOp op,
                               std::optional<PtxOrigin> origin = std::nullopt,
                               bool program_order = true);
+  // append(program_order) of an instruction split as SourceInstructions stores it (prototype
+  // id from program.instructions.internSplit, binding with this instruction's id and actor).
+  void appendSplit(std::uint32_t prototype, SourceRecordCodec::Binding binding);
   void appendGeneratedThread(ActorId actor,std::size_t count,
       std::function<SourceInstruction(std::size_t)> generate,
       std::optional<std::pair<std::uint64_t,std::uintptr_t>> cohort={},
@@ -27,6 +30,12 @@ class SourceProgramBuilder final {
                  bool join_completions, std::size_t anchor = 0);
   void finishEdges();
  private:
+  // The id of the next appended instruction.
+  [[nodiscard]] InstId nextId() const;
+  // Program order: `id` follows the actor's last instruction (an edge from it, if any). Records
+  // `id` as the actor's first instruction when it has none, and as its last; appendGeneratedThread
+  // then sets the last to its block's final instruction.
+  void orderAfterLast(ActorId actor, InstId id);
   std::map<ActorId, InstId> first_, last_;
   std::map<ActorId, std::vector<InstId>> initializers_;
   std::set<std::pair<InstId, InstId>> replaced_edges_;

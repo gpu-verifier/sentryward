@@ -60,6 +60,7 @@ bool LinkMemoryDomains(SemanticProgram& result) {
   struct AddressIndex {std::vector<AddressRun> runs;MemoryAddressRunIndex index;};
   AddressIndex indexed_addresses;
   const auto& artifact=result.lowering.artifact;
+  bool grouped=false;  // linking the groups, in key order
   try {
     for(const auto& actor:artifact.program.actors) {
       if(!actors.empty()) {
@@ -225,6 +226,7 @@ bool LinkMemoryDomains(SemanticProgram& result) {
     for(const auto& layout:result.lowering.mma_layouts)matrix_layouts.emplace(layout.instruction,&layout);
     std::map<a::AddressId,const a::ConstantAddressBinding*> address_lookup;
     for(const auto& address:artifact.addresses)address_lookup.emplace(address.address,&address);
+    grouped=true;
     for(auto& [key,group]:groups) {
       std::vector<Domain> cuts;
       std::uint64_t lo=UINT64_MAX,hi=0;
@@ -335,6 +337,35 @@ bool LinkMemoryDomains(SemanticProgram& result) {
           require(value.access.bytes==payload,"Incomplete register payload mapping");
           continue;
         }
+        // A bulk reduction: the payload Load and the reduction Store each bind, in source
+        // order, the element fragments of their own direction (one per mode).
+        if(std::any_of(values.begin(),values.end(),[](const V& v){return v.access.reduction;})) {
+          std::set<a::AccessMode> modes;
+          for(const auto& value:values) {
+            require(modes.insert(value.access.mode).second && value.access.bytes.has_value(),
+                "Reduction values do not bind one per direction");
+            std::uint64_t payload=0;
+            for(const auto& source:sources) {
+              if(source.access.mode!=value.access.mode)continue;
+              require(source.access.ordered_native && source.access.bytes &&
+                  *source.access.bytes<=*value.access.bytes-payload,"Reduction payload does not match its element fragments");
+              auto address=*source.column->address;address.address=source.access.address;
+              address.offset=advance(source.column->address_offset,source.column->offset_step,source.begin);
+              auto part=value.access;part.bytes=source.access.bytes;
+              auto binding=BindMemoryValue(source.access,part,occurrence,0,&address);
+              binding.value_byte_offset=payload;payload+=*source.access.bytes;
+              SemanticMemoryBindingCodec::Delta delta{};
+              delta[0]=source.column->instruction_step*std::int64_t(source.step);
+              delta[3]=domain.step;delta[7]=value.column->instance_step*value.step;
+              delta[8]=source.column->address_step*std::int64_t(source.step);
+              delta[9]=source.column->offset_step*std::int64_t(source.step);
+              if(domain.count==1)result.memory_bindings.push_back(std::move(binding));
+              else result.memory_bindings.appendAffineColumns({binding},{delta},domain.count);
+            }
+            require(payload==*value.access.bytes,"Incomplete reduction payload mapping");
+          }
+          continue;
+        }
         bool ordered=sources.size()==values.size();
         for(std::size_t i=0;ordered && i<sources.size();++i)
           ordered=sources[i].access.ordered_native && values[i].access.ordinary_scalar &&
@@ -381,6 +412,7 @@ bool LinkMemoryDomains(SemanticProgram& result) {
     profile.pruned=result.memory_bindings.storedBindingCount();
   } catch(const std::exception& error) {
     Diagnostic(result,"unsupported_memory_binding_domain",error.what());
+    result.diagnostics.back().first_group=grouped;
   }
   return true; // Never silently retry the whole kernel through expanded linking.
 }

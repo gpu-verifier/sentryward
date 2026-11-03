@@ -1,8 +1,8 @@
 #include "sentryward/scalar_fold/graph.h"
+#include "sentryward/algorithm/base/analysis_scope.h"
 
 #include <algorithm>
 #include <array>
-#include <atomic>
 #include <limits>
 #include <ostream>
 #include <stdexcept>
@@ -114,11 +114,7 @@ std::size_t RefHash::operator()(const Ref& r) const {
   return h;
 }
 
-Graph::Graph() {
-  static std::atomic<std::uint64_t> next_owner{1};
-  owner_ = next_owner.fetch_add(1, std::memory_order_relaxed);
-  if (owner_ == 0) throw std::overflow_error("scalar-fold graph owner overflow");
-}
+Graph::Graph() : owner_(algorithm::AnalysisScope::Current().Next(algorithm::AnalysisScope::Ids::kScalarFoldGraph)) {}
 void Graph::validateRef(const Ref& ref) const {
   if (ref.owner != owner_)
     throw std::invalid_argument("scalar-fold reference belongs to another graph");

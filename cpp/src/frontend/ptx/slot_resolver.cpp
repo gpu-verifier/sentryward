@@ -22,18 +22,28 @@ std::optional<AbstractAffine> AffineOffset(const AffineForm &form, const Integer
   AbstractAffine result{*constant, {}};
   for (const auto &[atom, coefficient] : form.terms) {
     const auto factor = Int64(coefficient), offset = Int64(atom.byte_offset);
-    if (!factor || !offset) return std::nullopt;
-    result.terms.push_back({atom.object, atom.element_type, *offset, *factor});
+    const auto lower = Int64(atom.lower), upper = Int64(atom.upper);
+    if (!factor || !offset || !lower || !upper) return std::nullopt;
+    result.terms.push_back({atom.object, atom.element_type, *offset, *factor, atom.function, *lower, *upper});
   }
   return result;
 }
-// The address-model expression of that offset: constant + coefficient x element lookups.
+// The address-model expression of that offset: constant + coefficient x element lookups (an
+// element function's lookup carries its object and bounds).
 Json AffineOffsetJson(const AbstractAffine &affine) {
   Json operands = Json::array({affine.constant});
-  for (const auto &term : affine.terms)
-    operands.push_back({{"operator", "mul"}, {"operands", Json::array({
-        Json{{"operator", "gather"}, {"symbol", algorithm::TensorPropertySymbol(term.object, term.element_type)},
-             {"args", Json::array({term.offset})}}, term.coefficient})}});
+  for (const auto &term : affine.terms) {
+    Json lookup{{"operator", "gather"}, {"args", Json::array({term.offset})}};
+    if (term.function.empty()) {
+      lookup["symbol"] = algorithm::TensorPropertySymbol(term.object, term.element_type);
+    } else {
+      lookup["symbol"] = algorithm::TensorPropertyFunctionSymbol(term.object, term.element_type, term.function);
+      lookup["object"] = term.object;
+      lookup["lower"] = term.lower;
+      lookup["upper"] = term.upper;
+    }
+    operands.push_back({{"operator", "mul"}, {"operands", Json::array({std::move(lookup), term.coefficient})}});
+  }
   return Json{{"operator", "add"}, {"operands", std::move(operands)}};
 }
 } // namespace
@@ -165,6 +175,8 @@ ConstantStep SlotResolver::MemoryResource(std::string id, std::uint64_t offset,
   return result;
 }
 std::optional<Json> SlotResolver::ExtractAddress(const RecordView &e, std::string_view operand) {
+  // The extractor's graph and memos follow its query order: a worker leaves the query to the consumer.
+  FactSource::RequireSerial();
   if (!address_values_) address_values_ = std::make_unique<AddressValueExtractor>(core_.facts, core_.frame);
   return address_values_->Extract(*core_.active_lane_, e, operand, [this](LaneRef lane, DynamicKey key) {
     const auto previous = core_.active_lane_;
@@ -244,10 +256,14 @@ SlotTerminal<ResolvedFootprint> SlotResolver::MemoryBody(const RecordView &e, co
         throw SemanticError("pointer_resource_mismatch",
                             "contract disagrees with pointer provenance");
       const Integer lower = bounded.lower + displacement, upper = bounded.upper + displacement;
-      // A non-affine offset (offset_identity) has no abstract footprint: the fallback below.
-      const bool inside = lower >= 0 && bounded.offset_identity.empty() &&
+      // A non-affine offset (offset_identity) has an abstract footprint only by its form in
+      // element functions; without one, the fallback below.
+      const auto *form = bounded.offset_identity.empty() ? &bounded.offset
+                         : bounded.abstract                ? &*bounded.abstract
+                                                           : nullptr;
+      const bool inside = lower >= 0 && form &&
           (!bounded.extent_bytes || upper + Integer(bytes) <= Integer(*bounded.extent_bytes));
-      if (auto affine = inside ? AffineOffset(bounded.offset, displacement) : std::nullopt) {
+      if (auto affine = inside ? AffineOffset(*form, displacement) : std::nullopt) {
         auto placement = MemoryResource(bounded.resource, 0, 0);
         if (placement.offset == 0) {
           const auto binding = frame.Format(placement.key);
@@ -330,6 +346,9 @@ SlotTerminal<ResolvedFootprint> SlotResolver::MemoryBody(const RecordView &e, co
     // Every bridge or extractor call precedes every step (see slot_resolver.h).
     if (config_.bridge) {
       fallback = FallbackUse::Bridge;
+      // The bridge's index and on-demand value view follow its query order: a worker leaves the
+      // query to the consumer.
+      FactSource::RequireSerial();
       value_expression = config_.bridge(*core_.active_lane_, e, text);
     } else {
       fallback = FallbackUse::Extractor;
@@ -568,10 +587,11 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
     affine_coordinates.emplace_back();
     if (known) { coordinate_expressions.push_back(origins.back()); continue; }
     // A bounded coordinate (tensor_properties) in the s32 range is its exact affine form in
-    // element lookups (the address model's gathers): no extraction.
+    // element lookups and element functions (the address model's gathers): no extraction.
     if (const auto *bounded = std::get_if<BoundedInteger>(&value);
-        bounded && (*bounded)->affine && (*bounded)->lower >= INT32_MIN && (*bounded)->upper <= INT32_MAX)
-      if (auto affine = AffineOffset(*(*bounded)->affine, 0)) {
+        bounded && ((*bounded)->affine || (*bounded)->abstract) && (*bounded)->lower >= INT32_MIN &&
+        (*bounded)->upper <= INT32_MAX)
+      if (auto affine = AffineOffset((*bounded)->affine ? *(*bounded)->affine : *(*bounded)->abstract, 0)) {
         coordinate_expressions.push_back(AffineOffsetJson(*affine));
         affine_coordinates.back() = std::move(*affine);
         continue;
@@ -645,10 +665,15 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
         options.completion_rank = *owner;
       }
     }
+    // A .shared::cta load writes the executing CTA; with .cta_group::2 its barrier may be in
+    // that CTA or in its pair peer (such as a barrier of the pair's leader CTA).
+    const auto self = frame.self().value;
     if (spaces[0] == "shared::cta" &&
-        options.completion_rank != frame.self().value)
-      throw SemanticError("tma_shared_cta_owner",
-                          "local TMA barrier resolves to peer");
+        (options.cta_group == 1 ? *options.completion_rank != self
+                                : *options.completion_rank / 2 != self / 2))
+      throw SemanticError("tma_shared_cta_owner", options.cta_group == 1
+          ? "local TMA barrier resolves to peer"
+          : "group2 TMA barrier is outside the executing CTA pair");
   }
   if (Has(i, "multicast::cluster"))
     options.multicast_mask = Unsigned(core_.ScalarValue(e, ops[3], "multicast mask") & 65535,
@@ -663,28 +688,45 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
   result.descriptor = std::move(descriptor_key);
   // Every symbolic coordinate affine: the region's first byte, base + sum of coordinate x
   // stride, as one affine form in element lookups (the class log's δ form, query_log.cpp).
-  // A gather has four independent row origins, so no single region form.
-  if (!gather && !opaque_coordinate && std::any_of(affine_coordinates.begin(), affine_coordinates.end(),
+  // A gather's rows are four independent row origins: one form per row ({column, row}).
+  if (!opaque_coordinate && std::any_of(affine_coordinates.begin(), affine_coordinates.end(),
                                         [](const auto &c) { return c.has_value(); })) {
     const auto strides = descriptor.value("coordinate_strides_bytes", Json());
     const auto base = descriptor.value("base_byte_offset", Json(0));
-    if (strides.is_array() && strides.size() == origins.size() && base.is_number_integer()) {
+    const std::size_t dims = gather ? 2 : origins.size();
+    // The form of the region whose coordinate along `dim` is coordinate `index[dim]`.
+    const auto region = [&](const std::vector<std::size_t> &index) -> std::optional<AbstractAffine> {
       Integer constant = JsonInteger(base);
       std::vector<AbstractAffine::Term> terms;
-      bool exact = true;
-      for (std::size_t dim = 0; exact && dim < origins.size(); ++dim) {
-        if (!strides[dim].is_number_integer()) { exact = false; break; }
+      for (std::size_t dim = 0; dim < dims; ++dim) {
+        if (!strides[dim].is_number_integer()) return std::nullopt;
         const Integer stride = JsonInteger(strides[dim]);
-        if (!affine_coordinates[dim]) { constant += Integer(origins[dim]) * stride; continue; }
-        constant += Integer(affine_coordinates[dim]->constant) * stride;
-        for (const auto &term : affine_coordinates[dim]->terms) {
+        const auto &coordinate = affine_coordinates[index[dim]];
+        if (!coordinate) { constant += Integer(origins[index[dim]]) * stride; continue; }
+        constant += Integer(coordinate->constant) * stride;
+        for (auto term : coordinate->terms) {
           const auto coefficient = Int64(Integer(term.coefficient) * stride);
-          if (!coefficient) { exact = false; break; }
-          terms.push_back({term.object, term.element_type, term.offset, *coefficient});
+          if (!coefficient) return std::nullopt;
+          term.coefficient = *coefficient;
+          terms.push_back(std::move(term));
         }
       }
-      if (const auto fitted = exact ? Int64(constant) : std::nullopt)
-        result.region_affine = AbstractAffine{*fitted, std::move(terms)};
+      const auto fitted = Int64(constant);
+      if (!fitted) return std::nullopt;
+      return AbstractAffine{*fitted, std::move(terms)};
+    };
+    if (strides.is_array() && strides.size() == dims && base.is_number_integer()) {
+      std::vector<std::vector<std::size_t>> regions;
+      if (gather) regions = {{0, 1}, {0, 2}, {0, 3}, {0, 4}};
+      else {
+        regions.emplace_back(dims);
+        for (std::size_t dim = 0; dim < dims; ++dim) regions.back()[dim] = dim;
+      }
+      for (const auto &index : regions) {
+        auto form = region(index);
+        if (!form) { result.region_affine.clear(); break; }
+        result.region_affine.push_back(std::move(*form));
+      }
     }
   }
   result.pairs.reserve(mapping.segments.size());
@@ -696,17 +738,33 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
   for (const auto &s : mapping.segments)
     step_count += 1 + (s.abstract_global ? 2 + std::size_t(known_resource) : s.global_offset ? 1 : 0);
   steps.reserve(step_count);
+  // The abstract segments' tma_region expressions differ only in "bytes", "logical_offset" and a
+  // gather's row: one expression per row, built at the first abstract segment (one copy of the
+  // descriptor per row), takes each segment's two fields in place and is serialized, in O(text)
+  // per segment.
+  std::vector<Json> region_expressions; // per coordinates (a gather's rows)
   for (const auto &s : mapping.segments) {
     std::optional<std::size_t> global;
     if (s.abstract_global) {
-      // A gather row is the map's one-row box at {column, row}: the region covers that row.
-      Json expression={{"operator","tma_region"},{"descriptor",descriptor},
-          {"coordinates",gather ? Json::array({coordinate_expressions.at(0),
-                                               coordinate_expressions.at(1 + s.gather_row)})
-                                : coordinate_expressions},
-          {"logical_offset",s.logical_offset},{"bytes",s.bytes},
-          {"occurrence",Json::array({frame.Json(frame.self()),facts.Warp(*core_.active_lane_),facts.LaneId(*core_.active_lane_),e.instruction_id(),e.occurrence()})}};
-      auto serialized=expression.dump();
+      if (region_expressions.empty()) {
+        const auto occurrence = Json::array({frame.Json(frame.self()), facts.Warp(*core_.active_lane_),
+                                             facts.LaneId(*core_.active_lane_), e.instruction_id(), e.occurrence()});
+        const auto region_expression = [&](Json coordinates) {
+          return Json{{"operator", "tma_region"}, {"descriptor", descriptor},
+                      {"coordinates", std::move(coordinates)}, {"occurrence", occurrence}};
+        };
+        // A gather row is the map's one-row box at {column, row}: the region covers that row.
+        if (gather)
+          for (std::size_t row = 0; row < 4; ++row)
+            region_expressions.push_back(region_expression(
+                Json::array({coordinate_expressions.at(0), coordinate_expressions.at(1 + row)})));
+        else
+          region_expressions.push_back(region_expression(coordinate_expressions));
+      }
+      auto &expression = region_expressions.at(gather ? s.gather_row : 0);
+      expression["bytes"] = s.bytes;
+      expression["logical_offset"] = s.logical_offset;
+      auto serialized = expression.dump();
       const auto address=steps.size();
       steps.push_back({ExpressionStep{"global",serialized,{},std::string("unresolved"),{}}});
       // A dynamic origin does not erase a descriptor's known global allocation.

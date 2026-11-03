@@ -214,6 +214,13 @@ struct MemoryAttributes final {
   std::vector<std::string> native_modifiers;
   // A disabled Load yields zero without reading; a disabled Store has no effect.
   bool guarded = false;
+  // A Store that combines with the old contents elementwise (cp.reduce.async.bulk): the
+  // reduction ("add", "min", "max") of elements of `element`. Absent: an overwrite.
+  struct Reduction {
+    std::string operation;
+    ElementType element;
+  };
+  std::optional<Reduction> reduction = std::nullopt;
 };
 
 class LoadOp final : public TypedOperation {

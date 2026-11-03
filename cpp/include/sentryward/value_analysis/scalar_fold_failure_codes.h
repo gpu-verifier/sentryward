@@ -23,7 +23,7 @@ enum class FoldFailureKind : std::uint8_t {
   KeyText,     // the message names projection keys
   Internal,    // an internal invariant
   Lifting,     // the lifting's own failure
-  Dynamic,     // dynamic what() (LayoutError)
+  Dynamic,     // a message built at run time (LayoutError's what(), a PTX line)
 };
 struct FoldFailureCode {
   std::string_view code;
@@ -54,6 +54,8 @@ inline constexpr std::array kFoldFailureCodes{
     FoldFailureCode{"scalar_fold_coordinate", FoldFailureKind::ContextFree},
     FoldFailureCode{"compact_view_unsupported", FoldFailureKind::ContextFree},
     FoldFailureCode{"symbolic_initial_base_unsupported", FoldFailureKind::ContextFree},
+    FoldFailureCode{"symbolic_output_position_unbounded", FoldFailureKind::ContextFree},
+    FoldFailureCode{"symbolic_output_placement_unsupported", FoldFailureKind::ContextFree},
     FoldFailureCode{"expression_node_limit_exceeded", FoldFailureKind::Budget},
     FoldFailureCode{"projection_worklist_limit_exceeded", FoldFailureKind::Budget},
     FoldFailureCode{"output_family_limit_exceeded", FoldFailureKind::Budget},
@@ -67,11 +69,13 @@ inline constexpr std::array kFoldFailureCodes{
     FoldFailureCode{"index_representation_overflow", FoldFailureKind::Magnitude},
     FoldFailureCode{"scalar_fold_index_overflow", FoldFailureKind::Magnitude},
     FoldFailureCode{"scalar_fold_prerequisite", FoldFailureKind::LaunchWide},
+    FoldFailureCode{"output_comparison_partial_view", FoldFailureKind::LaunchWide}, // binding-dependent; not in lifting mode
     FoldFailureCode{"scalar_fold_cycle", FoldFailureKind::KeyText},
     FoldFailureCode{"scalar_fold_internal_binding", FoldFailureKind::Internal},
     FoldFailureCode{"source_dependency_cycle", FoldFailureKind::Internal}, // IndexedSourceLimit
     FoldFailureCode{"scalar_fold_unit_parameter_unsupported", FoldFailureKind::Lifting},
     FoldFailureCode{"scalar_fold_mma_descriptor", FoldFailureKind::Dynamic}, // LayoutError and two literal fail() sites
+    FoldFailureCode{"unspecified_value_dependence", FoldFailureKind::Dynamic}, // names its provenance and line
 };
 inline bool FoldFailureContextFree(std::string_view code) noexcept {
   for (const auto &entry : kFoldFailureCodes)
