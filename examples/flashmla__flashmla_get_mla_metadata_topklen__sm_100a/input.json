@@ -1,0 +1,115 @@
+{
+ "schema": "spverify.kernel-input/v1",
+ "entry": "_ZN4smxx6decode23get_mla_metadata_kernelILb1ELb0ELb0EEEv24GetDecodeSchedMetaParams",
+ "launch": {
+  "grid_dim": [
+   1,
+   1,
+   1
+  ],
+  "block_dim": [
+   32,
+   1,
+   1
+  ],
+  "cluster_dim": [
+   1,
+   1,
+   1
+  ],
+  "dynamic_shared_bytes": 68
+ },
+ "arguments": [
+  {
+   "parameter": 0,
+   "offset": 0,
+   "type": "s32",
+   "value": 4
+  },
+  {
+   "parameter": 0,
+   "offset": 4,
+   "type": "s32",
+   "value": 1
+  },
+  {
+   "parameter": 0,
+   "offset": 8,
+   "type": "s32",
+   "value": 64
+  },
+  {
+   "parameter": 0,
+   "offset": 12,
+   "type": "s32",
+   "value": 5
+  },
+  {
+   "parameter": 0,
+   "offset": 16,
+   "type": "s32",
+   "value": 148
+  },
+  {
+   "parameter": 0,
+   "offset": 20,
+   "type": "s32",
+   "value": 2048
+  },
+  {
+   "parameter": 0,
+   "offset": 24,
+   "type": "s32",
+   "value": 0
+  },
+  {
+   "parameter": 0,
+   "offset": 40,
+   "type": "pointer",
+   "value": null
+  }
+ ],
+ "declarations": [
+  {
+   "parameter": 0,
+   "offset": 32,
+   "type": "pointer",
+   "space": "global",
+   "object": "topk_length"
+  },
+  {
+   "parameter": 0,
+   "offset": 48,
+   "type": "pointer",
+   "space": "global",
+   "object": "tile_scheduler_metadata"
+  },
+  {
+   "parameter": 0,
+   "offset": 56,
+   "type": "pointer",
+   "space": "global",
+   "object": "num_splits"
+  }
+ ],
+ "assumptions": {
+  "duplicate_tma_store_benign": true,
+  "representative_election": true,
+  "clc_always_fails": true
+ },
+ "shape_arrays": [
+  {
+   "parameter": 0,
+   "offset": 32,
+   "element_type": "s32",
+   "shapes": [
+    [
+     335,
+     1732,
+     622,
+     1432
+    ]
+   ]
+  }
+ ]
+}

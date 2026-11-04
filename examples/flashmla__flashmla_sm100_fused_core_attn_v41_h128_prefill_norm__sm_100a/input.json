@@ -1,0 +1,351 @@
+{
+ "schema": "spverify.kernel-input/v1",
+ "entry": "_ZN5sm1007prefill34fused_norm_rope_attn_rope_cast_fwd9core_attn10fwd_kernelINS2_6KernelIXtlNS2_6ConfigEL17SparseAttnFwdMode0EL9ModelType0ELS7_0ELj128ELb1EEEEEEEvNT_6ParamsENS9_9TMAParamsENS9_9AuxParamsE",
+ "launch": {
+  "grid_dim": [
+   2,
+   1,
+   1
+  ],
+  "block_dim": [
+   512,
+   1,
+   1
+  ],
+  "cluster_dim": [
+   2,
+   1,
+   1
+  ],
+  "dynamic_shared_bytes": 187392
+ },
+ "arguments": [
+  {
+   "parameter": 0,
+   "offset": 0,
+   "type": "s32",
+   "value": 1
+  },
+  {
+   "parameter": 0,
+   "offset": 4,
+   "type": "s32",
+   "value": 64
+  },
+  {
+   "parameter": 0,
+   "offset": 8,
+   "type": "s32",
+   "value": 128
+  },
+  {
+   "parameter": 0,
+   "offset": 12,
+   "type": "s32",
+   "value": 1
+  },
+  {
+   "parameter": 0,
+   "offset": 16,
+   "type": "s32",
+   "value": 512
+  },
+  {
+   "parameter": 0,
+   "offset": 20,
+   "type": "s32",
+   "value": 512
+  },
+  {
+   "parameter": 0,
+   "offset": 24,
+   "type": "s32",
+   "value": 64
+  },
+  {
+   "parameter": 0,
+   "offset": 28,
+   "type": "f32",
+   "value": 0.5
+  },
+  {
+   "parameter": 0,
+   "offset": 32,
+   "type": "f32",
+   "value": 0.7213475108146667
+  },
+  {
+   "parameter": 0,
+   "offset": 64,
+   "type": "pointer",
+   "value": null
+  },
+  {
+   "parameter": 0,
+   "offset": 72,
+   "type": "pointer",
+   "value": null
+  },
+  {
+   "parameter": 0,
+   "offset": 80,
+   "type": "s32",
+   "value": 65536
+  },
+  {
+   "parameter": 0,
+   "offset": 84,
+   "type": "s32",
+   "value": 512
+  },
+  {
+   "parameter": 0,
+   "offset": 88,
+   "type": "s32",
+   "value": 1280
+  },
+  {
+   "parameter": 0,
+   "offset": 92,
+   "type": "s32",
+   "value": 640
+  },
+  {
+   "parameter": 0,
+   "offset": 96,
+   "type": "s32",
+   "value": 384
+  },
+  {
+   "parameter": 0,
+   "offset": 100,
+   "type": "s32",
+   "value": 192
+  },
+  {
+   "parameter": 0,
+   "offset": 104,
+   "type": "pointer",
+   "value": null
+  },
+  {
+   "parameter": 0,
+   "offset": 128,
+   "type": "s32",
+   "value": 0
+  },
+  {
+   "parameter": 0,
+   "offset": 132,
+   "type": "s32",
+   "value": 148
+  },
+  {
+   "parameter": 0,
+   "offset": 144,
+   "type": "bool",
+   "value": true
+  },
+  {
+   "parameter": 0,
+   "offset": 148,
+   "type": "f32",
+   "value": 9.999999747378752e-05
+  },
+  {
+   "parameter": 0,
+   "offset": 160,
+   "type": "bool",
+   "value": false
+  },
+  {
+   "parameter": 0,
+   "offset": 164,
+   "type": "u32",
+   "value": 64
+  },
+  {
+   "parameter": 0,
+   "offset": 176,
+   "type": "u32",
+   "value": 16
+  },
+  {
+   "parameter": 0,
+   "offset": 180,
+   "type": "u32",
+   "value": 8
+  },
+  {
+   "parameter": 0,
+   "offset": 184,
+   "type": "u32",
+   "value": 32
+  },
+  {
+   "parameter": 0,
+   "offset": 188,
+   "type": "bool",
+   "value": true
+  },
+  {
+   "parameter": 0,
+   "offset": 189,
+   "type": "bool",
+   "value": true
+  },
+  {
+   "parameter": 0,
+   "offset": 190,
+   "type": "bool",
+   "value": true
+  },
+  {
+   "parameter": 0,
+   "offset": 208,
+   "type": "u32",
+   "value": 128
+  },
+  {
+   "parameter": 0,
+   "offset": 212,
+   "type": "u32",
+   "value": 4
+  }
+ ],
+ "declarations": [
+  {
+   "parameter": 0,
+   "offset": 40,
+   "type": "pointer",
+   "space": "global",
+   "object": "Q"
+  },
+  {
+   "parameter": 0,
+   "offset": 48,
+   "type": "pointer",
+   "space": "global",
+   "object": "KV"
+  },
+  {
+   "parameter": 0,
+   "offset": 56,
+   "type": "pointer",
+   "space": "global",
+   "object": "indices"
+  },
+  {
+   "parameter": 0,
+   "offset": 112,
+   "type": "pointer",
+   "space": "global",
+   "object": "max_logits"
+  },
+  {
+   "parameter": 0,
+   "offset": 120,
+   "type": "pointer",
+   "space": "global",
+   "object": "LSE"
+  },
+  {
+   "parameter": 0,
+   "offset": 152,
+   "type": "pointer",
+   "space": "global",
+   "object": "token_positions"
+  },
+  {
+   "parameter": 0,
+   "offset": 168,
+   "type": "pointer",
+   "space": "global",
+   "object": "cos_sin_cache"
+  },
+  {
+   "parameter": 0,
+   "offset": 192,
+   "type": "pointer",
+   "space": "global",
+   "object": "out_fp8"
+  },
+  {
+   "parameter": 0,
+   "offset": 200,
+   "type": "pointer",
+   "space": "global",
+   "object": "out_sf"
+  }
+ ],
+ "assumptions": {
+  "duplicate_tma_store_benign": true,
+  "representative_election": true,
+  "clc_always_fails": true
+ },
+ "tma_descriptors": [
+  {
+   "parameter": 1,
+   "offset": 0,
+   "object": "KV",
+   "element_type": "bf16",
+   "global_shape": [
+    512,
+    64
+   ],
+   "coordinate_strides_bytes": [
+    2,
+    2560
+   ],
+   "box_shape": [
+    64,
+    1
+   ],
+   "element_strides": [
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  }
+ ],
+ "tensor_properties": [
+  {
+   "object": "indices",
+   "element_type": "s32",
+   "property": "lower_bound",
+   "value": 0
+  },
+  {
+   "object": "indices",
+   "element_type": "s32",
+   "property": "upper_bound",
+   "value": 63
+  },
+  {
+   "object": "token_positions",
+   "element_type": "u32",
+   "property": "lower_bound",
+   "value": 0
+  },
+  {
+   "object": "token_positions",
+   "element_type": "u32",
+   "property": "upper_bound",
+   "value": 131071
+  }
+ ],
+ "branch_decisions": [
+  {
+   "line": 22003,
+   "taken": false,
+   "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+  },
+  {
+   "line": 23152,
+   "taken": false,
+   "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+  }
+ ]
+}

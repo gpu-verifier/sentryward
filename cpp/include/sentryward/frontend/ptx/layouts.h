@@ -66,6 +66,28 @@ DecodeLdstLaneRegisters(const Instruction &, std::uint64_t taddr,
 [[nodiscard]] constexpr bool WsMmaShape(std::uint32_t m, std::uint32_t n) {
   return (m == 32 || m == 64 || m == 128) && (n == 64 || n == 128 || n == 256);
 }
+// The tcgen05.mma data-path organization (PTX ISA, "Data Path Layout Organization",
+// layouts A-G). Each CTA holds `rows` = M/cta_group rows of D. Its TMEM lanes form
+// `slices` lane groups: lane group s holds columns [s*N/slices, (s+1)*N/slices) of
+// every row. Layouts C and F use 16 lanes of each 32-lane quarter. The ISA does not
+// say where a lane group reads a Tensor Memory A operand; as in CUTLASS's duplicated
+// TMEM-A allocation (UMMA::TmemAllocMode::Duplicated), lane group s reads every A row
+// from its own lanes, so the operand holds one copy of A per lane group.
+struct MmaDataPath {
+  std::uint32_t rows{}, slices{1};
+  bool half_quarters{};
+  // The lane of `row` in lane group `slice`, relative to the lane alignment.
+  [[nodiscard]] std::uint32_t Lane(std::uint32_t row, std::uint32_t slice) const {
+    return half_quarters ? 32 * (row / 16) + row % 16 : row + rows * slice;
+  }
+  // Whether `lane` is an ISA Tensor Memory datapath lane alignment: 0, or 16 for layouts C and F.
+  [[nodiscard]] bool LaneAlignment(std::uint32_t lane) const {
+    return lane == 0 || (half_quarters && lane == 16);
+  }
+};
+// nullopt for an M, .cta_group and .ws combination outside the ISA's layout table.
+[[nodiscard]] std::optional<MmaDataPath> DecodeMmaDataPath(std::uint32_t m, std::uint32_t cta_group,
+                                                           bool ws, bool sparse);
 [[nodiscard]] MmaDescriptor DecodeBlockScaledDescriptor(std::uint64_t value, std::string_view kind);
 [[nodiscard]] std::vector<ByteInterval> DecodeScaleFootprint(
     std::uint64_t taddr, unsigned selector, unsigned rows, unsigned vector_bytes,
@@ -93,9 +115,34 @@ void ForEachSharedMatrixMapping(std::uint64_t descriptor, std::uint32_t mn,
 DecodeSharedMatrixElements(std::uint64_t descriptor, std::uint32_t mn,
                            std::uint32_t k, std::uint32_t element_bits,
                            std::string_view major);
+// Lanes (rows) of a CTA's Tensor Memory (PTX ISA, Tensor Memory Addressing).
+inline constexpr std::uint32_t kTmemLanes = 128;
+// A tcgen05.cp data-movement shape (PTX ISA, tcgen05 "Data Movement Shape" and
+// tcgen05.cp): `rows` source rows of `row_bits` bits each. A .multicast qualifier
+// replicates the rows into the lane quarters (warps) of the TMEM lanes.
+struct CopyShape {
+  enum class Multicast { kNone, kWarpx4, kWarpx2_02_13, kWarpx2_01_23 };
+  std::uint32_t rows{}, row_bits{};
+  Multicast multicast = Multicast::kNone;
+  std::string name; // the shape and multicast qualifiers, e.g. "32x128b.warpx4"
+  [[nodiscard]] std::uint64_t SourceBytes() const { return std::uint64_t{rows} * row_bits / 8; }
+  // Whether every one of the 128 TMEM lanes receives a known source row: the 128-row
+  // shapes and the multicast shapes (a .4x256b copy has no lane mapping here).
+  [[nodiscard]] bool LaneMapped() const { return rows == kTmemLanes || multicast != Multicast::kNone; }
+  // Bytes written to TMEM: all lanes when LaneMapped, else the source bytes.
+  [[nodiscard]] std::uint64_t TensorBytes() const {
+    return LaneMapped() ? std::uint64_t{kTmemLanes} * row_bits / 8 : SourceBytes();
+  }
+  // The source row that TMEM lane `lane` (0-127, from the copy's base lane) receives; LaneMapped only.
+  [[nodiscard]] std::uint32_t SourceRow(std::uint32_t lane) const;
+};
+// The shape of a tcgen05.cp's modifiers: exactly one shape with the multicast qualifier
+// that the ISA requires for it (.64x128b: .warpx2::02_13 or .warpx2::01_23; .32x128b:
+// .warpx4; the other shapes none). nullopt otherwise.
+[[nodiscard]] std::optional<CopyShape> DecodeCopyShape(const std::vector<std::string> &modifiers);
 [[nodiscard]] std::vector<std::pair<ByteInterval, ByteInterval>>
 DecodeCopyFragments(std::uint64_t descriptor, std::uint64_t taddr,
-                    std::string_view shape,
+                    const CopyShape &shape,
                     std::optional<std::uint32_t> allocated_columns = {});
 [[nodiscard]] ExactTmemFootprint DecodeMmaDFootprint(
     const Instruction &, std::uint64_t d_taddr, std::uint64_t idesc,

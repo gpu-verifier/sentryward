@@ -1,0 +1,474 @@
+{
+ "schema": "spverify.kernel-input/v1",
+ "entry": "kernel_cake_kda_train_cfa2684db4d92e37448d",
+ "launch": {
+  "grid_dim": [
+   4,
+   1,
+   1
+  ],
+  "cluster_dim": [
+   1,
+   1,
+   1
+  ],
+  "block_dim": [
+   320,
+   1,
+   1
+  ],
+  "dynamic_shared_bytes": 224384
+ },
+ "arguments": [
+  {
+   "parameter": 17,
+   "type": "u32",
+   "value": 1
+  },
+  {
+   "parameter": 19,
+   "type": "u32",
+   "value": 2
+  },
+  {
+   "parameter": 22,
+   "type": "f32",
+   "value": 0.08838834764831845
+  }
+ ],
+ "declarations": [
+  {
+   "parameter": 0,
+   "type": "tensor_map"
+  },
+  {
+   "parameter": 1,
+   "type": "tensor_map"
+  },
+  {
+   "parameter": 2,
+   "type": "tensor_map"
+  },
+  {
+   "parameter": 3,
+   "type": "tensor_map"
+  },
+  {
+   "parameter": 4,
+   "type": "tensor_map"
+  },
+  {
+   "parameter": 5,
+   "type": "tensor_map"
+  },
+  {
+   "parameter": 6,
+   "type": "tensor_map"
+  },
+  {
+   "parameter": 7,
+   "type": "tensor_map"
+  },
+  {
+   "parameter": 8,
+   "type": "tensor_map"
+  },
+  {
+   "parameter": 9,
+   "type": "tensor_map"
+  },
+  {
+   "parameter": 10,
+   "type": "pointer",
+   "object": "beta_int"
+  },
+  {
+   "parameter": 11,
+   "type": "pointer",
+   "object": "dq_f"
+  },
+  {
+   "parameter": 12,
+   "type": "pointer",
+   "object": "dk_f"
+  },
+  {
+   "parameter": 13,
+   "type": "pointer",
+   "object": "dg_f"
+  },
+  {
+   "parameter": 14,
+   "type": "pointer",
+   "object": "db_f"
+  },
+  {
+   "parameter": 15,
+   "type": "pointer",
+   "object": "dAkk"
+  },
+  {
+   "parameter": 16,
+   "type": "pointer",
+   "object": "dv"
+  },
+  {
+   "parameter": 18,
+   "type": "pointer",
+   "object": "seq_chunk_start"
+  },
+  {
+   "parameter": 20,
+   "type": "pointer",
+   "object": "chunk_bos"
+  },
+  {
+   "parameter": 21,
+   "type": "pointer",
+   "object": "chunk_len"
+  },
+  {
+   "parameter": 23,
+   "type": "pointer",
+   "object": "dAqk"
+  }
+ ],
+ "assumptions": {
+  "duplicate_tma_store_benign": true,
+  "representative_election": true,
+  "clc_always_fails": true,
+  "representative_branches": false,
+  "bounded_computation_loops": false,
+  "order_independent_atomics": false
+ },
+ "shape_arrays": [
+  {
+   "parameter": 18,
+   "offset": 0,
+   "element_type": "s32",
+   "shapes": [
+    [
+     0
+    ],
+    [
+     1
+    ],
+    [
+     2
+    ]
+   ]
+  },
+  {
+   "parameter": 20,
+   "offset": 0,
+   "element_type": "s32",
+   "shapes": [
+    [
+     0
+    ],
+    [
+     64
+    ],
+    [
+     0
+    ],
+    [
+     0
+    ]
+   ]
+  },
+  {
+   "parameter": 21,
+   "offset": 0,
+   "element_type": "s32",
+   "shapes": [
+    [
+     64
+    ],
+    [
+     64
+    ],
+    [
+     0
+    ],
+    [
+     0
+    ]
+   ]
+  }
+ ],
+ "tma_descriptors": [
+  {
+   "parameter": 0,
+   "object": "dout",
+   "element_type": "bf16",
+   "rank": 3,
+   "global_shape": [
+    128,
+    1,
+    128
+   ],
+   "box_shape": [
+    64,
+    1,
+    64
+   ],
+   "global_strides_bytes": [
+    256,
+    256
+   ],
+   "element_strides": [
+    1,
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  },
+  {
+   "parameter": 1,
+   "object": "v_new",
+   "element_type": "bf16",
+   "rank": 3,
+   "global_shape": [
+    128,
+    1,
+    256
+   ],
+   "box_shape": [
+    64,
+    1,
+    64
+   ],
+   "global_strides_bytes": [
+    256,
+    256
+   ],
+   "element_strides": [
+    1,
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  },
+  {
+   "parameter": 2,
+   "object": "dv2",
+   "element_type": "bf16",
+   "rank": 3,
+   "global_shape": [
+    128,
+    1,
+    256
+   ],
+   "box_shape": [
+    64,
+    1,
+    64
+   ],
+   "global_strides_bytes": [
+    256,
+    256
+   ],
+   "element_strides": [
+    1,
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  },
+  {
+   "parameter": 3,
+   "object": "v",
+   "element_type": "bf16",
+   "rank": 3,
+   "global_shape": [
+    128,
+    1,
+    128
+   ],
+   "box_shape": [
+    64,
+    1,
+    64
+   ],
+   "global_strides_bytes": [
+    256,
+    256
+   ],
+   "element_strides": [
+    1,
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  },
+  {
+   "parameter": 4,
+   "object": "h",
+   "element_type": "bf16",
+   "rank": 2,
+   "global_shape": [
+    128,
+    512
+   ],
+   "box_shape": [
+    64,
+    128
+   ],
+   "global_strides_bytes": [
+    256
+   ],
+   "element_strides": [
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  },
+  {
+   "parameter": 5,
+   "object": "dh",
+   "element_type": "bf16",
+   "rank": 2,
+   "global_shape": [
+    128,
+    512
+   ],
+   "box_shape": [
+    64,
+    128
+   ],
+   "global_strides_bytes": [
+    256
+   ],
+   "element_strides": [
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  },
+  {
+   "parameter": 6,
+   "object": "Akk",
+   "element_type": "bf16",
+   "rank": 3,
+   "global_shape": [
+    64,
+    1,
+    128
+   ],
+   "box_shape": [
+    64,
+    1,
+    64
+   ],
+   "global_strides_bytes": [
+    128,
+    128
+   ],
+   "element_strides": [
+    1,
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  },
+  {
+   "parameter": 7,
+   "object": "gk",
+   "element_type": "f32",
+   "rank": 3,
+   "global_shape": [
+    128,
+    1,
+    256
+   ],
+   "box_shape": [
+    32,
+    1,
+    64
+   ],
+   "global_strides_bytes": [
+    512,
+    512
+   ],
+   "element_strides": [
+    1,
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  },
+  {
+   "parameter": 8,
+   "object": "k",
+   "element_type": "bf16",
+   "rank": 3,
+   "global_shape": [
+    128,
+    1,
+    128
+   ],
+   "box_shape": [
+    64,
+    1,
+    64
+   ],
+   "global_strides_bytes": [
+    256,
+    256
+   ],
+   "element_strides": [
+    1,
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  },
+  {
+   "parameter": 9,
+   "object": "q",
+   "element_type": "bf16",
+   "rank": 3,
+   "global_shape": [
+    128,
+    1,
+    128
+   ],
+   "box_shape": [
+    64,
+    1,
+    64
+   ],
+   "global_strides_bytes": [
+    256,
+    256
+   ],
+   "element_strides": [
+    1,
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  }
+ ]
+}

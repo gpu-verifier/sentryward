@@ -280,9 +280,12 @@ void HappensBeforeGraph::rebuildSnapshot() const {
 }
 
 HappensBeforeGraphBuilder::HappensBeforeGraphBuilder(
-    const LoweredProgram& program, const ReferenceTrace* trace) {
-  const EventDag& base = program.graph();
-  happensBeforeGraph_.actors_ = program.actors();
+    const LoweredProgram& program, const ReferenceTrace* trace)
+    : HappensBeforeGraphBuilder(program.graph(), program.actors(), trace) {}
+
+HappensBeforeGraphBuilder::HappensBeforeGraphBuilder(
+    const EventDag& base, std::vector<ActorInfo> actors, const ReferenceTrace* trace) {
+  happensBeforeGraph_.actors_ = std::move(actors);
   if (!base.isAcyclic()) {
     throw std::invalid_argument("lowered program graph is cyclic");
   }

@@ -1,0 +1,391 @@
+{
+ "schema": "spverify.equivalence-mapping.v1",
+ "output_value_semantics": "ideal_real",
+ "left_inputs": {
+  "allocations": {
+   "6:global1:Q": "Q",
+   "6:global2:KV": "KV",
+   "6:global7:indices": "indices",
+   "6:global9:attn_sink": "attn_sink",
+   "6:global11:topk_length": "topk_length"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global1:Q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     129,
+     640
+    ],
+    "source_strides_bytes": [
+     165120,
+     1280,
+     2
+    ],
+    "target_strides_bytes": [
+     165120,
+     1280,
+     2
+    ]
+   },
+   "6:global2:KV": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     32,
+     2,
+     640
+    ],
+    "source_strides_bytes": [
+     2560,
+     1280,
+     2
+    ],
+    "target_strides_bytes": [
+     2560,
+     1280,
+     2
+    ]
+   },
+   "6:global7:indices": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1,
+     2,
+     2176
+    ],
+    "source_strides_bytes": [
+     17408,
+     8704,
+     4
+    ],
+    "target_strides_bytes": [
+     17408,
+     8704,
+     4
+    ]
+   },
+   "6:global9:attn_sink": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     128
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global11:topk_length": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   }
+  }
+ },
+ "right_inputs": {
+  "allocations": {
+   "6:global1:Q": "Q",
+   "6:global2:KV": "KV",
+   "6:global7:indices": "indices",
+   "6:global9:attn_sink": "attn_sink",
+   "6:global11:topk_length": "topk_length"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global1:Q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     129,
+     640
+    ],
+    "source_strides_bytes": [
+     165120,
+     1280,
+     2
+    ],
+    "target_strides_bytes": [
+     165120,
+     1280,
+     2
+    ]
+   },
+   "6:global2:KV": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     32,
+     2,
+     640
+    ],
+    "source_strides_bytes": [
+     2560,
+     1280,
+     2
+    ],
+    "target_strides_bytes": [
+     2560,
+     1280,
+     2
+    ]
+   },
+   "6:global7:indices": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1,
+     2,
+     2176
+    ],
+    "source_strides_bytes": [
+     17408,
+     8704,
+     4
+    ],
+    "target_strides_bytes": [
+     17408,
+     8704,
+     4
+    ]
+   },
+   "6:global9:attn_sink": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     128
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global11:topk_length": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   }
+  }
+ },
+ "outputs": {
+  "kind": "dense_tensors",
+  "tensors": [
+   {
+    "left_allocation": "6:global1:O",
+    "right_allocation": "6:global1:O",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     128,
+     512
+    ],
+    "left_strides_bytes": [
+     131072,
+     1024,
+     2
+    ],
+    "right_strides_bytes": [
+     131072,
+     1024,
+     2
+    ]
+   },
+   {
+    "left_allocation": "6:global10:max_logits",
+    "right_allocation": "6:global10:max_logits",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1,
+     128
+    ],
+    "left_strides_bytes": [
+     512,
+     4
+    ],
+    "right_strides_bytes": [
+     512,
+     4
+    ]
+   },
+   {
+    "left_allocation": "6:global3:LSE",
+    "right_allocation": "6:global3:LSE",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1,
+     128
+    ],
+    "left_strides_bytes": [
+     512,
+     4
+    ],
+    "right_strides_bytes": [
+     512,
+     4
+    ]
+   }
+  ]
+ },
+ "reference": {
+  "arguments": [
+   {
+    "name": "Q",
+    "allocation": "6:global1:Q",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "KV",
+    "allocation": "6:global2:KV",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "indices",
+    "allocation": "6:global7:indices",
+    "dtype": "int32"
+   },
+   {
+    "name": "attn_sink",
+    "allocation": "6:global9:attn_sink",
+    "dtype": "float32"
+   },
+   {
+    "name": "topk_length",
+    "allocation": "6:global11:topk_length",
+    "dtype": "int32"
+   },
+   {
+    "name": "sm_scale_log2",
+    "parameter": 0,
+    "parameter_offset": 32
+   },
+   {
+    "name": "h_q",
+    "parameter": 0,
+    "parameter_offset": 8
+   },
+   {
+    "name": "topk",
+    "parameter": 0,
+    "parameter_offset": 24
+   }
+  ]
+ },
+ "provenance": {
+  "source": "FlashMLA sm100 sparse prefill head128 (regular impl) sm100::prefill::sparse_fwd::head128::sparse_attn_fwd_kernel<KernelTemplate, TmaParams<...>> (2-CTA cluster); sparse top-k MQA prefill over a bf16 KV with attention sink and topk_length",
+  "upstream": [
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fwd/head128/instantiations/phase1_k512.cu",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fwd/head128/phase1.cuh",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fwd/head128/config.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fwd/head128/phase1.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/params.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/helpers.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/common_subroutine.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/api/sparse_prefill.cpp",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/api/common.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/flash_mla/flash_mla_interface.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/test-sparse-prefill.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/lib.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/ref.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/kernelkit/generate.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/kernelkit/utils.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/setup.py"
+  ],
+  "scope": "tests/test-sparse-prefill.py testcases[300] (seed 300; the first entry of the second corner_cases group, \"some blocks may not have any valid topk indices\"; user-selected 2026-11-02 because no main-test h_q=128 case has topk > 1280 and the first corner group's rows that route here have all indices invalid): s_q=1, s_kv=32, topk=2048, h_q=128, h_kv=1, d_qk=d_v=512, sm_scale=0.5, is_all_indices_invalid=False, have_attn_sink=True, have_topk_length=True; sparse_prefill.cpp picks the regular head128 impl (topk > 1280; features HEAD_128, ATTN_SINK, TOPK_LENGTH supported); grid (2, 1, 1), block 512, cluster (2, 1, 1), 165120 B dynamic smem; mode=Prefill, num_sm=148; q/kv/indices strides from kernelkit non_contiguousify; attn_sink [128] f32 and topk_length [1] int32 contiguous; topk_length = [1114] as a read-only shape array (CUDA-RNG draw of tests/lib.py:220 for seed 300, CPU-emulated with build/corpus-refresh-20261026/fmla-rng/cuda_rng_emu.py; B200, PyTorch >= 2.10; not measured on a GPU), so num_k_blocks = 9; indices rows: positions 0-31 are a permutation of [0, 32), every later position is one of the invalid fillers {-2147483648, -123456, -1, 32, 114514, 1919810, 2147480000, 2147483647}, stated as tensor_properties [-2147483648, 2147483647]; only KV block 0 has valid indices; O, max_logits and LSE written; branch choices at PTX 1688 (`if (!should_scale_o)`, phase1.cuh:233, taken=false), PTX 2929 (`if (k > 0 && should_scale_o)`, phase1.cuh:266, taken=false), PTX 5757 (`if (have_valid_indices)`, phase1.cuh:352, taken=false), PTX 7000 (`if (have_valid_indices)`, phase1.cuh:352, taken=false), PTX 8056 (`if (have_valid_indices)`, phase1.cuh:352, taken=false), PTX 9112 (`if (have_valid_indices)`, phase1.cuh:352, taken=false), PTX 10572 (`if (!should_skip_tma)`, phase1.cuh:436, taken=false), PTX 10765 (`if (!should_skip_tma)`, phase1.cuh:448, taken=false; the K-producer skip of an all-invalid index block, user-approved 2026-11-03); the O-rescale choices decide only visits whose predicate is not statically known, so the first KV block follows the program at PTX 2929; CLC queries fail (clc_always_fails, inert: no clusterlaunchcontrol in this entry). Reference binding: inputs whose non_contiguousify strides are not contiguous (Q, KV, indices) are bound as their contiguous storage tensors on both sides; reference.py slices the logical block with the kernel parameters h_q (offset 8 = 128), topk (offset 24 = 2048).",
+  "scope_branch_choices": [
+   {
+    "line": 1688,
+    "taken": false,
+    "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 2929,
+    "taken": false,
+    "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 5757,
+    "taken": false,
+    "note": "Always take the has-valid-indices path at the have_valid_indices warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 7000,
+    "taken": false,
+    "note": "Always take the has-valid-indices path at the have_valid_indices warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 8056,
+    "taken": false,
+    "note": "Always take the has-valid-indices path at the have_valid_indices warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 9112,
+    "taken": false,
+    "note": "Always take the has-valid-indices path at the have_valid_indices warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 10572,
+    "taken": false,
+    "note": "Never skip the K TMA at the should_skip_tma all-invalid-indices check. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 10765,
+    "taken": false,
+    "note": "Never skip the K TMA at the should_skip_tma all-invalid-indices check. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   }
+  ],
+  "scope_shape_arrays": [
+   {
+    "parameter": 0,
+    "offset": 72,
+    "element_type": "s32",
+    "shapes": [
+     [
+      1114
+     ]
+    ]
+   }
+  ],
+  "optimized_input_sha256": "34002e9f4577fc023cf31e2949bf26049bda1a19540349d33b15c513a3848dcd",
+  "ptx_sha256": "76eb0fd088fd823c3f873c667e4996f7d16d7a28fbb0bbdbe6caa7a9e67b0ad8"
+ }
+}

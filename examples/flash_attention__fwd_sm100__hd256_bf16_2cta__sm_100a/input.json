@@ -1,0 +1,537 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor0000o11101213_tensor0000o11101213_tensor0000o10111213_None_None_tensor0000o11101213_tensorpt_0",
+  "launch": {
+    "grid_dim": [
+      108,
+      1,
+      1
+    ],
+    "block_dim": [
+      512,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      2,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 232448
+  },
+  "arguments": [
+    {
+      "field": "shape.0.0",
+      "value": 255
+    },
+    {
+      "field": "shape.0.1",
+      "value": 256
+    },
+    {
+      "field": "shape.0.2",
+      "value": 6
+    },
+    {
+      "field": "shape.0.3",
+      "value": 9
+    },
+    {
+      "field": "shape.1.0",
+      "value": 256
+    },
+    {
+      "field": "shape.1.1",
+      "value": 256
+    },
+    {
+      "field": "shape.1.2",
+      "value": 6
+    },
+    {
+      "field": "shape.1.3",
+      "value": 9
+    },
+    {
+      "field": "shape.2.0",
+      "value": 256
+    },
+    {
+      "field": "shape.2.1",
+      "value": 256
+    },
+    {
+      "field": "shape.2.2",
+      "value": 6
+    },
+    {
+      "field": "shape.2.3",
+      "value": 9
+    },
+    {
+      "field": "shape.3.0",
+      "value": 255
+    },
+    {
+      "field": "shape.3.1",
+      "value": 256
+    },
+    {
+      "field": "shape.3.2",
+      "value": 6
+    },
+    {
+      "field": "shape.3.3",
+      "value": 9
+    },
+    {
+      "field": "lse.shape.0",
+      "value": 255
+    },
+    {
+      "field": "lse.shape.1",
+      "value": 6
+    },
+    {
+      "field": "lse.shape.2",
+      "value": 9
+    },
+    {
+      "field": "lse.stride.1",
+      "value": 255
+    },
+    {
+      "field": "lse.stride.2",
+      "value": 1530
+    },
+    {
+      "field": "scale_log2",
+      "value": 0.09016843885183334
+    },
+    {
+      "field": "div.12.divisor",
+      "value": 1
+    },
+    {
+      "field": "div.12.multiplier",
+      "value": 0
+    },
+    {
+      "field": "div.12.shift1",
+      "value": 0
+    },
+    {
+      "field": "div.12.shift2",
+      "value": 0
+    },
+    {
+      "field": "scheduler.13.num_block",
+      "value": 1
+    },
+    {
+      "field": "div.14.divisor",
+      "value": 6
+    },
+    {
+      "field": "div.14.multiplier",
+      "value": 1431655766
+    },
+    {
+      "field": "div.14.shift1",
+      "value": 1
+    },
+    {
+      "field": "div.14.shift2",
+      "value": 2
+    },
+    {
+      "field": "scheduler.15.num_head",
+      "value": 6
+    },
+    {
+      "field": "scheduler.16.total_blocks_cluster",
+      "value": 54
+    },
+    {
+      "field": "scheduler.17.num_splits",
+      "value": 1
+    }
+  ],
+  "declarations": [
+    {
+      "name": "shape.0.0",
+      "parameter": 0,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "shape.0.1",
+      "parameter": 0,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "shape.0.2",
+      "parameter": 0,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.0.3",
+      "parameter": 0,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.1.0",
+      "parameter": 1,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "shape.1.1",
+      "parameter": 1,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "shape.1.2",
+      "parameter": 1,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.1.3",
+      "parameter": 1,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.2.0",
+      "parameter": 2,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "shape.2.1",
+      "parameter": 2,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "shape.2.2",
+      "parameter": 2,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.2.3",
+      "parameter": 2,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "shape.3.0",
+      "parameter": 3,
+      "offset": 0,
+      "type": "s32"
+    },
+    {
+      "name": "shape.3.1",
+      "parameter": 3,
+      "offset": 4,
+      "type": "s32"
+    },
+    {
+      "name": "shape.3.2",
+      "parameter": 3,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "shape.3.3",
+      "parameter": 3,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "lse.shape.0",
+      "parameter": 4,
+      "offset": 8,
+      "type": "s32"
+    },
+    {
+      "name": "lse.shape.1",
+      "parameter": 4,
+      "offset": 12,
+      "type": "s32"
+    },
+    {
+      "name": "lse.shape.2",
+      "parameter": 4,
+      "offset": 16,
+      "type": "s32"
+    },
+    {
+      "name": "lse.stride.1",
+      "parameter": 4,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "lse.stride.2",
+      "parameter": 4,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "scale_log2",
+      "parameter": 9,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "div.12.divisor",
+      "parameter": 12,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "div.12.multiplier",
+      "parameter": 12,
+      "offset": 4,
+      "type": "u32"
+    },
+    {
+      "name": "div.12.shift1",
+      "parameter": 12,
+      "offset": 8,
+      "type": "u8"
+    },
+    {
+      "name": "div.12.shift2",
+      "parameter": 12,
+      "offset": 9,
+      "type": "u8"
+    },
+    {
+      "name": "scheduler.13.num_block",
+      "parameter": 13,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "div.14.divisor",
+      "parameter": 14,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "div.14.multiplier",
+      "parameter": 14,
+      "offset": 4,
+      "type": "u32"
+    },
+    {
+      "name": "div.14.shift1",
+      "parameter": 14,
+      "offset": 8,
+      "type": "u8"
+    },
+    {
+      "name": "div.14.shift2",
+      "parameter": 14,
+      "offset": 9,
+      "type": "u8"
+    },
+    {
+      "name": "scheduler.15.num_head",
+      "parameter": 15,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.16.total_blocks_cluster",
+      "parameter": 16,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "name": "scheduler.17.num_splits",
+      "parameter": 17,
+      "offset": 0,
+      "type": "u32"
+    },
+    {
+      "parameter": 5,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 6,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 7,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 8,
+      "type": "tensor_map"
+    },
+    {
+      "parameter": 4,
+      "offset": 0,
+      "type": "pointer",
+      "object": "LSE"
+    }
+  ],
+  "tma_descriptors": [
+    {
+      "parameter": 5,
+      "offset": 0,
+      "object": "Q",
+      "element_type": "bf16",
+      "global_shape": [
+        256,
+        255,
+        6,
+        9
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        3072,
+        512,
+        783360
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "object": "K",
+      "element_type": "bf16",
+      "global_shape": [
+        256,
+        256,
+        6,
+        9
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        3072,
+        512,
+        786432
+      ],
+      "box_shape": [
+        64,
+        64,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 7,
+      "offset": 0,
+      "object": "V",
+      "element_type": "bf16",
+      "global_shape": [
+        256,
+        256,
+        6,
+        9
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        3072,
+        512,
+        786432
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 8,
+      "offset": 0,
+      "object": "O",
+      "element_type": "bf16",
+      "global_shape": [
+        256,
+        255,
+        6,
+        9
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        3072,
+        512,
+        783360
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true,
+    "representative_branches": false,
+    "bounded_computation_loops": false,
+    "order_independent_atomics": false
+  },
+  "branch_decisions": [
+    {
+      "line": 4943,
+      "taken": false,
+      "note": "Always execute softmax correction; do not jump over the TMEM rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+    }
+  ]
+}

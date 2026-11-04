@@ -2,6 +2,7 @@
 
 #include "sentryward/frontend/ptx/operands.h"
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <nlohmann/json.hpp>
 #include <regex>
@@ -371,6 +372,21 @@ MmaDescriptor DecodeMmaDescriptor(std::string_view kind, std::uint64_t value) {
               (value & 4 ? 2U : 1U),
           bool(value & 4)};
 }
+std::optional<MmaDataPath> DecodeMmaDataPath(std::uint32_t m, std::uint32_t cta_group, bool ws,
+                                             bool sparse) {
+  if (cta_group == 1 && ws && (m == 32 || m == 64 || m == 128))
+    return MmaDataPath{m, kTmemLanes / m}; // layouts G (1x4), E (2x2) and D (4x1)
+  if (cta_group == 1 && m == 128)
+    return MmaDataPath{m}; // layout D
+  if (cta_group == 1 && m == 64)
+    return MmaDataPath{m, 1, true}; // layout F
+  if (cta_group == 2 && !ws && m == 128)
+    return sparse ? MmaDataPath{m / 2, 1, true} // layout C
+                  : MmaDataPath{m / 2, 2};      // layout B (2x2)
+  if (cta_group == 2 && !ws && m == 256)
+    return MmaDataPath{m / 2}; // layout A
+  return std::nullopt;
+}
 MmaDescriptor DecodeBlockScaledDescriptor(std::uint64_t value, std::string_view kind) {
   if (value > UINT32_MAX) Fail("block-scaled descriptor must be u32");
   if (kind == "mxf4" || kind == "mxf4nvf4") {
@@ -575,24 +591,76 @@ void ForEachSharedMatrixMapping(std::uint64_t descriptor, std::uint32_t mn,
   }
 }
 
+std::optional<CopyShape> DecodeCopyShape(const std::vector<std::string> &modifiers) {
+  // PTX ISA tcgen05.cp: ".shape = { .128x256b, .4x256b, .128x128b, .64x128b**, .32x128b*** }",
+  // ".multicast = { .warpx2::02_13** , .warpx2::01_23**, .warpx4*** }";
+  // ".64x128b requires .warpx2::02_13 or .warpx2::01_23", ".32x128b requires .warpx4".
+  struct ShapeEntry { std::string_view text; std::uint32_t rows, row_bits; };
+  struct MulticastEntry { std::string_view text; CopyShape::Multicast kind; std::uint32_t rows; };
+  static constexpr std::array<ShapeEntry, 5> shapes{{{"128x256b", 128, 256}, {"4x256b", 4, 256},
+      {"128x128b", 128, 128}, {"64x128b", 64, 128}, {"32x128b", 32, 128}}};
+  static constexpr std::array<MulticastEntry, 3> multicasts{{
+      {"warpx2::02_13", CopyShape::Multicast::kWarpx2_02_13, 64},
+      {"warpx2::01_23", CopyShape::Multicast::kWarpx2_01_23, 64},
+      {"warpx4", CopyShape::Multicast::kWarpx4, 32}}};
+  const ShapeEntry *shape = nullptr;
+  const MulticastEntry *multicast = nullptr;
+  unsigned shape_count = 0, multicast_count = 0, warp_qualifiers = 0;
+  for (const auto &modifier : modifiers) {
+    for (const auto &entry : shapes)
+      if (modifier == entry.text) {
+        shape = &entry;
+        ++shape_count;
+      }
+    for (const auto &entry : multicasts)
+      if (modifier == entry.text) {
+        multicast = &entry;
+        ++multicast_count;
+      }
+    warp_qualifiers += modifier.starts_with("warpx");
+  }
+  const bool requires_multicast = shape && std::any_of(multicasts.begin(), multicasts.end(),
+      [&](const auto &entry) { return entry.rows == shape->rows; });
+  if (shape_count != 1 || multicast_count > 1 || warp_qualifiers != multicast_count ||
+      (multicast ? multicast->rows != shape->rows : requires_multicast))
+    return std::nullopt;
+  CopyShape result{shape->rows, shape->row_bits, multicast ? multicast->kind : CopyShape::Multicast::kNone,
+                   std::string(shape->text)};
+  if (multicast) result.name += "." + std::string(multicast->text);
+  return result;
+}
+std::uint32_t CopyShape::SourceRow(std::uint32_t lane) const {
+  // PTX ISA tcgen05.cp: with .warpx4 "the data being copied is multicasted into all 4 warps";
+  // with .warpx2 it "is multicasted into warp pairs and each warp in the warp pair receive half
+  // of the data" (02_13: "warps 0 and 2 form a pair; warps 1 and 3 form a pair"; 01_23: "warps 0
+  // and 1 form a pair; warps 2 and 3 form a pair"). Rows 0-31 go to the pair holding warp 0 and
+  // rows 32-63 to the other pair (CUTLASS Copy_Traits of SM100_UTCCP_2x64dp128bitlw0213/0123).
+  constexpr std::uint32_t warp_lanes = 32;
+  switch (multicast) {
+  case Multicast::kNone: return lane;
+  case Multicast::kWarpx4: return lane % warp_lanes;
+  case Multicast::kWarpx2_02_13: return lane % (2 * warp_lanes);
+  case Multicast::kWarpx2_01_23: return lane / (2 * warp_lanes) * warp_lanes + lane % warp_lanes;
+  }
+  Fail("unknown tcgen05.cp multicast");
+}
 std::vector<std::pair<ByteInterval, ByteInterval>>
 DecodeCopyFragments(std::uint64_t value, std::uint64_t taddr,
-                    std::string_view shape,
+                    const CopyShape &shape,
                     std::optional<std::uint32_t> columns) {
-  if (shape != "128x128b" && shape != "128x256b" && shape != "32x128b.warpx4")
+  if (!shape.LaneMapped())
     Fail("copy fragment mapping is unavailable for this shape");
-  const unsigned width = shape == "128x256b" ? 32 : 16;
-  const unsigned rows = shape == "32x128b.warpx4" ? 32 : 128;
+  const unsigned width = shape.row_bits / 8;
   const auto d = DecodeSharedMemoryDescriptor(value);
-  (void)DecodeSharedMatrixFootprint(value, rows, width, 8, "k");
+  (void)DecodeSharedMatrixFootprint(value, shape.rows, width, 8, "k");
   const auto [lane, column] = DecodeTmemAddress(taddr);
   std::vector<ByteInterval> bounds;
-  Rectangle(bounds, lane, column, 128, width / 4, columns.value_or(512));
+  Rectangle(bounds, lane, column, kTmemLanes, width / 4, columns.value_or(512));
   const unsigned bits = d.layout == 0 ? 0 : d.layout == 2 ? 3 : d.layout == 4 ? 2 : 1;
   std::vector<std::pair<ByteInterval, ByteInterval>> result;
-  for (unsigned row = 0; row < 128; ++row)
+  for (unsigned row = 0; row < kTmemLanes; ++row)
     for (unsigned chunk = 0; chunk < width / 16; ++chunk) {
-      const auto src_row = row % rows;
+      const auto src_row = shape.SourceRow(row);
       auto offset = std::uint64_t{src_row / 8} * d.stride_byte_offset;
       offset += !bits ? (src_row % 8) * 16 + chunk * d.leading_byte_offset
                       : (src_row % 8) * (1U << bits) * 16 + chunk * 16;
@@ -614,39 +682,43 @@ ExactTmemFootprint DecodeMmaDFootprint(
                   [](auto mask) { return mask != 0; }))
     Fail("MMA output lane masks need the exact supported all-zero shape");
   const auto [base_lane, base_column] = DecodeTmemAddress(taddr);
-  auto width = d.n;
-  bool layout_f = false;
-  if (Has(instruction, "ws")) {
-    // PTX 9.2 layouts D/E/G: 128/M lane groups of M lanes each hold N*M/128
-    // columns at the same base column; M=128 is layout D.
+  const bool ws = Has(instruction, "ws");
+  if (ws) {
     if (base_lane != 0)
       Fail(".ws MMA requires lane alignment zero");
-    width = d.n * d.m / 128;
   } else if (group2) {
-    if ((d.m != 128 && d.m != 256) || base_lane != 0)
+    // Sparse M=128 is layout C (lane alignment 0 or 16); dense M=128 and M=256 use all lanes.
+    if ((d.m != 128 && d.m != 256) ||
+        (base_lane != 0 && !(d.sparse && d.m == 128 && base_lane == 16)))
       Fail("group2 MMA requires M=128/256 and lane alignment zero");
     if (d.n % 2)
       Fail("group2 N must split equally");
-    if (d.m == 128)
-      width /= 2;
   } else if (d.m == 128) {
     if (base_lane)
       Fail("M=128 MMA requires lane alignment zero");
   } else if (d.m == 64) {
     if (base_lane != 0 && base_lane != 16)
       Fail("M=64 MMA requires lane alignment zero or sixteen");
-    layout_f = true;
   } else
     Fail("unsupported MMA D layout");
+  // Every lane group holds N/slices columns of its rows at the same base column.
+  const auto path = DecodeMmaDataPath(d.m, group2 ? 2 : 1, ws, d.sparse);
+  if (!path || d.n % path->slices)
+    Fail("unsupported MMA D layout");
+  const auto width = d.n / path->slices;
+  std::array<bool, kTmemLanes> holds{};
+  for (std::uint32_t slice = 0; slice < path->slices; ++slice)
+    for (std::uint32_t row = 0; row < path->rows; ++row)
+      holds.at(base_lane + path->Lane(row, slice)) = true;
   const auto limit = columns.value_or(512);
   if (!limit || limit > 512 || base_column > limit ||
       width > limit - base_column)
     Fail("MMA D exceeds allocation columns");
   std::vector<ByteInterval> intervals;
-  intervals.reserve((layout_f ? 64 : 128) *
+  intervals.reserve(std::size_t{path->rows} * path->slices *
                     (d.d_element_bits == 32 ? 1 : width));
-  for (unsigned lane = 0; lane < 128; ++lane) {
-    if (layout_f && (lane % 32 < base_lane || lane % 32 >= base_lane + 16))
+  for (unsigned lane = 0; lane < kTmemLanes; ++lane) {
+    if (!holds[lane])
       continue;
     if (d.d_element_bits == 32)
       intervals.push_back(

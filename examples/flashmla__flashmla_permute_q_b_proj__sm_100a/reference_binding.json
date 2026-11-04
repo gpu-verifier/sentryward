@@ -1,0 +1,172 @@
+{
+ "schema": "spverify.equivalence-mapping.v1",
+ "output_value_semantics": "ideal_real",
+ "left_inputs": {
+  "allocations": {
+   "6:global8:q_b_proj": "q_b_proj",
+   "6:global13:scale_factors": "scale_factors"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global8:q_b_proj": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 1,
+    "shape": [
+     65536,
+     1536
+    ],
+    "source_strides_bytes": [
+     1536,
+     1
+    ],
+    "target_strides_bytes": [
+     1536,
+     1
+    ]
+   },
+   "6:global13:scale_factors": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     65536,
+     12
+    ],
+    "source_strides_bytes": [
+     48,
+     4
+    ],
+    "target_strides_bytes": [
+     48,
+     4
+    ]
+   }
+  }
+ },
+ "right_inputs": {
+  "allocations": {
+   "6:global8:q_b_proj": "q_b_proj",
+   "6:global13:scale_factors": "scale_factors"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global8:q_b_proj": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 1,
+    "shape": [
+     65536,
+     1536
+    ],
+    "source_strides_bytes": [
+     1536,
+     1
+    ],
+    "target_strides_bytes": [
+     1536,
+     1
+    ]
+   },
+   "6:global13:scale_factors": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     65536,
+     12
+    ],
+    "source_strides_bytes": [
+     4,
+     262144
+    ],
+    "target_strides_bytes": [
+     48,
+     4
+    ]
+   }
+  }
+ },
+ "outputs": {
+  "kind": "dense_tensors",
+  "tensors": [
+   {
+    "left_allocation": "6:global17:q_b_proj_permuted",
+    "right_allocation": "6:global17:q_b_proj_permuted",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 1,
+    "shape": [
+     65536,
+     1536
+    ],
+    "left_strides_bytes": [
+     1536,
+     1
+    ],
+    "right_strides_bytes": [
+     1536,
+     1
+    ]
+   },
+   {
+    "left_allocation": "6:global22:scale_factors_permuted",
+    "right_allocation": "6:global22:scale_factors_permuted",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     65536,
+     12
+    ],
+    "left_strides_bytes": [
+     48,
+     4
+    ],
+    "right_strides_bytes": [
+     4,
+     262144
+    ]
+   }
+  ]
+ },
+ "reference": {
+  "arguments": [
+   {
+    "name": "q_b_proj",
+    "allocation": "6:global8:q_b_proj",
+    "dtype": "uint8"
+   },
+   {
+    "name": "scale_factors",
+    "allocation": "6:global13:scale_factors",
+    "dtype": "int32"
+   },
+   {
+    "name": "h_q",
+    "parameter": 0,
+    "parameter_offset": 0
+   },
+   {
+    "name": "d_q",
+    "parameter": 0,
+    "parameter_offset": 4
+   }
+  ]
+ },
+ "provenance": {
+  "source": "FlashMLA sm100 permute_q_b_proj_kernel: row permutation of the fp8 q_b_proj weight [h_q*d_q, q_lora_rank] (bulk copy G2S -> S2G per row) and of its packed-ue8m0 int32 scale factors (TMA-aligned column-major)",
+  "upstream": [
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fused_norm_rope_attn_rope_cast_fwd/permute_q_b_proj/kernel.cu",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fused_norm_rope_attn_rope_cast_fwd/permute_q_b_proj/kernel.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/api/fused_norm_rope_attn_rope_cast_fwd.cpp",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/flash_mla/fused_norm_rope_attn_rope_cast.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/test-fused-norm-rope-attn-rope-cast.py",
+   "https://github.com/deepseek-ai/TileKernels/blob/c1cf914a82e6901c679445f872051ce44ac2cc63/tile_kernels/quant/common.py",
+   "https://github.com/deepseek-ai/TileKernels/blob/c1cf914a82e6901c679445f872051ce44ac2cc63/tile_kernels/quant/per_token_cast_kernel.py"
+  ],
+  "scope": "tests/test-fused-norm-rope-attn-rope-cast.py first case (prefill, h_q=128, seed 0): get_q_b_weight(h_q=128, d_q=512, q_lora_rank=1536, scale_gran=32) -> permute_q_b_proj; grid (65536,1,1), 32 threads, 1536 B dynamic smem; q_b_proj and q_b_proj_permuted contiguous (stride(0)=1536 B); scale_factors and scale_factors_permuted [65536, 12] int32 with strides (1, 65536) elements (tile_kernels per_token_cast use_tma_aligned_col_major_sf + use_packed_ue8m0; FlashMLA allocate_scale_factor); the fp8 weight is compared as raw bytes (uint8 view), as the kernel moves it with cp.async.bulk",
+  "optimized_input_sha256": "84db85a3482d7d3875ba85f92bbfcc64278214f533f7a61aadb8d31cc0093a40",
+  "ptx_sha256": "59616fe0aaea46108ea343f71117df2c60948d5582e9010fd65a257b4ee67e97"
+ }
+}

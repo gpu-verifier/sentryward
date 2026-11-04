@@ -193,8 +193,7 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
   std::vector<MemoryAccessFamily> families;
   std::vector<FamilyFootprint> footprints;
   std::vector<std::optional<std::size_t>> copy_classes;
-  // Families whose storage FamilyConflictOrder leaves unreduced: duplicate-store exemptions, and
-  // below the families of a same-value pair.
+  // Families whose storage FamilyConflictOrder leaves unreduced: duplicate-store exemptions.
   std::vector<std::uint8_t> blocked_families;
   bool declined=false;std::size_t logical_accesses=0;
   ProfileCall("memory.family.accesses",[&] {
@@ -309,10 +308,7 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
   const auto initial_hb_stats=hb.stats();
   // Same-value write obligations (same_value_writes.h). Whether every member of a family is an
   // eligible write is decided once per family, only for families of a candidate write pair.
-  const auto same_value_writes=[&]{
-    return SameValueWrites(source,&ctas,weights?&*weights:nullptr,options.max_warning_samples);
-  };
-  auto same_value=same_value_writes();
+  SameValueWrites same_value(source,&ctas,weights?&*weights:nullptr,options.max_warning_samples);
   std::vector<std::uint8_t> plain_writes(families.size()); // 0 unknown, 1 eligible, 2 not
   const auto same_value_candidate=[&](std::size_t i,std::size_t j) {
     const auto& x=footprints[i];const auto& y=footprints[j];
@@ -339,13 +335,6 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
     for(const auto& [p,q]:corners)if(start(i,p)!=start(j,q))return std::pair{p,q};
     return std::nullopt;
   };
-  // A same-value pair of a reduced family (FamilyConflictOrder) blocks its storage, since the
-  // order constraints through their unordered pair no longer certify the pairs around it; every
-  // pair of that storage is then checked directly. A pass collects all such pairs (its races and
-  // unknowns stand), then the relation search runs again; each repetition blocks at least one more
-  // storage, so there are at most as many repetitions as storages.
-  bool rescan=false;
-  for(;;) {
   auto order=ProfileCall("memory.family.conflict_order",[&] {
     auto result=FamilyConflictOrder(families,footprints,graph.traceOrder(),blocked_families);
     ProfileScope counts("memory.family.conflict_order_counts");
@@ -433,9 +422,6 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
         residual_parts=requests[q].obligationResidual(domain,obligation_rows);
         expansion.pruned=obligation_rows;parts=residual_parts;
       } else if(same_candidate && requests[q].witness(domain)) {
-        if(order.candidates(i) || order.candidates(j)) {
-          blocked_families[i]=blocked_families[j]=1;rescan=true;continue;
-        }
         residual_parts=requests[q].obligationResidual(domain,obligation_rows);
         expansion.pruned=obligation_rows;parts=residual_parts;residual=true;
       }
@@ -511,6 +497,9 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
         } else if(same_value.pair(a,b,evidence)) {
           if(same_actor(relation,first,second)) {declined=true;return {};}
           same_values.add(families,i,j,relation,a.id);
+          // An unordered pair of reduced families: their constraints no longer certify the pairs
+          // around it, so the order requires further pairs (FamilyConflictOrder::extension).
+          if((order.candidates(i) || order.candidates(j)) && !order.addObligation(i,j)) {declined=true;return {};}
           // Every pair of the relation covers the same bytes, at the first family's member offset:
           // a further sample's overlap is the witness's, its region moved with that member.
           const auto moved=[&](std::size_t x,std::size_t) {
@@ -540,78 +529,94 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
   // Query ordering is independent of program scheduling. Group source
   // domains by physical mask width before forming batches; alternating small
   // and large domains must not repeatedly flush nearly-empty traversals.
-  std::map<std::pair<std::size_t,std::size_t>,std::vector<std::size_t>> write_sources;
-  for(std::size_t i=0;i<families.size();++i)
-    if(families[i].first.mode==AccessMode::kWrite && !footprints[i].empty) {
-      const auto source=families[i].event_family;
-      const auto width=MemberSet::storageWords(hb.families().families()[source].count);
-      write_sources[{width,source}].push_back(i);
-    }
-  for(const auto& [domain_source,source_accesses]:write_sources) {
-    const auto source_family=domain_source.second;
-    std::vector<FamilyRelationRequest> requests;
-    std::vector<std::pair<std::size_t,std::size_t>> targets;
-    ProfileScope candidates("memory.family.generate_relations");
-    for(auto i:source_accesses) {
-    const auto& first=families[i];
-    if(first.first.mode!=AccessMode::kWrite || footprints[i].empty)continue;
-    const auto [lo,hi]=bounds(i);
-    const auto* reduced=order.candidates(i);
-    const auto candidate=[&](std::size_t j) {
-      ++candidates.edges;
-      const auto& second=families[j];
-      if(second.first.mode==AccessMode::kWrite && j<i)return;
-      auto overlap=ClassifyFamilyOverlap(first,footprints[i],second,footprints[j]);
-      row_enumerations+=overlap.member_rows;
-      expansion.nodes=row_enumerations;
-      for(auto& r:overlap.unknown)overlap.overlap.push_back(std::move(r));
-      // Boolean race queries need no triangular member-row expansion.
-      // Reflexive pairs are discharged by the HB identity proof. Retain the
-      // legacy unique-pair contract only for A002 warning counts/groups.
-      if(i==j && copy_classes[i]) {
-        std::vector<MemberRelation> rows;
-        for(const auto& relation:overlap.overlap) {
-          auto parts=unique(relation,first);
-          rows.insert(rows.end(),std::make_move_iterator(parts.begin()),std::make_move_iterator(parts.end()));
-        }
-        overlap.overlap=std::move(rows);
+  using Sources=std::map<std::pair<std::size_t,std::size_t>,std::vector<std::size_t>>;
+  const auto add_source=[&](Sources& sources,std::size_t i) {
+    const auto source=families[i].event_family;
+    const auto width=MemberSet::storageWords(hb.families().families()[source].count);
+    sources[{width,source}].push_back(i);
+  };
+  // One relation search: each write family i of `sources` against every family that
+  // `candidates_of(i, visit)` visits; a write/write pair once, from its lesser family.
+  const auto search=[&](const Sources& sources,const auto& candidates_of) -> std::optional<Output> {
+    for(const auto& [domain_source,source_accesses]:sources) {
+      const auto source_family=domain_source.second;
+      std::vector<FamilyRelationRequest> requests;
+      std::vector<std::pair<std::size_t,std::size_t>> targets;
+      ProfileScope candidates("memory.family.generate_relations");
+      for(auto i:source_accesses) {
+        const auto& first=families[i];
+        if(first.first.mode!=AccessMode::kWrite || footprints[i].empty)continue;
+        const auto candidate=[&](std::size_t j) {
+          ++candidates.edges;
+          const auto& second=families[j];
+          if(second.first.mode==AccessMode::kWrite && j<i)return;
+          auto overlap=ClassifyFamilyOverlap(first,footprints[i],second,footprints[j]);
+          row_enumerations+=overlap.member_rows;
+          expansion.nodes=row_enumerations;
+          for(auto& r:overlap.unknown)overlap.overlap.push_back(std::move(r));
+          // Boolean race queries need no triangular member-row expansion.
+          // Reflexive pairs are discharged by the HB identity proof. Retain the
+          // legacy unique-pair contract only for A002 warning counts/groups.
+          if(i==j && copy_classes[i]) {
+            std::vector<MemberRelation> rows;
+            for(const auto& relation:overlap.overlap) {
+              auto parts=unique(relation,first);
+              rows.insert(rows.end(),std::make_move_iterator(parts.begin()),std::make_move_iterator(parts.end()));
+            }
+            overlap.overlap=std::move(rows);
+          }
+          if(overlap.overlap.empty())return;
+          for(const auto& relation:overlap.overlap)result.address_candidates+=cardinality(relation);
+          relation_count+=overlap.overlap.size();
+          profile.edges=relation_count;
+          requests.push_back({second.event_family,std::move(overlap.overlap)});targets.push_back({i,j});
+        };
+        candidates_of(i,candidate);
       }
-      if(overlap.overlap.empty())return;
-      for(const auto& relation:overlap.overlap)result.address_candidates+=cardinality(relation);
-      relation_count+=overlap.overlap.size();
-      profile.edges=relation_count;
-      requests.push_back({second.event_family,std::move(overlap.overlap)});targets.push_back({i,j});
-    };
-    if(reduced)for(auto j:*reduced)candidate(j);
-    else candidates_index.query(footprints[i],lo,hi,candidate);
+      candidates.nodes=requests.size();candidates.Stop();
+      if(requests.empty())continue;
+      const auto extent=hb.families().families()[source_family].count;
+      // Inline masks of 1..256 members have the same physical cost. Mix their
+      // labels; for larger masks retain equal storage widths, so padding cannot
+      // turn singleton queries into large dense-array work.
+      if(!batch.empty() && (batch.size()==std::min(kMaxRelationBatchSources,options.reachability.max_batch_sources) ||
+          MemberSet::storageWords(extent)!=MemberSet::storageWords(hb.families().families()[batch.front().source].count))) {
+        if(auto answer=process())return answer;
+        if(declined)return {};
+      }
+      batch.push_back({source_family,std::move(requests)});metadata.push_back(std::move(targets));
+      ProfileSnapshot();
     }
-    candidates.nodes=requests.size();candidates.Stop();
-    if(requests.empty())continue;
-    const auto extent=hb.families().families()[source_family].count;
-    // Inline masks of 1..256 members have the same physical cost. Mix their
-    // labels; for larger masks retain equal storage widths, so padding cannot
-    // turn singleton queries into large dense-array work.
-    if(!batch.empty() && (batch.size()==std::min(kMaxRelationBatchSources,options.reachability.max_batch_sources) ||
-        MemberSet::storageWords(extent)!=MemberSet::storageWords(hb.families().families()[batch.front().source].count))) {
-      if(auto answer=process())return answer;
-      if(declined)return {};
-    }
-    batch.push_back({source_family,std::move(requests)});metadata.push_back(std::move(targets));
-    ProfileSnapshot();
-  }
-  profile.nodes=families.size();profile.edges=relation_count;profile.pruned=row_enumerations+hb.stats().member_enumerations;
-  if(!batch.empty()) {
-    if(auto answer=process())return answer;
+    profile.nodes=families.size();profile.edges=relation_count;profile.pruned=row_enumerations+hb.stats().member_enumerations;
+    if(!batch.empty())return process();
+    return {};
+  };
+  Sources write_sources;
+  for(std::size_t i=0;i<families.size();++i)
+    if(families[i].first.mode==AccessMode::kWrite && !footprints[i].empty)add_source(write_sources,i);
+  if(auto answer=search(write_sources,[&](std::size_t i,const auto& visit) {
+        if(const auto* reduced=order.candidates(i))for(const auto j:*reduced)visit(j);
+        else {const auto [lo,hi]=bounds(i);candidates_index.query(footprints[i],lo,hi,visit);}
+      }))return answer;
+  if(declined)return {};
+  // The pairs that the obligations of reduced families require beyond their constraints; a pass
+  // over them may record further obligations, so repeat until none is new.
+  for(;;) {
+    const auto extension=order.extension([&](std::size_t family,const std::function<void(std::size_t)>& visit) {
+      const auto [lo,hi]=bounds(family);candidates_index.query(footprints[family],lo,hi,visit);
+    });
+    if(extension.empty())break;
+    Sources sources;
+    for(const auto& entry:extension)
+      if(families[entry.first].first.mode==AccessMode::kWrite)add_source(sources,entry.first);
+    if(auto answer=search(sources,[&](std::size_t i,const auto& visit) {
+          const auto found=std::lower_bound(extension.begin(),extension.end(),i,
+              [](const auto& entry,std::size_t family){return entry.first<family;});
+          for(const auto j:found->second)visit(j);
+        }))return answer;
     if(declined)return {};
-  }
-  if(rescan) {
-    rescan=false;same_value=same_value_writes();
-    result=MemoryRaceResult{};
-    result.search_strategy="conflict-family";result.reachability_algorithm="member-relations";
-    continue;
   }
   result.search_complete=true;
   return finish();
-  }
 }
 } // namespace sentryward::algorithm

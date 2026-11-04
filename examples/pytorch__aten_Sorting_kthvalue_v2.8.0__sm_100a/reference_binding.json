@@ -1,0 +1,159 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global5:input": "input"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          64
+        ],
+        "source_strides_bytes": [
+          256,
+          4
+        ],
+        "target_strides_bytes": [
+          256,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global5:input": "input"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:input": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          64
+        ],
+        "source_strides_bytes": [
+          256,
+          4
+        ],
+        "target_strides_bytes": [
+          256,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global8:kthValue",
+        "right_allocation": "6:global8:kthValue",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2
+        ],
+        "left_strides_bytes": [
+          4
+        ],
+        "right_strides_bytes": [
+          4
+        ]
+      },
+      {
+        "kind": "dense_tensor",
+        "left_allocation": "6:global7:indices",
+        "right_allocation": "6:global7:indices",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          2
+        ],
+        "left_strides_bytes": [
+          8
+        ],
+        "right_strides_bytes": [
+          8
+        ]
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "input",
+        "allocation": "6:global5:input",
+        "dtype": "float32"
+      },
+      {
+        "name": "k",
+        "parameter": 2
+      }
+    ]
+  },
+  "provenance": {
+    "sha256": "721ae19782389897fcb4a15c0009a30f3cc338f7dfc278d2f25e9d6c18ec7b91",
+    "source": "// Source: https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/aten/src/ATen/native/cuda/Sorting.cu ; https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/aten/src/ATen/native/cuda/SortingRadixSelect.cuh ; https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/aten/src/ATen/cuda/detail/TensorInfo.cuh",
+    "scope": "Fixed launch and input JSON: gatherKthValue<float, int, 2>, input float32 [2, 64] (contiguous; TensorInfo sizes [2, 1] after reduceDim, strides [64, 1]), inputSliceSize 64 (p1), k = 32 (p2), numInputSlices 2 (p3), inputWithinSliceStride 1 (p4), dim = -1, keepdim = False; kthValue float32 [2] and indices int64 [2]; both outputs retained. Analysis scope: the input's branch decisions (every element of a slice is the float with bits 0x2AAAAAAA, so every thread finds the k-th value). Index tie semantics: v2.8.0 documents any valid index on CUDA; the reference returns the smallest.",
+    "optimized_input_sha256": "721ae19782389897fcb4a15c0009a30f3cc338f7dfc278d2f25e9d6c18ec7b91",
+    "ptx_sha256": "ef11fb7a1a2aa3bbe79e8a7a126675920c4e8ee82744b811b4682b036545a255",
+    "upstream": [
+      "https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/aten/src/ATen/native/cuda/Sorting.cu",
+      "https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/aten/src/ATen/native/cuda/Sorting.cpp",
+      "https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/aten/src/ATen/native/cuda/SortingRadixSelect.cuh",
+      "https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/aten/src/ATen/native/cuda/SortingCommon.cuh",
+      "https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/torch/_torch_docs.py",
+      "https://github.com/pytorch/pytorch/blob/ba56102387ef21a3b04b357e5b183d48f0afefc7/test/test_sort_and_select.py"
+    ],
+    "scope_branch_choices": [
+      {
+        "line": 190,
+        "taken": true,
+        "note": "radixSelect: digit 0 is not the unique k-th value (count != 1); analysis scope: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value."
+      },
+      {
+        "line": 280,
+        "taken": true,
+        "note": "radixSelect: kToFind > count of digit 0 (count 0); continue to digit 1; analysis scope: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value."
+      },
+      {
+        "line": 297,
+        "taken": false,
+        "note": "radixSelect: digit 1 is not the unique k-th value; analysis scope: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value."
+      },
+      {
+        "line": 300,
+        "taken": false,
+        "note": "radixSelect: kToFind > count of digit 1 (count 0); continue to digit 2; analysis scope: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value."
+      },
+      {
+        "line": 306,
+        "taken": false,
+        "note": "radixSelect: digit 2 is not the unique k-th value (count 64); analysis scope: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value."
+      },
+      {
+        "line": 309,
+        "taken": true,
+        "note": "radixSelect: kToFind <= count of digit 2 (64); select digit 2 and proceed to the next digit position; analysis scope: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value."
+      },
+      {
+        "line": 341,
+        "taken": true,
+        "note": "index search: the loaded value equals the k-th value, so this thread records its index; analysis scope: every element of the slice is the same float with bit pattern 0x2AAAAAAA, so radix digit 2 is selected at every digit position and every thread finds the k-th value."
+      }
+    ],
+    "scope_shape_arrays": []
+  }
+}

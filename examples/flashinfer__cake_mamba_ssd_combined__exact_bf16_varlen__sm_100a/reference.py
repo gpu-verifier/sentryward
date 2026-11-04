@@ -10,7 +10,13 @@ Source: https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b034
   (cumsum/delta_precomputed[(l*nheads+h)*128 + row - offset], 1041-1055);
   initial state (1082-1102); per-chunk state update (1183-1280); final_states
   (1308-1325); causal intra term (1391-1411); output with inter term
-  exp(cs[r]) * C.state (1514-1578).
+  exp(cs[r]) * C.state, then the D skip term and z gate (1514-1578).
+Test case: https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/mamba/test_cake_ssd_combined.py
+  test_cake_ssd_combined_program_cache_is_multi_device_safe[varlen_metadata]
+  (464-495) runs _case(nheads=1, ngroups=1, varlen=True); _case (67-131):
+  has_d=True with D (nheads, 64) (d_has_hdim=True, so D_mode 2,
+  cake_ssd_combined.py 1046), has_z=True, has_initial_states=True,
+  dt_limit (0.001, 0.1).
 Host shapes and routing: https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/mamba/cake_ssd_combined.py
 
 The math equals the batched sibling (same generator; only routing differs).
@@ -18,6 +24,7 @@ Per (sequence, head), over the sequence's segments in order, with the
 segment-local precomputed cumsum cs and delta (segment base 0):
   state = exp(cs[t] - cs[t-1]) * state + delta[t] * x[t] b[t]^T   (cs[off-1] := 0)
   y[t]  = state . c[t]
+  out[t] = (y[t] + x[t] * D[head]) * z[t] * sigmoid(z[t])      (D_mode 2, has_z)
 starting from initial_states[sequence, head]; final_states gets the state after
 the last segment.  dt, A and dt_bias are consumed by the preprocess kernel.
 Intermediate BF16 rounding of chunk operands is abstracted as in the sibling.
@@ -31,7 +38,7 @@ import torch
 CHUNK = 128
 
 
-def reference(X, B, C, delta, cumsum, initial_states,
+def reference(X, B, C, delta, cumsum, initial_states, D, z,
               chunk_indices, chunk_offsets, seq_chunk_cumsum,
               chunk_index_0, chunk_index_1, chunk_index_2,
               chunk_offset_0, chunk_offset_1, chunk_offset_2,
@@ -53,10 +60,11 @@ def reference(X, B, C, delta, cumsum, initial_states,
             tuple(seq_chunk_cumsum.shape) != (sequence_count + 1,) or \
             chunk_offsets.shape != chunk_indices.shape:
         raise ValueError("table tensors must match the fixed table sizes")
-    if D_mode or has_z or not has_initial or checkpoint_state_count or not write_final_states:
-        raise ValueError("binding covers no D, no z, initial states, final states only")
+    if D_mode != 2 or not has_z or not has_initial or checkpoint_state_count or not write_final_states:
+        raise ValueError("binding covers D (nheads, head_dim), z, initial states, final states only")
     head_dim, state_dim = X.shape[-1], B.shape[-1]
     x, b, c = X.float(), B.float(), C.float()
+    skip, gate = D.float(), z.float()
     rows = {}
     finals = []
     for sequence in range(sequence_count):
@@ -81,7 +89,10 @@ def reference(X, B, C, delta, cumsum, initial_states,
                     update = (dl * x[0, token, head]).reshape(head_dim, 1) * \
                         b[0, token, group].reshape(1, state_dim)
                     state = decay * state + update
-                    rows[(token, head)] = (state * c[0, token, group].reshape(1, state_dim)).sum(dim=-1)
+                    y = (state * c[0, token, group].reshape(1, state_dim)).sum(dim=-1)
+                    y = y + x[0, token, head] * skip[head]
+                    g = gate[0, token, head]
+                    rows[(token, head)] = y * (g * (1 / (1 + torch.exp(-g))))
             head_states.append(state)
         finals.append(torch.stack(head_states, dim=0))
     missing = [key for key in ((t, h) for t in range(seqlen) for h in range(nheads)) if key not in rows]

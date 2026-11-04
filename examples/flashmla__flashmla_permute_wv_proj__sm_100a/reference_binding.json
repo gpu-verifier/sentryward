@@ -1,0 +1,195 @@
+{
+ "schema": "spverify.equivalence-mapping.v1",
+ "output_value_semantics": "ideal_real",
+ "left_inputs": {
+  "allocations": {
+   "6:global7:wv_proj": "wv_proj",
+   "6:global13:scale_factors": "scale_factors"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global7:wv_proj": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 1,
+    "shape": [
+     16,
+     512,
+     4096
+    ],
+    "source_strides_bytes": [
+     2097152,
+     4096,
+     1
+    ],
+    "target_strides_bytes": [
+     2097152,
+     4096,
+     1
+    ]
+   },
+   "6:global13:scale_factors": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 1,
+    "shape": [
+     16,
+     512,
+     32,
+     4
+    ],
+    "source_strides_bytes": [
+     65536,
+     128,
+     4,
+     1
+    ],
+    "target_strides_bytes": [
+     65536,
+     128,
+     4,
+     1
+    ]
+   }
+  }
+ },
+ "right_inputs": {
+  "allocations": {
+   "6:global7:wv_proj": "wv_proj",
+   "6:global13:scale_factors": "scale_factors"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global7:wv_proj": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 1,
+    "shape": [
+     16,
+     512,
+     4096
+    ],
+    "source_strides_bytes": [
+     2097152,
+     4096,
+     1
+    ],
+    "target_strides_bytes": [
+     2097152,
+     4096,
+     1
+    ]
+   },
+   "6:global13:scale_factors": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 1,
+    "shape": [
+     16,
+     512,
+     32,
+     4
+    ],
+    "source_strides_bytes": [
+     65536,
+     4,
+     2048,
+     1
+    ],
+    "target_strides_bytes": [
+     65536,
+     128,
+     4,
+     1
+    ]
+   }
+  }
+ },
+ "outputs": {
+  "kind": "dense_tensors",
+  "tensors": [
+   {
+    "left_allocation": "6:global16:wv_proj_permuted",
+    "right_allocation": "6:global16:wv_proj_permuted",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 1,
+    "shape": [
+     16,
+     512,
+     4096
+    ],
+    "left_strides_bytes": [
+     2097152,
+     4096,
+     1
+    ],
+    "right_strides_bytes": [
+     2097152,
+     4096,
+     1
+    ]
+   },
+   {
+    "left_allocation": "6:global22:scale_factors_permuted",
+    "right_allocation": "6:global22:scale_factors_permuted",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 1,
+    "shape": [
+     16,
+     512,
+     32,
+     4
+    ],
+    "left_strides_bytes": [
+     65536,
+     128,
+     4,
+     1
+    ],
+    "right_strides_bytes": [
+     65536,
+     4,
+     2048,
+     1
+    ]
+   }
+  ]
+ },
+ "reference": {
+  "arguments": [
+   {
+    "name": "wv_proj",
+    "allocation": "6:global7:wv_proj",
+    "dtype": "uint8"
+   },
+   {
+    "name": "sf_bytes",
+    "allocation": "6:global13:scale_factors",
+    "dtype": "uint8"
+   },
+   {
+    "name": "wv_group_size",
+    "parameter": 0,
+    "parameter_offset": 8
+   }
+  ]
+ },
+ "provenance": {
+  "source": "FlashMLA sm100 permute_wv_proj_kernel: per (wv_group, output row), the 8 heads x 16 chunks of 32 fp8 input channels are transposed to 16 chunks x 8 heads (bulk copy G2S, smem shuffle, bulk copy S2G), and the per-32 ue8m0 scale bytes are permuted the same way",
+  "upstream": [
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fused_norm_rope_attn_rope_cast_fwd/permute_wv_proj/kernel.cu",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fused_norm_rope_attn_rope_cast_fwd/permute_wv_proj/kernel.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/api/fused_norm_rope_attn_rope_cast_fwd.cpp",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/flash_mla/fused_norm_rope_attn_rope_cast.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/test-fused-norm-rope-attn-rope-cast.py",
+   "https://github.com/deepseek-ai/DeepGEMM/blob/5081f8513af57e61696de4f4f04b0e707ffb503e/csrc/apis/layout.hpp",
+   "https://github.com/deepseek-ai/DeepGEMM/blob/5081f8513af57e61696de4f4f04b0e707ffb503e/csrc/jit_kernels/impls/smxx_layout.hpp",
+   "https://github.com/deepseek-ai/DeepGEMM/blob/5081f8513af57e61696de4f4f04b0e707ffb503e/csrc/utils/math.hpp"
+  ],
+  "scope": "tests/test-fused-norm-rope-attn-rope-cast.py first case (prefill, h_q=128, seed 0): get_wb_weight(n_wv_group=16, wv_group_size=8, d_o=512, scale_gran=32, wv_proj_out_dim=512) -> permute_wv_proj; grid (512, 16, 1), 32 threads, 8192 B dynamic smem; wv_proj / wv_proj_permuted [16, 512, 4096] fp8 contiguous; scale_factors (deep_gemm.transform_sf_into_required_layout, SM100 packed ue8m0, MN-major TMA-aligned) and scale_factors_permuted (FlashMLA allocate_scale_factor) [16, 512, 32] int32 with strides (16384, 1, 512) elements, compared as their bytes [16, 512, 32, 4]; weights compared as raw bytes (uint8 view)",
+  "optimized_input_sha256": "28ef7a9bb73af57b754103cd19012ca3e9d52c15a3ed81461326c1192d9e5d5d",
+  "ptx_sha256": "a97f5623d89bfaff3b328d1af4eb34085a3794e8e3279f67ff57a08ebd1f409c"
+ }
+}

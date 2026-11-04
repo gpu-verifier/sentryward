@@ -5,7 +5,6 @@
 #include <map>
 #include <optional>
 #include <ranges>
-#include <set>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -105,15 +104,19 @@ bool lessDiagnostic(const Diagnostic& left, const Diagnostic& right) {
 }  // namespace
 
 Result<LoweredProgram, Diagnostic> Lowerer::Run(
-    const SourceProgram& source, bool synchronization_only,
-    CollectiveOrdering ordering) const {
-  const std::vector<Diagnostic> diagnostics =
-      SourceValidator().Validate(source);
-  if (!diagnostics.empty()) {
+    const SourceProgram& source, bool synchronization_only) const {
+  const auto validated = SourceValidator().Validate(source);
+  if (!validated) {
+    const auto& diagnostics = validated.error();
     return Result<LoweredProgram, Diagnostic>::Failure(*std::min_element(
         diagnostics.begin(), diagnostics.end(), lessDiagnostic));
   }
+  return Run(validated.value(), synchronization_only);
+}
 
+Result<LoweredProgram, Diagnostic> Lowerer::Run(
+    const ValidatedSource& validated, bool synchronization_only) const {
+  const SourceProgram& source = validated.program();
   std::vector<std::size_t> reordered_instructions;
   bool sorted=true;
   std::optional<InstId> previous_id;
@@ -163,7 +166,8 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
   StateDefMap state_defs;
   BarrierInitializationTable barrier_initializations;
   CollectiveTable collectives;
-  std::set<InstId> nonblocking_instructions;
+  // Ascending: IDs ascend in the lowering loop.
+  std::vector<InstId> nonblocking_instructions;
   std::map<SyncId, std::vector<CollectiveCall>> collective_calls;
 
   std::optional<ActorId> previous_actor;
@@ -191,24 +195,50 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
   std::vector<std::pair<std::size_t,std::size_t>> requirement_holders;
   std::vector<std::size_t> wait_positions;
   std::size_t next_step=0;
-  for (auto position : instructions) {
-    const auto step=next_step++;
-    const auto instruction_view=source.instructions.view(position); const auto& snapshot=*instruction_view;
-    const auto* instruction=&snapshot;
+  // The bookkeeping before a record is lowered: its thread's transition and loop iterations.
+  const auto enter=[&](std::size_t step,std::size_t position,ActorId actor,std::optional<std::uint32_t> site) {
     auto cohort=source.instructions.threadCohort(position);
     // The requirement pass replays these transitions; it has no transition rule of its own.
-    if(previous_actor!=instruction->actor || previous_cohort!=cohort) {
+    if(previous_actor!=actor || previous_cohort!=cohort) {
       finish_thread();
       event_begin=graph.beginThread();
-      previous_actor=instruction->actor;previous_cohort=cohort;
+      previous_actor=actor;previous_cohort=cohort;
       if(cohort)graph.beginEdgeGroup(cohort->first,cohort->second);
       transitions.push_back({step,cohort});
     }
-    if(instruction->ptx_origin) {
-      const auto site=instruction->ptx_origin->instruction_index;
-      if(previous_site && site<*previous_site)iteration_starts.emplace_back(graph.eventCount()-event_begin,site);
+    if(site) {
+      if(previous_site && *site<*previous_site)iteration_starts.emplace_back(graph.eventCount()-event_begin,*site);
       previous_site=site;
     }
+  };
+  static const auto kImmediateLoad=SourceOp(std::in_place_type<ImmediateLoad>).index();
+  static const auto kImmediateStore=SourceOp(std::in_place_type<ImmediateStore>).index();
+  for (auto position : instructions) {
+    const auto step=next_step++;
+    if(synchronization_only) {
+      // An immediate access lowers to an issue and a completion event, which emit projects to
+      // their operation kinds: the record's header (ID, actor, PTX site) determines them.
+      const auto header=HeaderOf(source.instructions,position);
+      if(header.operation==kImmediateLoad || header.operation==kImmediateStore) {
+        enter(step,position,header.actor,header.origin ? std::optional(header.origin->first) : std::nullopt);
+        const auto issue=graph.addEvent(EventSchedulingClass::kNormal,header.id,header.actor,OperationIssueEvent{});
+        const auto done=graph.addEvent(EventSchedulingClass::kNormal,header.id,header.actor,OperationCompleteEvent{});
+        addRequiredEdge(graph,issue,done,EventEdgeReason::kInternalIssueToDone);
+        if(!origins.record(header.id,{issue,done}))
+          throw std::logic_error("validated source produced duplicate origin map");
+        continue;
+      }
+    }
+    // Synchronization-only lowering reads every field of a record but where its accesses point:
+    // emit drops access arrays (keeping their sizes), and access modes are prototype fields.
+    // at() returns a const value; the cast lets the view move it instead of copying it.
+    const auto instruction_view=synchronization_only
+        ? SourceInstructions::Iterator::Arrow{SourceInstruction(source.instructions.at(position,SourceRecordCodec::bindExceptAccessEndpoints)),nullptr}
+        : source.instructions.view(position);
+    const auto& snapshot=*instruction_view;
+    const auto* instruction=&snapshot;
+    enter(step,position,instruction->actor,
+          instruction->ptx_origin ? std::optional(instruction->ptx_origin->instruction_index) : std::nullopt);
     std::optional<Diagnostic> lowering_error;
     const LoweredInstruction lowered = std::visit(
         Overloaded{
@@ -473,9 +503,8 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
     if (!origins.record(instruction->id, lowered.milestones)) {
       throw std::logic_error("validated source produced duplicate origin map");
     }
-    // IDs ascend in this pass, so every insertion appends.
     if (!lowered.blocking && lowered.milestones.issue != lowered.milestones.done)
-      nonblocking_instructions.emplace_hint(nonblocking_instructions.end(), instruction->id);
+      nonblocking_instructions.push_back(instruction->id);
     if (std::holds_alternative<AsyncOp>(instruction->op) || std::holds_alternative<Await>(instruction->op))
       requirement_holders.emplace_back(step, position);
     else if (std::holds_alternative<MBarrierWaitState>(instruction->op))
@@ -510,7 +539,8 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
   };
   for (const auto& [step, position] : requirement_holders) {
     replay_transitions(step);
-    const auto instruction_view=source.instructions.view(position); const auto& snapshot=*instruction_view;
+    // Only the holder's identity and references are read.
+    const auto snapshot=source.instructions.at(position,SourceRecordCodec::bindExceptAccessEndpoints);
     const auto* instruction=&snapshot;
     const Milestones milestones = *origins.findMilestones(instruction->id);
     const auto addRequirements = [&](const std::vector<MilestoneRef>& refs,
@@ -544,10 +574,14 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
                                          dependency.to.instruction});
   }
 
+  // The edges arrive sorted by source, so whether a source is nonblocking is read by a cursor
+  // that only advances: O(edges + nonblocking instructions) in all.
+  auto nonblocking=nonblocking_instructions.begin();
   const auto lower_source_edge=[&](const SourceEdge& edge) {
     // Endpoint events only, looked up source, then target, then the kind check.
+    while(nonblocking!=nonblocking_instructions.end() && *nonblocking<edge.from)++nonblocking;
     const auto source_milestone=(edge.kind==SourceEdgeKind::kProgramOrder &&
-        nonblocking_instructions.contains(edge.from)) ? Milestone::kIssue : Milestone::kComplete;
+        nonblocking!=nonblocking_instructions.end() && *nonblocking==edge.from) ? Milestone::kIssue : Milestone::kComplete;
     const EventId source_event = *origins.resolve({edge.from, source_milestone});
     const EventId target_event = *origins.resolve({edge.to, Milestone::kIssue});
     EventEdgeReason reason;
@@ -568,20 +602,7 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
     // Equivalent edges are equal values, so the sorted sequence is unique: one family pass
     // fills the logical edges and the sort compares values, not two materialized records.
     // The block frees the copy before the graph is frozen.
-    std::vector<SourceEdge> ordered_edges(source.edges.size());
-    std::size_t covered=0;
-    source.edges.forEachAffineColumn([&](const SourceEdge& value,const SourceEdgeCodec::Delta& delta,
-        std::size_t first,std::size_t stride,std::size_t count) {
-      auto edge=value;SourceEdgeCodec::Binding base{};SourceEdgeCodec::split(edge,base);
-      ordered_edges[first]=value;
-      for(std::size_t member=1;member<count;++member) {
-        const auto binding=SourceEdgeCodec::translate(base,delta,member);
-        if(!binding)throw std::logic_error("invalid compressed record binding");
-        SourceEdgeCodec::bind(edge,*binding);ordered_edges[first+stride*member]=edge;
-      }
-      covered+=count;
-    });
-    if(covered!=ordered_edges.size())throw std::logic_error("source edge families do not cover every edge");
+    auto ordered_edges=ExpandEdges(source.edges);
     if(!std::is_sorted(ordered_edges.begin(),ordered_edges.end(),lessSourceEdge))
       std::sort(ordered_edges.begin(),ordered_edges.end(),lessSourceEdge);
     for(const auto& edge:ordered_edges)lower_source_edge(edge);
@@ -600,6 +621,8 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
   }
   decltype(wait_positions)().swap(wait_positions);
 
+  // Ascending: edges are appended.
+  std::vector<std::size_t> execution_only_edges;
   std::vector<const CollectiveSpec*> collective_specs;
   collective_specs.reserve(source.collectives.size());
   for (const CollectiveSpec& spec : source.collectives) {
@@ -643,12 +666,11 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
       // A warp data collective still waits in CollectiveRuntime. Its return
       // is execution-gated, not a memory-order release. Adding this edge for
       // shfl/elect/vote/match/redux would publish unrelated preceding stores,
-      // so only the execution-order relation carries it.
+      // so only the execution-order relation carries it (executionOnlyEdges).
       // https://docs.nvidia.com/cuda/parallel-thread-execution/#parallel-synchronization-and-communication-instructions-shfl-sync
-      if (kind != CollectiveKind::kWarpData ||
-          ordering == CollectiveOrdering::kExecution)
-        addRequiredEdge(graph, completion, call.milestones.done,
-                        EventEdgeReason::kCollectiveRelease);
+      if (kind == CollectiveKind::kWarpData) execution_only_edges.push_back(graph.edgeCount());
+      addRequiredEdge(graph, completion, call.milestones.done,
+                      EventEdgeReason::kCollectiveRelease);
       participants.push_back(
           CollectiveParticipant{call.actor, call.instruction, call.milestones});
     }
@@ -669,9 +691,11 @@ Result<LoweredProgram, Diagnostic> Lowerer::Run(
         std::nullopt, {}});
   }
 
+  execution_only_edges.shrink_to_fit();
   return Result<LoweredProgram, Diagnostic>::Success(LoweredProgram(
       std::move(lowered_graph), std::move(origins), std::move(state_defs),
-      std::move(barrier_initializations), std::move(collectives), source.actors));
+      std::move(barrier_initializations), std::move(collectives), source.actors,
+      std::move(execution_only_edges)));
 }
 
 }  // namespace sentryward::algorithm

@@ -13,6 +13,7 @@
 #include "sentryward/algorithm/diagnostics/memory_profile.h"
 #include "sentryward/algorithm/diagnostics/performance_profile.h"
 #include "sentryward/algorithm/analysis/family_hb_reachability.h"
+#include "sentryward/algorithm/analysis/reachability.h"
 
 namespace sentryward::algorithm {
 namespace {
@@ -83,6 +84,29 @@ bool Full(const std::uint64_t* bits, std::size_t count) {
   return true;
 }
 
+// Whether every effect of a completed phase happens before each target. Every
+// effect has a certified edge to the phase's completion, so the targets the
+// completion reaches need one propagation from it; only the others are
+// queried over the effects.
+std::vector<std::uint8_t> LowerAnswers(FamilyHbReachability& forward,
+                                       std::optional<EventId> completion,
+                                       std::span<const EventId> effects,
+                                       std::span<const EventId> targets) {
+  auto lower = completion ? forward.allReachMany(std::span(&*completion, 1), targets)
+                          : std::vector<std::uint8_t>(targets.size(), 0);
+  std::vector<EventId> undecided;
+  std::vector<std::size_t> positions;
+  for (std::size_t i = 0; i < targets.size(); ++i) {
+    if (lower[i]) continue;
+    undecided.push_back(targets[i]);
+    positions.push_back(i);
+  }
+  if (undecided.empty()) return lower;
+  const auto queried = forward.allReachMany(effects, undecided);
+  for (std::size_t i = 0; i < positions.size(); ++i) lower[positions[i]] = queried[i];
+  return lower;
+}
+
 }  // namespace
 
 const WaitReachabilityAnswer* WaitReachabilityBatch::find(EventId issue) const noexcept {
@@ -94,7 +118,7 @@ const WaitReachabilityAnswer* WaitReachabilityBatch::find(EventId issue) const n
 WaitReachabilityBatch WaitReachabilityBatch::Build(
     const HappensBeforeGraph& graph, std::span<const PhaseInfo> phases,
     std::span<const WaitReachabilityQuery> queries,
-    WaitReachabilityBatchOptions options) {
+    WaitReachabilityBatchOptions options, ReachabilityOracle* reachability) {
   ProfileScope total_profile("wait.batch.build");
   WaitReachabilityBatch result;
   const auto* order = graph.traceOrder();
@@ -111,10 +135,21 @@ WaitReachabilityBatch WaitReachabilityBatch::Build(
   if (queries.size() <= limit / (4 * sizeof(WaitReachabilityAnswer))) {
     HbReachabilityOptions family_options;
     family_options.index_budget_bytes = limit / 4;
-    auto forward = TryFamilyHbReachability(graph, family_options);
+    // One owner per index: the oracle's when it has built it, otherwise one
+    // built for this batch. Past the applicability test the budget sizes only
+    // an index's pair cache. Reachability answers are exact either way.
+    std::unique_ptr<FamilyHbReachability> built_forward, built_reverse;
+    const auto index = [&](bool reverse, std::unique_ptr<FamilyHbReachability>& built) {
+      if (auto* owned = reachability ? reachability->builtFamilyQueries(reverse) : nullptr;
+          owned && &owned->graph() == &graph) return owned;
+      built = MakeFamilyHbReachability(graph, family_options, reverse);
+      return built.get();
+    };
+    auto* forward = FamilyHbReachabilityApplies(graph, family_options)
+        ? index(false, built_forward) : nullptr;
     if (forward) {
       ProfileScope family_profile("wait.batch.family_relations");
-      auto reverse = TryFamilyHbReachability(graph, family_options, true);
+      auto* reverse = index(true, built_reverse);
       std::map<PhaseKey, const PhaseInfo*> phase_map;
       std::map<BarrierLifetimeId, std::set<EventId>> effects;
       for (const auto& phase : phases) {
@@ -140,30 +175,49 @@ WaitReachabilityBatch WaitReachabilityBatch::Build(
         if (graph.contains(q.issue) && graph.contains(q.initialization))
           groups[{q.barrier, q.initialization, q.previous_phase, q.next_phase}].push_back(i);
       }
+      // Initialization targets that no lower answer decides, per initialization.
+      std::map<EventId, std::vector<std::size_t>> uninitialized;
       for (const auto& [key, indices] : groups) {
         const auto& [barrier, init, previous, next] = key;
         std::vector<EventId> targets;
         targets.reserve(indices.size());
         for (auto i : indices) targets.push_back(queries[i].issue);
-        const auto initialized = forward->allReachMany(std::span(&init, 1), targets);
-        for (std::size_t i = 0; i < indices.size(); ++i) result.answers_[indices[i]].initialization = bool(initialized[i]);
         if (previous) {
           const auto phase = phase_map.find({barrier, *previous});
           if (phase != phase_map.end() && phase->second->completed) {
-            const auto lower = forward->allReachMany(phase->second->effects, targets);
-            for (std::size_t i = 0; i < indices.size(); ++i) result.answers_[indices[i]].lower = bool(lower[i]);
-          }
-        }
-        if (next) {
-          const auto phase = phase_map.find({barrier, *next});
-          if (phase != phase_map.end() && phase->second->completed) {
-            const auto upper = reverse->findAncestors(phase->second->effects, targets);
+            const auto& info = *phase->second;
+            const auto lower = LowerAnswers(*forward, graph.phaseCompletion(info.key()), info.effects, targets);
             for (std::size_t i = 0; i < indices.size(); ++i) {
-              result.answers_[indices[i]].upper_indexed = true;
-              result.answers_[indices[i]].upper_witness = upper[i];
+              auto& answer = result.answers_[indices[i]];
+              answer.lower = bool(lower[i]);
+              // The initialization happens before every effect of a non-named
+              // phase, and every effect of this one (never empty here)
+              // happens before the issue.
+              if (lower[i] && !info.named) answer.initialization = true;
             }
           }
         }
+        for (auto i : indices)
+          if (!result.answers_[i].initialization) uninitialized[init].push_back(i);
+        if (next) {
+          const auto phase = phase_map.find({barrier, *next});
+          const auto completion = graph.phaseCompletion({barrier, *next});
+          if (phase != phase_map.end() && phase->second->completed && completion) {
+            // The completion's only predecessors are the phase's effects: an
+            // issue reaches it iff the issue reaches one of them.
+            const auto upper = reverse->findAncestors(std::span(&*completion, 1), targets);
+            for (std::size_t i = 0; i < indices.size(); ++i)
+              result.answers_[indices[i]].upper = upper[i].has_value();
+          }
+        }
+      }
+      for (const auto& [init, indices] : uninitialized) {
+        std::vector<EventId> targets;
+        targets.reserve(indices.size());
+        for (auto i : indices) targets.push_back(queries[i].issue);
+        const auto initialized = forward->allReachMany(std::span(&init, 1), targets);
+        for (std::size_t i = 0; i < indices.size(); ++i)
+          result.answers_[indices[i]].initialization = bool(initialized[i]);
       }
       std::sort(result.answers_.begin(), result.answers_.end(), [](const auto& a, const auto& b) { return a.issue < b.issue; });
       return result;
@@ -352,7 +406,7 @@ WaitReachabilityBatch WaitReachabilityBatch::Build(
     const auto words = need_lower ? (max_effects + 63) / 64 : 0;
     const std::size_t forward_width = sizeof(std::uint8_t) +
         (need_lower ? sizeof(std::uint32_t) + words * sizeof(std::uint64_t) : 0);
-    const std::size_t reverse_width = need_upper ? 2 * sizeof(std::uint32_t) : 0;
+    const std::size_t reverse_width = need_upper ? sizeof(std::uint32_t) : 0;
     std::size_t group_bytes = base_bytes;
     if (!AddBytes(group_bytes, effect_count, sizeof(Seed) + sizeof(EventId), limit) ||
         !AddBytes(group_bytes, size, std::max(forward_width, reverse_width), limit)) {
@@ -490,30 +544,20 @@ WaitReachabilityBatch WaitReachabilityBatch::Build(
     if (chain_valid && need_upper) {
       ProfileScope reverse_profile("wait.batch.reverse");
       std::vector<std::uint32_t> earliest(size, kNone);
-      std::vector<EventId> witnesses(size);
-      std::vector<std::uint8_t> no_flags;
-      memory_checkpoint(earliest, witnesses, no_flags, "wait.batch.reverse.ready");
+      std::vector<std::uint8_t> no_payload, no_flags;
+      memory_checkpoint(earliest, no_payload, no_flags, "wait.batch.reverse.ready");
       std::size_t seed = seeds.size();
       for (std::size_t local = size; local-- > 0;) {
         const auto position = component.begin + local;
         const auto event = ordered[position];
-        while (seed > 0 && seeds[seed - 1].position == position) {
-          const auto value = seeds[--seed];
-          if (value.phase < earliest[local]) {
-            earliest[local] = value.phase;
-            witnesses[local] = event;
-          }
-        }
+        while (seed > 0 && seeds[seed - 1].position == position)
+          earliest[local] = std::min(earliest[local], seeds[--seed].phase);
         for (auto successor : graph.successors(event)) {
           const auto following = static_cast<std::uint32_t>(positions[successor.value()]);
           if (following <= position || following >= stop) {
             chain_valid = false; break;
           }
-          const auto to = following - component.begin;
-          if (earliest[to] < earliest[local]) {
-            earliest[local] = earliest[to];
-            witnesses[local] = witnesses[to];
-          }
+          earliest[local] = std::min(earliest[local], earliest[following - component.begin]);
           ++reverse_profile.edges;
         }
         if (!chain_valid) break;
@@ -524,12 +568,8 @@ WaitReachabilityBatch WaitReachabilityBatch::Build(
           const auto index = slots[i].query;
           const auto next = queries[index].next_phase;
           if (!next || *next >= completed) continue;
-          auto& answer = result.answers_[index];
-          answer.upper_indexed = true;
           const auto local = static_cast<std::uint32_t>(positions[queries[index].issue.value()]) - component.begin;
-          if (earliest[local] > *next) continue;
-          answer.upper_witness = earliest[local] == *next
-              ? witnesses[local] : (*(phase_begin + *next))->effects.front();
+          result.answers_[index].upper = earliest[local] <= *next;
         }
       }
     }

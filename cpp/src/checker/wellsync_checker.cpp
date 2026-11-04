@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <new>
 #include <optional>
 #include <queue>
 #include <set>
@@ -280,6 +281,7 @@ template <typename Witness>
     case WaitCheckErrorCode::kMissingPreviousPhaseCompletion:
     case WaitCheckErrorCode::kPhaseNumberOverflow:
     case WaitCheckErrorCode::kMissingNextPhase:
+    case WaitCheckErrorCode::kMissingNextPhaseCompletion:
     case WaitCheckErrorCode::kMissingStateDefinition:
     case WaitCheckErrorCode::kInvalidStateDefinition:
     case WaitCheckErrorCode::kMissingStateToken:
@@ -784,18 +786,12 @@ namespace {
 // need that: it is what places the waits of non-elected lanes before the
 // elected lane's arrive or commit. The rendezvous publishes no memory effects
 // (#251), so the certificate handed to memory analysis is rebuilt on the
-// memory-order lowering with the same phase completions and derived edges.
-// Both lowerings emit identical events; only the collectives' completion ->
-// done edges differ.
-std::optional<CheckResult> UseMemoryOrderGraph(const SourceProgram& source,
+// memory-order relation of the same lowering with the same phase completions
+// and derived edges. The relation has the same events and IDs; only the warp
+// data collectives' completion -> done edges are left out.
+std::optional<CheckResult> UseMemoryOrderGraph(const LoweredProgram& lowered,
     PassCertificate& pass, const CheckerOptions& options) {
-  bool has_data_collective = false;
-  pass.happensBeforeGraph.events().forEachAffineColumn(
-      [&](const Event& event, const auto&, std::size_t, std::size_t, std::size_t) {
-        if (const auto* complete = std::get_if<CollectiveCompleteEvent>(&event.payload))
-          has_data_collective |= complete->kind == CollectiveKind::kWarpData;
-      });
-  if (!has_data_collective) return std::nullopt;
+  if (lowered.executionOnlyEdges().empty()) return std::nullopt;
 
   ProfileScope profile("sync.memory_order_graph");
   const auto invalid = [](std::string message) {
@@ -815,15 +811,19 @@ std::optional<CheckResult> UseMemoryOrderGraph(const SourceProgram& source,
   // graph before building its replacement to keep the peak footprint flat.
   pass.happensBeforeGraph = HappensBeforeGraph{};
 
-  auto lowered = ProfileCall("sync.memory_order_lower", [&] {
-    return Lowerer{}.Run(source, true, CollectiveOrdering::kMemory); });
-  if (!lowered) return invalid(lowered.error().message);
   std::optional<HappensBeforeGraphBuilder> builder;
-  try {
-    builder.emplace(lowered.value(),
-                    options.reachability.use_trace_order ? &pass.reference : nullptr);
-  } catch (const std::exception& error) {
-    return invalid(error.what());
+  {
+    // The proof graph keeps the relation's adjacency and copies the rest.
+    const EventDag memory_order = ProfileCall("sync.memory_order_relation", [&] {
+      return lowered.memoryOrderGraph(); });
+    try {
+      builder.emplace(memory_order, lowered.actors(),
+                      options.reachability.use_trace_order ? &pass.reference : nullptr);
+    } catch (const std::bad_alloc&) {
+      throw;
+    } catch (const std::exception& error) {
+      return invalid(error.what());
+    }
   }
   for (const auto& [id, phase] : completions) {
     const auto added = builder->AddPhaseCompletion(phase);
@@ -860,45 +860,41 @@ CheckResult WellSyncChecker::RunImpl(const SourceProgram& source,
     const CheckerOptions& options,const LoweredProgram* prepared) const {
   ScopedWellSyncDeadline deadline(options.timeout_seconds);
   ProfileScope sync_profile("sync.total");
+  std::optional<LoweredProgram> owned;
+  if (!prepared) {
+    auto validated = ProfileCall("sync.validate_source", [&] { return SourceValidator().Validate(source); });
+    if (!validated) {
+      std::vector<Diagnostic> diagnostics = std::move(validated).error();
+      const bool has_invalid = std::any_of(
+          diagnostics.begin(), diagnostics.end(),
+          [](const Diagnostic& diagnostic) {
+            return diagnostic.classification == DiagnosticClass::kInvalidInput;
+          });
+      return has_invalid ? InvalidFromDiagnostics(std::move(diagnostics))
+                         : UnsupportedFromDiagnostics(std::move(diagnostics));
+    }
+    auto lowered_result = ProfileCall("sync.lower", [&] {
+      return Lowerer().Run(validated.value(), true); });
+    if (!lowered_result) {
+      const Diagnostic error = lowered_result.error();
+      if (error.classification == DiagnosticClass::kUnsupported) {
+        return UnsupportedFromDiagnostics({error});
+      }
+      return InvalidFrom(error, "source lowering failed");
+    }
+    owned.emplace(std::move(lowered_result).value());
+    prepared = &*owned;
+  }
   // The reachability indexes of the execution-order pass are released on return.
-  CheckResult result = RunExecutionOrder(source, options, prepared);
+  CheckResult result = RunExecutionOrder(source, options, *prepared);
   if (PassCertificate* pass = result.certificate()) {
-    if (auto failure = UseMemoryOrderGraph(source, *pass, options)) return std::move(*failure);
+    if (auto failure = UseMemoryOrderGraph(*prepared, *pass, options)) return std::move(*failure);
   }
   return result;
 }
 
 CheckResult WellSyncChecker::RunExecutionOrder(const SourceProgram& source,
-    const CheckerOptions& options,const LoweredProgram* prepared) const {
-  std::optional<LoweredProgram> owned;
-  if(!prepared) {
-  SourceValidator validator;
-  std::vector<Diagnostic> diagnostics = ProfileCall("sync.validate_source", [&] { return validator.Validate(source); });
-  if (!diagnostics.empty()) {
-    const bool has_invalid = std::any_of(
-        diagnostics.begin(), diagnostics.end(),
-        [](const Diagnostic& diagnostic) {
-          return diagnostic.classification == DiagnosticClass::kInvalidInput;
-        });
-    return has_invalid ? InvalidFromDiagnostics(std::move(diagnostics))
-                       : UnsupportedFromDiagnostics(std::move(diagnostics));
-  }
-
-  Lowerer lowerer;
-  auto lowered_result = ProfileCall("sync.lower", [&] {
-    return lowerer.Run(source, true, CollectiveOrdering::kExecution); });
-  if (!lowered_result) {
-    const Diagnostic error = lowered_result.error();
-    if (error.classification == DiagnosticClass::kUnsupported) {
-      return UnsupportedFromDiagnostics({error});
-    }
-    return InvalidFrom(error, "source lowering failed");
-  }
-  owned.emplace(std::move(lowered_result).value());
-  prepared=&*owned;
-  }
-  const LoweredProgram& lowered=*prepared;
-
+    const CheckerOptions& options,const LoweredProgram& lowered) const {
   ReferenceSimulator simulator;
   auto trace_result =
       ProfileCall("sync.reference_simulation", [&] { return simulator.Run(lowered, SimulationOptions{
@@ -1081,6 +1077,9 @@ CheckResult WellSyncChecker::RunExecutionOrder(const SourceProgram& source,
   WaitChecker wait_checker;
   auto wait_result =
       ProfileCall("sync.waits", [&] {
+        // Both phase loops passed: every completed phase is certified and has
+        // its completion node and edges, and every phase start passed its
+        // separation and initialization checks.
         return wait_checker.CheckAll(
             lowered, trace, phases, proof, reachability, &parallel,
             WaitReachabilityBatchOptions{

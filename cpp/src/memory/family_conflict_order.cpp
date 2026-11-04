@@ -4,6 +4,7 @@
 #include <map>
 #include <numeric>
 #include <set>
+#include <stdexcept>
 #include <tuple>
 #include <unordered_map>
 
@@ -11,7 +12,7 @@ namespace sentryward::algorithm {
 FamilyConflictOrder::FamilyConflictOrder(const std::vector<MemoryAccessFamily>& families,
     const std::vector<FamilyFootprint>& footprints,const TraceOrder* order,
     std::span<const std::uint8_t> blocked_families)
-    :buckets_(families.size(),SIZE_MAX),peers_(families.size()) {
+    :buckets_(families.size(),SIZE_MAX),peers_(families.size()),shares_event_(families.size()) {
   if(!order)return;
   using I=address_solver::Int;
   using Storage=std::pair<std::string,std::string>;
@@ -131,6 +132,7 @@ void FamilyConflictOrder::reduceMembers(const std::vector<std::size_t>& items,
   std::vector<ConstantConflictRegion> regions;std::vector<std::size_t> owners,ranks;
   regions.reserve(members);owners.reserve(members);
   std::unordered_map<std::uint32_t,std::size_t> slots;
+  std::vector<std::size_t> slot_families; // the first family of each slot
   for(auto i:items) {
     const auto& f=families[i];const auto& p=footprints[i];
     for(std::size_t k=0;k<f.count;++k) {
@@ -138,7 +140,11 @@ void FamilyConflictOrder::reduceMembers(const std::vector<std::size_t>& items,
       const auto event=std::int64_t(f.first.event.value())+f.delta[1]*std::int64_t(k);
       if(offset<0 || offset>I(UINT64_MAX) || event<0 || event>std::int64_t(UINT32_MAX))return;
       const auto [slot,added]=slots.try_emplace(std::uint32_t(event),ranks.size());
-      if(added)ranks.push_back(order.rank(EventId(std::uint32_t(event))));
+      if(added) {
+        ranks.push_back(order.rank(EventId(std::uint32_t(event))));
+        slot_families.push_back(i);
+      } else if(slot_families[slot->second]!=i)
+        shares_event_[i]=shares_event_[slot_families[slot->second]]=1;
       regions.push_back({AccessId(std::uint32_t(regions.size())),EventId(std::uint32_t(slot->second)),
           f.first.mode==AccessMode::kWrite,0,std::uint64_t(offset),p.bytes});
       owners.push_back(i);
@@ -158,5 +164,59 @@ void FamilyConflictOrder::reduceMembers(const std::vector<std::size_t>& items,
 }
 const std::vector<std::size_t>* FamilyConflictOrder::candidates(std::size_t family) const {
   return buckets_[family]==SIZE_MAX?nullptr:&peers_[family];
+}
+std::size_t FamilyConflictOrder::group(std::size_t family) {
+  if(parents_.empty())return family;
+  while(parents_[family]!=family) {
+    parents_[family]=parents_[parents_[family]];
+    family=parents_[family];
+  }
+  return family;
+}
+bool FamilyConflictOrder::addObligation(std::size_t a,std::size_t b) {
+  // Constraints join only families of one reduced bucket, and its families overlap no others.
+  if(buckets_[a]==SIZE_MAX || buckets_[a]!=buckets_[b])
+    throw std::logic_error("a write obligation joins families outside one reduced bucket");
+  if(shares_event_[a] || shares_event_[b])return false;
+  if(parents_.empty()) {
+    parents_.resize(buckets_.size());
+    std::iota(parents_.begin(),parents_.end(),std::size_t(0));
+  }
+  a=group(a);b=group(b);
+  if(a==b)return true;
+  const auto members=[&](std::size_t root)->std::vector<std::size_t>& {
+    auto& list=groups_[root];
+    if(list.empty())list.push_back(root);
+    return list;
+  };
+  // Union by size: each family moves O(log families) times.
+  auto* x=&members(a);auto* y=&members(b);
+  if(x->size()<y->size()) {std::swap(a,b);std::swap(x,y);}
+  x->insert(x->end(),y->begin(),y->end());
+  groups_.erase(b);parents_[b]=a;
+  joined_.push_back(a);
+  return true;
+}
+std::vector<std::pair<std::size_t,std::vector<std::size_t>>> FamilyConflictOrder::extension(
+    const Overlapping& overlapping) {
+  std::vector<std::size_t> roots;roots.reserve(joined_.size());
+  for(const auto root:joined_)roots.push_back(group(root));
+  joined_.clear();
+  std::sort(roots.begin(),roots.end());roots.erase(std::unique(roots.begin(),roots.end()),roots.end());
+  std::map<std::size_t,std::vector<std::size_t>> added;
+  for(const auto root:roots) {
+    const auto& members=groups_.at(root);
+    std::unordered_set<std::size_t> linked{root};
+    for(const auto f:members)for(const auto peer:peers_[f])linked.insert(group(peer));
+    for(const auto f:members) {
+      auto constraints=peers_[f];std::sort(constraints.begin(),constraints.end());
+      overlapping(f,[&](std::size_t g) {
+        if(g==f || !linked.contains(group(g)) || std::binary_search(constraints.begin(),constraints.end(),g))return;
+        if(!required_.emplace(std::min(f,g),std::max(f,g)).second)return;
+        added[f].push_back(g);added[g].push_back(f);
+      });
+    }
+  }
+  return {std::make_move_iterator(added.begin()),std::make_move_iterator(added.end())};
 }
 } // namespace sentryward::algorithm

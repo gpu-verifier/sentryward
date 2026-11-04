@@ -1,0 +1,949 @@
+{
+ "schema": "spverify.equivalence-mapping.v1",
+ "output_value_semantics": "ideal_real",
+ "left_inputs": {
+  "allocations": {
+   "6:global4:dout": "dout",
+   "6:global5:v_new": "v_new",
+   "6:global3:dv2": "dv2",
+   "6:global1:v": "v",
+   "6:global1:h": "h",
+   "6:global2:dh": "dh",
+   "6:global3:Akk": "Akk",
+   "6:global2:gk": "gk",
+   "6:global1:k": "k",
+   "6:global1:q": "q",
+   "6:global8:beta_int": "beta_int",
+   "6:global15:seq_chunk_start": "seq_chunk_start",
+   "6:global9:chunk_bos": "chunk_bos",
+   "6:global9:chunk_len": "chunk_len"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global4:dout": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global5:v_new": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     256,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global3:dv2": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     256,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:v": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:h": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     4,
+     1,
+     128,
+     128
+    ],
+    "source_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ]
+   },
+   "6:global2:dh": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     4,
+     1,
+     128,
+     128
+    ],
+    "source_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ]
+   },
+   "6:global3:Akk": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     1,
+     64
+    ],
+    "source_strides_bytes": [
+     128,
+     128,
+     2
+    ],
+    "target_strides_bytes": [
+     128,
+     128,
+     2
+    ]
+   },
+   "6:global2:gk": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     256,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     512,
+     512,
+     4
+    ],
+    "target_strides_bytes": [
+     512,
+     512,
+     4
+    ]
+   },
+   "6:global1:k": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global8:beta_int": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     256,
+     1
+    ],
+    "source_strides_bytes": [
+     4,
+     4
+    ],
+    "target_strides_bytes": [
+     4,
+     4
+    ]
+   },
+   "6:global15:seq_chunk_start": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     3
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global9:chunk_bos": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global9:chunk_len": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   }
+  }
+ },
+ "right_inputs": {
+  "allocations": {
+   "6:global4:dout": "dout",
+   "6:global5:v_new": "v_new",
+   "6:global3:dv2": "dv2",
+   "6:global1:v": "v",
+   "6:global1:h": "h",
+   "6:global2:dh": "dh",
+   "6:global3:Akk": "Akk",
+   "6:global2:gk": "gk",
+   "6:global1:k": "k",
+   "6:global1:q": "q",
+   "6:global8:beta_int": "beta_int",
+   "6:global15:seq_chunk_start": "seq_chunk_start",
+   "6:global9:chunk_bos": "chunk_bos",
+   "6:global9:chunk_len": "chunk_len"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global4:dout": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global5:v_new": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     256,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global3:dv2": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     256,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:v": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:h": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     4,
+     1,
+     128,
+     128
+    ],
+    "source_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ]
+   },
+   "6:global2:dh": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     4,
+     1,
+     128,
+     128
+    ],
+    "source_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     32768,
+     32768,
+     256,
+     2
+    ]
+   },
+   "6:global3:Akk": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     1,
+     64
+    ],
+    "source_strides_bytes": [
+     128,
+     128,
+     2
+    ],
+    "target_strides_bytes": [
+     128,
+     128,
+     2
+    ]
+   },
+   "6:global2:gk": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     256,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     512,
+     512,
+     4
+    ],
+    "target_strides_bytes": [
+     512,
+     512,
+     4
+    ]
+   },
+   "6:global1:k": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global1:q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     1,
+     128
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   "6:global8:beta_int": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     256,
+     1
+    ],
+    "source_strides_bytes": [
+     4,
+     4
+    ],
+    "target_strides_bytes": [
+     4,
+     4
+    ]
+   },
+   "6:global15:seq_chunk_start": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     3
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global9:chunk_bos": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global9:chunk_len": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   }
+  }
+ },
+ "outputs": {
+  "kind": "dense_tensors",
+  "tensors": [
+   {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global4:dq_f",
+    "right_allocation": "6:global4:dq_f",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     128,
+     1,
+     128
+    ],
+    "left_strides_bytes": [
+     512,
+     512,
+     4
+    ],
+    "right_strides_bytes": [
+     512,
+     512,
+     4
+    ]
+   },
+   {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global4:dk_f",
+    "right_allocation": "6:global4:dk_f",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     128,
+     1,
+     128
+    ],
+    "left_strides_bytes": [
+     512,
+     512,
+     4
+    ],
+    "right_strides_bytes": [
+     512,
+     512,
+     4
+    ]
+   },
+   {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global4:dg_f",
+    "right_allocation": "6:global4:dg_f",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     128,
+     1,
+     128
+    ],
+    "left_strides_bytes": [
+     512,
+     512,
+     4
+    ],
+    "right_strides_bytes": [
+     512,
+     512,
+     4
+    ]
+   },
+   {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global4:db_f",
+    "right_allocation": "6:global4:db_f",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     128,
+     1
+    ],
+    "left_strides_bytes": [
+     4,
+     4
+    ],
+    "right_strides_bytes": [
+     4,
+     4
+    ]
+   },
+   {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global4:dAkk",
+    "right_allocation": "6:global4:dAkk",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     128,
+     1,
+     64
+    ],
+    "left_strides_bytes": [
+     256,
+     256,
+     4
+    ],
+    "right_strides_bytes": [
+     256,
+     256,
+     4
+    ]
+   },
+   {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global2:dv",
+    "right_allocation": "6:global2:dv",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     1,
+     128
+    ],
+    "left_strides_bytes": [
+     256,
+     256,
+     2
+    ],
+    "right_strides_bytes": [
+     256,
+     256,
+     2
+    ]
+   },
+   {
+    "kind": "dense_tensor",
+    "left_allocation": "6:global4:dAqk",
+    "right_allocation": "6:global4:dAqk",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     128,
+     1,
+     64
+    ],
+    "left_strides_bytes": [
+     256,
+     256,
+     4
+    ],
+    "right_strides_bytes": [
+     256,
+     256,
+     4
+    ]
+   }
+  ]
+ },
+ "reference": {
+  "arguments": [
+   {
+    "name": "dout",
+    "allocation": "6:global4:dout",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "v_new",
+    "allocation": "6:global5:v_new",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "dv2",
+    "allocation": "6:global3:dv2",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "v",
+    "allocation": "6:global1:v",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "h",
+    "allocation": "6:global1:h",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "dh",
+    "allocation": "6:global2:dh",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "akk",
+    "allocation": "6:global3:Akk",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "gk",
+    "allocation": "6:global2:gk",
+    "dtype": "float32"
+   },
+   {
+    "name": "k",
+    "allocation": "6:global1:k",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "q",
+    "allocation": "6:global1:q",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "beta",
+    "allocation": "6:global8:beta_int",
+    "dtype": "float32"
+   },
+   {
+    "name": "scale",
+    "parameter": 22
+   },
+   {
+    "name": "num_heads",
+    "parameter": 17
+   },
+   {
+    "name": "num_seqs",
+    "parameter": 19
+   },
+   {
+    "name": "seq_chunk_start_0",
+    "value": {
+     "input": "/shape_arrays/0/shapes/0/0"
+    }
+   },
+   {
+    "name": "seq_chunk_start_1",
+    "value": {
+     "input": "/shape_arrays/0/shapes/1/0"
+    }
+   },
+   {
+    "name": "seq_chunk_start_2",
+    "value": {
+     "input": "/shape_arrays/0/shapes/2/0"
+    }
+   },
+   {
+    "name": "chunk_bos_0",
+    "value": {
+     "input": "/shape_arrays/1/shapes/0/0"
+    }
+   },
+   {
+    "name": "chunk_bos_1",
+    "value": {
+     "input": "/shape_arrays/1/shapes/1/0"
+    }
+   },
+   {
+    "name": "chunk_bos_2",
+    "value": {
+     "input": "/shape_arrays/1/shapes/2/0"
+    }
+   },
+   {
+    "name": "chunk_bos_3",
+    "value": {
+     "input": "/shape_arrays/1/shapes/3/0"
+    }
+   },
+   {
+    "name": "chunk_len_0",
+    "value": {
+     "input": "/shape_arrays/2/shapes/0/0"
+    }
+   },
+   {
+    "name": "chunk_len_1",
+    "value": {
+     "input": "/shape_arrays/2/shapes/1/0"
+    }
+   },
+   {
+    "name": "chunk_len_2",
+    "value": {
+     "input": "/shape_arrays/2/shapes/2/0"
+    }
+   },
+   {
+    "name": "chunk_len_3",
+    "value": {
+     "input": "/shape_arrays/2/shapes/3/0"
+    }
+   }
+  ]
+ },
+ "provenance": {
+  "source": "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/flashinfer/experimental/cake_kda_train/csrc/cake_kda_train_cfa2684db4d92e37448d_kernel.cu",
+  "upstream": [
+   "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/flashinfer/experimental/cake_kda_train/csrc/cake_kda_train_cfa2684db4d92e37448d_kernel.cu",
+   "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/flashinfer/experimental/cake_kda_train/csrc/cake_kda_train_cfa2684db4d92e37448d_binding.cu",
+   "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/flashinfer/experimental/cake_kda_train/cake_jit.py",
+   "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/flashinfer/experimental/cake_kda_train/cake_backend.py",
+   "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/flashinfer/experimental/cake_kda_train/build.json",
+   "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/flashinfer/experimental/cake_kda_train/csrc/cake_kda_train_94c7d1cc6c908d53e8c1_kernel.cu",
+   "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/tests/experimental/test_cake_kda_train.py",
+   "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/tests/test_helpers/cake_kda_train_reference.py"
+  ],
+  "scope": "Upstream test_cake_kda_train.py SHAPES case ((64, 64), 1): two packed 64-token documents (chunk-aligned, chunk 64), H = 1, on sm_100a with 148 SMs. Light backward (path light, saved set version 4 with tables): segmented route, dqkg stage record dqkg_davq; grid min(NC_pad * H, 148) = 4 persistent CTAs over seq_chunk_start[num_seqs] * H = 2 (chunk, head) items; NC_pad = 4, R = 256; q, k, v, dout and the saved Akk are token rows, v_new, dv2, gk, beta and the partial gradients internal rows, h / dh the [NC_pad, H, 128, 128] tapes; scale = 128^-0.5. seq_chunk_start, chunk_bos and chunk_len are bound on both sides as shape arrays.",
+  "optimized_input_sha256": "37fc1dcf9e83ac9fc3460f079a96fddb93095f64ee96aea14368bd232187de22",
+  "ptx_sha256": "06fe4151fda808cc6b7cc23d272cfcfea71cddf557d9cd0743cf14ad2a65b2f7",
+  "scope_branch_choices": [],
+  "scope_shape_arrays": [
+   {
+    "parameter": 18,
+    "offset": 0,
+    "element_type": "s32",
+    "shapes": [
+     [
+      0
+     ],
+     [
+      1
+     ],
+     [
+      2
+     ]
+    ]
+   },
+   {
+    "parameter": 20,
+    "offset": 0,
+    "element_type": "s32",
+    "shapes": [
+     [
+      0
+     ],
+     [
+      64
+     ],
+     [
+      0
+     ],
+     [
+      0
+     ]
+    ]
+   },
+   {
+    "parameter": 21,
+    "offset": 0,
+    "element_type": "s32",
+    "shapes": [
+     [
+      64
+     ],
+     [
+      64
+     ],
+     [
+      0
+     ],
+     [
+      0
+     ]
+    ]
+   }
+  ]
+ }
+}

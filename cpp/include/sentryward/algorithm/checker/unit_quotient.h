@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <optional>
 #include <span>
 #include <string>
 #include <utility>
@@ -47,6 +48,28 @@ struct LaunchUnits {
   }
 };
 
+// A slot's site: the PTX instruction index and occurrence of its record in the CTA of rank `rank` of
+// its unit (the PtxOrigin of the source instructions lowered from that record).
+struct UnitSite {
+  std::uint32_t rank = 0, instruction = 0, occurrence = 0;
+  friend auto operator<=>(const UnitSite &, const UnitSite &) = default;
+};
+// The δ of a global allocation whose slots move by different amounts in some unit of a class: its
+// slot sites, grouped into pieces (the sites with one δ in every unit of the class), and each piece's
+// δ per unit. Every access of the allocation in the class's units is placed by the slot at its own
+// site (lowering resolves each footprint at the record it lowers).
+struct PiecewiseDelta {
+  std::vector<UnitSite> sites;                  // sorted, distinct
+  std::vector<std::uint32_t> piece;             // per site: its piece
+  std::vector<std::vector<std::int64_t>> delta; // per piece: δ per Class::units[i] (0 for i = 0)
+  // The piece of `site`, nullopt when it is not a slot site of the allocation. O(log sites).
+  [[nodiscard]] std::optional<std::uint32_t> PieceOf(const UnitSite &site) const {
+    const auto found = std::lower_bound(sites.begin(), sites.end(), site);
+    if (found == sites.end() || *found != site) return std::nullopt;
+    return piece[static_cast<std::size_t>(found - sites.begin())];
+  }
+};
+
 struct UnitQuotient : LaunchUnits {
   struct Unit {
     Coordinates kappa{};
@@ -56,6 +79,8 @@ struct UnitQuotient : LaunchUnits {
   struct Class {
     std::vector<std::uint32_t> units;                       // unit order; units[0] is the representative
     std::vector<std::map<std::string, std::int64_t>> delta; // per units[i]: δ per global allocation ({} for units[0])
+    // The allocations with a piecewise δ, which no delta[i] holds.
+    std::map<std::string, PiecewiseDelta> pieces;
   };
   std::vector<Unit> units;    // unit order (z, y, x over the unit grid)
   std::vector<Class> classes; // creation order
@@ -72,6 +97,10 @@ struct UnitQuotient : LaunchUnits {
     return units.at(ClassOf(linear).units.front()).ctas.at(RankOf(linear));
   }
   [[nodiscard]] bool Shared() const noexcept { return classes.size() < units.size(); }
+  // Whether some class has an allocation with a piecewise δ. O(classes).
+  [[nodiscard]] bool Piecewise() const noexcept {
+    return std::any_of(classes.begin(), classes.end(), [](const Class &c) { return !c.pieces.empty(); });
+  }
   // Whether the analysed program numbers the representative CTA `linear` (its instruction, actor and
   // barrier lifetime ids) as the per-unit program does, which consumes every CTA in launch order: it
   // is the launch's first CTA, or units are runs of consecutive CTAs and no member unit precedes its

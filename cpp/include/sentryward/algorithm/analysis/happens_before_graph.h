@@ -204,6 +204,11 @@ class HappensBeforeGraphBuilder final {
  public:
   explicit HappensBeforeGraphBuilder(const LoweredProgram& program,
                                      const ReferenceTrace* trace = nullptr);
+  // The proof graph over one relation of a lowered program with these actors
+  // (LoweredProgram::memoryOrderGraph). The graph's adjacency is shared, its
+  // events and edges are copied.
+  HappensBeforeGraphBuilder(const EventDag& graph, std::vector<ActorInfo> actors,
+                            const ReferenceTrace* trace = nullptr);
 
   [[nodiscard]] const HappensBeforeGraph& happensBeforeGraph() const noexcept;
   [[nodiscard]] bool Reaches(EventId from, EventId to) const;

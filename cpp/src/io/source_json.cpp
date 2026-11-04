@@ -691,7 +691,8 @@ const char* CodeName(WaitCheckErrorCode code) {
       "missing_target_completion", "target_completion_not_ordered_before_done",
       "issue_not_ordered_before_done", "missing_previous_phase", "previous_phase_not_ordered_before_issue",
       "missing_previous_phase_completion", "phase_number_overflow", "missing_next_phase",
-      "issue_not_ordered_before_next_phase", "missing_state_definition", "invalid_state_definition",
+      "issue_not_ordered_before_next_phase", "missing_next_phase_completion",
+      "missing_state_definition", "invalid_state_definition",
       "state_barrier_mismatch", "missing_state_token", "state_phase_mismatch",
       "state_definition_not_ordered_before_issue", "parity_mismatch", "happens_before_graph_mutation_failed"};
   return CodeName(code, names);
@@ -705,7 +706,7 @@ const char* CodeName(LifecycleCheckErrorCode code) {
 
 const char* CodeName(HappensBeforeGraphMutationErrorCode code) {
   static constexpr const char* names[] = {"frozen", "missing_event", "invalid_reason", "cycle",
-      "duplicate_phase_completion", "event_id_overflow"};
+      "duplicate_phase_completion", "event_id_overflow", "trace_order_violation"};
   return CodeName(code, names);
 }
 
@@ -1475,7 +1476,7 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
     // Repeated entries are reported per launch unit on both paths (RepeatedEntries).
     const LaunchUnits* launch_units = memory_options.units ? memory_options.units : memory_options.launch_units;
     CtaRelativeIds relative_ids(input.program);
-    const auto recovery = ProfileCall("input.recover_initializers", [&] { return RecoverDuplicateInitializers(input.program); });
+    auto recovery = ProfileCall("input.recover_initializers", [&] { return RecoverDuplicateInitializers(input.program); });
     report["warnings"] = Json::array();
     if (recovery.applied()) {
       report["analysis_target"] = "recovered_program";
@@ -1543,7 +1544,7 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
       return RenderReport(report);
     }
     auto unobserved = ProfileCall("input.eliminate_unobserved_synchronization",
-                                  [&] { return EliminateUnobservedSynchronization(input.program); });
+                                  [&] { return EliminateUnobservedSynchronization(input.program, std::exchange(recovery.validated, std::nullopt)); });
     if (!unobserved.eliminated.empty()) {
       // Per site and barrier; class-mode counts include every unit of the class.
       std::map<std::tuple<std::string, std::uint32_t, bool, std::uint32_t>, std::uint64_t> sites;
@@ -1607,7 +1608,9 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
     std::optional<LoweredProgram> prepared;
     {
       ProfileScope metadata_profile("input.metadata");
-      auto lowered = ProfileCall("input.metadata_lower", [&] { return Lowerer{}.Run(input.program, true, CollectiveOrdering::kExecution); });
+      // Compaction keeps every value, so a validation from before it still holds.
+      auto lowered = ProfileCall("input.metadata_lower", [&] {
+        return unobserved.validated ? Lowerer{}.Run(*unobserved.validated, true) : Lowerer{}.Run(input.program, true); });
       if (!lowered) Fail(lowered.error().message);
       prepared.emplace(std::move(lowered).value());
       // Validate endpoint domains without ever constructing their pair product.

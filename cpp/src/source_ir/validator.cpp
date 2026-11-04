@@ -12,6 +12,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -161,10 +162,77 @@ Adjacency MakeAdjacency(std::size_t ranks,RankPairs pairs) {
   return result;
 }
 
-}  // namespace
+// Immediate loads and stores carry no per-record condition.
+bool IsImmediate(const SourceInstructions& instructions, std::size_t record) {
+  return instructions.holdsOperation<ImmediateLoad>(record) || instructions.holdsOperation<ImmediateStore>(record);
+}
 
-std::vector<Diagnostic> SourceValidator::Validate(
-    const SourceProgram& program) const {
+// The members of one column run, each rebound in place on one copy of the first member: member j's
+// binding is the first member's translated j times by the run's delta (TemplateRecords' column
+// runs, as id() and actor() project them). The identity and every operand stored in the operation
+// itself are rewritten. Access endpoints keep the first member's values: an access's only
+// member-dependent condition is its register actor, which registerActor() reads from the binding.
+class RunMembers final {
+ public:
+  // `delta` must outlive this object (the run's own delta, during its visit).
+  RunMembers(SourceInstruction first, const SourceRecordCodec::Delta& delta)
+      : record_(std::move(first)), delta_(delta), id_(record_.id.value()), actor_(record_.actor.value()) {
+    // The first member's operands, in binding order (what SourceRecordCodec::split collects):
+    // every operand held by the operation is a field; each access endpoint is one operand.
+    SourceRecordCodec::walkOperands(record_.op, [&](auto& id) {
+      using Id = std::remove_cvref_t<decltype(id)>;
+      fields_.push_back({operands_.size(), &id, [](void* field, std::uint32_t value) { *static_cast<Id*>(field) = Id(value); }});
+      operands_.push_back(id.value());
+    }, [&](const SharedArray<MemoryEffect>& accesses) {
+      for (const MemoryEffect& access : accesses) {
+        if (const auto* reg = std::get_if<RegisterAddress>(&access.endpoint)) {
+          register_actors_.push_back(operands_.size());
+          operands_.push_back(reg->actor.value());
+        } else {
+          operands_.push_back(std::get<AddressId>(access.endpoint).value());
+        }
+      }
+    });
+    if (!delta_.operands.empty() && delta_.operands.size() != operands_.size())
+      throw std::logic_error("source record operand layout");
+  }
+  RunMembers(const RunMembers&) = delete;
+  RunMembers& operator=(const RunMembers&) = delete;
+  const SourceInstruction& at(std::size_t member) {
+    record_.id = InstId(translated(id_, delta_[0], member));
+    record_.actor = ActorId(translated(actor_, delta_[1], member));
+    for (const auto& field : fields_) field.assign(field.id, operand(field.operand, member));
+    return record_;
+  }
+  [[nodiscard]] std::size_t registerActorCount() const noexcept { return register_actors_.size(); }
+  [[nodiscard]] ActorId registerActor(std::size_t index, std::size_t member) const {
+    return ActorId(operand(register_actors_[index], member));
+  }
+
+ private:
+  struct Field {
+    std::size_t operand;
+    void* id;
+    void (*assign)(void*, std::uint32_t);
+  };
+  static std::uint32_t translated(std::uint32_t base, std::int64_t step, std::size_t member) {
+    return static_cast<std::uint32_t>(base + step * std::int64_t(member));
+  }
+  std::uint32_t operand(std::size_t index, std::size_t member) const {
+    return translated(operands_[index], delta_.operands.empty() ? 0 : delta_.operands[index], member);
+  }
+  SourceInstruction record_;
+  const SourceRecordCodec::Delta& delta_;
+  std::uint32_t id_, actor_;
+  std::vector<std::uint32_t> operands_;
+  std::vector<Field> fields_;
+  std::vector<std::size_t> register_actors_;
+};
+
+// `by_runs`: the per-record checks visit the column runs' members in run order (RunMembers),
+// without reconstructing them; otherwise the records in record order. Both skip immediate
+// loads and stores.
+std::vector<Diagnostic> Check(const SourceProgram& program, bool by_runs) {
   std::vector<Diagnostic> diagnostics;
 
   std::map<ActorId, const ActorInfo*> actors;
@@ -198,15 +266,35 @@ std::vector<Diagnostic> SourceValidator::Validate(
 
   // Rank the instruction IDs once; ID-keyed lookups become rank-indexed arrays.
   InstructionIndex ranks;
+  // Without `by_runs`, the records the per-record checks below visit, in record order: every
+  // record except immediate loads and stores, which carry no per-record condition.
+  std::vector<std::size_t> checked_records;
   {
     const auto n=program.instructions.size();
     std::vector<InstId> record_ids(n);
     std::vector<ActorId> record_actors(n);
+    // One pass over the column runs (TemplateRecords::forEachAffineColumnRun): the members of a
+    // run share their prototype, so its operation, and their IDs and actors are the first member's
+    // plus the run's delta per member, as id() and actor() project them. O(runs log segments + n),
+    // without reconstructing a record.
+    std::size_t covered=0;
+    program.instructions.forEachAffineColumnRun([&](const SourceRecordCodec::Delta& delta,
+        std::size_t begin,std::size_t stride,std::size_t count,const auto&) {
+      const auto first=HeaderOf(program.instructions,begin);
+      const bool immediate=IsImmediate(program.instructions,begin);
+      for (std::size_t member=0;member<count;++member) {
+        const auto record=begin+stride*member;
+        const auto steps=std::int64_t(member);
+        record_ids[record]=InstId(static_cast<std::uint32_t>(first.id.value()+delta[0]*steps));
+        record_actors[record]=ActorId(static_cast<std::uint32_t>(first.actor.value()+delta[1]*steps));
+        if(!immediate && !by_runs)checked_records.push_back(record);
+      }
+      covered+=count;
+    });
+    if(covered!=n)throw std::logic_error("source instruction runs do not cover every instruction");
+    std::sort(checked_records.begin(),checked_records.end());
     bool ascending=true;
-    for (std::size_t i=0;i<n;++i) {
-      record_ids[i]=program.instructions.id(i);record_actors[i]=program.instructions.actor(i);
-      ascending=ascending && (!i || record_ids[i-1]<record_ids[i]);
-    }
+    for (std::size_t i=1;i<n && ascending;++i) ascending=record_ids[i-1]<record_ids[i];
     std::vector<bool> duplicate;  // per record; strictly ascending IDs have none
     if (!ascending) {
       // Sorting by (ID, record) keeps each ID's first record as its owner.
@@ -348,11 +436,7 @@ std::vector<Diagnostic> SourceValidator::Validate(
     validateRef(dependency.to, nullptr);
   }
 
-  for (std::size_t i=0;i<program.instructions.size();++i) {
-    const auto instruction_view=program.instructions.view(i);
-    const auto& instruction=*instruction_view;
-    if(std::holds_alternative<ImmediateLoad>(instruction.op) ||
-       std::holds_alternative<ImmediateStore>(instruction.op))continue;
+  const auto check = [&](std::size_t i, const SourceInstruction& instruction) {
     std::visit(
         Overloaded{
             [](const ImmediateLoad&) {},
@@ -536,6 +620,28 @@ std::vector<Diagnostic> SourceValidator::Validate(
             },
         },
         instruction.op);
+  };
+  if (by_runs) {
+    program.instructions.forEachAffineColumnRun([&](const SourceRecordCodec::Delta& delta,
+        std::size_t begin,std::size_t stride,std::size_t count,const auto& first) {
+      if (IsImmediate(program.instructions, begin)) return;
+      RunMembers members(first(), delta);
+      for (std::size_t member = 0; member < count; ++member) {
+        const auto& instruction = members.at(member);
+        check(begin + stride * member, instruction);
+        for (std::size_t k = 0; k < members.registerActorCount(); ++k)
+          if (!actors.contains(members.registerActor(k, member)))
+            AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
+                          DiagnosticCode::kInvalidMemoryEffect,
+                          "memory effect has an invalid access mode or register endpoint",
+                          &instruction);
+      }
+    });
+  } else {
+    for (const auto i : checked_records) {
+      const auto instruction_view = program.instructions.view(i);
+      check(i, *instruction_view);
+    }
   }
 
   for (const auto barrier : named_barriers) {
@@ -594,7 +700,7 @@ std::vector<Diagnostic> SourceValidator::Validate(
   std::vector<std::size_t> indegrees(m),order_indegrees(m);
   {
     EdgeKindSet declared(program.edges.size());
-    for (const SourceEdge& edge : program.edges) {
+    for (const SourceEdge& edge : ExpandEdges(program.edges)) {
       if (!IsValidEdgeKind(edge.kind)) {
         AddDiagnostic(diagnostics, DiagnosticClass::kInvalidInput,
                       DiagnosticCode::kInvalidEdgeKind,
@@ -870,6 +976,23 @@ std::vector<Diagnostic> SourceValidator::Validate(
   }
 
   return diagnostics;
+}
+
+}  // namespace
+
+// Whether a program has a diagnostic does not depend on the order in which its records are
+// checked: every per-record check is a condition on that record, or a duplicate or missing key of
+// a table whose contents do not depend on that order. So the column runs decide validity, and
+// only a program with diagnostics is checked again record by record, which reports them in record
+// order. O(runs) reconstructions + O(n) for a valid program.
+Result<ValidatedSource, std::vector<Diagnostic>> SourceValidator::Validate(
+    const SourceProgram& program) const {
+  if (Check(program, true).empty())
+    return Result<ValidatedSource, std::vector<Diagnostic>>::Success(ValidatedSource(program));
+  auto diagnostics = Check(program, false);
+  if (diagnostics.empty())
+    throw std::logic_error("source validation by runs and by records disagree");
+  return Result<ValidatedSource, std::vector<Diagnostic>>::Failure(std::move(diagnostics));
 }
 
 }  // namespace sentryward::algorithm

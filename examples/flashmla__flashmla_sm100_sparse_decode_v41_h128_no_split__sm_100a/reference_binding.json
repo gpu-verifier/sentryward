@@ -1,0 +1,332 @@
+{
+ "schema": "spverify.equivalence-mapping.v1",
+ "output_value_semantics": "ideal_real",
+ "left_inputs": {
+  "allocations": {
+   "6:global1:Q": "Q",
+   "6:global2:KV": "KV",
+   "6:global7:indices": "indices",
+   "6:global11:topk_length": "topk_length"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global1:Q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     4,
+     2,
+     129,
+     640
+    ],
+    "source_strides_bytes": [
+     330240,
+     165120,
+     1280,
+     2
+    ],
+    "target_strides_bytes": [
+     330240,
+     165120,
+     1280,
+     2
+    ]
+   },
+   "6:global2:KV": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 1,
+    "shape": [
+     672,
+     5,
+     528
+    ],
+    "source_strides_bytes": [
+     2640,
+     528,
+     1
+    ],
+    "target_strides_bytes": [
+     2640,
+     528,
+     1
+    ]
+   },
+   "6:global7:indices": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4,
+     2,
+     192
+    ],
+    "source_strides_bytes": [
+     1536,
+     768,
+     4
+    ],
+    "target_strides_bytes": [
+     1536,
+     768,
+     4
+    ]
+   },
+   "6:global11:topk_length": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   }
+  }
+ },
+ "right_inputs": {
+  "allocations": {
+   "6:global1:Q": "Q",
+   "6:global2:KV": "KV",
+   "6:global7:indices": "indices",
+   "6:global11:topk_length": "topk_length"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global1:Q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     4,
+     2,
+     129,
+     640
+    ],
+    "source_strides_bytes": [
+     330240,
+     165120,
+     1280,
+     2
+    ],
+    "target_strides_bytes": [
+     330240,
+     165120,
+     1280,
+     2
+    ]
+   },
+   "6:global2:KV": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 1,
+    "shape": [
+     672,
+     5,
+     528
+    ],
+    "source_strides_bytes": [
+     2640,
+     528,
+     1
+    ],
+    "target_strides_bytes": [
+     2640,
+     528,
+     1
+    ]
+   },
+   "6:global7:indices": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4,
+     2,
+     192
+    ],
+    "source_strides_bytes": [
+     1536,
+     768,
+     4
+    ],
+    "target_strides_bytes": [
+     1536,
+     768,
+     4
+    ]
+   },
+   "6:global11:topk_length": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   }
+  }
+ },
+ "outputs": {
+  "kind": "dense_tensors",
+  "tensors": [
+   {
+    "left_allocation": "6:global1:O",
+    "right_allocation": "6:global1:O",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     4,
+     1,
+     128,
+     512
+    ],
+    "left_strides_bytes": [
+     131072,
+     131072,
+     1024,
+     2
+    ],
+    "right_strides_bytes": [
+     131072,
+     131072,
+     1024,
+     2
+    ]
+   },
+   {
+    "left_allocation": "6:global3:LSE",
+    "right_allocation": "6:global3:LSE",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4,
+     1,
+     128
+    ],
+    "left_strides_bytes": [
+     512,
+     512,
+     4
+    ],
+    "right_strides_bytes": [
+     512,
+     512,
+     4
+    ]
+   }
+  ]
+ },
+ "reference": {
+  "arguments": [
+   {
+    "name": "Q",
+    "allocation": "6:global1:Q",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "KV_data",
+    "allocation": "6:global2:KV",
+    "dtype": "float8_e4m3fn",
+    "shape": [
+     672,
+     5,
+     528
+    ]
+   },
+   {
+    "name": "KV_bytes",
+    "allocation": "6:global2:KV",
+    "dtype": "uint8",
+    "shape": [
+     672,
+     5,
+     528
+    ]
+   },
+   {
+    "name": "indices",
+    "allocation": "6:global7:indices",
+    "dtype": "int32"
+   },
+   {
+    "name": "topk_length",
+    "allocation": "6:global11:topk_length",
+    "dtype": "int32"
+   },
+   {
+    "name": "sm_scale_log2",
+    "parameter": 0,
+    "parameter_offset": 28
+   },
+   {
+    "name": "s_q",
+    "parameter": 0,
+    "parameter_offset": 4
+   },
+   {
+    "name": "h_q",
+    "parameter": 0,
+    "parameter_offset": 8
+   },
+   {
+    "name": "topk",
+    "parameter": 0,
+    "parameter_offset": 40
+   }
+  ]
+ },
+ "provenance": {
+  "source": "FlashMLA sm100 sparse decode head128 = sm100::prefill::sparse_fwd_for_small_topk::head128::flash_fwd_splitkv_mla_fp8_sparse_kernel<KernelTemplate<SparseAttnFwdMode::Decode, V41, V41>> (2-CTA cluster); sparse top-k MQA decode over the V4.1 fp8 KV cache",
+  "upstream": [
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fwd_for_small_topk/head128/instantiations/phase1_decode_k512_v41.cu",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fwd_for_small_topk/head128/phase1.cuh",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fwd_for_small_topk/head128/config.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fwd_for_small_topk/head128/phase1.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/params.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/kv_cache_format.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/kv_cache_utils.cuh",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/dequant_utils.cuh",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/helpers.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/common_subroutine.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/api/sparse_decode.cpp",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/api/common.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/flash_mla/flash_mla_interface.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/test-sparse-decode.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/lib.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/ref.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/quant.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/kernelkit/generate.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/kernelkit/utils.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/setup.py"
+  ],
+  "scope": "tests/test-sparse-decode.py correctness case #42 (first head128 case, seed-0 collection order): b=4, s_q=1, h_q=128, h_kv=1, d_qk=d_v=512, s_k=512, topk=64, block_size=5, is_varlen=True (cache_seqlens 574/384/833/476), have_topk_length=True, enable_attn_sink=False (attn_sink null), no extra cache; num_blocks=672 (max_seqlen_pad 840), page_block_size=5; SparseDecode_Sm100_Head128_Impl hotfix stride_q_s_q := stride_q_b (s_q == 1, b > 1); grid (2, 4, 1), block 512, cluster (2, 1, 1), 228736 B dynamic smem; enable_split_kv=false (topk+extra_topk <= 640): tile_scheduler_metadata/num_splits/lse_accum/o_accum null, accum strides and num_sm_parts 0 (aggregate zero-init); 1 KV block(s) per request (topk_length <= topk keeps orig_topk_padded = 64); q/indices strides from kernelkit non_contiguousify; indices in [-1, 3359], topk_length in [0, 64] (torch.randint(0, topk+1)); O and LSE written; branch choices at PTX 16530 (`if (!should_scale_o)`, the should_scale_o vote, taken=false) and PTX 17318 (O-rescale branch `if (k > 0 && should_scale_o)`, taken=false; decides only visits whose predicate is not statically known, so the first KV block follows the program); unused zero-initialised tensor maps omitted Reference binding (2026-10-28): inputs whose non_contiguousify strides are not contiguous (Q, indices) are bound as their whole contiguous storage tensors on both sides; reference.py slices the logical block with the kernel parameters s_q (offset 4 = 1), h_q (offset 8 = 128), topk (offset 40 = 64).",
+  "scope_branch_choices": [
+   {
+    "line": 16530,
+    "taken": false,
+    "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 17318,
+    "taken": false,
+    "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   }
+  ],
+  "scope_shape_arrays": [],
+  "optimized_input_sha256": "5bcecb2811adf687859da66c0c7c8fd2a133541f8fa1db762c4247bc31f671fc",
+  "ptx_sha256": "a97ada942df54505ae2c4718dda8be28fabf9c8dbded1a012d88c487e7fd712a"
+ }
+}

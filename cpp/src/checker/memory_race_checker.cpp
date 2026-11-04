@@ -5,7 +5,9 @@
 #include <chrono>
 #include <utility>
 #include <optional>
+#include <set>
 #include <span>
+#include <string>
 #include <vector>
 
 #include "sentryward/algorithm/analysis/unordered_access_pairs.h"
@@ -306,6 +308,53 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunQuotientMemoryCheck(
   return Output::Success(std::move(result));
 }
 
+// Cross-CTA class mode with a piecewise δ: the parts on an allocation that has a piecewise δ in some
+// class and some write part, split into runs of members with one slot site (CrossUnitPart::site: the
+// PTX instruction and occurrence of the member's source instruction, in its CTA's rank). A member
+// without a PTX origin leaves its run without a site. Other parts are kept as they are.
+// O(members of the split parts x log segments).
+static std::vector<CrossUnitPart> SplitBySite(std::vector<CrossUnitPart> parts, const SourceProgram& source,
+                                              const UnitQuotient& quotient) {
+  std::set<std::string> pieced, written;
+  for (const auto& c : quotient.classes)
+    for (const auto& [allocation, pieces] : c.pieces) pieced.insert(allocation);
+  for (const auto& part : parts)
+    if (part.write && part.footprint.space == "global") written.insert(part.footprint.allocation);
+  std::vector<CrossUnitPart> result;
+  result.reserve(parts.size());
+  for (auto& part : parts) {
+    const auto& allocation = part.footprint.allocation;
+    if (part.footprint.space != "global" || !pieced.contains(allocation) || !written.contains(allocation)) {
+      result.push_back(std::move(part));
+      continue;
+    }
+    const auto& family = part.family;
+    const auto rank = quotient.RankOf(part.cta);
+    const auto step = family.delta[MemoryAccessFamily::kInstructionField];
+    const auto site = [&](std::size_t member) -> std::optional<UnitSite> {
+      const auto instruction = std::int64_t(family.first.instruction.value()) +
+                               step * (std::int64_t(member) - std::int64_t(family.first_member));
+      const auto origin = HeaderOf(source.instructions, std::size_t(instruction)).origin;
+      if (!origin) return std::nullopt;
+      return UnitSite{rank, origin->first, origin->second};
+    };
+    const auto end = family.first_member + family.count;
+    for (auto begin = family.first_member; begin < end;) {
+      const auto at = site(begin);
+      auto stop = begin + 1;
+      while (stop < end && site(stop) == at) ++stop;
+      auto run = part;
+      run.family.first = family.at(begin);
+      run.family.first_member = begin;
+      run.family.count = stop - begin;
+      run.site = at;
+      result.push_back(std::move(run));
+      begin = stop;
+    }
+  }
+  return result;
+}
+
 // Cross-CTA class mode: after the quotient search ended without a race, every global pair with an
 // access in a member unit (cross_unit_races.h). A race found there is reported as the first race; an
 // Unknown, a work cap, a race behind an unresolved quotient search (whose first finding on the
@@ -368,6 +417,7 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
       }
     }
   }
+  if (options.units->Piecewise()) parts = SplitBySite(std::move(parts), source, *options.units);
   const auto outcome = CheckCrossUnit(parts, *options.units, memory);
   using Status = CrossUnitOutcome::Status;
   if (outcome.status == Status::kNone) return output;

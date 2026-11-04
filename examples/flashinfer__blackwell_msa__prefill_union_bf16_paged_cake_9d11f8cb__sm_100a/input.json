@@ -1,0 +1,391 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "kernel_cake_blackwell_msa_9d11f8cbc9df656a767b",
+  "launch": {
+    "grid_dim": [
+      2,
+      4,
+      1
+    ],
+    "cluster_dim": [
+      1,
+      1,
+      1
+    ],
+    "block_dim": [
+      512,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 201728
+  },
+  "arguments": [
+    {
+      "parameter": 14,
+      "type": "u32",
+      "value": 26
+    },
+    {
+      "parameter": 15,
+      "type": "u32",
+      "value": 4
+    },
+    {
+      "parameter": 16,
+      "type": "u32",
+      "value": 2
+    },
+    {
+      "parameter": 17,
+      "type": "u32",
+      "value": 16
+    },
+    {
+      "parameter": 18,
+      "type": "u32",
+      "value": 2
+    },
+    {
+      "parameter": 19,
+      "type": "u32",
+      "value": 0
+    },
+    {
+      "parameter": 20,
+      "type": "u32",
+      "value": 3
+    },
+    {
+      "parameter": 21,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 22,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 23,
+      "type": "f32",
+      "value": 0.1275174308245987
+    },
+    {
+      "parameter": 24,
+      "type": "f32",
+      "value": 1.0
+    },
+    {
+      "parameter": 25,
+      "type": "f32",
+      "value": 1.0
+    },
+    {
+      "parameter": 26,
+      "type": "f32",
+      "value": 1.0
+    },
+    {
+      "parameter": 27,
+      "type": "u32",
+      "value": 1
+    },
+    {
+      "parameter": 28,
+      "type": "u32",
+      "value": 0
+    }
+  ],
+  "declarations": [
+    {
+      "parameter": 0,
+      "type": "tensor_map",
+      "object": "q"
+    },
+    {
+      "parameter": 1,
+      "type": "tensor_map",
+      "object": "k"
+    },
+    {
+      "parameter": 2,
+      "type": "tensor_map",
+      "object": "k_scale"
+    },
+    {
+      "parameter": 3,
+      "type": "tensor_map",
+      "object": "v"
+    },
+    {
+      "parameter": 4,
+      "type": "tensor_map",
+      "object": "v_scale"
+    },
+    {
+      "parameter": 5,
+      "type": "pointer",
+      "object": "out"
+    },
+    {
+      "parameter": 6,
+      "type": "pointer",
+      "object": "lse"
+    },
+    {
+      "parameter": 7,
+      "type": "pointer",
+      "object": "temperature_lse"
+    },
+    {
+      "parameter": 8,
+      "type": "pointer",
+      "object": "q2k_indices"
+    },
+    {
+      "parameter": 9,
+      "type": "pointer",
+      "object": "cu_seqlens_q"
+    },
+    {
+      "parameter": 10,
+      "type": "pointer",
+      "object": "cu_seqlens_k"
+    },
+    {
+      "parameter": 11,
+      "type": "pointer",
+      "object": "q_offsets"
+    },
+    {
+      "parameter": 12,
+      "type": "pointer",
+      "object": "kv_lens"
+    },
+    {
+      "parameter": 13,
+      "type": "pointer",
+      "object": "page_table"
+    }
+  ],
+  "tensor_properties": [
+    {
+      "object": "page_table",
+      "element_type": "s32",
+      "property": "lower_bound",
+      "value": -1
+    },
+    {
+      "object": "page_table",
+      "element_type": "s32",
+      "property": "upper_bound",
+      "value": 4
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true
+  },
+  "tma_descriptors": [
+    {
+      "parameter": 0,
+      "object": "q",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        26,
+        4,
+        2
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        1024,
+        256,
+        128
+      ],
+      "box_shape": [
+        64,
+        128,
+        1,
+        2
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 1,
+      "object": "k",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        128,
+        2,
+        10
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        128,
+        32768
+      ],
+      "box_shape": [
+        64,
+        64,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 2,
+      "object": "k_scale",
+      "element_type": "u8",
+      "global_shape": [
+        1024,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        1,
+        1024,
+        1024
+      ],
+      "box_shape": [
+        256,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "none",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 3,
+      "object": "v",
+      "element_type": "bf16",
+      "global_shape": [
+        64,
+        128,
+        2,
+        10
+      ],
+      "coordinate_strides_bytes": [
+        2,
+        256,
+        128,
+        32768
+      ],
+      "box_shape": [
+        64,
+        64,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "swizzle": "128B",
+      "interleave": "none",
+      "oob_fill": "zero"
+    },
+    {
+      "parameter": 4,
+      "object": "v_scale",
+      "element_type": "u8",
+      "global_shape": [
+        1024,
+        1,
+        1
+      ],
+      "coordinate_strides_bytes": [
+        1,
+        1024,
+        1024
+      ],
+      "box_shape": [
+        256,
+        1,
+        1
+      ],
+      "element_strides": [
+        1,
+        1,
+        1
+      ],
+      "swizzle": "none",
+      "interleave": "none",
+      "oob_fill": "zero"
+    }
+  ],
+  "shape_arrays": [
+    {
+      "parameter": 9,
+      "offset": 0,
+      "element_type": "s32",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          19
+        ],
+        [
+          26
+        ]
+      ]
+    },
+    {
+      "parameter": 10,
+      "offset": 0,
+      "element_type": "s32",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          257
+        ],
+        [
+          386
+        ]
+      ]
+    },
+    {
+      "parameter": 12,
+      "offset": 0,
+      "element_type": "s32",
+      "shapes": [
+        [
+          257
+        ],
+        [
+          129
+        ]
+      ]
+    }
+  ]
+}

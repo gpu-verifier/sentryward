@@ -377,9 +377,9 @@ void PutTmaTail(std::string &out, const ResolvedTma &resolved) {
   }
 }
 // A TMA region whose symbolic coordinates are all affine in tensor-property elements
-// (ResolvedTma::region_affine): each abstract segment's expression and patch are the region
-// form, its placement (offset 0 of the target allocation) an anchor; the other steps (shared
-// bindings, completions) as usual. The structure (element objects, types, byte coefficients)
+// (ResolvedTma::region_affine): each region's expression and patch are the region form, its
+// placement (offset 0 of the target allocation) an anchor; the other steps (shared bindings,
+// completions) as usual. The structure (element objects, types, byte coefficients)
 // must be equal; the region's constant (the allocation's δ) and each element read's byte
 // offset (its object's δ) are compared up to δ. A gather has one form per row: a segment's
 // row is fixed by its logical offset (PutTmaTail). False (canon unchanged): not this form.
@@ -737,20 +737,6 @@ private:
   const CtaFacts &facts_;
   std::map<std::pair<std::uint8_t, std::uint16_t>, std::unique_ptr<Context>> contexts_;
 };
-// The registers a memory slot's resolution reads from its site record: the address
-// operand's own register (MemoryBody, Shared and GenericOwner read only it there;
-// definitions are other records).
-std::vector<RegId> AddressRegisters(const CtaFacts &facts, std::string_view operand) {
-  auto token = Trim(operand);
-  if (token.starts_with('[') && token.ends_with(']')) token = Trim(std::string_view(token).substr(1, token.size() - 2));
-  std::vector<RegId> regs;
-  if (const auto reg = facts.Reg(token)) regs.push_back(*reg);
-  if (const auto split = SplitAddress(token))
-    if (const auto reg = facts.Reg(split->first); reg && std::find(regs.begin(), regs.end(), *reg) == regs.end())
-      regs.push_back(*reg);
-  std::sort(regs.begin(), regs.end());
-  return regs;
-}
 // The member's record as the representative's consumer saw its own.
 RecordView MemberRecord(const CtaFacts &facts, RecordRef at, ReadKind kind, std::span<const RegId> slice,
                         RecordHolder &holder) {
@@ -760,31 +746,66 @@ RecordView MemberRecord(const CtaFacts &facts, RecordRef at, ReadKind kind, std:
   default: holder = facts.ReadFull(at); return holder.view();
   }
 }
-// δ = member - rep as a signed 64-bit value (false when it does not fit).
-bool AddDelta(UnitDelta &delta, const std::string &object, std::uint64_t member, std::uint64_t rep) {
-  constexpr auto kMax = static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max());
-  std::int64_t d;
-  if (member >= rep) {
-    if (member - rep > kMax) return false;
-    d = static_cast<std::int64_t>(member - rep);
-  } else {
-    if (rep - member > kMax) return false;
-    d = -static_cast<std::int64_t>(rep - member);
+// The δ answers of one unit's replay, per global allocation. Without `piecewise`, two answers for
+// one allocation must agree (the first disagreement fails the replay). With it, the allocation's
+// (site, δ) entries in replay order, without consecutive repeats (the globals of one slot share its
+// site). O(log allocations) per answer; O(allocations) memory, plus O(distinct runs) with `piecewise`.
+class DeltaAnswers {
+public:
+  explicit DeltaAnswers(bool piecewise) : piecewise_(piecewise) {}
+  // δ = member - rep as a signed 64-bit value at `site` (false when it does not fit, or disagrees).
+  bool Add(const std::string &object, const algorithm::UnitSite &site, std::uint64_t member, std::uint64_t rep) {
+    constexpr auto kMax = static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max());
+    std::int64_t d;
+    if (member >= rep) {
+      if (member - rep > kMax) return false;
+      d = static_cast<std::int64_t>(member - rep);
+    } else {
+      if (rep - member > kMax) return false;
+      d = -static_cast<std::int64_t>(rep - member);
+    }
+    return Put(object, site, d);
   }
-  const auto [it, added] = delta.try_emplace(object, d);
-  return added || it->second == d;
-}
-// The same for signed offsets (a bounded-pointer footprint's terms).
-bool AddSignedDelta(UnitDelta &delta, const std::string &object, std::int64_t member, std::int64_t rep) {
-  std::int64_t d;
-  if (__builtin_sub_overflow(member, rep, &d)) return false;
-  const auto [it, added] = delta.try_emplace(object, d);
-  return added || it->second == d;
-}
+  // The same for signed offsets (a bounded-pointer footprint's terms).
+  bool AddSigned(const std::string &object, const algorithm::UnitSite &site, std::int64_t member, std::int64_t rep) {
+    std::int64_t d;
+    if (__builtin_sub_overflow(member, rep, &d)) return false;
+    return Put(object, site, d);
+  }
+  // The unit's δ table: an allocation whose answers all agree has one δ; otherwise (`piecewise`
+  // only) its sorted (site, δ) list, each site with one δ. Nullopt when a site has two δ.
+  // O(entries log entries).
+  [[nodiscard]] std::optional<UnitDelta> Table() && {
+    UnitDelta table;
+    for (auto &[object, entries] : answers_) {
+      const auto d = entries.front().second;
+      if (std::all_of(entries.begin(), entries.end(), [&](const auto &e) { return e.second == d; })) {
+        table.uniform.emplace(object, d);
+        continue;
+      }
+      std::sort(entries.begin(), entries.end());
+      entries.erase(std::unique(entries.begin(), entries.end()), entries.end());
+      for (std::size_t k = 1; k < entries.size(); ++k)
+        if (entries[k].first == entries[k - 1].first) return std::nullopt;
+      table.pieces.emplace(object, std::move(entries));
+    }
+    return table;
+  }
+
+private:
+  bool Put(const std::string &object, const algorithm::UnitSite &site, std::int64_t d) {
+    auto &entries = answers_[object];
+    if (!entries.empty() && !piecewise_) return entries.front().second == d;
+    if (entries.empty() || entries.back().first != site || entries.back().second != d) entries.emplace_back(site, d);
+    return true;
+  }
+  bool piecewise_;
+  std::map<std::string, std::vector<std::pair<algorithm::UnitSite, std::int64_t>>> answers_;
+};
 // The logged answers (special, uniform, memo, Partition and value reads), then
 // the logged slots, of one rank's log re-asked on the member CTA's own facts; δ
 // accumulates across ranks. False with the first failing question.
-bool Replay(const UnitLog &log, std::uint32_t rank, const CtaFacts &facts, UnitDelta &delta) {
+bool Replay(const UnitLog &log, std::uint32_t rank, const CtaFacts &facts, DeltaAnswers &delta) {
   const auto &r = log.ranks.at(rank);
   try {
     for (const auto &e : r.specials) {
@@ -886,16 +907,18 @@ bool Replay(const UnitLog &log, std::uint32_t rank, const CtaFacts &facts, UnitD
       if (!canon.unliftable.empty() || canon.shape != log.strings.At(e.shape) || canon.globals.size() != e.offsets_count ||
           canon.shifts.size() != e.shifts_count)
         return false;
+      const algorithm::UnitSite at{rank, static_cast<std::uint32_t>(site.instruction_id()),
+                                   static_cast<std::uint32_t>(site.occurrence())};
       for (std::uint32_t k = 0; k < e.offsets_count; ++k) {
         const auto &rep = r.offsets[e.offsets_begin + k];
         const auto &object = log.strings.At(rep.object);
-        if (canon.globals[k].first != object || !AddDelta(delta, object, canon.globals[k].second, rep.offset))
+        if (canon.globals[k].first != object || !delta.Add(object, at, canon.globals[k].second, rep.offset))
           return false;
       }
       for (std::uint32_t k = 0; k < e.shifts_count; ++k) {
         const auto &rep = r.shifts[e.shifts_begin + k];
         const auto &object = log.strings.At(rep.object);
-        if (canon.shifts[k].first != object || !AddSignedDelta(delta, object, canon.shifts[k].second, rep.value))
+        if (canon.shifts[k].first != object || !delta.AddSigned(object, at, canon.shifts[k].second, rep.value))
           return false;
       }
     }
@@ -904,13 +927,21 @@ bool Replay(const UnitLog &log, std::uint32_t rank, const CtaFacts &facts, UnitD
   }
   return true;
 }
+// Every δ of an aligned allocation (each of its pieces) a multiple of the modulus.
 bool AlignOk(const UnitLog &log, const UnitDelta &delta) {
   for (const auto &r : log.ranks)
     for (const auto &a : r.aligns) {
       if (!a.modulus) continue;
-      const auto found = delta.find(log.strings.At(a.object));
-      const std::int64_t d = found == delta.end() ? 0 : found->second;
-      if (d % static_cast<std::int64_t>(a.modulus) != 0) return false;
+      const auto &object = log.strings.At(a.object);
+      const auto modulus = static_cast<std::int64_t>(a.modulus);
+      if (const auto pieces = delta.pieces.find(object); pieces != delta.pieces.end()) {
+        for (const auto &[site, d] : pieces->second)
+          if (d % modulus != 0) return false;
+        continue;
+      }
+      const auto found = delta.uniform.find(object);
+      const std::int64_t d = found == delta.uniform.end() ? 0 : found->second;
+      if (d % modulus != 0) return false;
     }
   return true;
 }
@@ -922,11 +953,15 @@ bool SameStructure(const std::vector<StructureKey> &a, const std::vector<Structu
   return true;
 }
 // Equal answers and slot outcomes (every rank's log replayed, δ accumulating)
-// and the alignment checks (AbsoluteCheck) of a unit against one class log.
-bool Admits(const UnitLog &log, std::span<const CtaFacts *const> facts, UnitDelta &delta) {
+// and the alignment checks (AbsoluteCheck) of a unit against one class log; `piecewise`: the class
+// admits a piecewise δ (UnitClasses::AdmitPiecewise). The unit's δ table, or nullopt.
+std::optional<UnitDelta> Admits(const UnitLog &log, std::span<const CtaFacts *const> facts, bool piecewise) {
+  DeltaAnswers answers(piecewise);
   for (std::uint32_t rank = 0; rank < facts.size(); ++rank)
-    if (!Replay(log, rank, *facts[rank], delta)) return false;
-  return AlignOk(log, delta);
+    if (!Replay(log, rank, *facts[rank], answers)) return std::nullopt;
+  auto delta = std::move(answers).Table();
+  if (!delta || !AlignOk(log, *delta)) return std::nullopt;
+  return delta;
 }
 } // namespace
 
@@ -949,18 +984,20 @@ struct UnitClasses::Impl {
     std::vector<UnitDelta> deltas;
     std::vector<std::pair<std::string, std::uint64_t>> fences; // the representative's tensormap regions
     bool fence_nonconstant = false;
+    bool piecewise = false; // admits a piecewise δ (AdmitPiecewise before the class was founded)
   };
   std::vector<ClassInfo> classes;
   // Per unit: its class and index in it (0 = representative), once decided.
   std::vector<std::optional<std::pair<std::uint32_t, std::uint32_t>>> membership;
   std::unordered_map<std::uint32_t, Pending> pending;
   std::uint64_t admitted = 0, class_bytes = 0;
-  bool futility = false;
+  bool futility = false, piecewise = false;
   // The classes with logs as of the last Found, for PreAdmit off the main thread.
   struct SnapshotClass {
     std::uint32_t klass;
     Keys keys;
     std::shared_ptr<const UnitLog> log;
+    bool piecewise;
   };
   struct Snapshot {
     std::uint32_t classes = 0;
@@ -975,6 +1012,7 @@ struct UnitClasses::Impl {
   void Found(std::uint32_t unit, Pending &p) {
     ClassInfo info;
     info.rep = unit;
+    info.piecewise = piecewise;
     std::uint64_t log_bytes = 0;
     if (p.log) {
       for (const auto &r : p.log->ranks) {
@@ -1005,7 +1043,7 @@ struct UnitClasses::Impl {
     auto next = std::make_shared<Snapshot>(*previous);
     next->classes = static_cast<std::uint32_t>(classes.size());
     if (classes.back().log)
-      next->logged.push_back({next->classes - 1, classes.back().keys, classes.back().log});
+      next->logged.push_back({next->classes - 1, classes.back().keys, classes.back().log, classes.back().piecewise});
     std::lock_guard lock(snapshot_mutex);
     snapshot = std::move(next);
   }
@@ -1014,6 +1052,46 @@ struct UnitClasses::Impl {
     classes[klass].members.push_back(unit);
     classes[klass].deltas.push_back(std::move(delta));
     membership.at(unit) = {klass, static_cast<std::uint32_t>(classes[klass].members.size())};
+  }
+  // The class's allocations with a piecewise δ in some member: their sites (every member replayed the
+  // same log, so each such member lists the same sites; a member with one δ has it at every site),
+  // grouped into pieces by their δ over the class's units. O(members x sites log) per allocation.
+  static std::map<std::string, algorithm::PiecewiseDelta> Pieces(const ClassInfo &c) {
+    std::map<std::string, algorithm::PiecewiseDelta> result;
+    for (const auto &member : c.deltas)
+      for (const auto &[object, entries] : member.pieces) {
+        auto &table = result[object];
+        if (!table.sites.empty()) continue;
+        for (const auto &[site, d] : entries) table.sites.push_back(site);
+      }
+    for (auto &[object, table] : result) {
+      std::vector<std::vector<std::int64_t>> rows(table.sites.size(), std::vector<std::int64_t>(c.deltas.size() + 1, 0));
+      for (std::size_t m = 0; m < c.deltas.size(); ++m) {
+        const auto &member = c.deltas[m];
+        if (const auto pieced = member.pieces.find(object); pieced != member.pieces.end()) {
+          if (pieced->second.size() != table.sites.size())
+            throw std::logic_error("internal error: CTA class bookkeeping (members with different slot sites)");
+          for (std::size_t k = 0; k < table.sites.size(); ++k) {
+            if (pieced->second[k].first != table.sites[k])
+              throw std::logic_error("internal error: CTA class bookkeeping (members with different slot sites)");
+            rows[k][m + 1] = pieced->second[k].second;
+          }
+          continue;
+        }
+        const auto uniform = member.uniform.find(object);
+        if (uniform == member.uniform.end())
+          throw std::logic_error("internal error: CTA class bookkeeping (a member without the allocation's δ)");
+        for (auto &row : rows) row[m + 1] = uniform->second;
+      }
+      std::map<std::vector<std::int64_t>, std::uint32_t> ids;
+      table.piece.reserve(rows.size());
+      for (auto &row : rows) {
+        const auto [it, added] = ids.try_emplace(row, static_cast<std::uint32_t>(table.delta.size()));
+        if (added) table.delta.push_back(std::move(row));
+        table.piece.push_back(it->second);
+      }
+    }
+    return result;
   }
   // The tensormap locality rule over every unit's cp_fenceproxy regions (representative + δ for members).
   struct Region {
@@ -1029,8 +1107,9 @@ struct UnitClasses::Impl {
       for (const auto &[object, offset] : c.fences) {
         regions.push_back({object, offset, c.rep});
         for (std::size_t m = 0; m < c.members.size(); ++m) {
-          const auto found = c.deltas[m].find(object);
-          if (found == c.deltas[m].end()) return false; // never expected: the member's own slot fixes δ
+          // A piecewise δ is not placed here: unknown.
+          const auto found = c.deltas[m].uniform.find(object);
+          if (found == c.deltas[m].uniform.end()) return false;
           std::int64_t moved; // the member's region; one outside the int64 offset range is unknown
           if (offset > std::uint64_t(INT64_MAX) || __builtin_add_overflow(std::int64_t(offset), found->second, &moved) ||
               moved < 0)
@@ -1064,10 +1143,6 @@ UnitClasses::~UnitClasses() = default;
 
 // ---- class mode -------------------------------------------------------------
 UnitClasses::PreAdmission UnitClasses::PreAdmit(std::span<const CtaFacts *const> facts,
-                                                const std::vector<StructureKey> &keys) const {
-  return PreAdmit(facts, keys, PreAdmission{});
-}
-UnitClasses::PreAdmission UnitClasses::PreAdmit(std::span<const CtaFacts *const> facts,
                                                 const std::vector<StructureKey> &keys, PreAdmission previous) const {
   if (previous.joined) return previous;
   const auto &s = *impl_;
@@ -1085,10 +1160,9 @@ UnitClasses::PreAdmission UnitClasses::PreAdmit(std::span<const CtaFacts *const>
     throw std::logic_error("internal error: CTA class bookkeeping (look-ahead admission without every CTA of the unit)");
   for (const auto &candidate : snapshot->logged) {
     if (candidate.klass < previous.classes || !SameStructure(*candidate.keys, keys)) continue;
-    UnitDelta delta;
-    if (Admits(*candidate.log, facts, delta)) {
+    if (auto delta = Admits(*candidate.log, facts, candidate.piecewise)) {
       result.joined = candidate.klass;
-      result.delta = std::move(delta);
+      result.delta = std::move(*delta);
       return result;
     }
   }
@@ -1103,14 +1177,15 @@ std::optional<std::uint32_t> UnitClasses::Admit(std::uint32_t unit, std::span<co
     throw std::logic_error("internal error: CTA class bookkeeping (admission without every CTA of the unit)");
   if (keys.size() != size)
     throw std::logic_error("internal error: CTA class bookkeeping (admission without every CTA's structure key)");
+  if (pre.joined) {
+    const auto joined = *pre.joined;
+    Join(unit, std::move(pre));
+    return joined;
+  }
   // Classes [0, pre.classes) are decided by the look-ahead: the first of them that admits
   // the unit is the sequential first (earlier ones fail on these facts either way).
   if (pre.classes > s.classes.size())
     throw std::logic_error("internal error: CTA class bookkeeping (look-ahead admission saw a later class)");
-  if (pre.joined) {
-    s.Join(unit, *pre.joined, std::move(pre.delta));
-    return pre.joined;
-  }
   // Structure keys, then answers, slot outcomes and alignment checks: the later
   // candidate classes in creation order.
   // Class mode with values: value lifting adds no admission condition.
@@ -1122,15 +1197,25 @@ std::optional<std::uint32_t> UnitClasses::Admit(std::uint32_t unit, std::span<co
   for (std::uint32_t c = pre.classes; c < s.classes.size(); ++c) {
     const auto &candidate = s.classes[c];
     if (!candidate.log || !SameStructure(*candidate.keys, keys)) continue;
-    UnitDelta delta;
-    if (Admits(*candidate.log, facts, delta)) {
-      s.Join(unit, c, std::move(delta));
+    if (auto delta = Admits(*candidate.log, facts, candidate.piecewise)) {
+      s.Join(unit, c, std::move(*delta));
       return c;
     }
   }
   s.pending[unit].keys = std::move(keys);
   return std::nullopt;
 }
+
+void UnitClasses::Join(std::uint32_t unit, PreAdmission pre) {
+  auto &s = *impl_;
+  if (!pre.joined)
+    throw std::logic_error("internal error: CTA class bookkeeping (a join without a look-ahead admission)");
+  if (pre.classes > s.classes.size())
+    throw std::logic_error("internal error: CTA class bookkeeping (look-ahead admission saw a later class)");
+  s.Join(unit, *pre.joined, std::move(pre.delta));
+}
+
+void UnitClasses::AdmitPiecewise() noexcept { impl_->piecewise = true; }
 
 QuerySink *UnitClasses::Record(std::uint32_t unit, std::uint32_t rank, const CtaFacts &facts) {
   auto &s = *impl_;
@@ -1176,7 +1261,10 @@ algorithm::UnitQuotient UnitClasses::Quotient() const {
     entry.units.push_back(c.rep);
     entry.units.insert(entry.units.end(), c.members.begin(), c.members.end());
     entry.delta.emplace_back();
-    entry.delta.insert(entry.delta.end(), c.deltas.begin(), c.deltas.end());
+    for (const auto &d : c.deltas) entry.delta.push_back(d.uniform);
+    entry.pieces = Impl::Pieces(c);
+    for (const auto &[object, pieces] : entry.pieces)
+      for (auto &d : entry.delta) d.erase(object);
     q.classes.push_back(std::move(entry));
   }
   return q;

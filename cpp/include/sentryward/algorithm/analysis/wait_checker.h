@@ -24,9 +24,12 @@ struct LowerFreshnessCertificate final {
                          const LowerFreshnessCertificate&) = default;
 };
 
+// The issue happens before the completion node of next_phase. That node's only
+// incoming edges are the certified edges from the phase's effects, so this is
+// equivalent to the issue happening before some effect of next_phase.
 struct UpperFreshnessCertificate final {
   PhaseKey next_phase;
-  EventId reachable_effect;
+  EventId reachable_completion;
 
   friend bool operator==(const UpperFreshnessCertificate&,
                          const UpperFreshnessCertificate&) = default;
@@ -131,6 +134,7 @@ enum class WaitCheckErrorCode {
   kPhaseNumberOverflow,
   kMissingNextPhase,
   kIssueNotOrderedBeforeNextPhase,
+  kMissingNextPhaseCompletion,
   kMissingStateDefinition,
   kInvalidStateDefinition,
   kStateBarrierMismatch,

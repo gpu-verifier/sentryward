@@ -11,6 +11,8 @@
 
 namespace sentryward::algorithm {
 
+class ReachabilityOracle;
+
 struct WaitReachabilityQuery final {
   EventId issue;
   EventId initialization;
@@ -24,14 +26,18 @@ struct WaitReachabilityAnswer final {
   // Disengaged means unavailable: the caller must use its ordinary oracle.
   std::optional<bool> initialization;
   std::optional<bool> lower;
-  bool upper_indexed = false;
-  // With upper_indexed=true, no witness means an exact negative answer.
-  std::optional<EventId> upper_witness;
+  // Whether the issue happens before some effect of the next phase,
+  // equivalently before that phase's completion node.
+  std::optional<bool> upper;
 };
 
 struct WaitReachabilityBatchOptions final {
   // The caller has certified every completed phase and all consecutive phase
-  // separations. Metadata alone is not a proof of that ordering.
+  // separations, and every non-named phase start passed its initialization
+  // check: a query's initialization (its barrier's) happens before every
+  // effect of each such phase of the barrier. Each completed phase has its
+  // completion node, whose only incoming edges are the certified edges from
+  // the phase's effects. Metadata alone is not a proof of that ordering.
   bool certified_phase_ordering = false;
   std::size_t scratch_limit_bytes = std::size_t{512} * 1024 * 1024;
 };
@@ -42,10 +48,14 @@ struct WaitReachabilityBatchOptions final {
 // Unrelated later mutations require rebuilding the batch.
 class WaitReachabilityBatch final {
  public:
+  // The family relations are answered through the family indexes that
+  // `reachability` (an oracle of the same graph) has built; Build builds only
+  // the ones it lacks, and releases those before it returns.
   [[nodiscard]] static WaitReachabilityBatch Build(
       const HappensBeforeGraph& graph, std::span<const PhaseInfo> phases,
       std::span<const WaitReachabilityQuery> queries,
-      WaitReachabilityBatchOptions options = {});
+      WaitReachabilityBatchOptions options = {},
+      ReachabilityOracle* reachability = nullptr);
 
   [[nodiscard]] const WaitReachabilityAnswer* find(EventId issue) const noexcept;
 

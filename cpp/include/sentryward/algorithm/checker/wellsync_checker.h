@@ -30,8 +30,7 @@ class WellSyncChecker final {
       const CheckerOptions& options = CheckerOptions{}) const;
 
   // Pipeline entry: prepared must come from a successful Lowerer::Run on this
-  // unchanged source with CollectiveOrdering::kExecution. It is borrowed only
-  // for the duration of the call.
+  // unchanged source. It is borrowed only for the duration of the call.
   [[nodiscard]] CheckResult RunPrepared(const SourceProgram& source,
       const LoweredProgram& prepared, const CheckerOptions& options = {}) const;
  private:
@@ -40,7 +39,7 @@ class WellSyncChecker final {
   // Synchronization checks on the execution-order relation. The certificate's
   // proof graph still carries the rendezvous of warp data collectives.
   [[nodiscard]] CheckResult RunExecutionOrder(const SourceProgram& source,
-      const CheckerOptions& options, const LoweredProgram* prepared) const;
+      const CheckerOptions& options, const LoweredProgram& lowered) const;
 };
 
 }  // namespace sentryward::algorithm

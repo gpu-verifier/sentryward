@@ -616,7 +616,8 @@ std::optional<alg::SameValueFailure> SameValueOutcome(
 // Cross-CTA value lifting in class mode: the class tables the scalar fold
 // instantiates members from. A unit is named by its origin (rank 0's
 // coordinates); δ is keyed as ConstantRegion::allocation (AllocationIdentity);
-// CTA ids are linear, renamed rank by rank.
+// CTA ids are linear, renamed rank by rank. An allocation with a piecewise δ has no entry: such a
+// quotient exists only when no value stage lifts (UnitClasses::AdmitPiecewise).
 // O(units x unit size + δ entries).
 sentryward::value_analysis::UnitLifting ClassLifting(const alg::UnitQuotient &q) {
   namespace va = sentryward::value_analysis;
@@ -1100,6 +1101,62 @@ std::optional<std::uint64_t> AllocatedBytes() {
   return std::nullopt;
 #endif
 }
+// The driver's accounting of one executed CTA: what it adds to the launch's statistics and
+// frontend assumptions, read from the CTA's facts once. A pure function of that CTA's
+// execution, so class mode's look-ahead workers summarize the units they execute and the
+// driver applies the summaries in unit order. The per-lane quantities are added up per CTA:
+// counts are sums, and a branch decision's assumption and rule are those of its last lane, as
+// when the driver adds lane by lane. O(lanes x per-lane decisions + static instructions).
+struct CtaAccount {
+  ptx::TemplateExecutionStatistics execution;
+  ptx::ThreadRecordStatistics storage;
+  std::uint64_t records = 0, assumed_assertions = 0;
+  std::uint64_t representative_branch_uses = 0, bounded_loop_uses = 0;
+  std::uint64_t election_uses = 0, clc_uses = 0, atomic_uses = 0;
+  std::map<std::uint64_t, std::uint64_t> opaque_regions;
+  std::map<std::uint64_t, ptx::DataBranchDecision> data_branch_decisions;
+  std::set<std::uint32_t> static_choice_lines;
+  // Whether the CTA executed one of `atomic_sites` (class mode's unit-independence precondition).
+  bool executes_atomic_site = false;
+};
+// Adds a later decision at one branch line to its summary: the counts add up, and the
+// assumption and rule become the later one's.
+void AddDecision(ptx::DataBranchDecision &summary, const ptx::DataBranchDecision &decision) {
+  summary.assumption = decision.assumption;
+  summary.rule = decision.rule;
+  summary.taken += decision.taken;
+  summary.not_taken += decision.not_taken;
+}
+CtaAccount SummarizeCta(const ptx::CtaFacts &cta_facts, const ptx::Function &function,
+                        std::span<const std::uint32_t> atomic_sites) {
+  const ptx::FactSource::ConsumerScope driver(cta_facts, {ptx::Consumer::Driver, 0});
+  CtaAccount account{.execution = cta_facts.TemplateStatistics(), .storage = cta_facts.RecordCompression()};
+  for (std::size_t index = 0; index < cta_facts.LaneCount(); ++index) {
+    const auto lane = cta_facts.Lane(index);
+    const auto aggregates = cta_facts.Aggregates(lane);
+    account.records += cta_facts.Size(lane);
+    account.assumed_assertions += aggregates.assumed_assertions;
+    for (const auto &[line, count] : aggregates.opaque_regions) account.opaque_regions[line] += count;
+    for (const auto &[line, decision] : aggregates.data_branch_decisions) {
+      AddDecision(account.data_branch_decisions[line], decision);
+      (decision.assumption == "representative_branches" ? account.representative_branch_uses
+                                                         : account.bounded_loop_uses) +=
+          decision.taken + decision.not_taken;
+    }
+  }
+  account.static_choice_lines = cta_facts.StaticBranchChoiceLines();
+  const auto static_counts = cta_facts.StaticCounts();
+  for (std::size_t id = 0; id < static_counts.size(); ++id) {
+    const auto &op = function.instructions[id].opcode;
+    const auto count = static_counts[id];
+    if (op == "elect") account.election_uses += count;
+    if (op == "clusterlaunchcontrol") account.clc_uses += count;
+    if (op == "atom" || op == "red") account.atomic_uses += count;
+  }
+  for (const auto id : atomic_sites)
+    if (id < static_counts.size() && static_counts[id] != 0) account.executes_atomic_site = true;
+  return account;
+}
 // One analysis attempt of the launch: the class-mode attempt, or with
 // `unit_restart` the per-unit attempt after it (PerUnitRestart). Prints the
 // report and returns the exit status; a class-mode attempt that restarts throws
@@ -1223,6 +1280,9 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
             {"line", diagnostic.origin.source_line.value_or(0)}};
         return;
       }
+      // A piecewise δ is admitted only once values cannot be lifted (UnitClasses::AdmitPiecewise).
+      if (class_lifting() && quotient->Piecewise())
+        throw std::logic_error("internal error: CTA class bookkeeping (lifting a piecewise δ)");
       if (!actions.complete()) {
         const auto& diagnostic = actions.diagnostics.front();
         // A binding diagnostic (it names its occurrence, or is the domain
@@ -1505,6 +1565,8 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
       std::unique_ptr<ptx::UnitClasses> classes;
       if (unit_plan.class_mode) {
         classes = std::make_unique<ptx::UnitClasses>(unit_plan, class_budget);
+        // Without value lifting, classes admit a piecewise δ from the start.
+        if (!unit_plan.lift_values) classes->AdmitPiecewise();
         // Lowering weights by the class tables, complete before its Finish.
         quotient = std::make_unique<alg::UnitQuotient>();
         if (semantic_builder) semantic_builder->TrackUnits(quotient.get());
@@ -1521,10 +1583,10 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
         std::map<std::uint64_t, std::uint64_t> opaque_regions;
         std::map<std::string, std::set<std::uint64_t>> property_lines;
         std::set<std::uint64_t> static_choice_lines;
-        // The driver's accounting of one executed CTA (every CTA, members included).
-        const auto account = [&](const ptx::CtaFacts &cta_facts) {
-              const ptx::FactSource::ConsumerScope driver(cta_facts, {ptx::Consumer::Driver, 0});
-              const auto &execution=cta_facts.TemplateStatistics();
+        // The driver's accounting of one executed CTA (every CTA, members included), applied in
+        // launch order: its SummarizeCta.
+        const auto account = [&](const CtaAccount &cta_account) {
+              const auto &execution=cta_account.execution;
               template_ctas+=execution.used;
               template_execution.steps+=execution.steps;
               template_execution.logical_steps+=execution.logical_steps;
@@ -1542,50 +1604,38 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
                   {"record_bindings",template_execution.record_bindings},
                   {"coordinate_bindings",template_execution.coordinate_bindings},
                   {"path_entries",template_execution.path_entries}});
-              const auto &storage = cta_facts.RecordCompression();
+              const auto &storage = cta_account.storage;
               record_compression.record_count += storage.record_count;
               record_compression.template_count += storage.template_count;
               record_compression.unique_binding_count += storage.unique_binding_count;
               record_compression.estimated_owned_bytes += storage.estimated_owned_bytes;
-              for (std::size_t index = 0; index < cta_facts.LaneCount(); ++index) {
-                const auto lane = cta_facts.Lane(index);
-                const auto aggregates = cta_facts.Aggregates(lane);
-                records += cta_facts.Size(lane);
-                auto &facts = input_metadata["frontend_assumptions"];
-                facts["assertion_uses"] = facts["assertion_uses"].get<std::uint64_t>() + aggregates.assumed_assertions;
-                for (const auto &[line, count] : aggregates.opaque_regions) opaque_regions[line] += count;
-                for (const auto &[line, decision] : aggregates.data_branch_decisions) {
-                  auto &summary = data_branch_decisions[line];
-                  summary.assumption = decision.assumption;
-                  summary.rule = decision.rule;
-                  summary.taken += decision.taken;
-                  summary.not_taken += decision.not_taken;
-                  const auto counter = decision.assumption == "representative_branches" ? "representative_branch_uses" : "bounded_loop_uses";
-                  facts[counter] = facts[counter].get<std::uint64_t>() +
-                      decision.taken + decision.not_taken;
-                }
-              }
-              static_choice_lines.insert(cta_facts.StaticBranchChoiceLines().begin(),
-                                         cta_facts.StaticBranchChoiceLines().end());
-              const auto static_counts = cta_facts.StaticCounts();
-              for (std::size_t id=0;id<static_counts.size();++id) {
-                auto &facts=input_metadata["frontend_assumptions"];
-                const auto &op=function->instructions[id].opcode;
-                const auto count=static_counts[id];
-                if (op=="elect") facts["election_uses"]=facts["election_uses"].get<std::uint64_t>()+count;
-                if (op=="clusterlaunchcontrol") facts["clc_uses"]=facts["clc_uses"].get<std::uint64_t>()+count;
-                if (op=="atom" || op=="red") facts["atomic_uses"]=facts["atomic_uses"].get<std::uint64_t>()+count;
-              }
+              records += cta_account.records;
+              auto &facts = input_metadata["frontend_assumptions"];
+              const auto add = [&](const char *counter, std::uint64_t count) {
+                facts[counter] = facts[counter].get<std::uint64_t>() + count;
+              };
+              add("assertion_uses", cta_account.assumed_assertions);
+              for (const auto &[line, count] : cta_account.opaque_regions) opaque_regions[line] += count;
+              for (const auto &[line, decision] : cta_account.data_branch_decisions)
+                AddDecision(data_branch_decisions[line], decision);
+              add("representative_branch_uses", cta_account.representative_branch_uses);
+              add("bounded_loop_uses", cta_account.bounded_loop_uses);
+              static_choice_lines.insert(cta_account.static_choice_lines.begin(),
+                                         cta_account.static_choice_lines.end());
+              add("election_uses", cta_account.election_uses);
+              add("clc_uses", cta_account.clc_uses);
+              add("atomic_uses", cta_account.atomic_uses);
               // Unit independence forbids an executed global atomic: restart if this CTA executes one.
-              if (unit_plan.class_mode)
-                for (const auto id : unit_plan.precondition.atomic_sites)
-                  if (id < static_counts.size() && static_counts[id] != 0)
-                    throw alg::UnitClassRestart{"executed_global_atomic"};
+              if (unit_plan.class_mode && cta_account.executes_atomic_site)
+                throw alg::UnitClassRestart{"executed_global_atomic"};
+        };
+        const auto summarize = [&](const ptx::CtaFacts &cta_facts) {
+          return SummarizeCta(cta_facts, *function, unit_plan.precondition.atomic_sites);
         };
         // A CTA's tensor_properties decisions, read once every consumer is done with it: template
         // values evaluated after its run (lowering, class admission) are decided by bounds too.
-        const auto account_properties = [&](const ptx::CtaFacts &cta_facts) {
-          for (const auto &[object, sites] : cta_facts.PropertyDecisionsSnapshot())
+        const auto account_properties = [&](const std::map<std::string, std::set<std::uint32_t>> &decisions) {
+          for (const auto &[object, sites] : decisions)
             for (const auto id : sites) property_lines[object].insert(function->instructions[id].line);
         };
         const auto linear_id = [&](const ptx::Coordinates &c) {
@@ -1596,16 +1646,54 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
           // a unit joins a class before any of its CTAs is consumed, and only
           // the founding (representative) units are consumed, in rank order.
           std::uint32_t consumed = 0;
-          // One unit's execution: its ranks' programs, their facts and structure keys
-          // (pure functions of each CTA's own execution). Facts point into the
+          // Up to --sync-threads look-ahead workers (below).
+          const std::size_t workers = options.threads > 1 ? options.threads : 0;
+          // One unit's execution: its ranks' programs, their facts, structure keys and driver
+          // accounting (pure functions of each CTA's own execution). Facts point into the
           // programs, so they are destroyed first.
           struct ExecutedUnit {
             std::vector<ptx::ExecutionProgram> programs;
             std::vector<std::unique_ptr<ptx::UnitFrame>> frames;
             std::vector<std::unique_ptr<ptx::CtaFacts>> facts;
             std::vector<ptx::StructureKey> keys;
+            std::vector<CtaAccount> accounts;
+            // Per rank: the CTA's tensor_properties decisions, read when its program is released.
+            std::vector<std::map<std::string, std::set<std::uint32_t>>> property_sites;
             // Admission against the classes founded before this unit ran (look-ahead).
             ptx::UnitClasses::PreAdmission pre;
+            // Every rank's program released: only the accounting, the decisions and the admission remain.
+            bool released = false;
+          };
+          // Releases a rank's program after its last consumer (admission, or the founder's
+          // consumption), on whichever thread finished with it. The executions were allocated in
+          // the workers' arenas, which keep the freed pages: return them every 8 released units.
+          [[maybe_unused]] std::atomic<std::size_t> released_units = 0;
+          const auto release_rank = [&](ExecutedUnit &executed, std::size_t rank) {
+            executed.property_sites[rank] = executed.facts[rank]->PropertyDecisionsSnapshot();
+            executed.facts[rank].reset();
+            alg::ProfileCall("frontend.release_execution", [&] { executed.programs[rank] = ptx::ExecutionProgram{}; });
+            if (rank + 1 == executed.programs.size()) executed.released = true;
+#if defined(__GLIBC__)
+            if (workers && executed.released && ++released_units % 8 == 0) malloc_trim(0);
+#endif
+          };
+          const auto release = [&](ExecutedUnit &executed) {
+            for (std::size_t rank = 0; rank < executed.programs.size(); ++rank) release_rank(executed, rank);
+          };
+          // A unit the look-ahead admits is released by the thread that admitted it; the loop
+          // then applies its accounting and joins it without its facts.
+          const auto pre_admit = [&](ExecutedUnit &executed) {
+            std::vector<const ptx::CtaFacts *> view;
+            for (const auto &facts : executed.facts) view.push_back(facts.get());
+            executed.pre = alg::ProfileCall("class.pre_admit",
+                                            [&] { return classes->PreAdmit(view, executed.keys, std::move(executed.pre)); });
+            if (executed.pre.joined) {
+              release(executed);
+              return;
+            }
+            // The replay's reads filled the template value caches; drop them before the
+            // unit waits in the window (a later read, e.g. a founder's lowering, recomputes).
+            for (const auto &facts : executed.facts) facts->ReleaseValues();
           };
           const auto execute = [&](std::size_t index, const std::function<void()> &unit_poll) {
             const auto &unit = unit_plan.units[index];
@@ -1636,24 +1724,20 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
               result->frames.push_back(std::make_unique<ptx::UnitFrame>(unit.ctas[rank], program.config.cluster_dim));
               result->facts.push_back(
                   std::make_unique<ptx::CtaFacts>(program, *result->frames.back(), linear_id(unit.ctas[rank])));
+              result->accounts.push_back(summarize(*result->facts.back()));
               result->keys.push_back(alg::ProfileCall("class.structure_key",
                                                       [&] { return ptx::ComputeStructureKey(*result->facts.back()); }));
             }
-            std::vector<const ptx::CtaFacts *> view;
-            for (const auto &facts : result->facts) view.push_back(facts.get());
-            result->pre = alg::ProfileCall("class.pre_admit", [&] { return classes->PreAdmit(view, result->keys); });
-            // The replay's reads filled the template value caches; drop them before the
-            // unit waits in the window (a later read, e.g. a founder's lowering, recomputes).
-            for (const auto &facts : result->facts) facts->ReleaseValues();
+            result->property_sites.resize(size);
+            pre_admit(*result);
             return result;
           };
-          // Look-ahead: up to --sync-threads workers execute the next units while
+          // Look-ahead: the workers execute the next units while
           // this loop consumes in unit order; a unit's execution error is rethrown here,
           // at that unit, and leaving the loop (a restart included) joins the workers.
           // The first unit runs inline: the bytes it allocates bound the workers (each
           // keeps its own allocator arena at about one execution) and the executed units
           // in flight to LookAheadBudget (a quarter of the memory limit).
-          const std::size_t workers = options.threads > 1 ? options.threads : 0;
           std::unique_ptr<ExecutedUnit> first;
           std::size_t window = workers;
           if (workers && !unit_plan.units.empty()) {
@@ -1666,7 +1750,6 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
                   LookAheadBudget(options.rss_mib) / (*after - *before), 1, workers));
           }
           const std::size_t skip = first ? 1 : 0;
-          [[maybe_unused]] std::size_t released_units = 0;
           std::optional<ptx::LookAhead<std::unique_ptr<ExecutedUnit>>> executions;
           executions.emplace(unit_plan.units.size() - skip, window, window,
               [&](std::size_t index, const std::function<void()> &unit_poll) { return execute(index + skip, unit_poll); },
@@ -1675,28 +1758,24 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
             const auto size = unit.ctas.size();
             monitor.Stage("ptx_execution.cta" + std::to_string(ctas));
             const auto executed_unit = first ? std::move(first) : executions->Take();
-            auto &programs = executed_unit->programs;
-            auto &unit_facts = executed_unit->facts;
-            std::vector<const ptx::CtaFacts *> view;
-            for (std::size_t rank = 0; rank < size; ++rank) {
-              view.push_back(unit_facts[rank].get());
-              account(*unit_facts[rank]);
+            for (const auto &cta_account : executed_unit->accounts) {
+              account(cta_account);
               ++ctas;
             }
-            const auto release = [&](std::size_t rank) {
-              account_properties(*unit_facts[rank]);
-              unit_facts[rank].reset();
-              auto &program = programs[rank];
-              alg::ProfileCall("frontend.release_execution",
-                               [&] { program = ptx::ExecutionProgram{}; });
-#if defined(__GLIBC__)
-              // The executions were allocated in the workers' arenas, which keep the
-              // freed pages: return them every 8 released units.
-              if (workers && rank + 1 == size && ++released_units % 8 == 0) malloc_trim(0);
-#endif
+            const auto account_released = [&] {
+              for (const auto &sites : executed_unit->property_sites) account_properties(sites);
             };
+            if (executed_unit->released) {
+              account_released();
+              classes->Join(unit.index, std::move(executed_unit->pre));
+              continue;
+            }
+            auto &unit_facts = executed_unit->facts;
+            std::vector<const ptx::CtaFacts *> view;
+            for (const auto &facts : unit_facts) view.push_back(facts.get());
             if (classes->Admit(unit.index, view, std::move(executed_unit->keys), std::move(executed_unit->pre))) {
-              for (std::size_t rank = 0; rank < size; ++rank) release(rank);
+              release(*executed_unit);
+              account_released();
               continue;
             }
             for (std::size_t rank = 0; rank < size; ++rank) {
@@ -1717,20 +1796,21 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
                 if (semantic_builder) {
                   monitor.Stage("semantic_ir.cta" + std::to_string(consumed));
                   semantic_builder->AddCta(cta_facts);
+                  // A value diagnostic leaves the program's values incomplete: no value stage lifts,
+                  // so this class and later ones may admit a piecewise δ.
+                  if (!semantic_builder->valueDiagnostics().empty()) classes->AdmitPiecewise();
                 }
                 ++consumed;
               }
               classes->Recorded(unit.index, static_cast<std::uint32_t>(rank));
-              release(rank);
+              release_rank(*executed_unit, rank);
+              account_properties(executed_unit->property_sites[rank]);
             }
             // The units executed while this one was consumed were pre-admitted without its class:
             // try it on them now, in parallel (Admit would replay it here, one unit at a time).
             if (workers)
               executions->RefreshReady(workers, [&](std::unique_ptr<ExecutedUnit> &waiting) {
-                std::vector<const ptx::CtaFacts *> waiting_view;
-                for (const auto &facts : waiting->facts) waiting_view.push_back(facts.get());
-                waiting->pre = classes->PreAdmit(waiting_view, waiting->keys, std::move(waiting->pre));
-                for (const auto &facts : waiting->facts) facts->ReleaseValues();
+                if (!waiting->pre.joined) pre_admit(*waiting);
               });
           }
           executions.reset();
@@ -1783,7 +1863,7 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
               // The only consumer view of this program; destroyed before the program is released.
               const ptx::UnitFrame frame(member, program.config.cluster_dim);
               ptx::CtaFacts cta_facts(program, frame, linear_id(member));
-              account(cta_facts);
+              account(summarize(cta_facts));
               if (lowerer) {
                 monitor.Stage("source_ir.cta" + std::to_string(ctas));
                 lowerer->AddCta(cta_facts);
@@ -1796,7 +1876,7 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
                 monitor.Stage("semantic_ir.cta" + std::to_string(ctas));
                 semantic_builder->AddCta(cta_facts);
               }
-              account_properties(cta_facts);
+              account_properties(cta_facts.PropertyDecisionsSnapshot());
               }
               alg::ProfileCall("frontend.release_execution",
                                [&] { program = ptx::ExecutionProgram{}; });

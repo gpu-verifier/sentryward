@@ -464,6 +464,12 @@ FamilyHbReachability* ReachabilityOracle::familyQueries(bool reverse) {
   return index.get();
 }
 
+FamilyHbReachability* ReachabilityOracle::builtFamilyQueries(bool reverse) {
+  auto& index = reverse ? reverse_family_queries_ : family_queries_;
+  if (index) index->RefreshAppendOnly();
+  return index.get();
+}
+
 const DynamicBitset* ReachabilityOracle::cached(
     EventId root, bool reverse, std::span<const EventId> targets) {
   const auto found = std::find_if(cache_.begin(), cache_.end(),

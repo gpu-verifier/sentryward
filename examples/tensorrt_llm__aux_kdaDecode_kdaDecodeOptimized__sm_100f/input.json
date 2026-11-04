@@ -1,0 +1,284 @@
+{
+  "schema": "spverify.kernel-input/v1",
+  "entry": "_ZN12tensorrt_llm3_v17kernels9kdaDecode54_GLOBAL__N__a67695d1_21_kdaDecodeOptimized_cu_9e246d4824kda_decode_native_kernelILNS3_14KernelScheduleE3ELi16ELb1EEEvPK13__nv_bfloat16S8_S8_S8_S8_S8_S8_S8_S8_PS6_S9_S9_PKfS8_SB_S8_S8_SB_PKiPfllS9_fffNS2_17KdaDecodeIoLayoutE",
+  "launch": {
+    "grid_dim": [
+      4,
+      1,
+      16
+    ],
+    "block_dim": [
+      256,
+      1,
+      1
+    ],
+    "cluster_dim": [
+      4,
+      1,
+      1
+    ],
+    "dynamic_shared_bytes": 0
+  },
+  "arguments": [
+    {
+      "field": "state_stride",
+      "value": 262144
+    },
+    {
+      "field": "conv_stride",
+      "value": 18432
+    },
+    {
+      "field": "lower_bound",
+      "value": -5.0
+    },
+    {
+      "field": "scale",
+      "value": 0.08838834764831845
+    },
+    {
+      "field": "onorm_eps",
+      "value": 1e-05
+    },
+    {
+      "field": "layout.xQRowStride",
+      "value": 6144
+    },
+    {
+      "field": "layout.xKRowStride",
+      "value": 6144
+    },
+    {
+      "field": "layout.xVRowStride",
+      "value": 6144
+    },
+    {
+      "field": "layout.gateRowStride",
+      "value": 2048
+    },
+    {
+      "field": "layout.betaRowStride",
+      "value": 272
+    },
+    {
+      "field": "layout.outputNormGateRowStride",
+      "value": 2048
+    }
+  ],
+  "declarations": [
+    {
+      "name": "state_stride",
+      "parameter": 20,
+      "offset": 0,
+      "type": "u64"
+    },
+    {
+      "name": "conv_stride",
+      "parameter": 21,
+      "offset": 0,
+      "type": "u64"
+    },
+    {
+      "name": "lower_bound",
+      "parameter": 23,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "scale",
+      "parameter": 24,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "onorm_eps",
+      "parameter": 25,
+      "offset": 0,
+      "type": "f32"
+    },
+    {
+      "name": "layout.xQRowStride",
+      "parameter": 26,
+      "offset": 0,
+      "type": "s64"
+    },
+    {
+      "name": "layout.xKRowStride",
+      "parameter": 26,
+      "offset": 8,
+      "type": "s64"
+    },
+    {
+      "name": "layout.xVRowStride",
+      "parameter": 26,
+      "offset": 16,
+      "type": "s64"
+    },
+    {
+      "name": "layout.gateRowStride",
+      "parameter": 26,
+      "offset": 24,
+      "type": "s64"
+    },
+    {
+      "name": "layout.betaRowStride",
+      "parameter": 26,
+      "offset": 32,
+      "type": "s64"
+    },
+    {
+      "name": "layout.outputNormGateRowStride",
+      "parameter": 26,
+      "offset": 40,
+      "type": "s64"
+    },
+    {
+      "parameter": 0,
+      "offset": 0,
+      "type": "pointer",
+      "object": "x_q"
+    },
+    {
+      "parameter": 1,
+      "offset": 0,
+      "type": "pointer",
+      "object": "x_k"
+    },
+    {
+      "parameter": 2,
+      "offset": 0,
+      "type": "pointer",
+      "object": "x_v"
+    },
+    {
+      "parameter": 3,
+      "offset": 0,
+      "type": "pointer",
+      "object": "w_q"
+    },
+    {
+      "parameter": 4,
+      "offset": 0,
+      "type": "pointer",
+      "object": "w_k"
+    },
+    {
+      "parameter": 5,
+      "offset": 0,
+      "type": "pointer",
+      "object": "w_v"
+    },
+    {
+      "parameter": 6,
+      "offset": 0,
+      "type": "pointer",
+      "object": "bias_q"
+    },
+    {
+      "parameter": 7,
+      "offset": 0,
+      "type": "pointer",
+      "object": "bias_k"
+    },
+    {
+      "parameter": 8,
+      "offset": 0,
+      "type": "pointer",
+      "object": "bias_v"
+    },
+    {
+      "parameter": 9,
+      "offset": 0,
+      "type": "pointer",
+      "object": "cs_q"
+    },
+    {
+      "parameter": 10,
+      "offset": 0,
+      "type": "pointer",
+      "object": "cs_k"
+    },
+    {
+      "parameter": 11,
+      "offset": 0,
+      "type": "pointer",
+      "object": "cs_v"
+    },
+    {
+      "parameter": 12,
+      "offset": 0,
+      "type": "pointer",
+      "object": "a_log"
+    },
+    {
+      "parameter": 13,
+      "offset": 0,
+      "type": "pointer",
+      "object": "g"
+    },
+    {
+      "parameter": 14,
+      "offset": 0,
+      "type": "pointer",
+      "object": "dt_bias"
+    },
+    {
+      "parameter": 15,
+      "offset": 0,
+      "type": "pointer",
+      "object": "beta"
+    },
+    {
+      "parameter": 16,
+      "offset": 0,
+      "type": "pointer",
+      "object": "onorm_g"
+    },
+    {
+      "parameter": 17,
+      "offset": 0,
+      "type": "pointer",
+      "object": "onorm_weight"
+    },
+    {
+      "parameter": 19,
+      "offset": 0,
+      "type": "pointer",
+      "object": "state"
+    },
+    {
+      "parameter": 22,
+      "offset": 0,
+      "type": "pointer",
+      "object": "out"
+    },
+    {
+      "parameter": 18,
+      "offset": 0,
+      "type": "pointer",
+      "object": "ssm_state_indices"
+    }
+  ],
+  "tensor_properties": [
+    {
+      "object": "ssm_state_indices",
+      "element_type": "s32",
+      "property": "lower_bound",
+      "value": 0
+    },
+    {
+      "object": "ssm_state_indices",
+      "element_type": "s32",
+      "property": "upper_bound",
+      "value": 0
+    }
+  ],
+  "assumptions": {
+    "duplicate_tma_store_benign": true,
+    "representative_election": true,
+    "clc_always_fails": true,
+    "representative_branches": false,
+    "bounded_computation_loops": false,
+    "order_independent_atomics": false
+  }
+}

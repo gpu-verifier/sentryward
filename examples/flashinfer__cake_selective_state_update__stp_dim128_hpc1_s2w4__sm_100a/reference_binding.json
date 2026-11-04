@@ -1,0 +1,548 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global5:state": "state",
+      "6:global1:x": "x",
+      "6:global2:dt": "dt",
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global1:C": "C",
+      "6:global1:D": "D",
+      "6:global7:dt_bias": "dt_bias",
+      "6:global19:state_batch_indices": "state_batch_indices"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:state": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          32,
+          16,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          524288,
+          32768,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          524288,
+          32768,
+          256,
+          2
+        ]
+      },
+      "6:global1:x": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          32,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global2:dt": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          32,
+          16
+        ],
+        "source_strides_bytes": [
+          64,
+          4
+        ],
+        "target_strides_bytes": [
+          64,
+          4
+        ]
+      },
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          16
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          32,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global1:C": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          32,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global1:D": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          16
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global7:dt_bias": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          16
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global19:state_batch_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          32
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global5:state": "state",
+      "6:global1:x": "x",
+      "6:global2:dt": "dt",
+      "6:global1:A": "A",
+      "6:global1:B": "B",
+      "6:global1:C": "C",
+      "6:global1:D": "D",
+      "6:global7:dt_bias": "dt_bias",
+      "6:global19:state_batch_indices": "state_batch_indices"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global5:state": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          32,
+          16,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          524288,
+          32768,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          524288,
+          32768,
+          256,
+          2
+        ]
+      },
+      "6:global1:x": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          32,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global2:dt": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          32,
+          16
+        ],
+        "source_strides_bytes": [
+          64,
+          4
+        ],
+        "target_strides_bytes": [
+          64,
+          4
+        ]
+      },
+      "6:global1:A": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          16
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global1:B": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          32,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global1:C": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          32,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global1:D": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          16
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global7:dt_bias": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          16
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global19:state_batch_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 8,
+        "shape": [
+          32
+        ],
+        "source_strides_bytes": [
+          8
+        ],
+        "target_strides_bytes": [
+          8
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "left_allocation": "6:global6:output",
+        "right_allocation": "6:global6:output",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          32,
+          16,
+          128
+        ],
+        "left_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      {
+        "left_allocation": "6:global5:state",
+        "right_allocation": "6:global5:state",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          32,
+          16,
+          128,
+          128
+        ],
+        "left_strides_bytes": [
+          524288,
+          32768,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          524288,
+          32768,
+          256,
+          2
+        ]
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "state",
+        "allocation": "6:global5:state",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "x",
+        "allocation": "6:global1:x",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "dt",
+        "allocation": "6:global2:dt",
+        "dtype": "float32"
+      },
+      {
+        "name": "A",
+        "allocation": "6:global1:A",
+        "dtype": "float32"
+      },
+      {
+        "name": "B",
+        "allocation": "6:global1:B",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "C",
+        "allocation": "6:global1:C",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "D",
+        "allocation": "6:global1:D",
+        "dtype": "float32"
+      },
+      {
+        "name": "dt_bias",
+        "allocation": "6:global7:dt_bias",
+        "dtype": "float32"
+      },
+      {
+        "name": "state_batch_indices",
+        "allocation": "6:global19:state_batch_indices",
+        "dtype": "int64"
+      },
+      {
+        "name": "dst_state_batch_indices",
+        "allocation": "6:global19:state_batch_indices",
+        "dtype": "int64"
+      },
+      {
+        "name": "nheads",
+        "value": {
+          "input": "/arguments/0/value"
+        }
+      },
+      {
+        "name": "ngroups",
+        "value": {
+          "input": "/arguments/1/value"
+        }
+      },
+      {
+        "name": "head_tiles",
+        "value": {
+          "input": "/arguments/2/value"
+        }
+      },
+      {
+        "name": "x_batch_stride",
+        "value": {
+          "input": "/arguments/3/value"
+        }
+      },
+      {
+        "name": "b_batch_stride",
+        "value": {
+          "input": "/arguments/4/value"
+        }
+      },
+      {
+        "name": "c_batch_stride",
+        "value": {
+          "input": "/arguments/5/value"
+        }
+      },
+      {
+        "name": "out_batch_stride",
+        "value": {
+          "input": "/arguments/6/value"
+        }
+      },
+      {
+        "name": "dt_batch_stride",
+        "value": {
+          "input": "/arguments/7/value"
+        }
+      },
+      {
+        "name": "dt_softplus",
+        "value": {
+          "input": "/arguments/8/value"
+        }
+      },
+      {
+        "name": "has_z",
+        "value": {
+          "input": "/arguments/9/value"
+        }
+      },
+      {
+        "name": "disable_state_update",
+        "value": {
+          "input": "/arguments/10/value"
+        }
+      },
+      {
+        "name": "pad_slot_id",
+        "value": {
+          "input": "/arguments/11/value"
+        }
+      },
+      {
+        "name": "grid_x",
+        "value": {
+          "input": "/launch/grid_dim/0"
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "source": "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/csrc/cake_selective_state_update/cake_selective_state_update_6b20a536e14fc15a5a1b_kernel.cu",
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/csrc/cake_selective_state_update/cake_selective_state_update_6b20a536e14fc15a5a1b_kernel.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/csrc/cake_selective_state_update/cake_selective_state_update_6b20a536e14fc15a5a1b_binding.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/flashinfer/jit/mamba/cake_selective_state_update.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/flashinfer/mamba/selective_state_update.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/tests/mamba/test_cake_selective_state_update.py"
+    ],
+    "optimized_input": "examples/flashinfer__cake_selective_state_update__stp_dim128_hpc1_s2w4__sm_100a/input.json",
+    "optimized_input_sha256": "9e1d315074b6cc3aeed618a1ba420cb51fc4b634dc80c9e07fee9ad26d4443b3",
+    "ptx_sha256": "7ae48a3fc7a060f30f100f44f19a37e3a55f4e77de3f50bcd11524569bdd7803",
+    "scope": "Upstream main parity test test_cake_selective_state_update_matches_flashinfer, first single-token row stp_ratio1: batch=32, nheads=16, ngroups=16, dim=dstate=128, BF16 state pool of 32 slots (TMA global_shape [128,128,16,32], box [128,16,1,1]); FP32 dt/A/D/dt_bias one value per head; dt_softplus=0, has_z=0 (z bound to its own unused object), disable_state_update=0, pad_slot_id=-1. Program stp_dim128_hpc1_s2w4 (one head per CTA, two CTAs per tile): head_tiles=1, grid 1024 CTAs of 160 threads. The selector passes the source table (torch.arange(32)) as both slot tables; under the project's distinct-object scope they are two objects, each with tensor_properties bounds [0, 31] and injective. Reference handles pad, out-of-range and permuted slots generally. Outputs: output [32,16,128] and the full state tensor. Slot tables (2026-10-29, option c): upstream passes state_batch_indices as both the source and the destination table (dst_state_batch_indices is None), so parameters 10 and 11 name one object.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
+  }
+}

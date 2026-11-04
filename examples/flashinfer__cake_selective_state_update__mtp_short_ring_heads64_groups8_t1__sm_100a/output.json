@@ -1,0 +1,705 @@
+{
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
+    }
+  ],
+  "checks": {
+    "equivalence": "incomplete",
+    "synchronization": "passed"
+  },
+  "diagnostics": [
+    {
+      "code": "tma_data_dependent_coordinate",
+      "details": {
+        "internal_stage": "value_lowering"
+      },
+      "message": "TMA tile coordinate %r512 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+      "stage": "equivalence"
+    }
+  ],
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 4227072,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "s64",
+          "object": "state_batch_indices",
+          "property": "lower_bound",
+          "value": 0
+        },
+        {
+          "element_type": "s64",
+          "object": "state_batch_indices",
+          "property": "upper_bound",
+          "value": 63
+        },
+        {
+          "element_type": "s64",
+          "object": "state_batch_indices",
+          "property": "injective"
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "state_batch_indices",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg9.0"
+        }
+      ],
+      "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [
+      {
+        "lines": [
+          398,
+          641,
+          862,
+          1083,
+          1333,
+          1353,
+          1376,
+          1399,
+          1422,
+          1445,
+          1468,
+          1491,
+          1514,
+          1537,
+          1560,
+          1583,
+          1609,
+          1679,
+          1733,
+          1787
+        ],
+        "object": "state_batch_indices"
+      }
+    ],
+    "trap_only_equality_assertions_hold": true
+  },
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "counts": {
+      "edges": 901308,
+      "events": 637255,
+      "instructions": 239306,
+      "memory_accesses": 138640,
+      "threads": 288
+    },
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "tma_data_dependent_coordinate",
+          "message": "TMA tile coordinate %r512 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+          "stage": "value_lowering"
+        }
+      ],
+      "expression_diagnostic": {
+        "diagnostics": [
+          {
+            "code": "tma_data_dependent_coordinate",
+            "message": "TMA tile coordinate %r512 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+            "stage": "value_lowering"
+          }
+        ],
+        "line": 1340,
+        "serialization": {
+          "action_patterns": 0,
+          "binding_patterns": 0,
+          "domain_refinements": 0,
+          "elapsed_seconds": 5.5951e-05,
+          "event_families": 0,
+          "expanded_event_records": 0,
+          "largest_batch_members": 0,
+          "logical_actions": 0,
+          "logical_events": 0,
+          "peak_rss_mib_at_completion": 1975.39453125,
+          "reachability_queries": 0,
+          "relations": 0,
+          "rss_mib_at_completion": 486.62890625,
+          "scheduled_batches": 0,
+          "singleton_batches": 0,
+          "value_families": 0
+        },
+        "stage": "value_lowering"
+      },
+      "stage": "value_lowering"
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [
+          {
+            "code": "tma_data_dependent_coordinate",
+            "details": {
+              "cta": 0,
+              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes [%r424], [%rd192, {%r425, %r425, %r609, %r512}], [%r426];",
+              "instruction_index": 773,
+              "location": {
+                "file": "corpus/flashinfer__cake_selective_state_update__mtp_short_ring_heads64_groups8_t1__sm_100a.ptx",
+                "line": 1340
+              },
+              "occurrence": 0,
+              "thread": 256
+            },
+            "message": "TMA tile coordinate %r512 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+            "stage": "value_lowering"
+          }
+        ],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": false
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 512,
+      "dependency_compression": {
+        "bulk_full_wait": {
+          "consumers": 1,
+          "emitted_references": 32,
+          "original_references": 32,
+          "prefix_effects": 0
+        },
+        "bulk_read_wait": {
+          "consumers": 32,
+          "emitted_references": 32,
+          "original_references": 528,
+          "prefix_effects": 0
+        },
+        "cp_async_wait": {
+          "consumers": 256,
+          "emitted_references": 128,
+          "original_references": 128,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "executed_records": 492263424,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 4227072,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "s64",
+              "object": "state_batch_indices",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s64",
+              "object": "state_batch_indices",
+              "property": "upper_bound",
+              "value": 63
+            },
+            {
+              "element_type": "s64",
+              "object": "state_batch_indices",
+              "property": "injective"
+            }
+          ],
+          "regions": [
+            {
+              "allocation": "state_batch_indices",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg9.0"
+            }
+          ],
+          "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+        },
+        "tensor_property_decisions": [
+          {
+            "lines": [
+              398,
+              641,
+              862,
+              1083,
+              1333,
+              1353,
+              1376,
+              1399,
+              1422,
+              1445,
+              1468,
+              1491,
+              1514,
+              1537,
+              1560,
+              1583,
+              1609,
+              1679,
+              1733,
+              1787
+            ],
+            "object": "state_batch_indices"
+          }
+        ],
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "x",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_141341c762041c2f0989_param_1",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "dt",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_141341c762041c2f0989_param_2",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "A",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_141341c762041c2f0989_param_3",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "B",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_141341c762041c2f0989_param_4",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "C",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_141341c762041c2f0989_param_5",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "D",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_141341c762041c2f0989_param_6",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "dt_bias",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_141341c762041c2f0989_param_7",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "output",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_141341c762041c2f0989_param_8",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "state_batch_indices",
+          "offset": 0,
+          "parameter": "kernel_cake_selective_state_update_141341c762041c2f0989_param_9",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 239306,
+      "reached_opcodes": {
+        "add.ftz.f32": 16781312,
+        "add.s16": 1048576,
+        "add.s32": 28960768,
+        "add.s64": 1867776,
+        "and.b16": 2105344,
+        "and.b32": 37945344,
+        "bar.sync": 147456,
+        "bar.warp.sync": 4194304,
+        "barrier.sync": 131072,
+        "bra": 9105920,
+        "bra.uni": 13824,
+        "cp.async.bulk.commit_group": 16384,
+        "cp.async.bulk.tensor.4d.global.shared::cta.tile.bulk_group": 16384,
+        "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes": 16384,
+        "cp.async.bulk.wait_group": 512,
+        "cp.async.bulk.wait_group.read": 16384,
+        "cp.async.cg.shared::cta.global": 65536,
+        "cp.async.commit_group": 131072,
+        "cp.async.wait_group": 131072,
+        "cvt.f32.bf16": 4194304,
+        "cvt.rn.bf16.f32": 524288,
+        "cvt.rn.bf16x2.f32": 33554432,
+        "cvt.u16.u32": 1052672,
+        "cvt.u32.u16": 2105344,
+        "cvt.u32.u64": 16384,
+        "cvt.u64.u32": 147456,
+        "cvta.param.u64": 22528,
+        "cvta.to.global.u64": 294912,
+        "elect.sync": 4227072,
+        "ex2.approx.ftz.f32": 4096,
+        "fence.mbarrier_init.release.cluster": 512,
+        "fence.proxy.async.shared::cta": 4210688,
+        "fma.rn.ftz.f32": 524288,
+        "fma.rn.ftz.f32x2": 67108864,
+        "ld.global.nc.b32": 16384,
+        "ld.global.nc.b64": 147456,
+        "ld.global.nc.v4.b32": 524288,
+        "ld.param.b32": 147456,
+        "ld.param.b64": 1474560,
+        "ld.shared.b16": 4194304,
+        "ld.shared.b32": 1048576,
+        "ld.shared.v2.b32": 1048576,
+        "ld.shared.v4.b32": 8388608,
+        "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64": 16384,
+        "mbarrier.arrive.release.cta.shared::cta.b64": 131072,
+        "mbarrier.init.shared::cta.b64": 12288,
+        "mbarrier.try_wait.parity.acquire.cta.shared::cta.b64": 4210688,
+        "mov.b32": 43687936,
+        "mov.b64": 82984960,
+        "mov.s32": 132096,
+        "mov.u32": 294912,
+        "mul.ftz.f32": 4202496,
+        "mul.lo.s16": 2105344,
+        "mul.rn.ftz.f32x2": 33554432,
+        "mul.wide.s32": 1048576,
+        "mul.wide.u16": 1052672,
+        "mul.wide.u32": 270336,
+        "or.b32": 917504,
+        "ret": 147456,
+        "selp.b32": 262144,
+        "setp.eq.b32": 4362240,
+        "setp.eq.b64": 4212736,
+        "setp.gt.s32": 147456,
+        "setp.gt.u32": 32768,
+        "setp.lt.u32": 131072,
+        "setp.ne.b32": 5812224,
+        "setp.ne.b64": 4096,
+        "shfl.sync.bfly.b32": 12582912,
+        "shfl.sync.idx.b32": 147456,
+        "shl.b16": 1052672,
+        "shl.b32": 39620608,
+        "shr.u16": 1052672,
+        "shr.u32": 425984,
+        "st.global.b16": 524288,
+        "st.shared.b32": 4096,
+        "st.shared.v2.b32": 4096,
+        "st.shared.v4.b32": 8388608,
+        "sub.s16": 1052672
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 18,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 239306,
+        "stored_bindings": 49702
+      },
+      "source_edge_storage": {
+        "binding_templates": 288,
+        "logical_edges": 239018,
+        "stored_bindings": 288
+      },
+      "thread_count": 147456,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "event-family-relations",
+        "batches": 7,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 36401765,
+        "filtered_queries": 16720,
+        "queries": 409188,
+        "shared_peak_index_bytes": 16777216
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 409188,
+      "address_model": {
+        "cache_hits": 496,
+        "congruence_disjoint": 14,
+        "ground_disjoint": 496,
+        "ground_overlap": 0,
+        "injective_disjoint": 1,
+        "layer0_disjoint": 0,
+        "refined_pairs": 992,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "hb_algorithm": "event-family-relations",
+      "hb_batches": 7,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 36401765,
+      "hb_filtered_queries": 16720,
+      "hb_peak_index_bytes": 16777216,
+      "hb_queries": 409188,
+      "hb_query_seconds": 5.4196147240000005,
+      "overlap_queries": 992,
+      "strategy": "conflict-first",
+      "unordered_candidates_examined": 992
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 1976.984375,
+    "required_order_domains": 0,
+    "required_orders": 0,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 1,
+      "binding_diagnostics": [
+        {
+          "code": "incomplete_value_semantics",
+          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r512 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
+        }
+      ],
+      "execution_cohorts": 35,
+      "mapping_complete": false,
+      "memory_binding_stored_rows": 0,
+      "memory_binding_templates": 0,
+      "memory_bindings": 0,
+      "memory_linking_templates_used": false,
+      "synchronization_groups": 15080,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 0,
+      "thread_prefix_groups": 2237,
+      "value_diagnostic_count": 1,
+      "value_diagnostics": [
+        {
+          "code": "tma_data_dependent_coordinate",
+          "line": 1340,
+          "message": "TMA tile coordinate %r512 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
+        }
+      ]
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 512,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 501627392,
+      "path_entries": 31590912,
+      "record_bindings": 69475840,
+      "record_nodes": 30244352,
+      "splits": 8704,
+      "template_steps": 30953984,
+      "thread_memberships": 147456,
+      "value_nodes": 27535333
+    },
+    "thread_record_compression": {
+      "completed_ctas": 512,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 492263424,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "tma_data_dependent_coordinate",
+          "message": "TMA tile coordinate %r512 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+          "stage": "value_lowering"
+        }
+      ],
+      "equivalence_check": "unsupported",
+      "line": 1340,
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      },
+      "serialization": {
+        "action_patterns": 0,
+        "binding_patterns": 0,
+        "domain_refinements": 0,
+        "elapsed_seconds": 5.5951e-05,
+        "event_families": 0,
+        "expanded_event_records": 0,
+        "largest_batch_members": 0,
+        "logical_actions": 0,
+        "logical_events": 0,
+        "peak_rss_mib_at_completion": 1975.39453125,
+        "reachability_queries": 0,
+        "relations": 0,
+        "rss_mib_at_completion": 486.62890625,
+        "scheduled_batches": 0,
+        "singleton_batches": 0,
+        "value_families": 0
+      },
+      "stage": "value_lowering"
+    },
+    "value_ir_instance_count": 24650,
+    "value_ir_node_count": 1484,
+    "value_view_complete": false,
+    "verification_elapsed_seconds": 50.242549089,
+    "verification_result": "race_free"
+  },
+  "peak_rss_mib": 1976.984375,
+  "pipeline_elapsed_seconds": 50.299228732,
+  "result": "unsupported",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "verification_limitations": [],
+  "warning_count": 0,
+  "warning_samples_truncated": false,
+  "warnings": [],
+  "wellsync_timeout_seconds": 500.0,
+  "whole_pipeline_timeout_seconds": 497.839
+}

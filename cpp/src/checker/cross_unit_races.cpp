@@ -39,7 +39,7 @@ bool Meet(const std::vector<Interval> &a, const std::vector<Interval> &b, I d) {
   }
   return false;
 }
-// Parts of one class on one allocation, sorted by lo, with a max-hi tree (interval queries).
+// Parts on one allocation, sorted by lo, with a max-hi tree (interval queries).
 struct PartIndex {
   std::vector<std::size_t> parts; // indexes into the global part list
   std::vector<Interval> spans;
@@ -77,7 +77,7 @@ Interval Span(const CrossUnitPart &part) {
   const auto [lo, hi] = FootprintSpan(part.family, part.footprint);
   return {lo, hi};
 }
-// A class's units on one allocation: (δ, unit index in the class), sorted.
+// A part group's units on one allocation: (δ, unit index in the class), sorted.
 using Deltas = std::vector<std::pair<std::int64_t, std::uint32_t>>;
 // The runs of equal δ of a sorted list whose distinct values are first + step * k: run k holds
 // positions [starts[k], starts[k + 1]). Nullopt when the distinct values are no progression.
@@ -162,19 +162,31 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
   if (!quotient.Shared()) return {};
   const auto shared_class = [&](std::uint32_t klass) { return quotient.classes.at(klass).units.size() > 1; };
 
-  // Global parts, by allocation; per alias the allocations that use it.
-  struct ClassParts {
+  // Global parts, by allocation and part group; per alias the allocations that use it. A part group
+  // is a class, or one piece of a class's piecewise δ on the allocation (UnitQuotient::PiecewiseDelta).
+  struct PartGroup {
+    std::uint32_t klass = 0, piece = 0; // piece kWhole: the class's one δ
+    auto operator<=>(const PartGroup &) const = default;
+  };
+  constexpr std::uint32_t kWhole = UINT32_MAX;
+  struct GroupParts {
     PartIndex all;
     std::vector<std::size_t> writes;
     std::vector<Interval> write_hull, all_hull;
   };
-  std::map<std::string, std::map<std::uint32_t, ClassParts>> by_allocation;
+  std::map<std::string, std::map<PartGroup, GroupParts>> by_allocation;
   // Lookup parts (no constant span), by allocation and class.
   std::map<std::string, std::map<std::uint32_t, std::vector<std::size_t>>> lookups;
   std::map<std::string, std::set<std::string>> alias_allocations;
   std::map<std::string, bool> alias_write, alias_shared;
   bool unplaced = false, unplaced_write = false, unplaced_shared = false, any_shared_global = false,
        any_global_write = false;
+  // The allocations some placeable global part writes: a pair on any other one holds no write.
+  std::set<std::string> written;
+  for (const auto &part : parts)
+    if (part.write && !part.footprint.empty && part.family.count && part.footprint.space == "global" &&
+        !part.footprint.allocation.empty())
+      written.insert(part.footprint.allocation);
   for (std::size_t k = 0; k < parts.size(); ++k) {
     const auto &part = parts[k];
     const auto &fp = part.footprint;
@@ -192,19 +204,31 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
     }
     any_shared_global |= shared;
     any_global_write |= part.write;
-    if (lookup) {
-      lookups[fp.allocation][klass].push_back(k);
-    } else {
-      auto &entry = by_allocation[fp.allocation][klass];
-      entry.all.parts.push_back(k);
-      entry.all.spans.push_back(Span(part));
-      if (part.write) entry.writes.push_back(k);
-    }
     if (!fp.alias.empty()) {
       alias_allocations[fp.alias].insert(fp.allocation);
       alias_write[fp.alias] = alias_write[fp.alias] || part.write;
       alias_shared[fp.alias] = alias_shared[fp.alias] || shared;
     }
+    if (!written.contains(fp.allocation)) continue;
+    const auto &pieces = quotient.classes.at(klass).pieces;
+    if (lookup) {
+      // A lookup part is placed by one δ per object (the groups of the lookup pass).
+      if (pieces.contains(fp.allocation)) return unknown("piecewise_lookup:" + fp.allocation);
+      for (const auto &g : fp.gathers)
+        if (pieces.contains(g.object)) return unknown("piecewise_lookup:" + g.object);
+      lookups[fp.allocation][klass].push_back(k);
+      continue;
+    }
+    PartGroup group{klass, kWhole};
+    if (const auto found = pieces.find(fp.allocation); found != pieces.end()) {
+      const auto piece = part.site ? found->second.PieceOf(*part.site) : std::nullopt;
+      if (!piece) return unknown("piece_unknown:" + fp.allocation);
+      group.piece = *piece;
+    }
+    auto &entry = by_allocation[fp.allocation][group];
+    entry.all.parts.push_back(k);
+    entry.all.spans.push_back(Span(part));
+    if (part.write) entry.writes.push_back(k);
   }
   // An unplaceable global access paired with a member unit's access, one of them a write (an
   // Unknown involving a member restarts per unit).
@@ -215,23 +239,27 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
     if (allocations.size() > 1 && alias_write[alias] && alias_shared[alias])
       return unknown("alias_group:" + alias);
 
-  for (auto &[allocation, classes] : by_allocation) {
-    // δ of every unit of every class with parts here, sorted (the window search), and its runs
+  for (auto &[allocation, groups] : by_allocation) {
+    // δ of every unit of every part group with parts here, sorted (the window search), and its runs
     // when the distinct values form a progression.
-    std::map<std::uint32_t, Deltas> deltas;
-    std::map<std::uint32_t, std::optional<Progression>> progressions;
-    for (auto &[klass, entry] : classes) {
+    std::map<PartGroup, Deltas> deltas;
+    std::map<PartGroup, std::optional<Progression>> progressions;
+    for (auto &[group, entry] : groups) {
       entry.all.Build();
       std::vector<Interval> writes;
       for (const auto k : entry.writes) writes.push_back(Span(parts[k]));
       entry.write_hull = Merge(std::move(writes));
       entry.all_hull = Merge(entry.all.spans);
-      const auto &c = quotient.classes.at(klass);
-      auto &list = deltas[klass];
+      const auto &c = quotient.classes.at(group.klass);
+      auto &list = deltas[group];
       list.reserve(c.units.size());
       for (std::size_t i = 0; i < c.units.size(); ++i) {
         if (i == 0) {
           list.emplace_back(0, 0);
+          continue;
+        }
+        if (group.piece != kWhole) {
+          list.emplace_back(c.pieces.at(allocation).delta.at(group.piece).at(i), static_cast<std::uint32_t>(i));
           continue;
         }
         if (i >= c.delta.size()) return unknown("delta_missing:" + allocation);
@@ -240,12 +268,52 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
         list.emplace_back(found->second, static_cast<std::uint32_t>(i));
       }
       std::sort(list.begin(), list.end());
-      progressions[klass] = AsProgression(list);
+      progressions[group] = AsProgression(list);
     }
-    for (const auto &[a, A] : classes) {
+    // Two pieces of one class in one of its member units: the representative's own check placed them
+    // at d = 0, the member moves them apart by d = δ_u(Q) - δ_u(P). Their pairs may be ordered within
+    // the unit, which this pass does not know, so any overlap with a write is Unknown. Each d once.
+    for (const auto &[g, P] : groups) {
+      if (g.piece == kWhole || P.write_hull.empty()) continue;
+      const auto &table = quotient.classes.at(g.klass).pieces.at(allocation);
+      for (const auto &[h, Q] : groups) {
+        if (h.klass != g.klass || h.piece == g.piece) continue;
+        std::unordered_set<std::int64_t> memo;
+        for (std::size_t i = 1; i < table.delta.at(g.piece).size(); ++i) {
+          std::int64_t d;
+          if (__builtin_sub_overflow(table.delta.at(h.piece).at(i), table.delta.at(g.piece).at(i), &d))
+            return unknown("delta_overflow:" + allocation);
+          if (++unit_pairs > limits.unit_pairs) return cap("unit_pairs");
+          if (d == 0 || !memo.insert(d).second) continue;
+          if (!Meet(P.write_hull, Q.all_hull, I(d))) continue;
+          for (const auto k : P.writes) {
+            const auto &p = parts[k];
+            const auto span = Span(p);
+            std::optional<CrossUnitOutcome> found;
+            Q.all.Query(span.lo - I(d), span.hi - I(d), [&](std::size_t index) {
+              const auto &q = parts[Q.all.parts[index]];
+              if (++refinements > limits.refinements) {
+                found = cap("refinements");
+                return false;
+              }
+              auto shifted = q.footprint;
+              shifted.offset += I(d);
+              const auto relation = ClassifyFamilyOverlap(p.family, p.footprint, q.family, shifted);
+              if (!relation.overlap.empty() || !relation.unknown.empty()) {
+                found = unknown("piece_overlap:" + allocation);
+                return false;
+              }
+              return true;
+            });
+            if (found) return std::move(*found);
+          }
+        }
+      }
+    }
+    for (const auto &[a, A] : groups) {
       if (A.write_hull.empty()) continue;
-      for (const auto &[b, B] : classes) {
-        if (B.all_hull.empty() || (!shared_class(a) && !shared_class(b))) continue;
+      for (const auto &[b, B] : groups) {
+        if (B.all_hull.empty() || (!shared_class(a.klass) && !shared_class(b.klass))) continue;
         // d = δ_v - δ_u must lie strictly between these for the hulls to meet.
         const I low = A.write_hull.front().lo - B.all_hull.back().hi;
         const I high = A.write_hull.back().hi - B.all_hull.front().lo;
@@ -287,7 +355,7 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
                   race.second_part = B.all.parts[index];
                   race.first_member = witness->first;
                   race.second_member = witness->second;
-                  const auto &ca = quotient.classes.at(a), &cb = quotient.classes.at(b);
+                  const auto &ca = quotient.classes.at(a.klass), &cb = quotient.classes.at(b.klass);
                   race.first_unit = ca.units.at(i);
                   race.second_unit = cb.units.at(j);
                   race.first_delta = delta_u;
@@ -311,7 +379,8 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
         // first decides it, in the same order (the same first race).
         const auto &pu = progressions.at(a), &pv = progressions.at(b);
         if (pu && pv && (pu->step == 0 || pv->step == 0 || pu->step == pv->step)) {
-          for (const auto &[p_u, p_v] : FirstPairs(du, *pu, dv, *pv, std::max(pu->step, pv->step), low, high, a == b)) {
+          for (const auto &[p_u, p_v] :
+               FirstPairs(du, *pu, dv, *pv, std::max(pu->step, pv->step), low, high, a.klass == b.klass)) {
             if (++unit_pairs > limits.unit_pairs) return cap("unit_pairs");
             const auto d = translation(p_u, p_v);
             if (!d) return unknown("delta_overflow:" + allocation);
@@ -327,7 +396,7 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
               std::upper_bound(dv.begin(), dv.end(), lo, [](I x, const auto &e) { return x < I(e.first); }) - dv.begin());
           for (; p_v < dv.size() && I(dv[p_v].first) < hi; ++p_v) {
             const auto j = dv[p_v].second;
-            if ((a == b && i == j) || (i == 0 && j == 0)) continue; // same unit; representative pair
+            if ((a.klass == b.klass && i == j) || (i == 0 && j == 0)) continue; // same unit; representative pair
             if (++unit_pairs > limits.unit_pairs) return cap("unit_pairs");
             const auto d = translation(p_u, p_v);
             if (!d) return unknown("delta_overflow:" + allocation);
@@ -380,10 +449,10 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
       }
     }
     if (const auto found = by_allocation.find(allocation); found != by_allocation.end())
-      for (const auto &[klass, entry] : found->second) {
+      for (const auto &[group, entry] : found->second) {
         Bucket bucket;
         bucket.all.parts = entry.all.parts;
-        on[klass].buckets.push_back(std::move(bucket));
+        on[group.klass].buckets.push_back(std::move(bucket));
       }
     for (auto &[klass, entry] : on) {
       entry.objects.push_back(allocation);

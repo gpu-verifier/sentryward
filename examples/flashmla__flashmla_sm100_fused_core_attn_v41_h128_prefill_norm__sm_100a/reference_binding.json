@@ -1,0 +1,395 @@
+{
+ "schema": "spverify.equivalence-mapping.v1",
+ "output_value_semantics": "ideal_real",
+ "left_inputs": {
+  "allocations": {
+   "6:global1:Q": "Q",
+   "6:global2:KV": "KV",
+   "6:global7:indices": "indices",
+   "6:global15:token_positions": "token_positions",
+   "6:global13:cos_sin_cache": "cos_sin_cache"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global1:Q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     128,
+     512
+    ],
+    "source_strides_bytes": [
+     131072,
+     1024,
+     2
+    ],
+    "target_strides_bytes": [
+     131072,
+     1024,
+     2
+    ]
+   },
+   "6:global2:KV": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     65,
+     2,
+     640
+    ],
+    "source_strides_bytes": [
+     2560,
+     1280,
+     2
+    ],
+    "target_strides_bytes": [
+     2560,
+     1280,
+     2
+    ]
+   },
+   "6:global7:indices": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     2,
+     2,
+     192
+    ],
+    "source_strides_bytes": [
+     1536,
+     768,
+     4
+    ],
+    "target_strides_bytes": [
+     1536,
+     768,
+     4
+    ]
+   },
+   "6:global15:token_positions": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global13:cos_sin_cache": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     131072,
+     64
+    ],
+    "source_strides_bytes": [
+     256,
+     4
+    ],
+    "target_strides_bytes": [
+     256,
+     4
+    ]
+   }
+  }
+ },
+ "right_inputs": {
+  "allocations": {
+   "6:global1:Q": "Q",
+   "6:global2:KV": "KV",
+   "6:global7:indices": "indices",
+   "6:global15:token_positions": "token_positions",
+   "6:global13:cos_sin_cache": "cos_sin_cache"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global1:Q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     128,
+     512
+    ],
+    "source_strides_bytes": [
+     131072,
+     1024,
+     2
+    ],
+    "target_strides_bytes": [
+     131072,
+     1024,
+     2
+    ]
+   },
+   "6:global2:KV": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     65,
+     2,
+     640
+    ],
+    "source_strides_bytes": [
+     2560,
+     1280,
+     2
+    ],
+    "target_strides_bytes": [
+     2560,
+     1280,
+     2
+    ]
+   },
+   "6:global7:indices": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     2,
+     2,
+     192
+    ],
+    "source_strides_bytes": [
+     1536,
+     768,
+     4
+    ],
+    "target_strides_bytes": [
+     1536,
+     768,
+     4
+    ]
+   },
+   "6:global15:token_positions": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global13:cos_sin_cache": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     131072,
+     64
+    ],
+    "source_strides_bytes": [
+     256,
+     4
+    ],
+    "target_strides_bytes": [
+     256,
+     4
+    ]
+   }
+  }
+ },
+ "outputs": {
+  "kind": "dense_tensors",
+  "tensors": [
+   {
+    "left_allocation": "6:global7:out_fp8",
+    "right_allocation": "6:global7:out_fp8",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 1,
+    "shape": [
+     1,
+     16,
+     4096
+    ],
+    "left_strides_bytes": [
+     65536,
+     4096,
+     1
+    ],
+    "right_strides_bytes": [
+     65536,
+     4096,
+     1
+    ]
+   },
+   {
+    "left_allocation": "6:global6:out_sf",
+    "right_allocation": "6:global6:out_sf",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 1,
+    "shape": [
+     1,
+     16,
+     32,
+     4
+    ],
+    "left_strides_bytes": [
+     2048,
+     128,
+     4,
+     1
+    ],
+    "right_strides_bytes": [
+     4,
+     512,
+     16,
+     1
+    ]
+   },
+   {
+    "left_allocation": "6:global10:max_logits",
+    "right_allocation": "6:global10:max_logits",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1,
+     128
+    ],
+    "left_strides_bytes": [
+     512,
+     4
+    ],
+    "right_strides_bytes": [
+     512,
+     4
+    ]
+   },
+   {
+    "left_allocation": "6:global3:LSE",
+    "right_allocation": "6:global3:LSE",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1,
+     128
+    ],
+    "left_strides_bytes": [
+     512,
+     4
+    ],
+    "right_strides_bytes": [
+     512,
+     4
+    ]
+   }
+  ]
+ },
+ "reference": {
+  "arguments": [
+   {
+    "name": "Q",
+    "allocation": "6:global1:Q",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "KV",
+    "allocation": "6:global2:KV",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "indices",
+    "allocation": "6:global7:indices",
+    "dtype": "int32"
+   },
+   {
+    "name": "token_positions",
+    "allocation": "6:global15:token_positions",
+    "dtype": "int32"
+   },
+   {
+    "name": "cos_sin_cache",
+    "allocation": "6:global13:cos_sin_cache",
+    "dtype": "float32"
+   },
+   {
+    "name": "sm_scale_log2",
+    "parameter": 0,
+    "parameter_offset": 32
+   },
+   {
+    "name": "rms_norm_eps",
+    "parameter": 0,
+    "parameter_offset": 148
+   },
+   {
+    "name": "s_kv",
+    "parameter": 0,
+    "parameter_offset": 4
+   },
+   {
+    "name": "h_q",
+    "parameter": 0,
+    "parameter_offset": 8
+   },
+   {
+    "name": "topk",
+    "parameter": 0,
+    "parameter_offset": 24
+   }
+  ]
+ },
+ "provenance": {
+  "source": "FlashMLA sm100 fused Norm+RoPE+core attention+RoPE+Cast prefill, h_q=128 2-CTA cluster, q norm: sm100::prefill::fused_norm_rope_attn_rope_cast_fwd::core_attn::fwd_kernel<Kernel<Config{Prefill, V41, V41, 128, true}>>; sparse top-k MQA prefill over a bf16 KV with Q RMS norm, Q/O RoPE and a per-32 FP8 e4m3 output cast with packed ue8m0 scale factors",
+  "upstream": [
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fused_norm_rope_attn_rope_cast_fwd/core_attn/instantiations/v41_h128_prefill_norm.cu",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fused_norm_rope_attn_rope_cast_fwd/core_attn/kernel.cuh",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fused_norm_rope_attn_rope_cast_fwd/core_attn/config.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fused_norm_rope_attn_rope_cast_fwd/core_attn/kernel.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fused_norm_rope_attn_rope_cast_fwd/permute_q_b_proj/kernel.cu",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/params.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/common_subroutine.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/helpers.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/api/fused_norm_rope_attn_rope_cast_fwd.cpp",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/api/common.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/flash_mla/fused_norm_rope_attn_rope_cast.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/test-fused-norm-rope-attn-rope-cast.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/lib.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/ref.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/kernelkit/generate.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/kernelkit/utils.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/setup.py",
+   "https://github.com/deepseek-ai/TileKernels/blob/c1cf914a82e6901c679445f872051ce44ac2cc63/tile_kernels/quant/common.py",
+   "https://github.com/deepseek-ai/TileKernels/blob/c1cf914a82e6901c679445f872051ce44ac2cc63/tile_kernels/quant/per_token_cast_cuda.py",
+   "https://github.com/deepseek-ai/TileKernels/blob/c1cf914a82e6901c679445f872051ce44ac2cc63/tile_kernels/config.py"
+  ],
+  "scope": "tests/test-fused-norm-rope-attn-rope-cast.py testcases[0] = correctness_cases_prefill[0] (seed 0): s_q=1, s_kv=64, topk=64, h_q=128, h_kv=1, d_qk=d_v=512, no attn_sink, valid indices, no topk_length, k_amplifier (0.0, 1.0); Python-random draws enable_q_norm=True, q_lora_rank=1536, q_b_proj_scale_gran=32, wv_proj_out_dim=512; sm_scale=0.5, rms_norm_eps=1e-4, n_wv_group=16, num_per_channels=32, use_tma_aligned_col_major_sf=round_sf=use_packed_ue8m0=True; the API dispatches run_fused_norm_rope_attn_rope_cast_fwd_kernel<Config{Prefill, V41, V41, 128, true}> (h_q == 128, enable_q_norm); grid (2, 1, 1), block 512, cluster (2, 1, 1), 187392 B dynamic smem; one KV block of B_TOPK=96 (64 indices + 32 masked positions); mode=Prefill, num_sm=148; attn_sink, topk_length and out null; q contiguous in the permuted layout (stride_q_s_q 65536); kv/indices strides from kernelkit non_contiguousify (1280 / 384); out_sf strides [1, 128, 4]; indices in [0, 63] (each row a permutation of [0, s_kv) since topk == s_kv), token_positions in [0, 131071] (torch.randint(0, 131072)); out_fp8, out_sf, max_logits and LSE written; branch choices at PTX 22003 (`if (!should_scale_o)`, the should_scale_o vote, taken=false) and PTX 23152 (O-rescale branch `if (kv_block_idx > 0 && should_scale_o)`, taken=false; decides only visits whose predicate is not statically known, so the single KV block follows the program); CLC queries fail (clc_always_fails). Reference binding: KV and indices (non_contiguousify views) are bound as their whole contiguous storage tensors on both sides; reference.py slices the logical blocks with s_kv (offset 4 = 64) and topk (offset 24 = 64); out_sf is compared per ue8m0 byte at its TMA-aligned col-major position.",
+  "scope_branch_choices": [
+   {
+    "line": 22003,
+    "taken": false,
+    "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 23152,
+    "taken": false,
+    "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   }
+  ],
+  "scope_shape_arrays": [],
+  "optimized_input_sha256": "fe6f4b884cb438119acf312e1253aab75f1c4148e912c1c63fb7d54adbce10d2",
+  "ptx_sha256": "3287193e6b24b8001d160e8a39954573139e09ccb2d65237a45b6277f7e14fd4"
+ }
+}

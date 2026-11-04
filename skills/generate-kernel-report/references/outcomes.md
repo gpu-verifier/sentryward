@@ -27,6 +27,6 @@ Recovery is recorded by `analysis_target: recovered_program` and `recovery_polic
 
 Diagnostic stage/code groups aid navigation; they do not prove common causes. Read both `failed_required_orders` and `diagnostics[].details`: a sampled order list may cover only one category. A lifecycle diagnostic without a saved order list does not justify inventing a completion/deallocation pair.
 
-For `issue_not_ordered_before_next_phase`, the required edge is **wait issue → next-phase completion effect**. `required_events` are not predecessors of the wait. This direction follows the corresponding `FindDescendant(issue_id, next_info->effects)` check in `cpp/src/analysis/wait_checker.cpp`; another rejection needs its own interpretation.
+For `issue_not_ordered_before_next_phase`, the required edge is **wait issue → next-phase completion effect**. `required_events` are not predecessors of the wait. This direction follows the upper-freshness check `CheckUpper` in `cpp/src/analysis/wait_checker.cpp` (the wait issue must happen before some effect of the next phase, equivalently before that phase's completion node); another rejection needs its own interpretation.
 
 For clean results, keep the visible account brief and scoped. For warnings, explain the classification rule without upgrading them to bugs or inventing value-equality assumptions. An identity mismatch prevents combining incompatible artifacts. See [evidence.md](evidence.md) for assumptions and source attribution.

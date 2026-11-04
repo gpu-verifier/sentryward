@@ -2732,6 +2732,25 @@ void Executor::Data(const Decoded &d, State &s, std::uint32_t warp,
     Set(d, s, {Integer(result & mask)});
     return;
   }
+  // shf.{l,r}.{clamp,wrap}.b32 d, a, b, c (PTX ISA, logic and shift instructions): d is the
+  // most- (l) or least- (r) significant word of the 64-bit value [b, a] shifted by
+  // n = min(c, 32) (.clamp) or c & 0x1f (.wrap), with c read as u32.
+  if (op == "shf" && n == 4) {
+    constexpr unsigned word_bits = 32;
+    const bool left = Has(i, "l"), clamp = Has(i, "clamp");
+    const auto low = ScalarInteger(val(1)), high = ScalarInteger(val(2)), amount = ScalarInteger(val(3));
+    if (left == Has(i, "r") || clamp == Has(i, "wrap") || !Has(i, "b32") || !low || !high || !amount) {
+      Invalidate(d, s);
+      return;
+    }
+    const Integer mask = (Integer(1) << word_bits) - 1, count = *amount & mask;
+    const auto shift = (clamp ? std::min<Integer>(count, word_bits) : Integer(count & (word_bits - 1)))
+                           .convert_to<unsigned>();
+    const Integer source = ((*high & mask) << word_bits) | (*low & mask);
+    const Integer shifted = left ? Integer((source << shift) >> word_bits) : Integer(source >> shift);
+    Set(d, s, {Integer(shifted & mask)});
+    return;
+  }
   if (In(op, {"cvt", "cvta"}) && n > 1) {
     if (op == "cvt" && Floating(i)) {
       Set(d,s,{ExactIntegerToFloat(val(1),i)});

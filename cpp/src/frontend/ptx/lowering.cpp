@@ -26,6 +26,13 @@
 namespace sentryward::frontend::ptx {
 using Json = nlohmann::json;
 namespace {
+// An ordinary load or store: lowered by its address operand's Memory slot alone (Instruction's
+// immediate memory path).
+bool OrdinaryMemory(const Instruction& i) {
+  const auto& s=i.semantics;
+  return s.category=="memory" && s.modeled && !s.atomic_add && (s.memory_mode=="read" || s.memory_mode=="write") &&
+         !i.address_lanes && s.memory_space!="param" && s.memory_space!="const";
+}
 bool IsWarpDataCollective(const Instruction& instruction) {
   return Has(instruction,"sync") &&
       (instruction.opcode=="elect" || instruction.opcode=="shfl" ||
@@ -647,17 +654,17 @@ struct ModelLowerer::Impl {
               std::optional<CompletionAction> completion = {});
   void Instruction(Thread &, const RecordView &);
   void LowerThread(const CtaFacts &, LaneRef, Thread &, const std::vector<std::size_t> *positions,
-                   std::span<const std::optional<std::uint32_t>> collective_masks, std::uint64_t &visits,
+                   std::span<const std::optional<std::vector<RegId>>> read_slices, std::uint64_t &visits,
                    IterationStarts *iteration_starts = nullptr);
   void LowerLanes(const CtaFacts &, Resources &, const ValueAddresses &, std::span<const std::size_t> order,
                   std::span<const ActorInfo> lane_actors,
-                  std::span<const std::optional<std::uint32_t>> collective_masks,
+                  std::span<const std::optional<std::vector<RegId>>> read_slices,
                   std::span<const std::uintptr_t> member_cohorts, bool template_execution, std::uint64_t &visits);
   void BeginLaneWork(const Impl &consumer, Resources &like, const ValueAddresses &bridge);
   void EndLaneWork();
   void ClearLane(bool release);
   void LowerLane(const CtaFacts &, LaneRef, std::size_t position, const ActorInfo &,
-                 std::span<const std::optional<std::uint32_t>> collective_masks,
+                 std::span<const std::optional<std::vector<RegId>>> read_slices,
                  const std::function<void()> &worker_poll);
   void SplitLane();
   bool Absorb(Impl &shadow);
@@ -1090,6 +1097,13 @@ void ModelLowerer::Impl::Mma(Thread &t, const RecordView &e,
     metadata = ResolveTmem(t, e, ops[3]);
     if (group == 2 && !peer_placement(*metadata))
       throw SemanticError("tmem_group2_relative_peer_base", "metadata peers require matched placement");
+  }
+  // Layouts C and F use half the lanes; A, D and the sparsity metadata must share one
+  // lane alignment (PTX ISA, "Data Path Layout Organization").
+  if (const auto path = DecodeMmaDataPath(desc.m, group, ws, sparse); path && path->half_quarters) {
+    const auto lane = [](const TmemAddress &address) { return (address.address >> 16) & 0x7f; };
+    if ((a && lane(*a) != lane(d)) || (metadata && lane(*metadata) != lane(d)))
+      throw SemanticError("tcgen_mma_variant", "layout C and F MMA operands need the lane alignment of D");
   }
   std::vector<Fragment> reads, writes;
   std::vector<std::pair<MmaOperandRole,std::uint32_t>> read_roles, write_roles;
@@ -1532,22 +1546,9 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const RecordView &e,
                     [&](const auto &item) { return std::get<0>(item.first) == static_cast<unsigned>(group); }))
       limitations["tcgen_pipeline_effect_refinement"] =
           "Copy effects following MMA operand reads require pipeline ordering refinement.";
-    std::vector<std::string> shapes;
-    for (const auto &m : i.modifiers)
-      if (m == "128x128b" || m == "128x256b" || m == "4x256b" || m == "32x128b")
-        shapes.push_back(m);
-    const bool multicast = Has(i, "warpx4");
-    if (ops.size() != 2 || shapes.size() != 1 ||
-        (shapes.front() == "32x128b") != multicast ||
-        Has(i, "b8x16") || Has(i, "b6x16_p32") || Has(i, "b4x16_p64") ||
-        std::any_of(i.modifiers.begin(), i.modifiers.end(), [](const auto &m) {
-          return m.starts_with("warpx") && m != "warpx4";
-        }))
+    const auto shape = DecodeCopyShape(i.modifiers);
+    if (ops.size() != 2 || !shape || Has(i, "b8x16") || Has(i, "b6x16_p32") || Has(i, "b4x16_p64"))
       throw SemanticError("tcgen_cp_variant", "copy format needs a region mapping");
-    auto shape = shapes.front();
-    const std::uint64_t bytes = shape == "128x256b" ? 4096 :
-        shape == "128x128b" ? 2048 : shape == "32x128b" ? 512 : 128;
-    if (multicast) shape += ".warpx4";
     const auto target = ResolveTmem(t, e, ops[0]);
     const auto descriptor = Descriptor(e, ops[1], "copy shared descriptor");
     const auto &frame = resources->frame;
@@ -1559,7 +1560,7 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const RecordView &e,
       owners = {frame.Rank(rank & ~1U), frame.Rank(rank | 1U)};
     }
     std::optional<std::vector<std::pair<ByteInterval, ByteInterval>>> fragments;
-    try { fragments = DecodeCopyFragments(descriptor, target.address, shape, target.columns); }
+    try { fragments = DecodeCopyFragments(descriptor, target.address, *shape, target.columns); }
     catch (const LayoutError &) {}
     std::vector<std::pair<Fragment, Fragment>> pairs;
     for (auto owner : owners) {
@@ -1569,10 +1570,11 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const RecordView &e,
                            resources->Bind("tensor", target.resource, write.offset, write.size, owner)});
       } else {
         pairs.push_back({resources->Abstract("shared", "physical.shared.cta.0",
-             {{"operator", "tcgen_cp_shared_region"}, {"operands", Json::array({descriptor, shape})}}, bytes, owner),
+             {{"operator", "tcgen_cp_shared_region"}, {"operands", Json::array({descriptor, shape->name})}},
+             shape->SourceBytes(), owner),
             resources->Abstract("tensor", target.resource,
-             {{"operator", "tcgen_cp_tensor_region"}, {"operands", Json::array({target.address, shape})}},
-             bytes * (multicast ? 4 : 1), owner)});
+             {{"operator", "tcgen_cp_tensor_region"}, {"operands", Json::array({target.address, shape->name})}},
+             shape->TensorBytes(), owner)});
       }
     }
     const auto id = Next();
@@ -1584,7 +1586,7 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const RecordView &e,
                          std::nullopt, {Ref(id, Milestone::kEffect, index)}});
     }
     TcgenCopyPlan plan{effects, static_cast<unsigned>(group), target.resource, target.address,
-                       shapes.front() == "4x256b", {}};
+                       shape->name == "4x256b", {}};
     for (std::uint32_t index = 1; index < effects.size(); index += 2) {
       const auto &write = effects[index].accesses.front();
       const auto &binding = resources->Binding(std::get<AddressId>(write.endpoint));
@@ -1905,9 +1907,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
   if (i.predicate && !e.predicate_value())
     throw SemanticError("unresolved_instruction_predicate",
                         "reached instruction predicate unresolved");
-  const bool ordinary_memory = s.category=="memory" && s.modeled && !s.atomic_add &&
-      (s.memory_mode=="read" || s.memory_mode=="write") && !i.address_lanes &&
-      s.memory_space!="param" && s.memory_space!="const";
+  const bool ordinary_memory = OrdinaryMemory(i);
   if (!ordinary_memory && i.opcode != "tcgen05" && i.opcode != "ldmatrix" &&
       i.opcode != "stmatrix" && (!t.writes.empty() || !t.reads.empty())) {
     for (std::size_t k = 0; k < ops.size(); ++k) {
@@ -2817,10 +2817,28 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_add
     prototypes->at(i.id)={InstId{},ActorId{},Location(i),std::move(operation),
         PtxOrigin{source_name,i.id,0,origin_opcodes[i.id]}};
   }
-  std::vector<std::optional<std::uint32_t>> collective_masks(function.instructions.size());
+  // Per static instruction, the registers lowering reads from its records, when they are known
+  // (LowerThread reads only those; others are read in full): a warp collective's member mask; an
+  // ordinary load or store's address operand (its slot reads only that register there,
+  // AddressRegisters); a tcgen05.ld/st's TMEM address and half-split offset (not its data registers).
+  std::vector<std::optional<std::vector<RegId>>> read_slices(function.instructions.size());
   for(const auto& i:function.instructions) {
-    if(!IsWarpDataCollective(i) || operands[i.id].empty())continue;
-    if(const auto reg=cta_facts.Reg(Trim(operands[i.id].back())))collective_masks[i.id]=*reg;
+    const auto& ops=operands[i.id];
+    if(IsWarpDataCollective(i)) {
+      if(ops.empty())continue;
+      if(const auto reg=cta_facts.Reg(Trim(ops.back())))read_slices[i.id]=std::vector<RegId>{*reg};
+    } else if(OrdinaryMemory(i)) {
+      if(const auto brackets=Brackets(ops); !brackets.empty())read_slices[i.id]=AddressRegisters(cta_facts,brackets.front());
+    } else if(i.opcode=="tcgen05" && (i.semantics.operation=="load" || i.semantics.operation=="store")) {
+      std::vector<RegId> regs;
+      for(const auto& op:ops) {
+        if(Trim(op).starts_with('{'))continue;
+        for(const auto reg:AddressRegisters(cta_facts,op))
+          if(std::find(regs.begin(),regs.end(),reg)==regs.end())regs.push_back(reg);
+      }
+      std::sort(regs.begin(),regs.end());
+      read_slices[i.id]=std::move(regs);
+    }
   }
   std::uint64_t visits = 0;
   // A thread extends only the preceding thread's family block. Lower each
@@ -2841,7 +2859,7 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_add
   // build the value view the workers' records come from.
   if (threads > 1 && lane_workers && !synchronous_template && lane_count > 1) {
     const std::vector<ActorInfo> lane_actors(source.program.actors.begin() + actor_begin, source.program.actors.end());
-    LowerLanes(cta_facts, r, bridge, thread_order, lane_actors, collective_masks, member_cohorts, template_execution,
+    LowerLanes(cta_facts, r, bridge, thread_order, lane_actors, read_slices, member_cohorts, template_execution,
                visits);
   } else
   for (std::size_t position = 0; position < thread_order.size(); ++position) {
@@ -3027,7 +3045,7 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_add
       }
     }
     IterationStarts iteration_starts;
-    LowerThread(cta_facts, lane_ref, thread, projection ? &projection->positions : nullptr, collective_masks, visits,
+    LowerThread(cta_facts, lane_ref, thread, projection ? &projection->positions : nullptr, read_slices, visits,
                 template_execution ? &iteration_starts : nullptr);
     histories.push_back(std::move(thread.history));
     if(template_execution) {
@@ -3120,7 +3138,7 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_add
 // record), lowered into this Impl's state (a worker's: the lane's own).
 void ModelLowerer::Impl::LowerThread(const CtaFacts &cta_facts, LaneRef lane_ref, Thread &thread,
                                      const std::vector<std::size_t> *positions,
-                                     std::span<const std::optional<std::uint32_t>> collective_masks,
+                                     std::span<const std::optional<std::vector<RegId>>> read_slices,
                                      std::uint64_t &visits, IterationStarts *iteration_starts) {
   const auto count=positions ? positions->size() : cta_facts.Size(lane_ref);
   const auto emitted=[&] { return lane ? lane->instructions.size() : source.program.instructions.size(); };
@@ -3137,11 +3155,10 @@ void ModelLowerer::Impl::LowerThread(const CtaFacts &cta_facts, LaneRef lane_ref
         iteration_starts->emplace_back(emitted()-first, instruction);
       previous_instruction=instruction;
     }
-    RecordHolder concrete; // Slice{mask} or Full; the metadata record otherwise
+    RecordHolder concrete; // a Slice over read_slices, or Full; the metadata record otherwise
     if (!cta_facts.Expanded(lane_ref)) {
-      const auto& mask=collective_masks[metadata.instruction_id()];
-      if(mask)
-        concrete=cta_facts.ReadSlice({lane_ref,index},std::span(&*mask,1));
+      if(const auto& slice=read_slices[metadata.instruction_id()])
+        concrete=cta_facts.ReadSlice({lane_ref,index},*slice);
       else if(semantics.category!="compute" && semantics.category!="control")
         concrete=cta_facts.ReadFull({lane_ref,index});
     }
@@ -3248,7 +3265,7 @@ void ModelLowerer::Impl::ClearLane(bool release) {
 // exception there.
 void ModelLowerer::Impl::LowerLane(const CtaFacts &cta_facts, LaneRef lane_ref, std::size_t position,
                                    const ActorInfo &actor,
-                                   std::span<const std::optional<std::uint32_t>> collective_masks,
+                                   std::span<const std::optional<std::vector<RegId>>> read_slices,
                                    const std::function<void()> &worker_poll) {
   ClearLane(false);
   addresses.KeepWrites();
@@ -3265,7 +3282,7 @@ void ModelLowerer::Impl::LowerLane(const CtaFacts &cta_facts, LaneRef lane_ref, 
   thread.actor = actor;
   std::uint64_t visits = 0;
   try {
-    LowerThread(cta_facts, lane_ref, thread, nullptr, collective_masks, visits,
+    LowerThread(cta_facts, lane_ref, thread, nullptr, read_slices, visits,
                 cta_facts.TemplateExecution() ? &work.iteration_starts : nullptr);
     work.history = std::move(thread.history);
     SplitLane();
@@ -3313,7 +3330,7 @@ void ModelLowerer::Impl::SplitLane() {
 // (window + 1 Impls, kept across CTAs) bound the memory in flight to that many lanes' results.
 void ModelLowerer::Impl::LowerLanes(const CtaFacts &cta_facts, Resources &r, const ValueAddresses &bridge,
                                     std::span<const std::size_t> order, std::span<const ActorInfo> lane_actors,
-                                    std::span<const std::optional<std::uint32_t>> collective_masks,
+                                    std::span<const std::optional<std::vector<RegId>>> read_slices,
                                     std::span<const std::uintptr_t> member_cohorts, bool template_execution,
                                     std::uint64_t &visits) {
   const auto window = 2 * threads;
@@ -3371,7 +3388,7 @@ void ModelLowerer::Impl::LowerLanes(const CtaFacts &cta_facts, Resources &r, con
                               ~Finished() { matrix.Finished(index); }
                             } finished{*matrix, index};
                             handle.shadow->LowerLane(cta_facts, cta_facts.Lane(k), index, lane_actors[k],
-                                                     collective_masks, worker_poll);
+                                                     read_slices, worker_poll);
                             return handle;
                           },
                           poll);
@@ -3389,7 +3406,7 @@ void ModelLowerer::Impl::LowerLanes(const CtaFacts &cta_facts, Resources &r, con
       r.BeginLane(lane_ref);
       Thread thread;
       thread.actor = lane_actors[k];
-      LowerThread(cta_facts, lane_ref, thread, nullptr, collective_masks, visits,
+      LowerThread(cta_facts, lane_ref, thread, nullptr, read_slices, visits,
                   template_execution ? &consumer_starts : nullptr);
       histories.push_back(std::move(thread.history));
       iteration_starts = &consumer_starts;

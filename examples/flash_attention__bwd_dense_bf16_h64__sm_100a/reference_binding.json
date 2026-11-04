@@ -113,15 +113,21 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          256,
-          64
+          2,
+          16,
+          128,
+          4
         ],
         "source_strides_bytes": [
-          256,
+          32768,
+          2048,
+          16,
           4
         ],
         "target_strides_bytes": [
-          256,
+          32768,
+          2048,
+          16,
           4
         ]
       }
@@ -240,15 +246,21 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          256,
-          64
+          2,
+          16,
+          128,
+          4
         ],
         "source_strides_bytes": [
-          256,
+          32768,
+          2048,
+          16,
           4
         ],
         "target_strides_bytes": [
-          256,
+          32768,
+          2048,
+          16,
           4
         ]
       }
@@ -265,15 +277,21 @@
         "right_offset": 0,
         "element_bytes": 4,
         "shape": [
-          256,
-          64
+          2,
+          16,
+          128,
+          4
         ],
         "left_strides_bytes": [
-          256,
+          32768,
+          2048,
+          16,
           4
         ],
         "right_strides_bytes": [
-          256,
+          32768,
+          2048,
+          16,
           4
         ]
       },
@@ -368,7 +386,7 @@
     ]
   },
   "provenance": {
-    "evidence": "flash_bwd_sm100.py: probability exp2(score*scale_log2-LSE); dS=P*(dO V^T-dPsum); dQaccum bulk-reduce adds to preexisting contents without scale; dK scaled in epilogue, dV unscaled. Includes prior dQaccum as input, no invented zero-initialization.",
+    "evidence": "flash_bwd_sm100.py: probability exp2(score*scale_log2-LSE); dS=P*(dO V^T-dPsum); dQaccum bulk-reduce adds to preexisting contents without scale, in the 1-CTA dQaccum memory order (dQ_reduce_ncol 32: per 128-row m_block, offset 512*(col//4) + 4*row + col%4 fp32 elements, read back the same way by flash_bwd_postprocess.py); dK scaled in epilogue, dV unscaled. Includes prior dQaccum as input, no invented zero-initialization.",
     "ptx": "corpus/flash_attention__bwd_dense_bf16_h64__sm_100a.ptx",
     "optimized_input": "examples/flash_attention__bwd_dense_bf16_h64__sm_100a/input.json",
     "semantics": "Fixed saved configuration; ideal-real arithmetic; all written mathematical outputs.",
@@ -377,7 +395,8 @@
     "upstream": [
       "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_bwd_sm100.py",
       "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/interface.py",
-      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/tile_scheduler.py"
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/tile_scheduler.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/ce088ab9ce0fc0434dcd8afa0a791da9fcc3a820/flash_attn/cute/flash_bwd_postprocess.py"
     ],
     "scope_branch_choices": [],
     "scope_shape_arrays": []

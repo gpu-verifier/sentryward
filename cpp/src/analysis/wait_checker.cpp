@@ -84,6 +84,33 @@ template <typename Witness>
   return reachability.Reaches(from, to);
 }
 
+// Upper freshness for a completed next phase: the issue happens before some
+// of its effects. Each effect has a certified edge to the phase's completion,
+// which the certificate names.
+[[nodiscard]] Result<UpperFreshnessCertificate, WaitCheckError> CheckUpper(
+    EventId issue_id, PhaseKey next, const PhaseInfo& next_info,
+    const HappensBeforeGraph& graph, ReachabilityOracle& reachability,
+    const WaitReachabilityAnswer* batch) {
+  const bool ordered = ProfileCall("wait.upper", [&] {
+    if (batch && batch->upper.has_value()) return *batch->upper;
+    ProfileScope fallback("wait.upper_fallback");
+    return reachability.FindDescendant(issue_id, next_info.effects).has_value();
+  });
+  if (!ordered) {
+    return Result<UpperFreshnessCertificate, WaitCheckError>::Failure(
+        ReachabilityError(WaitCheckErrorCode::kIssueNotOrderedBeforeNextPhase,
+                          issue_id, next, next_info.effects));
+  }
+  const std::optional<EventId> completion = graph.phaseCompletion(next);
+  if (!completion.has_value()) {
+    return Result<UpperFreshnessCertificate, WaitCheckError>::Failure(
+        Error(WaitCheckErrorCode::kMissingNextPhaseCompletion,
+              EventWitness(issue_id, std::nullopt, next)));
+  }
+  return Result<UpperFreshnessCertificate, WaitCheckError>::Success(
+      UpperFreshnessCertificate{next, *completion});
+}
+
 // A null writer means speculative validation against an immutable batch graph.
 // Successful certificates can be committed after the batch; failures must be
 // retried with Check after earlier certificates have been committed.
@@ -195,17 +222,11 @@ Result<WaitCertificate, WaitCheckError> CheckImpl(
     }
     std::optional<UpperFreshnessCertificate> upper;
     if (first_info->completed) {
-      const auto reachable_effect = ProfileCall("wait.upper", [&] {
-        if (batch && batch->upper_indexed) return batch->upper_witness;
-        ProfileScope fallback("wait.upper_fallback");
-        return reachability.FindDescendant(issue_id, first_info->effects);
-      });
-      if (!reachable_effect) {
-        return Result<WaitCertificate, WaitCheckError>::Failure(
-            ReachabilityError(WaitCheckErrorCode::kIssueNotOrderedBeforeNextPhase,
-                              issue_id, first, first_info->effects));
+      auto checked = CheckUpper(issue_id, first, *first_info, graph, reachability, batch);
+      if (!checked) {
+        return Result<WaitCertificate, WaitCheckError>::Failure(std::move(checked).error());
       }
-      upper = UpperFreshnessCertificate{first, *reachable_effect};
+      upper = std::move(checked).value();
     }
     return Result<WaitCertificate, WaitCheckError>::Success(WaitCertificate{
         issue_id, done_id, std::nullopt, initialization->event, std::nullopt,
@@ -303,18 +324,11 @@ Result<WaitCertificate, WaitCheckError> CheckImpl(
               EventWitness(issue_id, std::nullopt, next)));
   }
   if (next_info->completed) {
-    const auto reachable_effect = ProfileCall("wait.upper", [&] {
-      if (batch && batch->upper_indexed) return batch->upper_witness;
-      ProfileScope fallback("wait.upper_fallback");
-      return reachability.FindDescendant(issue_id, next_info->effects);
-    });
-    if (!reachable_effect.has_value()) {
-      return Result<WaitCertificate, WaitCheckError>::Failure(
-          ReachabilityError(
-              WaitCheckErrorCode::kIssueNotOrderedBeforeNextPhase, issue_id,
-              next, next_info->effects));
+    auto checked = CheckUpper(issue_id, next, *next_info, graph, reachability, batch);
+    if (!checked) {
+      return Result<WaitCertificate, WaitCheckError>::Failure(std::move(checked).error());
     }
-    upper = UpperFreshnessCertificate{next, *reachable_effect};
+    upper = std::move(checked).value();
   }
 
   WaitKindCertificate kind;
@@ -441,7 +455,8 @@ Result<std::vector<WaitCertificate>, WaitCheckError> WaitChecker::CheckAll(
       }
       query_profile.Stop();
       batch = WaitReachabilityBatch::Build(
-          proof.happensBeforeGraph(), phases.phases(), queries, batch_options);
+          proof.happensBeforeGraph(), phases.phases(), queries, batch_options,
+          &reachability);
     }
     certificates.reserve(issues.size());
     // Bounded batches limit speculative work and preserve useful cache locality.

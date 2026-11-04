@@ -48,9 +48,10 @@ void ForEachBarrierUse(const SourceOp& operation, Consumer&& consume) {
 }  // namespace
 
 InitializationRecovery RecoverDuplicateInitializers(SourceProgram& program) {
-  InitializationRecovery result{{}, SourceValidator{}.Validate(program)};
-  if (result.diagnostics.empty() ||
-      std::any_of(result.diagnostics.begin(), result.diagnostics.end(),
+  auto validation = SourceValidator{}.Validate(program);
+  if (validation) return {{}, {}, std::move(validation).value()};
+  InitializationRecovery result{{}, std::move(validation).error(), std::nullopt};
+  if (std::any_of(result.diagnostics.begin(), result.diagnostics.end(),
                   [](const Diagnostic& diagnostic) {
                     return diagnostic.code !=
                            DiagnosticCode::kDuplicateBarrierInitialization;

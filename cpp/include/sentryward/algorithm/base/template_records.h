@@ -406,6 +406,27 @@ class TemplateRecords final {
     has_generated_=std::exchange(other.has_generated_,false);rewritten_=std::exchange(other.rewritten_,false);
     return *this;
   }
+  // The first `count` records stored as here: `count` must be where a stored block begins (or
+  // size()), so no block is cut. Every prototype stays interned, so records appended afterwards
+  // get the prototype IDs they would get here. O(kept rows and blocks + prototypes).
+  TemplateRecords prefix(std::size_t count) const {
+    if(count>logical_size_)throw std::out_of_range("template record prefix");
+    if(count==logical_size_)return *this;
+    const auto end=std::lower_bound(segments_.begin(),segments_.end(),count,
+        [](const Segment& segment,std::size_t first){return segment.begin<first;});
+    if(end==segments_.end() || end->begin!=count)throw std::invalid_argument("template record prefix cuts a stored block");
+    TemplateRecords result;
+    // A block's rows follow the rows of every earlier block.
+    result.rows_.assign(rows_.begin(),rows_.begin()+end->physical);
+    result.segments_.assign(segments_.begin(),end);
+    for(const auto& [index,row]:edits_)if(index<count)result.edits_.emplace(index,row);
+    result.prototypes_=prototypes_;result.index_=index_;
+    result.logical_size_=count;result.boundary_=true;
+    result.has_generated_=std::any_of(result.segments_.begin(),result.segments_.end(),
+        [](const Segment& segment){return bool(segment.generate);});
+    result.rewritten_=rewritten_;
+    return result;
+  }
   TemplateRecords(std::vector<T> values){reserve(values.size());for(auto& value:values)push_back(std::move(value));}
   TemplateRecords(std::initializer_list<T> values){for(const auto& x:values)push_back(x);}
   TemplateRecords& operator=(std::initializer_list<T> values){clear();for(const auto& x:values)push_back(x);return *this;}
@@ -444,13 +465,18 @@ class TemplateRecords final {
   auto rbegin() const{return std::make_reverse_iterator(end());}
   auto rend() const{return std::make_reverse_iterator(begin());}
   const T at(std::size_t i) const {
+    return at(i,[](T& record,const typename Codec::Binding& binding){Codec::bind(record,binding);});
+  }
+  // at(i) with `bind(record, binding)` in place of Codec::bind for a stored template record, e.g. a
+  // codec's partial binding for a reader of only some fields.
+  template<class Bind> const T at(std::size_t i,Bind bind) const {
     if(generatedAt(i)) {
       const auto& segment=segmentAt(i);
       return segment.generate(i-segment.begin);
     }
     const auto row=rowAt(i);
     auto result=prototypes_.at(row.prototype&~concrete);
-    if(!(row.prototype&concrete)) Codec::bind(result,row.binding);
+    if(!(row.prototype&concrete)) bind(result,row.binding);
     return result;
   }
   const T operator[](std::size_t i) const{return at(i);}
@@ -685,6 +711,13 @@ class TemplateRecords final {
         std::size_t begin,std::size_t width,std::size_t members) {
       visit(value(),delta,first,stride,count,begin,width,members);
     },include_generated,first_record);
+  }
+  // The same runs, every record included, with visit(delta, first, stride, count, value) where
+  // value() reconstructs the run's first record only when called.
+  template<class Visitor> void forEachAffineColumnRun(Visitor&& visit) const
+    requires requires { typename Codec::Delta; } {
+    forEachColumnRun([&](const auto& value,const Delta& delta,std::size_t first,std::size_t stride,std::size_t count,
+        std::size_t,std::size_t,std::size_t) { visit(delta,first,stride,count,value); },true);
   }
  private:
   // forEachAffineColumnWithBlock's runs; `value()` reconstructs a run's first record only when called.

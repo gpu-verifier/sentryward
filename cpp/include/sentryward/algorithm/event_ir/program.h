@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -109,10 +110,23 @@ class LoweredProgram final {
  public:
   LoweredProgram(EventDag graph, OriginMap origins, StateDefMap state_defs,
                  BarrierInitializationTable barrier_initializations,
-                 CollectiveTable collectives, std::vector<ActorInfo> actors = {});
+                 CollectiveTable collectives, std::vector<ActorInfo> actors,
+                 std::vector<std::size_t> execution_only_edges);
   [[nodiscard]] const std::vector<ActorInfo>& actors() const noexcept { return actors_; }
 
+  // The execution-order relation: a participant of a collective resumes only after every
+  // participant has issued it. The wait, phase and lifecycle checks reason about when
+  // synchronization events can execute and need this relation.
   [[nodiscard]] const EventDag& graph() const noexcept;
+  // The edges of graph() that only the execution order carries (ascending indices into
+  // graph().edges()): the completion -> done edges of warp data collectives
+  // (shfl/elect/vote/match/redux .sync). Their rendezvous publishes no memory effects, so a
+  // participant's return is not ordered after the other lanes' issues in memory order (#251).
+  [[nodiscard]] const std::vector<std::size_t>& executionOnlyEdges() const noexcept {
+    return execution_only_edges_;
+  }
+  // The memory-order relation: graph() less executionOnlyEdges(), with the same events and IDs.
+  [[nodiscard]] EventDag memoryOrderGraph() const { return graph_.without(execution_only_edges_); }
   [[nodiscard]] const OriginMap& origins() const noexcept;
   // After synchronization, retain the source/event mapping without retaining
   // or copying the whole lowered graph.
@@ -127,6 +141,7 @@ class LoweredProgram final {
 
  private:
   EventDag graph_;
+  std::vector<std::size_t> execution_only_edges_;
   std::vector<ActorInfo> actors_;
   OriginMap origins_;
   StateDefMap state_defs_;

@@ -1,0 +1,863 @@
+{
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
+    }
+  ],
+  "checks": {
+    "equivalence": "incomplete",
+    "synchronization": "passed"
+  },
+  "diagnostics": [
+    {
+      "code": "symbolic_initial_base_unsupported",
+      "details": {
+        "internal_stage": "value_analysis.scalar_fold"
+      },
+      "message": "No unique pointer root for symbolic initial-memory allocation 6:global2:KV",
+      "stage": "equivalence"
+    }
+  ],
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 128,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "branch_choices_with_static_visits": [
+      3048
+    ],
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 1536,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "s32",
+          "object": "indices",
+          "property": "lower_bound",
+          "value": -1
+        },
+        {
+          "element_type": "s32",
+          "object": "indices",
+          "property": "upper_bound",
+          "value": 2799
+        },
+        {
+          "element_type": "s32",
+          "object": "topk_length",
+          "property": "lower_bound",
+          "value": 0
+        },
+        {
+          "element_type": "s32",
+          "object": "topk_length",
+          "property": "upper_bound",
+          "value": 64
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "indices",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg0.72"
+        },
+        {
+          "allocation": "topk_length",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg0.80"
+        }
+      ],
+      "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [
+      {
+        "lines": [
+          1126,
+          5387,
+          5432,
+          9061,
+          9086,
+          10687,
+          10920,
+          10950,
+          11513,
+          11717,
+          11756,
+          11795,
+          12055,
+          12065,
+          12096,
+          12688,
+          16658
+        ],
+        "object": "topk_length"
+      }
+    ],
+    "trap_only_equality_assertions_hold": true
+  },
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "counts": {
+      "edges": 1964444,
+      "events": 725184,
+      "instructions": 125196,
+      "memory_accesses": 528788,
+      "threads": 1536
+    },
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "symbolic_initial_base_unsupported",
+          "message": "No unique pointer root for symbolic initial-memory allocation 6:global2:KV",
+          "stage": "value_analysis.scalar_fold"
+        }
+      ],
+      "expression_diagnostic": {
+        "construction_collections": 0,
+        "diagnostic": {
+          "code": "symbolic_initial_base_unsupported",
+          "instance": 0,
+          "instruction": "cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::1.L2::cache_hint [%r232], [%rd60, {%r233, %r234, %r235, %r236, %r237}], [%r238], %rd61;",
+          "line": 11089,
+          "message": "No unique pointer root for symbolic initial-memory allocation 6:global2:KV",
+          "value_node": 12621
+        },
+        "diagnostics": [
+          {
+            "code": "symbolic_initial_base_unsupported",
+            "details": {
+              "instance": 0,
+              "instruction": "cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::1.L2::cache_hint [%r232], [%rd60, {%r233, %r234, %r235, %r236, %r237}], [%r238], %rd61;",
+              "line": 11089,
+              "value_node": 12621
+            },
+            "message": "No unique pointer root for symbolic initial-memory allocation 6:global2:KV",
+            "stage": "pipeline"
+          }
+        ],
+        "partial_node_count": 363,
+        "partial_output_count": 0,
+        "peak_construction_nodes": 363,
+        "shared_view_projection_hits": 18,
+        "source_outputs": 11264
+      },
+      "stage": "value_analysis.scalar_fold"
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 4,
+      "dependency_compression": {
+        "bulk_read_wait": {
+          "consumers": 512,
+          "emitted_references": 0,
+          "original_references": 0,
+          "prefix_effects": 0
+        },
+        "tcgen_commit": {
+          "consumers": 12,
+          "emitted_references": 180,
+          "original_references": 352,
+          "prefix_effects": 12
+        },
+        "tcgen_load_wait": {
+          "consumers": 2560,
+          "emitted_references": 3072,
+          "original_references": 10240,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "tcgen_cp_memory_effect_refinement",
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 1201664,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 128,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "branch_choices_with_static_visits": [
+          3048
+        ],
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 1536,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "s32",
+              "object": "indices",
+              "property": "lower_bound",
+              "value": -1
+            },
+            {
+              "element_type": "s32",
+              "object": "indices",
+              "property": "upper_bound",
+              "value": 2799
+            },
+            {
+              "element_type": "s32",
+              "object": "topk_length",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s32",
+              "object": "topk_length",
+              "property": "upper_bound",
+              "value": 64
+            }
+          ],
+          "regions": [
+            {
+              "allocation": "indices",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg0.72"
+            },
+            {
+              "allocation": "topk_length",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg0.80"
+            }
+          ],
+          "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+        },
+        "tensor_property_decisions": [
+          {
+            "lines": [
+              1126,
+              5387,
+              5432,
+              9061,
+              9086,
+              10687,
+              10920,
+              10950,
+              11513,
+              11717,
+              11756,
+              11795,
+              12055,
+              12065,
+              12096,
+              12688,
+              16658
+            ],
+            "object": "topk_length"
+          }
+        ],
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "Q",
+          "offset": 56,
+          "parameter": "_ZN5sm1006decode6sparse6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS2_14KernelTemplateIXtlNS2_6ConfigEL9ModelType0ELS6_0ELb0EEEEENS7_9TmaParamsIN4cute5tupleIJiiiiEEENS9_9TiledCopyINS9_9Copy_AtomIJNS9_11Copy_TraitsINS9_13SM90_TMA_LOADEJNS9_1CILi65536EEENS9_12AuxTmaParamsINSA_IJNS9_11ScaledBasisINSG_ILi1EEEJLi1EEEENSJ_ISK_JLi0EEEENSJ_ISK_JLi2EEEENSJ_ISK_JLi3EEEEEEERKNS9_6LayoutINSA_IJNSG_ILi64EEESR_SK_SK_EEESP_EERKNS9_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSQ_INSA_IJSK_NSA_IJNSA_IJNSA_IJSR_SR_EEENSG_ILi8EEEEEEEEEEEENSA_IJNSG_ILi0EEENSA_IJNSA_IJNSA_IJSR_SK_EEENSG_ILi4096EEEEEEEEEEEEEENSA_IJSR_NSG_ILi512EEEEEEEESB_NSC_INSD_IJNSE_INS9_14SM90_TMA_STOREEJSH_S10_EEES13_EEENSQ_INSA_IJSK_NSA_IJNSA_IJS15_SK_EEEEEEEEENSA_IJS1A_NSA_IJNSA_IJS1B_S1A_EEEEEEEEEEES15_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "KV",
+          "offset": 64,
+          "parameter": "_ZN5sm1006decode6sparse6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS2_14KernelTemplateIXtlNS2_6ConfigEL9ModelType0ELS6_0ELb0EEEEENS7_9TmaParamsIN4cute5tupleIJiiiiEEENS9_9TiledCopyINS9_9Copy_AtomIJNS9_11Copy_TraitsINS9_13SM90_TMA_LOADEJNS9_1CILi65536EEENS9_12AuxTmaParamsINSA_IJNS9_11ScaledBasisINSG_ILi1EEEJLi1EEEENSJ_ISK_JLi0EEEENSJ_ISK_JLi2EEEENSJ_ISK_JLi3EEEEEEERKNS9_6LayoutINSA_IJNSG_ILi64EEESR_SK_SK_EEESP_EERKNS9_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSQ_INSA_IJSK_NSA_IJNSA_IJNSA_IJSR_SR_EEENSG_ILi8EEEEEEEEEEEENSA_IJNSG_ILi0EEENSA_IJNSA_IJNSA_IJSR_SK_EEENSG_ILi4096EEEEEEEEEEEEEENSA_IJSR_NSG_ILi512EEEEEEEESB_NSC_INSD_IJNSE_INS9_14SM90_TMA_STOREEJSH_S10_EEES13_EEENSQ_INSA_IJSK_NSA_IJNSA_IJS15_SK_EEEEEEEEENSA_IJS1A_NSA_IJNSA_IJS1B_S1A_EEEEEEEEEEES15_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "indices",
+          "offset": 72,
+          "parameter": "_ZN5sm1006decode6sparse6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS2_14KernelTemplateIXtlNS2_6ConfigEL9ModelType0ELS6_0ELb0EEEEENS7_9TmaParamsIN4cute5tupleIJiiiiEEENS9_9TiledCopyINS9_9Copy_AtomIJNS9_11Copy_TraitsINS9_13SM90_TMA_LOADEJNS9_1CILi65536EEENS9_12AuxTmaParamsINSA_IJNS9_11ScaledBasisINSG_ILi1EEEJLi1EEEENSJ_ISK_JLi0EEEENSJ_ISK_JLi2EEEENSJ_ISK_JLi3EEEEEEERKNS9_6LayoutINSA_IJNSG_ILi64EEESR_SK_SK_EEESP_EERKNS9_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSQ_INSA_IJSK_NSA_IJNSA_IJNSA_IJSR_SR_EEENSG_ILi8EEEEEEEEEEEENSA_IJNSG_ILi0EEENSA_IJNSA_IJNSA_IJSR_SK_EEENSG_ILi4096EEEEEEEEEEEEEENSA_IJSR_NSG_ILi512EEEEEEEESB_NSC_INSD_IJNSE_INS9_14SM90_TMA_STOREEJSH_S10_EEES13_EEENSQ_INSA_IJSK_NSA_IJNSA_IJS15_SK_EEEEEEEEENSA_IJS1A_NSA_IJNSA_IJS1B_S1A_EEEEEEEEEEES15_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "topk_length",
+          "offset": 80,
+          "parameter": "_ZN5sm1006decode6sparse6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS2_14KernelTemplateIXtlNS2_6ConfigEL9ModelType0ELS6_0ELb0EEEEENS7_9TmaParamsIN4cute5tupleIJiiiiEEENS9_9TiledCopyINS9_9Copy_AtomIJNS9_11Copy_TraitsINS9_13SM90_TMA_LOADEJNS9_1CILi65536EEENS9_12AuxTmaParamsINSA_IJNS9_11ScaledBasisINSG_ILi1EEEJLi1EEEENSJ_ISK_JLi0EEEENSJ_ISK_JLi2EEEENSJ_ISK_JLi3EEEEEEERKNS9_6LayoutINSA_IJNSG_ILi64EEESR_SK_SK_EEESP_EERKNS9_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSQ_INSA_IJSK_NSA_IJNSA_IJNSA_IJSR_SR_EEENSG_ILi8EEEEEEEEEEEENSA_IJNSG_ILi0EEENSA_IJNSA_IJNSA_IJSR_SK_EEENSG_ILi4096EEEEEEEEEEEEEENSA_IJSR_NSG_ILi512EEEEEEEESB_NSC_INSD_IJNSE_INS9_14SM90_TMA_STOREEJSH_S10_EEES13_EEENSQ_INSA_IJSK_NSA_IJNSA_IJS15_SK_EEEEEEEEENSA_IJS1A_NSA_IJNSA_IJS1B_S1A_EEEEEEEEEEES15_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "attn_sink",
+          "offset": 88,
+          "parameter": "_ZN5sm1006decode6sparse6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS2_14KernelTemplateIXtlNS2_6ConfigEL9ModelType0ELS6_0ELb0EEEEENS7_9TmaParamsIN4cute5tupleIJiiiiEEENS9_9TiledCopyINS9_9Copy_AtomIJNS9_11Copy_TraitsINS9_13SM90_TMA_LOADEJNS9_1CILi65536EEENS9_12AuxTmaParamsINSA_IJNS9_11ScaledBasisINSG_ILi1EEEJLi1EEEENSJ_ISK_JLi0EEEENSJ_ISK_JLi2EEEENSJ_ISK_JLi3EEEEEEERKNS9_6LayoutINSA_IJNSG_ILi64EEESR_SK_SK_EEESP_EERKNS9_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSQ_INSA_IJSK_NSA_IJNSA_IJNSA_IJSR_SR_EEENSG_ILi8EEEEEEEEEEEENSA_IJNSG_ILi0EEENSA_IJNSA_IJNSA_IJSR_SK_EEENSG_ILi4096EEEEEEEEEEEEEENSA_IJSR_NSG_ILi512EEEEEEEESB_NSC_INSD_IJNSE_INS9_14SM90_TMA_STOREEJSH_S10_EEES13_EEENSQ_INSA_IJSK_NSA_IJNSA_IJS15_SK_EEEEEEEEENSA_IJS1A_NSA_IJNSA_IJS1B_S1A_EEEEEEEEEEES15_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "LSE",
+          "offset": 96,
+          "parameter": "_ZN5sm1006decode6sparse6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS2_14KernelTemplateIXtlNS2_6ConfigEL9ModelType0ELS6_0ELb0EEEEENS7_9TmaParamsIN4cute5tupleIJiiiiEEENS9_9TiledCopyINS9_9Copy_AtomIJNS9_11Copy_TraitsINS9_13SM90_TMA_LOADEJNS9_1CILi65536EEENS9_12AuxTmaParamsINSA_IJNS9_11ScaledBasisINSG_ILi1EEEJLi1EEEENSJ_ISK_JLi0EEEENSJ_ISK_JLi2EEEENSJ_ISK_JLi3EEEEEEERKNS9_6LayoutINSA_IJNSG_ILi64EEESR_SK_SK_EEESP_EERKNS9_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSQ_INSA_IJSK_NSA_IJNSA_IJNSA_IJSR_SR_EEENSG_ILi8EEEEEEEEEEEENSA_IJNSG_ILi0EEENSA_IJNSA_IJNSA_IJSR_SK_EEENSG_ILi4096EEEEEEEEEEEEEENSA_IJSR_NSG_ILi512EEEEEEEESB_NSC_INSD_IJNSE_INS9_14SM90_TMA_STOREEJSH_S10_EEES13_EEENSQ_INSA_IJSK_NSA_IJNSA_IJS15_SK_EEEEEEEEENSA_IJS1A_NSA_IJNSA_IJS1B_S1A_EEEEEEEEEEES15_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "O",
+          "offset": 104,
+          "parameter": "_ZN5sm1006decode6sparse6head6439flash_fwd_splitkv_mla_fp8_sparse_kernelINS2_14KernelTemplateIXtlNS2_6ConfigEL9ModelType0ELS6_0ELb0EEEEENS7_9TmaParamsIN4cute5tupleIJiiiiEEENS9_9TiledCopyINS9_9Copy_AtomIJNS9_11Copy_TraitsINS9_13SM90_TMA_LOADEJNS9_1CILi65536EEENS9_12AuxTmaParamsINSA_IJNS9_11ScaledBasisINSG_ILi1EEEJLi1EEEENSJ_ISK_JLi0EEEENSJ_ISK_JLi2EEEENSJ_ISK_JLi3EEEEEEERKNS9_6LayoutINSA_IJNSG_ILi64EEESR_SK_SK_EEESP_EERKNS9_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSQ_INSA_IJSK_NSA_IJNSA_IJNSA_IJSR_SR_EEENSG_ILi8EEEEEEEEEEEENSA_IJNSG_ILi0EEENSA_IJNSA_IJNSA_IJSR_SK_EEENSG_ILi4096EEEEEEEEEEEEEENSA_IJSR_NSG_ILi512EEEEEEEESB_NSC_INSD_IJNSE_INS9_14SM90_TMA_STOREEJSH_S10_EEES13_EEENSQ_INSA_IJSK_NSA_IJNSA_IJS15_SK_EEEEEEEEENSA_IJS1A_NSA_IJNSA_IJS1B_S1A_EEEEEEEEEEES15_EEEEEEv22SparseAttnDecodeParamsT0__param_0",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 125196,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 96
+      },
+      "reached_opcodes": {
+        "add.f32x2": 16384,
+        "add.ftz.f32": 1024,
+        "add.s32": 47744,
+        "add.s64": 9168,
+        "and.b16": 13460,
+        "and.b32": 16180,
+        "and.b64": 4096,
+        "and.pred": 256,
+        "bar.sync": 6144,
+        "barrier.sync": 1536,
+        "bfe.s32": 1024,
+        "bra": 9908,
+        "bra.uni": 1408,
+        "cp.async.bulk.commit_group": 512,
+        "cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::1.L2::cache_hint": 64,
+        "cp.async.bulk.tensor.4d.global.shared::cta.bulk_group": 32,
+        "cp.async.bulk.tensor.4d.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 32,
+        "cp.async.bulk.wait_group.read": 512,
+        "cvt.rn.bf16x2.e4m3x2": 65536,
+        "cvt.rn.bf16x2.f32": 73728,
+        "cvt.rn.bf16x2.ue8m0x2": 16384,
+        "cvt.s32.s8": 256,
+        "cvt.s64.s32": 384,
+        "cvt.s8.s32": 1536,
+        "cvt.u16.u32": 34824,
+        "cvt.u16.u64": 65536,
+        "cvt.u32.u16": 2700,
+        "cvt.u64.u32": 17164,
+        "cvta.param.u64": 524,
+        "cvta.shared.u64": 512,
+        "cvta.to.global.u64": 256,
+        "div.u32": 256,
+        "elect.sync": 1536,
+        "ex2.approx.ftz.f32": 16896,
+        "fence.mbarrier_init.release.cluster": 4,
+        "fence.proxy.async.shared::cta": 3072,
+        "fma.rn.f32x2": 8192,
+        "fma.rn.ftz.f32": 768,
+        "griddepcontrol.launch_dependents": 512,
+        "ld.global.nc.f32": 512,
+        "ld.global.nc.s32": 1536,
+        "ld.global.nc.v2.s32": 128,
+        "ld.param.b32": 6160,
+        "ld.param.b64": 4096,
+        "ld.param.v2.b32": 128,
+        "ld.shared.b32": 1664,
+        "ld.shared.b64": 16384,
+        "ld.shared.v2.b64": 4096,
+        "ld.shared.v4.b32": 2112,
+        "lg2.approx.ftz.f32": 256,
+        "mad.lo.s32": 272,
+        "max.ftz.f32": 18432,
+        "max.s32": 1160,
+        "mbarrier.arrive.expect_tx.shared::cta.b64": 8,
+        "mbarrier.arrive.shared::cta.b64": 2692,
+        "mbarrier.init.shared::cta.b64": 92,
+        "mbarrier.try_wait.parity.shared::cta.b64": 3232,
+        "min.s32": 128,
+        "mov.b128": 20480,
+        "mov.b16": 1804,
+        "mov.b32": 36396,
+        "mov.b64": 203384,
+        "mov.pred": 512,
+        "mov.s32": 1584,
+        "mov.u32": 4608,
+        "mul.bf16x2": 65536,
+        "mul.f32x2": 65536,
+        "mul.ftz.f32": 1280,
+        "mul.hi.s32": 128,
+        "mul.lo.s16": 16384,
+        "mul.lo.s32": 1152,
+        "mul.wide.s32": 640,
+        "mul.wide.u32": 2816,
+        "neg.ftz.f32": 512,
+        "neg.s32": 648,
+        "not.b32": 520,
+        "not.pred": 512,
+        "or.b32": 3456,
+        "or.b64": 8208,
+        "or.pred": 512,
+        "prefetch.tensormap": 12,
+        "prmt.b32": 32768,
+        "ret": 1536,
+        "selp.b16": 17168,
+        "selp.b32": 18436,
+        "selp.b64": 4,
+        "selp.f32": 1280,
+        "setmaxnreg.dec.sync.aligned.u32": 512,
+        "setmaxnreg.inc.sync.aligned.u32": 1024,
+        "setp.eq.b16": 12288,
+        "setp.eq.b32": 5764,
+        "setp.eq.b64": 3584,
+        "setp.eq.ftz.f32": 1280,
+        "setp.ge.s32": 2944,
+        "setp.gt.ftz.f32": 512,
+        "setp.gt.s16": 1536,
+        "setp.gt.s32": 3588,
+        "setp.gt.u32": 512,
+        "setp.lt.s32": 1544,
+        "setp.lt.u32": 4,
+        "setp.ne.b16": 652,
+        "setp.ne.b32": 7020,
+        "shfl.sync.bfly.b32": 256,
+        "shfl.sync.idx.b32": 3584,
+        "shl.b32": 9516,
+        "shl.b64": 8832,
+        "shr.s32": 4900,
+        "shr.u32": 9644,
+        "shr.u64": 53248,
+        "st.global.b32": 256,
+        "st.shared.b128": 4096,
+        "st.shared.b32": 1024,
+        "st.shared.b8": 32,
+        "st.shared.v2.b32": 128,
+        "st.shared.v4.b32": 2048,
+        "st.v4.b32": 16384,
+        "st.weak.shared::cta.b128": 16384,
+        "sub.ftz.f32": 1024,
+        "sub.s32": 2056,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 128,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 12,
+        "tcgen05.cp.cta_group::1.128x256b": 64,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 128,
+        "tcgen05.fence::after_thread_sync": 1040,
+        "tcgen05.fence::before_thread_sync": 512,
+        "tcgen05.ld.sync.aligned.32x32b.x32.b32": 1024,
+        "tcgen05.ld.sync.aligned.32x32b.x64.b32": 2048,
+        "tcgen05.mma.ws.cta_group::1.kind::f16": 96,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 128,
+        "tcgen05.wait::ld.sync.aligned": 2560,
+        "vote.sync.any.pred": 512,
+        "xor.b16": 644,
+        "xor.b32": 1536,
+        "xor.b64": 4096
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 56,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 125196,
+        "stored_bindings": 26760
+      },
+      "source_edge_storage": {
+        "binding_templates": 1736,
+        "logical_edges": 123660,
+        "stored_bindings": 1736
+      },
+      "tcgen_copy_refinement": {
+        "blocked": [],
+        "discharged": 64
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 12,
+        "operations": 160
+      },
+      "thread_count": 1536,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": [
+        {
+          "line": 2345,
+          "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice.",
+          "taken": false
+        },
+        {
+          "line": 3048,
+          "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice.",
+          "taken": false
+        }
+      ]
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      },
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 4,
+        "edge_visits": 1221141,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 12584,
+          "family_requests": 720,
+          "logical_orders": 81312,
+          "owner_bindings": 5184,
+          "stored_orders": 2696
+        }
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 520312,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 233456,
+        "affine_member_rows": 0,
+        "candidate_relations": 318948,
+        "hb_frontier_pieces": 24874,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 528788
+      },
+      "hb_algorithm": "member-relations",
+      "hb_batches": 611,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 3199813,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 520312,
+      "hb_query_seconds": 0.36729852500000026,
+      "overlap_queries": 0,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 0
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 3987.890625,
+    "required_order_domains": 2696,
+    "required_orders": 81312,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 100,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 404156,
+      "memory_binding_templates": 29584,
+      "memory_bindings": 552868,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 3308,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 100,
+      "thread_prefix_groups": 244592,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 4,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 1214384,
+      "path_entries": 33780,
+      "record_bindings": 18276,
+      "record_nodes": 28564,
+      "splits": 48,
+      "template_steps": 28984,
+      "thread_memberships": 1536,
+      "value_nodes": 9530
+    },
+    "thread_record_compression": {
+      "completed_ctas": 4,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 1201664,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [],
+      "duplicate_write_value_checks": 0,
+      "equivalence_check": "unsupported",
+      "initial_memory_regions": 11332,
+      "initial_read_families": 11160,
+      "memory_action_storage": {
+        "logical_actions": 552868,
+        "stored_runs": 404156
+      },
+      "output_region_families": 0,
+      "output_regions": 11264,
+      "passes": [
+        {
+          "name": "packing",
+          "rewritten_instances": 344288,
+          "rewritten_nodes": 7520,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 2392984,
+          "name": "type_edges",
+          "removed_nodes": 58864
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 1628,
+          "layouts": 11028,
+          "mapping_blocks": 66196,
+          "name": "view_normalization",
+          "original_pieces": 428576,
+          "reused_initial_reads": 11828,
+          "reused_views": 28,
+          "segmented": 256,
+          "slices": 28672,
+          "stored_mapping_blocks": 65544,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
+        }
+      ],
+      "processed_memory_actions": 552868,
+      "processed_memory_families": 0,
+      "read_substitutions": 62676,
+      "scalar_fold": {
+        "construction_collections": 0,
+        "diagnostic": {
+          "code": "symbolic_initial_base_unsupported",
+          "instance": 0,
+          "instruction": "cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::1.L2::cache_hint [%r232], [%rd60, {%r233, %r234, %r235, %r236, %r237}], [%r238], %rd61;",
+          "line": 11089,
+          "message": "No unique pointer root for symbolic initial-memory allocation 6:global2:KV",
+          "value_node": 12621
+        },
+        "diagnostics": [
+          {
+            "code": "symbolic_initial_base_unsupported",
+            "details": {
+              "instance": 0,
+              "instruction": "cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::1.L2::cache_hint [%r232], [%rd60, {%r233, %r234, %r235, %r236, %r237}], [%r238], %rd61;",
+              "line": 11089,
+              "value_node": 12621
+            },
+            "message": "No unique pointer root for symbolic initial-memory allocation 6:global2:KV",
+            "stage": "pipeline"
+          }
+        ],
+        "partial_node_count": 363,
+        "partial_output_count": 0,
+        "peak_construction_nodes": 363,
+        "shared_view_projection_hits": 18,
+        "source_outputs": 11264
+      },
+      "serialization": {
+        "action_patterns": 404156,
+        "binding_patterns": 404156,
+        "domain_refinements": 940376,
+        "elapsed_seconds": 2.404248926,
+        "event_families": 422604,
+        "expanded_event_records": 0,
+        "largest_batch_members": 128,
+        "logical_actions": 552868,
+        "logical_events": 5507892,
+        "peak_rss_mib_at_completion": 2066.9921875,
+        "reachability_queries": 0,
+        "relations": 1503584,
+        "rss_mib_at_completion": 1366.328125,
+        "scheduled_batches": 422604,
+        "singleton_batches": 332188,
+        "value_families": 203704
+      },
+      "shared_read_families": 1076,
+      "shared_read_instances": 9264,
+      "stored_read_substitutions": 53412
+    },
+    "value_ir_instance_count": 2394510,
+    "value_ir_node_count": 151922,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 5.001153557,
+    "verification_result": "race_free"
+  },
+  "peak_rss_mib": 3987.890625,
+  "pipeline_elapsed_seconds": 24.343495209,
+  "result": "unsupported",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "verification_limitations": [],
+  "warning_count": 0,
+  "warning_samples_truncated": false,
+  "warnings": [],
+  "wellsync_timeout_seconds": 500.0,
+  "whole_pipeline_timeout_seconds": 498.439
+}

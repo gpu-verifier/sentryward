@@ -1,9 +1,11 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include "sentryward/algorithm/source_ir/program.h"
+#include "sentryward/algorithm/source_ir/validator.h"
 
 namespace sentryward::algorithm {
 
@@ -27,6 +29,8 @@ struct RetainedInitializationOrder final {
 struct UnobservedSynchronization final {
   std::vector<EliminatedArrivals> eliminated;
   std::vector<RetainedInitializationOrder> initialization_orders;
+  // The given validation of the program, when nothing was eliminated (the program is unchanged).
+  std::optional<ValidatedSource> validated;
 };
 
 // Requires a validated program, whose barrier operands each name one exact lifetime.
@@ -41,7 +45,8 @@ struct UnobservedSynchronization final {
 // count, no added arrivals and one arrival count dividing its expected count, so the
 // pending count never underflows. Its initialization order is returned.
 // O(templates) to decide and rewrite; O(eliminated mbarrier operations) for the orders.
+// `validated`, when given, is the validation of `program`.
 [[nodiscard]] UnobservedSynchronization EliminateUnobservedSynchronization(
-    SourceProgram& program);
+    SourceProgram& program, std::optional<ValidatedSource> validated = std::nullopt);
 
 }  // namespace sentryward::algorithm

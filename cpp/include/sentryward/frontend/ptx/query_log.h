@@ -26,8 +26,13 @@
 #include <vector>
 
 namespace sentryward::frontend::ptx {
-// δ per global allocation of one unit relative to its class representative.
-using UnitDelta = std::map<std::string, std::int64_t>;
+// δ per global allocation of one unit relative to its class representative: one δ for an
+// allocation that every slot moves alike, else its (site, δ) list, sorted by site
+// (algorithm::PiecewiseDelta once the class is complete).
+struct UnitDelta {
+  std::map<std::string, std::int64_t> uniform;
+  std::map<std::string, std::vector<std::pair<algorithm::UnitSite, std::int64_t>>> pieces;
+};
 
 // The classes of one launch in class mode (the driver's unit-major loop).
 class UnitClasses {
@@ -48,20 +53,29 @@ public:
   // Admit's checks (below) of a unit against the classes founded so far, off the main thread (class
   // logs never change once founded; the snapshot shares them). Admit takes its result:
   // those classes are decided by it, later ones replayed there. `previous`: an earlier PreAdmit
-  // of these facts, whose classes stay decided (its admission, if any, stands).
-  [[nodiscard]] PreAdmission PreAdmit(std::span<const CtaFacts *const> facts,
-                                      const std::vector<StructureKey> &keys) const;
+  // of these facts (empty before the first), whose classes stay decided (its admission, if any,
+  // stands).
   [[nodiscard]] PreAdmission PreAdmit(std::span<const CtaFacts *const> facts,
                                       const std::vector<StructureKey> &keys, PreAdmission previous) const;
   // Every rank of `unit` executed (`facts` in rank order, accounting done), none
   // consumed: equal structure keys on every rank, then equal answers to the
-  // logged questions, equal slot outcomes up to δ and the logged alignment
+  // logged questions, equal slot outcomes up to δ (one per allocation, or one per
+  // slot site in a class that admits a piecewise δ) and the logged alignment
   // checks (AbsoluteCheck) against each candidate class in creation order.
   // Returns the class the unit joins, or nullopt: the unit founds a class, each
   // rank consumed between Record() and Recorded().
   // `keys`: every rank's ComputeStructureKey; `pre`: PreAdmit's result on these facts.
   std::optional<std::uint32_t> Admit(std::uint32_t unit, std::span<const CtaFacts *const> facts,
                                      std::vector<StructureKey> keys, PreAdmission pre);
+  // Admit of a unit the look-ahead admitted (`pre.joined`), which reads neither its facts nor its
+  // keys: the unit joins that class (its facts may already be released).
+  void Join(std::uint32_t unit, PreAdmission pre);
+  // Classes founded from now on admit a unit whose slots move one allocation by different
+  // amounts at different sites (a piecewise δ, UnitQuotient::PiecewiseDelta). The driver calls it
+  // once no value stage can lift values: the run lifts none, or a consumed CTA's value view has a
+  // diagnostic (the program's values are then incomplete). The cross-unit race pass decides
+  // piecewise δ; value lifting does not represent it.
+  void AdmitPiecewise() noexcept;
   // The founding unit's rank is about to be consumed: the recorder to attach
   // (null when no log is kept: futility).
   QuerySink *Record(std::uint32_t unit, std::uint32_t rank, const CtaFacts &facts);

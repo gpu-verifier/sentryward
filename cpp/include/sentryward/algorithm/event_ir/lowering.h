@@ -4,27 +4,19 @@
 #include "sentryward/algorithm/event_ir/program.h"
 #include "sentryward/algorithm/source_ir/diagnostic.h"
 #include "sentryward/algorithm/source_ir/program.h"
+#include "sentryward/algorithm/source_ir/validator.h"
 
 namespace sentryward::algorithm {
 
-// Which dependencies of a warp data collective (shfl/elect/vote/match/redux
-// .sync) the lowered graph carries. The two relations differ only in the
-// completion -> done edge of these collectives; events and IDs are identical.
-enum class CollectiveOrdering {
-  // Memory order: the rendezvous publishes no memory effects, so a
-  // participant's return is not ordered after the other lanes' issues (#251).
-  kMemory,
-  // Execution order: a participant resumes only after every participant has
-  // issued the collective. The wait, phase and lifecycle checks reason about
-  // when synchronization events can execute and need this relation.
-  kExecution,
-};
-
+// One lowering gives both relations of a program: its graph is the execution order, and the
+// memory order is that graph less the execution-only edges (LoweredProgram::memoryOrderGraph).
 class Lowerer final {
  public:
   [[nodiscard]] Result<LoweredProgram, Diagnostic> Run(
-      const SourceProgram& source, bool synchronization_only = false,
-      CollectiveOrdering ordering = CollectiveOrdering::kMemory) const;
+      const ValidatedSource& source, bool synchronization_only = false) const;
+  // Validates the program first; an invalid program fails with its least diagnostic.
+  [[nodiscard]] Result<LoweredProgram, Diagnostic> Run(
+      const SourceProgram& source, bool synchronization_only = false) const;
 };
 
 }  // namespace sentryward::algorithm

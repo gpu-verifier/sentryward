@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <array>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -132,8 +133,11 @@ struct SourceRecordCodec {
     }
     return Binding{InstId(fields[0]),ActorId(fields[1]),AddressId(fields[2]),fields[3],std::move(operands)};
   }
-  template<class Visit>
-  static void visitOperands(SourceOp& operation, Visit visit) {
+  // The operands in binding order: `visit(id)` for every operand held by the operation (and its
+  // effects' predecessor references), `accesses(array)` for each effect's access array, whose
+  // endpoints are the next array.size() operands (one per access).
+  template<class Visit, class Accesses>
+  static void walkOperands(SourceOp& operation, Visit visit, Accesses accesses) {
     const auto references = [&](auto& refs) { for (auto& ref : refs) visit(ref.instruction); };
     std::visit([&](auto& op) {
       if constexpr (requires { op.async_id; }) visit(op.async_id);
@@ -145,15 +149,21 @@ struct SourceRecordCodec {
       if constexpr (requires { op.completion_requires; }) references(op.completion_requires);
       if constexpr (requires { op.effects; }) for (auto& effect : op.effects) {
         references(effect.predecessors);
-        effect.accesses = effect.accesses.transformed([&](std::size_t, MemoryEffect access) {
-          std::visit([&](auto& endpoint) {
-            if constexpr (requires { endpoint.actor; }) visit(endpoint.actor);
-            else visit(endpoint);
-          }, access.endpoint);
-          return access;
-        });
+        accesses(effect.accesses);
       }
     }, operation);
+  }
+  template<class Visit>
+  static void visitOperands(SourceOp& operation, Visit visit) {
+    walkOperands(operation, visit, [&](SharedArray<MemoryEffect>& accesses) {
+      accesses = accesses.transformed([&](std::size_t, MemoryEffect access) {
+        std::visit([&](auto& endpoint) {
+          if constexpr (requires { endpoint.actor; }) visit(endpoint.actor);
+          else visit(endpoint);
+        }, access.endpoint);
+        return access;
+      });
+    });
   }
   static bool split(SourceInstruction& inst,Binding& binding){
     auto* load=std::get_if<ImmediateLoad>(&inst.op);
@@ -168,12 +178,23 @@ struct SourceRecordCodec {
     return true;
   }
   static void bind(SourceInstruction& inst,const Binding& binding){
+    bindFields(inst,binding);
+    std::size_t i = 0;
+    visitOperands(inst.op, [&](auto& id) { id = std::remove_reference_t<decltype(id)>(binding.operands.at(i++)); });
+  }
+  // bind() except the access endpoints, which keep the split prototype's cleared values: for a
+  // reader of everything but where accesses point (it does not copy the access arrays).
+  static void bindExceptAccessEndpoints(SourceInstruction& inst,const Binding& binding){
+    bindFields(inst,binding);
+    std::size_t i = 0;
+    walkOperands(inst.op, [&](auto& id) { id = std::remove_reference_t<decltype(id)>(binding.operands.at(i++)); },
+                 [&](const SharedArray<MemoryEffect>& accesses) { i += accesses.size(); });
+  }
+  static void bindFields(SourceInstruction& inst,const Binding& binding){
     inst.id=binding.id;inst.actor=binding.actor;
     if(inst.ptx_origin)inst.ptx_origin->occurrence=binding.occurrence;
     if(auto* load=std::get_if<ImmediateLoad>(&inst.op))load->address=binding.address;
     else if(auto* store=std::get_if<ImmediateStore>(&inst.op))store->address=binding.address;
-    std::size_t i = 0;
-    visitOperands(inst.op, [&](auto& id) { id = std::remove_reference_t<decltype(id)>(binding.operands.at(i++)); });
   }
   // The binding split() returns for bind(prototype, binding) of a split prototype: bind()
   // ignores the fields the prototype has no slot for and split() clears them.
@@ -286,6 +307,26 @@ struct SourceEdgeCodec {
   }
 };
 using SourceEdges=TemplateRecords<SourceEdge,SourceEdgeCodec>;
+
+// The edges in declaration order, expanded family by family: O(edges) translations, without the
+// per-edge lookup of at(i).
+inline std::vector<SourceEdge> ExpandEdges(const SourceEdges& edges) {
+  std::vector<SourceEdge> expanded(edges.size());
+  std::size_t covered=0;
+  edges.forEachAffineColumn([&](const SourceEdge& value,const SourceEdgeCodec::Delta& delta,
+      std::size_t first,std::size_t stride,std::size_t count) {
+    auto edge=value;SourceEdgeCodec::Binding base{};SourceEdgeCodec::split(edge,base);
+    expanded[first]=value;
+    for(std::size_t member=1;member<count;++member) {
+      const auto binding=SourceEdgeCodec::translate(base,delta,member);
+      if(!binding)throw std::logic_error("invalid compressed record binding");
+      SourceEdgeCodec::bind(edge,*binding);expanded[first+stride*member]=edge;
+    }
+    covered+=count;
+  });
+  if(covered!=expanded.size())throw std::logic_error("source edge families do not cover every edge");
+  return expanded;
+}
 
 struct CollectiveSpec final {
   SyncId sync_id;

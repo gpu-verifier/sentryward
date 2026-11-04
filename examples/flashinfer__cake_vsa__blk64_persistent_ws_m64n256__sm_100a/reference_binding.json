@@ -16,17 +16,17 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          64,
-          1,
+          128,
+          2,
           128
         ],
         "source_strides_bytes": [
-          256,
+          512,
           256,
           2
         ],
         "target_strides_bytes": [
-          256,
+          512,
           256,
           2
         ]
@@ -37,16 +37,16 @@
         "element_bytes": 2,
         "shape": [
           2048,
-          1,
+          2,
           128
         ],
         "source_strides_bytes": [
-          256,
+          512,
           256,
           2
         ],
         "target_strides_bytes": [
-          256,
+          512,
           256,
           2
         ]
@@ -57,16 +57,16 @@
         "element_bytes": 2,
         "shape": [
           2048,
-          1,
+          2,
           128
         ],
         "source_strides_bytes": [
-          256,
+          512,
           256,
           2
         ],
         "target_strides_bytes": [
-          256,
+          512,
           256,
           2
         ]
@@ -76,17 +76,17 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          1,
-          1,
+          2,
+          2,
           32
         ],
         "source_strides_bytes": [
-          128,
+          256,
           128,
           4
         ],
         "target_strides_bytes": [
-          128,
+          256,
           128,
           4
         ]
@@ -96,15 +96,15 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          1,
-          1
+          2,
+          2
         ],
         "source_strides_bytes": [
-          4,
+          8,
           4
         ],
         "target_strides_bytes": [
-          4,
+          8,
           4
         ]
       }
@@ -125,17 +125,17 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          64,
-          1,
+          128,
+          2,
           128
         ],
         "source_strides_bytes": [
-          256,
+          512,
           256,
           2
         ],
         "target_strides_bytes": [
-          256,
+          512,
           256,
           2
         ]
@@ -146,16 +146,16 @@
         "element_bytes": 2,
         "shape": [
           2048,
-          1,
+          2,
           128
         ],
         "source_strides_bytes": [
-          256,
+          512,
           256,
           2
         ],
         "target_strides_bytes": [
-          256,
+          512,
           256,
           2
         ]
@@ -166,16 +166,16 @@
         "element_bytes": 2,
         "shape": [
           2048,
-          1,
+          2,
           128
         ],
         "source_strides_bytes": [
-          256,
+          512,
           256,
           2
         ],
         "target_strides_bytes": [
-          256,
+          512,
           256,
           2
         ]
@@ -185,17 +185,17 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          1,
-          1,
+          2,
+          2,
           32
         ],
         "source_strides_bytes": [
-          128,
+          256,
           128,
           4
         ],
         "target_strides_bytes": [
-          128,
+          256,
           128,
           4
         ]
@@ -205,44 +205,70 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          1,
-          1
+          2,
+          2
         ],
         "source_strides_bytes": [
-          4,
+          8,
           4
         ],
         "target_strides_bytes": [
-          4,
+          8,
           4
         ]
       }
     }
   },
   "outputs": {
-    "kind": "dense_tensor",
-    "left_allocation": "6:global3:out",
-    "right_allocation": "6:global3:out",
-    "left_offset": 0,
-    "right_offset": 0,
-    "element_bytes": 2,
-    "shape": [
-      1,
-      64,
-      1,
-      128
-    ],
-    "left_strides_bytes": [
-      16384,
-      256,
-      256,
-      2
-    ],
-    "right_strides_bytes": [
-      16384,
-      256,
-      256,
-      2
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "left_allocation": "6:global3:out",
+        "right_allocation": "6:global3:out",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2,
+          64,
+          2,
+          128
+        ],
+        "left_strides_bytes": [
+          32768,
+          512,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          32768,
+          512,
+          256,
+          2
+        ]
+      },
+      {
+        "left_allocation": "6:global3:lse",
+        "right_allocation": "6:global3:lse",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          64,
+          2
+        ],
+        "left_strides_bytes": [
+          512,
+          8,
+          4
+        ],
+        "right_strides_bytes": [
+          512,
+          8,
+          4
+        ]
+      }
     ]
   },
   "reference": {
@@ -287,7 +313,7 @@
       "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/attention/test_cake_vsa.py",
       "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/attention/test_cake_vsa_planning.py"
     ],
-    "scope": "M=sequence_q=64, H=1, MB=1, total_tiles=tiles_per_cta=1, grid 1; topk=max_kv_blocks=32 and N=2048 (NB=32) from the upstream ws-profile tests; q2k_num=[28] as an M1 shape array (routes to this kernel: count%4==0, 28 > 24); q2k_indices bounds [0,31]; return_lse=0 (lse not written); kv_block_lens never loaded.",
+    "scope": "Upstream test tests/attention/test_cake_vsa.py::test_cake_vsa_blk64_full_group_rows_use_weight_stationary_profile (L327-389): block 64, heads 2, head_dim 128, M=sequence_q=128 (MB=2), N=2048 (NB=32), topk=max_kv_blocks=32, q2k_num [[24,28],[24,28]] as a shape array (the plan routes to blk64_persistent_ws_m64n256, asserted at L364), return_lse=1 (wrapper.run(..., return_lse=True)); cake_vsa._run_blk64 (L720-758): total_tiles=MB*heads=4, persistent grid min(4, SMs)=4, tiles_per_cta=1, softmax_scale_log2=1/sqrt(128)/ln 2. q2k_indices bounds [0,31] (upstream contents arange(32) per row are not stated as a fact); kv_block_lens never loaded. Outputs out [M, H, 128] bf16 and lse [M, H] f32 (natural log, cake_vsa.py run_cake_vsa contract and the test's logsumexp oracle).",
     "scope_branch_choices": [],
     "scope_shape_arrays": [
       {
@@ -296,12 +322,17 @@
         "element_type": "s32",
         "shapes": [
           [
+            24,
+            28
+          ],
+          [
+            24,
             28
           ]
         ]
       }
     ],
-    "optimized_input_sha256": "6dff21fffb270aee4d9a45056d58edf113870f501872abf83f8a0e30c623ae15",
+    "optimized_input_sha256": "a9314f0ba0b3e32f72edc6edd9461cfee894368d246d5abbfaa7ab1ba2de4be4",
     "ptx_sha256": "aa68959bef2ef69d669d823b97ddb358afdb46191e3fc433f78052774c5438d2"
   }
 }

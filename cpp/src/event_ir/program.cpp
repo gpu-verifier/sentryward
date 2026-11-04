@@ -86,8 +86,10 @@ const std::map<SyncId, LoweredCollective>& CollectiveTable::entries() const
 LoweredProgram::LoweredProgram(
     EventDag graph, OriginMap origins, StateDefMap state_defs,
     BarrierInitializationTable barrier_initializations,
-    CollectiveTable collectives, std::vector<ActorInfo> actors)
+    CollectiveTable collectives, std::vector<ActorInfo> actors,
+    std::vector<std::size_t> execution_only_edges)
     : graph_(std::move(graph)),
+      execution_only_edges_(std::move(execution_only_edges)),
       actors_(std::move(actors)),
       origins_(std::move(origins)),
       state_defs_(std::move(state_defs)),

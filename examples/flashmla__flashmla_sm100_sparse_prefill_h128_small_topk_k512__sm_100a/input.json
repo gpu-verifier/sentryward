@@ -1,0 +1,314 @@
+{
+ "schema": "spverify.kernel-input/v1",
+ "entry": "_ZN5sm1007prefill25sparse_fwd_for_small_topk7head12837sparse_attn_fwd_for_small_topk_kernelINS2_14KernelTemplateIL17SparseAttnFwdMode0EL9ModelType0ELS6_0EEEEEvNT_4ArgTENS8_9TmaParamsE",
+ "launch": {
+  "grid_dim": [
+   2,
+   1,
+   1
+  ],
+  "block_dim": [
+   512,
+   1,
+   1
+  ],
+  "cluster_dim": [
+   2,
+   1,
+   1
+  ],
+  "dynamic_shared_bytes": 223616
+ },
+ "arguments": [
+  {
+   "parameter": 0,
+   "offset": 0,
+   "type": "s32",
+   "value": 1
+  },
+  {
+   "parameter": 0,
+   "offset": 4,
+   "type": "s32",
+   "value": 128
+  },
+  {
+   "parameter": 0,
+   "offset": 8,
+   "type": "s32",
+   "value": 128
+  },
+  {
+   "parameter": 0,
+   "offset": 12,
+   "type": "s32",
+   "value": 1
+  },
+  {
+   "parameter": 0,
+   "offset": 16,
+   "type": "s32",
+   "value": 512
+  },
+  {
+   "parameter": 0,
+   "offset": 20,
+   "type": "s32",
+   "value": 512
+  },
+  {
+   "parameter": 0,
+   "offset": 24,
+   "type": "s32",
+   "value": 128
+  },
+  {
+   "parameter": 0,
+   "offset": 28,
+   "type": "f32",
+   "value": 0.5
+  },
+  {
+   "parameter": 0,
+   "offset": 32,
+   "type": "f32",
+   "value": 0.7213475108146667
+  },
+  {
+   "parameter": 0,
+   "offset": 64,
+   "type": "pointer",
+   "value": null
+  },
+  {
+   "parameter": 0,
+   "offset": 72,
+   "type": "pointer",
+   "value": null
+  },
+  {
+   "parameter": 0,
+   "offset": 80,
+   "type": "s32",
+   "value": 82560
+  },
+  {
+   "parameter": 0,
+   "offset": 84,
+   "type": "s32",
+   "value": 640
+  },
+  {
+   "parameter": 0,
+   "offset": 88,
+   "type": "s32",
+   "value": 1280
+  },
+  {
+   "parameter": 0,
+   "offset": 92,
+   "type": "s32",
+   "value": 640
+  },
+  {
+   "parameter": 0,
+   "offset": 96,
+   "type": "s32",
+   "value": 512
+  },
+  {
+   "parameter": 0,
+   "offset": 100,
+   "type": "s32",
+   "value": 256
+  },
+  {
+   "parameter": 0,
+   "offset": 128,
+   "type": "s32",
+   "value": 0
+  },
+  {
+   "parameter": 0,
+   "offset": 132,
+   "type": "s32",
+   "value": 148
+  }
+ ],
+ "declarations": [
+  {
+   "parameter": 0,
+   "offset": 40,
+   "type": "pointer",
+   "space": "global",
+   "object": "Q"
+  },
+  {
+   "parameter": 0,
+   "offset": 48,
+   "type": "pointer",
+   "space": "global",
+   "object": "KV"
+  },
+  {
+   "parameter": 0,
+   "offset": 56,
+   "type": "pointer",
+   "space": "global",
+   "object": "indices"
+  },
+  {
+   "parameter": 0,
+   "offset": 104,
+   "type": "pointer",
+   "space": "global",
+   "object": "O"
+  },
+  {
+   "parameter": 0,
+   "offset": 112,
+   "type": "pointer",
+   "space": "global",
+   "object": "max_logits"
+  },
+  {
+   "parameter": 0,
+   "offset": 120,
+   "type": "pointer",
+   "space": "global",
+   "object": "LSE"
+  }
+ ],
+ "assumptions": {
+  "duplicate_tma_store_benign": true,
+  "representative_election": true,
+  "clc_always_fails": true
+ },
+ "tma_descriptors": [
+  {
+   "parameter": 1,
+   "offset": 0,
+   "object": "Q",
+   "element_type": "bf16",
+   "global_shape": [
+    64,
+    128,
+    2,
+    4,
+    1
+   ],
+   "coordinate_strides_bytes": [
+    2,
+    1280,
+    512,
+    128,
+    165120
+   ],
+   "box_shape": [
+    64,
+    64,
+    2,
+    4,
+    1
+   ],
+   "element_strides": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  },
+  {
+   "parameter": 1,
+   "offset": 128,
+   "object": "KV",
+   "element_type": "bf16",
+   "global_shape": [
+    512,
+    128
+   ],
+   "coordinate_strides_bytes": [
+    2,
+    2560
+   ],
+   "box_shape": [
+    64,
+    1
+   ],
+   "element_strides": [
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  },
+  {
+   "parameter": 1,
+   "offset": 256,
+   "object": "O",
+   "element_type": "bf16",
+   "global_shape": [
+    64,
+    128,
+    8,
+    1,
+    1
+   ],
+   "coordinate_strides_bytes": [
+    2,
+    1024,
+    128,
+    131072,
+    131072
+   ],
+   "box_shape": [
+    64,
+    64,
+    8,
+    1,
+    1
+   ],
+   "element_strides": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  }
+ ],
+ "tensor_properties": [
+  {
+   "object": "indices",
+   "element_type": "s32",
+   "property": "lower_bound",
+   "value": 0
+  },
+  {
+   "object": "indices",
+   "element_type": "s32",
+   "property": "upper_bound",
+   "value": 127
+  }
+ ],
+ "branch_decisions": [
+  {
+   "line": 13240,
+   "taken": false,
+   "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+  },
+  {
+   "line": 14028,
+   "taken": false,
+   "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+  }
+ ]
+}

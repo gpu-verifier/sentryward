@@ -1,0 +1,342 @@
+{
+ "schema": "spverify.equivalence-mapping.v1",
+ "output_value_semantics": "ideal_real",
+ "left_inputs": {
+  "allocations": {
+   "6:global9:LSE_accum": "LSE_accum",
+   "6:global7:O_accum": "O_accum",
+   "6:global10:num_splits": "num_splits",
+   "6:global1:O": "O",
+   "6:global3:LSE": "LSE"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global9:LSE_accum": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     152,
+     1,
+     64
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     4
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     4
+    ]
+   },
+   "6:global7:O_accum": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     152,
+     1,
+     64,
+     512
+    ],
+    "source_strides_bytes": [
+     131072,
+     131072,
+     2048,
+     4
+    ],
+    "target_strides_bytes": [
+     131072,
+     131072,
+     2048,
+     4
+    ]
+   },
+   "6:global10:num_splits": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     5
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global1:O": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     4,
+     1,
+     64,
+     512
+    ],
+    "source_strides_bytes": [
+     65536,
+     65536,
+     1024,
+     2
+    ],
+    "target_strides_bytes": [
+     65536,
+     65536,
+     1024,
+     2
+    ]
+   },
+   "6:global3:LSE": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4,
+     1,
+     64
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     4
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     4
+    ]
+   }
+  }
+ },
+ "right_inputs": {
+  "allocations": {
+   "6:global9:LSE_accum": "LSE_accum",
+   "6:global7:O_accum": "O_accum",
+   "6:global10:num_splits": "num_splits",
+   "6:global1:O": "O",
+   "6:global3:LSE": "LSE"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global9:LSE_accum": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     152,
+     1,
+     64
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     4
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     4
+    ]
+   },
+   "6:global7:O_accum": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     152,
+     1,
+     64,
+     512
+    ],
+    "source_strides_bytes": [
+     131072,
+     131072,
+     2048,
+     4
+    ],
+    "target_strides_bytes": [
+     131072,
+     131072,
+     2048,
+     4
+    ]
+   },
+   "6:global10:num_splits": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     5
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global1:O": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     4,
+     1,
+     64,
+     512
+    ],
+    "source_strides_bytes": [
+     65536,
+     65536,
+     1024,
+     2
+    ],
+    "target_strides_bytes": [
+     65536,
+     65536,
+     1024,
+     2
+    ]
+   },
+   "6:global3:LSE": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4,
+     1,
+     64
+    ],
+    "source_strides_bytes": [
+     256,
+     256,
+     4
+    ],
+    "target_strides_bytes": [
+     256,
+     256,
+     4
+    ]
+   }
+  }
+ },
+ "outputs": {
+  "kind": "dense_tensors",
+  "tensors": [
+   {
+    "left_allocation": "6:global1:O",
+    "right_allocation": "6:global1:O",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     4,
+     1,
+     64,
+     512
+    ],
+    "left_strides_bytes": [
+     65536,
+     65536,
+     1024,
+     2
+    ],
+    "right_strides_bytes": [
+     65536,
+     65536,
+     1024,
+     2
+    ]
+   },
+   {
+    "left_allocation": "6:global3:LSE",
+    "right_allocation": "6:global3:LSE",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4,
+     1,
+     64
+    ],
+    "left_strides_bytes": [
+     256,
+     256,
+     4
+    ],
+    "right_strides_bytes": [
+     256,
+     256,
+     4
+    ]
+   }
+  ]
+ },
+ "reference": {
+  "arguments": [
+   {
+    "name": "lse_accum",
+    "allocation": "6:global9:LSE_accum",
+    "dtype": "float32"
+   },
+   {
+    "name": "o_accum",
+    "allocation": "6:global7:O_accum",
+    "dtype": "float32"
+   },
+   {
+    "name": "num_splits",
+    "allocation": "6:global10:num_splits",
+    "dtype": "int32"
+   },
+   {
+    "name": "out_in",
+    "allocation": "6:global1:O",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "lse_in",
+    "allocation": "6:global3:LSE",
+    "dtype": "float32"
+   }
+  ]
+ },
+ "provenance": {
+  "source": "FlashMLA smxx flash_fwd_mla_combine_kernel<bf16, HEAD_DIM_V=512, BLOCK_SIZE_M=8, MAX_SPLITS=160, 256 threads, HAVE_INCOMPLETE_HEAD_BLOCK=false>: log-sum-exp merge of the split-KV partial outputs (lse_accum in log2 units, o_accum f32) into O (bf16) and LSE (natural log), for requests with more than one split",
+  "upstream": [
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/smxx/decode/combine/combine.cu",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/smxx/decode/combine/combine.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/params.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/api/sparse_decode.cpp",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/flash_mla/flash_mla_interface.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/test-sparse-decode.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/lib.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/ref.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/setup.py"
+  ],
+  "scope": "tests/test-sparse-decode.py case index 24 (first split-KV case; seed 24): b=4, s_q=1, h_q=64, topk=2048, block_size=1, is_varlen=True (num_blocks=17488, page_block_size=1 from python random), have_topk_length=True, enable_attn_sink=False (attn_sink null), no extra cache, enable_split_kv=true, num_sm=num_sm_parts=148; grid (4, 1, 8), 256 threads; lse_accum [152, 1, 64] / o_accum [152, 1, 64, 512] f32 contiguous; O and LSE are also inputs because requests with exactly one split are left as the decode kernel wrote them; num_splits [5] int32 is produced by get_mla_metadata_kernel<true,false,false> from random topk_length (torch.randint on CUDA), so its contents are unknown here (no shape_arrays) Shape array values (2026-10-29) from a CPU emulation of the CUDA RNG and of get_mla_metadata_kernel (build/corpus-refresh-20261026/fmla-rng/, README.md and case24_result.json; validate.py 30/30 against published GPU outputs; assumes a B200 with 148 SMs, 2048 threads/SM, PyTorch >= 2.10; not measured on a GPU): num_splits = [0, 6, 34, 44, 67] (the metadata kernel's output for topk_length = [335, 1732, 622, 1432]; per-request splits 6, 28, 10, 23).",
+  "optimized_input_sha256": "c8d032bf062c3ddff6954eae41c57ac5b331c0e5ba0fa82f78f25df954dc08a5",
+  "scope_shape_arrays": [
+   {
+    "parameter": 0,
+    "offset": 288,
+    "element_type": "s32",
+    "shapes": [
+     [
+      0,
+      6,
+      34,
+      44,
+      67
+     ]
+    ]
+   }
+  ],
+  "ptx_sha256": "da4f7d390f3cb1d6f3ff9a127ff74d037cde5609e996e21524e88fb7300b6176"
+ }
+}

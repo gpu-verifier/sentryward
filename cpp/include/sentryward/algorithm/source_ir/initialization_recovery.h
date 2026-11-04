@@ -1,10 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include "sentryward/algorithm/source_ir/diagnostic.h"
 #include "sentryward/algorithm/source_ir/program.h"
+#include "sentryward/algorithm/source_ir/validator.h"
 
 namespace sentryward::algorithm {
 
@@ -24,6 +26,8 @@ struct InitializationWarning final {
 struct InitializationRecovery final {
   std::vector<InitializationWarning> warnings;
   std::vector<Diagnostic> diagnostics;
+  // The validation of the program as given, when it is valid (nothing to recover).
+  std::optional<ValidatedSource> validated;
 
   [[nodiscard]] bool applied() const noexcept { return !warnings.empty(); }
 };

@@ -7,15 +7,17 @@
 // is a race, or a same-value write obligation that the caller leaves to the per-unit analysis.
 // Representative pairs belong to the normal checker.
 //
-// Cost: O(P log P) for P global family parts, per ordered class pair (A, B) on one
-// allocation O(|A| log |B|) to find the units whose δ falls in the hull window plus one O(1) memo
-// lookup per candidate unit pair; each distinct translation d = δ_v - δ_u is decided once by a
-// linear hull merge and, only if hulls meet, by exact ClassifyFamilyOverlap on the intersecting
-// family pairs (an interval-tree query per write part). When the distinct δ of both classes form
-// arithmetic progressions with one step (units tiling the allocation evenly, in any unit order),
-// the translations are enumerated without the unit pairs: O(|A| + |B| + T log T) for the
-// T < |A| + |B| translations, decided at the same first pair and in the same order as the window
-// search. Members are never expanded.
+// Cost: O(P log P) for P global family parts, per ordered pair (A, B) of part groups (a class, or
+// one piece of a class's piecewise δ) on one allocation O(|A| log |B|) to find the units whose δ
+// falls in the hull window plus one O(1) memo lookup per candidate unit pair; each distinct
+// translation d = δ_v - δ_u is decided once by a linear hull merge and, only if hulls meet, by
+// exact ClassifyFamilyOverlap on the intersecting family pairs (an interval-tree query per write
+// part). When the distinct δ of both groups form arithmetic progressions with one step (units
+// tiling the allocation evenly, in any unit order), the translations are enumerated without the
+// unit pairs: O(|A| + |B| + T log T) for the T < |A| + |B| translations, decided at the same first
+// pair and in the same order as the window search. Two pieces of one class are also compared inside
+// each member unit: O(|A|) differences of their δ, each distinct one decided once as above.
+// Members are never expanded.
 //
 // Parts whose footprint is tensor-property lookups (FamilyFootprint::gathers) have no constant
 // span. With a memory model, they are decided per allocation over pairs of unit groups (units of a
@@ -29,6 +31,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -43,9 +46,13 @@ struct CrossUnitPart {
   FamilyFootprint footprint;
   bool write = false;
   std::uint32_t cta = 0; // linear id of the representative CTA
+  // The slot site of every member, set on a written allocation with a piecewise δ in some class
+  // (UnitQuotient::PiecewiseDelta): such a part is placed by its piece's δ.
+  std::optional<UnitSite> site = std::nullopt;
 };
 // Work caps: exceeding either restarts the launch per unit. unit_pairs counts the unit pairs the
-// window search visits, or the translations decided on progressions.
+// window search visits, or the translations decided on progressions, and the member units the
+// check of two pieces inside one unit visits.
 struct CrossUnitLimits {
   std::uint64_t unit_pairs = 10'000'000, refinements = 1'000'000, symbolic_decisions = 100'000;
 };
@@ -63,7 +70,10 @@ struct CrossUnitOutcome {
   std::string reason; // kUnknown / kCap: why
 };
 // Every pair with at least one member unit is decided exactly; parts outside global memory are
-// ignored, unplaceable ones are Unknown.
+// ignored, unplaceable ones are Unknown. Allocations without a write part hold no conflicting pair
+// and are skipped. On an allocation with a piecewise δ, each piece of a class is a group of its own,
+// placed by the piece's δ, and two pieces of one class are also compared inside each member unit,
+// where any overlap with a write is Unknown; a lookup part with a piecewise δ is Unknown.
 [[nodiscard]] CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const UnitQuotient &quotient,
                                               MemoryModel &model, const CrossUnitLimits &limits = {});
 } // namespace sentryward::algorithm

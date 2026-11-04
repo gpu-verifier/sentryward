@@ -11,6 +11,14 @@ class FamilyHbReachability : public HbReachability {
   virtual std::vector<std::optional<EventId>> findAncestors(std::span<const EventId> sources,
       std::span<const EventId> targets) = 0;
 };
+// Whether a family index applies to the graph as it is now: the budget allows
+// one and the events are family-compressed. Throws for zero batch sources.
+[[nodiscard]] bool FamilyHbReachabilityApplies(
+    const HappensBeforeGraph& graph, const HbReachabilityOptions& options);
+// Requires FamilyHbReachabilityApplies.
+[[nodiscard]] std::unique_ptr<FamilyHbReachability> MakeFamilyHbReachability(
+    const HappensBeforeGraph& graph, const HbReachabilityOptions& options, bool reverse = false);
+// Null unless FamilyHbReachabilityApplies.
 [[nodiscard]] std::unique_ptr<FamilyHbReachability> TryFamilyHbReachability(
     const HappensBeforeGraph& graph, const HbReachabilityOptions& options, bool reverse = false);
 }

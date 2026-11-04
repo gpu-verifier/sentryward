@@ -223,11 +223,17 @@ class FamilyIndex final : public FamilyHbReachability {
   std::vector<std::pair<std::size_t,std::size_t>> rank_bounds_;HbReachabilityStats stats_;
 };
 }
-std::unique_ptr<FamilyHbReachability> TryFamilyHbReachability(const HappensBeforeGraph& graph,const HbReachabilityOptions& options,bool reverse) {
+bool FamilyHbReachabilityApplies(const HappensBeforeGraph& graph,const HbReachabilityOptions& options) {
   if(options.max_batch_sources==0)throw std::invalid_argument("max_batch_sources must be positive");
-  if(options.index_budget_bytes<1024*1024)return nullptr;
-  if(graph.events().unrolledBindingCount()*2>=graph.eventCount())return nullptr;
-  const EventFamilies families(graph.events());if(families.families().size()*2>=graph.eventCount())return nullptr;
+  if(options.index_budget_bytes<1024*1024)return false;
+  if(graph.events().unrolledBindingCount()*2>=graph.eventCount())return false;
+  const EventFamilies families(graph.events());return families.families().size()*2<graph.eventCount();
+}
+std::unique_ptr<FamilyHbReachability> MakeFamilyHbReachability(const HappensBeforeGraph& graph,const HbReachabilityOptions& options,bool reverse) {
   return std::make_unique<FamilyIndex>(graph,options,reverse);
+}
+std::unique_ptr<FamilyHbReachability> TryFamilyHbReachability(const HappensBeforeGraph& graph,const HbReachabilityOptions& options,bool reverse) {
+  if(!FamilyHbReachabilityApplies(graph,options))return nullptr;
+  return MakeFamilyHbReachability(graph,options,reverse);
 }
 }  // namespace sentryward::algorithm

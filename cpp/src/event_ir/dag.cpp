@@ -1,7 +1,9 @@
 #include "sentryward/algorithm/event_ir/dag.h"
 #include "sentryward/algorithm/semantics/template_schedule.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <queue>
 #include <stdexcept>
@@ -48,7 +50,7 @@ CsrAdjacency::CsrAdjacency(const EventRecords& events, const EventEdges& edges) 
   predecessor_offsets_.back()=successor_offsets_.back()=edges.size();
 }
 
-EventDag::EventDag(EventRecords events, EventEdges edges)
+EventDag::EventDag(EventRecords events, EventEdges edges, bool acyclic)
     : events_(std::move(events)), edges_(std::move(edges)),
       adjacency_(new CsrAdjacency(events_, edges_)) {
   forward_ordered_ = true;
@@ -57,7 +59,25 @@ EventDag::EventDag(EventRecords events, EventEdges edges)
         std::int64_t(edge.from.value()) + delta[0] * std::int64_t(count - 1) <
         std::int64_t(edge.to.value()) + delta[1] * std::int64_t(count - 1);
   });
-  acyclic_ = forward_ordered_ || computeAcyclic();
+  acyclic_ = forward_ordered_ || acyclic || computeAcyclic();
+}
+
+EventDag EventDag::without(std::span<const std::size_t> removed) const {
+  if (std::adjacent_find(removed.begin(), removed.end(), std::greater_equal<>()) != removed.end() ||
+      (!removed.empty() && removed.back() >= edges_.size()))
+    throw std::invalid_argument("removed edges must be ascending edge indices");
+  if (removed.empty()) return EventDag(events_, edges_, acyclic_);
+  auto edges = edges_.prefix(removed.front());
+  auto next = removed.begin();
+  for (std::size_t index = removed.front(); index < edges_.size(); ++index) {
+    if (next != removed.end() && *next == index) {
+      ++next;
+      continue;
+    }
+    edges.pushBackAffine(edges_[index]);
+  }
+  edges.shrink_to_fit();
+  return EventDag(events_, std::move(edges), acyclic_);
 }
 
 std::size_t EventDag::eventCount() const noexcept { return events_.size(); }

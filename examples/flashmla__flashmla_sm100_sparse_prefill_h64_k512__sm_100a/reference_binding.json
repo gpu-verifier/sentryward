@@ -1,0 +1,305 @@
+{
+ "schema": "spverify.equivalence-mapping.v1",
+ "output_value_semantics": "ideal_real",
+ "left_inputs": {
+  "allocations": {
+   "6:global1:Q": "Q",
+   "6:global2:KV": "KV",
+   "6:global7:indices": "indices"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global1:Q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     65,
+     640
+    ],
+    "source_strides_bytes": [
+     83200,
+     1280,
+     2
+    ],
+    "target_strides_bytes": [
+     83200,
+     1280,
+     2
+    ]
+   },
+   "6:global2:KV": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     2,
+     640
+    ],
+    "source_strides_bytes": [
+     2560,
+     1280,
+     2
+    ],
+    "target_strides_bytes": [
+     2560,
+     1280,
+     2
+    ]
+   },
+   "6:global7:indices": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1,
+     2,
+     256
+    ],
+    "source_strides_bytes": [
+     2048,
+     1024,
+     4
+    ],
+    "target_strides_bytes": [
+     2048,
+     1024,
+     4
+    ]
+   }
+  }
+ },
+ "right_inputs": {
+  "allocations": {
+   "6:global1:Q": "Q",
+   "6:global2:KV": "KV",
+   "6:global7:indices": "indices"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global1:Q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     65,
+     640
+    ],
+    "source_strides_bytes": [
+     83200,
+     1280,
+     2
+    ],
+    "target_strides_bytes": [
+     83200,
+     1280,
+     2
+    ]
+   },
+   "6:global2:KV": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     2,
+     640
+    ],
+    "source_strides_bytes": [
+     2560,
+     1280,
+     2
+    ],
+    "target_strides_bytes": [
+     2560,
+     1280,
+     2
+    ]
+   },
+   "6:global7:indices": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1,
+     2,
+     256
+    ],
+    "source_strides_bytes": [
+     2048,
+     1024,
+     4
+    ],
+    "target_strides_bytes": [
+     2048,
+     1024,
+     4
+    ]
+   }
+  }
+ },
+ "outputs": {
+  "kind": "dense_tensors",
+  "tensors": [
+   {
+    "left_allocation": "6:global1:O",
+    "right_allocation": "6:global1:O",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     1,
+     64,
+     512
+    ],
+    "left_strides_bytes": [
+     65536,
+     1024,
+     2
+    ],
+    "right_strides_bytes": [
+     65536,
+     1024,
+     2
+    ]
+   },
+   {
+    "left_allocation": "6:global10:max_logits",
+    "right_allocation": "6:global10:max_logits",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1,
+     64
+    ],
+    "left_strides_bytes": [
+     256,
+     4
+    ],
+    "right_strides_bytes": [
+     256,
+     4
+    ]
+   },
+   {
+    "left_allocation": "6:global3:LSE",
+    "right_allocation": "6:global3:LSE",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     1,
+     64
+    ],
+    "left_strides_bytes": [
+     256,
+     4
+    ],
+    "right_strides_bytes": [
+     256,
+     4
+    ]
+   }
+  ]
+ },
+ "reference": {
+  "arguments": [
+   {
+    "name": "Q",
+    "allocation": "6:global1:Q",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "KV",
+    "allocation": "6:global2:KV",
+    "dtype": "bfloat16"
+   },
+   {
+    "name": "indices",
+    "allocation": "6:global7:indices",
+    "dtype": "int32"
+   },
+   {
+    "name": "sm_scale_log2",
+    "parameter": 0,
+    "parameter_offset": 32
+   },
+   {
+    "name": "h_q",
+    "parameter": 0,
+    "parameter_offset": 8
+   },
+   {
+    "name": "topk",
+    "parameter": 0,
+    "parameter_offset": 24
+   }
+  ]
+ },
+ "provenance": {
+  "source": "FlashMLA sm100 sparse prefill head64 sm100::prefill::sparse_fwd::head64::sparse_attn_fwd_kernel<KernelTemplate, TmaParams<...>>; sparse top-k MQA prefill over a bf16 KV",
+  "upstream": [
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fwd/head64/instantiations/phase1_h64_k512.cu",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fwd/head64/phase1.cuh",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fwd/head64/config.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/prefill/sparse/fwd/head64/phase1.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/params.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/helpers.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/sm100/common_subroutine.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/api/sparse_prefill.cpp",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/api/common.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/flash_mla/flash_mla_interface.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/test-sparse-prefill.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/lib.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/ref.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/kernelkit/generate.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/kernelkit/utils.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/setup.py"
+  ],
+  "scope": "tests/test-sparse-prefill.py correctness_cases[30] (first h_q=64 case; h_q loop order [128, 64]): s_q=1, s_kv=128, topk=128, h_q=64, h_kv=1, d_qk=d_v=512, seed 30, sm_scale=0.5, no attn_sink, no topk_length; grid (1, 1, 1), block 384, cluster (1, 1, 1), 222480 B dynamic smem; mode=Prefill, num_sm=148; attn_sink and topk_length null; 2 KV blocks of 64 per query; q/kv/indices strides from kernelkit non_contiguousify; indices in [0, 127] (each row a permutation of [0, s_kv) since topk == s_kv); O, max_logits and LSE written; branch choices at PTX 2091 (`if (!should_scale_o)`, the should_scale_o vote, taken=false) and PTX 2881 (O-rescale branch `if (k > 0 && should_scale_o)`, taken=false; decides only visits whose predicate is not statically known, so the first KV block follows the program); at the have_valid_indices vote (`phase1.cuh:345`) the has-valid-indices side at PTX 5623 (taken=true), 5792 (taken=false), 6999 (taken=false), 7913 (taken=false), 8827 (taken=false); CLC queries fail (clc_always_fails) Reference binding (2026-10-28): inputs whose non_contiguousify strides are not contiguous (KV, Q, indices) are bound as their whole contiguous storage tensors on both sides; reference.py slices the logical block with the kernel parameters h_q (offset 8 = 64), topk (offset 24 = 128).",
+  "scope_branch_choices": [
+   {
+    "line": 2091,
+    "taken": false,
+    "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 2881,
+    "taken": false,
+    "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 5623,
+    "taken": true,
+    "note": "Always take the has-valid-indices path at the have_valid_indices warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 5792,
+    "taken": false,
+    "note": "Always take the has-valid-indices path at the have_valid_indices warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 6999,
+    "taken": false,
+    "note": "Always take the has-valid-indices path at the have_valid_indices warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 7913,
+    "taken": false,
+    "note": "Always take the has-valid-indices path at the have_valid_indices warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   },
+   {
+    "line": 8827,
+    "taken": false,
+    "note": "Always take the has-valid-indices path at the have_valid_indices warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+   }
+  ],
+  "scope_shape_arrays": [],
+  "optimized_input_sha256": "12cb63ee142413ffca365791ac62682045e553f19b7aed1bc26f5c030197c67a",
+  "ptx_sha256": "791fcf9eb296655e3735a120d83c832549784c86b31506c211cf37d1f4cb386a"
+ }
+}

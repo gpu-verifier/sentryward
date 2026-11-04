@@ -1,0 +1,548 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          9,
+          6,
+          255,
+          256
+        ],
+        "source_strides_bytes": [
+          783360,
+          130560,
+          512,
+          2
+        ],
+        "target_strides_bytes": [
+          783360,
+          130560,
+          512,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          9,
+          6,
+          256,
+          256
+        ],
+        "source_strides_bytes": [
+          786432,
+          131072,
+          512,
+          2
+        ],
+        "target_strides_bytes": [
+          786432,
+          131072,
+          512,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          9,
+          6,
+          256,
+          256
+        ],
+        "source_strides_bytes": [
+          786432,
+          131072,
+          512,
+          2
+        ],
+        "target_strides_bytes": [
+          786432,
+          131072,
+          512,
+          2
+        ]
+      }
+    },
+    "parameter_constants": {
+      "reference_param_4+0": {
+        "type": "b32",
+        "literal": "1035512379"
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:Q": "Q",
+      "6:global1:K": "K",
+      "6:global1:V": "V"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:Q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          9,
+          6,
+          255,
+          256
+        ],
+        "source_strides_bytes": [
+          783360,
+          512,
+          3072,
+          2
+        ],
+        "target_strides_bytes": [
+          783360,
+          130560,
+          512,
+          2
+        ]
+      },
+      "6:global1:K": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          9,
+          6,
+          256,
+          256
+        ],
+        "source_strides_bytes": [
+          786432,
+          512,
+          3072,
+          2
+        ],
+        "target_strides_bytes": [
+          786432,
+          131072,
+          512,
+          2
+        ]
+      },
+      "6:global1:V": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          9,
+          6,
+          256,
+          256
+        ],
+        "source_strides_bytes": [
+          786432,
+          512,
+          3072,
+          2
+        ],
+        "target_strides_bytes": [
+          786432,
+          131072,
+          512,
+          2
+        ]
+      }
+    },
+    "parameter_constants": {
+      "kernel_cutlass_kernel_flash_attncuteflash_fwd_sm100FlashAttentionForwardSm100_object_at__tensor0000o11101213_tensor0000o11101213_tensor0000o10111213_None_None_tensor0000o11101213_tensorpt_0_param_9+0": {
+        "type": "b32",
+        "literal": "1035512379"
+      }
+    }
+  },
+  "provenance": {
+    "optimized_input_sha256": "5b30e8ea77c5c9833ab91af0cd035ad2396a5cdea021228c023c852c6d8d1627",
+    "upstream": [
+      "https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/flash_attn/cute/flash_fwd_sm100.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/flash_attn/cute/interface.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/flash_attn/cute/tile_scheduler.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/flash_attn/cute/testing.py",
+      "https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/tests/cute/test_flash_attn.py"
+    ],
+    "derived_from": "https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/flash_attn/cute/flash_fwd_sm100.py",
+    "scope_branch_choices": [
+      {
+        "line": 4943,
+        "taken": false,
+        "note": "Always execute softmax correction; do not jump over the TMEM rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+      }
+    ],
+    "semantics": "ideal_real; fixed saved configuration; all declared output tensors",
+    "ptx_sha256": "745921127a388289fa51f3d04deaf586f19510596ce2ca4a2633bf8bc5980894",
+    "scope_shape_arrays": [],
+    "source_interface": {
+      "name": ".",
+      "family": "attention",
+      "source": "https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/flash_attn/cute/flash_fwd_sm100.py",
+      "ptx": "",
+      "entry": "reference",
+      "upstream": [
+        "https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/flash_attn/cute/flash_fwd_sm100.py",
+        "https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/flash_attn/cute/interface.py",
+        "https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/flash_attn/cute/tile_scheduler.py",
+        "https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/flash_attn/cute/testing.py",
+        "https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/tests/cute/test_flash_attn.py"
+      ],
+      "parameters": [
+        {
+          "name": "Q",
+          "type": "bf16",
+          "shape": [
+            9,
+            6,
+            255,
+            256
+          ],
+          "role": "input",
+          "source": "Q",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "K",
+          "type": "bf16",
+          "shape": [
+            9,
+            6,
+            256,
+            256
+          ],
+          "role": "input",
+          "source": "K",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "V",
+          "type": "bf16",
+          "shape": [
+            9,
+            6,
+            256,
+            256
+          ],
+          "role": "input",
+          "source": "V",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "O",
+          "type": "bf16",
+          "shape": [
+            9,
+            6,
+            255,
+            256
+          ],
+          "role": "output",
+          "source": "O",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "scale_log2",
+          "type": "float",
+          "value": 0.09016843885183334,
+          "role": "input"
+        },
+        {
+          "name": "LSE",
+          "type": "float",
+          "shape": [
+            9,
+            6,
+            255
+          ],
+          "role": "output",
+          "source": "LSE",
+          "layout": "row-major logical tensor"
+        }
+      ],
+      "attributes": {
+        "batch": 9,
+        "query_heads": 6,
+        "kv_heads": 6,
+        "M": 255,
+        "N": 256,
+        "D": 256,
+        "DV": 256,
+        "splits": 1,
+        "causal": false,
+        "input_type": "bf16",
+        "output_type": "bf16"
+      },
+      "work_items": 13770,
+      "launch": {
+        "grid_dim": [
+          108,
+          1,
+          1
+        ],
+        "block_dim": [
+          512,
+          1,
+          1
+        ],
+        "cluster_dim": [
+          2,
+          1,
+          1
+        ]
+      },
+      "optimized_input": "examples/./input.json",
+      "optimized_input_sha256": "5b30e8ea77c5c9833ab91af0cd035ad2396a5cdea021228c023c852c6d8d1627",
+      "optimized_scope_branch_choices": [
+        {
+          "line": 4943,
+          "taken": false,
+          "note": "Always execute softmax correction; do not jump over the TMEM rescale update. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+        }
+      ],
+      "optimized_objects": {
+        "tma_descriptors": [
+          {
+            "parameter": 5,
+            "offset": 0,
+            "object": "Q",
+            "element_type": "bf16",
+            "global_shape": [
+              256,
+              255,
+              6,
+              9
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              3072,
+              512,
+              783360
+            ],
+            "box_shape": [
+              64,
+              128,
+              1,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 6,
+            "offset": 0,
+            "object": "K",
+            "element_type": "bf16",
+            "global_shape": [
+              256,
+              256,
+              6,
+              9
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              3072,
+              512,
+              786432
+            ],
+            "box_shape": [
+              64,
+              64,
+              1,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 7,
+            "offset": 0,
+            "object": "V",
+            "element_type": "bf16",
+            "global_shape": [
+              256,
+              256,
+              6,
+              9
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              3072,
+              512,
+              786432
+            ],
+            "box_shape": [
+              64,
+              128,
+              1,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          },
+          {
+            "parameter": 8,
+            "offset": 0,
+            "object": "O",
+            "element_type": "bf16",
+            "global_shape": [
+              256,
+              255,
+              6,
+              9
+            ],
+            "coordinate_strides_bytes": [
+              2,
+              3072,
+              512,
+              783360
+            ],
+            "box_shape": [
+              64,
+              128,
+              1,
+              1
+            ],
+            "element_strides": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "swizzle": "128B",
+            "interleave": "none",
+            "oob_fill": "zero"
+          }
+        ],
+        "pointer_declarations": [
+          {
+            "parameter": 4,
+            "offset": 0,
+            "type": "pointer",
+            "object": "LSE"
+          }
+        ]
+      },
+      "comparison_domain": "ideal mathematical computation; no bitwise-equivalence claim",
+      "logical_layout_adapter": "required when optimized storage differs from reference row-major layout",
+      "equivalence_status": "not_checked"
+    },
+    "historical_paths": {
+      "interface": "examples/./reference_binding.json#/provenance/source_interface",
+      "mapping": "examples/./reference_binding.json#/provenance/mapping_notes"
+    },
+    "mapping_notes": "# .\n\n## Reference interface\n\nAll indices below are logical indices. Byte-level layout information from the\nsaved optimized input is retained in source_interface.\n\n| Parameter | Type | Logical shape | Role | Optimized counterpart |\n|---|---|---|---|---|\n| Q | bf16 | 9 x 6 x 255 x 256 | input | Q (tensor map, parameter 5) |\n| K | bf16 | 9 x 6 x 256 x 256 | input | K (tensor map, parameter 6) |\n| V | bf16 | 9 x 6 x 256 x 256 | input | V (tensor map, parameter 7) |\n| O | bf16 | 9 x 6 x 255 x 256 | output | O (TMA-store tensor map, parameter 8) |\n| scale_log2 | float | 0.09016843885183334 | input | scale_log2 (parameter 9) |\n| LSE | float | 9 x 6 x 255 | output | LSE (pointer, parameter 4) |\n\n## Computation and mapping\n\nScenario: tests/cute/test_flash_attn.py::test_flash_attn_output, first hd256 row of the (255, 256) pair, which upstream labels \"SM100 hd256 2CTA test case\"\n(seqlen_q = 255, seqlen_k = 256, d = dv = 256, MHA, batch 9, 6 heads, bf16, non-causal).\nQ[b,h,q,d], K[b,kh,k,d], and V[b,kh,k,v] are the logical tensors.\nkh = floor(h / (query_heads / kv_heads)) = h (MHA).\nscore[k] = scale_log2 * sum_d Q[b,h,q,d] * K[b,kh,k,d].\nO = sum_k 2^(score[k]-max(score)) * V[k] / sum_k 2^(score[k]-max(score)).\nLSE[b,h,q] = ln(sum_k 2^score[k]) (kernel: (rowmax * scale_log2 + log2(rowsum)) * ln 2).\nscale_log2 = f32(1/sqrt(256)) * f32(log2 e), computed by the host launcher; no descale tensors.\nQ, K and O tensor-map coordinates are [d,s,h,b]; V uses the transposed view (d,s,h,b) with d contiguous.\nThe torch tensors are contiguous (b,s,h,d); the right-side strides restate that storage in (b,h,s,d) order.\nO is written by the TMA store through parameter 8; there is no output pointer parameter.\nLSE is the contiguous torch (b,h,s) float32 tensor; the kernel addresses it through the (s,h,b) view\nwith element strides (1, 255, 1530) read from parameter 4 (+24 and +32).\n\n## Validation boundary\n\nNot compared against an optimized GPU execution.\nPrecision/reduction-order differences follow\nthe mathematical contract in the top-level README.\n\n## Upstream\n\n- https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/flash_attn/cute/flash_fwd_sm100.py\n- https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/flash_attn/cute/interface.py\n- https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/flash_attn/cute/tile_scheduler.py\n- https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/flash_attn/cute/testing.py\n- https://github.com/Dao-AILab/flash-attention/blob/98c1cee0ed59307833841cdbf567fe336ceec13a/tests/cute/test_flash_attn.py\n"
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "left_allocation": "6:global1:O",
+        "right_allocation": "6:global1:O",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          9,
+          6,
+          255,
+          256
+        ],
+        "left_strides_bytes": [
+          783360,
+          130560,
+          512,
+          2
+        ],
+        "right_strides_bytes": [
+          783360,
+          512,
+          3072,
+          2
+        ]
+      },
+      {
+        "left_allocation": "6:global3:LSE",
+        "right_allocation": "6:global3:LSE",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          9,
+          6,
+          255
+        ],
+        "left_strides_bytes": [
+          6120,
+          1020,
+          4
+        ],
+        "right_strides_bytes": [
+          6120,
+          1020,
+          4
+        ]
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "Q",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:Q"
+      },
+      {
+        "name": "K",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:K"
+      },
+      {
+        "name": "V",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:V"
+      },
+      {
+        "name": "scale_log2",
+        "value": 0.09016843885183334
+      }
+    ]
+  }
+}

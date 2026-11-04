@@ -4212,11 +4212,18 @@ class Lower {
       accumulate=mat->accumulate();
     }
     const auto& a=input.type(args[0]);const auto& b=input.type(args[1]);
-    if(!a.hasStaticShape() || !b.hasStaticShape() || a.shape().size()!=2 || b.shape().size()!=2)
+    // A native Tensor Memory A of shape (slices, rows, K) holds one copy per
+    // data-path lane group; lane group s multiplies its own copy into D columns
+    // [s*cols/slices, (s+1)*cols/slices).
+    const bool sliced=native && a.hasStaticShape() && a.shape().size()==3;
+    if(!a.hasStaticShape() || !b.hasStaticShape() || a.shape().size()!=(sliced?3U:2U) || b.shape().size()!=2)
       fail("scalar_fold_parameterized_mma","MMA operand shape is not fixed rank two");
-    const auto k=a.shape()[1];
-    if(a.shape()[0]!=rows || (native?(b.shape()[0]!=cols || b.shape()[1]!=k):(b.shape()[0]!=k || b.shape()[1]!=cols)))
+    const auto slices=sliced?a.shape()[0]:1;
+    const auto k=a.shape().back();
+    if(a.shape()[sliced?1:0]!=rows || !slices || cols%slices ||
+        (native?(b.shape()[0]!=cols || b.shape()[1]!=k):(b.shape()[0]!=k || b.shape()[1]!=cols)))
       fail("scalar_fold_mma_shape","MMA operand shapes disagree with scalar contraction");
+    const auto arow=sliced?plus(times(quotient(col,cols/slices),integer(rows)),row):row;
     // A zero-fill A or B makes every product term +0: no plan, pieces or cuts.
     if(native)if(auto zero=zeroProductMma(args,accumulate,accumulator,index,
         integer(dst.element().width()/8),dtype,dst.element()))return *zero;
@@ -4226,7 +4233,7 @@ class Lower {
     auto plan_it=reduction_domain_plans.find(*projection_key);
     if(plan_it==reduction_domain_plans.end()) {
       std::vector<algorithm::AffineDomain> computed_plan;
-      const auto ao=times(times(row,integer(k)),integer(atype.width()/8));
+      const auto ao=times(times(arow,integer(k)),integer(atype.width()/8));
       const auto bo=times(native?times(col,integer(k)):col,integer(btype.width()/8));
       const auto ad=reductionDomains(args[0],ao,atype.width()/8,atype,k);
       const auto bd=reductionDomains(args[1],bo,(native?1:cols)*(btype.width()/8),btype,k);
@@ -4289,7 +4296,7 @@ class Lower {
       const auto begin=planned?plan[cursor].first:cursor;
       const auto step=planned?plan[cursor].step:1;
       domains.resize(level);
-      const auto a_start=times(plus(times(row,integer(k)),Offset(integer(begin))),integer(atype.width()/8));
+      const auto a_start=times(plus(times(arow,integer(k)),Offset(integer(begin))),integer(atype.width()/8));
       const auto b_start=times(native?plus(times(col,integer(k)),Offset(integer(begin))):
           plus(Offset(mul(integer(begin),integer(cols))),col),integer(btype.width()/8));
       auto count=planned?plan[cursor].count:std::min(readSpan(args[0],a_start,atype.width()/8,atype,k-begin),
@@ -4310,7 +4317,7 @@ class Lower {
         if(count==1)audit->add(AuditCounter::scalar_reduction_terms));
       if(count>1)domains.push_back(count);
       Offset iv(add(integer(begin),mul(integer(step),integer(first))));if(count>1)iv.terms[level]=integer(step);
-      auto ai=plus(times(row,integer(k)),iv);
+      auto ai=plus(times(arow,integer(k)),iv);
       auto bi=native?plus(times(col,integer(k)),iv):plus(times(iv,integer(cols)),col);
       auto av=project(args[0],times(ai,integer(atype.width()/8)),atype);
       auto bv=project(args[1],times(bi,integer(btype.width()/8)),btype);

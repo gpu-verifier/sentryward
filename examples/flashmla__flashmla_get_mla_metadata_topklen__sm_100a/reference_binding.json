@@ -1,0 +1,144 @@
+{
+ "schema": "spverify.equivalence-mapping.v1",
+ "output_value_semantics": "ideal_real",
+ "left_inputs": {
+  "allocations": {
+   "6:global11:topk_length": "topk_length"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global11:topk_length": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   }
+  }
+ },
+ "right_inputs": {
+  "allocations": {
+   "6:global11:topk_length": "topk_length"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global11:topk_length": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   }
+  }
+ },
+ "outputs": {
+  "kind": "dense_tensors",
+  "tensors": [
+   {
+    "left_allocation": "6:global23:tile_scheduler_metadata",
+    "right_allocation": "6:global23:tile_scheduler_metadata",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     148,
+     7
+    ],
+    "left_strides_bytes": [
+     28,
+     4
+    ],
+    "right_strides_bytes": [
+     32,
+     4
+    ]
+   },
+   {
+    "left_allocation": "6:global10:num_splits",
+    "right_allocation": "6:global10:num_splits",
+    "left_offset": 0,
+    "right_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     5
+    ],
+    "left_strides_bytes": [
+     4
+    ],
+    "right_strides_bytes": [
+     4
+    ]
+   }
+  ]
+ },
+ "reference": {
+  "arguments": [
+   {
+    "name": "topk_length",
+    "allocation": "6:global11:topk_length",
+    "dtype": "int32"
+   },
+   {
+    "name": "block_size_topk",
+    "parameter": 0,
+    "parameter_offset": 8
+   },
+   {
+    "name": "fixed_overhead_num_blocks",
+    "parameter": 0,
+    "parameter_offset": 12
+   },
+   {
+    "name": "num_sm_parts",
+    "parameter": 0,
+    "parameter_offset": 16
+   }
+  ]
+ },
+ "provenance": {
+  "source": "FlashMLA smxx get_mla_metadata_kernel<HAVE_TOPK_LEN=true, HAVE_EXTRA_TOPK=false, HAVE_EXTRA_TOPK_LEN=false>: one warp greedily splits every request's top-k blocks over num_sm_parts SM partitions (DecodingSchedMeta per partition, cumulative split counts num_splits)",
+  "upstream": [
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/smxx/decode/get_decoding_sched_meta/get_decoding_sched_meta.cu",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/cuda_kernels/smxx/decode/get_decoding_sched_meta/get_decoding_sched_meta.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/params.h",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/csrc/api/sparse_decode.cpp",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/flash_mla/flash_mla_interface.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/test-sparse-decode.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/lib.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/tests/ref.py",
+   "https://github.com/deepseek-ai/FlashMLA/blob/395cb3afbb331fef7b1b21e9340861b9436b42d8/setup.py"
+  ],
+  "scope": "tests/test-sparse-decode.py case index 24 (first split-KV case; seed 24): b=4, s_q=1, h_q=64, topk=2048, have_topk_length=True, no extra cache; GetDecodeSchedMetaParams {b=4, s_q=1, block_size_topk=64, fixed_overhead_num_blocks=5, num_sm_parts=148, topk=2048, extra_topk=0, topk_length, extra_topk_length=null, tile_scheduler_metadata [148, 8] int32, num_splits [5] int32}; grid 1, 32 threads, 68 B dynamic smem; topk_length values are torch.randint(0, topk+1) on CUDA (lib.py:331), stated as tensor_properties [0, 2048]; DecodingSchedMeta word 7 (_pad) is never written, so only words 0-6 are compared Shape array values (2026-10-29) from a CPU emulation of the CUDA RNG and of get_mla_metadata_kernel (build/corpus-refresh-20261026/fmla-rng/, README.md and case24_result.json; validate.py 30/30 against published GPU outputs; assumes a B200 with 148 SMs, 2048 threads/SM, PyTorch >= 2.10; not measured on a GPU): topk_length = [335, 1732, 622, 1432] (torch.randint(0, 2049, (4,)) at tests/lib.py:331, seed 24).",
+  "optimized_input_sha256": "3be4e992cf6b0703d417b92fb74030848dba4ca071f497132e28df61622212f6",
+  "scope_shape_arrays": [
+   {
+    "parameter": 0,
+    "offset": 32,
+    "element_type": "s32",
+    "shapes": [
+     [
+      335,
+      1732,
+      622,
+      1432
+     ]
+    ]
+   }
+  ],
+  "ptx_sha256": "e50850b88f46194977fe026332959c94494a4367f58b819fc2c24dc8c53d623d"
+ }
+}

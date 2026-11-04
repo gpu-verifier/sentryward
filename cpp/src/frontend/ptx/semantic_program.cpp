@@ -366,9 +366,20 @@ void LinkMmaMemory(SemanticProgram& result, const MmaValueLayout& layout,
     using Key = std::pair<MmaOperandRole,a::AccessMode>;
     std::map<Key,const ValueAccess*> operands;
     std::string kind;
-    for (const auto& value : values) {
+    const auto native_address=[&](const ValueAccess& value) {
       const auto& instance = result.values.node(value.reference.node).instances().at(value.reference.instance);
-      const auto* address = dynamic_cast<const v::NativeMatrixOp*>(&result.values.definingNode(instance.operands.at(0)).operation());
+      return dynamic_cast<const v::NativeMatrixOp*>(&result.values.definingNode(instance.operands.at(0)).operation());
+    };
+    // tcgen05.mma.sp: metadata index values other than the ISA's listed ones are
+    // undefined behavior, so a value mapping needs a metadata validity premise.
+    if (std::any_of(values.begin(),values.end(),[&](const ValueAccess& value) {
+          const auto* address=native_address(value);
+          return address && address->opcode()==v::NativeMatrixOpcode::TcgenMmaAddress &&
+              address->attributes().role==v::MatrixRole::SparseMetadata;
+        }))
+      throw LayoutError("Sparse MMA value mapping needs a metadata validity premise and is not decoded");
+    for (const auto& value : values) {
+      const auto* address = native_address(value);
       if (!address || address->opcode()!=v::NativeMatrixOpcode::TcgenMmaAddress || !value.bytes)
         throw LayoutError("MMA value needs a fixed shape and a native matrix address");
       MmaOperandRole role;
@@ -387,21 +398,15 @@ void LinkMmaMemory(SemanticProgram& result, const MmaValueLayout& layout,
     }
     const bool scaled=operands.contains({MmaOperandRole::ScaleA,a::AccessMode::kRead});
     const auto descriptor=scaled ? DecodeBlockScaledDescriptor(layout.descriptor,kind) : DecodeMmaDescriptor(kind,layout.descriptor);
-    // Two-CTA M=128 D uses the 2x2 datapath: each CTA's row r keeps columns
-    // [0,N/2) in lane r and [N/2,N) in lane r+64 (CUTLASS tmem_frg_2sm,
-    // M_MMA=64). TMEM-A and scale factors use duplicated layouts not decoded here.
-    const bool two_by_two=layout.cta_group==2 && descriptor.m==128;
-    if (two_by_two && (scaled || layout.a_in_tmem))
-      throw LayoutError("Two-CTA M=128 MMA duplicated TMEM operand layout is not decoded");
-    // .ws D uses 128/M lane groups (PTX 9.2 layouts D, E and G): group g keeps
-    // columns [g*N*M/128,(g+1)*N*M/128) of row r in lane g*M+r. Each group reads
-    // TMEM-A rows from its own lanes, which one M x K operand does not express.
+    // D and a TMEM A operand follow the data path's lane groups (MmaDataPath).
+    // Two-CTA M=128 scale factors use the 2x2 scale duplication, not decoded here.
+    if (layout.cta_group==2 && descriptor.m==128 && scaled)
+      throw LayoutError("Two-CTA M=128 MMA duplicated scale-factor layout is not decoded");
     if (layout.ws && (scaled || layout.cta_group!=1 ||
         (descriptor.m!=32 && descriptor.m!=64 && descriptor.m!=128)))
       throw LayoutError(".ws MMA value layout requires dense cta_group::1 M=32/64/128");
-    if (layout.ws && layout.a_in_tmem && descriptor.m<128)
-      throw LayoutError(".ws MMA per-lane-group TMEM-A operand layout is not decoded");
-    const unsigned ws_groups=layout.ws ? 128/descriptor.m : 1;
+    const auto path=DecodeMmaDataPath(descriptor.m,layout.cta_group,layout.ws,descriptor.sparse);
+    if (!path) throw LayoutError("MMA shape has no PTX data-path layout");
     std::map<std::pair<std::uint32_t,std::uint32_t>,const MmaValueAccess*> tags;
     for (const auto& tag : layout.accesses) tags.emplace(std::pair{tag.effect,tag.access},&tag);
     using PartKey=std::tuple<MmaOperandRole,a::AccessMode,std::uint32_t>;
@@ -497,14 +502,19 @@ void LinkMmaMemory(SemanticProgram& result, const MmaValueLayout& layout,
       }
       else {
         if(packed)throw LayoutError("FP4 TMEM-A logical packing is not implemented");
-        const auto [lane,column]=DecodeTmemAddress(role==MmaOperandRole::A ? layout.a_base : layout.d_base);
-        const unsigned halves=layout.ws ? ws_groups : two_by_two ? 2 : 1, width=columns/halves;
+        const bool operand_a=role==MmaOperandRole::A;
+        const auto [lane,column]=DecodeTmemAddress(operand_a ? layout.a_base : layout.d_base);
+        if (!path->LaneAlignment(lane) ||
+            (operand_a && *value.bytes!=std::uint64_t{path->slices}*descriptor.m*columns*bits/8))
+          throw LayoutError("MMA TMEM operand does not match its data-path layout");
+        // Lane group s holds D columns [s*N/slices,(s+1)*N/slices), and the s-th
+        // copy of every A row: block s of the (slices, M, K) A value.
+        const unsigned width=operand_a ? columns : columns/path->slices;
         for (unsigned row=0;row<rows;++row)
-          for (unsigned half=0;half<halves;++half) {
-            const auto physical_row=layout.ws ? lane+row+descriptor.m*half :
-                descriptor.m==64 ? lane+32*(row/16)+row%16 : lane+row+64*half;
-            const auto physical=EncodeCellByteOffset(physical_row,column);
-            const auto logical=((std::uint64_t{part}*rows+row)*columns+std::uint64_t{half}*width)*bits/8;
+          for (unsigned slice=0;slice<path->slices;++slice) {
+            const auto physical=EncodeCellByteOffset(lane+path->Lane(row,slice),column);
+            const auto logical=operand_a ? (std::uint64_t{slice}*descriptor.m+std::uint64_t{part}*rows+row)*columns*bits/8 :
+                ((std::uint64_t{part}*rows+row)*columns+std::uint64_t{slice}*width)*bits/8;
             if(role==MmaOperandRole::D && bits!=32) {
               // The existing D16 footprint has a two-byte hole between cells;
               // these are distinct physical fragments, not contiguous bytes.
@@ -568,7 +578,9 @@ bool LinkCopyMemory(SemanticProgram& result,const SemanticOccurrence& occurrence
     const auto& read_instance=read_node.instances().at(read->reference.instance);
     const auto& copy=dynamic_cast<const v::NativeMatrixOp&>(
         result.values.definingNode(read_instance.operands.at(0)).operation());
-    const bool replicated=std::ranges::find(copy.attributes().modifiers,"warpx4")!=copy.attributes().modifiers.end();
+    // A multicast copy reads source rows once per receiving lane quarter.
+    const auto shape=DecodeCopyShape(copy.attributes().modifiers);
+    const bool replicated=shape && shape->multicast!=CopyShape::Multicast::kNone;
     std::uint64_t replicated_size=0;
     for(std::size_t i=0;i<source.size();i+=2) {
       const auto& input=source[i];const auto& output=source[i+1];

@@ -3,7 +3,7 @@
     "entry": "kernel_flashinfer_vsa_blk64_persistent_per_head_m64n256_ws_sm100",
     "launch": {
         "grid_dim": [
-            1,
+            4,
             1,
             1
         ],
@@ -28,17 +28,17 @@
         {
             "parameter": 9,
             "type": "u32",
-            "value": 64
+            "value": 128
         },
         {
             "parameter": 10,
             "type": "u32",
-            "value": 1
+            "value": 2
         },
         {
             "parameter": 11,
             "type": "u32",
-            "value": 1
+            "value": 4
         },
         {
             "parameter": 12,
@@ -48,7 +48,7 @@
         {
             "parameter": 13,
             "type": "u32",
-            "value": 1
+            "value": 2
         },
         {
             "parameter": 14,
@@ -58,7 +58,7 @@
         {
             "parameter": 15,
             "type": "u32",
-            "value": 0
+            "value": 1
         }
     ],
     "declarations": [
@@ -115,6 +115,11 @@
             "element_type": "s32",
             "shapes": [
                 [
+                    24,
+                    28
+                ],
+                [
+                    24,
                     28
                 ]
             ]
@@ -140,14 +145,14 @@
             "object": "q",
             "global_shape": [
                 64,
-                1,
-                64,
+                2,
+                128,
                 2
             ],
             "coordinate_strides_bytes": [
                 2,
                 256,
-                256,
+                512,
                 128
             ],
             "box_shape": [
@@ -175,11 +180,11 @@
                 64,
                 2048,
                 2,
-                1
+                2
             ],
             "coordinate_strides_bytes": [
                 2,
-                256,
+                512,
                 128,
                 256
             ],
@@ -208,11 +213,11 @@
                 64,
                 2048,
                 2,
-                1
+                2
             ],
             "coordinate_strides_bytes": [
                 2,
-                256,
+                512,
                 128,
                 256
             ],
@@ -239,12 +244,12 @@
             "object": "out",
             "global_shape": [
                 128,
-                64,
-                1
+                128,
+                2
             ],
             "coordinate_strides_bytes": [
                 2,
-                256,
+                512,
                 256
             ],
             "box_shape": [

@@ -34,12 +34,20 @@ class EventDag final {
   [[nodiscard]] std::optional<EventOrder> topologicalOrder() const;
   [[nodiscard]] bool isAcyclic() const;
 
+  // This graph less the edges at `removed` (ascending indices into edges()): the same events and
+  // IDs and the other edges in their order. The edges before the first removed one keep their
+  // storage; the later ones are appended one by one, as EventDagBuilder::addEdge outside an edge
+  // group appends them. Removing edges keeps an acyclic graph acyclic.
+  // O(stored rows and blocks + (edges after the first removed one) log blocks), plus the adjacency.
+  [[nodiscard]] EventDag without(std::span<const std::size_t> removed) const;
+
  private:
   friend class EventDagBuilder;
   // Optional diagnostics inspect owned capacities without exposing mutable data.
   friend class MemoryCensus;
 
-  EventDag(EventRecords events, EventEdges edges);
+  // `acyclic`: the edges are known to form no cycle (otherwise this is computed).
+  EventDag(EventRecords events, EventEdges edges, bool acyclic = false);
   [[nodiscard]] bool computeAcyclic() const;
 
   EventRecords events_;
@@ -57,6 +65,7 @@ class EventDagBuilder final {
   explicit EventDagBuilder(EventRecords events);
   std::size_t beginThread(){return events_.beginThread();}
   [[nodiscard]] std::size_t eventCount() const noexcept{return events_.size();}
+  [[nodiscard]] std::size_t edgeCount() const noexcept{return edges_.size();}
   // Ordered iterations of the current thread's events (TemplateRecords::compressIterations).
   void compressIterations(std::size_t begin,const std::vector<std::pair<std::size_t,std::uint32_t>>& starts) {
     events_.compressIterations(begin,starts);

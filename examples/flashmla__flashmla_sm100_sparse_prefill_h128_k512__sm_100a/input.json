@@ -1,0 +1,342 @@
+{
+ "schema": "spverify.kernel-input/v1",
+ "entry": "_ZN5sm1007prefill10sparse_fwd7head12822sparse_attn_fwd_kernelINS2_14KernelTemplateENS2_9TmaParamsIN4cute5tupleIJiiiEEENS6_9TiledCopyINS6_9Copy_AtomIJNS6_11Copy_TraitsINS6_26SM100_TMA_2SM_LOAD_NOSPLITEJNS6_1CILi65536EEENS6_12AuxTmaParamsINS7_IJNS6_11ScaledBasisINSD_ILi1EEEJLi1EEEENSG_ISH_JLi0EEEENSG_ISH_JLi2EEEEEEERKNS6_6LayoutINS7_IJNSD_ILi64EEESN_SH_EEESL_EERKNS6_7SwizzleILi3ELi4ELi3EEEEEEEEN7cutlass10bfloat16_tEEEENSM_INS7_IJSH_NS7_IJNS7_IJNS7_IJSN_SN_EEENSD_ILi8EEEEEEEEEEEENS7_IJNSD_ILi0EEENS7_IJNS7_IJNS7_IJSN_SH_EEENSD_ILi4096EEEEEEEEEEEEEENS7_IJSN_NSD_ILi512EEEEEEEES8_NS9_INSA_IJNSB_INS6_14SM90_TMA_STOREEJSE_SW_EEESZ_EEENSM_INS7_IJSH_NS7_IJNS7_IJS11_SH_EEEEEEEEENS7_IJS16_NS7_IJNS7_IJS17_S16_EEEEEEEEEEES11_EEEEEEv19SparseAttnFwdParamsT0_",
+ "launch": {
+  "grid_dim": [
+   2,
+   1,
+   1
+  ],
+  "block_dim": [
+   512,
+   1,
+   1
+  ],
+  "cluster_dim": [
+   2,
+   1,
+   1
+  ],
+  "dynamic_shared_bytes": 165120
+ },
+ "arguments": [
+  {
+   "parameter": 0,
+   "offset": 0,
+   "type": "s32",
+   "value": 1
+  },
+  {
+   "parameter": 0,
+   "offset": 4,
+   "type": "s32",
+   "value": 32
+  },
+  {
+   "parameter": 0,
+   "offset": 8,
+   "type": "s32",
+   "value": 128
+  },
+  {
+   "parameter": 0,
+   "offset": 12,
+   "type": "s32",
+   "value": 1
+  },
+  {
+   "parameter": 0,
+   "offset": 16,
+   "type": "s32",
+   "value": 512
+  },
+  {
+   "parameter": 0,
+   "offset": 20,
+   "type": "s32",
+   "value": 512
+  },
+  {
+   "parameter": 0,
+   "offset": 24,
+   "type": "s32",
+   "value": 2048
+  },
+  {
+   "parameter": 0,
+   "offset": 28,
+   "type": "f32",
+   "value": 0.5
+  },
+  {
+   "parameter": 0,
+   "offset": 32,
+   "type": "f32",
+   "value": 0.7213475108146667
+  },
+  {
+   "parameter": 0,
+   "offset": 80,
+   "type": "s32",
+   "value": 82560
+  },
+  {
+   "parameter": 0,
+   "offset": 84,
+   "type": "s32",
+   "value": 640
+  },
+  {
+   "parameter": 0,
+   "offset": 88,
+   "type": "s32",
+   "value": 1280
+  },
+  {
+   "parameter": 0,
+   "offset": 92,
+   "type": "s32",
+   "value": 640
+  },
+  {
+   "parameter": 0,
+   "offset": 96,
+   "type": "s32",
+   "value": 4352
+  },
+  {
+   "parameter": 0,
+   "offset": 100,
+   "type": "s32",
+   "value": 2176
+  },
+  {
+   "parameter": 0,
+   "offset": 128,
+   "type": "s32",
+   "value": 0
+  },
+  {
+   "parameter": 0,
+   "offset": 132,
+   "type": "s32",
+   "value": 148
+  }
+ ],
+ "declarations": [
+  {
+   "parameter": 0,
+   "offset": 40,
+   "type": "pointer",
+   "space": "global",
+   "object": "Q"
+  },
+  {
+   "parameter": 0,
+   "offset": 48,
+   "type": "pointer",
+   "space": "global",
+   "object": "KV"
+  },
+  {
+   "parameter": 0,
+   "offset": 56,
+   "type": "pointer",
+   "space": "global",
+   "object": "indices"
+  },
+  {
+   "parameter": 0,
+   "offset": 64,
+   "type": "pointer",
+   "space": "global",
+   "object": "attn_sink"
+  },
+  {
+   "parameter": 0,
+   "offset": 72,
+   "type": "pointer",
+   "space": "global",
+   "object": "topk_length"
+  },
+  {
+   "parameter": 0,
+   "offset": 104,
+   "type": "pointer",
+   "space": "global",
+   "object": "O"
+  },
+  {
+   "parameter": 0,
+   "offset": 112,
+   "type": "pointer",
+   "space": "global",
+   "object": "max_logits"
+  },
+  {
+   "parameter": 0,
+   "offset": 120,
+   "type": "pointer",
+   "space": "global",
+   "object": "LSE"
+  }
+ ],
+ "shape_arrays": [
+  {
+   "parameter": 0,
+   "offset": 72,
+   "element_type": "s32",
+   "shapes": [
+    [
+     1114
+    ]
+   ]
+  }
+ ],
+ "assumptions": {
+  "duplicate_tma_store_benign": true,
+  "representative_election": true,
+  "clc_always_fails": true
+ },
+ "tma_descriptors": [
+  {
+   "parameter": 1,
+   "offset": 128,
+   "object": "Q",
+   "element_type": "bf16",
+   "global_shape": [
+    512,
+    128,
+    1
+   ],
+   "coordinate_strides_bytes": [
+    2,
+    1280,
+    165120
+   ],
+   "box_shape": [
+    64,
+    64,
+    1
+   ],
+   "element_strides": [
+    1,
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  },
+  {
+   "parameter": 1,
+   "offset": 512,
+   "object": "O",
+   "element_type": "bf16",
+   "global_shape": [
+    512,
+    128,
+    1
+   ],
+   "coordinate_strides_bytes": [
+    2,
+    1024,
+    131072
+   ],
+   "box_shape": [
+    64,
+    64,
+    1
+   ],
+   "element_strides": [
+    1,
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  },
+  {
+   "parameter": 1,
+   "offset": 768,
+   "object": "KV",
+   "element_type": "bf16",
+   "global_shape": [
+    512,
+    32
+   ],
+   "coordinate_strides_bytes": [
+    2,
+    2560
+   ],
+   "box_shape": [
+    64,
+    1
+   ],
+   "element_strides": [
+    1,
+    1
+   ],
+   "swizzle": "128B",
+   "interleave": "none",
+   "oob_fill": "zero"
+  }
+ ],
+ "tensor_properties": [
+  {
+   "object": "indices",
+   "element_type": "s32",
+   "property": "lower_bound",
+   "value": -2147483648
+  },
+  {
+   "object": "indices",
+   "element_type": "s32",
+   "property": "upper_bound",
+   "value": 2147483647
+  }
+ ],
+ "branch_decisions": [
+  {
+   "line": 1688,
+   "taken": false,
+   "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+  },
+  {
+   "line": 2929,
+   "taken": false,
+   "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+  },
+  {
+   "line": 5757,
+   "taken": false,
+   "note": "Always take the has-valid-indices path at the have_valid_indices warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+  },
+  {
+   "line": 7000,
+   "taken": false,
+   "note": "Always take the has-valid-indices path at the have_valid_indices warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+  },
+  {
+   "line": 8056,
+   "taken": false,
+   "note": "Always take the has-valid-indices path at the have_valid_indices warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+  },
+  {
+   "line": 9112,
+   "taken": false,
+   "note": "Always take the has-valid-indices path at the have_valid_indices warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+  },
+  {
+   "line": 10572,
+   "taken": false,
+   "note": "Never skip the K TMA at the should_skip_tma all-invalid-indices check. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+  },
+  {
+   "line": 10765,
+   "taken": false,
+   "note": "Never skip the K TMA at the should_skip_tma all-invalid-indices check. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice."
+  }
+ ]
+}

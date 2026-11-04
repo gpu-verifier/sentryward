@@ -56,6 +56,18 @@ exponent is incremented when the bf16 mantissa is nonzero and
 2^-127 < |x| < infinity. NaN gives 0xFF, and `.satfinite` turns a non-NaN 0xFF
 into 0xFE.
 
+The value analysis models an MMA whose A operand is in Tensor Memory and whose
+data path has several lane groups (`.cta_group::2` M=128 with dense A, and
+`.ws` M=64 and M=32; PTX layouts B, E and G) as one A copy per lane group: lane
+group s reads every A row from its own lanes and multiplies it into D columns
+`[s·N/g, (s+1)·N/g)`, where g is the number of lane groups. The copies need not
+be equal. The PTX ISA does not state where a lane group reads A; this follows
+CUTLASS's duplicated TMEM-A allocation (`UMMA::TmemAllocMode::Duplicated`).
+Likewise, for `tcgen05.cp.64x128b`, TMEM lane L receives source row L mod 64
+with `.warpx2::02_13` and row 32·⌊L/64⌋ + L mod 32 with `.warpx2::01_23`; the
+ISA names the warp pairs but not which half each pair receives, so this follows
+CUTLASS `SM100_UTCCP_2x64dp128bitlw0213` / `…lw0123`.
+
 ### Merged forward branches
 
 A conditional forward branch whose predicate the input does not determine, for
@@ -210,15 +222,20 @@ Why this is sound:
 
 Cross-CTA classes (class mode): a write pair inside an analyzed CTA or cluster
 stands for that pair in every unit of its class, and its warning is counted
-once per unit. A value proof that reads the CTA index numerically re-runs the
-launch per unit. A global write pair between two different units, found by
-the cross-unit pass, is not instantiated per member. If the rule above could
-accept it, the launch is re-run per unit, whose analysis checks such pairs as
-obligations; otherwise it is a race. A re-run caused only by
-values that do not lift keeps the class-mode synchronization verdict when that
-verdict is race free without warnings or same-value obligations. The re-run
-then redoes only the value analysis. It still builds the per-unit
-happens-before order, which orders the value analysis's memory actions.
+once per unit. If a member unit shifts one global allocation by different
+amounts at different instruction sites (a piecewise shift, used only when the
+run lifts no values), the cross-unit pass also checks each write at one such
+site against the accesses at another, moved apart by the member's shift
+difference; if they may overlap, the launch is re-run per unit. A value proof
+that reads the CTA index numerically re-runs the launch per unit. A global
+write pair between two different units, found by the cross-unit pass, is not
+instantiated per member. If the rule above could accept it, the launch is
+re-run per unit, whose analysis checks such pairs as obligations; otherwise it
+is a race. A re-run caused only by values that do not lift keeps the class-mode
+synchronization verdict when that verdict is race free without warnings or
+same-value obligations. The re-run then redoes only the value analysis. It
+still builds the per-unit happens-before order, which orders the value
+analysis's memory actions.
 
 ## Floating values stay in range
 

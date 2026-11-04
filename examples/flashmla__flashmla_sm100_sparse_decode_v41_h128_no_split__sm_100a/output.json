@@ -1,0 +1,1492 @@
+{
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": null
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
+    }
+  ],
+  "checks": {
+    "equivalence": "not_run",
+    "synchronization": "failed"
+  },
+  "diagnostics": [
+    {
+      "code": "not_wellsynced",
+      "details": {
+        "internal_stage": "synchronization_check"
+      },
+      "message": "The reference execution cannot advance; events remain blocked.",
+      "stage": "synchronization"
+    }
+  ],
+  "evidence": {
+    "counterexample": {
+      "candidate_order": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          28199,
+          28934,
+          29669,
+          30404,
+          31139,
+          31874,
+          32609,
+          33344,
+          34079,
+          34814,
+          35549,
+          36284,
+          37019,
+          37754,
+          38489,
+          39224,
+          39959,
+          40694,
+          41429,
+          42164,
+          42899,
+          43634,
+          44369,
+          45104,
+          45839
+        ],
+        "total": 1452824,
+        "truncated": true
+      },
+      "candidate_order_preserved": true,
+      "executed_prefix": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          28199,
+          28934,
+          29669,
+          30404,
+          31139,
+          31874,
+          32609,
+          33344,
+          34079,
+          34814,
+          35549,
+          36284,
+          37019,
+          37754,
+          38489,
+          39224,
+          39959,
+          40694,
+          41429,
+          42164,
+          42899,
+          43634,
+          44369,
+          45104,
+          45839
+        ],
+        "total": 1452824,
+        "truncated": true
+      },
+      "replayed_candidate_order": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          28199,
+          28934,
+          29669,
+          30404,
+          31139,
+          31874,
+          32609,
+          33344,
+          34079,
+          34814,
+          35549,
+          36284,
+          37019,
+          37754,
+          38489,
+          39224,
+          39959,
+          40694,
+          41429,
+          42164,
+          42899,
+          43634,
+          44369,
+          45104,
+          45839
+        ],
+        "total": 1452824,
+        "truncated": true
+      },
+      "stop": {
+        "blocked": {
+          "events": [
+            28198,
+            28933,
+            29668,
+            30403,
+            31138,
+            31873,
+            32608,
+            33343,
+            34078,
+            34813,
+            35548,
+            36283,
+            37018,
+            37753,
+            38488,
+            39223,
+            39958,
+            40693,
+            41428,
+            42163,
+            42898,
+            43633,
+            44368,
+            45103,
+            45838,
+            46573,
+            47308,
+            48043,
+            48778,
+            49513,
+            50248,
+            50983
+          ],
+          "total": 5352,
+          "truncated": true
+        },
+        "executed": {
+          "events": [
+            0,
+            3,
+            1,
+            2,
+            4,
+            5,
+            6,
+            28199,
+            28934,
+            29669,
+            30404,
+            31139,
+            31874,
+            32609,
+            33344,
+            34079,
+            34814,
+            35549,
+            36284,
+            37019,
+            37754,
+            38489,
+            39224,
+            39959,
+            40694,
+            41429,
+            42164,
+            42899,
+            43634,
+            44369,
+            45104,
+            45839
+          ],
+          "total": 1452824,
+          "truncated": true
+        },
+        "message": "The reference execution cannot advance; events remain blocked."
+      },
+      "unexecuted_candidate": {
+        "events": [],
+        "total": 0,
+        "truncated": false
+      }
+    },
+    "provenance_events_total": 1458176,
+    "rejection": {
+      "blocked": {
+        "events": [
+          28198,
+          28933,
+          29668,
+          30403,
+          31138,
+          31873,
+          32608,
+          33343,
+          34078,
+          34813,
+          35548,
+          36283,
+          37018,
+          37753,
+          38488,
+          39223,
+          39958,
+          40693,
+          41428,
+          42163,
+          42898,
+          43633,
+          44368,
+          45103,
+          45838,
+          46573,
+          47308,
+          48043,
+          48778,
+          49513,
+          50248,
+          50983
+        ],
+        "total": 5352,
+        "truncated": true
+      },
+      "executed": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          28199,
+          28934,
+          29669,
+          30404,
+          31139,
+          31874,
+          32609,
+          33344,
+          34079,
+          34814,
+          35549,
+          36284,
+          37019,
+          37754,
+          38489,
+          39224,
+          39959,
+          40694,
+          41429,
+          42164,
+          42899,
+          43634,
+          44369,
+          45104,
+          45839
+        ],
+        "total": 1452824,
+        "truncated": true
+      },
+      "message": "The reference execution cannot advance; events remain blocked."
+    },
+    "rejection_kind": "reference_deadlock",
+    "source_event_scope": "reported_witness_events",
+    "source_events": [
+      {
+        "column": 9,
+        "event": 0,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 0,
+        "line": 373
+      },
+      {
+        "column": 9,
+        "event": 1,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 0,
+        "line": 373
+      },
+      {
+        "column": 9,
+        "event": 2,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 0,
+        "line": 373
+      },
+      {
+        "column": 9,
+        "event": 3,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 0,
+        "line": 373
+      },
+      {
+        "column": 9,
+        "event": 4,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 1,
+        "line": 373
+      },
+      {
+        "column": 9,
+        "event": 5,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 1,
+        "line": 373
+      },
+      {
+        "column": 9,
+        "event": 6,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 2,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 28198,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 120,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 28199,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 121,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 28933,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 216,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 28934,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 217,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 29668,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 312,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 29669,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 313,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 30403,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 408,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 30404,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 409,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 31138,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 504,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 31139,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 505,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 31873,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 600,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 31874,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 601,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 32608,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 696,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 32609,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 697,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 33343,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 792,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 33344,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 793,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 34078,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 888,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 34079,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 889,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 34813,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 984,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 34814,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 985,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 35548,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 1080,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 35549,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 1081,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 36283,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 1176,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 36284,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 1177,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 37018,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 1272,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 37019,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 1273,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 37753,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 1368,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 37754,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 1369,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 38488,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 1464,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 38489,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 1465,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 39223,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 1560,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 39224,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 1561,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 39958,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 1656,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 39959,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 1657,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 40693,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 1752,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 40694,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 1753,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 41428,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 1848,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 41429,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 1849,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 42163,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 1944,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 42164,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 1945,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 42898,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 2040,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 42899,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 2041,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 43633,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 2136,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 43634,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 2137,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 44368,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 2232,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 44369,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 2233,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 45103,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 2328,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 45104,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 2329,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 45838,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 2424,
+        "line": 64
+      },
+      {
+        "column": 9,
+        "event": 45839,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/../cuda-13.2/bin/..//include/sm_30_intrinsics.hpp",
+        "instruction": 2425,
+        "line": 373
+      },
+      {
+        "column": 5,
+        "event": 46573,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 2520,
+        "line": 64
+      },
+      {
+        "column": 5,
+        "event": 47308,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 2616,
+        "line": 64
+      },
+      {
+        "column": 5,
+        "event": 48043,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 2712,
+        "line": 64
+      },
+      {
+        "column": 5,
+        "event": 48778,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 2808,
+        "line": 64
+      },
+      {
+        "column": 5,
+        "event": 49513,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 2904,
+        "line": 64
+      },
+      {
+        "column": 5,
+        "event": 50248,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 3000,
+        "line": 64
+      },
+      {
+        "column": 5,
+        "event": 50983,
+        "file": "/home/ubuntu/sentryward-timeouts-20261016/cr/fmla/FlashMLA/csrc/3rdparty/kerutils/include/kerutils/device/cuda/sm90/intrinsics.cuh",
+        "instruction": 3096,
+        "line": 64
+      }
+    ],
+    "synthetic_events": [],
+    "unmapped_witness_events": [],
+    "witness_event_list_limit": 32,
+    "witness_event_lists_truncated": true
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 256,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "branch_choices_with_static_visits": [
+      17318
+    ],
+    "clc_failure": true,
+    "clc_uses": 3600,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 3968,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "s32",
+          "object": "indices",
+          "property": "lower_bound",
+          "value": -1
+        },
+        {
+          "element_type": "s32",
+          "object": "indices",
+          "property": "upper_bound",
+          "value": 3359
+        },
+        {
+          "element_type": "s32",
+          "object": "topk_length",
+          "property": "lower_bound",
+          "value": 0
+        },
+        {
+          "element_type": "s32",
+          "object": "topk_length",
+          "property": "upper_bound",
+          "value": 64
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "indices",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg0.72"
+        },
+        {
+          "allocation": "topk_length",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg0.80"
+        }
+      ],
+      "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [
+      {
+        "lines": [
+          9333,
+          11527,
+          11856,
+          11872,
+          12594,
+          13134,
+          13468,
+          13499,
+          13519,
+          13788,
+          13806,
+          13837,
+          14506,
+          14663,
+          14820,
+          15100,
+          15391,
+          19854
+        ],
+        "object": "topk_length"
+      }
+    ],
+    "trap_only_equality_assertions_hold": true
+  },
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "counts": {
+      "edges": 4716112,
+      "events": 1458176,
+      "instructions": 255656,
+      "threads": 4096
+    },
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "failed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "not_wellsynced",
+                "message": "The reference execution cannot advance; events remain blocked.",
+                "stage": "synchronization_check"
+              }
+            ],
+            "prerequisite_result": "not_wellsynced"
+          },
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [
+          {
+            "code": "unsupported_async_copy",
+            "details": {
+              "cta": 0,
+              "instruction": "cp.async.ca.shared.global.L2::128B [%r190], [%rd34], 8, %r191;",
+              "instruction_index": 3181,
+              "location": {
+                "file": "corpus/flashmla__flashmla_sm100_sparse_decode_v41_h128_no_split__sm_100a.ptx",
+                "line": 14728
+              },
+              "occurrence": 0,
+              "thread": 353
+            },
+            "message": "cp.async source size or ignore-source is data-dependent; its zero-filled destination is not modeled in the value analysis",
+            "stage": "value_lowering"
+          }
+        ],
+        "first_unavailable_reason": "memory occurrence has no value node",
+        "queries": 256,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 256,
+        "value_view_complete": false
+      },
+      "cluster_completion_joins": 12,
+      "cta_count": 8,
+      "dependency_compression": {
+        "bulk_read_wait": {
+          "consumers": 1032,
+          "emitted_references": 0,
+          "original_references": 0,
+          "prefix_effects": 0
+        },
+        "cp_async_mbarrier": {
+          "consumers": 128,
+          "emitted_references": 384,
+          "original_references": 256,
+          "prefix_effects": 128
+        },
+        "tcgen_commit": {
+          "consumers": 24,
+          "emitted_references": 220,
+          "original_references": 896,
+          "prefix_effects": 24
+        },
+        "tcgen_load_wait": {
+          "consumers": 5120,
+          "emitted_references": 6144,
+          "original_references": 12288,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "tcgen_cp_memory_effect_refinement",
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 2289876,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 256,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "branch_choices_with_static_visits": [
+          17318
+        ],
+        "clc_failure": true,
+        "clc_uses": 3600,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 3968,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "s32",
+              "object": "indices",
+              "property": "lower_bound",
+              "value": -1
+            },
+            {
+              "element_type": "s32",
+              "object": "indices",
+              "property": "upper_bound",
+              "value": 3359
+            },
+            {
+              "element_type": "s32",
+              "object": "topk_length",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s32",
+              "object": "topk_length",
+              "property": "upper_bound",
+              "value": 64
+            }
+          ],
+          "regions": [
+            {
+              "allocation": "indices",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg0.72"
+            },
+            {
+              "allocation": "topk_length",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg0.80"
+            }
+          ],
+          "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+        },
+        "tensor_property_decisions": [
+          {
+            "lines": [
+              9333,
+              11527,
+              11856,
+              11872,
+              12594,
+              13134,
+              13468,
+              13499,
+              13519,
+              13788,
+              13806,
+              13837,
+              14506,
+              14663,
+              14820,
+              15100,
+              15391,
+              19854
+            ],
+            "object": "topk_length"
+          }
+        ],
+        "trap_only_equality_assertions_hold": true
+      },
+      "group2_progress": {
+        "blocked": [],
+        "checked_pairs": 12,
+        "premises": [
+          "Baseline synchronization and asynchronous work must independently make progress.",
+          "Resident peer CTAs must be scheduled fairly and have admitted TMEM capacity.",
+          "Allocation placement and retirement RequiredOrders are separate obligations.",
+          "Source references, actor ordering, and collective participation must be validated."
+        ]
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "Q",
+          "offset": 56,
+          "parameter": "_ZN5sm1007prefill25sparse_fwd_for_small_topk7head12839flash_fwd_splitkv_mla_fp8_sparse_kernelINS2_14KernelTemplateIL17SparseAttnFwdMode1EL9ModelType0ELS6_0EEEEEvNT_4ArgTENS8_9TmaParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "KV",
+          "offset": 64,
+          "parameter": "_ZN5sm1007prefill25sparse_fwd_for_small_topk7head12839flash_fwd_splitkv_mla_fp8_sparse_kernelINS2_14KernelTemplateIL17SparseAttnFwdMode1EL9ModelType0ELS6_0EEEEEvNT_4ArgTENS8_9TmaParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "indices",
+          "offset": 72,
+          "parameter": "_ZN5sm1007prefill25sparse_fwd_for_small_topk7head12839flash_fwd_splitkv_mla_fp8_sparse_kernelINS2_14KernelTemplateIL17SparseAttnFwdMode1EL9ModelType0ELS6_0EEEEEvNT_4ArgTENS8_9TmaParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "topk_length",
+          "offset": 80,
+          "parameter": "_ZN5sm1007prefill25sparse_fwd_for_small_topk7head12839flash_fwd_splitkv_mla_fp8_sparse_kernelINS2_14KernelTemplateIL17SparseAttnFwdMode1EL9ModelType0ELS6_0EEEEEvNT_4ArgTENS8_9TmaParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "LSE",
+          "offset": 96,
+          "parameter": "_ZN5sm1007prefill25sparse_fwd_for_small_topk7head12839flash_fwd_splitkv_mla_fp8_sparse_kernelINS2_14KernelTemplateIL17SparseAttnFwdMode1EL9ModelType0ELS6_0EEEEEvNT_4ArgTENS8_9TmaParamsE_param_0",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "O",
+          "offset": 104,
+          "parameter": "_ZN5sm1007prefill25sparse_fwd_for_small_topk7head12839flash_fwd_splitkv_mla_fp8_sparse_kernelINS2_14KernelTemplateIL17SparseAttnFwdMode1EL9ModelType0ELS6_0EEEEEvNT_4ArgTENS8_9TmaParamsE_param_0",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 255656,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 96
+      },
+      "reached_opcodes": {
+        "add.f32x2": 32768,
+        "add.ftz.f32": 2048,
+        "add.s32": 137012,
+        "add.s64": 16196,
+        "add.u32": 64,
+        "and.b16": 24576,
+        "and.b32": 46944,
+        "and.b64": 8192,
+        "and.pred": 1288,
+        "bar.sync": 5120,
+        "bar.warp.sync": 1024,
+        "barrier.cluster.arrive.relaxed": 12288,
+        "barrier.cluster.wait.acquire": 12288,
+        "bfe.s32": 2048,
+        "bra": 25604,
+        "bra.uni": 4888,
+        "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128": 3596,
+        "clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128": 4,
+        "cp.async.bulk.commit_group": 8,
+        "cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::1.L2::cache_hint": 128,
+        "cp.async.bulk.tensor.5d.cta_group::2.shared::cluster.global.mbarrier::complete_tx::bytes.L2::cache_hint": 8,
+        "cp.async.bulk.tensor.5d.global.shared::cta.bulk_group": 8,
+        "cp.async.bulk.wait_group.read": 1032,
+        "cp.async.ca.shared.global.L2::128B": 256,
+        "cp.async.mbarrier.arrive.noinc.shared::cta.b64": 128,
+        "cvt.rn.bf16x2.e4m3x2": 65536,
+        "cvt.rn.bf16x2.f32": 147456,
+        "cvt.rn.bf16x2.ue8m0x2": 16384,
+        "cvt.s32.s8": 512,
+        "cvt.s8.s32": 3072,
+        "cvt.u16.u32": 35840,
+        "cvt.u16.u64": 65536,
+        "cvt.u32.u16": 4,
+        "cvt.u32.u64": 8448,
+        "cvt.u64.u32": 67596,
+        "cvta.param.u64": 1048,
+        "cvta.shared.u64": 1024,
+        "cvta.to.global.u64": 512,
+        "cvta.to.shared.u64": 8192,
+        "div.approx.ftz.f32": 512,
+        "div.s32": 8,
+        "elect.sync": 3968,
+        "ex2.approx.ftz.f32": 34304,
+        "fence.mbarrier_init.release.cluster": 16,
+        "fence.proxy.async.shared::cta": 3072,
+        "fma.rn.f32x2": 16384,
+        "fma.rn.ftz.f32": 2048,
+        "griddepcontrol.launch_dependents": 32,
+        "ld.acquire.cta.shared.b128": 3596,
+        "ld.global.nc.s32": 3596,
+        "ld.global.nc.v2.s32": 256,
+        "ld.param.b32": 7704,
+        "ld.param.b64": 9256,
+        "ld.param.v2.b32": 264,
+        "ld.shared.b32": 4096,
+        "ld.shared.b64": 16384,
+        "ld.shared.v2.b32": 4096,
+        "ld.shared.v2.b64": 8192,
+        "ld.shared.v4.b32": 128,
+        "lg2.approx.ftz.f32": 512,
+        "mad.lo.s32": 4640,
+        "mapa.shared::cluster.u32": 6700,
+        "max.ftz.f32": 36864,
+        "max.s32": 2828,
+        "mbarrier.arrive.expect_tx.shared::cta.b64": 20,
+        "mbarrier.arrive.shared::cluster.b64": 6700,
+        "mbarrier.arrive.shared::cta.b64": 4108,
+        "mbarrier.init.shared::cta.b64": 248,
+        "mbarrier.try_wait.parity.shared::cta.b64": 14652,
+        "min.s32": 256,
+        "mov.b128": 61440,
+        "mov.b16": 1040,
+        "mov.b32": 90144,
+        "mov.b64": 453836,
+        "mov.pred": 1024,
+        "mov.s32": 4092,
+        "mov.u32": 11788,
+        "mul.bf16x2": 65536,
+        "mul.f32x2": 131072,
+        "mul.ftz.f32": 1536,
+        "mul.hi.s32": 512,
+        "mul.hi.u32": 1032,
+        "mul.lo.s16": 16384,
+        "mul.lo.s32": 1296,
+        "mul.wide.s32": 5132,
+        "mul.wide.u32": 1560,
+        "neg.ftz.f32": 1536,
+        "neg.s32": 1024,
+        "not.b32": 1552,
+        "not.pred": 1800,
+        "or.b32": 7936,
+        "or.b64": 17420,
+        "or.pred": 2048,
+        "prefetch.tensormap": 24,
+        "prmt.b32": 32768,
+        "ret": 4096,
+        "selp.b16": 17408,
+        "selp.b32": 42028,
+        "selp.b64": 144,
+        "selp.f32": 3072,
+        "selp.u32": 3596,
+        "setmaxnreg.dec.sync.aligned.u32": 2048,
+        "setmaxnreg.inc.sync.aligned.u32": 2048,
+        "setp.eq.b16": 24576,
+        "setp.eq.b32": 27844,
+        "setp.eq.b64": 7704,
+        "setp.eq.ftz.f32": 2048,
+        "setp.ge.s32": 776,
+        "setp.gt.ftz.f32": 1024,
+        "setp.gt.s16": 3072,
+        "setp.gt.s32": 7168,
+        "setp.gt.u32": 2048,
+        "setp.lt.s32": 4236,
+        "setp.lt.u32": 144,
+        "setp.ne.b32": 20784,
+        "shfl.sync.bfly.b32": 512,
+        "shfl.sync.idx.b32": 8192,
+        "shl.b32": 20912,
+        "shl.b64": 17152,
+        "shr.s32": 10544,
+        "shr.u32": 30032,
+        "shr.u64": 57344,
+        "st.global.b32": 512,
+        "st.shared.b128": 45056,
+        "st.shared.b32": 2560,
+        "st.shared.b8": 64,
+        "st.shared.v2.b32": 256,
+        "st.weak.shared::cta.b128": 16384,
+        "sub.ftz.f32": 2048,
+        "sub.s32": 3604,
+        "tcgen05.alloc.cta_group::2.sync.aligned.shared::cta.b32": 256,
+        "tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.b64": 4,
+        "tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64": 20,
+        "tcgen05.cp.cta_group::2.128x256b": 64,
+        "tcgen05.dealloc.cta_group::2.sync.aligned.b32": 256,
+        "tcgen05.fence::after_thread_sync": 1036,
+        "tcgen05.fence::before_thread_sync": 1028,
+        "tcgen05.ld.sync.aligned.32x32b.x32.b32": 2048,
+        "tcgen05.ld.sync.aligned.32x32b.x64.b32": 4096,
+        "tcgen05.mma.cta_group::2.kind::f16": 96,
+        "tcgen05.relinquish_alloc_permit.cta_group::2.sync.aligned": 256,
+        "tcgen05.wait::ld.sync.aligned": 5120,
+        "vote.sync.any.pred": 1024,
+        "xor.b16": 4,
+        "xor.b32": 7692,
+        "xor.b64": 8192
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 164,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 255656,
+        "stored_bindings": 32960
+      },
+      "source_edge_storage": {
+        "binding_templates": 4497,
+        "logical_edges": 251560,
+        "stored_bindings": 4520
+      },
+      "tcgen_copy_refinement": {
+        "blocked": [],
+        "discharged": 64
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 24,
+        "operations": 160
+      },
+      "thread_count": 4096,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": [
+        {
+          "line": 16530,
+          "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice.",
+          "taken": false
+        },
+        {
+          "line": 17318,
+          "note": "Always take the O-rescale path at the should_scale_o warp vote. Analysis scope: pattern-based scenario; conclusions are conditional on this branch choice.",
+          "taken": false
+        }
+      ]
+    },
+    "implementation": "cpp",
+    "memory_analysis_complete": false,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 774.375,
+    "required_order_domains": 11912,
+    "required_orders": 577952,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 1,
+      "binding_diagnostics": [
+        {
+          "code": "incomplete_value_semantics",
+          "message": "unsupported_async_copy: cp.async source size or ignore-source is data-dependent; its zero-filled destination is not modeled in the value analysis"
+        }
+      ],
+      "execution_cohorts": 304,
+      "mapping_complete": false,
+      "memory_binding_stored_rows": 0,
+      "memory_binding_templates": 0,
+      "memory_bindings": 0,
+      "memory_linking_templates_used": false,
+      "synchronization_groups": 7352,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 212,
+      "thread_prefix_groups": 5452,
+      "value_diagnostic_count": 1,
+      "value_diagnostics": [
+        {
+          "code": "unsupported_async_copy",
+          "line": 14728,
+          "message": "cp.async source size or ignore-source is data-dependent; its zero-filled destination is not modeled in the value analysis"
+        }
+      ]
+    },
+    "source_violations": [],
+    "stage": "synchronization_check",
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 8,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 2334220,
+      "path_entries": 87684,
+      "record_bindings": 71460,
+      "record_nodes": 75940,
+      "splits": 148,
+      "template_steps": 77280,
+      "thread_memberships": 4096,
+      "value_nodes": 45855
+    },
+    "thread_record_compression": {
+      "completed_ctas": 8,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 2289876,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "failed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "not_wellsynced",
+                "message": "The reference execution cannot advance; events remain blocked.",
+                "stage": "synchronization_check"
+              }
+            ],
+            "prerequisite_result": "not_wellsynced",
+            "prerequisite_status": "not_wellsynced"
+          },
+          "stage": "pipeline"
+        }
+      ],
+      "equivalence_check": "blocked",
+      "prerequisite_status": "not_wellsynced",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      }
+    },
+    "value_ir_instance_count": 85018,
+    "value_ir_node_count": 3141,
+    "value_view_complete": false
+  },
+  "peak_rss_mib": 794.05078125,
+  "pipeline_elapsed_seconds": 4.259623672,
+  "result": "not_wellsynced",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "verification_limitations": [],
+  "warnings": [],
+  "wellsync_timeout_seconds": 500.0,
+  "whole_pipeline_timeout_seconds": 498.465
+}

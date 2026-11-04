@@ -1,0 +1,2660 @@
+{
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": false
+    }
+  ],
+  "checks": {
+    "equivalence": "passed",
+    "synchronization": "passed"
+  },
+  "diagnostics": [],
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 7104,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "shape_input_contract": {
+      "kind": "fixed_read_only",
+      "origin": "shape_arrays",
+      "regions": [
+        {
+          "allocation": "seg_table",
+          "byte_offset": 0,
+          "bytes": 316,
+          "resource": "input.arg7.0"
+        },
+        {
+          "allocation": "chunk_bos",
+          "byte_offset": 0,
+          "bytes": 16,
+          "resource": "input.arg19.0"
+        },
+        {
+          "allocation": "chunk_len",
+          "byte_offset": 0,
+          "bytes": 16,
+          "resource": "input.arg20.0"
+        }
+      ],
+      "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+    },
+    "trap_only_equality_assertions_hold": true
+  },
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "counts": {
+      "edges": 15614818,
+      "events": 5036914,
+      "instructions": 997902,
+      "memory_accesses": 3257860,
+      "threads": 23680
+    },
+    "equivalence": {
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 48301,
+      "comparison_elapsed_seconds": 0.174713976,
+      "context_declaration": {
+        "assumptions": [],
+        "fixed_inputs": [
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "37"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "74"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "4"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "5"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "6"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "7"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "8"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "9"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "10"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "11"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "12"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "13"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "14"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "15"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "16"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "17"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "18"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "19"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "20"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "21"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "22"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "23"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "24"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "25"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "26"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "27"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "28"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "29"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "30"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "31"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "32"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "33"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "34"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "35"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "36"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "37"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "38"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "39"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "40"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "41"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "42"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "43"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "44"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "45"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "46"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "47"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "48"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "49"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "50"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "51"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "52"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "53"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "54"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "55"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "56"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "57"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "58"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "59"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "60"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "61"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "62"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "63"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "64"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "65"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "66"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "67"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "68"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "69"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "70"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "71"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "72"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "73"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "74"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "75"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "76"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "77"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "78"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "2"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "chunk_bos",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "chunk_bos",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "64"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "chunk_bos",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "chunk_bos",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "chunk_len",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "64"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "chunk_len",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "64"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "chunk_len",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "chunk_len",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          }
+        ],
+        "inputs": [],
+        "predicate_nodes": []
+      },
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 138509,
+        "affine_coordinate_captures": 640,
+        "affine_state_banks": 1,
+        "call_definition_node_visits": 10618,
+        "canonical_factor_visits": 7680,
+        "canonical_node_visits": 13833,
+        "canonical_sum_initials": 256,
+        "certified_state_pattern_cache_hits": 758,
+        "certified_state_pattern_decline_no_certified_state": 8,
+        "certified_state_pattern_decline_nonplain_pattern": 2,
+        "certified_state_pattern_work": 183,
+        "coefficient_normalizations": 2,
+        "completed_reductions": 640,
+        "constant_binary32_bitcasts": 256,
+        "coordinate_digit_node_visits": 1156,
+        "coverage_polynomial_peak": 4,
+        "coverage_polynomial_visits": 6144,
+        "coverage_stored_piece_visits": 1152,
+        "ep_body_anchor_edges": 9633,
+        "ep_body_anchor_nodes": 13744,
+        "ep_body_bound_read_exact_hits": 256,
+        "ep_body_bound_read_matcher_fallbacks": 6,
+        "ep_body_call_rebuilds": 1792,
+        "ep_body_deferred_call_anchors": 2308,
+        "ep_body_deferred_unmatched_anchors": 2308,
+        "ep_body_fold_scope_boundaries": 1664,
+        "ep_body_instance_cache_entries": 1024,
+        "ep_body_instance_cache_hits": 512,
+        "ep_body_missing_opaque_read": 6,
+        "ep_body_obligations": 3072,
+        "ep_body_pattern_anchor_cache_hits": 14220,
+        "ep_body_payload_summary_nodes": 3072,
+        "ep_body_proofs": 2048,
+        "ep_body_read_anchor_rejections": 10900,
+        "ep_body_read_match_cache_entries": 890,
+        "ep_body_target_anchor_cache_hits": 9749,
+        "ep_identity_proofs": 2304,
+        "ep_reduction_outer_obligations": 128,
+        "ep_scalar_attempts": 3456,
+        "ep_scalar_proofs": 2304,
+        "exact_proof_reuse_certificates": 128,
+        "finite_bilinear_banks": 1,
+        "finite_state_reuse_banks": 1,
+        "fold_alpha_signature_edges": 11253,
+        "fold_alpha_signatures": 5017,
+        "fold_alpha_states": 7305,
+        "fp_idiom_power_constructions": 0,
+        "fp_idiom_rm_producers": 0,
+        "ideal_additive_compiler_exp_sequences": 0,
+        "ideal_compiler_exp_sequences": 0,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_single_constant_exp_sequences": 0,
+        "imported_context_nodes": 38137,
+        "importer_scope_banks": 2,
+        "importer_scope_binder_hits": 1598,
+        "importer_scope_binders_created": 962,
+        "importer_scope_leaf_lookups": 2560,
+        "importer_scope_nested_body_fallbacks": 3072,
+        "input_index_radix_quotients": 127,
+        "intern_requests": 409148,
+        "linear_reduction_closed_groups": 256,
+        "linear_reduction_pattern_attempts": 128,
+        "linear_reduction_pattern_proofs": 128,
+        "linear_reduction_preserved_partial_groups": 0,
+        "linear_reduction_weighted_states": 1664,
+        "local_pattern_candidates": 11968,
+        "masked_sum_prefix_queries": 3712,
+        "normalization_cache_context_changes": 16,
+        "normalization_node_visits": 15489,
+        "packed_radix_probes": 127,
+        "packed_radix_rewrites": 127,
+        "parametric_state_attempts": 0,
+        "pattern_build_peak_nodes": 5,
+        "pattern_build_unique_nodes": 2944,
+        "pattern_node_visits": 46428,
+        "proved_select_arms_imported": 16510,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_temporary_nodes": 0,
+        "shifted_maximum_reference_domains": 128,
+        "summary_bind_nodes": 2816,
+        "summary_concat_nodes": 256,
+        "symbolic_byte_reads_without_extent_proof": 0,
+        "unary_reduction_composition_attempts": 128,
+        "unary_reduction_composition_context_changes": 8
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 256,
+        "status": "proved"
+      },
+      "diagnostics": [],
+      "elapsed_s": 0.152153271,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 832,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 832,
+          "unique_query_nodes": 0
+        },
+        "query_count": 3456,
+        "reset_s": 0.0,
+        "reuse_cache": true,
+        "shared_evictions": 0
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 0,
+        "fixed_input_elements": 87,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 256,
+      "finished_families": 256,
+      "fixed_input_context": {
+        "applied": [],
+        "applied_elements": 0,
+        "configured": [
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "37"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "74"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "4"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "5"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "6"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "7"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "8"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "9"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "10"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "11"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "12"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "13"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "14"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "15"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "16"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "17"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "18"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "19"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "20"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "21"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "22"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "23"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "24"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "25"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "26"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "27"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "28"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "29"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "30"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "31"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "32"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "33"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "34"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "35"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "36"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "37"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "38"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "39"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "40"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "41"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "42"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "43"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "44"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "45"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "46"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "47"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "48"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "49"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "50"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "51"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "52"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "53"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "54"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "55"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "56"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "57"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "58"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "59"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "60"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "61"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "62"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "63"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "64"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "65"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "66"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "67"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "68"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "69"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "70"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "71"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "72"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "73"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "74"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "75"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "76"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "77"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "1"
+          },
+          {
+            "coordinates": [
+              "78"
+            ],
+            "input": "seg_table",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "2"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "chunk_bos",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "chunk_bos",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "64"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "chunk_bos",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "chunk_bos",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "0"
+            ],
+            "input": "chunk_len",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "64"
+          },
+          {
+            "coordinates": [
+              "1"
+            ],
+            "input": "chunk_len",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "64"
+          },
+          {
+            "coordinates": [
+              "2"
+            ],
+            "input": "chunk_len",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          },
+          {
+            "coordinates": [
+              "3"
+            ],
+            "input": "chunk_len",
+            "interpretation": "s32",
+            "reason": "current verified fixed-read-only input; input sha256=5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004; provenance sha256=bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3",
+            "value": "0"
+          }
+        ],
+        "configured_elements": 87
+      },
+      "idealizations_applied": [],
+      "input_contract_applied_reads": [],
+      "legacy_scalar_fallback": false,
+      "mapping_input_memory_constraints": {},
+      "native_context": {
+        "elements": 87,
+        "input_sha256": "5a731bdc4b8eeb1c60213fff7ef2bcf9e750d1b30424e550d394fb6452dd7004",
+        "kind": "verified_current_fixed_input",
+        "provenance_sha256": "bafc47c5df1749de42777c5eed2b98cd66496a2d4e8ffd4b3c6c8b84f4ce1bd3"
+      },
+      "normalized_reachable_nodes": 4739,
+      "numerical_result": "verified",
+      "pattern_nodes": 2480,
+      "peak_rss_kib": 6686112,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 5120,
+      "piece_union": {
+        "abstract_optimized_replacements": 0,
+        "abstract_reference_replacements": 0,
+        "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+        "collected_pieces": 0,
+        "late_certificates": "accepted_until_each_schema_is_complete",
+        "method": "complete_output_equalities_with_finite_piece_union",
+        "replacements": 0,
+        "schemas": [],
+        "stored_dag_work": 0,
+        "work_limit": 2000000
+      },
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        2815,
+        348
+      ],
+      "reference_term_patterns": 12,
+      "row_groups": [
+        {
+          "count": 2,
+          "families": [
+            [
+              0,
+              0
+            ],
+            [
+              64,
+              64
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "11863283/134217728",
+                  "count": "128",
+                  "spec": 0
+                },
+                {
+                  "coefficient": "1",
+                  "count": "64",
+                  "spec": 3
+                }
+              ],
+              "contribution_pieces": 12,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 4,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 100,
+              "weighted_add_edges": 0,
+              "witness_nodes": 12
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.660000000005453e-06,
+            "cumulative_elapsed_s": 0.066801646,
+            "left_import_s": 0.00037566100000000033,
+            "left_normalize_s": 0.0001358809999999972,
+            "parametric_state_s": 2.3000000000015196e-06,
+            "piece_union_record_s": 5.86999999999116e-06,
+            "piece_union_seal_s": 3.199999999980996e-07,
+            "right_import_s": 0.0006153720000000075,
+            "right_normalize_s": 0.00041550200000001355,
+            "state_pattern_s": 0.00017192199999999883,
+            "unary_reduction_s": 3.4800000000018844e-06
+          }
+        },
+        {
+          "count": 124,
+          "families": [
+            [
+              1,
+              35
+            ],
+            [
+              37,
+              63
+            ],
+            [
+              65,
+              99
+            ],
+            [
+              101,
+              127
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "11863283/134217728",
+                  "count": "128",
+                  "spec": 4
+                },
+                {
+                  "coefficient": "1",
+                  "count": "64",
+                  "spec": 5
+                }
+              ],
+              "contribution_pieces": 12,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 4,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 100,
+              "weighted_add_edges": 0,
+              "witness_nodes": 12
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 7.08200000001046e-05,
+            "cumulative_elapsed_s": 0.091965793,
+            "left_import_s": 0.016265338999999983,
+            "left_normalize_s": 0.004435750999999969,
+            "parametric_state_s": 4.3909999999987726e-05,
+            "piece_union_record_s": 0.00020735999999996462,
+            "piece_union_seal_s": 3.059999999999608e-06,
+            "right_import_s": 0.03553371100000003,
+            "right_normalize_s": 0.017465182999999964,
+            "state_pattern_s": 0.008540953999999996,
+            "unary_reduction_s": 9.041000000004247e-05
+          }
+        },
+        {
+          "count": 2,
+          "families": [
+            [
+              36,
+              36
+            ],
+            [
+              100,
+              100
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "11863283/134217728",
+                  "count": "128",
+                  "spec": 6
+                },
+                {
+                  "coefficient": "1",
+                  "count": "64",
+                  "spec": 7
+                }
+              ],
+              "contribution_pieces": 12,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 4,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 100,
+              "weighted_add_edges": 0,
+              "witness_nodes": 12
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.0700000000057885e-06,
+            "cumulative_elapsed_s": 0.081123297,
+            "left_import_s": 0.000278000999999993,
+            "left_normalize_s": 7.87699999999919e-05,
+            "parametric_state_s": 6.399999999961992e-07,
+            "piece_union_record_s": 3.739999999995136e-06,
+            "piece_union_seal_s": 4.9999999987559995e-08,
+            "right_import_s": 0.0005607830000000091,
+            "right_normalize_s": 0.0004016920000000021,
+            "state_pattern_s": 0.00013679000000000469,
+            "unary_reduction_s": 1.690000000005576e-06
+          }
+        },
+        {
+          "count": 128,
+          "families": [
+            [
+              128,
+              255
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 4.380100000002385e-05,
+            "cumulative_elapsed_s": 0.150877225,
+            "left_import_s": 0.02149741299999998,
+            "left_normalize_s": 0.004312391000000054,
+            "parametric_state_s": 3.767999999988725e-05,
+            "piece_union_record_s": 0.0001288600000000223,
+            "piece_union_seal_s": 2.949999999973807e-06,
+            "right_import_s": 0.020287736000000056,
+            "right_normalize_s": 0.01176442699999991
+          }
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 0.00011835100000013969,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.038416413999999954,
+        "left_normalize_s": 0.008962793000000012,
+        "parametric_state_s": 8.452999999987269e-05,
+        "piece_union_record_s": 0.0003458299999999732,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 6.379999999959075e-06,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 0.056997602000000105,
+        "right_normalize_s": 0.03004680399999989,
+        "state_pattern_s": 0.008849665999999999
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.000756543
+      },
+      "total_output_families": 256,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 74,
+      "dependency_compression": {
+        "tcgen_commit": {
+          "consumers": 12,
+          "emitted_references": 70,
+          "original_references": 224,
+          "prefix_effects": 12
+        },
+        "tcgen_load_wait": {
+          "consumers": 6144,
+          "emitted_references": 7168,
+          "original_references": 42496,
+          "prefix_effects": 0
+        },
+        "tcgen_store_wait": {
+          "consumers": 9728,
+          "emitted_references": 77824,
+          "original_references": 77824,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 3957838,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 7104,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "shape_input_contract": {
+          "kind": "fixed_read_only",
+          "origin": "shape_arrays",
+          "regions": [
+            {
+              "allocation": "seg_table",
+              "byte_offset": 0,
+              "bytes": 316,
+              "resource": "input.arg7.0"
+            },
+            {
+              "allocation": "chunk_bos",
+              "byte_offset": 0,
+              "bytes": 16,
+              "resource": "input.arg19.0"
+            },
+            {
+              "allocation": "chunk_len",
+              "byte_offset": 0,
+              "bytes": 16,
+              "resource": "input.arg20.0"
+            }
+          ],
+          "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+        },
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "u",
+          "offset": 0,
+          "parameter": "kernel_cake_kda_train_9931cdff5dfd86c687c7_param_2",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "gk",
+          "offset": 0,
+          "parameter": "kernel_cake_kda_train_9931cdff5dfd86c687c7_param_3",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "seg_table",
+          "offset": 0,
+          "parameter": "kernel_cake_kda_train_9931cdff5dfd86c687c7_param_7",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "hseg",
+          "offset": 0,
+          "parameter": "kernel_cake_kda_train_9931cdff5dfd86c687c7_param_10",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "eye",
+          "offset": 0,
+          "parameter": "kernel_cake_kda_train_9931cdff5dfd86c687c7_param_11",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "seg_state",
+          "offset": 0,
+          "parameter": "kernel_cake_kda_train_9931cdff5dfd86c687c7_param_12",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "out",
+          "offset": 0,
+          "parameter": "kernel_cake_kda_train_9931cdff5dfd86c687c7_param_18",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "chunk_bos",
+          "offset": 0,
+          "parameter": "kernel_cake_kda_train_9931cdff5dfd86c687c7_param_19",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "chunk_len",
+          "offset": 0,
+          "parameter": "kernel_cake_kda_train_9931cdff5dfd86c687c7_param_20",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 997902,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 48
+      },
+      "reached_opcodes": {
+        "add.s32": 396090,
+        "add.s64": 93312,
+        "add.u32": 80,
+        "and.b32": 193676,
+        "and.pred": 11840,
+        "bar.sync": 23680,
+        "bar.warp.sync": 26048,
+        "barrier.sync": 18944,
+        "bra": 258450,
+        "bra.uni": 9472,
+        "cp.async.bulk.tensor.3d.shared::cta.global.mbarrier::complete_tx::bytes": 14,
+        "cvt.rn.bf16x2.f32": 32768,
+        "cvt.s64.s32": 9472,
+        "cvt.u32.u64": 23680,
+        "cvt.u64.u32": 44416,
+        "cvta.param.u64": 12,
+        "cvta.shared.u64": 23680,
+        "cvta.to.global.u64": 127872,
+        "cvta.to.shared.u64": 23680,
+        "div.u32": 33152,
+        "elect.sync": 7104,
+        "ex2.approx.ftz.f32": 256,
+        "fence.mbarrier_init.release.cluster": 74,
+        "fence.proxy.async.shared::cta": 512,
+        "fma.rn.ftz.f32": 16384,
+        "ld.global.nc.b32": 71808,
+        "ld.global.nc.v4.b32": 305152,
+        "ld.param.b32": 165760,
+        "ld.param.b64": 189440,
+        "ld.volatile.shared.b32": 26048,
+        "mad.lo.s64": 9472,
+        "max.s32": 23680,
+        "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64": 6,
+        "mbarrier.arrive.release.cta.shared::cta.b64": 1026,
+        "mbarrier.init.shared::cta.b64": 1258,
+        "mbarrier.try_wait.parity.acquire.cta.shared::cta.b64": 1044,
+        "mov.b32": 448716,
+        "mov.b64": 142176,
+        "mov.s32": 222,
+        "mov.u32": 47360,
+        "mul.ftz.f32": 32768,
+        "mul.lo.s32": 33152,
+        "mul.wide.s32": 34688,
+        "mul.wide.u32": 24192,
+        "neg.s32": 47360,
+        "not.pred": 332,
+        "or.b32": 40454,
+        "or.b64": 768,
+        "or.pred": 12096,
+        "rem.u32": 23680,
+        "ret": 23680,
+        "selp.b32": 23684,
+        "setp.eq.b32": 42630,
+        "setp.ge.s32": 24704,
+        "setp.gt.s32": 47360,
+        "setp.gt.u32": 11840,
+        "setp.le.s32": 774,
+        "setp.le.u32": 9728,
+        "setp.lt.s32": 87764,
+        "setp.lt.u32": 47360,
+        "setp.ne.b32": 154452,
+        "shfl.sync.idx.b32": 47360,
+        "shl.b32": 78404,
+        "shl.b64": 20224,
+        "shr.s32": 9472,
+        "shr.u32": 33164,
+        "st.global.v8.b32": 1024,
+        "st.shared.v4.b32": 6144,
+        "sub.ftz.f32": 16384,
+        "sub.s32": 54980,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 2368,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 12,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 2368,
+        "tcgen05.fence::after_thread_sync": 24712,
+        "tcgen05.fence::before_thread_sync": 19970,
+        "tcgen05.ld.sync.aligned.16x32bx2.x16.b32": 3072,
+        "tcgen05.ld.sync.aligned.32x32b.x16.b32": 4096,
+        "tcgen05.mma.cta_group::1.kind::f16": 48,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 2368,
+        "tcgen05.st.sync.aligned.32x32b.x16.b32": 77824,
+        "tcgen05.wait::ld.sync.aligned": 6144,
+        "tcgen05.wait::st.sync.aligned": 9728,
+        "xor.b32": 6670
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 666,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 997902,
+        "stored_bindings": 34682
+      },
+      "source_edge_storage": {
+        "binding_templates": 29092,
+        "logical_edges": 974222,
+        "stored_bindings": 29092
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 12,
+        "operations": 48
+      },
+      "thread_count": 23680,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      },
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 13,
+        "edge_visits": 285869,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 221538,
+          "family_requests": 4326,
+          "logical_orders": 2177136,
+          "owner_bindings": 133558,
+          "stored_orders": 68082
+        }
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 470624,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 97350,
+        "affine_member_rows": 0,
+        "candidate_relations": 110816,
+        "hb_frontier_pieces": 28516,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 3257860
+      },
+      "hb_algorithm": "member-relations",
+      "hb_batches": 210,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 1059341,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 470624,
+      "hb_query_seconds": 0.15658490600000005,
+      "overlap_queries": 0,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 0
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 6291.4609375,
+    "required_order_domains": 68082,
+    "required_orders": 2177136,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 1110,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 2651678,
+      "memory_binding_templates": 18693,
+      "memory_bindings": 2846122,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 18492,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 2730,
+      "thread_prefix_groups": 355384,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 74,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 4073998,
+      "path_entries": 98566,
+      "record_bindings": 94788,
+      "record_nodes": 64896,
+      "splits": 518,
+      "template_steps": 67528,
+      "thread_memberships": 23680,
+      "value_nodes": 52343
+    },
+    "thread_record_compression": {
+      "completed_ctas": 74,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 3957838,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [],
+      "duplicate_write_value_checks": 0,
+      "equivalence_check": "equivalent",
+      "initial_memory_regions": 1225761,
+      "initial_read_families": 35590,
+      "memory_action_storage": {
+        "logical_actions": 2846122,
+        "stored_runs": 2651678
+      },
+      "output_region_families": 0,
+      "output_regions": 8192,
+      "passes": [
+        {
+          "name": "packing",
+          "rewritten_instances": 65728,
+          "rewritten_nodes": 1472,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 1141020,
+          "name": "type_edges",
+          "removed_nodes": 25130
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 780,
+          "layouts": 80,
+          "mapping_blocks": 41298,
+          "name": "view_normalization",
+          "original_pieces": 187008,
+          "reused_initial_reads": 1227460,
+          "reused_views": 2072,
+          "segmented": 18,
+          "slices": 7168,
+          "stored_mapping_blocks": 38466,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
+        }
+      ],
+      "processed_memory_actions": 2846122,
+      "processed_memory_families": 0,
+      "read_substitutions": 1330586,
+      "scalar_fold": {
+        "construction_collections": 0,
+        "diagnostics": [],
+        "output_count": 8192,
+        "output_families_merged": 0,
+        "output_family_count": 2,
+        "output_root_count": 2,
+        "peak_construction_nodes": 1382,
+        "shared_view_projection_hits": 208,
+        "source_outputs": 8192,
+        "spatial_families_projected": 2,
+        "spatial_outputs_projected": 8192,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 17,
+          "edges": 363,
+          "folds": 32,
+          "indices": 5,
+          "initial_cells": 33,
+          "logical_iterations": 380,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 4,
+          "nodes": 221,
+          "nodes_before_final_collection": 1382,
+          "nodes_reclaimed": 1161,
+          "operations": 134,
+          "parameters": 0,
+          "range_descriptions": 32,
+          "storage_nodes": 221,
+          "unique_fold_bodies": 32
+        }
+      },
+      "serialization": {
+        "action_patterns": 2651678,
+        "binding_patterns": 2651678,
+        "domain_refinements": 9711772,
+        "elapsed_seconds": 8.903948493,
+        "event_families": 448872,
+        "expanded_event_records": 0,
+        "largest_batch_members": 128,
+        "logical_actions": 2846122,
+        "logical_events": 16654726,
+        "peak_rss_mib_at_completion": 6529.40625,
+        "reachability_queries": 0,
+        "relations": 5856410,
+        "rss_mib_at_completion": 3692.23046875,
+        "scheduled_batches": 448872,
+        "singleton_batches": 191362,
+        "value_families": 227734
+      },
+      "shared_read_families": 1558,
+      "shared_read_instances": 95080,
+      "stored_read_substitutions": 1235506
+    },
+    "value_ir_instance_count": 9033150,
+    "value_ir_node_count": 231098,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 18.826555614,
+    "verification_result": "race_free"
+  },
+  "peak_rss_mib": 6529.40625,
+  "pipeline_elapsed_seconds": 37.96298346,
+  "result": "verified",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "verification_limitations": [],
+  "warning_count": 0,
+  "warning_samples_truncated": false,
+  "warnings": [],
+  "wellsync_timeout_seconds": 500.0,
+  "whole_pipeline_timeout_seconds": 497.738
+}

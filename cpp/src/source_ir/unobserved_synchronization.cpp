@@ -3,6 +3,7 @@
 #include <map>
 #include <optional>
 #include <set>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -36,7 +37,10 @@ void ForEachArrival(const SourceOp& operation, Visit&& visit) {
 
 }  // namespace
 
-UnobservedSynchronization EliminateUnobservedSynchronization(SourceProgram& program) {
+UnobservedSynchronization EliminateUnobservedSynchronization(SourceProgram& program,
+                                                             std::optional<ValidatedSource> validated) {
+  if (validated && &validated->program() != &program)
+    throw std::invalid_argument("the validation names another program");
   std::map<BarrierLifetimeId, BarrierUses> barriers;
   program.instructions.forEachAffineColumn([&](const SourceInstruction& first, const auto&, std::size_t,
                                               std::size_t, std::size_t) {
@@ -85,7 +89,10 @@ UnobservedSynchronization EliminateUnobservedSynchronization(SourceProgram& prog
       unobserved.insert(barrier);
   }
   UnobservedSynchronization result;
-  if (unobserved.empty()) return result;
+  if (unobserved.empty()) {
+    result.validated = std::move(validated);
+    return result;
+  }
   std::map<BarrierLifetimeId, std::vector<MilestoneRef>> uses;
   program.instructions.forEachAffineColumn([&](const SourceInstruction& first, const auto& delta, std::size_t,
                                               std::size_t, std::size_t count) {

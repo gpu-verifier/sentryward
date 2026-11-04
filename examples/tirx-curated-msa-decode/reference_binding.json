@@ -1,0 +1,680 @@
+{
+ "schema": "spverify.equivalence-mapping.v1",
+ "output_value_semantics": "ideal_real",
+ "left_inputs": {
+  "allocations": {
+   "6:global12:cu_seqlens_k": "cu_seqlens_k",
+   "6:global11:q2k_indices": "q2k_indices",
+   "6:global1:q": "q",
+   "6:global1:k": "k",
+   "6:global1:v": "v"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global12:cu_seqlens_k": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     129
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global11:q2k_indices": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4,
+     128,
+     16
+    ],
+    "source_strides_bytes": [
+     8192,
+     64,
+     4
+    ],
+    "target_strides_bytes": [
+     8192,
+     64,
+     4
+    ]
+   },
+   "6:global1:q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     64,
+     128
+    ],
+    "source_strides_bytes": [
+     16384,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     16384,
+     256,
+     2
+    ]
+   },
+   "6:global1:k": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     524288,
+     4,
+     128
+    ],
+    "source_strides_bytes": [
+     1024,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     1024,
+     256,
+     2
+    ]
+   },
+   "6:global1:v": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     524288,
+     4,
+     128
+    ],
+    "source_strides_bytes": [
+     1024,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     1024,
+     256,
+     2
+    ]
+   }
+  }
+ },
+ "right_inputs": {
+  "allocations": {
+   "6:global12:cu_seqlens_k": "cu_seqlens_k",
+   "6:global11:q2k_indices": "q2k_indices",
+   "6:global1:q": "q",
+   "6:global1:k": "k",
+   "6:global1:v": "v"
+  },
+  "parameters": {},
+  "layouts": {
+   "6:global12:cu_seqlens_k": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     129
+    ],
+    "source_strides_bytes": [
+     4
+    ],
+    "target_strides_bytes": [
+     4
+    ]
+   },
+   "6:global11:q2k_indices": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 4,
+    "shape": [
+     4,
+     128,
+     16
+    ],
+    "source_strides_bytes": [
+     8192,
+     64,
+     4
+    ],
+    "target_strides_bytes": [
+     8192,
+     64,
+     4
+    ]
+   },
+   "6:global1:q": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     128,
+     64,
+     128
+    ],
+    "source_strides_bytes": [
+     16384,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     16384,
+     256,
+     2
+    ]
+   },
+   "6:global1:k": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     524288,
+     4,
+     128
+    ],
+    "source_strides_bytes": [
+     1024,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     1024,
+     256,
+     2
+    ]
+   },
+   "6:global1:v": {
+    "source_offset": 0,
+    "target_offset": 0,
+    "element_bytes": 2,
+    "shape": [
+     524288,
+     4,
+     128
+    ],
+    "source_strides_bytes": [
+     1024,
+     256,
+     2
+    ],
+    "target_strides_bytes": [
+     1024,
+     256,
+     2
+    ]
+   }
+  }
+ },
+ "outputs": {
+  "kind": "dense_tensor",
+  "left_allocation": "6:global6:output",
+  "right_allocation": "6:global6:output",
+  "left_offset": 0,
+  "right_offset": 0,
+  "element_bytes": 2,
+  "shape": [
+   128,
+   64,
+   128
+  ],
+  "left_strides_bytes": [
+   16384,
+   256,
+   2
+  ],
+  "right_strides_bytes": [
+   16384,
+   256,
+   2
+  ]
+ },
+ "reference": {
+  "arguments": [
+   {
+    "name": "Q",
+    "dtype": "bfloat16",
+    "allocation": "6:global1:q"
+   },
+   {
+    "name": "K",
+    "dtype": "bfloat16",
+    "allocation": "6:global1:k"
+   },
+   {
+    "name": "V",
+    "dtype": "bfloat16",
+    "allocation": "6:global1:v"
+   },
+   {
+    "name": "cu_seqlens_k",
+    "dtype": "int32",
+    "allocation": "6:global12:cu_seqlens_k"
+   },
+   {
+    "name": "q2k_indices",
+    "dtype": "int32",
+    "allocation": "6:global11:q2k_indices"
+   },
+   {
+    "name": "scale_log2",
+    "parameter": 12
+   }
+  ]
+ },
+ "provenance": {
+  "source": "https://github.com/mlc-ai/TIRx-kernels/blob/ff128be7470d674a94169e12c1556590e4046cba/tirx_kernels/msa/msa_decode_multishape.py",
+  "upstream": [
+   "https://github.com/mlc-ai/TIRx-kernels/blob/ff128be7470d674a94169e12c1556590e4046cba/tirx_kernels/msa/msa_decode_multishape.py",
+   "https://github.com/mlc-ai/TIRx-kernels/blob/ff128be7470d674a94169e12c1556590e4046cba/tirx_kernels/bench_suite/config/msa/curated_msa_decode_multishape.yaml"
+  ],
+  "scope": "BENCH_CONFIGS decode_bf16_b128_q1_kv4096_h64 (B=128, T=1, S_kv=4096, H_q=64, H_kv=4, topk=16, flat bf16, seed 50), KV-major entry msa_decode_kvmajor_kernel; full launch of 148 CTAs over 512 (request, kv head) items. PTX params (alphabetical): p0 k_map, p1 cu_seqlens_k, p2 out, p3 part_ctr, p4 part_ml, p5 part_o, p6 ptab, p7 q2k_indices, p8 q_map, p9 qraw, p10 sched, p11 v_map, p12 scale_log2 = softmax_scale*log2(e) with softmax_scale = 128**-0.5. cu_seqlens_k fixed by the shape array (arange(0, 524289, 4096)); q2k_indices bounded to [-1, 31] by tensor_properties (_make_q2k_indices: 32 visible blocks per row). Output: all of out [128, 64, 128] bf16.",
+  "semantics": "ideal_real; union of the selected 128-token blocks (each distinct block once), bottom-right causal boundary, exp2(scale_log2 q.k)-weighted mean of v, 0 for an empty row",
+  "scope_branch_choices": [],
+  "scope_shape_arrays": [
+   {
+    "parameter": 1,
+    "offset": 0,
+    "element_type": "s32",
+    "shapes": [
+     [
+      0
+     ],
+     [
+      4096
+     ],
+     [
+      8192
+     ],
+     [
+      12288
+     ],
+     [
+      16384
+     ],
+     [
+      20480
+     ],
+     [
+      24576
+     ],
+     [
+      28672
+     ],
+     [
+      32768
+     ],
+     [
+      36864
+     ],
+     [
+      40960
+     ],
+     [
+      45056
+     ],
+     [
+      49152
+     ],
+     [
+      53248
+     ],
+     [
+      57344
+     ],
+     [
+      61440
+     ],
+     [
+      65536
+     ],
+     [
+      69632
+     ],
+     [
+      73728
+     ],
+     [
+      77824
+     ],
+     [
+      81920
+     ],
+     [
+      86016
+     ],
+     [
+      90112
+     ],
+     [
+      94208
+     ],
+     [
+      98304
+     ],
+     [
+      102400
+     ],
+     [
+      106496
+     ],
+     [
+      110592
+     ],
+     [
+      114688
+     ],
+     [
+      118784
+     ],
+     [
+      122880
+     ],
+     [
+      126976
+     ],
+     [
+      131072
+     ],
+     [
+      135168
+     ],
+     [
+      139264
+     ],
+     [
+      143360
+     ],
+     [
+      147456
+     ],
+     [
+      151552
+     ],
+     [
+      155648
+     ],
+     [
+      159744
+     ],
+     [
+      163840
+     ],
+     [
+      167936
+     ],
+     [
+      172032
+     ],
+     [
+      176128
+     ],
+     [
+      180224
+     ],
+     [
+      184320
+     ],
+     [
+      188416
+     ],
+     [
+      192512
+     ],
+     [
+      196608
+     ],
+     [
+      200704
+     ],
+     [
+      204800
+     ],
+     [
+      208896
+     ],
+     [
+      212992
+     ],
+     [
+      217088
+     ],
+     [
+      221184
+     ],
+     [
+      225280
+     ],
+     [
+      229376
+     ],
+     [
+      233472
+     ],
+     [
+      237568
+     ],
+     [
+      241664
+     ],
+     [
+      245760
+     ],
+     [
+      249856
+     ],
+     [
+      253952
+     ],
+     [
+      258048
+     ],
+     [
+      262144
+     ],
+     [
+      266240
+     ],
+     [
+      270336
+     ],
+     [
+      274432
+     ],
+     [
+      278528
+     ],
+     [
+      282624
+     ],
+     [
+      286720
+     ],
+     [
+      290816
+     ],
+     [
+      294912
+     ],
+     [
+      299008
+     ],
+     [
+      303104
+     ],
+     [
+      307200
+     ],
+     [
+      311296
+     ],
+     [
+      315392
+     ],
+     [
+      319488
+     ],
+     [
+      323584
+     ],
+     [
+      327680
+     ],
+     [
+      331776
+     ],
+     [
+      335872
+     ],
+     [
+      339968
+     ],
+     [
+      344064
+     ],
+     [
+      348160
+     ],
+     [
+      352256
+     ],
+     [
+      356352
+     ],
+     [
+      360448
+     ],
+     [
+      364544
+     ],
+     [
+      368640
+     ],
+     [
+      372736
+     ],
+     [
+      376832
+     ],
+     [
+      380928
+     ],
+     [
+      385024
+     ],
+     [
+      389120
+     ],
+     [
+      393216
+     ],
+     [
+      397312
+     ],
+     [
+      401408
+     ],
+     [
+      405504
+     ],
+     [
+      409600
+     ],
+     [
+      413696
+     ],
+     [
+      417792
+     ],
+     [
+      421888
+     ],
+     [
+      425984
+     ],
+     [
+      430080
+     ],
+     [
+      434176
+     ],
+     [
+      438272
+     ],
+     [
+      442368
+     ],
+     [
+      446464
+     ],
+     [
+      450560
+     ],
+     [
+      454656
+     ],
+     [
+      458752
+     ],
+     [
+      462848
+     ],
+     [
+      466944
+     ],
+     [
+      471040
+     ],
+     [
+      475136
+     ],
+     [
+      479232
+     ],
+     [
+      483328
+     ],
+     [
+      487424
+     ],
+     [
+      491520
+     ],
+     [
+      495616
+     ],
+     [
+      499712
+     ],
+     [
+      503808
+     ],
+     [
+      507904
+     ],
+     [
+      512000
+     ],
+     [
+      516096
+     ],
+     [
+      520192
+     ],
+     [
+      524288
+     ]
+    ]
+   }
+  ],
+  "optimized_input_sha256": "7c5d0963a944e7f76f21b56f6f4945f9f0f2ce73941bde7edf6763340ea483c8",
+  "ptx_sha256": "c5c888c3f70ccf48839fc8de02de97f0694101d6e9ce2d7f7517f8f835a358c2"
+ }
+}

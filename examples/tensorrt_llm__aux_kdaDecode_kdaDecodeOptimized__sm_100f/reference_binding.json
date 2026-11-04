@@ -1,0 +1,1473 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global3:x_q": "x_q",
+      "6:global3:x_k": "x_k",
+      "6:global3:x_v": "x_v",
+      "6:global3:w_q": "w_q",
+      "6:global3:w_k": "w_k",
+      "6:global3:w_v": "w_v",
+      "6:global6:bias_q": "bias_q",
+      "6:global6:bias_k": "bias_k",
+      "6:global6:bias_v": "bias_v",
+      "6:global4:cs_q": "cs_q",
+      "6:global4:cs_k": "cs_k",
+      "6:global4:cs_v": "cs_v",
+      "6:global5:a_log": "a_log",
+      "6:global1:g": "g",
+      "6:global7:dt_bias": "dt_bias",
+      "6:global4:beta": "beta",
+      "6:global7:onorm_g": "onorm_g",
+      "6:global12:onorm_weight": "onorm_weight",
+      "6:global17:ssm_state_indices": "ssm_state_indices",
+      "6:global5:state": "state"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global3:x_q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global3:x_k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global3:x_v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global3:w_q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          2048
+        ],
+        "source_strides_bytes": [
+          4096,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          2
+        ]
+      },
+      "6:global3:w_k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          2048
+        ],
+        "source_strides_bytes": [
+          4096,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          2
+        ]
+      },
+      "6:global3:w_v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          2048
+        ],
+        "source_strides_bytes": [
+          4096,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          2
+        ]
+      },
+      "6:global6:bias_q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2048
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      },
+      "6:global6:bias_k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2048
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      },
+      "6:global6:bias_v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2048
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      },
+      "6:global4:cs_q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2048,
+          3
+        ],
+        "source_strides_bytes": [
+          12288,
+          6,
+          2
+        ],
+        "target_strides_bytes": [
+          12288,
+          6,
+          2
+        ]
+      },
+      "6:global4:cs_k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2048,
+          3
+        ],
+        "source_strides_bytes": [
+          12288,
+          6,
+          2
+        ],
+        "target_strides_bytes": [
+          12288,
+          6,
+          2
+        ]
+      },
+      "6:global4:cs_v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2048,
+          3
+        ],
+        "source_strides_bytes": [
+          12288,
+          6,
+          2
+        ],
+        "target_strides_bytes": [
+          12288,
+          6,
+          2
+        ]
+      },
+      "6:global5:a_log": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          16
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global1:g": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global7:dt_bias": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2048
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global4:beta": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16
+        ],
+        "source_strides_bytes": [
+          32,
+          2
+        ],
+        "target_strides_bytes": [
+          32,
+          2
+        ]
+      },
+      "6:global7:onorm_g": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global12:onorm_weight": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global17:ssm_state_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global5:state": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          16,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          1048576,
+          65536,
+          512,
+          4
+        ],
+        "target_strides_bytes": [
+          1048576,
+          65536,
+          512,
+          4
+        ]
+      }
+    },
+    "parameter_constants": {
+      "reference_param_21+0": {
+        "type": "b32",
+        "literal": "3231711232"
+      },
+      "reference_param_22+0": {
+        "type": "b32",
+        "literal": "1035273459"
+      },
+      "reference_param_23+0": {
+        "type": "b32",
+        "literal": "925353388"
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global3:x_q": "x_q",
+      "6:global3:x_k": "x_k",
+      "6:global3:x_v": "x_v",
+      "6:global3:w_q": "w_q",
+      "6:global3:w_k": "w_k",
+      "6:global3:w_v": "w_v",
+      "6:global6:bias_q": "bias_q",
+      "6:global6:bias_k": "bias_k",
+      "6:global6:bias_v": "bias_v",
+      "6:global4:cs_q": "cs_q",
+      "6:global4:cs_k": "cs_k",
+      "6:global4:cs_v": "cs_v",
+      "6:global5:a_log": "a_log",
+      "6:global1:g": "g",
+      "6:global7:dt_bias": "dt_bias",
+      "6:global4:beta": "beta",
+      "6:global7:onorm_g": "onorm_g",
+      "6:global12:onorm_weight": "onorm_weight",
+      "6:global17:ssm_state_indices": "ssm_state_indices",
+      "6:global5:state": "state"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global3:x_q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global3:x_k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global3:x_v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global3:w_q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          2048
+        ],
+        "source_strides_bytes": [
+          4096,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          2
+        ]
+      },
+      "6:global3:w_k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          2048
+        ],
+        "source_strides_bytes": [
+          4096,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          2
+        ]
+      },
+      "6:global3:w_v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          4,
+          2048
+        ],
+        "source_strides_bytes": [
+          4096,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          2
+        ]
+      },
+      "6:global6:bias_q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2048
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      },
+      "6:global6:bias_k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2048
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      },
+      "6:global6:bias_v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          2048
+        ],
+        "source_strides_bytes": [
+          2
+        ],
+        "target_strides_bytes": [
+          2
+        ]
+      },
+      "6:global4:cs_q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2048,
+          3
+        ],
+        "source_strides_bytes": [
+          12288,
+          6,
+          2
+        ],
+        "target_strides_bytes": [
+          12288,
+          6,
+          2
+        ]
+      },
+      "6:global4:cs_k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2048,
+          3
+        ],
+        "source_strides_bytes": [
+          12288,
+          6,
+          2
+        ],
+        "target_strides_bytes": [
+          12288,
+          6,
+          2
+        ]
+      },
+      "6:global4:cs_v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2048,
+          3
+        ],
+        "source_strides_bytes": [
+          12288,
+          6,
+          2
+        ],
+        "target_strides_bytes": [
+          12288,
+          6,
+          2
+        ]
+      },
+      "6:global5:a_log": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          16
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global1:g": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global7:dt_bias": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2048
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global4:beta": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16
+        ],
+        "source_strides_bytes": [
+          32,
+          2
+        ],
+        "target_strides_bytes": [
+          32,
+          2
+        ]
+      },
+      "6:global7:onorm_g": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16,
+          128
+        ],
+        "source_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      },
+      "6:global12:onorm_weight": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          128
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global17:ssm_state_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1
+        ],
+        "source_strides_bytes": [
+          4
+        ],
+        "target_strides_bytes": [
+          4
+        ]
+      },
+      "6:global5:state": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          16,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          1048576,
+          65536,
+          512,
+          4
+        ],
+        "target_strides_bytes": [
+          1048576,
+          65536,
+          512,
+          4
+        ]
+      }
+    },
+    "parameter_constants": {
+      "_ZN12tensorrt_llm3_v17kernels9kdaDecode54_GLOBAL__N__a67695d1_21_kdaDecodeOptimized_cu_9e246d4824kda_decode_native_kernelILNS3_14KernelScheduleE3ELi16ELb1EEEvPK13__nv_bfloat16S8_S8_S8_S8_S8_S8_S8_S8_PS6_S9_S9_PKfS8_SB_S8_S8_SB_PKiPfllS9_fffNS2_17KdaDecodeIoLayoutE_param_23+0": {
+        "type": "b32",
+        "literal": "3231711232"
+      },
+      "_ZN12tensorrt_llm3_v17kernels9kdaDecode54_GLOBAL__N__a67695d1_21_kdaDecodeOptimized_cu_9e246d4824kda_decode_native_kernelILNS3_14KernelScheduleE3ELi16ELb1EEEvPK13__nv_bfloat16S8_S8_S8_S8_S8_S8_S8_S8_PS6_S9_S9_PKfS8_SB_S8_S8_SB_PKiPfllS9_fffNS2_17KdaDecodeIoLayoutE_param_24+0": {
+        "type": "b32",
+        "literal": "1035273459"
+      },
+      "_ZN12tensorrt_llm3_v17kernels9kdaDecode54_GLOBAL__N__a67695d1_21_kdaDecodeOptimized_cu_9e246d4824kda_decode_native_kernelILNS3_14KernelScheduleE3ELi16ELb1EEEvPK13__nv_bfloat16S8_S8_S8_S8_S8_S8_S8_S8_PS6_S9_S9_PKfS8_SB_S8_S8_SB_PKiPfllS9_fffNS2_17KdaDecodeIoLayoutE_param_25+0": {
+        "type": "b32",
+        "literal": "925353388"
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "left_allocation": "6:global4:cs_q",
+        "right_allocation": "6:global4:cs_q",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2048,
+          3
+        ],
+        "left_strides_bytes": [
+          12288,
+          6,
+          2
+        ],
+        "right_strides_bytes": [
+          12288,
+          6,
+          2
+        ]
+      },
+      {
+        "left_allocation": "6:global4:cs_k",
+        "right_allocation": "6:global4:cs_k",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2048,
+          3
+        ],
+        "left_strides_bytes": [
+          12288,
+          6,
+          2
+        ],
+        "right_strides_bytes": [
+          12288,
+          6,
+          2
+        ]
+      },
+      {
+        "left_allocation": "6:global4:cs_v",
+        "right_allocation": "6:global4:cs_v",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          2048,
+          3
+        ],
+        "left_strides_bytes": [
+          12288,
+          6,
+          2
+        ],
+        "right_strides_bytes": [
+          12288,
+          6,
+          2
+        ]
+      },
+      {
+        "left_allocation": "6:global5:state",
+        "right_allocation": "6:global5:state",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          1,
+          16,
+          128,
+          128
+        ],
+        "left_strides_bytes": [
+          1048576,
+          65536,
+          512,
+          4
+        ],
+        "right_strides_bytes": [
+          1048576,
+          65536,
+          512,
+          4
+        ]
+      },
+      {
+        "left_allocation": "6:global1:O",
+        "right_allocation": "6:global3:out",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          1,
+          16,
+          128
+        ],
+        "left_strides_bytes": [
+          4096,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          4096,
+          256,
+          2
+        ]
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "x_q",
+        "dtype": "bfloat16",
+        "allocation": "6:global3:x_q"
+      },
+      {
+        "name": "x_k",
+        "dtype": "bfloat16",
+        "allocation": "6:global3:x_k"
+      },
+      {
+        "name": "x_v",
+        "dtype": "bfloat16",
+        "allocation": "6:global3:x_v"
+      },
+      {
+        "name": "w_q",
+        "dtype": "bfloat16",
+        "allocation": "6:global3:w_q"
+      },
+      {
+        "name": "w_k",
+        "dtype": "bfloat16",
+        "allocation": "6:global3:w_k"
+      },
+      {
+        "name": "w_v",
+        "dtype": "bfloat16",
+        "allocation": "6:global3:w_v"
+      },
+      {
+        "name": "bias_q",
+        "dtype": "bfloat16",
+        "allocation": "6:global6:bias_q"
+      },
+      {
+        "name": "bias_k",
+        "dtype": "bfloat16",
+        "allocation": "6:global6:bias_k"
+      },
+      {
+        "name": "bias_v",
+        "dtype": "bfloat16",
+        "allocation": "6:global6:bias_v"
+      },
+      {
+        "name": "cs_q",
+        "dtype": "bfloat16",
+        "allocation": "6:global4:cs_q"
+      },
+      {
+        "name": "cs_k",
+        "dtype": "bfloat16",
+        "allocation": "6:global4:cs_k"
+      },
+      {
+        "name": "cs_v",
+        "dtype": "bfloat16",
+        "allocation": "6:global4:cs_v"
+      },
+      {
+        "name": "a_log",
+        "dtype": "float32",
+        "allocation": "6:global5:a_log"
+      },
+      {
+        "name": "g",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:g"
+      },
+      {
+        "name": "dt_bias",
+        "dtype": "float32",
+        "allocation": "6:global7:dt_bias"
+      },
+      {
+        "name": "beta",
+        "dtype": "bfloat16",
+        "allocation": "6:global4:beta"
+      },
+      {
+        "name": "onorm_g",
+        "dtype": "bfloat16",
+        "allocation": "6:global7:onorm_g"
+      },
+      {
+        "name": "onorm_weight",
+        "dtype": "float32",
+        "allocation": "6:global12:onorm_weight"
+      },
+      {
+        "name": "ssm_state_indices",
+        "dtype": "int32",
+        "allocation": "6:global17:ssm_state_indices"
+      },
+      {
+        "name": "state",
+        "dtype": "float32",
+        "allocation": "6:global5:state"
+      },
+      {
+        "name": "lower_bound",
+        "value": -5.0
+      },
+      {
+        "name": "scale",
+        "value": 0.08838834764831845
+      },
+      {
+        "name": "epsilon",
+        "value": 1e-05
+      }
+    ]
+  },
+  "provenance": {
+    "optimized_input_sha256": "9964e780902451cdaee2fa0b2bb29cef0f594fe8a131355cae011142cc0e3b76",
+    "upstream": [
+      "https://github.com/NVIDIA/TensorRT-LLM/blob/7587cc8e8a61a39be9d05ee00bf612088ee675c9/cpp/tensorrt_llm/kernels/kdaDecode/kdaDecodeOptimized.cu",
+      "https://github.com/NVIDIA/TensorRT-LLM/blob/7587cc8e8a61a39be9d05ee00bf612088ee675c9/cpp/tensorrt_llm/kernels/kdaDecode/kdaDecode.h",
+      "https://github.com/NVIDIA/TensorRT-LLM/blob/7587cc8e8a61a39be9d05ee00bf612088ee675c9/cpp/tensorrt_llm/kernels/kdaDecode/kdaDecodeDispatcher.cpp",
+      "https://github.com/NVIDIA/TensorRT-LLM/blob/7587cc8e8a61a39be9d05ee00bf612088ee675c9/tensorrt_llm/_torch/modules/kimi_kda/kimi_kda_mixer.py",
+      "https://github.com/NVIDIA/TensorRT-LLM/blob/7587cc8e8a61a39be9d05ee00bf612088ee675c9/tests/unittest/_torch/modules/kimi_kda/test_kda_decode_op.py"
+    ],
+    "derived_from": "https://github.com/NVIDIA/TensorRT-LLM/blob/7587cc8e8a61a39be9d05ee00bf612088ee675c9/cpp/tensorrt_llm/kernels/kdaDecode/kdaDecodeOptimized.cu",
+    "scope_branch_choices": [],
+    "semantics": "ideal_real; fixed saved configuration; all declared output tensors",
+    "ptx_sha256": "9665955b7e0a99100a391a2de1486d78cb2fc512481f9a6f8d8580d633e836c8",
+    "scope_shape_arrays": [],
+    "source_interface": {
+      "name": "tensorrt_llm__aux_kdaDecode_kdaDecodeOptimized__sm_100f",
+      "family": "kda",
+      "source": "https://github.com/NVIDIA/TensorRT-LLM/blob/7587cc8e8a61a39be9d05ee00bf612088ee675c9/cpp/tensorrt_llm/kernels/kdaDecode/kdaDecodeOptimized.cu",
+      "ptx": "",
+      "entry": "reference",
+      "upstream": [
+        "https://github.com/NVIDIA/TensorRT-LLM/blob/7587cc8e8a61a39be9d05ee00bf612088ee675c9/cpp/tensorrt_llm/kernels/kdaDecode/kdaDecodeOptimized.cu",
+        "https://github.com/NVIDIA/TensorRT-LLM/blob/7587cc8e8a61a39be9d05ee00bf612088ee675c9/cpp/tensorrt_llm/kernels/kdaDecode/kdaDecode.h",
+        "https://github.com/NVIDIA/TensorRT-LLM/blob/7587cc8e8a61a39be9d05ee00bf612088ee675c9/cpp/tensorrt_llm/kernels/kdaDecode/kdaDecodeDispatcher.cpp",
+        "https://github.com/NVIDIA/TensorRT-LLM/blob/7587cc8e8a61a39be9d05ee00bf612088ee675c9/tensorrt_llm/_torch/modules/kimi_kda/kimi_kda_mixer.py",
+        "https://github.com/NVIDIA/TensorRT-LLM/blob/7587cc8e8a61a39be9d05ee00bf612088ee675c9/tests/unittest/_torch/modules/kimi_kda/test_kda_decode_op.py"
+      ],
+      "parameters": [
+        {
+          "name": "x_q",
+          "type": "bf16",
+          "shape": [
+            1,
+            16,
+            128
+          ],
+          "role": "input",
+          "source": "x_q",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "x_k",
+          "type": "bf16",
+          "shape": [
+            1,
+            16,
+            128
+          ],
+          "role": "input",
+          "source": "x_k",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "x_v",
+          "type": "bf16",
+          "shape": [
+            1,
+            16,
+            128
+          ],
+          "role": "input",
+          "source": "x_v",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "w_q",
+          "type": "bf16",
+          "shape": [
+            4,
+            2048
+          ],
+          "role": "input",
+          "source": "w_q",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "w_k",
+          "type": "bf16",
+          "shape": [
+            4,
+            2048
+          ],
+          "role": "input",
+          "source": "w_k",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "w_v",
+          "type": "bf16",
+          "shape": [
+            4,
+            2048
+          ],
+          "role": "input",
+          "source": "w_v",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "bias_q",
+          "type": "bf16",
+          "shape": [
+            2048
+          ],
+          "role": "input",
+          "source": "bias_q",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "bias_k",
+          "type": "bf16",
+          "shape": [
+            2048
+          ],
+          "role": "input",
+          "source": "bias_k",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "bias_v",
+          "type": "bf16",
+          "shape": [
+            2048
+          ],
+          "role": "input",
+          "source": "bias_v",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "cs_q",
+          "type": "bf16",
+          "shape": [
+            1,
+            2048,
+            3
+          ],
+          "role": "inout",
+          "source": "cs_q",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "cs_k",
+          "type": "bf16",
+          "shape": [
+            1,
+            2048,
+            3
+          ],
+          "role": "inout",
+          "source": "cs_k",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "cs_v",
+          "type": "bf16",
+          "shape": [
+            1,
+            2048,
+            3
+          ],
+          "role": "inout",
+          "source": "cs_v",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "a_log",
+          "type": "float",
+          "shape": [
+            16
+          ],
+          "role": "input",
+          "source": "a_log",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "g",
+          "type": "bf16",
+          "shape": [
+            1,
+            16,
+            128
+          ],
+          "role": "input",
+          "source": "g",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "dt_bias",
+          "type": "float",
+          "shape": [
+            2048
+          ],
+          "role": "input",
+          "source": "dt_bias",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "beta",
+          "type": "bf16",
+          "shape": [
+            1,
+            16
+          ],
+          "role": "input",
+          "source": "beta",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "onorm_g",
+          "type": "bf16",
+          "shape": [
+            1,
+            16,
+            128
+          ],
+          "role": "input",
+          "source": "onorm_g",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "onorm_weight",
+          "type": "float",
+          "shape": [
+            128
+          ],
+          "role": "input",
+          "source": "onorm_weight",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "ssm_state_indices",
+          "type": "int",
+          "shape": [
+            1
+          ],
+          "role": "input",
+          "source": "ssm_state_indices",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "state",
+          "type": "float",
+          "shape": [
+            1,
+            16,
+            128,
+            128
+          ],
+          "role": "inout",
+          "source": "state",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "O",
+          "type": "bf16",
+          "shape": [
+            1,
+            16,
+            128
+          ],
+          "role": "output",
+          "source": "out",
+          "layout": "row-major logical tensor"
+        },
+        {
+          "name": "lower_bound",
+          "type": "float",
+          "value": -5.0,
+          "role": "input"
+        },
+        {
+          "name": "scale",
+          "type": "float",
+          "value": 0.08838834764831845,
+          "role": "input"
+        },
+        {
+          "name": "epsilon",
+          "type": "float",
+          "value": 1e-05,
+          "role": "input"
+        }
+      ],
+      "attributes": {
+        "batch": 1,
+        "heads": 16,
+        "value_heads": 16,
+        "key_dim": 128,
+        "value_dim": 128,
+        "conv_width": 4,
+        "ssm_state_indices": "int32 [B] slot table, values [0, slots - 1]; slots = 1",
+        "update_conv_state": true,
+        "lower_bound_gate": true,
+        "beta_sigmoid": true,
+        "output_rmsnorm": true,
+        "output_type": "bf16",
+        "gate": "low-rank",
+        "schedule": "kFourCtaThreadBlockClusterCpAsync"
+      },
+      "work_items": 64,
+      "launch": {
+        "grid_dim": [
+          4,
+          1,
+          16
+        ],
+        "block_dim": [
+          256,
+          1,
+          1
+        ],
+        "cluster_dim": [
+          4,
+          1,
+          1
+        ]
+      },
+      "optimized_input": "examples/tensorrt_llm__aux_kdaDecode_kdaDecodeOptimized__sm_100f/input.json",
+      "optimized_input_sha256": "9964e780902451cdaee2fa0b2bb29cef0f594fe8a131355cae011142cc0e3b76",
+      "optimized_scope_branch_choices": [],
+      "optimized_objects": {
+        "tma_descriptors": [],
+        "pointer_declarations": [
+          {
+            "parameter": 0,
+            "offset": 0,
+            "type": "pointer",
+            "object": "x_q"
+          },
+          {
+            "parameter": 1,
+            "offset": 0,
+            "type": "pointer",
+            "object": "x_k"
+          },
+          {
+            "parameter": 2,
+            "offset": 0,
+            "type": "pointer",
+            "object": "x_v"
+          },
+          {
+            "parameter": 3,
+            "offset": 0,
+            "type": "pointer",
+            "object": "w_q"
+          },
+          {
+            "parameter": 4,
+            "offset": 0,
+            "type": "pointer",
+            "object": "w_k"
+          },
+          {
+            "parameter": 5,
+            "offset": 0,
+            "type": "pointer",
+            "object": "w_v"
+          },
+          {
+            "parameter": 6,
+            "offset": 0,
+            "type": "pointer",
+            "object": "bias_q"
+          },
+          {
+            "parameter": 7,
+            "offset": 0,
+            "type": "pointer",
+            "object": "bias_k"
+          },
+          {
+            "parameter": 8,
+            "offset": 0,
+            "type": "pointer",
+            "object": "bias_v"
+          },
+          {
+            "parameter": 9,
+            "offset": 0,
+            "type": "pointer",
+            "object": "cs_q"
+          },
+          {
+            "parameter": 10,
+            "offset": 0,
+            "type": "pointer",
+            "object": "cs_k"
+          },
+          {
+            "parameter": 11,
+            "offset": 0,
+            "type": "pointer",
+            "object": "cs_v"
+          },
+          {
+            "parameter": 12,
+            "offset": 0,
+            "type": "pointer",
+            "object": "a_log"
+          },
+          {
+            "parameter": 13,
+            "offset": 0,
+            "type": "pointer",
+            "object": "g"
+          },
+          {
+            "parameter": 14,
+            "offset": 0,
+            "type": "pointer",
+            "object": "dt_bias"
+          },
+          {
+            "parameter": 15,
+            "offset": 0,
+            "type": "pointer",
+            "object": "beta"
+          },
+          {
+            "parameter": 16,
+            "offset": 0,
+            "type": "pointer",
+            "object": "onorm_g"
+          },
+          {
+            "parameter": 17,
+            "offset": 0,
+            "type": "pointer",
+            "object": "onorm_weight"
+          },
+          {
+            "parameter": 19,
+            "offset": 0,
+            "type": "pointer",
+            "object": "state"
+          },
+          {
+            "parameter": 22,
+            "offset": 0,
+            "type": "pointer",
+            "object": "out"
+          },
+          {
+            "parameter": 18,
+            "offset": 0,
+            "type": "pointer",
+            "object": "ssm_state_indices"
+          }
+        ]
+      },
+      "comparison_domain": "ideal mathematical computation; no bitwise-equivalence claim",
+      "logical_layout_adapter": "required when optimized storage differs from reference row-major layout",
+      "equivalence_status": "not_checked"
+    }
+  }
+}

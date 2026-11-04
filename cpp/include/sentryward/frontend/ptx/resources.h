@@ -157,6 +157,10 @@ struct TmaAccesses {
 // ---- the slot interface -----------------------------------------------------
 // The address bridge: (active lane, record, operand text) -> address JSON.
 using AddressBridge = std::function<std::optional<nlohmann::json>(LaneRef, const RecordView &, std::string_view)>;
+// The registers a memory slot's resolution reads from its site record, for its address operand
+// (`[reg]`, `[reg+imm]` or a plain register): that operand's own register (MemoryBody, Shared and
+// GenericOwner read only it there; definitions are other records). Sorted.
+std::vector<RegId> AddressRegisters(const FactSource &facts, std::string_view operand);
 // The consumer a Resources serves, and its bridge: an empty bridge means the
 // slot resolver consults its own address-value extractor (`if (bridge)`).
 struct SlotConfig {
@@ -228,7 +232,9 @@ struct ResolvedFootprint {
   std::optional<AbstractAffine> affine = std::nullopt;
 };
 // Tma's terminal: per segment [global steps][shared step], then the
-// completions' BarrierSteps; pairs and completions name steps by index.
+// completions' BarrierSteps; pairs and completions name steps by index. An
+// abstract region's global steps (expression, placement, patch) come once, at
+// the first segment of the region; its other segments' pairs name the same step.
 struct ResolvedTma {
   std::vector<SlotStep> steps;
   struct Pair {

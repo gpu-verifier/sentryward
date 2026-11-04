@@ -28,6 +28,17 @@ std::vector<std::string> OperandTexts(const Module &m, const Instruction &i) {
     r.emplace_back(m.view(v));
   return r;
 }
+std::vector<RegId> AddressRegisters(const FactSource &facts, std::string_view operand) {
+  auto token = Trim(operand);
+  if (token.starts_with('[') && token.ends_with(']')) token = Trim(std::string_view(token).substr(1, token.size() - 2));
+  std::vector<RegId> regs;
+  if (const auto reg = facts.Reg(token)) regs.push_back(*reg);
+  if (const auto split = SplitAddress(token))
+    if (const auto reg = facts.Reg(split->first); reg && std::find(regs.begin(), regs.end(), *reg) == regs.end())
+      regs.push_back(*reg);
+  std::sort(regs.begin(), regs.end());
+  return regs;
+}
 bool Has(const Instruction &i, std::string_view m) {
   return std::find(i.modifiers.begin(), i.modifiers.end(), m) !=
          i.modifiers.end();

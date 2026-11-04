@@ -1,0 +1,769 @@
+{
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
+    }
+  ],
+  "checks": {
+    "equivalence": "incomplete",
+    "synchronization": "passed"
+  },
+  "diagnostics": [
+    {
+      "code": "unit_restart_limit_exceeded",
+      "details": {
+        "internal_stage": "value_analysis.scalar_fold"
+      },
+      "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 67250064 value instances (8 units from 2 analysed), above the limit 67108864.",
+      "stage": "equivalence"
+    }
+  ],
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 73984,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [
+      {
+        "lanes": 7288,
+        "line": 751
+      },
+      {
+        "lanes": 7288,
+        "line": 1162
+      },
+      {
+        "lanes": 22528,
+        "line": 1591
+      }
+    ],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "shape_input_contract": {
+      "kind": "fixed_read_only",
+      "origin": "shape_arrays",
+      "regions": [
+        {
+          "allocation": "cu_seqlens_q",
+          "byte_offset": 0,
+          "bytes": 12,
+          "resource": "input.arg9.0"
+        },
+        {
+          "allocation": "cu_seqlens_k",
+          "byte_offset": 0,
+          "bytes": 12,
+          "resource": "input.arg10.0"
+        },
+        {
+          "allocation": "kv_lens",
+          "byte_offset": 0,
+          "bytes": 12,
+          "resource": "input.arg12.0"
+        }
+      ],
+      "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+    },
+    "trap_only_equality_assertions_hold": true
+  },
+  "internal": {
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_timeout_ms": 100
+    },
+    "counts": {
+      "edges": 20823162,
+      "events": 6696694,
+      "instructions": 571533,
+      "memory_accesses": 5440981,
+      "threads": 1024
+    },
+    "equivalence": {
+      "diagnostics": [
+        {
+          "code": "unit_restart_limit_exceeded",
+          "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 67250064 value instances (8 units from 2 analysed), above the limit 67108864.",
+          "stage": "value_analysis.scalar_fold"
+        }
+      ],
+      "expression_diagnostic": {
+        "class_mode_diagnostic": {
+          "code": "expression_node_limit_exceeded",
+          "message": "lifted member outputs exceed the scalar graph node budget"
+        },
+        "diagnostic": {
+          "code": "unit_restart_limit_exceeded",
+          "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 67250064 value instances (8 units from 2 analysed), above the limit 67108864."
+        },
+        "diagnostics": [
+          {
+            "code": "unit_restart_limit_exceeded",
+            "details": {
+              "resource": {
+                "estimate": 67250064,
+                "kind": "per_unit_value_instances",
+                "limit": 67108864,
+                "origin": "algorithm_budget"
+              }
+            },
+            "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 67250064 value instances (8 units from 2 analysed), above the limit 67108864.",
+            "stage": "pipeline"
+          }
+        ],
+        "resource": {
+          "estimate": 67250064,
+          "kind": "per_unit_value_instances",
+          "limit": 67108864,
+          "origin": "algorithm_budget"
+        }
+      },
+      "stage": "value_analysis.scalar_fold"
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": true
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 8,
+      "dependency_compression": {
+        "tcgen_commit": {
+          "consumers": 92,
+          "emitted_references": 886,
+          "original_references": 20272,
+          "prefix_effects": 92
+        },
+        "tcgen_load_wait": {
+          "consumers": 50688,
+          "emitted_references": 56320,
+          "original_references": 4887040,
+          "prefix_effects": 0
+        },
+        "tcgen_store_wait": {
+          "consumers": 16384,
+          "emitted_references": 57856,
+          "original_references": 768000,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 24638404,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 73984,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [
+          {
+            "lanes": 7288,
+            "line": 751
+          },
+          {
+            "lanes": 7288,
+            "line": 1162
+          },
+          {
+            "lanes": 22528,
+            "line": 1591
+          }
+        ],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "shape_input_contract": {
+          "kind": "fixed_read_only",
+          "origin": "shape_arrays",
+          "regions": [
+            {
+              "allocation": "cu_seqlens_q",
+              "byte_offset": 0,
+              "bytes": 12,
+              "resource": "input.arg9.0"
+            },
+            {
+              "allocation": "cu_seqlens_k",
+              "byte_offset": 0,
+              "bytes": 12,
+              "resource": "input.arg10.0"
+            },
+            {
+              "allocation": "kv_lens",
+              "byte_offset": 0,
+              "bytes": 12,
+              "resource": "input.arg12.0"
+            }
+          ],
+          "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+        },
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "out",
+          "offset": 0,
+          "parameter": "kernel_cake_blackwell_msa_1a404b555f04cdde1d2c_param_5",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "lse",
+          "offset": 0,
+          "parameter": "kernel_cake_blackwell_msa_1a404b555f04cdde1d2c_param_6",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "temperature_lse",
+          "offset": 0,
+          "parameter": "kernel_cake_blackwell_msa_1a404b555f04cdde1d2c_param_7",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "q2k_indices",
+          "offset": 0,
+          "parameter": "kernel_cake_blackwell_msa_1a404b555f04cdde1d2c_param_8",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "cu_seqlens_q",
+          "offset": 0,
+          "parameter": "kernel_cake_blackwell_msa_1a404b555f04cdde1d2c_param_9",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "cu_seqlens_k",
+          "offset": 0,
+          "parameter": "kernel_cake_blackwell_msa_1a404b555f04cdde1d2c_param_10",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "q_offsets",
+          "offset": 0,
+          "parameter": "kernel_cake_blackwell_msa_1a404b555f04cdde1d2c_param_11",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "kv_lens",
+          "offset": 0,
+          "parameter": "kernel_cake_blackwell_msa_1a404b555f04cdde1d2c_param_12",
+          "source": "declaration"
+        },
+        {
+          "bytes": 8,
+          "object": "page_table",
+          "offset": 0,
+          "parameter": "kernel_cake_blackwell_msa_1a404b555f04cdde1d2c_param_13",
+          "source": "declaration"
+        }
+      ],
+      "lowered_instruction_count": 571533,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 704
+      },
+      "reached_opcodes": {
+        "add.ftz.f32": 67584,
+        "add.rm.ftz.f32x2": 90112,
+        "add.rn.ftz.f32x2": 1441792,
+        "add.s32": 774840,
+        "add.s64": 24756,
+        "add.u32": 78848,
+        "and.b32": 35448,
+        "and.pred": 7168,
+        "bar.sync": 4096,
+        "bar.warp.sync": 4352,
+        "barrier.sync": 256,
+        "bra": 284356,
+        "bra.uni": 8568,
+        "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes": 720,
+        "cvt.rn.bf16x2.f32": 1476864,
+        "cvt.s64.s32": 3072,
+        "cvt.u32.u64": 4096,
+        "cvt.u64.u32": 16384,
+        "cvta.param.u64": 184,
+        "cvta.shared.u64": 4096,
+        "cvta.to.global.u64": 35072,
+        "cvta.to.shared.u64": 4096,
+        "div.s32": 9280,
+        "elect.sync": 73984,
+        "ex2.approx.ftz.f32": 2703360,
+        "fence.mbarrier_init.release.cluster": 8,
+        "fence.proxy.async.shared::cta": 256,
+        "fma.rn.ftz.f32": 90660,
+        "fma.rn.ftz.f32x2": 1712128,
+        "ld.global.nc.b32": 32256,
+        "ld.global.nc.v4.b32": 2192,
+        "ld.param.b32": 36168,
+        "ld.param.b64": 35072,
+        "ld.shared.b32": 35392,
+        "ld.volatile.shared.b32": 4352,
+        "lg2.approx.ftz.f32": 548,
+        "mad.lo.s32": 804,
+        "max.f32": 3153920,
+        "max.s32": 9216,
+        "max.u32": 22528,
+        "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64": 192,
+        "mbarrier.arrive.release.cta.shared::cta.b64": 115968,
+        "mbarrier.init.shared::cta.b64": 240,
+        "mbarrier.try_wait.parity.acquire.cta.shared::cta.b64": 97024,
+        "min.s32": 5632,
+        "min.u32": 2048,
+        "mov.b32": 550808,
+        "mov.b64": 7745856,
+        "mov.pred": 3584,
+        "mov.s32": 1600,
+        "mov.u32": 10240,
+        "mul.ftz.f32": 23624,
+        "mul.lo.s32": 9280,
+        "mul.rn.f32x2": 1345792,
+        "mul.wide.s32": 8372,
+        "mul.wide.u32": 3584,
+        "neg.ftz.f32": 45056,
+        "neg.s32": 256,
+        "not.b32": 22528,
+        "not.pred": 24064,
+        "or.b32": 12096,
+        "or.b64": 11264,
+        "or.pred": 5376,
+        "rcp.approx.ftz.f32": 2048,
+        "ret": 4096,
+        "selp.b32": 61248,
+        "selp.f32": 137764,
+        "setmaxnreg.dec.sync.aligned.u32": 2048,
+        "setmaxnreg.inc.sync.aligned.u32": 2048,
+        "setp.eq.b32": 156352,
+        "setp.eq.ftz.f32": 22528,
+        "setp.ge.s32": 32000,
+        "setp.ge.u32": 16384,
+        "setp.gt.ftz.f32": 2596,
+        "setp.gt.s32": 16896,
+        "setp.gt.u32": 49664,
+        "setp.lt.ftz.f32": 20480,
+        "setp.lt.s32": 16272,
+        "setp.lt.u32": 45752,
+        "setp.ltu.ftz.f32": 22528,
+        "setp.ne.b32": 88000,
+        "shfl.sync.idx.b32": 34816,
+        "shl.b32": 260080,
+        "shl.b64": 5120,
+        "shr.s32": 25600,
+        "shr.u32": 24952,
+        "st.global.b32": 548,
+        "st.global.v4.b32": 8768,
+        "st.shared.b32": 37440,
+        "sub.rn.ftz.f32x2": 180224,
+        "sub.s32": 41536,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 256,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 368,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 256,
+        "tcgen05.fence::after_thread_sync": 62208,
+        "tcgen05.fence::before_thread_sync": 89088,
+        "tcgen05.ld.sync.aligned.32x32b.x16.b32": 180224,
+        "tcgen05.ld.sync.aligned.32x32b.x64.b32": 45056,
+        "tcgen05.mma.cta_group::1.kind::f16": 2816,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 256,
+        "tcgen05.st.sync.aligned.32x32b.x16.b32": 208896,
+        "tcgen05.st.sync.aligned.32x32b.x32.b32": 22528,
+        "tcgen05.wait::ld.sync.aligned": 202752,
+        "tcgen05.wait::st.sync.aligned": 65536,
+        "vote.sync.any.pred": 20480,
+        "xor.b32": 86528
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 26,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 571533,
+        "stored_bindings": 14350
+      },
+      "source_edge_storage": {
+        "binding_templates": 3044,
+        "logical_edges": 570509,
+        "stored_bindings": 3044
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 92,
+        "operations": 704
+      },
+      "thread_count": 4096,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
+    },
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      },
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 39,
+        "edge_visits": 74986761,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 368228,
+          "family_requests": 9968,
+          "logical_orders": 3788608,
+          "owner_bindings": 234752,
+          "stored_orders": 119076
+        }
+      }
+    },
+    "implementation": "cpp",
+    "memory_analysis": {
+      "address_candidates": 7799641,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 516878,
+        "affine_member_rows": 8192,
+        "candidate_relations": 5465562,
+        "hb_frontier_pieces": 8178925,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 5440981
+      },
+      "hb_algorithm": "member-relations",
+      "hb_batches": 3539,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 168264532,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 7799641,
+      "hb_query_seconds": 28.680423476999973,
+      "overlap_queries": 0,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 0
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 18834.375,
+    "required_order_domains": 119076,
+    "required_orders": 3788608,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 46,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 3041406,
+      "memory_binding_templates": 91743,
+      "memory_bindings": 3698241,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 13644,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 1010,
+      "thread_prefix_groups": 910411,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 8,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 24782808,
+      "path_entries": 455216,
+      "record_bindings": 444280,
+      "record_nodes": 405176,
+      "splits": 88,
+      "template_steps": 411128,
+      "thread_memberships": 4096,
+      "value_nodes": 235516
+    },
+    "thread_record_compression": {
+      "completed_ctas": 8,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 24638404,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "diagnostics": [],
+      "duplicate_write_value_checks": 0,
+      "equivalence_check": "analysis_budget_exceeded",
+      "initial_memory_regions": 62776,
+      "initial_read_families": 62200,
+      "memory_action_storage": {
+        "logical_actions": 3698241,
+        "stored_runs": 3044731
+      },
+      "output_region_families": 0,
+      "output_regions": 8905,
+      "passes": [
+        {
+          "name": "packing",
+          "rewritten_instances": 1416208,
+          "rewritten_nodes": 24016,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 12153996,
+          "name": "type_edges",
+          "removed_nodes": 206806
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 7300,
+          "layouts": 980,
+          "mapping_blocks": 396255,
+          "name": "view_normalization",
+          "original_pieces": 2936832,
+          "reused_initial_reads": 63324,
+          "reused_views": 672,
+          "segmented": 468,
+          "slices": 58512,
+          "stored_mapping_blocks": 351340,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
+        }
+      ],
+      "processed_memory_actions": 3698241,
+      "processed_memory_families": 0,
+      "read_substitutions": 139510,
+      "scalar_fold": {
+        "class_mode_diagnostic": {
+          "code": "expression_node_limit_exceeded",
+          "message": "lifted member outputs exceed the scalar graph node budget"
+        },
+        "diagnostic": {
+          "code": "unit_restart_limit_exceeded",
+          "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 67250064 value instances (8 units from 2 analysed), above the limit 67108864."
+        },
+        "diagnostics": [
+          {
+            "code": "unit_restart_limit_exceeded",
+            "details": {
+              "resource": {
+                "estimate": 67250064,
+                "kind": "per_unit_value_instances",
+                "limit": 67108864,
+                "origin": "algorithm_budget"
+              }
+            },
+            "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 67250064 value instances (8 units from 2 analysed), above the limit 67108864.",
+            "stage": "pipeline"
+          }
+        ],
+        "resource": {
+          "estimate": 67250064,
+          "kind": "per_unit_value_instances",
+          "limit": 67108864,
+          "origin": "algorithm_budget"
+        }
+      },
+      "serialization": {
+        "action_patterns": 3044731,
+        "binding_patterns": 3041406,
+        "domain_refinements": 15207812,
+        "elapsed_seconds": 24.536436499,
+        "event_families": 1482405,
+        "expanded_event_records": 0,
+        "largest_batch_members": 219,
+        "logical_actions": 3698241,
+        "logical_events": 31660260,
+        "peak_rss_mib_at_completion": 9404.5703125,
+        "reachability_queries": 0,
+        "relations": 8399301,
+        "rss_mib_at_completion": 5585.06640625,
+        "scheduled_batches": 9708537,
+        "singleton_batches": 9314748,
+        "value_families": 695451
+      },
+      "shared_read_families": 164,
+      "shared_read_instances": 8926,
+      "stored_read_substitutions": 130584
+    },
+    "value_ir_instance_count": 16812516,
+    "value_ir_node_count": 589869,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 82.268222043,
+    "verification_result": "race_free"
+  },
+  "peak_rss_mib": 18834.375,
+  "pipeline_elapsed_seconds": 229.072807218,
+  "result": "analysis_budget_exceeded",
+  "rss_limit_mib": null,
+  "schema": "spverify.native-result/v1",
+  "scope": {
+    "operation": "kernel_verification"
+  },
+  "verification_limitations": [],
+  "warning_count": 0,
+  "warning_samples_truncated": false,
+  "warnings": [],
+  "wellsync_timeout_seconds": 500.0,
+  "whole_pipeline_timeout_seconds": 497.885
+}

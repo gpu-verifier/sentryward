@@ -55,6 +55,11 @@ class ReachabilityOracle final {
       std::span<const EventId> candidates, std::span<const EventId> targets);
 
   void NotifyGraphMutation() noexcept;
+  // The family index that this oracle's queries built for the direction,
+  // refreshed for the events and edges appended since, or null. Never builds
+  // one, so lending it leaves the oracle's later queries as they would be.
+  // The oracle keeps ownership; query the index only until the graph changes.
+  [[nodiscard]] FamilyHbReachability* builtFamilyQueries(bool reverse);
   [[nodiscard]] bool Freeze();
   [[nodiscard]] bool frozen() const noexcept;
   [[nodiscard]] bool usesDenseIndex() const noexcept;

@@ -15,17 +15,17 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          4,
-          4,
+          128,
+          32,
           128
         ],
         "source_strides_bytes": [
-          1024,
+          8192,
           256,
           2
         ],
         "target_strides_bytes": [
-          1024,
+          8192,
           256,
           2
         ]
@@ -35,15 +35,15 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          4,
-          4
+          128,
+          32
         ],
         "source_strides_bytes": [
-          16,
+          128,
           4
         ],
         "target_strides_bytes": [
-          16,
+          128,
           4
         ]
       },
@@ -52,17 +52,17 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          4,
-          4,
+          128,
+          32,
           128
         ],
         "source_strides_bytes": [
-          1024,
+          8192,
           256,
           2
         ],
         "target_strides_bytes": [
-          1024,
+          8192,
           256,
           2
         ]
@@ -72,15 +72,15 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          4,
-          4
+          128,
+          32
         ],
         "source_strides_bytes": [
-          16,
+          128,
           4
         ],
         "target_strides_bytes": [
-          16,
+          128,
           4
         ]
       }
@@ -100,17 +100,17 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          4,
-          4,
+          128,
+          32,
           128
         ],
         "source_strides_bytes": [
-          1024,
+          8192,
           256,
           2
         ],
         "target_strides_bytes": [
-          1024,
+          8192,
           256,
           2
         ]
@@ -120,15 +120,15 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          4,
-          4
+          128,
+          32
         ],
         "source_strides_bytes": [
-          16,
+          128,
           4
         ],
         "target_strides_bytes": [
-          16,
+          128,
           4
         ]
       },
@@ -137,17 +137,17 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          4,
-          4,
+          128,
+          32,
           128
         ],
         "source_strides_bytes": [
-          1024,
+          8192,
           256,
           2
         ],
         "target_strides_bytes": [
-          1024,
+          8192,
           256,
           2
         ]
@@ -157,15 +157,15 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          4,
-          4
+          128,
+          32
         ],
         "source_strides_bytes": [
-          16,
+          128,
           4
         ],
         "target_strides_bytes": [
-          16,
+          128,
           4
         ]
       }
@@ -181,17 +181,17 @@
         "right_offset": 0,
         "element_bytes": 2,
         "shape": [
-          4,
-          4,
+          128,
+          32,
           128
         ],
         "left_strides_bytes": [
-          1024,
+          8192,
           256,
           2
         ],
         "right_strides_bytes": [
-          1024,
+          8192,
           256,
           2
         ]
@@ -203,15 +203,15 @@
         "right_offset": 0,
         "element_bytes": 4,
         "shape": [
-          4,
-          4
+          128,
+          32
         ],
         "left_strides_bytes": [
-          16,
+          128,
           4
         ],
         "right_strides_bytes": [
-          16,
+          128,
           4
         ]
       }
@@ -247,10 +247,12 @@
       "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/attention/cascade.cuh",
       "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/csrc/cascade.cu",
       "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/vec_dtypes.cuh",
-      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/math.cuh"
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/include/flashinfer/math.cuh",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/tests/trace/example.py#L259-L266",
+      "https://github.com/flashinfer-ai/flashinfer/blob/8c94f70f49fbe17adb5deae5b2b48ff467346863/tests/trace/fi_trace_out/merge_state_h32_d128.json"
     ],
-    "scope": "MergeStateKernel<8,bf16,bf16>; seq_len=4 (grid.x), num_heads=4 (block.y, param 6), head_dim=128 (param 7); s_merged non-null; all of v_merged and s_merged written",
-    "optimized_input_sha256": "7d1ba8cc18404b24a1a43ee6cabd0ea8e13f90ed3742d9d382946e17d2e03271",
+    "scope": "MergeStateKernel<8,bf16,bf16>; upstream bf16 call tests/trace/example.py L259-266 (ms_T, ms_H, ms_D = 128, 32, 128; trace definition merge_state_h32_d128: num_heads 32, head_dim 128): seq_len=128 (grid.x), num_heads=32 (block.y, param 6), head_dim=128 (param 7, block.x = 128/8); s_merged non-null; all of v_merged and s_merged written",
+    "optimized_input_sha256": "e0d0b2d6f91276a00dbce18e121ac7a5790ce69b89be6c5c8b8fe166f2b15427",
     "ptx_sha256": "cbd5f5ee1e963912473d11cee085470ff3e7bd66e61b8d55dec6f959013ae925",
     "scope_shape_arrays": []
   }

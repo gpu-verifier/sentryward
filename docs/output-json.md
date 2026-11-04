@@ -212,8 +212,10 @@ analyzed once for all of them. A race between two such units carries
 clusters (or CTAs); `first_cta` and `second_cta` are the coordinates of the two
 CTAs. The accesses in `first` and `second` are those of the analyzed CTA,
 translated to the listed CTAs. `allocation` names the global allocation where
-they meet. `first_delta` and `second_delta` are the byte shifts of that
-allocation in each listed unit relative to the analyzed one.
+they meet. `first_delta` and `second_delta` are the byte shifts of the first
+and second access in their listed units relative to the analyzed one: the
+allocation's shift, or the shift at the access's instruction site when the
+allocation moves by different amounts at different sites.
 
 ## Repeated entries
 

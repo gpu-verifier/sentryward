@@ -1,0 +1,409 @@
+{
+  "schema": "spverify.equivalence-mapping.v1",
+  "output_value_semantics": "ideal_real",
+  "left_inputs": {
+    "allocations": {
+      "6:global1:q": "q",
+      "6:global1:k": "k",
+      "6:global1:v": "v",
+      "6:global11:q2k_indices": "q2k_indices",
+      "6:global10:page_table": "page_table"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          26,
+          4,
+          128
+        ],
+        "source_strides_bytes": [
+          1024,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          256,
+          2
+        ]
+      },
+      "6:global1:k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          5,
+          2,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          65536,
+          32768,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          65536,
+          32768,
+          256,
+          2
+        ]
+      },
+      "6:global1:v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          5,
+          2,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          65536,
+          32768,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          65536,
+          32768,
+          256,
+          2
+        ]
+      },
+      "6:global11:q2k_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          26,
+          16
+        ],
+        "source_strides_bytes": [
+          1664,
+          64,
+          4
+        ],
+        "target_strides_bytes": [
+          1664,
+          64,
+          4
+        ]
+      },
+      "6:global10:page_table": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          3
+        ],
+        "source_strides_bytes": [
+          12,
+          4
+        ],
+        "target_strides_bytes": [
+          12,
+          4
+        ]
+      }
+    }
+  },
+  "right_inputs": {
+    "allocations": {
+      "6:global1:q": "q",
+      "6:global1:k": "k",
+      "6:global1:v": "v",
+      "6:global11:q2k_indices": "q2k_indices",
+      "6:global10:page_table": "page_table"
+    },
+    "parameters": {},
+    "layouts": {
+      "6:global1:q": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          26,
+          4,
+          128
+        ],
+        "source_strides_bytes": [
+          1024,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          1024,
+          256,
+          2
+        ]
+      },
+      "6:global1:k": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          5,
+          2,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          65536,
+          32768,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          65536,
+          32768,
+          256,
+          2
+        ]
+      },
+      "6:global1:v": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          5,
+          2,
+          128,
+          128
+        ],
+        "source_strides_bytes": [
+          65536,
+          32768,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          65536,
+          32768,
+          256,
+          2
+        ]
+      },
+      "6:global11:q2k_indices": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          26,
+          16
+        ],
+        "source_strides_bytes": [
+          1664,
+          64,
+          4
+        ],
+        "target_strides_bytes": [
+          1664,
+          64,
+          4
+        ]
+      },
+      "6:global10:page_table": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          2,
+          3
+        ],
+        "source_strides_bytes": [
+          12,
+          4
+        ],
+        "target_strides_bytes": [
+          12,
+          4
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "left_allocation": "6:global3:out",
+        "right_allocation": "6:global3:out",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          26,
+          4,
+          128
+        ],
+        "left_strides_bytes": [
+          1024,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          1024,
+          256,
+          2
+        ]
+      },
+      {
+        "left_allocation": "6:global3:lse",
+        "right_allocation": "6:global3:lse",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 4,
+        "shape": [
+          26,
+          4
+        ],
+        "left_strides_bytes": [
+          16,
+          4
+        ],
+        "right_strides_bytes": [
+          16,
+          4
+        ]
+      }
+    ]
+  },
+  "reference": {
+    "arguments": [
+      {
+        "name": "q",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:q"
+      },
+      {
+        "name": "k",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:k"
+      },
+      {
+        "name": "v",
+        "dtype": "bfloat16",
+        "allocation": "6:global1:v"
+      },
+      {
+        "name": "q2k_indices",
+        "dtype": "int32",
+        "allocation": "6:global11:q2k_indices"
+      },
+      {
+        "name": "page_table",
+        "dtype": "int32",
+        "allocation": "6:global10:page_table"
+      },
+      {
+        "name": "softmax_scale_log2",
+        "parameter": 23
+      },
+      {
+        "name": "causal",
+        "parameter": 21
+      },
+      {
+        "name": "cu_q_0",
+        "value": {
+          "input": "/shape_arrays/0/shapes/0/0"
+        }
+      },
+      {
+        "name": "cu_q_1",
+        "value": {
+          "input": "/shape_arrays/0/shapes/1/0"
+        }
+      },
+      {
+        "name": "cu_q_2",
+        "value": {
+          "input": "/shape_arrays/0/shapes/2/0"
+        }
+      },
+      {
+        "name": "kv_len_0",
+        "value": {
+          "input": "/shape_arrays/2/shapes/0/0"
+        }
+      },
+      {
+        "name": "kv_len_1",
+        "value": {
+          "input": "/shape_arrays/2/shapes/1/0"
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "source": "flashinfer 47e64b0e96c446eaba90e40a1ecdf5891aaef92d Cake-generated SM100 union prefill program cake_blackwell_msa_9d11f8cbc9df656a767b (route prefill_union:bfloat16:bfloat16:paged:gqa0:any), its TVM-FFI binding and the Python launcher",
+    "scope": "upstream test prefill-paged-bf16-ragged: two requests q_lens [19, 7], kv_lens [257, 129]; total_q=26 (p14), 4 q heads (p15), 2 kv heads (p16), topk 16 (p17), batch_size 2 (p18), uniform_q_len 0 (p19), max_pages 3 (p20), causal (p21=1), derive_q_offset 1 (p22), return_softmax_lse 1 (p27), return_temperature_lse 0 (p28); grid (2, 4, 1); shape arrays cu_seqlens_q [0, 19, 26], cu_seqlens_k [0, 257, 386] (passed by the test; the paged loader overwrites the token base with 0), kv_lens [257, 129]; paged k/v pool 5 pages [5, 2, 128, 128] and page_table [2, 3] (_make_paged_cache); outputs out [26, 4, 128] and lse [26, 4]; temperature_lse is not written; page_table values bounded to [-1, 4] by tensor_properties (the test table is [[4, 3, 2], [1, 0, -1]])",
+    "semantics": "ideal_real; per request, query row i and q head h attend to key tokens t <= kv_len - q_len + i whose 128-token block is in any q2k slot of (h // 2, row); logical block n reads physical page page_table[b, n] (negative -> 0, beyond the pool -> zeros); out = exp2(softmax_scale_log2 q.k)-weighted mean of v (0 for an empty row), lse = natural-log LSE (-inf for an empty row)",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": [
+      {
+        "parameter": 9,
+        "offset": 0,
+        "element_type": "s32",
+        "shapes": [
+          [
+            0
+          ],
+          [
+            19
+          ],
+          [
+            26
+          ]
+        ]
+      },
+      {
+        "parameter": 10,
+        "offset": 0,
+        "element_type": "s32",
+        "shapes": [
+          [
+            0
+          ],
+          [
+            257
+          ],
+          [
+            386
+          ]
+        ]
+      },
+      {
+        "parameter": 12,
+        "offset": 0,
+        "element_type": "s32",
+        "shapes": [
+          [
+            257
+          ],
+          [
+            129
+          ]
+        ]
+      }
+    ],
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/csrc/blackwell_msa/cake_blackwell_msa_9d11f8cbc9df656a767b_kernel.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/csrc/blackwell_msa/cake_blackwell_msa_9d11f8cbc9df656a767b_binding.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/flashinfer/msa_ops/_blackwell_sm100.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/flashinfer/jit/blackwell_msa.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/47e64b0e96c446eaba90e40a1ecdf5891aaef92d/tests/msa_ops/test_blackwell_msa_sm100.py"
+    ],
+    "ptx_sha256": "6fa1fc49ccd15c84f004d92c6ee1cb0ce3f071d3f550ad45a3255de9927c3836",
+    "optimized_input_sha256": "ff70596f3505fa470c8a6bc5dc84c80590f7f93ade191986a3610cc73e9aef5f"
+  }
+}

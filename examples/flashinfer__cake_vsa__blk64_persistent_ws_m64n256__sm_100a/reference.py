@@ -11,7 +11,11 @@ the kernel consumes whole groups of four list entries. Every list entry is
 processed on its own, so a repeated block id is counted once per entry. A key
 token outside [0, N) is read through the TMA zero fill (K = V = 0). The kernel
 never loads kv_block_lens, so it is not a reference input. LSE is written only
-when return_lse != 0; this scenario passes 0.
+when return_lse != 0; this scenario passes 1, as the upstream test
+test_cake_vsa_blk64_full_group_rows_use_weight_stationary_profile does
+(wrapper.run(..., return_lse=True)). lse is float32 [M, H], the natural-log
+log-sum-exp of the scaled scores (run_cake_vsa contract in flashinfer/cake_vsa.py;
+the test's oracle is torch.logsumexp(scores, dim=-1).transpose(0, 1)).
 """
 import torch
 
@@ -45,6 +49,10 @@ def reference(q, k, v, q2k_indices, q2k_num, scale_log2):
     # the kernel are abstracted, as in examples/_reference/pytorch_models.py.
     score = (query @ key.transpose(-1, -2)) * scale_log2
     weight = torch.where(active, torch.exp2(score), 0.0)
-    out = (weight @ value) / weight.sum(dim=-1, keepdim=True)
-    # [MB, 64, H, D] equals the row-major [M, H, D] output.
-    return out.permute(1, 2, 0, 3).to(q.dtype)
+    total = weight.sum(dim=-1, keepdim=True)
+    out = (weight @ value) / total
+    # exp2(s * scale_log2) = exp(s * scale_log2 * ln 2), so log(total) is the
+    # natural-log LSE of the scores scaled by scale_log2 * ln 2 = 1/sqrt(D).
+    lse = torch.log(total.squeeze(-1))
+    # [MB, 64, H, D] and [MB, 64, H] equal the row-major [M, H, D] and [M, H] outputs.
+    return out.permute(1, 2, 0, 3).to(q.dtype), lse.permute(1, 2, 0)

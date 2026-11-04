@@ -3139,8 +3139,15 @@ void ValueTemplateExtractor::TcgenMma() {
       auto bits = role == "A" ? d.a_element_bits : role == "B" ? d.b_element_bits : d.d_element_bits;
       const bool packed = scaled && bits==4 && role!="D";
       if (packed) bits=8;
+      std::vector<std::uint64_t> shape{role == "A" ? d.m : role == "B" ? d.n : d.m,
+          role == "D" ? d.n : packed ? d.k/2 : d.k};
+      // A Tensor Memory A operand holds one copy per data-path lane group.
+      if (role == "A" && text(1).starts_with('['))
+        if (const auto path = DecodeMmaDataPath(d.m, Has(i,"cta_group::2") ? 2 : 1, ws, d.sparse);
+            path && path->slices > 1)
+          shape.insert(shape.begin(), path->slices);
       return v::ValueType::matrix(address ? v::ElementType::unsignedInteger(64) : v::ElementType::bit(bits),
-          {role == "A" ? d.m : role == "B" ? d.n : d.m, role == "D" ? d.n : packed ? d.k/2 : d.k});
+          std::move(shape));
     }
     if (fixed_descriptor && scaled && (role=="scale_A" || role=="scale_B")) {
       const auto& d=*fixed_descriptor;
@@ -3303,15 +3310,12 @@ void ValueTemplateExtractor::Tcgen() {
     return;
   }
   if (Has(i,"cp")) {
-    unsigned rows = 0, bits = 0;
-    for (const auto& mod : i.modifiers) {
-      std::smatch m;
-      if (std::regex_match(mod,m,std::regex("(128|64|32|4)x(128|256)b"))) { rows=std::stoul(m[1]);bits=std::stoul(m[2]); }
-      else if (!In(mod,{"cp","cta_group::1","cta_group::2","warpx4","warpx2::02_13","warpx2::01_23"}))
+    for (const auto& mod : i.modifiers)
+      if (!std::regex_match(mod,std::regex("(128|64|32|4)x(128|256)b")) &&
+          !In(mod,{"cp","cta_group::1","cta_group::2","warpx4","warpx2::02_13","warpx2::01_23"}))
         throw std::invalid_argument("Unsupported tcgen05.cp value modifier: " + mod);
-    }
-    if (!rows || !bits || i.operands.size()!=2 || !((rows==128 && (bits==128 || bits==256)) ||
-        (rows==4 && bits==256) || ((rows==32 || rows==64) && bits==128)))
+    const auto shape=DecodeCopyShape(i.modifiers);
+    if (!shape || i.operands.size()!=2)
       throw std::invalid_argument("Invalid tcgen05.cp shape/operands");
     auto dst=Address(text(0)), src=Operand(text(1),U64());
     if (src) src=Reinterpret(*src,U64());
@@ -3321,9 +3325,8 @@ void ValueTemplateExtractor::Tcgen() {
     const auto issuer=ClusterRank();
     std::string view="tcgen05.copy"; for (const auto& mod : i.modifiers) view+='.'+mod;
     const auto type=[&](const char* role, bool address=false) {
-      if (!address && (rows==128 || (rows==32 && Has(i,"warpx4"))))
-        return v::ValueType::matrix(v::ElementType::bit(8),
-            {std::uint64_t(rows)*bits/8*(Has(i,"cta_group::2")?2:1)*(Has(i,"warpx4")?4:1)});
+      if (!address && shape->LaneMapped())
+        return v::ValueType::matrix(v::ElementType::bit(8),{shape->TensorBytes()*(Has(i,"cta_group::2")?2:1)});
       return v::ValueType::parameterizedMatrix(address ? v::ElementType::unsignedInteger(64) : v::ElementType::bit(8),
           src->value,view+':'+role);
     };

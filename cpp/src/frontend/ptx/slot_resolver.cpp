@@ -4,6 +4,7 @@
 #include "sentryward/frontend/ptx/value_ir.h"
 #include "sentryward/algorithm/memory/symbolic_address_model.h"
 #include <algorithm>
+#include <array>
 #include <sstream>
 namespace sentryward::frontend::ptx {
 
@@ -731,55 +732,51 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
   }
   result.pairs.reserve(mapping.segments.size());
   const bool known_resource = resource != "unresolved";
-  // The exact step count: an abstract_global segment appends its expression,
-  // the offset-0 placement when the resource is known, and its patch; a global_offset
-  // segment its placement; every segment its shared binding; then the completions.
-  std::size_t step_count = mapping.completions.size();
+  // An abstract segment's global footprint is its region: the box at the TMA's coordinates (one
+  // per gather row), which the address model covers as a whole (symbolic_address_model.cpp,
+  // tma_region). So one region binding per row serves every abstract segment of that row: its
+  // expression, the offset-0 placement when the resource is known, and its patch, appended at the
+  // row's first abstract segment. A segment's place in the region is its pair's logical offset and
+  // bytes. O(descriptor text) per row and O(1) per segment.
+  constexpr std::size_t kRegionRows = 4; // a tile::gather4's rows; one region otherwise
+  std::array<bool, kRegionRows> abstract_rows{};
   for (const auto &s : mapping.segments)
-    step_count += 1 + (s.abstract_global ? 2 + std::size_t(known_resource) : s.global_offset ? 1 : 0);
+    if (s.abstract_global) abstract_rows.at(gather ? s.gather_row : 0) = true;
+  // The exact step count: each abstract row's region steps; a global_offset segment's placement;
+  // every segment's shared binding; then the completions.
+  std::size_t step_count = mapping.completions.size();
+  for (const bool row : abstract_rows) step_count += row ? 2 + std::size_t(known_resource) : 0;
+  for (const auto &s : mapping.segments) step_count += 1 + (!s.abstract_global && s.global_offset ? 1 : 0);
   steps.reserve(step_count);
-  // The abstract segments' tma_region expressions differ only in "bytes", "logical_offset" and a
-  // gather's row: one expression per row, built at the first abstract segment (one copy of the
-  // descriptor per row), takes each segment's two fields in place and is serialized, in O(text)
-  // per segment.
-  std::vector<Json> region_expressions; // per coordinates (a gather's rows)
+  std::array<std::optional<std::size_t>, kRegionRows> region_steps; // each row's ExpressionStep
   for (const auto &s : mapping.segments) {
     std::optional<std::size_t> global;
     if (s.abstract_global) {
-      if (region_expressions.empty()) {
+      auto &region = region_steps.at(gather ? s.gather_row : 0);
+      if (!region) {
         const auto occurrence = Json::array({frame.Json(frame.self()), facts.Warp(*core_.active_lane_),
                                              facts.LaneId(*core_.active_lane_), e.instruction_id(), e.occurrence()});
-        const auto region_expression = [&](Json coordinates) {
-          return Json{{"operator", "tma_region"}, {"descriptor", descriptor},
-                      {"coordinates", std::move(coordinates)}, {"occurrence", occurrence}};
-        };
         // A gather row is the map's one-row box at {column, row}: the region covers that row.
-        if (gather)
-          for (std::size_t row = 0; row < 4; ++row)
-            region_expressions.push_back(region_expression(
-                Json::array({coordinate_expressions.at(0), coordinate_expressions.at(1 + row)})));
-        else
-          region_expressions.push_back(region_expression(coordinate_expressions));
+        auto coordinates = gather ? Json::array({coordinate_expressions.at(0), coordinate_expressions.at(1 + s.gather_row)})
+                                  : coordinate_expressions;
+        auto serialized = Json{{"operator", "tma_region"}, {"descriptor", descriptor},
+                               {"coordinates", std::move(coordinates)}, {"occurrence", occurrence}}.dump();
+        region = steps.size();
+        steps.push_back({ExpressionStep{"global",serialized,{},std::string("unresolved"),{}}});
+        // A dynamic origin does not erase a descriptor's known global allocation.
+        // MemoryResource may throw here and leave the binding half-patched.
+        PatchStep patch{*region, {}, {}, std::move(serialized)};
+        if (known_resource) {
+          auto placement = MemoryResource(resource, 0, 0);
+          // The placement binding's allocation and offset, from its step (which the
+          // stored binding equals).
+          patch.allocation = placement.key;
+          patch.offset = placement.offset;
+          steps.push_back({std::move(placement)});
+        }
+        steps.push_back({std::move(patch)});
       }
-      auto &expression = region_expressions.at(gather ? s.gather_row : 0);
-      expression["bytes"] = s.bytes;
-      expression["logical_offset"] = s.logical_offset;
-      auto serialized = expression.dump();
-      const auto address=steps.size();
-      steps.push_back({ExpressionStep{"global",serialized,{},std::string("unresolved"),{}}});
-      // A dynamic origin does not erase a descriptor's known global allocation.
-      // MemoryResource may throw here and leave the binding half-patched.
-      PatchStep patch{address, {}, {}, std::move(serialized)};
-      if (known_resource) {
-        auto placement = MemoryResource(resource, 0, 0);
-        // The placement binding's allocation and offset, from its step (which the
-        // stored binding equals).
-        patch.allocation = placement.key;
-        patch.offset = placement.offset;
-        steps.push_back({std::move(placement)});
-      }
-      steps.push_back({std::move(patch)});
-      global=address;
+      global = *region;
     } else if (s.global_offset) {
       auto placement = MemoryResource(resource, *s.global_offset, s.bytes);
       global = steps.size();
