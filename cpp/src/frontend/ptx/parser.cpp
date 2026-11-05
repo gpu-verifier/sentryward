@@ -246,8 +246,8 @@ private:
     while (at < masked.size() && Ident(masked[at]))
       ++at;
     f.name = masked.substr(begin, at - begin);
-    if (!names.insert(f.name).second)
-      Error("duplicate function", begin);
+    const auto name_at = begin;
+    names.insert(f.name);
     at = Ws(at, masked.size());
     if (at < masked.size() && masked[at] == '(') {
       auto end = Match(at, masked.size());
@@ -279,8 +279,10 @@ private:
         continue;
       }
       if (masked[at] == ';') {
+        // A prototype: kept until (and unless) its definition follows; repeated prototypes add nothing.
         f.header = {start, at + 1};
-        m.functions.push_back(std::move(f));
+        if (Declared(f.name) == m.functions.end())
+          m.functions.push_back(std::move(f));
         return at + 1;
       }
       if (masked[at] == '{') {
@@ -289,11 +291,23 @@ private:
         f.body = {at + 1, end};
         f.has_body = true;
         Body(f);
-        m.functions.push_back(std::move(f));
+        // A definition replaces its forward declaration (nvcc emits both for its internal math helpers);
+        // a second definition is an error.
+        auto declared = Declared(f.name);
+        if (declared != m.functions.end() && declared->has_body)
+          Error("duplicate function", name_at);
+        if (declared != m.functions.end())
+          *declared = std::move(f);
+        else
+          m.functions.push_back(std::move(f));
         return end + 1;
       }
     }
     Error("unterminated function", start);
+  }
+  std::vector<Function>::iterator Declared(const std::string &name) {
+    return std::find_if(m.functions.begin(), m.functions.end(),
+                        [&](const Function &g) { return g.name == name; });
   }
   void Body(Function &f) {
     auto at = f.body.begin;
