@@ -121,21 +121,128 @@ interpretation. It does not prove bit-for-bit floating-point equality. Input
 layouts do not imply nonzero values or other mathematical premises. A failed
 proof is `equivalence_not_proven`, not a counterexample.
 
-Operations on exact constants (literals, fixed launch parameters and values
-computed only from them) are evaluated exactly as the instruction rounds, not as
-ideal reals: binary32/binary64 `add`, `sub`, `mul`, `div` and `fma` with
-round-to-nearest-even (explicit `.rn` or PTX's default rounding; `.ftz`
-flushes binary32 subnormals, and a `.ftz` result that may round up to the
-smallest normal magnitude from below stays ideal, since its flush depends on
-when the hardware detects tininess), and `cvt` to `f16`, `bf16`, `f32` or
-`f64` with `.rn`, `.rz`, `.rm` or `.rp`. A default-rounding `add`/`sub` with a
-default-rounding `mul` operand stays ideal: PTX may contract the pair into an
-`fma`. Saturating, flushing or other conversions, approximate instructions and
-non-finite results stay ideal, as do all operations with a non-constant operand.
 Reference literals of type `f32` and `f64` denote their nearest binary32/binary64
 value. The numerical model also uses one range premise, configurable as the
 assumption `floating_values_in_range` (enabled by default;
 [assumptions](assumptions.md#floating-values-stay-in-range)).
+
+**PTX values: constant propagation in the instruction's own type.** Where PTX
+semantics fix a floating value, the comparison uses that value, computed as the
+instruction computes it in its own type, not as an ideal real. Every other
+floating value is an ideal real. The propagation has two parts.
+
+- **Exact constants, at lowering.** An operation whose operands are all exact
+  constants (literals, fixed launch parameters and values computed only from
+  them) has its rounded result: binary32/binary64 `add`, `sub` and `mul` with
+  round-to-nearest-even (explicit `.rn` or PTX's default rounding), `div` and
+  `fma` with explicit `.rn` (`.ftz` flushes binary32 subnormals, and a `.ftz`
+  result that may round up to the smallest normal magnitude from below stays
+  ideal, since its flush depends on when the hardware detects tininess), and
+  `cvt` to `f16`, `bf16`, `f32` or `f64` with `.rn`, `.rz`, `.rm` or `.rp`. A
+  non-finite result is left to the import. PTX may fuse a default-rounding
+  `mul` into a default-rounding `add`/`sub` that reads it (contraction below),
+  so such an `add`/`sub` is not folded even when its operands are constants,
+  and when the `mul` itself was folded the `add`/`sub` is no instruction image
+  for the import: the fold hides the product the hardware may fuse. Finite
+  constant folding is otherwise unchanged. Saturating, flushing or other
+  conversions and approximate instructions stay ideal.
+- **Value sets, at import.** Each floating node that is the image of one PTX
+  instruction is evaluated again when the comparison imports it, from its direct
+  operands. This extends constant propagation in three ways: a `selp` whose
+  condition the current scope decided is its chosen operand; an operand that is
+  not one constant is a set of values (an interval of the extended reals plus a
+  may-be-NaN flag); and the result is the set of every value the hardware can
+  produce under the evaluations PTX permits (rounding modes, `.ftz`,
+  contraction). The outcome:
+  - **One infinity.** The node imports as that infinity (counter
+    `hardware_infinities`). An `ex2.approx` of -Inf is +0.0 (PTX ISA, `ex2`
+    special cases); `max` of +Inf and `min` of -Inf without `.NaN` are that
+    infinity, also for a NaN operand (`max.NaN` and `min.NaN` return NaN for one).
+  - **Finite.** The node imports as an ideal real.
+  - **Otherwise** (NaN possible, or finite and infinite values possible). When an
+    operand carries an infinity that this rule introduced (below), the family is
+    not proven (`hardware_value_not_determined`); else the node imports as an
+    ideal real.
+
+An infinity written as a literal in the PTX has the same value in the model and
+on the hardware. It keeps the model's extended-real arithmetic, in which every
+other operand is an ideal real: `-inf - m` is `-inf`. So does an infinity the
+rule concludes from literal infinities alone (for example `-inf * log2(e)` with
+a literal -inf, or `max(-inf, -inf)`), which is the model's own extended-real
+value. Any other concluded infinity is introduced: it replaces a value the model
+would compute as finite (for example `-FLT_MAX * log2(e)`, whose ideal value is
+about -4.9e38). Every value that may be such an infinity, or hold its bits, is
+tracked (per import of a node in its scope), and its uses are checked against
+the value sets, so that the infinity holds under every permitted evaluation,
+contraction included:
+
+- A `selp` passes it on from its chosen operand, or from either operand when its
+  condition is not decided; never from its condition. A negation, an absolute
+  value, an integer or bit operation and a conversion (`mov.b32` round trips
+  included) pass it on.
+- A `max` (`min`) passes it on from an operand that may decide it: -inf never
+  decides a `max` (+inf a `min`) and is dropped, unless every operand is that
+  infinity. With `.NaN`, a NaN operand decides instead: an introduced infinity
+  that may decide a `max.NaN` or `min.NaN` whose set may be NaN stops the
+  family.
+- A comparison is exact on it and passes nothing on. An instruction image whose
+  set is finite (for example `ex2.approx` of -Inf) passes nothing on.
+- Anything else stops the family: an `add`, `sub`, `mul`, `fma` or `ex2.approx`
+  whose set is not finite, and every operation that is no instruction image (a
+  division, a reassociated or accumulated sum, an MMA, a software
+  function, a floating-point idiom such as a bit-level exponent or rounding), a
+  Sum Fold and an unrolled sum.
+
+The value sets follow PTX semantics:
+
+- **Rounding.** "Instructions that support rounding modifiers are IEEE-754
+  compliant" (PTX ISA, floating-point instructions); a `mul`, `add` or `sub`
+  without rounding modifier rounds to nearest even. IEEE 754 round to nearest
+  carries a result at or beyond 2^(emax+1) - 2^(emax-p) (2^128 (1 - 2^-25) for
+  `f32`) to the infinity of its sign; `.rz` gives ±MAX, `.rm` and `.rp` give an
+  infinity in one direction and ±MAX in the other. The scalar lowering records
+  the rounding modes and `.ftz` of the instruction each node is the image of
+  (provenance only, never part of a node's identity; a `max` or `min` records
+  only `.ftz`). A node made by several instructions takes the union of their
+  modes. A node that a rewrite builds in an instruction's place (a reassociated
+  sum, the sum that an `fma` without rounding modifier becomes, a rewritten
+  exponential, an MMA or reduction-store accumulation) is no image of any
+  instruction, even where it coincides with one; its consumers then read every
+  value from it. The
+  template of a Fold is an image only when both prototype instances are, and
+  each further instance must be an image whose modes the template's include, or
+  no Fold is formed.
+- **Contraction.** PTX may optimize "mul/add and mul/sub sequences with no
+  rounding modifiers" into `fma` (PTX ISA, `mul`). The set of such an `add` or
+  `sub` that reads a `mul` without rounding modifier also contains the exact
+  product plus the other operand, rounded once.
+- **Flush to zero.** `.ftz` flushes subnormal operands and results to a zero of
+  their sign.
+- **Operands.** A literal is its exact value; an `f16`/`bf16` decimal that is no
+  value of its type admits every value. A constant read through Bitcasts of one
+  width ending in an IEEE type is the value of those bits, and one floating
+  conversion may follow, rounded in its mode (`.sat` limits it to [0.0, 1.0]);
+  any other conversion admits every value. An operand imported as an infinity is
+  that infinity; a `selp` whose condition this scope decided is its chosen
+  operand; a negation negates its operand's set in this scope; an instruction
+  image imported as a constant is evaluated again from its own operands in this
+  scope, at most 16 such evaluations deep. Other operands have scope-independent
+  sets computed the same way through constants, `selp`, `neg`, `max`/`min` (one
+  operand that is surely a number bounds a maximum from below; `.NaN` propagates
+  NaN), running maxima and minima (the initial value bounds a running maximum
+  from below) and instruction images; any other node, an input element included,
+  admits every value.
+- **Conversions.** An edge conversion of an imported value follows the same
+  rules; a `cvt.sat` of -inf is +0.0 ("`.sat` limits the result to the range
+  [0.0, 1.0]", PTX ISA, `cvt`). A `cvt.sat` of +inf is not handled
+  (`saturation_input_finiteness_not_proven`).
+- **Never 0 from a finite input.** A finite argument of `ex2.approx.f32` gives a
+  result within 2 ulp of the correctly rounded one, which admits the smallest
+  subnormals, so it is never taken to be 0.
+- **Maxima.** A -MAX_T operand of a `max` (+MAX_T of a `min`) whose other
+  operand's set lies at or above -MAX_T (at or below MAX_T) and excludes NaN
+  never decides it and is dropped (counter `range_bounds_proved`), without the
+  range premise.
 
 Reduction stores combine into memory instead of overwriting it.
 `cp.reduce.async.bulk` combines each element of its shared-memory payload into
@@ -182,7 +289,10 @@ Example bindings use the following provenance fields:
 See a [complete binding example](../examples/pytorch__aten_WeightNorm__sm_100a/reference_binding.json#provenance).
 These are provenance records, not an authorization to assume arbitrary tensor
 values. The optional fixed-input context adapter checks source hashes and scope
-before using its supported concrete input facts. Its context receipt records the
+before using its supported concrete input facts. Kernel reads of a verified
+`shape_arrays` table are replaced by the declared values too, not only reference
+reads: the race-free, memory-complete native run of the same input proved that
+the kernel never writes the table. Its context receipt records the
 actual source identities. A source URL or prose `scope` alone is not a checked
 numerical premise. Changing an input requires reviewing the associated
 provenance rather than copying a successful historical receipt.

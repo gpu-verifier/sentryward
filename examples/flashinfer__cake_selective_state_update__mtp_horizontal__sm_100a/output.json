@@ -8,7 +8,7 @@
       "key": "duplicate_tma_store_benign",
       "label": "Duplicate TMA stores",
       "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
-      "triggered": false
+      "triggered": null
     },
     {
       "category": "analysis assumption",
@@ -60,23 +60,675 @@
     }
   ],
   "checks": {
-    "equivalence": "incomplete",
-    "synchronization": "passed"
+    "equivalence": "not_run",
+    "synchronization": "failed"
   },
   "diagnostics": [
     {
-      "code": "tma_data_dependent_coordinate",
+      "code": "issue_not_ordered_before_next_phase",
       "details": {
-        "internal_stage": "value_lowering"
+        "internal_stage": "synchronization_check",
+        "issue": 207918,
+        "phase": {
+          "barrier": 13,
+          "generation": 1
+        },
+        "required_events": {
+          "events": [
+            1752
+          ],
+          "total": 1,
+          "truncated": false
+        }
       },
-      "message": "TMA tile coordinate %r300 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-      "stage": "equivalence"
+      "message": "Wait check failed: issue_not_ordered_before_next_phase.",
+      "stage": "synchronization"
     }
   ],
   "evidence": {
-    "race_count": 0,
-    "race_samples_truncated": false,
-    "races": []
+    "counterexample": {
+      "candidate_order": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          6736,
+          6739,
+          6737,
+          6738,
+          6740,
+          6741,
+          6742,
+          13240,
+          13243,
+          13241,
+          13242,
+          13244,
+          13245,
+          13246,
+          19744,
+          19747,
+          19745,
+          19746,
+          19748,
+          19749,
+          19750,
+          26248,
+          26251,
+          26249,
+          26250
+        ],
+        "total": 1650173,
+        "truncated": true
+      },
+      "candidate_order_preserved": true,
+      "executed_prefix": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          6736,
+          6739,
+          6737,
+          6738,
+          6740,
+          6741,
+          6742,
+          13240,
+          13243,
+          13241,
+          13242,
+          13244,
+          13245,
+          13246,
+          19744,
+          19747,
+          19745,
+          19746,
+          19748,
+          19749,
+          19750,
+          26248,
+          26251,
+          26249,
+          26250
+        ],
+        "total": 369902,
+        "truncated": true
+      },
+      "first_unexecuted": 207919,
+      "replayed_candidate_order": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          6736,
+          6739,
+          6737,
+          6738,
+          6740,
+          6741,
+          6742,
+          13240,
+          13243,
+          13241,
+          13242,
+          13244,
+          13245,
+          13246,
+          19744,
+          19747,
+          19745,
+          19746,
+          19748,
+          19749,
+          19750,
+          26248,
+          26251,
+          26249,
+          26250
+        ],
+        "total": 1647696,
+        "truncated": true
+      },
+      "unexecuted_candidate": {
+        "events": [
+          207919,
+          207920,
+          207921,
+          207922,
+          207923,
+          207924,
+          207925,
+          207926,
+          207927,
+          207928,
+          207929,
+          207930,
+          207931,
+          207932,
+          207933,
+          207934,
+          207935,
+          207936,
+          207937,
+          207938,
+          207939,
+          207940,
+          207941,
+          207942,
+          207943,
+          207944,
+          207945,
+          207946,
+          207947,
+          207948,
+          207951,
+          207949
+        ],
+        "total": 1278338,
+        "truncated": true
+      }
+    },
+    "provenance_events_total": 1650173,
+    "rejection": {
+      "code": "issue_not_ordered_before_next_phase",
+      "issue": 207918,
+      "message": "Wait check failed: issue_not_ordered_before_next_phase.",
+      "phase": {
+        "barrier": 13,
+        "generation": 1
+      },
+      "required_events": {
+        "events": [
+          1752
+        ],
+        "total": 1,
+        "truncated": false
+      }
+    },
+    "rejection_kind": "wait_condition",
+    "source_event_scope": "reported_witness_events",
+    "source_events": [
+      {
+        "column": 2,
+        "event": 0,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 0,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 1,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 0,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 2,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 0,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 3,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 0,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 4,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 1,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 5,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 1,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 6,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 2,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 1752,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 691,
+        "line": 286
+      },
+      {
+        "column": 2,
+        "event": 6736,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 2627,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 6737,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 2627,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 6738,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 2627,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 6739,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 2627,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 6740,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 2628,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 6741,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 2628,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 6742,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 2629,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 13240,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 5123,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 13241,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 5123,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 13242,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 5123,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 13243,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 5123,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 13244,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 5124,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 13245,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 5124,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 13246,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 5125,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 19744,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 7619,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 19745,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 7619,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 19746,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 7619,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 19747,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 7619,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 19748,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 7620,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 19749,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 7620,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 19750,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 7621,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 26248,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 10115,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 26249,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 10115,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 26250,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 10115,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 26251,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 10115,
+        "line": 47
+      },
+      {
+        "column": 2,
+        "event": 207918,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79780,
+        "line": 306
+      },
+      {
+        "column": 2,
+        "event": 207919,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79780,
+        "line": 306
+      },
+      {
+        "column": 2,
+        "event": 207920,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79781,
+        "line": 344
+      },
+      {
+        "column": 2,
+        "event": 207921,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79781,
+        "line": 344
+      },
+      {
+        "column": 2,
+        "event": 207922,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79782,
+        "line": 371
+      },
+      {
+        "column": 2,
+        "event": 207923,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79782,
+        "line": 371
+      },
+      {
+        "column": 2,
+        "event": 207924,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79783,
+        "line": 400
+      },
+      {
+        "column": 2,
+        "event": 207925,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79783,
+        "line": 400
+      },
+      {
+        "column": 2,
+        "event": 207926,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79784,
+        "line": 404
+      },
+      {
+        "column": 2,
+        "event": 207927,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79784,
+        "line": 404
+      },
+      {
+        "column": 2,
+        "event": 207928,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79785,
+        "line": 469
+      },
+      {
+        "column": 2,
+        "event": 207929,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79785,
+        "line": 469
+      },
+      {
+        "column": 2,
+        "event": 207930,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79786,
+        "line": 503
+      },
+      {
+        "column": 2,
+        "event": 207931,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79786,
+        "line": 503
+      },
+      {
+        "column": 2,
+        "event": 207932,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79787,
+        "line": 504
+      },
+      {
+        "column": 2,
+        "event": 207933,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79787,
+        "line": 504
+      },
+      {
+        "column": 2,
+        "event": 207934,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79788,
+        "line": 505
+      },
+      {
+        "column": 2,
+        "event": 207935,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79788,
+        "line": 505
+      },
+      {
+        "column": 2,
+        "event": 207936,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79789,
+        "line": 515
+      },
+      {
+        "column": 2,
+        "event": 207937,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79789,
+        "line": 515
+      },
+      {
+        "column": 2,
+        "event": 207938,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79790,
+        "line": 519
+      },
+      {
+        "column": 2,
+        "event": 207939,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79790,
+        "line": 519
+      },
+      {
+        "column": 2,
+        "event": 207940,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79791,
+        "line": 644
+      },
+      {
+        "column": 2,
+        "event": 207941,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79791,
+        "line": 644
+      },
+      {
+        "column": 2,
+        "event": 207942,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79792,
+        "line": 647
+      },
+      {
+        "column": 2,
+        "event": 207943,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79792,
+        "line": 647
+      },
+      {
+        "column": 2,
+        "event": 207944,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79793,
+        "line": 793
+      },
+      {
+        "column": 2,
+        "event": 207945,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79793,
+        "line": 793
+      },
+      {
+        "column": 2,
+        "event": 207946,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79794,
+        "line": 814
+      },
+      {
+        "column": 2,
+        "event": 207947,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79794,
+        "line": 814
+      },
+      {
+        "column": 2,
+        "event": 207948,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79795,
+        "line": 823
+      },
+      {
+        "column": 2,
+        "event": 207949,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79795,
+        "line": 823
+      },
+      {
+        "column": 2,
+        "event": 207951,
+        "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
+        "instruction": 79795,
+        "line": 823
+      }
+    ],
+    "synthetic_events": [],
+    "unmapped_witness_events": [],
+    "witness_event_list_limit": 32,
+    "witness_event_lists_truncated": true
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -94,13 +746,13 @@
       "preferred_lane": 0,
       "strategy": "preferred_member"
     },
-    "election_uses": 896,
+    "election_uses": 868352,
     "fixed_election": true,
     "isolated_launch": true,
     "noalias_unbounded": false,
     "opaque_compute_regions": [
       {
-        "lanes": 12,
+        "lanes": 12288,
         "line": 204
       }
     ],
@@ -109,6 +761,54 @@
       "extent_bytes": "unbounded"
     },
     "representative_branch_uses": 0,
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "s64",
+          "object": "state_batch_indices",
+          "property": "lower_bound",
+          "value": 0
+        },
+        {
+          "element_type": "s64",
+          "object": "state_batch_indices",
+          "property": "upper_bound",
+          "value": 31
+        },
+        {
+          "element_type": "s64",
+          "object": "state_batch_indices",
+          "property": "injective"
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "state_batch_indices",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg9.0"
+        },
+        {
+          "allocation": "state_batch_indices",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg11.0"
+        }
+      ],
+      "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [
+      {
+        "lines": [
+          313,
+          973,
+          1056
+        ],
+        "object": "state_batch_indices"
+      }
+    ],
     "trap_only_equality_assertions_hold": true
   },
   "internal": {
@@ -123,83 +823,63 @@
       "solver_timeout_ms": 100
     },
     "counts": {
-      "edges": 544630,
-      "events": 389665,
-      "instructions": 146079,
-      "memory_accesses": 103698,
+      "edges": 2264088,
+      "events": 1650123,
+      "instructions": 632035,
       "threads": 288
     },
     "equivalence": {
       "diagnostics": [
         {
-          "code": "tma_data_dependent_coordinate",
-          "message": "TMA tile coordinate %r300 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-          "stage": "value_lowering"
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "failed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "issue_not_ordered_before_next_phase",
+                "details": {
+                  "issue": 207918,
+                  "phase": {
+                    "barrier": 13,
+                    "generation": 1
+                  },
+                  "required_events": {
+                    "events": [
+                      1752
+                    ],
+                    "total": 1,
+                    "truncated": false
+                  }
+                },
+                "message": "Wait check failed: issue_not_ordered_before_next_phase.",
+                "stage": "synchronization_check"
+              }
+            ],
+            "prerequisite_result": "not_wellsynced"
+          },
+          "stage": "equivalence_check"
         }
-      ],
-      "expression_diagnostic": {
-        "diagnostics": [
-          {
-            "code": "tma_data_dependent_coordinate",
-            "message": "TMA tile coordinate %r300 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-            "stage": "value_lowering"
-          }
-        ],
-        "line": 1021,
-        "serialization": {
-          "action_patterns": 0,
-          "binding_patterns": 0,
-          "domain_refinements": 0,
-          "elapsed_seconds": 3.917e-05,
-          "event_families": 0,
-          "expanded_event_records": 0,
-          "largest_batch_members": 0,
-          "logical_actions": 0,
-          "logical_events": 0,
-          "peak_rss_mib_at_completion": 226.4453125,
-          "reachability_queries": 0,
-          "relations": 0,
-          "rss_mib_at_completion": 219.1328125,
-          "scheduled_batches": 0,
-          "singleton_batches": 0,
-          "value_families": 0
-        },
-        "stage": "value_lowering"
-      },
-      "stage": "value_lowering"
+      ]
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "tma_data_dependent_coordinate",
-            "details": {
-              "cta": 0,
-              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes [%r298], [%rd97, {%r292, %r292, %r299, %r300}], [%r295];",
-              "instruction_index": 595,
-              "location": {
-                "file": "corpus/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a.ptx",
-                "line": 1021
-              },
-              "occurrence": 0,
-              "thread": 256
-            },
-            "message": "TMA tile coordinate %r300 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-            "stage": "value_lowering"
-          }
-        ],
+        "diagnostics": [],
         "first_unavailable_reason": "",
         "queries": 0,
         "resolved": 0,
         "source": "value_lowering",
         "unavailable": 0,
-        "value_view_complete": false
+        "value_view_complete": true
       },
       "cluster_completion_joins": 0,
-      "cta_count": 1,
+      "cta_count": 256,
       "dependency_compression": {},
       "diagnostic_sample_count": 0,
-      "executed_records": 908117,
+      "executed_records": 1057424896,
       "frontend_assumptions": {
         "assertion_failure_forms": [
           "trap",
@@ -216,13 +896,13 @@
           "preferred_lane": 0,
           "strategy": "preferred_member"
         },
-        "election_uses": 896,
+        "election_uses": 868352,
         "fixed_election": true,
         "isolated_launch": true,
         "noalias_unbounded": false,
         "opaque_compute_regions": [
           {
-            "lanes": 12,
+            "lanes": 12288,
             "line": 204
           }
         ],
@@ -231,6 +911,54 @@
           "extent_bytes": "unbounded"
         },
         "representative_branch_uses": 0,
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "s64",
+              "object": "state_batch_indices",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s64",
+              "object": "state_batch_indices",
+              "property": "upper_bound",
+              "value": 31
+            },
+            {
+              "element_type": "s64",
+              "object": "state_batch_indices",
+              "property": "injective"
+            }
+          ],
+          "regions": [
+            {
+              "allocation": "state_batch_indices",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg9.0"
+            },
+            {
+              "allocation": "state_batch_indices",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg11.0"
+            }
+          ],
+          "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+        },
+        "tensor_property_decisions": [
+          {
+            "lines": [
+              313,
+              973,
+              1056
+            ],
+            "object": "state_batch_indices"
+          }
+        ],
         "trap_only_equality_assertions_hold": true
       },
       "implementation": "cpp",
@@ -314,83 +1042,88 @@
         },
         {
           "bytes": 8,
-          "object": "intermediate_state_indices",
+          "object": "state_batch_indices",
           "offset": 0,
           "parameter": "kernel_cake_selective_state_update_mtp_horizontal_param_11",
           "source": "declaration"
         }
       ],
-      "lowered_instruction_count": 146079,
+      "lowered_instruction_count": 632035,
       "reached_opcodes": {
-        "add.rn.f32": 24984,
-        "add.s32": 70000,
-        "add.s64": 934,
-        "and.b32": 110080,
-        "and.pred": 768,
-        "bar.sync": 576,
-        "bar.warp.sync": 64,
-        "bra": 21039,
-        "bra.uni": 268,
-        "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes": 10,
-        "cvt.f32.bf16": 6144,
-        "cvt.rn.bf16.f32": 384,
-        "cvt.sat.f32.f32": 12,
-        "cvt.u64.u32": 1024,
-        "cvta.to.global.u64": 933,
-        "div.s32": 261,
-        "elect.sync": 896,
-        "ex2.approx.ftz.f32": 12,
-        "fence.mbarrier_init.release.cluster": 1,
-        "fence.proxy.async.shared::cta": 512,
-        "fence.proxy.tensormap::generic.acquire.sys": 4,
-        "fma.rm.f32": 12,
-        "fma.rn.f32": 36,
-        "fma.rn.ftz.f32x2": 98304,
-        "ld.global.nc.b32": 294,
-        "ld.global.nc.b64": 256,
-        "ld.param.b32": 795,
-        "ld.param.b64": 941,
-        "ld.shared.b16": 6144,
-        "ld.shared.b32": 12288,
-        "ld.shared.v4.b32": 26624,
-        "mad.lo.s32": 5414,
-        "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64": 4,
-        "mbarrier.arrive.release.cta.shared::cta.b64": 26,
-        "mbarrier.init.shared::cta.b64": 14,
-        "mbarrier.try_wait.parity.acquire.cta.shared::cta.b64": 774,
-        "min.s32": 257,
-        "mov.b32": 9031,
-        "mov.b64": 229376,
-        "mov.pred": 3840,
-        "mov.s32": 28,
-        "mov.u32": 2114,
-        "mul.lo.s32": 1538,
-        "mul.rn.f32": 408,
-        "mul.rn.ftz.f32x2": 98304,
-        "mul.wide.s32": 922,
-        "neg.f32": 12,
-        "not.pred": 512,
-        "or.b32": 3328,
-        "or.pred": 12,
-        "ret": 288,
-        "selp.b32": 258,
-        "setp.eq.b32": 7565,
-        "setp.ge.s32": 257,
-        "setp.gt.s32": 288,
-        "setp.gt.s64": 256,
-        "setp.gt.u32": 600,
-        "setp.gtu.f32": 12,
-        "setp.lt.s32": 513,
-        "setp.ne.b32": 7520,
-        "shfl.sync.down.b32": 18432,
-        "shfl.sync.idx.b32": 288,
-        "shl.b32": 126271,
-        "shr.s32": 769,
-        "shr.u32": 2081,
-        "st.global.b16": 384,
-        "st.shared.b32": 24,
-        "sub.s32": 1794,
-        "xor.b32": 3
+        "add.rn.f32": 25976832,
+        "add.s32": 72978432,
+        "add.s64": 29661184,
+        "and.b32": 112721920,
+        "and.pred": 786432,
+        "bar.sync": 147456,
+        "bar.warp.sync": 65536,
+        "bra": 13322240,
+        "bra.uni": 274432,
+        "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes": 10240,
+        "cvt.f32.bf16": 6291456,
+        "cvt.rn.bf16.f32": 786432,
+        "cvt.rn.bf16x2.f32": 50331648,
+        "cvt.s64.s32": 1048576,
+        "cvt.sat.f32.f32": 12288,
+        "cvt.u64.u32": 1048576,
+        "cvta.to.global.u64": 2397184,
+        "div.s32": 266496,
+        "elect.sync": 868352,
+        "ex2.approx.ftz.f32": 12288,
+        "fence.mbarrier_init.release.cluster": 256,
+        "fence.proxy.async.shared::cta": 524288,
+        "fence.proxy.tensormap::generic.acquire.sys": 1024,
+        "fma.rm.f32": 12288,
+        "fma.rn.f32": 36864,
+        "fma.rn.ftz.f32x2": 100663296,
+        "ld.global.nc.b32": 301056,
+        "ld.global.nc.b64": 1310720,
+        "ld.param.b32": 6513408,
+        "ld.param.b64": 9345280,
+        "ld.shared.b16": 6291456,
+        "ld.shared.b32": 12582912,
+        "ld.shared.v4.b32": 27262976,
+        "mad.lo.s32": 5543936,
+        "mad.lo.s64": 1048576,
+        "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64": 4096,
+        "mbarrier.arrive.release.cta.shared::cta.b64": 26624,
+        "mbarrier.init.shared::cta.b64": 3584,
+        "mbarrier.try_wait.parity.acquire.cta.shared::cta.b64": 792576,
+        "min.s32": 263168,
+        "mov.b32": 8948992,
+        "mov.b64": 234881024,
+        "mov.pred": 3932160,
+        "mov.s32": 27136,
+        "mov.u32": 1720832,
+        "mul.lo.s32": 1574912,
+        "mul.rn.f32": 811008,
+        "mul.rn.ftz.f32x2": 100663296,
+        "mul.wide.s32": 7628800,
+        "neg.f32": 12288,
+        "not.pred": 6815744,
+        "or.b32": 3407872,
+        "or.pred": 12288,
+        "ret": 73728,
+        "selp.b32": 264192,
+        "setp.eq.b32": 7697408,
+        "setp.ge.s32": 65792,
+        "setp.gt.s32": 73728,
+        "setp.gt.s64": 262144,
+        "setp.gt.u32": 614400,
+        "setp.gtu.f32": 12288,
+        "setp.lt.s32": 525312,
+        "setp.ne.b32": 7036928,
+        "shfl.sync.down.b32": 18874368,
+        "shfl.sync.idx.b32": 73728,
+        "shl.b32": 130348544,
+        "shl.b64": 12582912,
+        "shr.s32": 196864,
+        "shr.u32": 1515776,
+        "st.global.L1::no_allocate.v4.b32": 12582912,
+        "st.global.b16": 786432,
+        "st.shared.b32": 24576,
+        "sub.s32": 1837056,
+        "xor.b32": 3072
       },
       "shared_constant_propagation": {
         "read_from_dependencies": 0,
@@ -398,80 +1131,29 @@
         "validation": "pending_backend"
       },
       "source_binding_storage": {
-        "binding_templates": 14,
+        "binding_templates": 16,
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
-        "logical_instructions": 146079,
-        "stored_bindings": 17968
+        "logical_instructions": 632035,
+        "stored_bindings": 106624
       },
       "source_edge_storage": {
         "binding_templates": 288,
-        "logical_edges": 145791,
+        "logical_edges": 631747,
         "stored_bindings": 288
       },
-      "thread_count": 288,
+      "thread_count": 73728,
       "unsupported_occurrence_counts": {},
       "user_branch_decisions": []
     },
-    "hb_queries": {
-      "memory": {
-        "algorithm": "not-built",
-        "batches": 0,
-        "cache_hits": 0,
-        "dfs_queries": 0,
-        "edge_visits": 0,
-        "filtered_queries": 0,
-        "queries": 0,
-        "shared_peak_index_bytes": 0
-      }
-    },
     "implementation": "cpp",
-    "memory_analysis": {
-      "address_candidates": 81118,
-      "address_model": {
-        "cache_hits": 0,
-        "congruence_disjoint": 0,
-        "ground_disjoint": 0,
-        "ground_overlap": 0,
-        "injective_disjoint": 0,
-        "layer0_disjoint": 0,
-        "refined_pairs": 0,
-        "solver_queries": 0,
-        "solver_sat": 0,
-        "solver_unknown": 0,
-        "solver_unsat": 0
-      },
-      "candidate_generation_fallback": false,
-      "exhaustive": false,
-      "family_analysis": {
-        "access_families": 17013,
-        "affine_member_rows": 0,
-        "candidate_relations": 14195,
-        "hb_frontier_pieces": 0,
-        "hb_member_enumerations": 0,
-        "logical_accesses": 103698
-      },
-      "hb_algorithm": "member-relations",
-      "hb_batches": 74,
-      "hb_cache_hits": 0,
-      "hb_dfs_queries": 0,
-      "hb_edge_visits": 245487,
-      "hb_filtered_queries": 0,
-      "hb_peak_index_bytes": 0,
-      "hb_queries": 81118,
-      "hb_query_seconds": 0.050483929999999996,
-      "overlap_queries": 0,
-      "strategy": "conflict-family",
-      "unordered_candidates_examined": 0
-    },
-    "memory_analysis_complete": true,
+    "memory_analysis_complete": false,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 219.10546875,
+    "peak_footprint_mib": 9599.43359375,
     "required_order_domains": 0,
     "required_orders": 0,
-    "search_complete": true,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
@@ -482,71 +1164,89 @@
       "representative_election": true
     },
     "semantic_program": {
-      "binding_diagnostic_count": 1,
-      "binding_diagnostics": [
-        {
-          "code": "incomplete_value_semantics",
-          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r300 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
-        }
-      ],
-      "execution_cohorts": 27,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
-      "memory_linking_templates_used": false,
-      "synchronization_groups": 6288,
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 31,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 403380,
+      "memory_binding_templates": 145601,
+      "memory_bindings": 706104,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 34602,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 0,
-      "thread_prefix_groups": 2450,
-      "value_diagnostic_count": 1,
-      "value_diagnostics": [
-        {
-          "code": "tma_data_dependent_coordinate",
-          "line": 1021,
-          "message": "TMA tile coordinate %r300 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
-        }
-      ]
+      "thread_prefix_groups": 914863,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
     "source_violations": [],
+    "stage": "synchronization_check",
     "synchronization_input": {
       "compute_access_binding": "after_happens_before",
       "kind": "ordering_endpoints",
       "memory_address_payloads": false
     },
     "template_execution": {
-      "completed_ctas": 1,
+      "completed_ctas": 256,
       "coordinate_bindings": 0,
-      "logical_thread_steps": 912368,
-      "path_entries": 43514,
-      "record_bindings": 18350,
-      "record_nodes": 38945,
-      "splits": 13,
-      "template_steps": 39200,
-      "thread_memberships": 288,
-      "value_nodes": 7341
+      "logical_thread_steps": 1075112192,
+      "path_entries": 59253248,
+      "record_bindings": 152036608,
+      "record_nodes": 57759744,
+      "splits": 3840,
+      "template_steps": 58866944,
+      "thread_memberships": 73728,
+      "value_nodes": 61689043
     },
     "thread_record_compression": {
-      "completed_ctas": 1,
+      "completed_ctas": 256,
       "enabled": true,
       "estimated_pool_bytes_sum": 0,
       "intern_calls": 0,
-      "logical_records": 908117,
+      "logical_records": 1057424896,
       "record_handle_bytes": 32,
       "templates": 0,
       "unique_bindings": 0
     },
-    "unresolved_count": 0,
     "value_analysis": {
       "diagnostics": [
         {
-          "code": "tma_data_dependent_coordinate",
-          "message": "TMA tile coordinate %r300 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-          "stage": "value_lowering"
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "failed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "issue_not_ordered_before_next_phase",
+                "details": {
+                  "issue": 207918,
+                  "phase": {
+                    "barrier": 13,
+                    "generation": 1
+                  },
+                  "required_events": {
+                    "events": [
+                      1752
+                    ],
+                    "total": 1,
+                    "truncated": false
+                  }
+                },
+                "message": "Wait check failed: issue_not_ordered_before_next_phase.",
+                "stage": "synchronization_check"
+              }
+            ],
+            "prerequisite_result": "not_wellsynced",
+            "prerequisite_status": "not_wellsynced"
+          },
+          "stage": "pipeline"
         }
       ],
-      "equivalence_check": "unsupported",
-      "line": 1021,
+      "equivalence_check": "blocked",
+      "prerequisite_status": "not_wellsynced",
       "scalar_fold": {
         "diagnostics": [
           {
@@ -554,45 +1254,22 @@
             "stage": "pipeline"
           }
         ]
-      },
-      "serialization": {
-        "action_patterns": 0,
-        "binding_patterns": 0,
-        "domain_refinements": 0,
-        "elapsed_seconds": 3.917e-05,
-        "event_families": 0,
-        "expanded_event_records": 0,
-        "largest_batch_members": 0,
-        "logical_actions": 0,
-        "logical_events": 0,
-        "peak_rss_mib_at_completion": 226.4453125,
-        "reachability_queries": 0,
-        "relations": 0,
-        "rss_mib_at_completion": 219.1328125,
-        "scheduled_batches": 0,
-        "singleton_batches": 0,
-        "value_families": 0
-      },
-      "stage": "value_lowering"
+      }
     },
-    "value_ir_instance_count": 18718,
-    "value_ir_node_count": 1532,
-    "value_view_complete": false,
-    "verification_elapsed_seconds": 0.833791498,
-    "verification_result": "race_free"
+    "value_ir_instance_count": 12689871,
+    "value_ir_node_count": 683965,
+    "value_view_complete": true
   },
-  "peak_rss_mib": 226.4453125,
-  "pipeline_elapsed_seconds": 0.848531341,
-  "result": "unsupported",
+  "peak_rss_mib": 9599.43359375,
+  "pipeline_elapsed_seconds": 102.238344146,
+  "result": "not_wellsynced",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
   "verification_limitations": [],
-  "warning_count": 0,
-  "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.304
+  "whole_pipeline_timeout_seconds": 497.801
 }

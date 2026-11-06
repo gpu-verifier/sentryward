@@ -707,7 +707,9 @@ const v::MemoryAttributes& memoryAttributes(const v::Node& node) {
 }
 
 // A Load without a constant region that reads initial contents of an
-// allocation no action writes: kept as an original Load leaf.
+// allocation no action writes: kept as an original Load leaf. A TMA region
+// fragment's guard is its zero fill (MemoryAttributes::region_offset), which
+// the leaf keeps: a disabled Load yields zero.
 bool symbolicInitialRead(const v::Node& node,const OrderedMemoryAction& action,
     const std::map<std::string,AllocationInfo>& allocations,
     const std::set<std::string>& written_allocations,bool unknown_write_allocation) {
@@ -717,7 +719,7 @@ bool symbolicInitialRead(const v::Node& node,const OrderedMemoryAction& action,
   const auto& attributes=memoryAttributes(node);
   return allocation!=allocations.end() && allocation->second.has_initial_contents &&
       attributes.interpretation==v::MemoryAttributes::Interpretation::Ordinary &&
-      !attributes.layout && !attributes.descriptor;
+      !attributes.layout && !attributes.descriptor && (!attributes.guarded || attributes.region_offset);
 }
 
 // Index-function memory: accesses at a symbolic position constant + sum(coefficient x
@@ -1066,11 +1068,11 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
     const auto* load = dynamic_cast<const v::LoadOp*>(&node.operation());
     const auto* store = dynamic_cast<const v::StoreOp*>(&node.operation());
     const auto& attributes = load ? load->attributes() : store->attributes();
-    if (attributes.guarded) {
-      return fail("guarded_memory_unsupported", "A guarded memory effect must have its guard resolved first.", action.operation);
-    }
     const bool initial_read=!action.region &&
         symbolicInitialRead(node,action,allocations,written_allocations,unknown_write_allocation);
+    if (attributes.guarded && !initial_read) {
+      return fail("guarded_memory_unsupported", "A guarded memory effect must have its guard resolved first.", action.operation);
+    }
     const bool positioned=!action.region && !initial_read && positionedAccess(node,action);
     if (!action.region && !positioned) {
       if(initial_read) {
@@ -1082,6 +1084,10 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
         if(!dependencies.ready(operands.span(),{},&missing))
           return fail("invalid_value_order","An initial-memory address depends on an unexecuted read."+missing,action.operation);
         result.symbolic_initial_reads.emplace(action.operation,region);
+        // An unguarded TMA region fragment (MemoryAttributes::region_offset) is read at its
+        // exact position when it has one; otherwise at its allocation-relative address.
+        if(attributes.region_offset && !attributes.guarded && action.symbolic_position)
+          result.symbolic_read_positions.emplace(action.operation,*action.symbolic_position);
         result.reads.emplace(action.operation,value);
         completed_reads.insert(action.operation);
         ++result.processed_actions;
@@ -1351,7 +1357,9 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
       } else finishRead(existing->second.value);
     } else {
       if (!allocation->second.has_initial_contents) {
-        return fail("uninitialized_memory_read", "The intermediate allocation is read before a covering store.", action.operation);
+        if (positioned)
+          return fail("uninitialized_memory_read", "The intermediate allocation is read before a covering store.", action.operation);
+        result.unwritten_read_allocations.insert(region.allocation);
       }
       if (positioned) {
         // No write reached these bytes (same segment: no cell; others: disjoint or no
@@ -1387,9 +1395,10 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
       result.outputs.push_back({cell.region, cell.value, cell.writer, cell.value_byte_offset, {}, {}, cell.reduced});
     }
   }
-  // Final cells of each segment, at their symbolic positions (census: segments are
-  // disjoint, or slotted and never both written at meeting ranges).
-  if (!segments.empty()) result.tensor_properties = contract.tensor_properties;
+  // The premises: final cells of each segment at their symbolic positions (census:
+  // segments are disjoint, or slotted and never both written at meeting ranges), and
+  // input field values. O(records).
+  result.tensor_properties = contract.tensor_properties;
   for (const auto& [key, cells] : segments) {
     if (!allocations.at(key.first).output) continue;
     for (const auto& [offset, cell] : cells) {

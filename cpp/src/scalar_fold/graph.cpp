@@ -197,6 +197,10 @@ std::size_t Graph::collect(std::span<Ref> roots,std::span<std::optional<Id>> wea
     hashes[moved%ahead]=hash;++moved;
   }
   for(auto next=moved>ahead?moved-ahead:0;next<moved;++next)retained.indexNode({hashes[next%ahead],next});
+  for(Id id=0;id<instructions_.size();++id)if(live[id] && instructions_[id]) {
+    if(retained.instructions_.size()<=map[id])retained.instructions_.resize(map[id]+1);
+    retained.instructions_[map[id]]=instructions_[id];
+  }
   *this=std::move(retained);
   return removed;
 }
@@ -278,6 +282,12 @@ Ref Graph::operation(std::string name, std::string type,
   n.operands = std::move(operands);
   n.attributes = std::move(attributes);
   return intern(std::move(n));
+}
+void Graph::markInstruction(const Ref& ref, std::uint8_t modes) {
+  validateRef(ref);
+  if (!modes || nodes_[ref.node].kind != Kind::Operation) return;
+  if (instructions_.size() <= ref.node) instructions_.resize(ref.node + 1);
+  instructions_[ref.node] |= modes;
 }
 Ref Graph::fold(Reducer reducer, Ref initial, Ref body,
                 std::uint32_t binder_level, std::uint64_t count,

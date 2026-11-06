@@ -97,7 +97,10 @@ Reshaped reshape(const scalar_fold::Graph& source,const scalar_fold::OutputFamil
       case s::Kind::Parameter:values[id]=graph.parameter(n.type,n.name);break;
       case s::Kind::InitialCell:values[id]=graph.initialCell(n.name,args.at(0),n.type);break;
       case s::Kind::Index:values[id]=n.index_level<family.shape.size()?coordinates[n.index_level]:graph.index(shifted(n.index_level));break;
-      case s::Kind::Operation:values[id]=graph.operation(n.name,n.type,std::move(args),n.attributes);break;
+      case s::Kind::Operation:
+        values[id]=graph.operation(n.name,n.type,std::move(args),n.attributes);
+        graph.markInstruction(values[id],source.instructionModes(id));
+        break;
       case s::Kind::Fold:
         values[id]=graph.fold(n.fold->reducer,args.at(0),args.at(1),shifted(n.fold->binder_level),n.fold->count,n.type);break;
     }

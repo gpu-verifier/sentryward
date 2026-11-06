@@ -96,16 +96,29 @@ MatrixResolver::Resolve(LaneRef current, std::size_t position,
   const bool cached = occurrence.resolved_by < position;
   lock.unlock();
   if (!cached) {
+    // PTX ISA ldmatrix (9.7.16.5.15) / stmatrix (9.7.16.5.16): ".aligned ... all threads in the
+    // warp must execute the same" instruction. A thread of the warp that has no such occurrence
+    // (it exited, diverged or had a false guard: a false-guard lane records no occurrence)
+    // violates that: undefined behavior. A lane the launch does not have keeps the participation
+    // refusal, as does a recorded peer whose guard is not known to be true.
+    const auto misses = [&](std::size_t lane) {
+      if (!facts_.FindLane(facts_.Warp(current), static_cast<std::uint32_t>(lane)))
+        Participation("aligned matrix memory requires the same occurrence in all 32 lanes");
+      throw SemanticError("aligned_lanes_missing",
+                          instruction.opcode + " .aligned is not executed by lane " + std::to_string(lane) +
+                              " of its warp (undefined behavior)",
+                          {{"missing_lane", lane}, {"warp", facts_.Warp(current)},
+                           {"isa_section", instruction.opcode == "ldmatrix" ? "9.7.16.5.15 ldmatrix" : "9.7.16.5.16 stmatrix"}});
+    };
     for (std::size_t lane = 0; lane < occurrence.lanes.size(); ++lane) {
-      if (!occurrence.lanes[lane])
-        Participation("aligned matrix memory requires the same occurrence in "
-                      "all 32 lanes");
+      if (!occurrence.lanes[lane]) misses(lane);
       // The constructor expands every lane (ExpansionSite::Matrix): the
       // recorded element.
       const auto peer = facts_.Meta({*occurrence.lanes[lane], occurrence.positions[lane]});
-      if (peer.instruction_id() != execution.instruction_id() ||
-          peer.predicate_value() != true)
+      if (peer.instruction_id() != execution.instruction_id())
         Participation("matrix peers disagree on instruction or participation");
+      if (peer.predicate_value() != true)
+        Participation("aligned matrix memory requires every peer's guard to be true");
     }
     // Commit only a complete row cache. A failed resolution leaves this
     // occurrence uncached, avoiding partial rows on a later diagnostic retry.

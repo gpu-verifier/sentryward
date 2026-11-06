@@ -35,6 +35,9 @@ struct RawNode {
   Id level = 0;
   uint64_t count = 0;
   std::string reducer;
+  // scalar_fold::instruction_mode bits of the PTX instructions this node is the image of; provenance
+  // only, never part of a node's key (production.cpp). 0 for reference nodes.
+  uint8_t instruction = 0;
   explicit RawNode(const J &n)
       : kind(n.at("kind")), name(n.value("name", "")),
         type(n.value("type", "")), attributes(n.value("attributes", "")) {

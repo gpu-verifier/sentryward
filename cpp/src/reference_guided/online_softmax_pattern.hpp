@@ -315,7 +315,7 @@ class OnlineSoftmaxPattern {
         }
       } else if (auto call = semantic_call(entry.rewritten);
                  call && checker.specs[call->sid].maximum &&
-                 checker.specs[call->sid].facts.finite &&
+                 checker.specs[call->sid].facts.finite && a.nodes[entry.rewritten].facts.finite &&
                  checker.specs[call->sid].count > 0 &&
                  std::find(maximum_specs.begin(), maximum_specs.end(), call->sid) != maximum_specs.end()) {
         entry.reducible = true;
@@ -593,7 +593,7 @@ public:
     const auto &ns = checker.specs[numerator->sid], &ds = checker.specs[denominator->sid];
     const auto &mass_facts = a.nodes[left->denominator].facts;
     if (ns.maximum || ds.maximum || ns.count <= 0 || ns.count != ds.count ||
-        !ns.facts.finite || !ds.facts.finite || !ds.facts.nn ||
+        !ns.facts.finite || !a.nodes[left->numerator].facts.finite || !ds.facts.finite || !ds.facts.nn ||
         !mass_facts.finite || !mass_facts.pos) return {};
     ++a.stats["online_softmax_pattern_attempts"];
     auto decline = [&](const char *reason) -> std::optional<OnlineSoftmaxProof> {

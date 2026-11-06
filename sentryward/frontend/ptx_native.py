@@ -93,6 +93,10 @@ def _run_ptx(ptx: str | Path, config: str | Path, *,
         if not isinstance(name, str) or not name or type(enabled) is not bool:
             raise ValueError('semantic assumptions must map nonempty names to booleans')
         command += ['--assume' if enabled else '--no-assume', name]
+    if reference is None and reference_failure is None:
+        # Without a reference the equivalence check is skipped, but memory elimination still runs: it
+        # proves the same-value write obligations of the synchronization check.
+        command.append('--analyze-values')
     if reference_failure is not None:
         command += ['--analyze-scalar-fold', '--require-equivalence',
                     '--reference-failure-json', json.dumps(reference_failure)]
@@ -191,7 +195,7 @@ def _exit_code(result):
     code = result.get('_process', {}).get('returncode', 0)
     if code:
         return code if code > 0 else 128 - code
-    return 0 if result.get('result') in {'verified','race_free','potential_race','not_wellsynced','invalid_lifecycle','unsupported','equivalence_not_proven'} else 2
+    return 0 if result.get('result') in {'verified','race_free','potential_race','not_wellsynced','invalid_lifecycle','undefined_behavior','unsupported','equivalence_not_proven'} else 2
 
 
 def main(argv: Sequence[str] | None = None) -> int:

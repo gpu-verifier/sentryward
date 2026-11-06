@@ -148,6 +148,27 @@ inline Z possible_prefix(AffineRange difference, std::string predicate,
   if (predicate == "ne" && c == 0 && lo == 0 && hi == 0) return Z(0);
   return count;
 }
+// The reduction binder must declare the whole domain [0, count) as its
+// integer interval: the possible-prefix bound reads that interval.
+inline bool domain_binder(const Arena &a, Id axis, const Z &count) {
+  const auto &variable = a.nodes[axis];
+  return variable.op == "var" && variable.data.size() == 2 && variable.bounds &&
+         variable.data[0].denominator() == 1 && variable.data[1].denominator() == 1 &&
+         variable.bounds->first.denominator() == 1 && variable.bounds->second.denominator() == 1 &&
+         variable.data[0] <= 0 && variable.data[1] >= Q(count - 1) &&
+         variable.bounds->first <= 0 && variable.bounds->second >= Q(count - 1);
+}
+// The possible prefix of a mask's active comparison: count when the
+// comparison is outside the affine fragment.
+inline Z mask_prefix(AffineRangeReader &reader, const Node &predicate, const std::string &active,
+                     const Z &count) {
+  if (active != "lt" && active != "le" && active != "gt" && active != "ge" &&
+      active != "eq" && active != "ne") return count;
+  const auto left = reader.read(predicate.args[0]), right = reader.read(predicate.args[1]);
+  if (!left || !right) return count;
+  AffineRange difference{left->slope - right->slope, left->low - right->high, left->high - right->low};
+  return std::min(count, possible_prefix(std::move(difference), active, count));
+}
 } // namespace rg::masked_sum_detail
 
 namespace rg {
@@ -157,13 +178,8 @@ namespace rg {
 // cache keyed by (body, axis, count). No Arena nodes or assumptions are added.
 inline Z masked_sum_prefix(Arena &a, Id body, Id axis, const Z &count) {
   ++a.stats["masked_sum_prefix_queries"];
-  if (count <= 0 || body >= a.nodes.size() || axis >= a.nodes.size()) return count;
-  const auto &variable = a.nodes[axis];
-  if (variable.op != "var" || variable.data.size() != 2 || !variable.bounds ||
-      variable.data[0].denominator() != 1 || variable.data[1].denominator() != 1 ||
-      variable.bounds->first.denominator() != 1 || variable.bounds->second.denominator() != 1 ||
-      variable.data[0] > 0 || variable.data[1] < Q(count - 1) ||
-      variable.bounds->first > 0 || variable.bounds->second < Q(count - 1)) return count;
+  if (count <= 0 || body >= a.nodes.size() || axis >= a.nodes.size() ||
+      !masked_sum_detail::domain_binder(a, axis, count)) return count;
   if (body == a.zero) return Z(0);
   const auto &node = a.nodes[body];
   if (!node.facts.finite) return count;
@@ -189,16 +205,28 @@ inline Z masked_sum_prefix(Arena &a, Id body, Id axis, const Z &count) {
     const auto &predicate = a.nodes[mask.args[0]];
     if (predicate.op != "compare" || predicate.args.size() != 2 || !predicate.data.empty()) continue;
     const std::string active = zero_true ? masked_sum_detail::inverse(predicate.tag) : predicate.tag;
-    if (active != "lt" && active != "le" && active != "gt" && active != "ge" &&
-        active != "eq" && active != "ne") continue;
-    const auto left = reader.read(predicate.args[0]), right = reader.read(predicate.args[1]);
-    if (!left || !right) continue;
-    masked_sum_detail::AffineRange difference{left->slope - right->slope,
-                                            left->low - right->high,
-                                            left->high - right->low};
-    result = std::min(result, masked_sum_detail::possible_prefix(std::move(difference), active, count));
+    result = std::min(result, masked_sum_detail::mask_prefix(reader, predicate, active, count));
     if (result == 0) break;
   }
   return result;
+}
+// The Max analogue of masked_sum_prefix for a body select(p, x, -infinity)
+// (or with the arms swapped): -infinity is the identity of Max, so indices
+// outside the possible prefix of the active condition contribute nothing.
+// Same affine predicate fragment and bounds; no Arena nodes are added.
+inline Z masked_max_prefix(Arena &a, Id body, Id axis, const Z &count) {
+  ++a.stats["masked_max_prefix_queries"];
+  if (count <= 0 || body >= a.nodes.size() || axis >= a.nodes.size() ||
+      !masked_sum_detail::domain_binder(a, axis, count)) return count;
+  const auto &mask = a.nodes[body];
+  if (mask.op != "select" || mask.args.size() != 3) return count;
+  const bool identity_true = a.neginf(mask.args[1]), identity_false = a.neginf(mask.args[2]);
+  if (identity_true && identity_false) return Z(0);
+  if (!identity_true && !identity_false) return count;
+  const auto &predicate = a.nodes[mask.args[0]];
+  if (predicate.op != "compare" || predicate.args.size() != 2 || !predicate.data.empty()) return count;
+  const std::string active = identity_true ? masked_sum_detail::inverse(predicate.tag) : predicate.tag;
+  masked_sum_detail::AffineRangeReader reader(a, axis);
+  return masked_sum_detail::mask_prefix(reader, predicate, active, count);
 }
 } // namespace rg

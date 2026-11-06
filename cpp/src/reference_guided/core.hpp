@@ -931,6 +931,41 @@ struct Arena {
     return same_comparison(predicate,describe_comparison("gt",a,b)) ||
            same_comparison(predicate,describe_comparison("ge",a,b));
   }
+  // An (in)equality of an IEEE binary16/bfloat16/binary32/binary64 encoding
+  // floatbits_w(x) with a constant pattern, read through the encoding:
+  // - the w-1 magnitude bits floatbits_w(x) mod 2^(w-1) are zero exactly for
+  //   +0 and -0, so that test is the floating zero test x == 0;
+  // - every encoding of a positive x (finite, rounded to +0, or +infinity)
+  //   has a clear sign bit, so a pattern with the sign bit set differs.
+  // Other patterns keep the integer comparison. O(1).
+  std::optional<Id> encoding_comparison(const std::string &p, Id lhs, Id rhs) {
+    if (p != "eq" && p != "ne") return {};
+    if (value(lhs) && !value(rhs)) std::swap(lhs, rhs);
+    const auto pattern = value(rhs);
+    if (!pattern || pattern->denominator() != 1 || *pattern < 0) return {};
+    auto encoded = [&](Id id) -> std::optional<std::pair<Id, unsigned>> {
+      const auto &n = nodes[id];
+      if (n.op != "floatbits" || n.args.size() != 1 || n.data.size() != 1 ||
+          (n.tag != "f16" && n.tag != "bf16" && n.tag != "f32" && n.tag != "f64"))
+        return {};
+      const unsigned w = n.data[0].numerator().convert_to<unsigned>();
+      if (Q(w) != n.data[0] || w != (n.tag == "f64" ? 64u : n.tag == "f32" ? 32u : 16u)) return {};
+      return std::pair(n.args[0], w);
+    };
+    const auto &n = nodes[lhs];
+    if (n.op == "imod" && n.args.size() == 1 && n.data.size() == 1 && *pattern == 0)
+      if (auto source = encoded(n.args[0]); source && n.data[0] == Q(pow2(source->second - 1))) {
+        ++stats["floating_encoding_zero_tests"];
+        return compare(p, source->first, zero);
+      }
+    if (auto source = encoded(lhs); source && *pattern >= Q(pow2(source->second - 1)) &&
+        *pattern < Q(pow2(source->second)) && nodes[source->first].facts.finite &&
+        nodes[source->first].facts.pos) {
+      ++stats["floating_encoding_sign_tests"];
+      return constant(p == "ne");
+    }
+    return {};
+  }
   Id compare(std::string p, Id a, Id b) {
     if (!valid_comparison(p))
       throw Unsupported("comparison " + p);
@@ -965,6 +1000,10 @@ struct Arena {
     if (b == zero && nodes[a].facts.pos &&
         (p == "ne" || p == "gt" || p == "ge"))
       return one;
+    if (b == zero && nodes[a].facts.finite && nodes[a].facts.pos &&
+        (p == "eq" || p == "lt" || p == "le"))
+      return zero;
+    if (auto decoded = encoding_comparison(p, a, b)) return *decoded;
     // Predicate constructors are shared by import, substitution and reference
     // instantiation. Inspect only this comparison's immediate Boolean shell;
     // never distribute Selects or search numerical ancestors.
@@ -1014,6 +1053,54 @@ struct Arena {
                          std::pair(Q(0), Q(1)));
     });
   }
+  // The interval of a Select arm where it is taken: when p (taken) or its
+  // complement is a comparison of a bounded value x with a constant, x's
+  // interval is narrowed by it inside an arm that is x, k*x or an affine sum
+  // of bounded terms. Otherwise the arm's own interval. Arms must be bounded;
+  // O(arm arity).
+  std::pair<Q, Q> guarded_bounds(Id p, Id arm, bool taken) const {
+    const auto own = *nodes[arm].bounds;
+    const auto &condition = nodes[p];
+    if (condition.op != "compare" || condition.args.size() != 2 || !condition.data.empty())
+      return own;
+    std::string op = taken ? condition.tag : complement_comparison(condition.tag);
+    Id x = condition.args[0];
+    auto c = value(condition.args[1]);
+    if (!c) {
+      c = value(condition.args[0]);
+      x = condition.args[1];
+      op = reverse_comparison(op);
+    }
+    if (!c || value(x) || !nodes[x].bounds || !nodes[x].facts.finite) return own;
+    auto narrowed = *nodes[x].bounds;
+    if (op == "le" || op == "lt") narrowed.second = std::min(narrowed.second, *c);
+    else if (op == "ge" || op == "gt") narrowed.first = std::max(narrowed.first, *c);
+    else if (op == "eq") narrowed = std::pair(*c, *c);
+    else return own;
+    if (narrowed.first > narrowed.second) return own;
+    auto interval = [&](Id term) -> Bounds {
+      if (term == x) return narrowed;
+      return nodes[term].bounds;
+    };
+    Bounds result;
+    const auto &n = nodes[arm];
+    if (arm == x) result = narrowed;
+    else if ((n.op == "add" || n.op == "mul") && std::find(n.args.begin(), n.args.end(), x) != n.args.end()) {
+      const bool sum = n.op == "add";
+      if (!sum && n.args.size() != 1) return own;
+      result = std::pair(Q(0), Q(0));
+      for (size_t i = 0; i < n.args.size() && result; ++i) {
+        const auto term = interval(n.args[i]);
+        if (!term) { result.reset(); break; }
+        const Q &k = sum ? n.data[i] : n.data[0];
+        const Q lo = term->first * k, hi = term->second * k;
+        result->first += std::min(lo, hi);
+        result->second += std::max(lo, hi);
+      }
+    }
+    if (!result) return own;
+    return std::pair(std::max(own.first, result->first), std::min(own.second, result->second));
+  }
   Id select(Id p, Id a, Id b, bool infer_bounds = false) {
     if (p == one)
       return a;
@@ -1050,6 +1137,9 @@ struct Arena {
       ++stats["select_max_probe_hits"];
       return maximum({a,b});
     }
+    if(auto tournament=tournament_select(p,a,b,false))return *tournament;
+    if(auto merged=argmax_point_select(p,a,b))return *merged;
+    if(auto payload=payload_tournament_select(p,a,b))return *payload;
     const auto &condition=nodes[p];
     // Refine only the selected occurrence of the compared value. No inherited
     // path context is added to the Arena, and no fact escapes to that value.
@@ -1089,9 +1179,10 @@ struct Arena {
     Bounds bounds;
     // Demand-driven: propagating every floating Select interval makes all
     // downstream add/mul rebuilds perform otherwise unused rational arithmetic.
-    if (infer_bounds && nodes[a].bounds && nodes[b].bounds)
-      bounds = std::pair(std::min(nodes[a].bounds->first, nodes[b].bounds->first),
-                         std::max(nodes[a].bounds->second, nodes[b].bounds->second));
+    if (infer_bounds && nodes[a].bounds && nodes[b].bounds) {
+      const auto ab = guarded_bounds(p, a, true), bb = guarded_bounds(p, b, false);
+      bounds = std::pair(std::min(ab.first, bb.first), std::max(ab.second, bb.second));
+    }
     return intern("select", {p, a, b}, {}, "",
                   {af.finite && bf.finite, af.pos && bf.pos, af.nn && bf.nn,
                    af.finite_or_negative_infinity() && bf.finite_or_negative_infinity()}, bounds);
@@ -1106,6 +1197,262 @@ struct Arena {
       if(b->first >= lo && b->second <= hi) return x;
     }
     return intern("clamp",{x},{lo,hi},"",{nodes[x].facts.finite,lo>0,lo>=0},std::pair(lo,hi));
+  }
+  // first_argmax(v_0..v_{n-1}; d_0 < ... < d_{n-1}) is d_j for the least j with v_j = max_k v_k: the
+  // index a lexicographic (value descending, index ascending) selection returns. Values are finite.
+  Id first_argmax(std::vector<std::pair<Q,Id>> members) {
+    std::sort(members.begin(),members.end());
+    std::vector<Id> values;std::vector<Q> indices;
+    for(const auto &[index,value]:members){indices.push_back(index);values.push_back(value);}
+    const Q low=indices.front(),high=indices.back();
+    return intern("first_argmax",values,indices,"",{true,low>0,low>=0},std::pair(low,high));
+  }
+  // The leaves of a nested max node. O(nodes of the max shell).
+  std::set<Id> max_leaves(Id value) const {
+    std::set<Id> leaves;std::vector<Id> todo{value};
+    while(!todo.empty()) {
+      const Id x=todo.back();todo.pop_back();
+      if(nodes[x].op=="max" || nodes[x].op=="masked_max")todo.insert(todo.end(),nodes[x].args.begin(),nodes[x].args.end());
+      else leaves.insert(x);
+    }
+    return leaves;
+  }
+  // A selection arm as tournament members (index, value): a constant index d whose value is the
+  // compared operand, a first_argmax node or c + first_argmax whose values' max is the compared
+  // operand, or (nested) a two-constant leaf selection. Empty when the arm is none of these.
+  std::vector<std::pair<Q,Id>> tournament_members(Id arm,Id compared) {
+    if(!nodes[compared].facts.finite)return {};
+    if(auto d=value(arm))return d->denominator()==1 ? std::vector<std::pair<Q,Id>>{{*d,compared}} : std::vector<std::pair<Q,Id>>{};
+    Q shift=0;Id core=arm;
+    if(nodes[arm].op=="add" && nodes[arm].args.size()==2) {
+      for(size_t j=0;j<2;++j)
+        if(nodes[arm].args[j]==one && nodes[arm].data[1-j]==1 && nodes[nodes[arm].args[1-j]].op=="first_argmax") {
+          shift=nodes[arm].data[j];core=nodes[arm].args[1-j];
+        }
+      if(core==arm)return {};
+    }
+    if(nodes[core].op=="select" && shift==0)
+      if(auto leaf=tournament_select(nodes[core].args[0],nodes[core].args[1],nodes[core].args[2],true))core=*leaf;
+    if(nodes[core].op!="first_argmax" || shift.denominator()!=1)return {};
+    const auto &values=nodes[core].args;const auto &indices=nodes[core].data;
+    if(max_leaves(compared)!=std::set<Id>(values.begin(),values.end()))return {};
+    std::vector<std::pair<Q,Id>> members;
+    for(size_t j=0;j<values.size();++j)members.emplace_back(indices[j]+shift,values[j]);
+    return members;
+  }
+  // A predicate whose only non-constant atom is one first_argmax node F (integer, bounds [lo, hi]) is a
+  // function on a finite domain: evaluate it at every index of F. Returns the point set or nothing.
+  // Integer arithmetic, words, comparisons and selections only; O(index count x predicate nodes).
+  std::optional<std::pair<Id,std::vector<Q>>> argmax_point_set(Id predicate) {
+    static constexpr size_t predicate_node_limit=64;
+    Id atom=invalid;std::vector<Id> order,todo{predicate};std::set<Id> seen;
+    while(!todo.empty()) {
+      const Id x=todo.back();todo.pop_back();
+      if(!seen.insert(x).second)continue;
+      if(seen.size()>predicate_node_limit)return {};
+      const auto &n=nodes[x];
+      if(n.op=="const")continue;
+      if(n.op=="first_argmax"){if(atom!=invalid && atom!=x)return {};atom=x;continue;}
+      if(n.op!="add" && n.op!="mul" && n.op!="idiv" && n.op!="imod" && n.op!="word" && n.op!="compare" && n.op!="select")return {};
+      order.push_back(x);todo.insert(todo.end(),n.args.begin(),n.args.end());
+    }
+    if(atom==invalid)return {};
+    std::vector<Q> points;
+    for(const Q &index:nodes[atom].data) {
+      std::map<Id,Q> v{{atom,index}};
+      std::function<std::optional<Q>(Id)> eval=[&](Id x)->std::optional<Q> {
+        if(auto c=value(x))return c;
+        if(auto it=v.find(x);it!=v.end())return it->second;
+        const auto &n=nodes[x];std::vector<Q> xs;
+        for(Id arg:n.args){auto r=eval(arg);if(!r)return {};xs.push_back(*r);}
+        Q r;
+        if(n.op=="add"){r=0;for(size_t j=0;j<xs.size();++j)r+=n.data[j]*xs[j];}
+        else if(n.op=="mul"){r=n.data[0];for(const Q &q:xs)r*=q;}
+        else if(n.op=="idiv" || n.op=="imod") {
+          if(xs[0].denominator()!=1)return {};
+          const Z d=n.data[0].numerator();
+          r=n.op=="idiv"?Q(floorz(xs[0].numerator(),d)):Q(modz(xs[0].numerator(),d));
+        } else if(n.op=="word") {
+          if(xs[0].denominator()!=1)return {};
+          r=Q(modz(xs[0].numerator(),pow2(n.data[0].numerator().convert_to<unsigned>())));
+        } else if(n.op=="compare") {
+          const auto &t=n.tag;const Q &l=xs[0],&h=xs[1];
+          r=Q((t=="lt"&&l<h)||(t=="le"&&l<=h)||(t=="eq"&&l==h)||(t=="ne"&&l!=h)||(t=="gt"&&l>h)||(t=="ge"&&l>=h)?1:0);
+        } else r=xs[0]!=0?xs[1]:xs[2];
+        v.emplace(x,r);return r;
+      };
+      const auto truth=eval(predicate);
+      if(!truth || (*truth!=0 && *truth!=1))return {};
+      if(*truth==1)points.push_back(index);
+    }
+    return std::pair(atom,points);
+  }
+  // select(p, select(q, X, Y), Y) is select(p and q, X, Y). Taken only when p and q are predicates of one
+  // first_argmax node F whose conjunction holds at exactly one index j: then it is select(F == j, X, Y).
+  std::optional<Id> argmax_point_select(Id p,Id a,Id b) {
+    if(nodes[a].op!="select" || nodes[a].args.size()!=3 || nodes[a].args[2]!=b)return {};
+    const Id q=nodes[a].args[0],x=nodes[a].args[1];
+    const auto left=argmax_point_set(p),right=argmax_point_set(q);
+    if(!left || !right || left->first!=right->first)return {};
+    std::vector<Q> both;
+    std::set_intersection(left->second.begin(),left->second.end(),right->second.begin(),right->second.end(),std::back_inserter(both));
+    if(both.size()!=1)return {};
+    ++stats["argmax_point_selections"];
+    return select(compare("eq",left->first,constant(both.front())),x,b);
+  }
+  // The compared values (X of the else arm, Y of the then arm) of a selection that takes the then arm when
+  // Y > X and the else arm when X > Y: p = (X <= Y), (X < Y), or (X < Y) or Q with Q zero unless X == Y
+  // (Q = (X == Y) or a 0/1 product containing it). Ties are not constrained.
+  std::optional<std::pair<Id,Id>> max_selection_operands(Id p) const {
+    if(nodes[p].op=="select" && nodes[p].args.size()==3 && nodes[p].args[1]==one && nodes[p].args[2]==zero)p=nodes[p].args[0];
+    Id strict=p,tie=invalid;
+    if(nodes[p].op=="select" && nodes[p].args.size()==3 && nodes[p].args[1]==one){strict=nodes[p].args[0];tie=nodes[p].args[2];}
+    const auto &c=nodes[strict];
+    if(c.op!="compare" || c.args.size()!=2 || (c.tag!="lt" && c.tag!="le") || (c.tag=="le" && tie!=invalid))return {};
+    const Id x=c.args[0],y=c.args[1];
+    auto equality=[&](Id f){const auto &e=nodes[f];return e.op=="compare" && e.tag=="eq" && e.args.size()==2 &&
+        ((e.args[0]==x && e.args[1]==y) || (e.args[0]==y && e.args[1]==x));};
+    if(tie!=invalid) {
+      const auto &t=nodes[tie];
+      const bool product=t.op=="mul" && t.data.size()==1 && t.data[0]==1 &&
+          std::any_of(t.args.begin(),t.args.end(),equality) &&
+          std::all_of(t.args.begin(),t.args.end(),[&](Id f){return nodes[f].bounds && nodes[f].bounds->first>=0 &&
+                                                                     nodes[f].bounds->second<=1;});
+      if(!product && !equality(tie))return {};
+    }
+    return std::pair(x,y);
+  }
+  // max(x, y) of a tournament. When every leaf is masked (select(G == d, c, u), one G, distinct d) the maximum
+  // is kept as masked_max(leaves in d order; d): a canonical spelling of the same maximum that does not depend on
+  // the order in which the selections combined it (an explicit max nests in tournament order). O(leaves).
+  Id tournament_maximum(Id x,Id y) {
+    std::set<Id> leaves=max_leaves(x);
+    for(Id leaf:max_leaves(y))leaves.insert(leaf);
+    if(auto masked=masked_maximum(leaves))return *masked;
+    return maximum({x,y});
+  }
+  std::optional<Id> masked_maximum(const std::set<Id> &leaves) {
+    if(leaves.size()<2)return {};
+    Id argmax=invalid;std::map<Q,Id> ordered;bool finite=true,pos=true,nn=true;
+    for(Id leaf:leaves) {
+      const auto masked=masked_leaf(leaf);
+      if(!masked || (argmax!=invalid && argmax!=masked->argmax) || !ordered.emplace(masked->index,leaf).second)return {};
+      argmax=masked->argmax;finite=finite && nodes[leaf].facts.finite;
+      pos=pos && nodes[masked->payload].facts.pos;nn=nn && nodes[masked->payload].facts.nn;
+    }
+    std::vector<Id> args;std::vector<Q> indices;
+    for(const auto &[index,leaf]:ordered){indices.push_back(index);args.push_back(leaf);}
+    // G equals at most one of the distinct d, so at least one leaf is its payload u: the maximum is at least
+    // that u (positive or nonnegative when every payload is).
+    return intern("masked_max",args,indices,"",{finite,finite && pos,finite && nn});
+  }
+  // A masked tournament leaf select(G == d, c, u): G first_argmax, d and c constants.
+  struct MaskedLeaf { Id argmax=invalid; Q index, mask; Id payload=invalid; };
+  std::optional<MaskedLeaf> masked_leaf(Id w) {
+    const auto &n=nodes[w];
+    if(n.op!="select" || n.args.size()!=3)return {};
+    const auto &t=nodes[n.args[0]];
+    const auto mask=value(n.args[1]);
+    if(!mask || t.op!="compare" || t.tag!="eq" || t.args.size()!=2 || nodes[t.args[0]].op!="first_argmax")return {};
+    const auto index=value(t.args[1]);
+    if(!index)return {};
+    return MaskedLeaf{t.args[0],*index,*mask,n.args[2]};
+  }
+  // A payload tournament: selections compare the (masked) values w and carry payloads u, where every w_j is u_j
+  // or select(G == d_j, c, u_j) (one first_argmax G, one constant c < 0, distinct d_j) and every u_j >= 0.
+  // At most one member is masked at run time and it is below every other member, so the carried payload of a
+  // set of two or more members is its maximum w. select(p, PY, PX) of disjoint member sets is max(X, Y) when each
+  // payload is its set's maximum already (PY == Y) or, for one member, that member's u. Exact; O(members).
+  std::optional<Id> payload_tournament_select(Id p,Id a,Id b) {
+    const auto operands=max_selection_operands(p);
+    if(!operands)return {};
+    const auto [x,y]=*operands;
+    if(a==y && b==x)return {};
+    const auto then_leaves=max_leaves(y),else_leaves=max_leaves(x);
+    for(Id leaf:then_leaves)if(else_leaves.contains(leaf))return {};
+    auto carried=[&](Id payload,Id compared,const std::set<Id> &leaves) {
+      // The same maximum spelled as an explicit max or as masked_max: equal leaf sets.
+      if(payload==compared || ((nodes[payload].op=="max" || nodes[payload].op=="masked_max") &&
+                                max_leaves(payload)==leaves))return true;
+      if(leaves.size()!=1)return false;
+      const auto masked=masked_leaf(compared);
+      return masked && masked->payload==payload;
+    };
+    if(!carried(a,y,then_leaves) || !carried(b,x,else_leaves))return {};
+    Id argmax=invalid;std::optional<Q> mask;std::set<Q> indices;
+    for(const auto *leaves:{&then_leaves,&else_leaves})
+      for(Id leaf:*leaves) {
+        if(const auto masked=masked_leaf(leaf)) {
+          if((argmax!=invalid && argmax!=masked->argmax) || (mask && *mask!=masked->mask) || masked->mask>=0 ||
+             !nodes[masked->payload].facts.finite || !nodes[masked->payload].facts.nn ||
+             !indices.insert(masked->index).second)return {};
+          argmax=masked->argmax;mask=masked->mask;
+        } else if(!nodes[leaf].facts.finite || !nodes[leaf].facts.nn)return {};
+      }
+    if(argmax==invalid)return {};
+    ++stats["payload_tournament_maxima"];
+    return tournament_maximum(x,y);
+  }
+  // select(p, a, b) of a lexicographic tournament. With X the compared value of b and Y that of a:
+  //  p = (X <= Y): a wins ties (a's indices must all precede b's);
+  //  p = (X < Y): b wins ties (b's indices must precede a's);
+  //  p = (X < Y) or (X == Y and Ia - Ib <= -1): explicit tie-break, any disjoint indices;
+  //  p = (X < Y) or (X == Y): a wins ties (a's indices must all precede b's).
+  // Arms equal to the compared values give max(X, Y) (p differs from X < Y only where X == Y); index
+  // arms give the first argmax of both member sets. A two-constant leaf is converted only when nested
+  // (`leaf`), so a lone two-way selection keeps its form. Exact; O(members).
+  std::optional<Id> tournament_select(Id p,Id a,Id b,bool leaf) {
+    if(nodes[p].op=="select" && nodes[p].args.size()==3 && nodes[p].args[1]==one && nodes[p].args[2]==zero)p=nodes[p].args[0];
+    Id strict=p,tie=invalid;
+    if(nodes[p].op=="select" && nodes[p].args.size()==3 && nodes[p].args[1]==one) {strict=nodes[p].args[0];tie=nodes[p].args[2];}
+    const auto &c=nodes[strict];
+    if(c.op!="compare" || c.args.size()!=2 || (c.tag!="lt" && c.tag!="le") || (c.tag=="le" && tie!=invalid))return {};
+    const Id x=c.args[0],y=c.args[1];
+    if(!nodes[x].facts.finite || !nodes[y].facts.finite)return {};
+    // The tie conjunction: a product of compare(eq, X, Y) and compare(le, Ia - Ib, -1) (or an equivalent
+    // form). The predicate is the AND of every factor, so every index-shaped factor must name the same
+    // difference; any other one (a runtime flag, say) is refused rather than dropped.
+    bool tie_values=false;Id tie_index=invalid;
+    if(tie!=invalid) {
+      const auto &t=nodes[tie];
+      const bool product=t.op=="mul" && t.data.size()==1 && t.data[0]==1;
+      if(!product && t.op!="compare")return {};
+      for(Id factor:product ? t.args : std::vector<Id>{tie}) {
+        const auto &f=nodes[factor];
+        Id index=invalid;
+        if(f.op=="compare" && f.tag=="eq" && f.args.size()==2 &&
+           ((f.args[0]==x && f.args[1]==y) || (f.args[0]==y && f.args[1]==x)))tie_values=true;
+        else if(f.op=="compare" && f.args.size()==2 && ((f.tag=="le" && f.args[1]==constant(-1)) ||
+                (f.tag=="lt" && f.args[1]==zero)))index=f.args[0];
+        else if(f.op=="compare" && f.args.size()==2 && ((f.tag=="ge" && f.args[1]==one) ||
+                (f.tag=="gt" && f.args[1]==zero)))index=neg(f.args[0]);
+        else return {};
+        if(index!=invalid) {
+          if(tie_index!=invalid && tie_index!=index)return {};
+          tie_index=index;
+        }
+      }
+      if(!tie_values)return {};
+    }
+    if(a==y && b==x) {
+      ++stats["tournament_value_maxima"];
+      return tournament_maximum(x,y);
+    }
+    if(!leaf && value(a) && value(b))return {};
+    auto ma=tournament_members(a,y),mb=tournament_members(b,x);
+    if(ma.empty() || mb.empty())return {};
+    Q a_low=ma.front().first,a_high=ma.front().first,b_low=mb.front().first,b_high=mb.front().first;
+    for(const auto &m:ma){a_low=std::min(a_low,m.first);a_high=std::max(a_high,m.first);}
+    for(const auto &m:mb){b_low=std::min(b_low,m.first);b_high=std::max(b_high,m.first);}
+    if(tie!=invalid && tie_index!=invalid) {
+      if(tie_index!=sub(a,b))return {};
+      std::set<Q> seen;
+      for(const auto &m:ma)seen.insert(m.first);
+      for(const auto &m:mb)if(!seen.insert(m.first).second)return {};
+    } else if(c.tag=="le" || tie!=invalid ? !(a_high<b_low) : !(b_high<a_low))return {};
+    ma.insert(ma.end(),mb.begin(),mb.end());
+    ++stats["tournament_first_argmax_merges"];
+    return first_argmax(std::move(ma));
   }
   Id maximum(std::vector<Id> xs) {
     std::vector<Id> flat;
@@ -1242,7 +1589,11 @@ struct Arena {
     if (x == one) return zero;
     // Preserve a partial real function when positivity is not established.
     bool finite = nodes[x].facts.finite && nodes[x].facts.pos;
-    return intern(base2 ? "log2" : "log", {x}, {}, "", {finite, false, false});
+    // The logarithm is increasing: a proved lower bound above (at least) 1
+    // makes it positive (nonnegative), e.g. log(2) > 0.
+    const auto &b = nodes[x].bounds;
+    bool positive = finite && b && b->first > 1, nonnegative = finite && b && b->first >= 1;
+    return intern(base2 ? "log2" : "log", {x}, {}, "", {finite, positive, nonnegative});
   }
   Id power(Id base, Id exponent) {
     if(nodes[base].facts.finite) {
@@ -1430,7 +1781,7 @@ struct Arena {
       auto child=[&](size_t j){return known_bits_cache.at(n.args.at(j));};
       KnownBits out;
       if(n.op=="const" && n.data[0].denominator()==1)out=exact(n.data[0].numerator());
-      else if(n.op=="var" || n.op=="readbits" || n.op=="packedbits" || n.op=="floatbits" ||
+      else if(n.op=="var" || n.op=="readbits" || n.op=="packedbits" || n.op=="floatbits" || n.op=="first_argmax" ||
               n.op=="compare" || n.op=="floor")out.integer=true;
       else if(n.op=="read") {
         auto split=n.tag.rfind('\n');std::string type=split==std::string::npos?"":n.tag.substr(split+1);
@@ -1680,6 +2031,7 @@ struct Arena {
           bits.push_back(mul({constant(Q(pow2(b))),compare("lt",args[1],constant(Q(width-lo-b)))}));
         return add(bits);
       }
+      if(auto view=shifted_byte_view_slice(source,lo,count))return *view;
     }
     const auto &n=nodes[source];
     if(n.op=="readbits" && lo%8==0 && count%8==0 && count>0 && Q(lo)+Q(count)<=n.data[0]) {
@@ -1689,6 +2041,61 @@ struct Arena {
     }
     return intern("extractbits",{source},{Q(lo),Q(count)},"",{true,false,true},
                   std::pair(Q(0),Q(pow2(count)-1)));
+  }
+  // readbits is a little-endian byte view (bit_slice above reads bits [8k, 8k+8) of R_W(a) as
+  // R_8(a+k)). So a sum of adjacent views of one allocation, sum_i 2^(8 o_i) R_(w_i)(a + o_i) with
+  // o_0 = 0 and o_(i+1) = o_i + w_i/8, is the single view R_W(a), W = sum_i w_i <= 256: both are
+  // sum_k 2^(8k) byte(a+k). Anything else is not a view. O(terms).
+  std::optional<Id> concatenated_byte_view(Id source) {
+    if(nodes[source].op=="readbits")return source;
+    const auto args=nodes[source].args;const auto data=nodes[source].data;
+    if(nodes[source].op!="add" || args.size()<2 || args.size()!=data.size())return {};
+    std::vector<std::pair<unsigned,Id>> parts;
+    for(size_t i=0;i<args.size();++i) {
+      const auto &view=nodes[args[i]];
+      if(data[i].denominator()!=1 || data[i]<=0 || view.op!="readbits" || view.args.size()!=1 ||
+         view.data.size()!=1)return {};
+      const Z coefficient=data[i].numerator();
+      if((coefficient&(coefficient-1))!=0)return {};
+      const unsigned shift=boost::multiprecision::msb(coefficient);
+      if(shift%8)return {};
+      parts.emplace_back(shift,args[i]);
+    }
+    std::sort(parts.begin(),parts.end());
+    const std::string tag=nodes[parts.front().second].tag;
+    const Id base=nodes[parts.front().second].args[0];
+    unsigned next=0;
+    for(const auto &[shift,view]:parts) {
+      const Q bits=nodes[view].data[0];
+      if(shift!=next || nodes[view].tag!=tag || bits.denominator()!=1 || bits<=0 ||
+         modz(bits.numerator(),8)!=0 || bits>Q(256-next))return {};
+      if(shift && nodes[view].args[0]!=add({base,constant(Q(shift/8))}))return {};
+      next+=bits.numerator().convert_to<unsigned>();
+    }
+    ++stats["concatenated_byte_views"];
+    return intern("readbits",{base},{Q(next)},tag,{true,false,true},std::pair(Q(0),Q(pow2(next)-1)));
+  }
+  // Bits [lo, lo+count) of word_shr(V, s), V a byte view R_W(a) (or a concatenation of adjacent
+  // views) no wider than the shifted word, are R_count(a + s/8 + lo/8) when lo and count are byte
+  // multiples, s is an integer multiple of 8 and 0 <= s, s + lo + count <= W: PTX shr then shifts
+  // exactly (its clamp at the word width is not reached) and the slice selects whole bytes of V.
+  // A constant s is already reduced by word_shr. O(terms of V).
+  std::optional<Id> shifted_byte_view_slice(Id source,unsigned lo,unsigned count) {
+    const auto args=nodes[source].args;const auto data=nodes[source].data;
+    if(nodes[source].op!="word_shr" || args.size()!=2 || data.size()!=2 || data[1]!=0 ||
+       lo%8 || count%8 || !count || value(args[1]))return {};
+    const auto view=concatenated_byte_view(args[0]);
+    if(!view || nodes[*view].data[0]>data[0])return {};
+    const Id shift=args[1];
+    const auto shift_bounds=nodes[shift].bounds;
+    if(!shift_bounds || shift_bounds->first<0 || !nodes[shift].facts.finite ||
+       shift_bounds->second+Q(lo)+Q(count)>nodes[*view].data[0])return {};
+    const auto shift_bits=known_bits(shift);
+    if(!shift_bits.integer || (shift_bits.zero&7)!=7)return {};
+    const std::string tag=nodes[*view].tag;
+    const Id address=add({nodes[*view].args[0],idiv(shift,8),constant(Q(lo/8))});
+    ++stats["shifted_byte_view_slices"];
+    return intern("readbits",{address},{Q(count)},tag,{true,false,true},std::pair(Q(0),Q(pow2(count)-1)));
   }
   // gcd of d and every integer coefficient of ts; 1 when a coefficient is not
   // an integer.
@@ -1848,6 +2255,48 @@ struct Arena {
     for (Id x : n.args)
       s += render(x, depth - 1) + ",";
     return s + ")";
+  }
+  // The diagnostic text of a large expression DAG (an unproved family's two
+  // sides). It differs from render in two ways. A node with operands is
+  // expanded only once, as op#id[...](...); every later occurrence is op#id.
+  // The text ends after `limit` bytes, at a UTF-8 character boundary, and is
+  // then marked "...(truncated)". O(limit + nodes expanded within depth).
+  std::string render_shared(Id root, int depth, std::size_t limit) const {
+    std::string s;
+    std::unordered_set<Id> expanded;
+    const auto go = [&](const auto &self, Id id, int remaining) -> void {
+      if (s.size() > limit)
+        return;
+      const auto &n = nodes[id];
+      if (n.op == "const") {
+        s += str(n.data[0]);
+        return;
+      }
+      if (remaining <= 0 || (!n.args.empty() && !expanded.insert(id).second)) {
+        s += n.op + "#" + std::to_string(id);
+        return;
+      }
+      s += n.args.empty() ? n.op : n.op + "#" + std::to_string(id);
+      s += "[" + n.tag;
+      for (const auto &q : n.data)
+        s += "," + str(q);
+      s += "](";
+      for (Id x : n.args) {
+        self(self, x, remaining - 1);
+        if (s.size() > limit)
+          return;
+        s += ",";
+      }
+      s += ")";
+    };
+    go(go, root, depth);
+    if (s.size() <= limit)
+      return s;
+    std::size_t cut = limit;
+    while (cut > 0 && (static_cast<unsigned char>(s[cut]) & 0xC0) == 0x80)
+      --cut;
+    s.resize(cut);
+    return s + "...(truncated)";
   }
 };
 } // namespace rg

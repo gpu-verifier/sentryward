@@ -38,6 +38,7 @@
 #if defined(__GLIBC__)
 #include <malloc.h>
 #endif
+#include <bitset>
 #include <filesystem>
 #include "sentryward/value_analysis/scalar_fold_lowering.h"
 #include "sentryward/value_analysis/scalar_fold_failure_codes.h"
@@ -256,6 +257,8 @@ Options Arguments(int argc, char **argv) {
     } else
       throw std::invalid_argument("unknown option " + a);
   }
+  // A reported reference failure is the outcome of a required equivalence check.
+  if (!o.reference_failure_json.empty()) o.require_equivalence = o.analyze_values = o.analyze_scalar_fold = true;
 #ifdef SENTRYWARD_DEVELOPMENT_EXPORTS
 #include "sentryward/development/runner/enable_export_values.inc"
 #endif
@@ -892,7 +895,12 @@ Json AnalyzeScalarFold(const sentryward::value_ir::Graph& values,
       fold_options.compared_outputs=compared;
       return sentryward::value_analysis::lowerScalarFold(values, eliminated,fold_options);
     });
-    if (lifting) {
+    // Reachable undefined behavior: its witness is an instance of an analysed unit, so it
+    // is one of the launch whether or not the representatives stand for their members.
+    const bool undefined = folded.diagnostic &&
+        sentryward::value_analysis::FoldFailureUndefinedBehavior(folded.diagnostic->code) &&
+        folded.diagnostic->undefined_behavior;
+    if (lifting && !undefined) {
       if (folded.lifting.refused) {
         // The first-item rule: a class-mode fold failure that is provably the per-unit
         // run's first failure is reported as computed; any other refusal restarts.
@@ -919,6 +927,7 @@ Json AnalyzeScalarFold(const sentryward::value_ir::Graph& values,
         report["resource"] = {{"origin","representation"},{"kind","integer_range"}};
       } else if (diagnostic.code == "invalid_analysis_budget") report["status"] = "invalid_configuration";
       else if (diagnostic.code == "source_dependency_cycle") report["status"] = "internal_error";
+      else if (undefined) report["status"] = "undefined_behavior";
       if (diagnostic.operation) {
         const auto& operation = *diagnostic.operation;
         report["diagnostic"]["value_node"] = operation.node;
@@ -926,6 +935,24 @@ Json AnalyzeScalarFold(const sentryward::value_ir::Graph& values,
         const auto& origin = values.node(operation.node).instances().at(operation.instance).origin;
         if (origin.source_line) report["diagnostic"]["line"] = *origin.source_line;
         report["diagnostic"]["instruction"] = origin.source_text;
+      }
+      if (undefined) {
+        const auto& w = *diagnostic.undefined_behavior;
+        Json witness = {{"condition", w.condition}, {"isa_reference", w.isa_reference},
+            {"isa_section", w.isa_section}, {"isa_wording", w.isa_wording},
+            {"source", w.source}, {"operand_byte", w.operand_byte},
+            {"field", w.field == 0 ? "low" : "high"}, {"witness_value", w.value},
+            {"witness_bits", "0b" + std::bitset<4>(w.value).to_string()}, {"defined_values", w.defined_values}};
+        if (w.source == "input_object") {
+          witness["object"] = w.object;
+          witness["property"] = w.property;
+          if (w.property == "field_values") witness["declared_values"] = w.declared_values;
+          if (w.object_byte_offset) witness["object_byte_offset"] = *w.object_byte_offset;
+        } else if (w.source == "unwritten_tensor_memory")
+          witness["note"] = "no store covers the metadata bytes before this MMA reads them, so their contents are unspecified";
+        if (report["diagnostic"].contains("line")) witness["line"] = report["diagnostic"]["line"];
+        if (report["diagnostic"].contains("instruction")) witness["instruction"] = report["diagnostic"]["instruction"];
+        report["diagnostic"]["undefined_behavior"] = std::move(witness);
       }
     }
     if (!folded.complete) {
@@ -1179,7 +1206,8 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
     if (kept_verdict) monitor.MemoryVerified(unit_restart->verdict, unit_restart->verdict_elapsed_s);
     std::optional<rg::Document> reference;
     std::optional<sentryward::scalar_fold::Artifact> expression;
-    Json equivalence_mapping, reference_error={{"status","missing_reference"},{"reason","reference_expression_not_supplied"}};
+    // A required equivalence check without a reference expression is missing input.
+    Json equivalence_mapping, reference_error={{"status","missing_input"},{"reason","reference_expression_not_supplied"}};
     // The bytes the binding compares: the scalar fold projects only those.
     std::map<std::string, sentryward::scalar_fold::ComparedOutput> compared_outputs;
     if(!options.reference_failure_json.empty()) {
@@ -1322,7 +1350,8 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
         // and they write the same allocations), and the static key names no
         // unit. Any other failure restarts.
         const auto &stop = pipeline.memory.diagnostic;
-        if (!pipeline.memory.complete && !(stop && stop->order_free)) return refuse_lifting(LiftingStopOf(stop));
+        if (!pipeline.memory.complete && !(stop && stop->order_free))
+          return refuse_lifting(LiftingStopOf(stop));
         if (RowModulusViolation(*unit_lifting)) return refuse_lifting();
       }
       const auto packing = pipeline.packing, exp2 = pipeline.ideal_exp2;
@@ -1976,8 +2005,19 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
 #include "sentryward/development/runner/source_export.inc"
 #endif
         if (!lowered.diagnostics.empty()) {
-          result = {{"status", "event_view_incomplete"}, {"stage","event_view_construction"},
-                    {"reason",lowered.diagnostics.front().value("code",std::string("event_view_construction_incomplete"))},
+          // A reachable undefined behavior the lowering decided from concrete values decides the
+          // result wherever it is among the diagnostics: an unsupported instruction lowered
+          // earlier cannot hide it. Otherwise the first diagnostic does. The deciding one leads
+          // the list (readers take the first diagnostic as the cause); the rest keep their order.
+          if (const auto deciding = ptx::DecidingLoweringDiagnostic(lowered.diagnostics); deciding) {
+            Json first = std::move(lowered.diagnostics[deciding]);
+            lowered.diagnostics.erase(deciding);
+            lowered.diagnostics.insert(lowered.diagnostics.begin(), std::move(first));
+          }
+          const auto reason = lowered.diagnostics.front().value("code", std::string("event_view_construction_incomplete"));
+          const bool reachable = ptx::LoweringUndefinedBehavior(reason);
+          result = {{"status", reachable ? "undefined_behavior" : "event_view_incomplete"},
+                    {"stage","event_view_construction"}, {"reason", reason},
                     {"diagnostics", std::move(lowered.diagnostics)},
                     {"verification_performed", false},
                     {"memory_analysis_complete", false}};
@@ -2206,51 +2246,69 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
       result["value_view_complete"] = result.value("status", "") == "value_view_complete";
       result["verification_performed"] = false;
     }
-    if (options.reference_stdin || options.require_equivalence) {
-      const auto verified = result.value("verification_status", result.value("status", ""));
-      // The first value-stage failure, if any. A not-run scalar projection must
-      // not hide a precise lowering/elimination diagnostic (e.g. atomic add), nor
-      // relabel that failure as a generic scalar/Fold blockage. Without a
-      // reference a complete fold keeps no artifact, so "ready" is no failure.
-      const auto value_failure = [&]() -> std::optional<Json> {
-        if (expression) return std::nullopt;
-        const auto& analysis = result["value_analysis"];
-        auto folded = analysis.value("scalar_fold", Json::object());
-        auto stage = std::string("value_analysis.scalar_fold");
-        if (folded.value("status", "not_run") == "not_run" &&
-            analysis.value("status", "not_run") != "expressions_ready") {
-          folded = analysis;
-          folded.erase("scalar_fold");
-          stage = analysis.value("stage", "value_analysis.memory_elimination");
-        }
-        const auto state = folded.value("status", "not_run");
-        if (!reference && state == "ready") return std::nullopt;
-        const auto diagnostic = folded.value("diagnostic", Json::object());
-        const auto reason = diagnostic.value("code", folded.value("reason", "expression_not_ready"));
-        // The public diagnostic's text: the failure's own message, else that of its
-        // entry in the stage's (normalized) diagnostics.
-        std::string message;
-        const auto text = [](const Json& object) {
-          return object.is_object() && object.contains("message") && object["message"].is_string()
-              ? object["message"].get<std::string>() : std::string();
-        };
-        message = text(diagnostic);
-        if (message.empty()) message = text(folded);
-        if (message.empty() && folded.contains("diagnostics") && folded["diagnostics"].is_array())
-          for (const auto& entry : folded["diagnostics"])
-            if (entry.is_object() && entry.value("code", "") == reason && !(message = text(entry)).empty()) break;
-        Json failure{
-            {"status", state == "analysis_budget_exceeded" ? "analysis_budget_exceeded" : state == "representation_limit_exceeded" ? "unsupported" :
-                       state == "unsupported" ? "unsupported" : "blocked"},
-            {"reason", reason}, {"stage", stage}, {"expression_diagnostic", folded}};
-        if (!message.empty()) failure["message"] = std::move(message);
-        return failure;
+    const auto verified = result.value("verification_status", result.value("status", ""));
+    // Every kernel verification reports its equivalence check. Without a reference expression or a
+    // reported reference failure, and without --require-equivalence, the check is skipped and a
+    // kernel whose synchronization check passed keeps that verdict, unless a value stage that ran
+    // found reachable undefined behavior (memory elimination runs on request, --analyze-values; the
+    // scalar fold, which checks sparse-metadata validity, only with --analyze-scalar-fold).
+    const bool skip_equivalence = !options.reference_stdin && !options.require_equivalence;
+    // The first value-stage failure, if any. A not-run scalar projection must
+    // not hide a precise lowering/elimination diagnostic (e.g. atomic add), nor
+    // relabel that failure as a generic scalar/Fold blockage. Without a
+    // reference a complete fold keeps no artifact, so "ready" is no failure.
+    const auto value_failure = [&]() -> std::optional<Json> {
+      if (expression || !result.contains("value_analysis")) return std::nullopt;
+      const auto& analysis = result["value_analysis"];
+      auto folded = analysis.value("scalar_fold", Json::object());
+      auto stage = std::string("value_analysis.scalar_fold");
+      if (folded.value("status", "not_run") == "not_run" &&
+          analysis.value("status", "not_run") != "expressions_ready") {
+        folded = analysis;
+        folded.erase("scalar_fold");
+        stage = analysis.value("stage", "value_analysis.memory_elimination");
+      }
+      const auto state = folded.value("status", "not_run");
+      if (!reference && state == "ready") return std::nullopt;
+      const auto diagnostic = folded.value("diagnostic", Json::object());
+      const auto reason = diagnostic.value("code", folded.value("reason", "expression_not_ready"));
+      // The public diagnostic's text: the failure's own message, else that of its
+      // entry in the stage's (normalized) diagnostics.
+      std::string message;
+      const auto text = [](const Json& object) {
+        return object.is_object() && object.contains("message") && object["message"].is_string()
+            ? object["message"].get<std::string>() : std::string();
       };
-      if (verified != "race_free" || !result.value("memory_analysis_complete", false))
-        result["equivalence"] = {{"status","blocked"},{"reason","verification_prerequisite_not_satisfied"}};
+      message = text(diagnostic);
+      if (message.empty()) message = text(folded);
+      if (message.empty() && folded.contains("diagnostics") && folded["diagnostics"].is_array())
+        for (const auto& entry : folded["diagnostics"])
+          if (entry.is_object() && entry.value("code", "") == reason && !(message = text(entry)).empty()) break;
+      Json failure{
+          {"status", state == "analysis_budget_exceeded" ? "analysis_budget_exceeded" : state == "representation_limit_exceeded" ? "unsupported" :
+                     state == "unsupported" ? "unsupported" : state == "undefined_behavior" ? "undefined_behavior" : "blocked"},
+          {"reason", reason}, {"stage", stage}, {"expression_diagnostic", folded}};
+      if (!message.empty()) failure["message"] = std::move(message);
+      if (state == "undefined_behavior" && diagnostic.contains("undefined_behavior"))
+        failure["details"] = diagnostic["undefined_behavior"];
+      return failure;
+    };
+    if (verified != "race_free" || !result.value("memory_analysis_complete", false))
+      result["equivalence"] = {{"status","blocked"},{"reason","verification_prerequisite_not_satisfied"}};
+    else if (skip_equivalence) {
+      Json skipped{{"status","skipped"},{"reason","reference_expression_not_supplied"},
+                   {"message", std::string("Equivalence checking was skipped: no reference expression was supplied.") +
+                       (options.analyze_scalar_fold ? "" : " The scalar fold did not run, so its checks (sparse-metadata "
+                                                         "validity among them) were not run.")}};
+      auto failure = value_failure();
+      if (failure && failure->value("status", "") == "undefined_behavior") {
+        result["equivalence"] = std::move(*failure);
+        result["equivalence"]["diagnostics"] = sentryward::results::Report(skipped, "equivalence")["diagnostics"];
+      } else result["equivalence"] = std::move(skipped);
+    } else {
       // A failed value stage is reported before a missing or failed reference:
       // supplying the reference would not change the result. Both are diagnosed.
-      else if (auto failure = value_failure()) {
+      if (auto failure = value_failure()) {
         result["equivalence"] = std::move(*failure);
         if (!reference)
           result["equivalence"]["diagnostics"] = sentryward::results::Report(reference_error, "equivalence")["diagnostics"];
@@ -2287,7 +2345,8 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
           return rg::compareArtifact(std::move(*reference), *expression,
               std::move(equivalence_mapping),
               {.seconds = options.equivalence_timeout,
-               .floating_range_premise = effective_assumptions.at("floating_values_in_range")},
+               .floating_range_premise = effective_assumptions.at("floating_values_in_range"),
+               .kernel_hardware_values = true},
               context).report;
         });
         result["equivalence"]["comparison_elapsed_seconds"] = std::chrono::duration<double>(Clock::now()-started).count();
@@ -2299,6 +2358,8 @@ int RunAttempt(int argc, char **argv, CallInputs &inputs, const std::optional<Pe
           result["equivalence"]["reason"] = "input_access_validity_not_proven";
         }
       }
+    }
+    if (options.analyze_values || result.contains("value_analysis")) {
       result["value_analysis"]["equivalence_check"] = result["equivalence"].value("result", result["equivalence"].value("status", std::string("not_run")));
       result["value_analysis"].erase("equivalence_reason");
     }

@@ -24,6 +24,7 @@ enum class FoldFailureKind : std::uint8_t {
   Internal,    // an internal invariant
   Lifting,     // the lifting's own failure
   Dynamic,     // a message built at run time (LayoutError's what(), a PTX line)
+  UndefinedBehavior, // a reachable undefined behavior: a witness of an analysed unit is one of the launch
 };
 struct FoldFailureCode {
   std::string_view code;
@@ -76,7 +77,15 @@ inline constexpr std::array kFoldFailureCodes{
     FoldFailureCode{"scalar_fold_unit_parameter_unsupported", FoldFailureKind::Lifting},
     FoldFailureCode{"scalar_fold_mma_descriptor", FoldFailureKind::Dynamic}, // LayoutError and two literal fail() sites
     FoldFailureCode{"unspecified_value_dependence", FoldFailureKind::Dynamic}, // names its provenance and line
+    FoldFailureCode{"sparse_metadata_validity_not_proven", FoldFailureKind::LaunchWide}, // a check over all sparse MMAs
+    FoldFailureCode{"sparse_metadata_invalid", FoldFailureKind::UndefinedBehavior},
 };
+// Codes that report reachable undefined behavior (result undefined_behavior).
+inline bool FoldFailureUndefinedBehavior(std::string_view code) noexcept {
+  for (const auto &entry : kFoldFailureCodes)
+    if (entry.code == code) return entry.kind == FoldFailureKind::UndefinedBehavior;
+  return false;
+}
 inline bool FoldFailureContextFree(std::string_view code) noexcept {
   for (const auto &entry : kFoldFailureCodes)
     if (entry.code == code) return entry.kind == FoldFailureKind::ContextFree;

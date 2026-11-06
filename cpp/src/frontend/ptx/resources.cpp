@@ -187,8 +187,24 @@ void UnitInterner::RequireAligned(const ConstantAddressBinding &binding, std::ui
                                   AddressId id) const {
   if (facts_.recording()) [[unlikely]]
     facts_.Note(query::AbsoluteCheck{id, modulus, &binding});
-  if (binding.offset % modulus)
-    throw SemanticError("bulk_reduction_alignment", "reduction base must be 16-byte aligned");
+  // PTX ISA cp.reduce.async.bulk: "The addresses dstMem and srcMem must be aligned to 16 bytes."
+  // A shared binding's offset is its address in the CTA's shared window; its misalignment under
+  // some placement that the shared objects' declared alignments permit is decided (undefined
+  // behavior, LoweringUndefinedBehavior, with that placement: FrontendConfig::SharedMisalignment).
+  // A global binding's offset is relative to an input object whose base alignment is not given.
+  if (binding.address_space == "shared") {
+    if (auto witness = facts_.launch().SharedMisalignment(binding.offset, modulus)) {
+      nlohmann::json details{{"address_space", binding.address_space}, {"offset", binding.offset},
+                             {"alignment", modulus}, {"isa_section", "9.7.10.28.4.2 cp.reduce.async.bulk"}};
+      details.update(*witness);
+      throw SemanticError("bulk_reduction_alignment",
+                          "bulk reduction shared address is not 16-byte aligned under a legal placement (undefined behavior)",
+                          std::move(details));
+    }
+  } else if (binding.offset % modulus)
+    throw SemanticError("bulk_reduction_base_alignment_unknown",
+                        "bulk reduction address is misaligned relative to an allocation whose base alignment is unknown",
+                        {{"address_space", binding.address_space}, {"offset", binding.offset}});
 }
 std::uint32_t UnitInterner::ApplyStep(SlotStep &&slot, const std::vector<std::uint32_t> *ids) {
   auto &step = slot.step;
@@ -237,9 +253,9 @@ TmaAccesses UnitInterner::Commit(SlotOutcome<ResolvedTma> &&outcome) {
     if (pair.global) global = Fragment{AddressId(ids[*pair.global]), pair.bytes};
     const Fragment shared{AddressId(ids[pair.shared]), pair.bytes};
     if (resolved.store)
-      result.pairs.push_back({shared, global, pair.logical_offset, pair.target_rank});
+      result.pairs.push_back({shared, global, pair.logical_offset, pair.target_rank, pair.place});
     else
-      result.pairs.push_back({global, shared, pair.logical_offset, pair.target_rank});
+      result.pairs.push_back({global, shared, pair.logical_offset, pair.target_rank, pair.place});
   }
   for (const auto &[step, bytes] : resolved.completions)
     result.completions.emplace_back(BarrierLifetimeId(ids[step]), bytes);

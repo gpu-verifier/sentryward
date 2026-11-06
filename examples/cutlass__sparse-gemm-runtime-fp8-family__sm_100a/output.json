@@ -60,16 +60,48 @@
     }
   ],
   "checks": {
-    "equivalence": "incomplete",
+    "equivalence": "not_run",
     "synchronization": "passed"
   },
   "diagnostics": [
     {
-      "code": "unsupported_mma_value_mapping",
+      "code": "sparse_metadata_invalid",
       "details": {
-        "internal_stage": "memory_effect_binding"
+        "condition": "\"The only meaningful values of the index are: 0b0100, 0b1000, 0b1100, 0b1001, 0b1101, 0b0110, 0b1110\" (the section gives no meaning to other values)",
+        "declared_values": [
+          0,
+          4,
+          8,
+          9,
+          12,
+          13,
+          14
+        ],
+        "defined_values": [
+          4,
+          6,
+          8,
+          9,
+          12,
+          13,
+          14
+        ],
+        "field": "low",
+        "instruction": "tcgen05.mma.sp.cta_group::1.kind::f8f6f4 [%r936], %rd60, %rd61, [%r930], %r937, {%r929, %r929, %r929, %r929}, p;",
+        "internal_stage": "value_analysis.scalar_fold",
+        "isa_reference": "PTX ISA 9.7.18.10.9 Sparse Matrices",
+        "isa_section": "9.7.18.10.9.2 Sparse tcgen05.mma.sp with .kind::f16, .kind::f8f6f4, .kind::mxf8f6f4, .kind::i8, .kind::ti16",
+        "isa_wording": "only_meaningful",
+        "line": 6228,
+        "object": "E.metadata",
+        "object_byte_offset": 0,
+        "operand_byte": 0,
+        "property": "field_values",
+        "source": "input_object",
+        "witness_bits": "0b0000",
+        "witness_value": 0
       },
-      "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded",
+      "message": "Sparse MMA metadata can hold an index value outside the PTX ISA's meaningful values",
       "stage": "equivalence"
     }
   ],
@@ -104,6 +136,37 @@
       "extent_bytes": "unbounded"
     },
     "representative_branch_uses": 0,
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "u64",
+          "field_bits": 4,
+          "object": "E.metadata",
+          "property": "field_values",
+          "values": [
+            0,
+            4,
+            8,
+            9,
+            12,
+            13,
+            14
+          ]
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "E.metadata",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "tma.input.1"
+        }
+      ],
+      "text": "Elements of these objects satisfy the stated bounds, injectivity and field values (trusted, not checked); the objects are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [],
     "trap_only_equality_assertions_hold": true
   },
   "internal": {
@@ -125,45 +188,179 @@
       "threads": 4096
     },
     "equivalence": {
+      "details": {
+        "condition": "\"The only meaningful values of the index are: 0b0100, 0b1000, 0b1100, 0b1001, 0b1101, 0b0110, 0b1110\" (the section gives no meaning to other values)",
+        "declared_values": [
+          0,
+          4,
+          8,
+          9,
+          12,
+          13,
+          14
+        ],
+        "defined_values": [
+          4,
+          6,
+          8,
+          9,
+          12,
+          13,
+          14
+        ],
+        "field": "low",
+        "instruction": "tcgen05.mma.sp.cta_group::1.kind::f8f6f4 [%r936], %rd60, %rd61, [%r930], %r937, {%r929, %r929, %r929, %r929}, p;",
+        "isa_reference": "PTX ISA 9.7.18.10.9 Sparse Matrices",
+        "isa_section": "9.7.18.10.9.2 Sparse tcgen05.mma.sp with .kind::f16, .kind::f8f6f4, .kind::mxf8f6f4, .kind::i8, .kind::ti16",
+        "isa_wording": "only_meaningful",
+        "line": 6228,
+        "object": "E.metadata",
+        "object_byte_offset": 0,
+        "operand_byte": 0,
+        "property": "field_values",
+        "source": "input_object",
+        "witness_bits": "0b0000",
+        "witness_value": 0
+      },
       "diagnostics": [
         {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded",
-          "stage": "memory_effect_binding"
+          "code": "sparse_metadata_invalid",
+          "details": {
+            "condition": "\"The only meaningful values of the index are: 0b0100, 0b1000, 0b1100, 0b1001, 0b1101, 0b0110, 0b1110\" (the section gives no meaning to other values)",
+            "declared_values": [
+              0,
+              4,
+              8,
+              9,
+              12,
+              13,
+              14
+            ],
+            "defined_values": [
+              4,
+              6,
+              8,
+              9,
+              12,
+              13,
+              14
+            ],
+            "field": "low",
+            "instruction": "tcgen05.mma.sp.cta_group::1.kind::f8f6f4 [%r936], %rd60, %rd61, [%r930], %r937, {%r929, %r929, %r929, %r929}, p;",
+            "isa_reference": "PTX ISA 9.7.18.10.9 Sparse Matrices",
+            "isa_section": "9.7.18.10.9.2 Sparse tcgen05.mma.sp with .kind::f16, .kind::f8f6f4, .kind::mxf8f6f4, .kind::i8, .kind::ti16",
+            "isa_wording": "only_meaningful",
+            "line": 6228,
+            "object": "E.metadata",
+            "object_byte_offset": 0,
+            "operand_byte": 0,
+            "property": "field_values",
+            "source": "input_object",
+            "witness_bits": "0b0000",
+            "witness_value": 0
+          },
+          "message": "Sparse MMA metadata can hold an index value outside the PTX ISA's meaningful values",
+          "stage": "value_analysis.scalar_fold"
         }
       ],
       "expression_diagnostic": {
+        "construction_collections": 0,
+        "diagnostic": {
+          "code": "sparse_metadata_invalid",
+          "instance": 0,
+          "instruction": "tcgen05.mma.sp.cta_group::1.kind::f8f6f4 [%r936], %rd60, %rd61, [%r930], %r937, {%r929, %r929, %r929, %r929}, p;",
+          "line": 6228,
+          "message": "Sparse MMA metadata can hold an index value outside the PTX ISA's meaningful values",
+          "undefined_behavior": {
+            "condition": "\"The only meaningful values of the index are: 0b0100, 0b1000, 0b1100, 0b1001, 0b1101, 0b0110, 0b1110\" (the section gives no meaning to other values)",
+            "declared_values": [
+              0,
+              4,
+              8,
+              9,
+              12,
+              13,
+              14
+            ],
+            "defined_values": [
+              4,
+              6,
+              8,
+              9,
+              12,
+              13,
+              14
+            ],
+            "field": "low",
+            "instruction": "tcgen05.mma.sp.cta_group::1.kind::f8f6f4 [%r936], %rd60, %rd61, [%r930], %r937, {%r929, %r929, %r929, %r929}, p;",
+            "isa_reference": "PTX ISA 9.7.18.10.9 Sparse Matrices",
+            "isa_section": "9.7.18.10.9.2 Sparse tcgen05.mma.sp with .kind::f16, .kind::f8f6f4, .kind::mxf8f6f4, .kind::i8, .kind::ti16",
+            "isa_wording": "only_meaningful",
+            "line": 6228,
+            "object": "E.metadata",
+            "object_byte_offset": 0,
+            "operand_byte": 0,
+            "property": "field_values",
+            "source": "input_object",
+            "witness_bits": "0b0000",
+            "witness_value": 0
+          },
+          "value_node": 8289
+        },
         "diagnostics": [
           {
-            "code": "unsupported_mma_value_mapping",
-            "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded",
-            "stage": "memory_effect_binding"
+            "code": "sparse_metadata_invalid",
+            "details": {
+              "instance": 0,
+              "instruction": "tcgen05.mma.sp.cta_group::1.kind::f8f6f4 [%r936], %rd60, %rd61, [%r930], %r937, {%r929, %r929, %r929, %r929}, p;",
+              "line": 6228,
+              "undefined_behavior": {
+                "condition": "\"The only meaningful values of the index are: 0b0100, 0b1000, 0b1100, 0b1001, 0b1101, 0b0110, 0b1110\" (the section gives no meaning to other values)",
+                "declared_values": [
+                  0,
+                  4,
+                  8,
+                  9,
+                  12,
+                  13,
+                  14
+                ],
+                "defined_values": [
+                  4,
+                  6,
+                  8,
+                  9,
+                  12,
+                  13,
+                  14
+                ],
+                "field": "low",
+                "instruction": "tcgen05.mma.sp.cta_group::1.kind::f8f6f4 [%r936], %rd60, %rd61, [%r930], %r937, {%r929, %r929, %r929, %r929}, p;",
+                "isa_reference": "PTX ISA 9.7.18.10.9 Sparse Matrices",
+                "isa_section": "9.7.18.10.9.2 Sparse tcgen05.mma.sp with .kind::f16, .kind::f8f6f4, .kind::mxf8f6f4, .kind::i8, .kind::ti16",
+                "isa_wording": "only_meaningful",
+                "line": 6228,
+                "object": "E.metadata",
+                "object_byte_offset": 0,
+                "operand_byte": 0,
+                "property": "field_values",
+                "source": "input_object",
+                "witness_bits": "0b0000",
+                "witness_value": 0
+              },
+              "value_node": 8289
+            },
+            "message": "Sparse MMA metadata can hold an index value outside the PTX ISA's meaningful values",
+            "stage": "pipeline"
           }
         ],
-        "instruction": "tcgen05.mma.sp.cta_group::1.kind::f8f6f4 [%r936], %rd60, %rd61, [%r930], %r937, {%r929, %r929, %r929, %r929}, p;",
-        "instruction_index": 927,
-        "line": 6228,
-        "serialization": {
-          "action_patterns": 0,
-          "binding_patterns": 0,
-          "domain_refinements": 0,
-          "elapsed_seconds": 6.31e-06,
-          "event_families": 0,
-          "expanded_event_records": 0,
-          "largest_batch_members": 0,
-          "logical_actions": 0,
-          "logical_events": 0,
-          "peak_rss_mib_at_completion": 2259.7421875,
-          "reachability_queries": 0,
-          "relations": 0,
-          "rss_mib_at_completion": 2055.2578125,
-          "scheduled_batches": 0,
-          "singleton_batches": 0,
-          "value_families": 0
-        },
-        "stage": "memory_effect_binding"
+        "partial_node_count": 11,
+        "partial_output_count": 0,
+        "peak_construction_nodes": 11,
+        "shared_view_projection_hits": 0,
+        "source_outputs": 22016
       },
-      "stage": "memory_effect_binding"
+      "stage": "value_analysis.scalar_fold"
     },
     "frontend": {
       "address_value_bridge": {
@@ -231,6 +428,37 @@
           "extent_bytes": "unbounded"
         },
         "representative_branch_uses": 0,
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "u64",
+              "field_bits": 4,
+              "object": "E.metadata",
+              "property": "field_values",
+              "values": [
+                0,
+                4,
+                8,
+                9,
+                12,
+                13,
+                14
+              ]
+            }
+          ],
+          "regions": [
+            {
+              "allocation": "E.metadata",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "tma.input.1"
+            }
+          ],
+          "text": "Elements of these objects satisfy the stated bounds, injectivity and field values (trusted, not checked); the objects are not written during the analyzed execution."
+        },
+        "tensor_property_decisions": [],
         "trap_only_equality_assertions_hold": true
       },
       "implementation": "cpp",
@@ -418,7 +646,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 12690656,
-      "hb_query_seconds": 0.284346569,
+      "hb_query_seconds": 0.29030865700000047,
       "overlap_queries": 682496,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 682496
@@ -426,7 +654,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 2257.92578125,
+    "peak_footprint_mib": 3886.140625,
     "required_order_domains": 4336,
     "required_orders": 138752,
     "search_complete": true,
@@ -440,147 +668,18 @@
       "representative_election": true
     },
     "semantic_program": {
-      "binding_diagnostic_count": 32,
-      "binding_diagnostics": [
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        },
-        {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded"
-        }
-      ],
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
       "execution_cohorts": 434,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 506323,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 533971,
       "memory_binding_templates": 44387,
-      "memory_bindings": 1832592,
+      "memory_bindings": 1860240,
       "memory_linking_templates_used": true,
       "synchronization_groups": 26302,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 145,
-      "thread_prefix_groups": 474324,
+      "thread_prefix_groups": 474356,
       "value_diagnostic_count": 0,
       "value_diagnostics": []
     },
@@ -614,54 +713,186 @@
     },
     "unresolved_count": 0,
     "value_analysis": {
-      "diagnostics": [
+      "diagnostics": [],
+      "duplicate_write_value_checks": 682496,
+      "equivalence_check": "undefined_behavior",
+      "initial_memory_regions": 4112,
+      "initial_read_families": 4112,
+      "memory_action_storage": {
+        "logical_actions": 1860240,
+        "stored_runs": 1194451
+      },
+      "output_region_families": 0,
+      "output_regions": 22016,
+      "passes": [
         {
-          "code": "unsupported_mma_value_mapping",
-          "message": "Sparse MMA value mapping needs a metadata validity premise and is not decoded",
-          "stage": "memory_effect_binding"
+          "name": "packing",
+          "rewritten_instances": 262368,
+          "rewritten_nodes": 12512,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 1590947,
+          "name": "type_edges",
+          "removed_nodes": 77504
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 307,
+          "layouts": 44128,
+          "mapping_blocks": 48240,
+          "name": "view_normalization",
+          "original_pieces": 535296,
+          "reused_initial_reads": 4112,
+          "reused_views": 22076,
+          "segmented": 0,
+          "slices": 4112,
+          "stored_mapping_blocks": 26164,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
         }
       ],
-      "equivalence_check": "unsupported",
-      "instruction": "tcgen05.mma.sp.cta_group::1.kind::f8f6f4 [%r936], %rd60, %rd61, [%r930], %r937, {%r929, %r929, %r929, %r929}, p;",
-      "instruction_index": 927,
-      "line": 6228,
+      "processed_memory_actions": 1860240,
+      "processed_memory_families": 0,
+      "read_substitutions": 718512,
       "scalar_fold": {
+        "construction_collections": 0,
+        "diagnostic": {
+          "code": "sparse_metadata_invalid",
+          "instance": 0,
+          "instruction": "tcgen05.mma.sp.cta_group::1.kind::f8f6f4 [%r936], %rd60, %rd61, [%r930], %r937, {%r929, %r929, %r929, %r929}, p;",
+          "line": 6228,
+          "message": "Sparse MMA metadata can hold an index value outside the PTX ISA's meaningful values",
+          "undefined_behavior": {
+            "condition": "\"The only meaningful values of the index are: 0b0100, 0b1000, 0b1100, 0b1001, 0b1101, 0b0110, 0b1110\" (the section gives no meaning to other values)",
+            "declared_values": [
+              0,
+              4,
+              8,
+              9,
+              12,
+              13,
+              14
+            ],
+            "defined_values": [
+              4,
+              6,
+              8,
+              9,
+              12,
+              13,
+              14
+            ],
+            "field": "low",
+            "instruction": "tcgen05.mma.sp.cta_group::1.kind::f8f6f4 [%r936], %rd60, %rd61, [%r930], %r937, {%r929, %r929, %r929, %r929}, p;",
+            "isa_reference": "PTX ISA 9.7.18.10.9 Sparse Matrices",
+            "isa_section": "9.7.18.10.9.2 Sparse tcgen05.mma.sp with .kind::f16, .kind::f8f6f4, .kind::mxf8f6f4, .kind::i8, .kind::ti16",
+            "isa_wording": "only_meaningful",
+            "line": 6228,
+            "object": "E.metadata",
+            "object_byte_offset": 0,
+            "operand_byte": 0,
+            "property": "field_values",
+            "source": "input_object",
+            "witness_bits": "0b0000",
+            "witness_value": 0
+          },
+          "value_node": 8289
+        },
         "diagnostics": [
           {
-            "code": "memory_elimination_not_completed",
+            "code": "sparse_metadata_invalid",
+            "details": {
+              "instance": 0,
+              "instruction": "tcgen05.mma.sp.cta_group::1.kind::f8f6f4 [%r936], %rd60, %rd61, [%r930], %r937, {%r929, %r929, %r929, %r929}, p;",
+              "line": 6228,
+              "undefined_behavior": {
+                "condition": "\"The only meaningful values of the index are: 0b0100, 0b1000, 0b1100, 0b1001, 0b1101, 0b0110, 0b1110\" (the section gives no meaning to other values)",
+                "declared_values": [
+                  0,
+                  4,
+                  8,
+                  9,
+                  12,
+                  13,
+                  14
+                ],
+                "defined_values": [
+                  4,
+                  6,
+                  8,
+                  9,
+                  12,
+                  13,
+                  14
+                ],
+                "field": "low",
+                "instruction": "tcgen05.mma.sp.cta_group::1.kind::f8f6f4 [%r936], %rd60, %rd61, [%r930], %r937, {%r929, %r929, %r929, %r929}, p;",
+                "isa_reference": "PTX ISA 9.7.18.10.9 Sparse Matrices",
+                "isa_section": "9.7.18.10.9.2 Sparse tcgen05.mma.sp with .kind::f16, .kind::f8f6f4, .kind::mxf8f6f4, .kind::i8, .kind::ti16",
+                "isa_wording": "only_meaningful",
+                "line": 6228,
+                "object": "E.metadata",
+                "object_byte_offset": 0,
+                "operand_byte": 0,
+                "property": "field_values",
+                "source": "input_object",
+                "witness_bits": "0b0000",
+                "witness_value": 0
+              },
+              "value_node": 8289
+            },
+            "message": "Sparse MMA metadata can hold an index value outside the PTX ISA's meaningful values",
             "stage": "pipeline"
           }
-        ]
+        ],
+        "partial_node_count": 11,
+        "partial_output_count": 0,
+        "peak_construction_nodes": 11,
+        "shared_view_projection_hits": 0,
+        "source_outputs": 22016
       },
       "serialization": {
-        "action_patterns": 0,
-        "binding_patterns": 0,
-        "domain_refinements": 0,
-        "elapsed_seconds": 6.31e-06,
-        "event_families": 0,
+        "action_patterns": 1194451,
+        "binding_patterns": 533971,
+        "domain_refinements": 2185208,
+        "elapsed_seconds": 5.066421549,
+        "event_families": 746578,
         "expanded_event_records": 0,
-        "largest_batch_members": 0,
-        "logical_actions": 0,
-        "logical_events": 0,
-        "peak_rss_mib_at_completion": 2259.7421875,
+        "largest_batch_members": 62,
+        "logical_actions": 1860240,
+        "logical_events": 11165973,
+        "peak_rss_mib_at_completion": 4068.6328125,
         "reachability_queries": 0,
-        "relations": 0,
-        "rss_mib_at_completion": 2055.2578125,
-        "scheduled_batches": 0,
-        "singleton_batches": 0,
-        "value_families": 0
+        "relations": 2633848,
+        "rss_mib_at_completion": 2581.09375,
+        "scheduled_batches": 746578,
+        "singleton_batches": 386660,
+        "value_families": 359982
       },
-      "stage": "memory_effect_binding"
+      "shared_read_families": 22194,
+      "shared_read_instances": 665853,
+      "stored_read_substitutions": 52659
     },
-    "value_ir_instance_count": 6434712,
-    "value_ir_node_count": 395925,
+    "value_ir_instance_count": 4843799,
+    "value_ir_node_count": 318455,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 12.734252275,
+    "verification_elapsed_seconds": 12.943380239,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 2259.7421875,
-  "pipeline_elapsed_seconds": 12.924020723,
-  "result": "unsupported",
+  "peak_rss_mib": 4068.6328125,
+  "pipeline_elapsed_seconds": 26.266599317,
+  "result": "undefined_behavior",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
@@ -1425,5 +1656,5 @@
     }
   ],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.484
+  "whole_pipeline_timeout_seconds": 498.493
 }

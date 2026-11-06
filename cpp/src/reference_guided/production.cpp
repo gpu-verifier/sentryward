@@ -35,7 +35,8 @@ struct Builder {
     // Key includes immediate operands only, never recursively hashes a DAG.
     J key={n.kind,n.name,n.type,n.attributes,n.level,n.count,n.reducer,J::array()};
     for(const auto& e:n.operands)key[7].push_back(edgeJson(e));
-    auto text=key.dump();auto it=intern.find(text);if(it!=intern.end())return Edge(it->second);
+    auto text=key.dump();auto it=intern.find(text);
+    if(it!=intern.end()){doc.nodes[it->second].instruction|=n.instruction;return Edge(it->second);}
     if(doc.nodes.size()>=invalid)throw Unsupported("raw node ID overflow");
     Id id=doc.nodes.size();doc.nodes.push_back(std::move(n));intern.emplace(std::move(text),id);return Edge(id);
   }
@@ -149,6 +150,67 @@ std::optional<BoxError> tileAxis(std::vector<Term>& terms,uint64_t base,uint64_t
   if(Z(base)+Z(step)*(count-1)>=Z(size))return BoxError::Extent;
   return std::nullopt;
 }
+// The most segments splitPiece cuts one dimension into, per axis. A run along a dense mixed-radix
+// chain of axes is a union of at most two maximal aligned segments per axis (one rising to an
+// aligned start, one falling to the run's end); a run that needs more is left to the refusal.
+constexpr std::size_t kSegmentsPerAxis=2;
+// A part of a piece: the family coordinates first + [0, extent), relative to the piece's own, whose
+// first element is at byte `offset`.
+struct Part {uint64_t offset;std::vector<uint64_t> first,extent;};
+// The parts of a piece (first element at byte `offset`; dimensions `extent` at byte `strides`) that
+// is no box on `axes` (ascending strides) because a dimension crosses an axis boundary. Each
+// dimension is cut, along its own run from the piece's first element, into segments: from each
+// start, the longest run that stays inside the axis it moves along (the largest stride dividing its
+// stride, as bindDimension), or, at unit slope from a start aligned to the whole rows of the dense
+// axes below some axis, those rows times what remains of that axis. The parts are the products of
+// the segments; the caller places each as a box and refuses unless every one is. Empty when no
+// dimension is cut, a segment would start outside the axes, or a dimension needs more than
+// kSegmentsPerAxis segments per axis. O(dims x axes^2), and O(product of segment counts) parts.
+std::vector<Part> splitPiece(const std::vector<Axis>& axes,uint64_t origin,uint64_t offset,
+    const std::vector<uint64_t>& extent,const std::vector<uint64_t>& strides) {
+  std::vector<std::vector<std::pair<uint64_t,uint64_t>>> segments(extent.size());
+  bool cut=false;
+  for(std::size_t d=0;d<extent.size();++d) {
+    const auto n=extent[d],stride=strides[d];
+    auto& list=segments[d];
+    const auto home=std::find_if(axes.rbegin(),axes.rend(),[&](const Axis& x){return stride>0 && stride%x.stride==0;});
+    if(n<=1 || home==axes.rend()){list.push_back({0,n});continue;}
+    const auto a=std::size_t(std::prev(home.base())-axes.begin());
+    const auto slope=stride/axes[a].stride;
+    for(uint64_t start=0;start<n;) {
+      if(list.size()>=kSegmentsPerAxis*axes.size())return {};
+      // The axis coordinates of the segment's first element.
+      std::vector<uint64_t> digit(axes.size());
+      auto rem=checked(Z(offset)+Z(start)*stride-origin);
+      for(std::size_t i=axes.size();i-->0;){digit[i]=rem/axes[i].stride;rem%=axes[i].stride;if(digit[i]>=axes[i].size)return {};}
+      const auto rest=n-start;
+      auto length=std::min<uint64_t>(rest,(axes[a].size-1-digit[a])/slope+1);
+      if(slope==1) {
+        Z row=1;
+        for(std::size_t i=a;i<axes.size() && row<=rest;++i) {
+          if(i>a && Z(axes[i].stride)!=Z(axes[i-1].stride)*axes[i-1].size)break;
+          length=std::max(length,checked(Z(row*std::min(Z(axes[i].size-digit[i]),Z(Z(rest)/row)))));
+          if(digit[i])break;
+          row*=axes[i].size;
+        }
+      }
+      list.push_back({start,length});start+=length;
+    }
+    cut|=list.size()>1;
+  }
+  if(!cut)return {};
+  std::vector<Part> parts{{offset,std::vector<uint64_t>(extent.size()),extent}};
+  for(std::size_t d=0;d<extent.size();++d) {
+    if(segments[d].size()==1)continue;
+    std::vector<Part> next;
+    for(const auto& part:parts)for(const auto& [start,length]:segments[d]) {
+      auto p=part;p.offset=checked(Z(part.offset)+Z(start)*strides[d]);p.first[d]=start;p.extent[d]=length;
+      next.push_back(std::move(p));
+    }
+    parts=std::move(next);
+  }
+  return parts;
+}
 // An axis coordinate: base + the digits `terms` of the family coordinates index(first + dim);
 // `remainder(t)` says whether digit t takes its Remainder.
 template<class Remainder> Edge axisCoordinate(Builder& x,uint64_t base,const std::vector<Term>& terms,unsigned first,
@@ -197,6 +259,52 @@ bool placementRoot(const Document& doc,const J& family) {
   const auto& n=doc.nodes.at(Edge(family.at("body")).node);
   return n.kind=="Operation" && n.name==sentryward::scalar_fold::kPlacementOperation;
 }
+// The axes the slot of a symbolic-position tensor runs over (pullPartition), as positions
+// [first, first + count) of `axes` (ascending strides) when that is more than the slot axis alone:
+// the slot axis (the largest stride dividing the placement coefficient) with the fewest following
+// dense axes (each stride the previous stride x size) whose product extent holds every write's slot
+// range [base + factor x lower, base + factor x upper]. A write's base is its mixed-radix coordinate
+// on those axes, from its byte offset as pullPartition decomposes it. Because the run is dense, a
+// fused slot coordinate s places a write at s x the run's first stride, and its digits are the run's
+// tensor coordinates. None when one axis holds every range or no run does, or a placement is not one
+// pullPartition places; pullPartition then binds or refuses the slot axis alone. pullPartition checks
+// every write against the fused extent again. O(writes x axes^2).
+std::optional<std::pair<std::size_t,std::size_t>> slotRun(const Document& right,const std::vector<Axis>& axes,
+    const std::vector<J>& families,uint64_t width,uint64_t origin) {
+  std::optional<std::size_t> first;std::size_t count=1;
+  for(const J& f:families) {
+    if(!placementRoot(right,f))return std::nullopt;
+    const auto terms=sentryward::scalar_fold::parsePlacementAttributes(right.nodes.at(Edge(f.at("body")).node).attributes);
+    if(!terms || terms->size()!=1 || terms->front().coefficient<=0 || terms->front().lower<0)return std::nullopt;
+    const auto coefficient=uint64_t(terms->front().coefficient);
+    std::optional<std::size_t> axis;
+    for(std::size_t i=axes.size();i-->0 && !axis;)if(coefficient%axes[i].stride==0)axis=i;
+    if(!axis || (first && *first!=*axis))return std::nullopt;
+    first=axis;
+    const auto packed=input_unsigned(f.at("element_bytes"));
+    if(!packed || packed%width)return std::nullopt;
+    const Z reach=Z(coefficient/axes[*axis].stride)*terms->front().upper;
+    for(uint64_t lane=0;lane<packed/width;++lane) {
+      const Z offset=Z(input_unsigned(f.at("offset")))+Z(lane)*width-origin;
+      if(offset<0)return std::nullopt;
+      // Whether the write's range fits the run [first, first + n): its fused coordinate is what remains
+      // of its offset below the axes above the run (pullPartition's decomposition), in first strides.
+      const auto fits=[&](std::size_t n) {
+        Z rem=offset,extent=1;
+        for(std::size_t i=axes.size();i-->*first+n;)rem%=axes[i].stride;
+        for(std::size_t i=*first;i<*first+n;++i)extent*=axes[i].size;
+        return rem/axes[*first].stride+reach<extent;
+      };
+      while(!fits(count)) {
+        const auto next=*first+count;
+        if(next==axes.size() || Z(axes[next].stride)!=Z(axes[next-1].stride)*axes[next-1].size)return std::nullopt;
+        ++count;
+      }
+    }
+  }
+  if(!first || count==1)return std::nullopt;
+  return std::pair{*first,count};
+}
 // Pull mode (index-function memory) for a tensor whose kernel
 // families lie at symbolic positions: each family is a dense box at a constant part, moved
 // along one tensor axis (the slot axis) by factor x atom (a SymbolicPlacement annotation).
@@ -223,6 +331,16 @@ void pullPartition(const Document& left,const Document& right,const J& m,Builder
   std::sort(axes.begin(),axes.end(),[](Axis x,Axis y){return x.stride<y.stride;});
   for(std::size_t i=1;i<axes.size();++i)
     if(axes[i].stride<checked(Z(axes[i-1].stride)*axes[i-1].size))refuse("symbolic_output_placement_unsupported","overlapping output layout");
+  // A slot over several dense axes (slotRun) is one axis of their product extent here; the
+  // coordinates below split it into the run's tensor coordinates again.
+  std::vector<Axis> slot_axes;
+  if(const auto run=slotRun(right,axes,families,width,origin)) {
+    const auto begin=axes.begin()+std::ptrdiff_t(run->first);
+    slot_axes.assign(begin,begin+std::ptrdiff_t(run->second));
+    uint64_t extent=1;for(const auto& axis:slot_axes)extent=checked(Z(extent)*axis.size);
+    *begin={begin->stride,extent,begin->index};
+    axes.erase(begin+1,begin+std::ptrdiff_t(run->second));
+  }
   const Edge target(reference.at("body"));
   const auto output_type=target.converted_type.empty()?left.nodes.at(target.node).type:target.converted_type;
   static constexpr auto box_messages=std::to_array<const char*>({"family stride is no multiple of a tensor stride",
@@ -320,6 +438,14 @@ void pullPartition(const Document& left,const Document& right,const J& m,Builder
       std::vector<Edge> coords(rank,x.constant(0));
       for(unsigned t=0;t<rank;++t) {
         if(shape[t]<=1)continue;
+        const auto fused=std::find_if(slot_axes.begin(),slot_axes.end(),[&](const Axis& s){return s.index==t;});
+        if(fused!=slot_axes.end()) {
+          // A digit of the fused slot coordinate; the last digit is the quotient (s < extent).
+          Edge digit=x.index(0);
+          if(fused->stride!=slot_axes.front().stride)digit=x.op("Divide",digit,x.constant(fused->stride/slot_axes.front().stride));
+          if(std::next(fused)!=slot_axes.end())digit=x.op("Remainder",digit,x.constant(fused->size));
+          coords[t]=digit;continue;
+        }
         if(t==slot->index){coords[t]=x.index(0);continue;}
         coords[t]=axisCoordinate(x,piece.base[t],piece.terms[t],1,remainder);
       }
@@ -410,13 +536,16 @@ void partition(const Document& left,const Document& right,const J& m,Builder& a,
     // A packed family (element_bytes = P * width) is P families of width-byte
     // elements at byte offsets slot * width; emit extracts each slot exactly.
     // A piece refers to its family in families, which outlives pieces.
-    struct Piece {const J* family;uint64_t offset,slot;};
+    // A piece covers the family coordinates first + [0, extent) (the whole family unless split below);
+    // offset is the byte offset of its first element.
+    struct Piece {const J* family;uint64_t offset,slot;std::vector<uint64_t> first,extent;};
     std::vector<Piece> pieces;
     for(const auto& f:families) {
       const auto packed=input_unsigned(f.at("element_bytes"));
       if(!packed || packed%width)throw Unsupported("invalid rectangular output");
+      const auto fs=f.at("shape").get<std::vector<uint64_t>>();
       for(uint64_t slot=0;slot<packed/width;++slot)
-        pieces.push_back({&f,checked(Z(input_unsigned(f.at("offset")))+Z(slot)*width),slot});
+        pieces.push_back({&f,checked(Z(input_unsigned(f.at("offset")))+Z(slot)*width),slot,std::vector<uint64_t>(fs.size()),fs});
     }
     // Refine physical tensor axes by the declared family strides. A block
     // [3,30] at strides [64,2] is rectangular in (row, column/32, column%32),
@@ -454,28 +583,52 @@ void partition(const Document& left,const Document& right,const J& m,Builder& a,
     const auto bound=[](std::optional<BoxError> e){if(e)throw Unsupported(box_messages[std::size_t(*e)]);};
     struct Box {std::vector<uint64_t> base,count,step;std::vector<std::vector<Term>> bindings;};
     std::vector<Box> boxes;std::vector<std::vector<Range>> ranges;Z total=0;
-    for(const auto& piece:pieces) {
+    // The box of a piece on the grid axes, or why it is none.
+    const auto place=[&](const Piece& piece,Box& box)->std::optional<BoxError> {
       const J& f=*piece.family;
-      auto fs=f.at("shape").get<std::vector<uint64_t>>(),st=f.at("strides_bytes").get<std::vector<uint64_t>>();
+      auto fs=piece.extent,st=f.at("strides_bytes").get<std::vector<uint64_t>>();
       if(fs.empty() || fs.size()!=st.size())throw Unsupported("invalid rectangular output");
-      Box box{std::vector<uint64_t>(grid_shape.size()),std::vector<uint64_t>(grid_shape.size(),1),std::vector<uint64_t>(grid_shape.size(),1),std::vector<std::vector<Term>>(grid_shape.size())};
+      box=Box{std::vector<uint64_t>(grid_shape.size()),std::vector<uint64_t>(grid_shape.size(),1),std::vector<uint64_t>(grid_shape.size(),1),std::vector<std::vector<Term>>(grid_shape.size())};
       auto rem=checked(Z(piece.offset)-origin);
       for(auto it=axes.rbegin();it!=axes.rend();++it){box.base[it->index]=rem/it->stride;rem%=it->stride;if(box.base[it->index]>=it->size)throw Unsupported("output outside tensor");}
       if(rem)throw Unsupported("output in padding");
       for(unsigned dim=0;dim<fs.size();++dim)
-        if(fs[dim]>1)bound(bindDimension(axes,box.base,std::nullopt,dim,fs[dim],st[dim],box.bindings));
+        if(fs[dim]>1)if(auto e=bindDimension(axes,box.base,std::nullopt,dim,fs[dim],st[dim],box.bindings))return e;
       for(unsigned axis=0;axis<grid_shape.size();++axis) {
         // Each tensor axis can be an AP, not necessarily a dense interval.
         // Mixed-radix family axes must still tile that AP exactly. Tiled on a copy: the
         // coordinates below add the digits in binding order.
         auto terms=box.bindings[axis];
-        bound(tileAxis(terms,box.base[axis],grid_shape[axis],box.step[axis],box.count[axis]));
+        if(auto e=tileAxis(terms,box.base[axis],grid_shape[axis],box.step[axis],box.count[axis]))return e;
       }
+      return std::nullopt;
+    };
+    std::vector<Piece> placed;
+    const auto record=[&](const Piece& piece,Box box) {
       total+=product(box.count);
       auto& row=ranges.emplace_back();
       for(unsigned i=0;i<grid_shape.size();++i)row.push_back({box.base[i],checked(Z(box.base[i])+Z(box.step[i])*(box.count[i]-1)),box.step[i]});
-      boxes.push_back(std::move(box));
+      boxes.push_back(std::move(box));placed.push_back(piece);
+    };
+    for(const auto& piece:pieces) {
+      Box box;
+      const auto error=place(piece,box);
+      if(!error){record(piece,std::move(box));continue;}
+      // A piece is no box when a dimension crosses an axis boundary, e.g. a run of words that wraps
+      // from the end of one row into the next. Its parts (splitPiece) are placed instead, all or none.
+      const auto parts=splitPiece(axes,origin,piece.offset,piece.extent,piece.family->at("strides_bytes").get<std::vector<uint64_t>>());
+      if(parts.empty())bound(error);
+      for(const auto& cut:parts) {
+        auto part=piece;part.offset=cut.offset;
+        for(std::size_t d=0;d<part.first.size();++d){part.first[d]+=cut.first[d];part.extent[d]=cut.extent[d];}
+        // A part that is no box, or lies outside the tensor, leaves the piece's own refusal.
+        bool boxed=false;
+        try{boxed=!place(part,box);}catch(const Unsupported&){}
+        if(!boxed)bound(error);
+        record(part,std::move(box));
+      }
     }
+    pieces=std::move(placed);
     // Pairwise disjointness, swept along the widest grid axis: only boxes whose
     // ranges on that axis meet are compared on every axis (not all pairs).
     // Without grid axes the tensor is one element, which every box covers.
@@ -498,8 +651,9 @@ void partition(const Document& left,const Document& right,const J& m,Builder& a,
         coords[parent->index]=a.op("Add",coords[parent->index],x);
       }
       const J& f=*pieces[i].family;
-      for(unsigned j=0;j<f.at("shape").size();++j)right_coords.push_back(b.index(j));
-      emit(f,coords,right_coords,f.at("shape").get<std::vector<uint64_t>>(),pieces[i].slot);
+      for(unsigned j=0;j<f.at("shape").size();++j)
+        right_coords.push_back(pieces[i].first[j]?b.op("Add",b.constant(pieces[i].first[j]),b.index(j)):b.index(j));
+      emit(f,coords,right_coords,pieces[i].extent,pieces[i].slot);
     }
     return;
   }
@@ -539,6 +693,7 @@ Document fromArtifact(const sentryward::scalar_fold::Artifact& a) {
   Document d;d.nodes.reserve(a.graph.size());
   for(const auto& n:a.graph.nodes()) {
     RawNode r;r.kind=sentryward::scalar_fold::kindName(n.kind);r.name=n.name;r.type=n.type;r.attributes=n.attributes;r.level=n.index_level;
+    r.instruction=a.graph.instructionModes(d.nodes.size());
     for(const auto& e:n.operands)r.operands.push_back(edge(e));
     if(n.fold){r.level=n.fold->binder_level;r.count=n.fold->count;r.reducer=sentryward::scalar_fold::reducerName(n.fold->reducer);}
     d.nodes.push_back(std::move(r));

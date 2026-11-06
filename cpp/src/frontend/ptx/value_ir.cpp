@@ -428,6 +428,17 @@ private:
   std::optional<v::Value> SpaceAddress(std::string_view operand, std::string_view space,
                                        std::optional<Expression> extra);
   bool ResolvedTma();
+  // An abstract TMA's tile region (one per tile::gather4 row, else one): its first byte's
+  // allocation-relative offset (s64), and a gather row's guard when the row is not proven
+  // inside the tensor (the offset then holds the row clamped into the tensor).
+  struct TmaRegionOrigin {
+    Expression offset;
+    std::optional<Expression> guard;
+  };
+  // Each region an abstract pair of `transfer` names, from the resolved `descriptor`;
+  // nothing when a region is not modeled (see ResolvedTma).
+  std::optional<std::vector<std::optional<TmaRegionOrigin>>> TmaRegionOrigins(
+      const TmaAccesses &transfer, const nlohmann::json &descriptor);
   void Tcgen();
   void TcgenMma();
   v::Value Native(v::NativeMatrixOpcode, v::ValueType, std::vector<v::Value>, v::NativeMatrixAttributes);
@@ -2997,24 +3008,43 @@ bool ValueTemplateExtractor::ResolvedTma() {
         if (!region && !binding.expression.empty()) region = id;
       }
   // Lowering gives a tile at a non-constant global region an abstract address, the region
-  // expression of slot_resolver.cpp (TmaBody). Its values need an index function over that
-  // region, including the zero fill of out-of-bounds elements; the descriptor-shaped form in
-  // Tma() has no byte payload a memory binding can map either. Name the cause from the
-  // expression itself (no further fact queries). A gather4 keeps its own refusal in Tma().
-  if (region && !Has(*instruction_, "tile::gather4")) {
-    const auto expression = nlohmann::json::parse(resources->Binding(*region).expression, nullptr, false);
+  // expression of slot_resolver.cpp (TmaBody). Each abstract fragment is then read or written
+  // at its allocation-relative address, its region's first byte (descriptor base + sum of
+  // coordinate x stride) plus its place in the region, when the fragment is contiguous in the
+  // tensor and its region is proven inside the tensor: every byte of it is then the tensor's
+  // byte at that address. A tile::gather4 row not proven inside (index -1 rows) is the
+  // guarded Load of the row clamped into the tensor, guarded by 0 <= row < rows: PTX ISA,
+  // Tensor "Out of Boundary Access", zero fill mode: "Elements in the Bounding Box which fall
+  // outside of the tensor boundary are set to 0", and a gather4 row is its own one-row
+  // bounding box ("four request coordinates will form four Bounding Boxes"); a disabled Load
+  // yields zero. Otherwise its values are not modeled: name the cause from the expression
+  // itself (no further fact queries).
+  std::vector<std::optional<TmaRegionOrigin>> origins;
+  // The region binding's expression, parsed once (it embeds the whole descriptor).
+  const auto expression = region ? nlohmann::json::parse(resources->Binding(*region).expression, nullptr, false)
+                                 : nlohmann::json();
+  if (region && expression.is_object() && expression.value("operator", std::string()) == "tma_region")
+    if (auto found = TmaRegionOrigins(transfer, expression.value("descriptor", nlohmann::json())))
+      origins = std::move(*found);
+  if (region && origins.empty()) {
     const auto tensor = Trim(module_.view(instruction_->operands.at(Has(*instruction_, "bulk_group") ? 0 : 1)));
     const auto open = tensor.find('{'), close = tensor.find('}');
     const auto tokens = open != std::string::npos && close != std::string::npos && open < close
         ? Split(std::string_view(tensor).substr(open + 1, close - open - 1), ',') : std::vector<std::string>{};
     const auto coordinates = expression.is_object() ? expression.value("coordinates", nlohmann::json()) : nlohmann::json();
+    // A gather4 region is one row {column, row}: the row of the first abstract pair.
+    const auto row = std::find_if(transfer.pairs.begin(), transfer.pairs.end(), [](const auto& p) { return p.place; });
+    const bool gather = Has(*instruction_, "tile::gather4") && row != transfer.pairs.end() && tokens.size() == 5;
     std::string dynamic;
-    if (coordinates.is_array() && coordinates.size() == tokens.size())
-      for (std::size_t k = 0; k < tokens.size(); ++k)
-        if (!coordinates[k].is_number_integer()) dynamic += (dynamic.empty() ? "" : ", ") + tokens[k];
+    if (coordinates.is_array() && coordinates.size() == (gather ? 2 : tokens.size()))
+      for (std::size_t k = 0; k < coordinates.size(); ++k)
+        if (!coordinates[k].is_number_integer())
+          dynamic += (dynamic.empty() ? "" : ", ") + tokens[gather && k == 1 ? 1 + row->place->region : k];
     if (!dynamic.empty())
       Fail("tma_data_dependent_coordinate", "TMA tile coordinate " + dynamic + " is data-dependent (not a "
-           "constant of the execution); the values of its tile region are not modeled (no index function)");
+           "constant of the execution) and its range is not proven to keep the tile inside the tensor "
+           "(0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its "
+           "tile region are not modeled");
     else
       Fail("tma_nonconstant_tensor_map", "TMA tile region is not a constant of the execution (tensor-map global "
            "address, shape or stride); the values of its tile region are not modeled");
@@ -3027,15 +3057,39 @@ bool ValueTemplateExtractor::ResolvedTma() {
   if (transfer.descriptor)
     Add(std::make_unique<v::LoadOp>(v::ValueType::matrix(v::ElementType::bit(8), {*transfer.descriptor->second})),
         {address(*transfer.descriptor)}, origin_);
+  // An abstract fragment's address and attributes (TmaRegionOrigins): its region's offset
+  // plus its place, a pointer naming its binding's allocation.
+  const auto placed = [&](const Fragment& fragment, const TmaRegionPlace& place, v::MemoryAttributes& attributes) {
+    const auto& origin = *origins.at(place.region);
+    const auto s64 = *PtxType("s64");
+    const auto offset = Add(std::make_unique<v::BinaryOp>(v::BinaryOpcode::Add, s64.value),
+        {origin.offset.value, Constant(s64, std::to_string(*place.offset)).value}, origin_).result();
+    const auto unsigned_offset = Add(std::make_unique<v::ConvertOp>(U64().value), {offset}, origin_).result();
+    const auto& binding = resources->Binding(fragment.first);
+    attributes.region_offset = *place.offset;
+    return graph_.asPointer(unsigned_offset, {binding.allocation, binding.address_space, {}, {}});
+  };
   std::map<std::tuple<algorithm::AddressId, std::optional<std::uint64_t>, std::uint64_t>, v::Value> reads;
   for (const auto& pair : transfer.pairs) {
+    const bool abstract_source = pair.place && !origins.empty() && pair.source &&
+        !resources->Binding(pair.source->first).expression.empty();
+    const bool abstract_destination = pair.place && !origins.empty() && pair.destination &&
+        !resources->Binding(pair.destination->first).expression.empty();
     std::optional<v::Value> data;
     if (pair.source) {
       const auto key = std::tuple{pair.source->first, pair.source->second, pair.logical_offset};
       if (const auto found = reads.find(key); found != reads.end()) data = found->second;
       else {
         const auto type = v::ValueType::matrix(v::ElementType::bit(8), {*pair.source->second});
-        data = Add(std::make_unique<v::LoadOp>(type), {address(*pair.source)}, origin_).result();
+        if (abstract_source) {
+          v::MemoryAttributes attributes;
+          std::vector<v::Value> operands{placed(*pair.source, *pair.place, attributes)};
+          if (const auto& guard = origins.at(pair.place->region)->guard) {
+            attributes.guarded = true;
+            operands.push_back(guard->value);
+          }
+          data = Add(std::make_unique<v::LoadOp>(type, std::move(attributes)), std::move(operands), origin_).result();
+        } else data = Add(std::make_unique<v::LoadOp>(type), {address(*pair.source)}, origin_).result();
         reads.emplace(key, *data);
       }
     }
@@ -3043,9 +3097,80 @@ bool ValueTemplateExtractor::ResolvedTma() {
     const auto type = v::ValueType::matrix(v::ElementType::bit(8), {*pair.destination->second});
     if (!data) data = Add(std::make_unique<v::ConstantOp>(type, "0"), {}, origin_).result();
     if (graph_.type(*data) != type) throw std::invalid_argument("Resolved TMA fragment byte extents differ");
-    Add(std::make_unique<v::StoreOp>(), {address(*pair.destination), *data}, origin_);
+    if (abstract_destination) {
+      v::MemoryAttributes attributes;
+      const auto destination = placed(*pair.destination, *pair.place, attributes);
+      Add(std::make_unique<v::StoreOp>(std::move(attributes)), {destination, *data}, origin_);
+    } else Add(std::make_unique<v::StoreOp>(), {address(*pair.destination), *data}, origin_);
   }
   return true;
+}
+
+std::optional<std::vector<std::optional<ValueTemplateExtractor::TmaRegionOrigin>>>
+ValueTemplateExtractor::TmaRegionOrigins(const TmaAccesses& transfer, const nlohmann::json& descriptor) {
+  const auto& i = *instruction_;
+  const bool gather = Has(i, "tile::gather4"), load = !Has(i, "bulk_group");
+  const auto strides = descriptor.value("coordinate_strides_bytes", nlohmann::json());
+  const auto base = descriptor.value("base_byte_offset", nlohmann::json(0));
+  const auto global = descriptor.value("global_shape", nlohmann::json());
+  const auto integral = [](const nlohmann::json& x) { return x.is_number_integer() && !x.is_boolean(); };
+  if (!strides.is_array() || strides.empty() || (gather && strides.size() != 2) || !integral(base) ||
+      !std::all_of(strides.begin(), strides.end(), integral))
+    return std::nullopt;
+  const auto tensor = Trim(module_.view(i.operands.at(load ? 1 : 0)));
+  const auto open = tensor.find('{'), close = tensor.find('}');
+  if (open == std::string::npos || close == std::string::npos || close < open) return std::nullopt;
+  const auto tokens = Split(std::string_view(tensor).substr(open + 1, close - open - 1), ',');
+  const std::size_t dims = strides.size();
+  if (tokens.size() != (gather ? 5 : dims)) return std::nullopt;
+  const auto s32 = *PtxType("s32"), s64 = *PtxType("s64");
+  const auto binary = [&](v::BinaryOpcode opcode, const Type& type, v::Value x, v::Value y) {
+    return Expression{Add(std::make_unique<v::BinaryOp>(opcode, type.value), {x, y}, origin_).result(), type};
+  };
+  const auto compare = [&](v::ComparePredicate predicate, v::Value x, v::Value y) {
+    return Expression{Add(std::make_unique<v::CompareOp>(predicate, Pred().value), {x, y}, origin_).result(), Pred()};
+  };
+  std::vector<std::optional<TmaRegionOrigin>> origins(gather ? 4 : 1);
+  for (const auto& pair : transfer.pairs) {
+    // Every endpoint at a non-constant region is an abstract pair's global endpoint.
+    for (const auto* endpoint : {&pair.source, &pair.destination})
+      if (*endpoint && !resources->Binding((*endpoint)->first).expression.empty() && !pair.place)
+        return std::nullopt;
+    if (!pair.place) continue;
+    const auto& place = *pair.place;
+    if (!place.offset || place.region >= origins.size()) return std::nullopt;
+    // A region not proven inside the tensor: only a zero-filled gather4 row (its column is
+    // inside, or it has no offset).
+    const bool guarded = !place.in_bounds;
+    if (guarded && (!gather || !load || descriptor.value("oob_fill", std::string()) != "zero" ||
+                    !global.is_array() || global.size() != 2 || !integral(global[1]) ||
+                    global[1].get<std::int64_t>() < 1 || global[1].get<std::int64_t>() > INT32_MAX))
+      return std::nullopt;
+    auto& origin = origins[place.region];
+    if (origin) continue;
+    auto offset = Constant(s64, std::to_string(base.get<std::int64_t>()));
+    std::optional<Expression> guard;
+    for (std::size_t dim = 0; dim < dims; ++dim) {
+      auto coordinate = Operand(Trim(tokens.at(gather && dim == 1 ? 1 + place.region : dim)), s32);
+      if (coordinate) coordinate = Reinterpret(*coordinate, s32);
+      if (!coordinate) return std::nullopt;
+      if (guarded && dim == 1) {
+        const auto rows = global[1].get<std::int64_t>();
+        const auto zero = Constant(s32, "0"), last = Constant(s32, std::to_string(rows - 1));
+        guard = binary(v::BinaryOpcode::BitAnd, Pred(),
+            compare(v::ComparePredicate::GreaterEqual, coordinate->value, zero.value).value,
+            compare(v::ComparePredicate::LessEqual, coordinate->value, last.value).value);
+        coordinate = binary(v::BinaryOpcode::Maximum, s32,
+            binary(v::BinaryOpcode::Minimum, s32, coordinate->value, last.value).value, zero.value);
+      }
+      const auto wide = Add(std::make_unique<v::ConvertOp>(s64.value), {coordinate->value}, origin_).result();
+      const auto stride = Constant(s64, std::to_string(strides[dim].get<std::int64_t>()));
+      offset = binary(v::BinaryOpcode::Add, s64, offset.value,
+                      binary(v::BinaryOpcode::Multiply, s64, wide, stride.value).value);
+    }
+    origin = TmaRegionOrigin{std::move(offset), std::move(guard)};
+  }
+  return origins;
 }
 
 void ValueTemplateExtractor::TcgenMma() {
@@ -3107,10 +3232,14 @@ void ValueTemplateExtractor::TcgenMma() {
   for (const auto& mod : i.modifiers) mode += '.' + mod;
   std::optional<MmaDescriptor> fixed_descriptor;
   auto known_descriptor=Known(text(descriptor_index));
-  if (!known_descriptor && scaled && resources && tmem_provenance) {
+  // Sparse: the descriptor without its selector (0-1) and negate (13-14) bits, as the
+  // lowering's MmaValueLayout keeps it, when those bits are not all known.
+  std::optional<std::uint64_t> sparse_layout;
+  if (!known_descriptor && ((scaled && tmem_provenance) || sparse) && resources) {
     resources->SetLane(lane_);
     const auto resolver=[&](const RecordView& record,std::string_view token,unsigned)
         ->std::optional<Resources::KnownBits> {
+      if(!tmem_provenance)return {};
       auto value=tmem_provenance->Resolve(facts_.Warp(lane_),record,token,facts_.LaneId(lane_));
       const auto* origin=facts_.Origin(record,token);
       const auto* current=facts_.Origin(*record_,token);
@@ -3121,17 +3250,29 @@ void ValueTemplateExtractor::TcgenMma() {
       return {};
     };
     const auto [value,mask]=resources->FixedBits(*record_,text(descriptor_index),32,resolver);
+    const std::uint64_t layout=UINT32_MAX & ~(3ULL | (1ULL<<13) | (1ULL<<14));
     if(mask==UINT32_MAX)known_descriptor=Integer(value);
+    else if(sparse && (mask & layout)==layout)sparse_layout=value & layout;
   }
-  if (!sparse)
-    if (const auto known = known_descriptor; known && *known >= 0 && *known <= UINT32_MAX) {
-      descriptor = Constant(U32(), known->convert_to<std::string>());
-      for (const auto& modifier : i.modifiers)
-        if (modifier.starts_with("kind::"))
-          try { fixed_descriptor = scaled ? DecodeBlockScaledDescriptor(known->convert_to<std::uint64_t>(),modifier.substr(6)) :
-              DecodeMmaDescriptor(modifier.substr(6),known->convert_to<std::uint64_t>()); }
-          catch (const LayoutError&) {}
-    }
+  // A sparse descriptor's selector bits (0-1) only move the metadata column; the shapes
+  // below do not depend on them.
+  if (const auto known = known_descriptor; known && *known >= 0 && *known <= UINT32_MAX) {
+    descriptor = Constant(U32(), known->convert_to<std::string>());
+    for (const auto& modifier : i.modifiers)
+      if (modifier.starts_with("kind::"))
+        try { fixed_descriptor = scaled ? DecodeBlockScaledDescriptor(known->convert_to<std::uint64_t>(),modifier.substr(6)) :
+            DecodeMmaDescriptor(modifier.substr(6),known->convert_to<std::uint64_t>()); }
+        catch (const LayoutError&) {}
+    if (fixed_descriptor && fixed_descriptor->sparse != sparse) fixed_descriptor.reset();
+  } else if (sparse_layout) {
+    // The operand shapes only (the descriptor stays a value): they do not depend on those bits.
+    for (const auto& modifier : i.modifiers)
+      if (modifier.starts_with("kind::"))
+        try { fixed_descriptor = scaled ? DecodeBlockScaledDescriptor(*sparse_layout,modifier.substr(6)) :
+            DecodeMmaDescriptor(modifier.substr(6),*sparse_layout); }
+        catch (const LayoutError&) {}
+    if (fixed_descriptor && !fixed_descriptor->sparse) fixed_descriptor.reset();
+  }
   const auto type = [&](std::string role, bool address = false) {
     const auto view = mode + ':' + role;
     if (fixed_descriptor && (role == "A" || role == "B" || role == "D")) {
@@ -3139,8 +3280,9 @@ void ValueTemplateExtractor::TcgenMma() {
       auto bits = role == "A" ? d.a_element_bits : role == "B" ? d.b_element_bits : d.d_element_bits;
       const bool packed = scaled && bits==4 && role!="D";
       if (packed) bits=8;
+      // A sparse A operand is stored packed: M x K/2 elements (ISA "Sparse Matrices").
       std::vector<std::uint64_t> shape{role == "A" ? d.m : role == "B" ? d.n : d.m,
-          role == "D" ? d.n : packed ? d.k/2 : d.k};
+          role == "D" ? d.n : (packed ? d.k/2 : d.k) / (sparse && role == "A" ? 2 : 1)};
       // A Tensor Memory A operand holds one copy per data-path lane group.
       if (role == "A" && text(1).starts_with('['))
         if (const auto path = DecodeMmaDataPath(d.m, Has(i,"cta_group::2") ? 2 : 1, ws, d.sparse);
@@ -3155,6 +3297,21 @@ void ValueTemplateExtractor::TcgenMma() {
       const unsigned vector=d.kind=="mxf4"?2:d.kind=="mxf4nvf4"?4:1;
       return v::ValueType::matrix(address ? v::ElementType::unsignedInteger(64) : v::ElementType::bit(8),
           {group,4,role=="scale_A"?d.m/group:d.n,vector});
+    }
+    // Sparse metadata (M = 128 x cta_group): the bytes of the Tensor Memory footprint
+    // DecodeSparseMetadataFootprint reads, one row per data-path lane in lane order (lanes of
+    // CTA part p are rows 128p..128p+127), 4 bytes per 32-bit column: one column for
+    // kind::f16, two for f8f6f4 and the block-scaled kinds. Every 4-bit field of the footprint
+    // is metadata of this MMA; their assignment to A rows and K chunks (ISA Fig. 288/292) is
+    // not decoded here.
+    if (fixed_descriptor && sparse && role=="metadata") {
+      const auto& d=*fixed_descriptor;
+      const unsigned group=Has(i,"cta_group::2")?2:1;
+      const bool known_kind=d.kind=="f16" || d.kind=="f8f6f4" || d.kind=="mxf8f6f4" ||
+          d.kind=="mxf4" || d.kind=="mxf4nvf4";
+      if (known_kind && d.m==128*group)
+        return v::ValueType::matrix(address ? v::ElementType::unsignedInteger(64) : v::ElementType::bit(8),
+            {d.m, d.kind=="f16" ? 4u : 8u});
     }
     return v::ValueType::parameterizedMatrix(address ? v::ElementType::unsignedInteger(64) :
         v::ElementType::fromDescriptor(descriptor->value, view), descriptor->value, view);

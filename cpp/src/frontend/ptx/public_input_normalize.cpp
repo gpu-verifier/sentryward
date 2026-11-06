@@ -378,7 +378,24 @@ FrontendConfig NormalizeKernelInput(const KernelInput &supplied, const Module &m
       Fail("inconsistent_tensor_property", path + ".element_type", "an object's properties must use one element type");
     const auto property = t["property"].get<std::string>();
     if (property == "injective") record["injective"] = true;
-    else {
+    else if (property == "field_values") {
+      // Repeated field_values records of one object intersect; their widths must agree.
+      const auto field_bits = t["field_bits"].get<unsigned>();
+      std::set<std::uint64_t> values;
+      for (const auto &value : t["values"]) values.insert(value.get<std::uint64_t>());
+      if (record.contains("field_bits")) {
+        if (record["field_bits"].get<unsigned>() != field_bits)
+          Fail("inconsistent_tensor_property", path + ".field_bits", "an object's field_values records must use one field width");
+        std::set<std::uint64_t> kept;
+        for (const auto &value : record["field_values"])
+          if (values.contains(value.get<std::uint64_t>())) kept.insert(value.get<std::uint64_t>());
+        values = std::move(kept);
+      }
+      if (values.empty())
+        Fail("inconsistent_tensor_property", path + ".values", "the object's field_values records are contradictory");
+      record["field_bits"] = field_bits;
+      record["field_values"] = Json(values);
+    } else {
       const Integer value = JsonInteger(t["value"]), lower = JsonInteger(record["lower_bound"]),
           upper = JsonInteger(record["upper_bound"]);
       if (property == "lower_bound" && value > lower) record["lower_bound"] = json_integer(value);
@@ -439,9 +456,12 @@ FrontendConfig NormalizeKernelInput(const KernelInput &supplied, const Module &m
             {"bytes", "whole_object"}});
       }
     raw["fixed_input"]["tensor_property_inputs"] = inputs;
+    const bool fields = std::any_of(tensor_properties.begin(), tensor_properties.end(),
+        [](const auto &entry) { return entry.second.contains("field_bits"); });
     raw["fixed_input"]["tensor_property_contract"] = {
         {"kind", "fixed_read_only"}, {"origin", "tensor_properties"},
-        {"text", "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."},
+        {"text", fields ? "Elements of these objects satisfy the stated bounds, injectivity and field values (trusted, not checked); the objects are not written during the analyzed execution."
+                        : "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."},
         {"properties", input["tensor_properties"]}, {"regions", regions_out}};
   }
   auto result = ParseConfig(raw);

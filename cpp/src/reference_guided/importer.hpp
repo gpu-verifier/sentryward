@@ -1,10 +1,13 @@
 #pragma once
 #include "core.hpp"
+#include "alpha_identity.hpp"
 #include "input.hpp"
 #include "equivalence_context.hpp"
 #include "floating_idiom_pass.hpp"
 #include "packed_decode.hpp"
 #include "sentryward/equivalence/float_from_chars.h"
+#include "sentryward/equivalence/ieee_bits.h"
+#include "sentryward/scalar_fold/graph.h"
 #include "xor_coordinate.hpp"
 #include <memory>
 #include <regex>
@@ -178,6 +181,9 @@ struct Importer {
   bool ideal;
   // The floating range premise of in_range (assumption floating_values_in_range); set by the comparison.
   bool range_premise = true;
+  // The hardware value rule applies to this side (hardware_value); set by the comparison for the PTX
+  // side only (ComparisonOptions::kernel_hardware_values).
+  bool hardware_values = false;
   const InputContract *contract;
   const PreparedContext *context = nullptr;
   std::set<std::pair<std::string,Id>> unresolved_accesses;
@@ -493,6 +499,36 @@ struct Importer {
     ++a.stats["importer_scope_binders_created"];
     return binder;
   }
+  // One binder per (bound level, domain) of a leaf Fold (a Fold whose body
+  // holds no Fold) for all of its imports, in every output family. A bound
+  // variable's name carries no meaning (alpha-equivalence), and leaf Folds
+  // never enclose one another, so reusing the name is exact; with one name, the
+  // parts of a Fold that do not depend on a family's outer coordinates (a
+  // reference scan's state chain, say) are the same Arena nodes across
+  // families instead of a fresh copy per family. The first import takes
+  // fold_binder's choice; only its alpha-shared binders are recorded, so
+  // nested, shadowed and fallback cases keep their own original binders. A
+  // recorded binder is reused only when no enclosing coordinate depends on it
+  // and the bound level is not shadowed, the same hygiene as the sibling bank.
+  // O(environment) per Fold import.
+  std::map<std::pair<Id, uint64_t>, Id> occurrence_binders;
+  Id occurrence_binder(Id raw, const Env &env) {
+    const auto &n = ns[raw];
+    if (auto it = occurrence_binders.find({n.level, n.count});
+        it != occurrence_binders.end() && !env.contains(n.level) && !raw_has_fold[n.operands[1].node]) {
+      const bool captured = std::any_of(env.begin(), env.end(),
+          [&](const auto &binding) { return a.depends(binding.second, it->second); });
+      if (!captured) {
+        ++a.stats["importer_occurrence_binder_hits"];
+        return it->second;
+      }
+      ++a.stats["importer_occurrence_capture_fallbacks"];
+    }
+    const Id binder = fold_binder(raw, env);
+    if (a.nodes[binder].tag.starts_with(side + ":shared-binder:"))
+      occurrence_binders.try_emplace(std::pair(n.level, n.count), binder);
+    return binder;
+  }
   // Byte provenance only: invalid denotes a proven zero byte. A source ID
   // denotes an opaque quantized e4m3 byte, never its ideal-real numeric value.
   using Packed = std::vector<Id>;
@@ -638,24 +674,460 @@ struct Importer {
   Id family(const J &f, const std::string &expected_type = "") {
     Env env=family_environment(f);
     if (auto result = packed_output(f["body"], env))
-      return *result;
+      return refuse_raw_byte_views(*result);
     Id n = edge(import(input_id(f["body"]["node"]), env), f["body"], true);
     if (mapping.value("output_value_semantics", "") == "ideal_real" &&
         a.nodes[n].op == "floatbits")
-      return a.nodes[n].args[0];
+      return refuse_raw_byte_views(a.nodes[n].args[0]);
     if (mapping.value("output_value_semantics", "") == "ideal_real" &&
         floating(expected_type) && (a.nodes[n].op=="readbits" || a.nodes[n].op=="extractbits"))
       if (auto interpreted=initial_typed_bits(n,expected_type)) {
         ++a.stats["typed_output_transport_reads"];
-        return *interpreted;
+        return refuse_raw_byte_views(*interpreted);
       }
-    return n;
+    return byte_view_output(n);
   }
   std::string family_type(const J &f) const {
     const auto &body=f.at("body");
     if(body.contains("converted_type"))return body.at("converted_type");
     if(!body.value("conversion","").empty())return "";
     return ns.at(input_id(body.at("node"))).type;
+  }
+  // A readbits node addresses raw bytes of this side's source layout. The same raw address denotes
+  // different elements on the two sides when their source layouts of one shared input differ, so
+  // views of such inputs are compared only at canonical (target-layout) addresses.
+  // Per raw layout key of this side: whether the other side lays out the same input differently.
+  std::unordered_map<std::string,bool> byte_layout_differs;
+  std::optional<bool> any_byte_layout_differs;
+  // Per Arena node: already scanned for raw views of such inputs (shared by this side's families).
+  std::vector<uint8_t> byte_view_scanned;
+  bool source_layout_differs(const std::string &raw) {
+    if(auto known=byte_layout_differs.find(raw);known!=byte_layout_differs.end())return known->second;
+    bool differs=false;
+    const auto &other=mapping.at(side=="left"?"right_inputs":"left_inputs");
+    const std::string shared=mapped_name(m,"allocations",raw);
+    if(m.contains("layouts") && m["layouts"].contains(raw) && other.contains("layouts"))
+      for(auto it=other["layouts"].begin();it!=other["layouts"].end();++it)
+        if(mapped_name(other,"allocations",it.key())==shared) {
+          const auto &mine=m["layouts"][raw],&theirs=it.value();
+          differs=differs || mine["source_strides_bytes"]!=theirs["source_strides_bytes"] ||
+                  jq(mine.value("source_offset",J(0)))!=jq(theirs.value("source_offset",J(0)));
+        }
+    byte_layout_differs.emplace(raw,differs);
+    return differs;
+  }
+  // The canonical address of a view of `bytes_read` bytes at raw `address`: target_offset +
+  // (offset mod element_bytes) + sum_j target_stride_j * ((offset / stride_j) mod extent_j), with
+  // offset = address - source_offset. Exact for a dense permuted source layout when the offset lies
+  // in the layout's extent and the view stays inside one element (both proved from bounds); an
+  // identity layout only moves the offset. O(rank) Arena terms.
+  std::optional<Id> canonical_byte_address(const std::string &raw,Id address,const Z &bytes_read) {
+    const auto &l=m["layouts"][raw];
+    const auto &target=l.contains("target_strides_bytes")?l["target_strides_bytes"]:l["source_strides_bytes"];
+    const Id off=a.sub(address,a.constant(jq(l.value("source_offset",J(0)))));
+    const Id target_offset=a.constant(jq(l.value("target_offset",J(0))));
+    if(target==l["source_strides_bytes"])return a.add({off,target_offset});
+    if(!packed_dense_layouts.contains(raw) || nested_layouts.contains(raw))return {};
+    const Z bytes=l["element_bytes"].get<unsigned>();
+    Z extent=bytes;
+    for(size_t j=0;j<l["shape"].size();++j)
+      extent+=(jq(l["shape"][j]).numerator()-1)*jq(l["source_strides_bytes"][j]).numerator();
+    const auto bounds=a.nodes[off].bounds;
+    if(!bounds || bounds->first<0 || bounds->second+Q(bytes_read)>Q(extent))return {};
+    const Id within=a.imod(off,bytes);
+    const auto inside=a.nodes[within].bounds;
+    if(!inside || inside->first<0 || inside->second+Q(bytes_read)>Q(bytes))return {};
+    std::vector<Id> terms{target_offset,within};
+    for(size_t j=0;j<l["shape"].size();++j) {
+      // A shape-1 axis has coordinate 0; its stride is not checked and may be 0.
+      if(jq(l["shape"][j])==1)continue;
+      const Id coordinate=a.imod(a.idiv(off,jq(l["source_strides_bytes"][j]).numerator()),
+                                 jq(l["shape"][j]).numerator());
+      terms.push_back(a.mul({a.constant(jq(target[j])),coordinate}));
+    }
+    ++a.stats["canonical_byte_view_layout_mappings"];
+    return a.add(terms);
+  }
+  // Whether the other side lays out some input of this side differently. Computed once per side.
+  bool some_byte_layout_differs() {
+    if(!any_byte_layout_differs) {
+      bool any=false;
+      if(m.contains("layouts"))
+        for(auto it=m["layouts"].begin();it!=m["layouts"].end();++it)any=source_layout_differs(it.key()) || any;
+      any_byte_layout_differs=any;
+    }
+    return *any_byte_layout_differs;
+  }
+  // Refuses an output value whose cone holds a raw byte view of such an input; returns the value
+  // otherwise. Every return of family() passes here. The scan visits each Arena node at most once
+  // per side (byte_view_scanned).
+  Id refuse_raw_byte_views(Id n) {
+    if(!some_byte_layout_differs())return n;
+    std::vector<Id> todo{n};
+    while(!todo.empty()) {
+      const Id x=todo.back();todo.pop_back();
+      if(byte_view_scanned.size()<=x)byte_view_scanned.resize(a.nodes.size(),0);
+      if(byte_view_scanned[x])continue;
+      byte_view_scanned[x]=1;a.check();
+      const auto &node=a.nodes[x];
+      if(node.op=="readbits" && source_layout_differs(node.tag))
+        throw Unsupported("A raw byte view of an input laid out differently on the two sides reaches an output",
+                          "byte_view_layout_unsupported",
+                          {{"allocation",mapped_name(m,"allocations",node.tag)},{"expression",a.render(x,3)}});
+      todo.insert(todo.end(),node.args.begin(),node.args.end());
+    }
+    return n;
+  }
+  // An output that is a byte view of such an input is read at its canonical address under the
+  // shared input name; both sides apply the same rule. Any other raw view of such an input in the
+  // output is refused. O(rank) for the root, then refuse_raw_byte_views.
+  Id byte_view_output(Id n) {
+    if(!some_byte_layout_differs())return n;
+    const auto &root=a.nodes[n];
+    if(root.op=="readbits" && root.args.size()==1 && root.data.size()==1 && source_layout_differs(root.tag) &&
+       root.data[0].denominator()==1 && root.data[0]>0 && modz(root.data[0].numerator(),8)==0) {
+      const std::string raw=root.tag;const Id address=root.args[0];const Q bits=root.data[0];
+      const auto canonical=canonical_byte_address(raw,address,bits.numerator()/8);
+      if(!canonical)
+        throw Unsupported("A byte-view output of an input laid out differently on the two sides has no proved "
+                          "canonical address","byte_view_layout_unsupported",
+                          {{"allocation",mapped_name(m,"allocations",raw)},{"bits",str(bits)},
+                           {"address_expression",a.render(address,3)}});
+      n=a.intern("readbits",{*canonical},{bits},"canonical:"+mapped_name(m,"allocations",raw),
+                 {true,false,true},std::pair(Q(0),Q(pow2(bits.numerator().convert_to<unsigned>())-1)));
+    }
+    return refuse_raw_byte_views(n);
+  }
+  // Verified fixed read-only inputs (shape arrays) hold their declared values for every read of
+  // either side: the native run proved that the kernel never writes them.
+  // A byte view of exactly one such element at a constant offset is that element's stored bits,
+  // its value modulo 2^bits. Coordinates use the side's source layout, as typed_read does. O(rank).
+  std::optional<Id> fixed_bits(const std::string &raw,Id offset,unsigned bits) {
+    if(!context || context->fixed_inputs.empty() || !m.contains("layouts") || !m["layouts"].contains(raw))return {};
+    const auto &l=m["layouts"][raw];
+    const unsigned bytes=l["element_bytes"].get<unsigned>();
+    const auto address=a.value(offset);
+    if(bits!=8*bytes || !address || address->denominator()!=1)return {};
+    const Z off=address->numerator()-jq(l.value("source_offset",J(0))).numerator();
+    Z extent=bytes,reconstructed=0;
+    for(size_t j=0;j<l["shape"].size();++j)
+      extent+=(jq(l["shape"][j]).numerator()-1)*jq(l["source_strides_bytes"][j]).numerator();
+    if(off<0 || off+bytes>extent || modz(off,bytes)!=0)return {};
+    std::vector<Id> coordinates;
+    for(size_t j=0;j<l["shape"].size();++j) {
+      // A shape-1 axis has coordinate 0.
+      const Z count=jq(l["shape"][j]).numerator(),stride=jq(l["source_strides_bytes"][j]).numerator();
+      const Z coordinate=count==1 ? Z(0) : modz(floorz(off,stride),count);
+      reconstructed+=coordinate*stride;
+      coordinates.push_back(a.constant(Q(coordinate)));
+    }
+    if(reconstructed!=off)return {};
+    const std::string alloc=mapped_name(m,"allocations",raw);
+    const auto range=ranges.find(alloc);
+    for(const std::string type:{"s"+std::to_string(bits),"u"+std::to_string(bits)})
+      if(auto fixed=context->fixed_read(a,alloc,type,coordinates,side!="left")) {
+        // Input-contract intervals are checked against fixed values when the context is prepared.
+        require_fixed_in_range(alloc,*fixed,range!=ranges.end() ? range->second : Bounds{});
+        return a.constant(Q(modz(a.nodes[*fixed].data[0].numerator(),pow2(bits))));
+      }
+    return {};
+  }
+  // A verified fixed value outside the input's mapped range contradicts the binding: refused.
+  void require_fixed_in_range(const std::string &alloc,Id fixed,const Bounds &bound) const {
+    const Q &value=a.nodes[fixed].data[0];
+    if(bound && (value<bound->first || value>bound->second))
+      throw Unsupported("fixed input conflicts with mapped input range: "+alloc);
+  }
+  // Per raw node: the index levels on which the offset of some read of a fixed input inside it
+  // depends (a Fold drops its own binder from its element's levels). Computed once, in one
+  // topological scan, and only when the comparison has fixed inputs.
+  std::optional<std::vector<std::vector<Id>>> fixed_read_levels;
+  // A fixed table holds at most the context's fixed-element cap of elements (fixed_input::decode_verified).
+  static constexpr uint64_t fixed_table_unroll_limit=fixed_input_element_limit;
+  // The reducers whose definition unrolled_fold builds. A PTX-side Fold carries its scalar-fold
+  // reducer verbatim (Product among them), without the document reader's check.
+  static bool unrollable_reducer(const std::string &reducer) {
+    return reducer=="Sum" || reducer=="Max" || reducer=="Min";
+  }
+  bool unrolls_fixed_table_fold(Id raw) {
+    if(!context || context->fixed_inputs.empty() || ns[raw].count>fixed_table_unroll_limit ||
+       ns[raw].operands.size()!=2 || !unrollable_reducer(ns[raw].reducer))return false;
+    if(!fixed_read_levels) {
+      std::vector<std::vector<Id>> levels(ns.size());
+      for(size_t i=0;i<ns.size();++i) {
+        const auto &n=ns[i];
+        std::set<Id> s;
+        for(size_t j=0;j<n.operands.size();++j)
+          for(Id v:levels[n.operands[j].node])
+            if(!(n.kind=="Fold" && j==1 && v==n.level))s.insert(v);
+        if((n.kind=="InputValue" || n.kind=="InitialCell") && n.operands.size()==1 &&
+           context->fixed_input_types.contains(mapped_name(m,"allocations",n.name)))
+          s.insert(free[n.operands[0].node].begin(),free[n.operands[0].node].end());
+        levels[i].assign(s.begin(),s.end());
+      }
+      fixed_read_levels=std::move(levels);
+    }
+    const auto &n=ns[raw];
+    const auto &element=(*fixed_read_levels)[n.operands[1].node];
+    return std::binary_search(element.begin(),element.end(),n.level);
+  }
+  // A stacked reduction (torch.stack(...).sum/amax): the element depends on the binder only through
+  // Select(binder == constant, A, rest) chains whose arms do not depend on it. Unrolling is the Fold's
+  // definition; the element is imported once per binder value, at most stacked_fold_unroll_limit times.
+  static constexpr uint64_t stacked_fold_unroll_limit=64;
+  bool unrolls_stacked_fold(Id raw) const {
+    const auto &n=ns[raw];
+    if(n.operands.size()!=2 || n.count>stacked_fold_unroll_limit || !unrollable_reducer(n.reducer))return false;
+    auto independent=[&](Id node){return !std::binary_search(free[node].begin(),free[node].end(),n.level);};
+    Id node=n.operands[1].node;
+    for(bool first=true;;first=false) {
+      const auto &select=ns[node];
+      if(!first && independent(node))return true;
+      if(select.kind!="Operation" || select.name!="Select" || !select.attributes.empty() || select.operands.size()!=3)return false;
+      const auto &equal=ns[select.operands[0].node];
+      if(equal.kind!="Operation" || equal.name!="Equal" || equal.operands.size()!=2)return false;
+      bool binder=false,constant=false;
+      for(const auto &side:equal.operands) {
+        const auto &x=ns[side.node];
+        if(x.kind=="Index" && x.level==n.level)binder=true;
+        else if(x.kind=="Constant")constant=true;
+      }
+      if(!binder || !constant || !independent(select.operands[1].node))return false;
+      node=select.operands[2].node;
+    }
+  }
+  // Per first_argmax node built from a reference Fold: that reference's Max fold over the same values.
+  std::unordered_map<Id,Id> argmax_maxima;
+  // Per imported node: the read of an input at a first_argmax coordinate it contains (one per node).
+  // Constants are not recorded: they contain no read.
+  std::unordered_map<Id,Id> argmax_reads;
+  // The most distinct nodes one replace_read visits; past it the gather is declined.
+  static constexpr size_t argmax_replace_visit_limit=size_t(1)<<16;
+  // The read R with every occurrence replaced by `to`, rebuilt through the exact Arena constructors of
+  // add, mul, exp/exp2 and recip; nodes without R are kept. Empty when R sits under another operation
+  // or the walk exceeds argmax_replace_visit_limit. A post-order walk on an explicit stack (no
+  // recursion depth), each node rebuilt once: O(min(|root DAG|, limit)).
+  std::optional<Id> replace_read(Id root,Id from,Id to) {
+    if(root==from)return to;
+    std::unordered_map<Id,Id> rebuilt;
+    std::vector<std::pair<Id,bool>> todo{{root,false}};
+    size_t visits=0;
+    while(!todo.empty()) {
+      const auto [x,ready]=todo.back();todo.pop_back();
+      if(rebuilt.contains(x))continue;
+      const auto &node=a.nodes[x];
+      if(!ready) {
+        if(++visits>argmax_replace_visit_limit) {
+          ++a.stats["argmax_gather_visit_limit_declines"];
+          return std::nullopt;
+        }
+        a.check();
+        todo.emplace_back(x,true);
+        for(size_t j=node.args.size();j-- > 0;)
+          if(node.args[j]!=from && !rebuilt.contains(node.args[j]))todo.emplace_back(node.args[j],false);
+        continue;
+      }
+      std::vector<Id> args;bool changed=false;
+      args.reserve(node.args.size());
+      for(Id arg:node.args) {
+        const Id r=arg==from ? to : rebuilt.at(arg);
+        changed|=r!=arg;args.push_back(r);
+      }
+      Id out=x;
+      if(changed) {
+        if(node.op=="add"){std::vector<Id> t;for(size_t j=0;j<args.size();++j)t.push_back(a.mul({a.constant(node.data[j]),args[j]}));out=a.add(t);}
+        else if(node.op=="mul"){args.push_back(a.constant(node.data[0]));out=a.mul(args);}
+        else if((node.op=="exp" || node.op=="exp2") && args.size()==1)out=a.exponential(args[0],node.op=="exp2");
+        else if(node.op=="recip" && args.size()==1)out=a.recip(args[0]);
+        else return std::nullopt;
+      }
+      rebuilt.emplace(x,out);
+    }
+    return rebuilt.at(root);
+  }
+  // E(R) with R = read(x, .., F, ..), F = first_argmax(v_0..v_{n-1}; d) is v_F when E(read(x, .., d_j, ..)) is v_j
+  // for every j (equal up to Fold binder names): then E = v_F = max_j v_j. Also when v_j = select(G == d_j, c, u_j)
+  // with u_j = E(read(.., d_j, ..)), G a first_argmax over the same indices and constant c below every u_j: the
+  // argmax F of v avoids G (v_G = c < v_k for k != G), so E = u_F = v_F = max v: the reference Max fold that
+  // defined F, or for masked leaves their masked_max. Checked at Divide and Multiply results containing such a
+  // read. O(n x min(|E|, argmax_replace_visit_limit)).
+  Id gathered_at_argmax(const RawNode &n,const std::vector<Id> &xs,Id result) {
+    if(a.nodes[result].op=="read")
+      for(Id coordinate:a.nodes[result].args)
+        if(a.nodes[coordinate].op=="first_argmax"){argmax_reads.emplace(result,result);return result;}
+    Id read=invalid;
+    for(Id x:xs)if(auto it=argmax_reads.find(x);it!=argmax_reads.end()){read=it->second;break;}
+    if(read==invalid)return result;
+    // The result keeps the read for its consumers unless it is a constant.
+    auto keep=[&] {
+      if(!a.value(result))argmax_reads.emplace(result,read);
+      return result;
+    };
+    if(n.kind!="Operation" || (n.name!="Divide" && n.name!="Multiply"))return keep();
+    const auto node=a.nodes[read];
+    size_t axis=node.args.size();
+    for(size_t j=0;j<node.args.size();++j)if(a.nodes[node.args[j]].op=="first_argmax")axis=j;
+    const Id argmax=node.args[axis];
+    const auto values=a.nodes[argmax].args;const auto indices=a.nodes[argmax].data;
+    if(values.size()<2)return keep();
+    Id masked_by=invalid;std::optional<Q> mask;bool nonnegative=true;
+    for(size_t j=0;j<values.size();++j) {
+      auto coordinates=node.args;coordinates[axis]=a.constant(indices[j]);
+      const Id instance_read=a.intern("read",coordinates,node.data,node.tag,node.facts,node.bounds);
+      const auto instance=replace_read(result,read,instance_read);
+      if(!instance)return keep();
+      nonnegative=nonnegative && a.nodes[*instance].facts.finite && a.nodes[*instance].facts.nn;
+      if(argmax_alpha.equal(*instance,values[j]))continue;
+      const auto &leaf=a.nodes[values[j]];
+      const auto &test=a.nodes[leaf.op=="select" ? leaf.args[0] : values[j]];
+      const auto c=leaf.op=="select" ? a.value(leaf.args[1]) : std::nullopt;
+      const bool masked=leaf.op=="select" && c && test.op=="compare" && test.tag=="eq" && test.args.size()==2 &&
+          a.nodes[test.args[0]].op=="first_argmax" && a.nodes[test.args[0]].data==indices &&
+          a.value(test.args[1]) && *a.value(test.args[1])==indices[j] &&
+          (masked_by==invalid || masked_by==test.args[0]) && (!mask || *mask==*c) &&
+          a.nodes[*instance].facts.nn && *c<0 && argmax_alpha.equal(*instance,leaf.args[2]);
+      if(!masked)return keep();
+      masked_by=test.args[0];mask=c;
+    }
+    // A masked leaf is below the others only when every instance is nonnegative.
+    if(masked_by!=invalid && !nonnegative)return keep();
+    if(masked_by!=invalid)
+      if(auto masked=a.masked_maximum(std::set<Id>(values.begin(),values.end()))) {
+        ++a.stats["argmax_gathers"];
+        return *masked;
+      }
+    const auto fold=argmax_maxima.find(argmax);
+    if(fold==argmax_maxima.end())return keep();
+    ++a.stats["argmax_gathers"];
+    return fold->second;
+  }
+  // Alpha identity of imported instances (binder names differ between the two scans of B).
+  FoldAlphaIdentity argmax_alpha{a};
+  // Raw shape of a first argmax: Fold(Min, init, Select(Equal(B, M), j, c)) over binder j, where M is a
+  // Fold(Max) over its own binder of the same count that does not depend on j, and neither the Min's
+  // element nor the Select's condition is converted. Raw structure only.
+  // first_argmax_fold imports B and M's element once per index: an axis longer than this (a
+  // vocabulary-sized argmax, say) keeps the generic Fold import instead of 2 x count imports.
+  static constexpr uint64_t first_argmax_unroll_limit=4096;
+  bool first_argmax_fold_pattern(Id raw) const {
+    const auto &n=ns[raw];
+    if(n.operands.size()!=2 || n.count>first_argmax_unroll_limit || !n.operands[1].conversion.empty())return false;
+    const auto &select=ns[n.operands[1].node];
+    if(select.kind!="Operation" || select.name!="Select" || !select.attributes.empty() || select.operands.size()!=3 ||
+       !select.operands[0].conversion.empty())return false;
+    const auto &equal=ns[select.operands[0].node];
+    if(equal.kind!="Operation" || equal.name!="Equal" || equal.operands.size()!=2)return false;
+    for(const auto &side:equal.operands) {
+      const auto &m=ns[side.node];
+      if(side.conversion.empty() && m.kind=="Fold" && m.reducer=="Max" && m.count==n.count &&
+         !std::binary_search(free[side.node].begin(),free[side.node].end(),n.level))return true;
+    }
+    return false;
+  }
+  // Min_j select(B(j) == max_k B'(k), j, c) with init >= n-1 (or +inf) and c >= n-1 is the least j attaining
+  // the max, when B'(k) is B(k) for every k (imported instances, equal up to Fold binder names), Max's init
+  // is -inf and every B(j) is finite (a finite maximum is attained). Imports B(j) and B'(j) per j. O(n x B).
+  std::optional<Id> first_argmax_fold(Id raw,const Env &env,std::vector<std::pair<Id,Env>> &missing) {
+    const auto &n=ns[raw];
+    const auto &init=n.operands[0];
+    const auto &select=ns[n.operands[1].node];
+    const auto &equal=ns[select.operands[0].node];
+    size_t which=0;
+    for(size_t j=0;j<2;++j) {
+      const auto &m=ns[equal.operands[j].node];
+      if(equal.operands[j].conversion.empty() && m.kind=="Fold" && m.reducer=="Max" && m.count==n.count)which=j;
+    }
+    const auto &maximum=ns[equal.operands[which].node];
+    const auto &body=equal.operands[1-which];
+    std::vector<Id> scratch;
+    auto need=[&](const Edge &e,const Env &scope)->std::optional<Id> {
+      if(cache.contains(key(scratch,e.node,scope)))return edge(cache.at(key(scratch,e.node,scope)),e);
+      missing.emplace_back(e.node,scope);return {};
+    };
+    auto start=need(init,env);
+    auto floor=need(maximum.operands[0],env);
+    auto whole=need(equal.operands[which],env);
+    std::vector<std::pair<Q,Id>> members;
+    bool complete=start && floor && whole;
+    for(uint64_t j=0;j<n.count;++j) {
+      Env scope=env,inner=env;
+      scope[n.level]=a.constant(Q(Z(j)));
+      inner[maximum.level]=a.constant(Q(Z(j)));
+      auto value=need(body,scope),instance=need(maximum.operands[1],inner);
+      auto index=need(select.operands[1],scope),other=need(select.operands[2],scope);
+      if(!value || !instance || !index || !other){complete=false;continue;}
+      const auto d=a.value(*index),c=a.value(*other);
+      if(!argmax_alpha.equal(*value,*instance) || !a.nodes[*value].facts.finite || !d || *d!=Q(Z(j)) ||
+         !c || *c<Q(Z(n.count-1)))return {};
+      members.emplace_back(*d,*value);
+    }
+    if(!complete)return {};
+    const auto lowest=a.value(*start);
+    if(!a.neginf(*floor) || !(a.nodes[*start].op=="infinity" && a.nodes[*start].data[0]==1) &&
+       !(lowest && *lowest>=Q(Z(n.count-1))))return {};
+    ++a.stats["first_argmax_folds"];
+    // Copies of the same argmax (one per reference use) are equal up to Fold binder names: share one node.
+    const Id argmax=argmax_alpha.representative(a.first_argmax(std::move(members)));
+    argmax_maxima.emplace(argmax,*whole);
+    return argmax;
+  }
+  // Whether the element, imported with the Fold's binder variable, still reads a fixed input at a
+  // coordinate that depends on the binder (raw offsets can mention the binder and simplify it away).
+  // Visits only nodes that depend on the binder (cached free sets); stops at the first such read.
+  bool reads_fixed_table_at(Id element,Id binder) {
+    std::vector<Id> todo{element};
+    std::unordered_set<Id> seen;
+    while(!todo.empty()) {
+      const Id x=todo.back();todo.pop_back();
+      if(!a.depends(x,binder) || !seen.insert(x).second)continue;
+      a.check();
+      const auto &node=a.nodes[x];
+      if(node.op=="read")
+        if(const auto split=node.tag.find('\n');split!=std::string::npos &&
+           context->fixed_input_types.contains(node.tag.substr(0,split)))
+          for(Id coordinate:node.args)if(a.depends(coordinate,binder))return true;
+      todo.insert(todo.end(),node.args.begin(),node.args.end());
+    }
+    return false;
+  }
+  // The definition of a finite Fold: init + sum_k e(k) (Sum), max(init, e(0), ..., e(count-1)) (Max),
+  // and Min as -max(-init, -e(k)). Each e(k) is imported with the binder bound to the constant k,
+  // so a fixed-table read at the binder's coordinate meets its concrete element. Missing operand
+  // imports are returned for the caller to schedule. O(count x element).
+  std::optional<Id> unrolled_fold(Id raw,const Env &env,std::vector<std::pair<Id,Env>> &missing,
+                                  const char *counter="fixed_table_folds_unrolled") {
+    const auto &n=ns[raw];
+    if(!unrollable_reducer(n.reducer))throw Unsupported("unsupported Fold reducer "+n.reducer);
+    const auto &init=n.operands[0],&element=n.operands[1];
+    std::vector<Id> scratch;
+    if(!cache.contains(key(scratch,init.node,env)))missing.emplace_back(init.node,env);
+    std::vector<Env> scopes;
+    scopes.reserve(n.count);
+    for(uint64_t j=0;j<n.count;++j) {
+      Env scope=env;
+      scope[n.level]=a.constant(Q(Z(j)));
+      if(!cache.contains(key(scratch,element.node,scope)))missing.emplace_back(element.node,scope);
+      scopes.push_back(std::move(scope));
+    }
+    if(!missing.empty())return {};
+    std::vector<Id> terms{edge(cache.at(key(scratch,init.node,env)),init)};
+    for(const auto &scope:scopes)terms.push_back(edge(cache.at(key(scratch,element.node,scope)),element));
+    // Taint (hardware_infinity_keys) per term: a Max or Min carries it on, a Sum stops the family.
+    std::vector<uint8_t> tainted;
+    for(size_t j=0;j<terms.size();++j)
+      if(hardware_infinity(j?element.node:init.node,j?scopes[j-1]:env)){tainted.resize(terms.size());tainted[j]=1;}
+    if(!tainted.empty() && n.reducer!="Max" && n.reducer!="Min")
+      hardware_decline(raw,terms,env,"a reassociated reduction");
+    ++a.stats[counter];
+    Id result;
+    if(n.reducer=="Max")result=a.maximum(terms);
+    else if(n.reducer=="Min") {
+      std::vector<Id> negated;
+      for(Id term:terms)negated.push_back(a.neg(term));
+      result=a.neg(a.maximum(negated));
+    } else result=a.add(terms);
+    if(!tainted.empty())carry_hardware_infinity(raw,key(raw,env),terms,tainted,result);
+    return result;
   }
   // Recognize only the exact e4m3 NaN encoding test on initial byte reads.
   // Whole-object constraints are caller premises; address coverage is checked
@@ -720,9 +1192,19 @@ struct Importer {
       const auto &edges = n.operands;
       bool fold = n.kind == "Fold", empty = fold && Q(n.count) == 0;
       size_t len = empty ? 1 : edges.size();
+      if (fold && !empty && unrolls_stacked_fold(f.i)) {
+        std::vector<std::pair<Id, Env>> missing;
+        if (auto result = unrolled_fold(f.i, f.env, missing, "stacked_folds_unrolled")) {
+          cache.emplace(k, context ? context->apply(a, *result) : *result);
+          continue;
+        }
+        todo.push_back({f.i, f.env, false});
+        for (auto &[raw, scope] : missing) todo.push_back({raw, std::move(scope), false});
+        continue;
+      }
       Env body = f.env;
       if (fold && !empty)
-        body[n.level] = fold_binder(f.i, f.env);
+        body[n.level] = occurrence_binder(f.i, f.env);
       // Import the complete recognized numerical operation's input first.
       // Its bit decomposition is not a numeric cast; only a finite positive
       // input under ideal_real permits this complete compiler approximation.
@@ -733,9 +1215,25 @@ struct Importer {
         }
         Id x=cache.at(input_key);
         if(a.nodes[x].facts.finite && a.nodes[x].facts.pos) {
+          if(hardware_infinity(input,f.env))hardware_decline(f.i,{},f.env,"a floating-point idiom");
           auto result=a.logarithm(x,true);
           cache.emplace(k,context?context->apply(a,result):result);
           ++a.stats["ideal_compiler_log2_polynomials"];continue;
+        }
+      }
+      // The same contract for the complete log1pf expansion: ideal log(1 + u) on a finite u >= 0.
+      // There log1p is finite and the expansion returns its main path (-0 for u = -0).
+      if(ideal)if(Id input=fp_idioms.log1p_input(f.i);input!=invalid) {
+        const auto input_key=key(input,f.env);
+        if(!cache.contains(input_key)) {
+          todo.push_back({f.i,f.env,false});todo.push_back({input,f.env,false});continue;
+        }
+        Id x=cache.at(input_key);
+        if(a.nodes[x].facts.finite && a.nodes[x].facts.nn) {
+          if(hardware_infinity(input,f.env))hardware_decline(f.i,{},f.env,"a floating-point idiom");
+          auto result=a.logarithm(a.add({a.one,x}));
+          cache.emplace(k,context?context->apply(a,result):result);
+          ++a.stats["ideal_compiler_log1p_polynomials"];continue;
         }
       }
       if (auto read = finite_scale_guard(n)) {
@@ -758,6 +1256,7 @@ struct Importer {
           continue;
         }
         cache.emplace(k,edge(cache.at(chosen_key),chosen));
+        if(hardware_infinity(chosen,f.env))hardware_infinity_keys.insert(k);
         ++a.stats["finite_"+read->second+"_nan_branches_eliminated"];
         continue;
       }
@@ -777,6 +1276,7 @@ struct Importer {
             todo.push_back({f.i,f.env,false});todo.push_back({chosen.node,f.env,false});continue;
           }
           Id selected=edge(cache.at(selected_key),chosen);
+          if(hardware_infinity(chosen,f.env))hardware_infinity_keys.insert(k);
           cache.emplace(k,context?context->apply(a,selected):selected);
           ++a.stats["proved_select_arms_imported"];continue;
         }
@@ -791,13 +1291,51 @@ struct Importer {
         }
         continue;
       }
+      // The ready frame chooses the Fold's binder again. A leaf Fold of the same level and count
+      // imported in between may have recorded a shared binder (occurrence_binder), so the choice
+      // can differ from the initial frame's; the body is then imported under this one. Every
+      // admitted binder is exact (alpha-equivalence), and the next choice is the same.
+      if (fold && !empty && !cache.contains(key(probe, edges[1].node, body))) {
+        todo.push_back({f.i, f.env, true});
+        todo.push_back({edges[1].node, body, false});
+        continue;
+      }
+      if (fold && !empty && n.reducer == "Min" && first_argmax_fold_pattern(f.i)) {
+        std::vector<std::pair<Id, Env>> missing;
+        if (auto result = first_argmax_fold(f.i, f.env, missing)) {
+          if (const auto tainted = tainted_operands(f.i, f.env, body); !tainted.empty())
+            carry_hardware_infinity(f.i, k, {cache.at(key(probe, edges[0].node, f.env)),
+                                             cache.at(key(probe, edges[1].node, body))}, tainted, *result);
+          cache.emplace(k, context ? context->apply(a, *result) : *result);
+          continue;
+        }
+        if (!missing.empty()) {
+          todo.push_back({f.i, f.env, true});
+          for (auto &[raw, scope] : missing) todo.push_back({raw, std::move(scope), false});
+          continue;
+        }
+      }
+      if (fold && !empty && unrolls_fixed_table_fold(f.i) &&
+          reads_fixed_table_at(cache.at(key(probe, edges[1].node, body)), body.at(n.level))) {
+        std::vector<std::pair<Id, Env>> missing;
+        if (auto result = unrolled_fold(f.i, f.env, missing)) {
+          cache.emplace(k, context->apply(a, *result));
+          continue;
+        }
+        todo.push_back({f.i, f.env, true});
+        for (auto &[raw, scope] : missing) todo.push_back({raw, std::move(scope), false});
+        continue;
+      }
       std::vector<Id> xs;
       for (size_t j = 0; j < len; ++j) {
         const Env &ctx = fold && j == 1 ? body : f.env;
         Id operand=cache.at(key(probe,edges[j].node,ctx));
         xs.push_back(fp_idioms.is_power(f.i) && j==0 ? operand : edge(operand,edges[j]));
       }
+      const auto tainted = tainted_operands(f.i, f.env, body);
       Id result;
+      if((fp_idioms.is_rounding(f.i) || fp_idioms.is_power(f.i)) && !tainted.empty())
+        hardware_decline(f.i, xs, f.env, "a floating-point idiom");
       if(fp_idioms.is_rounding(f.i)) {
         result=fp_idioms.lower_rounding(a,xs);
         ++a.stats["fp_idiom_rounding_instances"];
@@ -811,7 +1349,12 @@ struct Importer {
         power_bit_values.emplace(result,power);
         encoded_powers.insert(power);
         ++a.stats["fp_idiom_power_instances"];
-      } else result = empty ? xs[0] : make(n, xs, f.env, body);
+      } else if (auto exact = hardware_value(f.i, xs, tainted, f.env)) {
+        result = *exact;
+      } else {
+        result = empty ? xs[0] : make(n, xs, f.env, body);
+        if (!tainted.empty()) carry_hardware_infinity(f.i, k, xs, tainted, result);
+      }
       // Restrict local decoder proofs to arithmetic/selection boundaries. Raw
       // transports keep their original provenance for subsequent typed casts.
       if(n.kind=="Operation" && (n.name=="Add" || n.name=="Subtract" || n.name=="Multiply" ||
@@ -823,6 +1366,7 @@ struct Importer {
               });
         result=normalize_packed_decoder(result);
       }
+      result=gathered_at_argmax(n,xs,result);
       cache.emplace(k, context ? context->apply(a,result) : result);
       ++a.counter(Arena::Hot::imported_context_nodes);
     }
@@ -912,6 +1456,33 @@ struct Importer {
         ++a.stats["ideal_compiler_lse_sequences"];
         return a.intern("ideal_lse", {*mass, *pivot}, {}, "ptx_lg2_f32", {true, false, false});
       }
+    }
+    return {};
+  }
+  // __logf as nvcc expands it (with and without -ftz): lg2.approx.f32(y) * RN32(ln 2), whose
+  // operands x are already imported. On a proved finite positive y this is ideal log(y), under the
+  // same ideal_real contract as the lg2 LSE tail; only this witnessed RN32(ln 2) literal is
+  // idealized, other lg2 uses keep base two. O(1).
+  std::optional<Id> compiler_log(const RawNode &root, const std::vector<Id> &x, const Env &env) {
+    if (!ideal || root.type != "f32" || root.operands.size() != 2 || x.size() != 2 ||
+        (!root.attributes.empty() && root.attributes != "ideal_arithmetic")) return {};
+    static const Q compiler_ln2(1453635, 2097152);
+    for (unsigned side = 0; side != 2; ++side) {
+      const Edge &log_edge = root.operands[side], &scale = root.operands[1-side];
+      const auto &log = ns.at(log_edge.node), &literal = ns.at(scale.node);
+      if (!log_edge.conversion.empty() || log.kind != "Operation" || log.name != "PtxLog2" ||
+          log.type != "f32" || (log.attributes != "source=f32.approx.f32 source_type=f32" &&
+                                log.attributes != "source=f32.approx.ftz.f32 source_type=f32") ||
+          log.operands.size() != 1 || !log.operands[0].conversion.empty() ||
+          ns.at(log.operands[0].node).type != "f32") continue;
+      const bool typed_constant = literal.kind == "Constant" &&
+          ((literal.type == "f32" && scale.conversion.empty()) ||
+           (literal.type == "b32" && scale.conversion == "Bitcast(b32 -> f32)"));
+      if (!typed_constant || a.value(x[1-side]) != compiler_ln2) continue;
+      const Id *input = cache.find(key(log.operands[0].node, env));
+      if (!input || !a.nodes[*input].facts.finite || !a.nodes[*input].facts.pos) continue;
+      ++a.stats["ideal_compiler_log_sequences"];
+      return a.logarithm(*input);
     }
     return {};
   }
@@ -1433,6 +2004,21 @@ struct Importer {
       if (!std::regex_match(part, m, re))
         throw Unsupported("unparsed edge conversion: " + part);
       std::string attr = m[2], src = m[3], dst = m[4];
+      // An e2m1 satfinite result read as its four bits is encoded exactly (e2m1_bits). The encoding
+      // is total in its input, NaN and infinities included, so it needs no finiteness proof. Any
+      // other use of the result keeps the saturation path below.
+      if (ideal && attr == " rounding=nearest-even saturate_finite " && src == "f32" && dst == "e2m1") {
+        const auto next = ss.tellg();
+        std::string bits;
+        std::smatch b;
+        if (std::getline(ss, bits, ';') && std::regex_match(bits, b, re) && b[1] == "Bitcast" &&
+            std::string(b[2]).find_first_not_of(' ') == std::string::npos && b[3] == "e2m1" && b[4] == "u4") {
+          x = e2m1_bits(x);
+          continue;
+        }
+        ss.clear();
+        ss.seekg(next);
+      }
       if (attr.find("saturat") != attr.npos &&
           !(output && floating(src) && floating(dst) &&
             mapping.value("output_value_semantics", "") == "ideal_real")) {
@@ -1440,6 +2026,12 @@ struct Importer {
           throw Unsupported("Saturation requires supported ideal-real floating semantics",
                             "saturation_semantics_unsupported",
                             {{"ideal_real",ideal},{"source_type",src},{"target_type",dst},{"conversion",part}});
+        // cvt .sat limits the result to [0.0, 1.0] (PTX ISA, cvt): -inf becomes 0.
+        if (attr == " saturate " && a.neginf(x)) {
+          ++a.stats["saturated_negative_infinities"];
+          x = cast(a.zero, src, dst, m[1] == "Bitcast");
+          continue;
+        }
         if (!a.nodes[x].facts.finite)
           throw Unsupported("Could not prove that the saturation input is finite",
                             "saturation_input_finiteness_not_proven",
@@ -1454,6 +2046,34 @@ struct Importer {
       x = cast(x, src, dst, m[1] == "Bitcast");
     }
     return x;
+  }
+  // The four bits of cvt.rn.satfinite.e2m1 of a binary32 y, for every y. E2M1 has a sign, two
+  // exponent bits and one mantissa bit (magnitudes 0, 0.5, 1, 1.5, 2, 3, 4, 6) and no infinity or
+  // NaN. NaN gives +MAXNORM, 0b0111. Otherwise bit 3 is the sign bit of y's binary32 encoding (also
+  // for results that round to zero and for saturated ones), and bits 0..2 are the code of |y|
+  // rounded to nearest even, saturated to MAXNORM 6 above. Of the midpoints, 0.25, 1.25, 2.5 and 5
+  // round down to the even code, 0.75, 1.75 and 3.5 round up to it. O(1).
+  Id e2m1_bits(Id y) {
+    struct Midpoint { Q value; bool rounds_up; };
+    static const Midpoint midpoints[] = {{Q(1, 4), false}, {Q(3, 4), true}, {Q(5, 4), false},
+                                         {Q(7, 4), true}, {Q(5, 2), false}, {Q(7, 2), true},
+                                         {Q(5), false}};
+    const Id magnitude = a.absolute(y);
+    Id code = a.zero;
+    for (unsigned k = 0; k < std::size(midpoints); ++k)
+      code = a.select(a.compare(midpoints[k].rounds_up ? "ge" : "gt", magnitude,
+                                a.constant(midpoints[k].value)),
+                      a.constant(Q(k + 1)), code, true);
+    const Id word = cast(y, "f32", "u32", true);
+    const Id sign = a.compare("ne", a.mul({a.constant(Q(pow2(31))), a.imod(a.idiv(word, pow2(31)), 2)}),
+                              a.zero);
+    ++a.stats["e2m1_satfinite_encodings"];
+    const Id bits = a.select(a.compare("ne", y, y), a.constant(Q(7)),
+                             a.add({code, a.mul({sign, a.constant(Q(8))})}), true);
+    // Integers for every y (the code and sign also surface as terms of a packing sum once a finite
+    // y removes the NaN selection): word() may reduce their packing coefficients.
+    packed_decoders.known_integers.insert({code, sign, bits});
+    return bits;
   }
   // f16, bf16 or f32 bits whose bounds fix the sign and a normal exponent field (e.g. the uint4
   // dequantization idiom (w & 0x000F000F) | 0x64006400) are affine in the fraction bits:
@@ -1719,13 +2339,12 @@ struct Importer {
       consumed_contracts.emplace(alloc,t);
       contract->applied.emplace(side,alloc,t);
     }
-    // The optimized artifact already contains its saved specialization. Bind
-    // reference reads only after the ordinary identity, storage type, bounds
-    // and coordinate checks above; never specialize by expression node ID.
-    if(context && side=="left")
-      if(auto fixed=context->fixed_read(a,alloc,t,coords)) {
-        if(bound && (a.nodes[*fixed].data[0]<bound->first || a.nodes[*fixed].data[0]>bound->second))
-          throw Unsupported("fixed input conflicts with mapped input range: "+alloc);
+    // Bind fixed read-only inputs on both sides (see fixed_bits) only after the
+    // ordinary identity, storage type, bounds and coordinate checks above;
+    // never specialize by expression node ID.
+    if(context)
+      if(auto fixed=context->fixed_read(a,alloc,t,coords,side!="left")) {
+        require_fixed_in_range(alloc,*fixed,bound);
         return *fixed;
       }
     return typed_integer_fact(a.read(alloc, coords, floating(t) ? "real:" + t : t, bound),t);
@@ -1940,18 +2559,727 @@ struct Importer {
   // negative finite value never decides a Maximum (nor its largest finite value a Minimum); such
   // operands are dropped. Without the premise nothing is dropped. O(operands).
   std::vector<Id> in_range(std::vector<Id> x, const std::string &type, bool maximum) {
-    if (!range_premise) return x;
-    unsigned fraction = 0; int bias = 0;
-    if (type == "f16") { fraction = 10; bias = 15; }
-    else if (type == "bf16") { fraction = 7; bias = 127; }
-    else if (type == "f32") { fraction = 23; bias = 127; }
-    else if (type == "f64") { fraction = 52; bias = 1023; }
-    else return x;
-    const Q largest = Q(pow2(fraction + 1) - 1) * Q(pow2(unsigned(bias) - fraction));
+    const auto format = float_format(type);
+    if (!range_premise || !format) return x;
+    const Q largest = largest_finite(*format);
     const Id bound = a.constant(maximum ? -largest : largest);
     if (std::none_of(x.begin(), x.end(), [&](Id o) { return o != bound && a.nodes[o].facts.finite; })) return x;
     if (const auto dropped = std::erase(x, bound)) a.stats["range_premise_bounds_dropped"] += dropped;
     return x;
+  }
+  // Hardware values of the PTX side (docs/reference-binding-json.md, numerical model). An IEEE
+  // binary format: precision p (significand bits, the hidden bit included), largest exponent emax
+  // and smallest normal exponent -min_normal_shift.
+  struct FloatFormat { unsigned precision, max_exponent, min_normal_shift; };
+  static std::optional<FloatFormat> float_format(const std::string &t) {
+    const auto ieee = sentryward::equivalence::ieeeFormat(t);
+    if (!ieee) return std::nullopt;
+    const unsigned max_exponent = (1u << (ieee->width - 2 - ieee->fraction)) - 1;
+    return FloatFormat{ieee->fraction + 1, max_exponent, max_exponent - 1};
+  }
+  // The largest finite magnitude MAX = 2^(emax+1) - 2^(emax+1-p).
+  static Q largest_finite(const FloatFormat &f) {
+    return Q(pow2(f.max_exponent + 1) - pow2(f.max_exponent + 1 - f.precision));
+  }
+  // Round to nearest even carries a result to infinity from the midpoint 2^(emax+1) - 2^(emax-p)
+  // between MAX and 2^(emax+1) on (IEEE 754-2019, 4.3.1 and 7.4).
+  static Q overflow_threshold(const FloatFormat &f) {
+    return Q(pow2(f.max_exponent + 1) - pow2(f.max_exponent - f.precision));
+  }
+  // Whether q is a finite value of format f: |q| <= MAX and q = odd 2^z with at most p significant bits
+  // and z at least the subnormal spacing exponent emin + 1 - p. O(digits).
+  static bool representable(const Q &q, const FloatFormat &f) {
+    if (q == 0) return true;
+    const Z n = boost::multiprecision::abs(q.numerator()), d = q.denominator();
+    if ((d & (d - 1)) != 0 || Q(n, d) > largest_finite(f)) return false;
+    const unsigned zeros = unsigned(boost::multiprecision::lsb(n));
+    const long exponent = long(zeros) - long(boost::multiprecision::msb(d));
+    return boost::multiprecision::msb(Z(n >> zeros)) + 1 <= f.precision &&
+           exponent >= 1 - long(f.min_normal_shift) - long(f.precision);
+  }
+  // An extended real: -inf (infinity -1), a rational (0) or +inf (1).
+  struct Extended { int infinity = 0; Q value = Q(0); };
+  static bool before(const Extended &x, const Extended &y) {
+    if (x.infinity != y.infinity) return x.infinity < y.infinity;
+    return !x.infinity && x.value < y.value;
+  }
+  // The hardware value set of a floating value: every extended real in [lo, hi] may occur, and NaN
+  // when `nan`. The default admits every value.
+  struct ValueSet { Extended lo{-1}, hi{1}; bool nan = true; };
+  static ValueSet exactly(const Q &q) { return {{0, q}, {0, q}, false}; }
+  static ValueSet infinite(int sign) { return {{sign}, {sign}, false}; }
+  // The sign of the one infinity that `s` holds, else 0.
+  static int single_infinity(const ValueSet &s) {
+    return !s.nan && s.lo.infinity && s.lo.infinity == s.hi.infinity ? s.lo.infinity : 0;
+  }
+  static bool finite_set(const ValueSet &s) { return !s.nan && !s.lo.infinity && !s.hi.infinity; }
+  static ValueSet hull(const ValueSet &x, const ValueSet &y) {
+    return {before(y.lo, x.lo) ? y.lo : x.lo, before(x.hi, y.hi) ? y.hi : x.hi, x.nan || y.nan};
+  }
+  static ValueSet negated(const ValueSet &s) {
+    const auto flip = [](Extended e) { e.infinity = -e.infinity; e.value = -e.value; return e; };
+    return {flip(s.hi), flip(s.lo), s.nan};
+  }
+  // The exact sum of two sets: NaN only from opposite infinities, which also widen the bound.
+  static ValueSet sum(const ValueSet &x, const ValueSet &y) {
+    const auto plus = [](const Extended &u, const Extended &v, int widen) -> Extended {
+      if (u.infinity && v.infinity && u.infinity != v.infinity) return {widen};
+      if (u.infinity) return u;
+      if (v.infinity) return v;
+      return {0, u.value + v.value};
+    };
+    return {plus(x.lo, y.lo, -1), plus(x.hi, y.hi, 1),
+            x.nan || y.nan || (x.hi.infinity > 0 && y.lo.infinity < 0) || (x.lo.infinity < 0 && y.hi.infinity > 0)};
+  }
+  // The exact product of two sets: the extremes lie at the corners (a zero times an infinity bounds as
+  // zero), and NaN arises from a zero times an infinity.
+  static ValueSet product(const ValueSet &x, const ValueSet &y) {
+    const auto sign = [](const Extended &e) { return e.infinity ? e.infinity : (e.value > 0) - (e.value < 0); };
+    const auto times = [&](const Extended &u, const Extended &v) -> Extended {
+      if (u.infinity || v.infinity) return {sign(u) * sign(v)};
+      return {0, u.value * v.value};
+    };
+    const auto zero = [](const ValueSet &s) { return !before(Extended{}, s.lo) && !before(s.hi, Extended{}); };
+    const auto unbounded = [](const ValueSet &s) { return s.lo.infinity || s.hi.infinity; };
+    const std::array<Extended, 4> corners{times(x.lo, y.lo), times(x.lo, y.hi), times(x.hi, y.lo), times(x.hi, y.hi)};
+    return {*std::min_element(corners.begin(), corners.end(), before),
+            *std::max_element(corners.begin(), corners.end(), before),
+            x.nan || y.nan || (zero(x) && unbounded(y)) || (zero(y) && unbounded(x))};
+  }
+  // A flush to zero (.ftz) replaces a subnormal by a zero of its sign: a bound strictly between zero
+  // and the smallest normal magnitude moves to zero.
+  static ValueSet flushed(ValueSet s, const FloatFormat &f) {
+    const Q normal(1, pow2(f.min_normal_shift));
+    if (!s.lo.infinity && s.lo.value > 0 && s.lo.value < normal) s.lo.value = Q(0);
+    if (!s.hi.infinity && s.hi.value < 0 && s.hi.value > -normal) s.hi.value = Q(0);
+    return s;
+  }
+  // The value of format f at or below (`up`: at or above) finite q, on f's grid without range
+  // limits: q rounded down (up) to a multiple of 2^(e+1-p), e the exponent of q but at least emin. O(digits).
+  static Q on_grid(const Q &q, const FloatFormat &f, bool up) {
+    if (q == 0) return q;
+    const Q magnitude = q < 0 ? -q : q;
+    long e = long(boost::multiprecision::msb(magnitude.numerator())) -
+             long(boost::multiprecision::msb(magnitude.denominator()));
+    const auto power = [](long k) { return k >= 0 ? Q(pow2(unsigned(k))) : Q(1, pow2(unsigned(-k))); };
+    if (magnitude < power(e)) --e;
+    const Q spacing = power(std::max(e, -long(f.min_normal_shift)) + 1 - long(f.precision));
+    const Q steps = q / spacing;
+    Q whole(floorq(steps));
+    if (up && whole != steps) whole += Q(1);
+    return whole * spacing;
+  }
+  // Exact values in `s` rounded once to format f in the rounding modes `modes` (instruction_mode
+  // bits; when none is known, in every mode), flushed when `flush`. A finite bound moves to f's grid
+  // outward (every mode rounds a value between the two neighbours on that grid). IEEE 754-2019 7.4
+  // gives the overflow results: to nearest, at and beyond the threshold the infinity of the sign;
+  // toward zero ±MAX; toward -inf, -inf below -MAX and MAX above MAX; toward +inf, +inf above MAX
+  // and -MAX below -MAX.
+  static ValueSet rounded(const ValueSet &s, const FloatFormat &f, uint8_t modes, bool flush) {
+    namespace mode = sentryward::scalar_fold::instruction_mode;
+    enum Direction : unsigned { nearest = 1, zero = 2, down = 4, up = 8 };
+    unsigned directions = (modes & (mode::contractible | mode::nearest) ? nearest : 0) |
+                          (modes & mode::toward_zero ? zero : 0) | (modes & mode::toward_negative ? down : 0) |
+                          (modes & mode::toward_positive ? up : 0);
+    if (!directions) directions = nearest | zero | down | up;
+    const Q largest = largest_finite(f), threshold = overflow_threshold(f);
+    const auto bound = [&](const Extended &e, bool upper, unsigned d) -> Extended {
+      if (e.infinity) return e;
+      const Q &q = e.value;
+      if (d == nearest && q <= -threshold) return {-1};
+      if (d == nearest && q >= threshold) return {1};
+      if (q < -largest) return d == down ? Extended{-1} : Extended{0, -largest};
+      if (q > largest) return d == up ? Extended{1} : Extended{0, largest};
+      return {0, on_grid(q, f, upper)};
+    };
+    std::optional<ValueSet> result;
+    for (unsigned d = nearest; d <= up; d <<= 1) {
+      if (!(directions & d)) continue;
+      const ValueSet r{bound(s.lo, false, d), bound(s.hi, true, d), s.nan};
+      result = result ? hull(*result, r) : r;
+    }
+    return flush ? flushed(*result, f) : *result;
+  }
+  // The values a max_num (min_num) of operands in `sets` can take: a NaN operand is ignored unless
+  // .NaN propagates it (PTX ISA, max/min); an operand that is surely a number bounds a maximum from
+  // below, every operand from above.
+  static ValueSet extremum(std::vector<ValueSet> sets, bool maximum, bool propagate) {
+    if (!maximum)
+      for (auto &s : sets) s = negated(s);
+    ValueSet r{{1}, {-1}, false};
+    std::optional<Extended> sure;
+    bool any = false, all = true;
+    for (const auto &s : sets) {
+      if (before(r.hi, s.hi)) r.hi = s.hi;
+      if (before(s.lo, r.lo)) r.lo = s.lo;
+      if ((!s.nan || propagate) && (!sure || before(*sure, s.lo))) sure = s.lo;
+      any = any || s.nan;
+      all = all && s.nan;
+    }
+    if (sure) r.lo = *sure;
+    r.nan = propagate ? any : all;
+    return maximum ? r : negated(r);
+  }
+  // The leading Bitcasts of `conversion` from `type`: the type they reach, the number of parts they
+  // take and the remaining parts, or none when a Bitcast changes width or does not start at `type`.
+  struct BitcastChain { std::string type, rest; size_t casts = 0; };
+  static std::optional<BitcastChain> bitcast_chain(std::string type, const std::string &conversion) {
+    static const std::regex bitcast(R"(\s*Bitcast\(\s*([^ ()]+)\s*->\s*([^ ()]+)\s*\)\s*)");
+    std::vector<std::string> parts;
+    std::stringstream text(conversion);
+    for (std::string part; std::getline(text, part, ';');) parts.push_back(part);
+    BitcastChain chain;
+    std::smatch m;
+    for (; chain.casts < parts.size() && std::regex_match(parts[chain.casts], m, bitcast); ++chain.casts) {
+      if (m[1] != type || width(m[1]) != width(m[2])) return std::nullopt;
+      type = m[2];
+    }
+    chain.type = type;
+    for (size_t i = chain.casts; i < parts.size(); ++i) chain.rest += (chain.rest.empty() ? "" : ";") + parts[i];
+    return chain;
+  }
+  // The exact value of a raw Constant through `conversion`: none, or a chain of Bitcasts of integer
+  // bits of one width to an IEEE type; one floating Convert may follow (converted). An f16 or bf16
+  // literal that is no value of its type admits every value. Decoded without interning; memoized per
+  // raw node and conversion (constant_set). O(digits).
+  ValueSet parse_constant(const RawNode &n, const std::string &conversion) {
+    try {
+      const auto chain = bitcast_chain(n.type, conversion);
+      if (!chain) return {};
+      const size_t casts = chain->casts;
+      const std::string &type = chain->type;
+      const auto format = float_format(type);
+      if (!format) return {};
+      ValueSet value;
+      if (casts == 0) {
+        const std::string &s = n.name;
+        if (s == "-inf" || s == "-infinity" || s == "-Infinity") value = infinite(-1);
+        else if (s == "inf" || s == "+inf" || s == "infinity" || s == "Infinity") value = infinite(1);
+        else {
+          Q q;
+          const auto binary = [&](auto parsed, unsigned fraction) -> bool {
+            decltype(parsed) number = 0;
+            const auto r = sentryward::equivalence::floatFromChars(s.data(), s.data() + s.size(), number);
+            if (r.ec != std::errc{} || r.ptr != s.data() + s.size() || !std::isfinite(number)) return false;
+            using Word = std::conditional_t<sizeof(number) == 4, uint32_t, uint64_t>;
+            q = ieee_value(std::bit_cast<Word>(number), 8 * sizeof(number), fraction);
+            return true;
+          };
+          if (type == "f32" ? !binary(float{}, 23) : type == "f64" ? !binary(double{}, 52) : false) return {};
+          if (type != "f32" && type != "f64") {
+            q = decimal(s);
+            if (!representable(q, *format)) return {};
+          }
+          value = exactly(q);
+        }
+      } else {
+        if (floating(n.type)) return {};
+        const unsigned w = width(type), fraction = format->precision - 1;
+        const Q q = n.name.starts_with("0x") || n.name.starts_with("0X") ? Q(Z(n.name)) : decimal(n.name);
+        if (q.denominator() != 1) return {};
+        const Z bits = modz(q.numerator(), pow2(w));
+        const Z exponent_mask = pow2(w - 1) - pow2(fraction);
+        if ((bits & exponent_mask) == exponent_mask) {
+          if ((bits & (pow2(fraction) - 1)) != 0) return {};
+          value = infinite(bits >= pow2(w - 1) ? -1 : 1);
+        } else value = exactly(ieee_value(bits.convert_to<uint64_t>(), w, fraction));
+      }
+      return converted(value, chain->rest);
+    } catch (...) {
+      return {};
+    }
+  }
+  std::unordered_map<Id, std::vector<std::pair<std::string, ValueSet>>> constant_sets;
+  const ValueSet &constant_set(Id node, const std::string &conversion) {
+    auto &sets = constant_sets[node];
+    for (const auto &[text, set] : sets)
+      if (text == conversion) return set;
+    return sets.emplace_back(conversion, parse_constant(ns[node], conversion)).second;
+  }
+  // An edge conversion as the value sets read it, parsed once per spelling: one floating Convert
+  // rounds once in the rounding mode it names (none: an exact widening), .sat limits to [0.0, 1.0] and
+  // flushes NaN to +0.0 (PTX ISA, cvt). Any other conversion admits every value.
+  struct Conversion { enum Kind { every, saturate, round } kind = every; FloatFormat target{}; uint8_t modes = 0; bool flush = false; };
+  std::unordered_map<std::string, Conversion> conversions;
+  ValueSet converted(const ValueSet &s, const std::string &conversion) {
+    if (conversion.empty()) return s;
+    auto found = conversions.find(conversion);
+    if (found == conversions.end()) {
+      Conversion c;
+      static const std::regex convert(R"(\s*Convert([^();]*)\(\s*([^ ()]+)\s*->\s*([^ ()]+)\s*\)\s*)");
+      std::smatch m;
+      if (std::regex_match(conversion, m, convert) && float_format(m[2]))
+        if (const auto target = float_format(m[3])) {
+          const std::string attributes = m[1];
+          namespace mode = sentryward::scalar_fold::instruction_mode;
+          if (attributes.find("satfinite") != std::string::npos || attributes.find("saturate_finite") != std::string::npos)
+            c.kind = Conversion::every;
+          else if (attributes.find("saturat") != std::string::npos) c.kind = Conversion::saturate;
+          else {
+            c.kind = Conversion::round;
+            c.target = *target;
+            if (attributes.find("rounding=nearest-even") != std::string::npos) c.modes |= mode::nearest;
+            if (attributes.find("rounding=toward-zero") != std::string::npos) c.modes |= mode::toward_zero;
+            if (attributes.find("rounding=toward-negative") != std::string::npos) c.modes |= mode::toward_negative;
+            if (attributes.find("rounding=toward-positive") != std::string::npos) c.modes |= mode::toward_positive;
+            if (!c.modes && attributes.find("rounding=") == std::string::npos) c.modes = mode::nearest;
+            c.flush = attributes.find("flush_to_zero") != std::string::npos;
+          }
+        }
+      found = conversions.emplace(conversion, c).first;
+    }
+    const auto &c = found->second;
+    if (c.kind == Conversion::saturate) return {{0, Q(0)}, {0, Q(1)}, false};
+    if (c.kind == Conversion::round) return rounded(s, c.target, c.modes, c.flush);
+    return {};
+  }
+  // Hardware value sets of raw floating values, independent of the import scope (memoized per raw
+  // node): constants; Select (either arm), Negate, Maximum/Minimum and Max/Min Folds (an initial value
+  // bounds a running maximum from below); and PTX instruction images (RawNode::instruction) of add,
+  // sub, mul, fma and ex2.approx. Any other node admits every value, NaN included: an input element, a
+  // reassociated or accumulated sum, an MMA, a division, a software function. The walk
+  // enters only the operands that node_set reads (set_operands), so a node that admits every value
+  // ends it. O(nodes and edges of the floating cones read) over all queries.
+  std::unordered_map<Id, ValueSet> value_sets;
+  // The operands of raw node `id` whose sets node_set reads (an add's contraction reads its mul's
+  // operands through the mul's own entry). O(operands).
+  void set_operands(Id id, std::vector<Id> &out) const {
+    const auto &n = ns[id];
+    if (!float_format(n.type)) return;
+    const auto from = [&](size_t first) {
+      for (size_t j = first; j < n.operands.size(); ++j) out.push_back(n.operands[j].node);
+    };
+    if (n.kind == "Fold") {
+      if (n.operands.size() == 2 && (n.reducer == "Max" || n.reducer == "Min")) from(0);
+    } else if (n.kind == "Operation") {
+      if (n.name == "Select") { if (n.operands.size() == 3) from(1); }
+      else if (n.name == "Negate" || n.name == "Maximum" || n.name == "Minimum") from(0);
+      else if (sentryward::scalar_fold::instruction_mode::instruction(n.instruction) &&
+               (n.name == "Exp2" || n.name == "Multiply" || n.name == "Fma" || n.name == "Add" || n.name == "Subtract"))
+        from(0);
+    }
+  }
+  const ValueSet &raw_set(Id root) {
+    if (const auto found = value_sets.find(root); found != value_sets.end()) return found->second;
+    std::vector<std::pair<Id, bool>> todo{{root, false}};
+    std::unordered_set<Id> expanded;
+    std::vector<Id> operands;
+    while (!todo.empty()) {
+      const auto [id, ready] = todo.back();
+      todo.pop_back();
+      if (value_sets.contains(id) || (!ready && !expanded.insert(id).second)) continue;
+      a.check();
+      if (!ready) {
+        todo.emplace_back(id, true);
+        operands.clear();
+        set_operands(id, operands);
+        for (const Id o : operands)
+          if (!value_sets.contains(o) && ns[o].kind != "Constant") todo.emplace_back(o, false);
+        continue;
+      }
+      value_sets.emplace(id, node_set(ns[id], nullptr, 0));
+    }
+    return value_sets.at(root);
+  }
+  // Scope-dependent value sets of instruction images whose imported value is a constant, per import
+  // key and query depth (so that a result does not depend on the order of queries); bounded by
+  // scoped_set_depth nested scoped queries.
+  std::unordered_map<std::vector<Id>, ValueSet, VecHash> scoped_sets;
+  static constexpr unsigned scoped_set_depth = 16;
+  // Whether scope binds every free index level of raw node `node` (so that it has an import key there).
+  bool bound_in(Id node, const Env &scope) const {
+    return std::all_of(free[node].begin(), free[node].end(), [&](Id level) { return scope.contains(level); });
+  }
+  // The hardware value set of raw edge e, in import scope `scope` (or in every scope when null): an
+  // imported infinity is that infinity, a Select that this scope decided is its chosen arm, a Negate
+  // negates its operand's set in this scope, an instruction image imported as a constant is evaluated
+  // from its operands in this scope; any other value has its scope-independent set.
+  ValueSet edge_set(const Edge &e, const Env *scope, unsigned depth) {
+    const auto &n = ns[e.node];
+    if (n.kind == "Constant") return constant_set(e.node, e.conversion);
+    if (scope && depth < scoped_set_depth && bound_in(e.node, *scope))
+      if (const Id *found = cache.find(key(e.node, *scope))) {
+        const auto &value = a.nodes[*found];
+        if (value.op == "infinity") return converted(infinite(value.data[0] < 0 ? -1 : 1), e.conversion);
+        if (n.kind == "Operation" && n.name == "Select" && n.operands.size() == 3)
+          if (const Id *condition = cache.find(key(n.operands[0].node, *scope))) {
+            Id decided = edge(*condition, n.operands[0]);
+            if (context) decided = context->apply(a, decided);
+            if (decided == a.one || decided == a.zero)
+              return converted(edge_set(n.operands[decided == a.one ? 1 : 2], scope, depth + 1), e.conversion);
+          }
+        if (n.kind == "Operation" && n.name == "Negate" && n.operands.size() == 1)
+          return converted(node_set(n, scope, depth + 1), e.conversion);
+        if (value.op == "const" && sentryward::scalar_fold::instruction_mode::instruction(n.instruction)) {
+          auto k = key(e.node, *scope);
+          k.push_back(Id(depth));
+          auto memo = scoped_sets.find(k);
+          if (memo == scoped_sets.end()) memo = scoped_sets.emplace(std::move(k), node_set(n, scope, depth + 1)).first;
+          return converted(memo->second, e.conversion);
+        }
+      }
+    return converted(raw_set(e.node), e.conversion);
+  }
+  // The hardware value set of raw node n from its direct operands' sets (edge_set, in `scope`). An
+  // add or sub without rounding modifier that uses a mul without rounding modifier (directly or
+  // through the Negate of a sub) may be contracted into an fma (PTX ISA, mul): its set is then also
+  // the exact product plus the other addend, rounded once.
+  ValueSet node_set(const RawNode &n, const Env *scope, unsigned depth) {
+    namespace mode = sentryward::scalar_fold::instruction_mode;
+    const auto format = float_format(n.type);
+    if (!format) return {};
+    const auto operand = [&](size_t j) { return edge_set(n.operands[j], scope, depth); };
+    const bool flush = !mode::instruction(n.instruction) || (n.instruction & mode::flush);
+    if (n.kind == "Constant") return parse_constant(n, "");
+    if (n.kind == "Fold") {
+      // The body is imported under the Fold's binder: its scope-independent set holds for every step.
+      if (n.operands.size() != 2 || (n.reducer != "Max" && n.reducer != "Min")) return {};
+      const auto initial = flushed(edge_set(n.operands[0], scope, depth), *format);
+      if (n.count == 0) return initial;
+      return flushed(extremum({initial, flushed(edge_set(n.operands[1], nullptr, depth), *format)},
+                              n.reducer == "Max", false), *format);
+    }
+    if (n.kind != "Operation") return {};
+    const auto &name = n.name;
+    const size_t arity = n.operands.size();
+    if (name == "Select" && arity == 3) return hull(operand(1), operand(2));
+    if (name == "Negate" && arity == 1) return negated(flush ? flushed(operand(0), *format) : operand(0));
+    if ((name == "Maximum" || name == "Minimum") && arity >= 1) {
+      std::vector<ValueSet> sets;
+      for (size_t j = 0; j < arity; ++j) sets.push_back(flush ? flushed(operand(j), *format) : operand(j));
+      const bool propagate = n.attributes.find("propagate_nan") != std::string::npos;
+      const auto r = extremum(std::move(sets), name == "Maximum", propagate);
+      return flush ? flushed(r, *format) : r;
+    }
+    if (!mode::instruction(n.instruction)) return {};
+    const auto input = [&](size_t j) { return flush ? flushed(operand(j), *format) : operand(j); };
+    const auto round = [&](const ValueSet &s) { return rounded(s, *format, n.instruction, flush); };
+    if (name == "Exp2" && arity == 1) {
+      // ex2.approx: -Inf gives +0.0 and +Inf gives +Inf (PTX ISA, ex2); a finite argument gives a
+      // value within 2 ulp of the correctly rounded power, never below zero.
+      const auto x = input(0);
+      if (single_infinity(x) < 0) return exactly(Q(0));
+      if (single_infinity(x) > 0) return infinite(1);
+      return {{0, Q(0)}, {1}, x.nan};
+    }
+    if (name == "Multiply" && arity == 2) return round(product(input(0), input(1)));
+    if (name == "Fma" && arity == 3) return round(sum(product(input(0), input(1)), input(2)));
+    if ((name != "Add" && name != "Subtract") || arity != 2) return {};
+    ValueSet first = input(0), second = input(1);
+    if (name == "Subtract") second = negated(second);
+    ValueSet r = round(sum(first, second));
+    if (!(n.instruction & mode::contractible)) return r;
+    for (size_t j = 0; j < 2; ++j) {
+      // The mul this operand reads, through the Negate of a sub (unconverted edges only).
+      const Edge *edge_to = &n.operands[j];
+      bool negative = name == "Subtract" && j == 1;
+      if (edge_to->conversion.empty() && ns[edge_to->node].kind == "Operation" && ns[edge_to->node].name == "Negate" &&
+          ns[edge_to->node].operands.size() == 1) {
+        edge_to = &ns[edge_to->node].operands[0];
+        negative = !negative;
+      }
+      const auto &mul = ns[edge_to->node];
+      if (!edge_to->conversion.empty() || mul.kind != "Operation" || mul.name != "Multiply" ||
+          mul.operands.size() != 2 || !mode::instruction(mul.instruction) || !(mul.instruction & mode::contractible) ||
+          mul.type != n.type) continue;
+      const bool mul_flush = mul.instruction & mode::flush;
+      auto factor = [&](size_t i) {
+        const auto s = edge_set(mul.operands[i], scope, depth);
+        return mul_flush ? flushed(s, *format) : s;
+      };
+      const auto exact = product(factor(0), factor(1));
+      r = hull(r, round(sum(negative ? negated(exact) : exact, j == 0 ? second : first)));
+    }
+    return r;
+  }
+  // The taint of introduced infinities (docs/reference-binding-json.md, numerical model): the import
+  // keys whose import may be, or hold the bits of, an infinity that the hardware value rule
+  // introduced in place of a value the model computes as finite. One mechanism on every import path:
+  // a key is tainted when it carries a tainted data operand on (carry_hardware_infinity; a Select's
+  // arms, not its condition) or when the rule concludes an infinity that does not follow from literal
+  // infinities alone (hardware_value). Whatever cannot pass a tainted operand on exactly stops the
+  // family (hardware_decline). Touched only while some key is tainted.
+  std::unordered_set<std::vector<Id>, VecHash> hardware_infinity_keys;
+  std::vector<Id> taint_probe;
+  bool hardware_infinity(Id node, const Env &env) {
+    if (hardware_infinity_keys.empty() || !bound_in(node, env)) return false;
+    key(taint_probe, node, env);
+    return hardware_infinity_keys.contains(taint_probe);
+  }
+  bool hardware_infinity(const Edge &e, const Env &env) { return hardware_infinity(e.node, env); }
+  // The data operands of raw node `raw` whose keys are tainted (a Select's arms, a Fold's element in
+  // scope `body`); empty when none is. O(operands).
+  std::vector<uint8_t> tainted_operands(Id raw, const Env &env, const Env &body) {
+    std::vector<uint8_t> tainted;
+    if (hardware_infinity_keys.empty()) return tainted;
+    const auto &n = ns[raw];
+    const bool fold = n.kind == "Fold";
+    const size_t len = fold && n.count == 0 ? 1 : n.operands.size();
+    for (size_t j = n.kind == "Operation" && n.name == "Select" ? 1 : 0; j < len; ++j)
+      if (hardware_infinity(n.operands[j], fold && j == 1 ? body : env)) {
+        tainted.resize(len);
+        tainted[j] = 1;
+      }
+    return tainted;
+  }
+  static bool comparison(const RawNode &n) {
+    return n.type == "pred" || (n.kind == "Operation" && (n.name == "Compare" || n.name == "Less" ||
+           n.name == "LessEqual" || n.name == "Greater" || n.name == "GreaterEqual" || n.name == "Equal" ||
+           n.name == "NotEqual"));
+  }
+  // Records the taint of import key k of raw node `raw`, imported as `result` from operands x of
+  // which `tainted` are tainted, once hardware_value let the import proceed. A comparison or other
+  // predicate carries none: it is exact on the infinity. A maximum (minimum) carries it from an
+  // operand that may decide it, that is anything but -inf (+inf), and when its result is an
+  // infinity. A floating instruction image whose value set hardware_value found finite carries none.
+  // Every other node carries it on: a Select arm, a negation or absolute value, an integer or bit
+  // operation (a Bitcast is an edge conversion of its operand), an empty Fold. O(operands).
+  void carry_hardware_infinity(Id raw, const std::vector<Id> &k, const std::vector<Id> &x,
+                               const std::vector<uint8_t> &tainted, Id result) {
+    const auto &n = ns[raw];
+    if (comparison(n)) return;
+    const bool fold = n.kind == "Fold", floating = float_format(n.type).has_value();
+    const bool maximum = fold ? n.reducer == "Max" : n.name == "Maximum";
+    const bool extremum = maximum || (fold ? n.reducer == "Min" : n.name == "Minimum");
+    if (floating && a.nodes[result].op != "infinity") {
+      if (extremum) {
+        bool decides = false;
+        for (size_t j = 0; j < tainted.size() && j < x.size(); ++j)
+          decides = decides || (tainted[j] && !(a.nodes[x[j]].op == "infinity" && (a.nodes[x[j]].data[0] < 0) == maximum));
+        if (!decides) return;
+      } else if (n.kind == "Operation" && n.name != "Select" && n.name != "Negate" && n.name != "Absolute") return;
+    }
+    hardware_infinity_keys.insert(k);
+  }
+  static std::string render_set(const ValueSet &s) {
+    const auto end = [](const Extended &e) {
+      return e.infinity ? std::string(e.infinity < 0 ? "-inf" : "inf") : str(e.value);
+    };
+    return "[" + end(s.lo) + ", " + end(s.hi) + "]" + (s.nan ? " or NaN" : "");
+  }
+  // Stops the family at raw node `raw` (imported operands x in scope env): a tainted operand reaches
+  // an operation whose hardware value it does not determine (hardware_value_not_determined), with
+  // each operand's value set.
+  [[noreturn]] void hardware_decline(Id raw, const std::vector<Id> &x, const Env &env, const std::string &why,
+                                     const std::optional<ValueSet> &set = std::nullopt) {
+    namespace mode = sentryward::scalar_fold::instruction_mode;
+    const auto &n = ns[raw];
+    ++a.stats["hardware_value_declines"];
+    J operands = J::array();
+    for (size_t j = 0; j < n.operands.size() && j < x.size(); ++j) {
+      const auto &o = ns[n.operands[j].node];
+      operands.push_back({{"kind", o.kind}, {"name", o.name}, {"type", o.type},
+                          {"instruction", mode::instruction(o.instruction)},
+                          {"value_set", render_set(edge_set(n.operands[j], n.kind == "Fold" && j == 1 ? nullptr : &env, 0))},
+                          {"imported", a.render(x[j], 2)}});
+    }
+    J details{{"operation", n.kind == "Fold" ? "Fold " + n.reducer : n.name}, {"type", n.type},
+              {"instruction", mode::instruction(n.instruction)}, {"operands", operands}};
+    if (set) details["value_set"] = render_set(*set);
+    throw Unsupported("An infinity reaches an operation whose hardware value it does not determine (" + why + ")",
+                      "hardware_value_not_determined", details);
+  }
+  // The hardware value rule at raw node `raw` with imported operands x in scope env, of which
+  // `tainted` are tainted: an operation whose hardware value set is one infinity imports as that
+  // infinity (counter hardware_infinities). A tainted operand reaching an add, sub, mul, fma, ex2 or
+  // other arithmetic whose hardware value it does not determine (an instruction image whose set is not
+  // finite, or any operation that is no instruction image), a Sum Fold or a .NaN max/min that a NaN
+  // may decide stops the family (hardware_decline). An infinity from a literal keeps the model's
+  // extended-real handling there, as before. Select, Negate, Absolute, max/min (a deciding infinity is
+  // the result), Max/Min Folds and comparisons pass an infinity on, and so do conversions, which are
+  // edges (carry_hardware_infinity); an ex2.approx of -Inf is +0.0. Evaluated for an instruction image
+  // only when an operand is an imported constant or infinity or tainted. Otherwise none: the model
+  // imports the node as before.
+  std::optional<Id> hardware_value(Id raw, const std::vector<Id> &x, const std::vector<uint8_t> &tainted,
+                                   const Env &env) {
+    if (!hardware_values || !ideal) return {};
+    namespace mode = sentryward::scalar_fold::instruction_mode;
+    const auto &n = ns[raw];
+    if ((n.kind != "Operation" && n.kind != "Fold") || !float_format(n.type)) return {};
+    const bool infinite_operand =
+        std::any_of(x.begin(), x.end(), [&](Id v) { return a.nodes[v].op == "infinity"; });
+    const bool constant_operand = std::any_of(x.begin(), x.end(), [&](Id v) { return a.value(v).has_value(); });
+    const bool introduced_operand = !tainted.empty();
+    const auto is_tainted = [&](size_t j) { return j < tainted.size() && tainted[j]; };
+    const auto introduce = [&](int sign) {
+      ++a.stats["hardware_infinities"];
+      // An infinity that follows from literal infinities alone (an untainted infinite operand, no
+      // tainted one) is the value the extended-real model gives: it keeps literal status.
+      bool literal = false;
+      for (size_t j = 0; j < x.size(); ++j) literal = literal || (a.nodes[x[j]].op == "infinity" && !is_tainted(j));
+      if (introduced_operand || !literal) hardware_infinity_keys.insert(key(raw, env));
+      return a.infinity(sign);
+    };
+    if (n.kind == "Fold") {
+      if (introduced_operand && n.count > 0 && n.reducer != "Max" && n.reducer != "Min")
+        hardware_decline(raw, x, env, "a reassociated reduction");
+      return {};
+    }
+    const auto &name = n.name;
+    const bool rounding = name == "Add" || name == "Subtract" || name == "Multiply" || name == "Fma";
+    if (name == "Maximum" || name == "Minimum") {
+      // max_num(+inf, x) is +inf, min_num(-inf, x) is -inf, also for a NaN x; the other infinity
+      // never decides and the model drops it. With .NaN a NaN operand decides instead.
+      if (!infinite_operand && !introduced_operand) return {};
+      const auto s = node_set(n, &env, 0);
+      if (const int sign = single_infinity(s)) return introduce(sign);
+      if (s.nan && n.attributes.find("propagate_nan") != std::string::npos)
+        for (size_t j = 0; j < x.size(); ++j)
+          if (is_tainted(j) && !(a.nodes[x[j]].op == "infinity" && (a.nodes[x[j]].data[0] < 0) == (name == "Maximum")))
+            hardware_decline(raw, x, env, "a NaN operand of max.NaN or min.NaN may decide it", s);
+      return {};
+    }
+    if (mode::instruction(n.instruction) && (rounding || name == "Exp2") &&
+        (infinite_operand || constant_operand || introduced_operand)) {
+      const auto s = node_set(n, &env, 0);
+      if (const int sign = single_infinity(s)) return introduce(sign);
+      if (introduced_operand && !finite_set(s)) hardware_decline(raw, x, env, "its hardware value set is not finite", s);
+      return {};
+    }
+    if (introduced_operand && name != "Select" && name != "Negate" && name != "Absolute")
+      hardware_decline(raw, x, env, "it is no PTX instruction image");
+    return {};
+  }
+  // At a Maximum (Minimum), an operand imported as the type's most negative (largest) finite value
+  // -MAX (MAX) never decides it in hardware when another operand's hardware value set lies at or above
+  // -MAX (at or below MAX); it is dropped, without the range premise of in_range. Records
+  // range_bounds_proved. O(operands) besides the memoized sets.
+  std::vector<Id> proved_in_range(std::vector<Id> x, const RawNode &n, bool maximum, const Env &env) {
+    const auto format = float_format(n.type);
+    if (!hardware_values || !format || x.size() != n.operands.size()) return x;
+    const Q bound = maximum ? -largest_finite(*format) : largest_finite(*format);
+    std::vector<uint8_t> at_bound(x.size());
+    for (size_t j = 0; j < x.size(); ++j)
+      if (const auto v = a.value(x[j]); v && *v == bound) at_bound[j] = 1;
+    if (std::none_of(at_bound.begin(), at_bound.end(), [](uint8_t b) { return b; })) return x;
+    bool dominated = false;
+    const Extended limit{0, bound};
+    for (size_t j = 0; j < x.size() && !dominated; ++j) {
+      if (at_bound[j]) continue;
+      const auto s = edge_set(n.operands[j], &env, 0);
+      dominated = !s.nan && (maximum ? !before(s.lo, limit) : !before(limit, s.hi));
+    }
+    if (!dominated) return x;
+    std::vector<Id> kept;
+    for (size_t j = 0; j < x.size(); ++j)
+      if (!at_bound[j]) kept.push_back(x[j]);
+    a.stats["range_bounds_proved"] += x.size() - kept.size();
+    return kept;
+  }
+  // A comparison of a Select of two constants with a constant, decided arm by arm: the Select's
+  // Boolean condition, its complement 1 - p, or a constant. This is a predicate carried through an
+  // integer (selp 1, 0, then setp.ne 0) or any other constant pair. Exact. O(1).
+  std::optional<Id> selected_comparison(const std::string &op, Id x, Id y) {
+    if (!Arena::valid_comparison(op)) return {};
+    for (unsigned side = 0; side != 2; ++side) {
+      const Id chosen = side ? y : x;
+      const auto other = a.value(side ? x : y);
+      const auto n = a.nodes[chosen];
+      if (!other || n.op != "select" || n.args.size() != 3) continue;
+      const auto yes = a.value(n.args[1]), no = a.value(n.args[2]);
+      const Id condition = n.args[0];
+      const auto &bounds = a.nodes[condition].bounds;
+      if (!yes || !no || !bounds || bounds->first < 0 || bounds->second > 1 ||
+          !a.known_bits(condition).integer) continue;
+      const auto holds = [&](const Q &arm) {
+        const Q &l = side ? *other : arm, &r = side ? arm : *other;
+        return op == "eq" ? l == r : op == "ne" ? l != r : op == "lt" ? l < r :
+               op == "le" ? l <= r : op == "gt" ? l > r : l >= r;
+      };
+      const bool when_true = holds(*yes), when_false = holds(*no);
+      ++a.stats["constant_select_comparisons"];
+      if (when_true == when_false) return when_true ? a.one : a.zero;
+      if (when_true) return condition;
+      // The complement of a comparison of finite values is the complementary comparison.
+      const auto p = a.nodes[condition];
+      if (p.op == "compare" && p.args.size() == 2 && p.data.empty() &&
+          a.nodes[p.args[0]].facts.finite && a.nodes[p.args[1]].facts.finite)
+        return a.compare(Arena::complement_comparison(p.tag), p.args[0], p.args[1]);
+      return a.sub(a.one, condition);
+    }
+    return {};
+  }
+  // Widest integer word whose AND of two non-constant operands is expanded bit by bit (PTX and.b64).
+  static constexpr unsigned bitwise_and_width_limit = 64;
+  // Selections and sums bit_of descends through before it slices the word itself, and the most
+  // terms of a sum it splits (a w-bit word has at most w disjoint nonzero fields, plus a constant).
+  static constexpr unsigned bit_of_depth_limit = 8, bit_of_sum_terms = bitwise_and_width_limit + 1;
+  // A finite integer proved to lie in [0, 2^w) (bounds first; known bits only then).
+  bool whole_word(Id z, unsigned w) {
+    const auto bounds = a.nodes[z].bounds;
+    return a.nodes[z].facts.finite && bounds && bounds->first >= 0 && bounds->second < Q(pow2(w)) &&
+           a.known_bits(z).integer;
+  }
+  // Bit b of an integer word v in [0, 2^w), exactly: a constant's bit; for a Select of two such words,
+  // the Select of their bits; for the w-bit complement 2^w - 1 - z of such a word z, one minus z's
+  // bit; for a sum of nonnegative integer terms whose possible one bits (known_bits) are pairwise
+  // disjoint, which is their OR, the bit of the one term (or constant) that may set it; otherwise
+  // the arena's bit slice. O(depth * terms) known-bits lookups.
+  Id bit_of(Id v, unsigned b, unsigned w, unsigned depth = 0) {
+    const auto in_word = [&](Id z) { return whole_word(z, w); };
+    if (auto value = a.value(v); value && value->denominator() == 1 && *value >= 0)
+      return a.constant(Q(modz(floorz(value->numerator(), pow2(b)), Z(2))));
+    const auto n = a.nodes[v];
+    if (n.op == "select" && n.args.size() == 3 && depth < bit_of_depth_limit &&
+        in_word(n.args[1]) && in_word(n.args[2])) {
+      const Id yes = bit_of(n.args[1], b, w, depth + 1), no = bit_of(n.args[2], b, w, depth + 1);
+      return a.select(n.args[0], yes, no, true);
+    }
+    if (n.op != "add" || depth >= bit_of_depth_limit || n.args.size() > bit_of_sum_terms)
+      return a.bit_slice(v, b, 1);
+    Q offset = 0;
+    std::vector<std::pair<Id, Q>> parts;
+    for (const auto &[t, c] : a.terms(v)) {
+      if (t == a.one) offset += c;
+      else parts.emplace_back(t, c);
+    }
+    const auto all = [&](auto predicate) {
+      return std::all_of(parts.begin(), parts.end(), [&](const auto &p) { return predicate(p.second); });
+    };
+    if (offset == Q(pow2(w) - 1) && all([](const Q &c) { return c < 0; })) {
+      std::vector<Id> negated;
+      for (const auto &[t, c] : parts) negated.push_back(a.mul({a.constant(-c), t}));
+      const Id z = a.add(std::move(negated));
+      if (in_word(z)) return a.sub(a.one, bit_of(z, b, w, depth + 1));
+    }
+    if (offset >= 0 && offset.denominator() == 1 &&
+        all([](const Q &c) { return c > 0 && c.denominator() == 1; })) {
+      const Z mask = pow2(w) - 1;
+      Z taken = offset.numerator();
+      Id owner = invalid;
+      bool disjoint = taken <= mask;
+      for (const auto &[t, c] : parts) {
+        const Id term = c == 1 ? t : a.mul({a.constant(c), t});
+        if (!in_word(term)) { disjoint = false; break; }
+        const Z possible = mask ^ (a.known_bits(term).zero & mask);
+        if ((possible & taken) != 0) { disjoint = false; break; }
+        taken |= possible;
+        if (((possible >> b) & 1) != 0) owner = term;
+      }
+      if (disjoint) {
+        if (((offset.numerator() >> b) & 1) != 0) return a.one;
+        return owner == invalid ? a.zero : bit_of(owner, b, w, depth + 1);
+      }
+    }
+    return a.bit_slice(v, b, 1);
+  }
+  // x & y of an integer type whose operands are both non-constant: the sum over the bits b of
+  // 2^b * bit(x, b) * bit(y, b), exact for the two w-bit words. O(w) bit products.
+  std::optional<Id> bitwise_and(Id x, Id y, const std::string &t) {
+    const unsigned w = width(t);
+    if (w == 0 || w > bitwise_and_width_limit) return {};
+    const Id lhs = word(x, w), rhs = word(y, w);
+    std::vector<Id> terms;
+    for (unsigned b = 0; b < w; ++b) {
+      const Id l = bit_of(lhs, b, w);
+      if (l == a.zero) continue;
+      const Id r = bit_of(rhs, b, w);
+      if (r == a.zero) continue;
+      terms.push_back(a.mul({a.constant(Q(pow2(b))), l, r}));
+    }
+    ++a.stats["bitwise_and_bit_products"];
+    const Id result = a.add(std::move(terms));
+    return t.starts_with("s") ? cast(result, "u" + std::to_string(w), t) : result;
   }
   Id make(const RawNode &n, const std::vector<Id> &x, const Env &ctx,
           const Env &body) {
@@ -1980,9 +3308,11 @@ struct Importer {
       if(t=="e8m0" || t=="ue8m0")return typed_e8m0_input(name,x[0]);
       if (t == "ue4m3")
         return typed_ue4m3_input(name, x[0]);
-      if ((t.starts_with("b") && !t.starts_with("bf")) || t.starts_with("u"))
+      if ((t.starts_with("b") && !t.starts_with("bf")) || t.starts_with("u")) {
+        if (auto fixed = fixed_bits(name, x[0], width(t))) return *fixed;
         return a.intern("readbits", x, {Q(width(t))}, name, {true, false, true},
                         std::pair(Q(0), Q(pow2(width(t)) - 1)));
+      }
       return typed_read(name, x[0], t);
     }
     if (k == "Fold") {
@@ -2133,6 +3463,8 @@ struct Importer {
         auto bits=word(a.idiv(storage,pow2(off->numerator().convert_to<unsigned>())),w);
         return cast(bits,(floating(t)?"b":"u")+std::to_string(result_width),t,true);
       }
+      // The low w bits of an integer already in [0, 2^w) are the integer itself.
+      if(*off==0 && whole_word(storage,w))return storage;
       return a.bit_slice(storage,off->numerator().convert_to<unsigned>(),w);
     }
     if (name == "ShiftRight") {
@@ -2175,6 +3507,8 @@ struct Importer {
     }
     if (name == "BitAnd") {
       auto m = a.value(x.at(1));
+      if ((!m || m->denominator() != 1) && integer)
+        if (auto both = bitwise_and(x.at(0), x.at(1), t)) return *both;
       if (!m || m->denominator() != 1)
         throw Unsupported("nonconstant mask");
       Z mask = m->numerator();
@@ -2220,6 +3554,7 @@ struct Importer {
       return a.sub(x.at(0), x.at(1));
     if (name == "Multiply") {
       if (auto lse = compiler_lse(n, ctx)) return *lse;
+      if (auto log = compiler_log(n, x, ctx)) return *log;
       return x.size() == 2 ? numerical_product(x[0], x[1]) : a.mul(x);
     }
     if (name == "Fma")
@@ -2297,11 +3632,11 @@ struct Importer {
     if (name == "Select")
       return a.select(x.at(0), x.at(1), x.at(2), !floating(n.type));
     if (name == "Maximum")
-      return a.maximum(in_range(x, n.type, true));
+      return a.maximum(in_range(proved_in_range(x, n, true, ctx), n.type, true));
     if (name == "Minimum") {
       // Ideal-real minimum shares the maximum normal form.
       std::vector<Id> negatives;
-      for (Id operand : in_range(x, n.type, false))
+      for (Id operand : in_range(proved_in_range(x, n, false, ctx), n.type, false))
         negatives.push_back(a.neg(operand));
       return a.neg(a.maximum(std::move(negatives)));
     }
@@ -2310,13 +3645,16 @@ struct Importer {
       static const std::regex re("predicate=(\\w+)");
       if (!std::regex_search(attr, m, re))
         throw Unsupported("missing predicate metadata");
+      if (auto decided = selected_comparison(m[1], x.at(0), x.at(1))) return *decided;
       return a.compare(m[1], x.at(0), x.at(1));
     }
     static const std::map<std::string, std::string> cmp{
         {"Less", "lt"},         {"LessEqual", "le"}, {"Greater", "gt"},
         {"GreaterEqual", "ge"}, {"Equal", "eq"},     {"NotEqual", "ne"}};
-    if (cmp.contains(name))
+    if (cmp.contains(name)) {
+      if (auto decided = selected_comparison(cmp.at(name), x.at(0), x.at(1))) return *decided;
       return a.compare(cmp.at(name), x.at(0), x.at(1));
+    }
     if (name == "Log" || name == "Power") {
       if (!ideal || !floating(t))
         throw Unsupported("real Log/Power requires ideal_real floating expression");

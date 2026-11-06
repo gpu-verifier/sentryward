@@ -56,23 +56,14 @@
       "key": "floating_values_in_range",
       "label": "Floating values stay in range",
       "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
-      "triggered": null
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "incomplete",
+    "equivalence": "passed",
     "synchronization": "passed"
   },
-  "diagnostics": [
-    {
-      "code": "expression_form_unsupported",
-      "details": {
-        "internal_stage": "right_import_s"
-      },
-      "message": "integer-built f32 exponent field is not proved in the normal range [1,254] (bounds 0..511)",
-      "stage": "equivalence"
-    }
-  ],
+  "diagnostics": [],
   "evidence": {
     "race_count": 0,
     "race_samples_truncated": false,
@@ -162,9 +153,8 @@
     },
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
-      "arena_nodes": 100,
-      "blocked_stage": "right_import_s",
-      "comparison_elapsed_seconds": 0.311150381,
+      "arena_nodes": 89642,
+      "comparison_elapsed_seconds": 0.969004801,
       "context_declaration": {
         "assumptions": [
           {
@@ -186,48 +176,77 @@
       },
       "context_policy": "explicit native caller premises; no implied provenance certification",
       "counters": {
-        "add_term_visits": 70,
+        "add_term_visits": 943879,
         "affine_state_banks": 1,
-        "coordinate_digit_node_visits": 4,
+        "affine_state_certified_updates": 0,
+        "affine_state_collect_work": 164414,
+        "affine_state_segments": 0,
+        "call_definition_node_visits": 89,
+        "canonical_factor_visits": 32,
+        "canonical_node_visits": 34461,
+        "certified_state_pattern_cache_hits": 6,
+        "certified_state_pattern_decline_no_certified_state": 2,
+        "certified_state_pattern_work": 121,
+        "coefficient_normalizations": 1,
+        "completed_reductions": 8,
+        "constant_binary32_bitcasts": 16,
+        "coordinate_digit_node_visits": 1150,
+        "coverage_polynomial_peak": 2,
+        "coverage_polynomial_visits": 1032,
+        "coverage_stored_piece_visits": 1024,
+        "ep_body_anchor_edges": 36983,
+        "ep_body_anchor_nodes": 39056,
+        "ep_body_instance_cache_entries": 1024,
+        "ep_body_obligations": 1024,
+        "ep_body_pattern_anchor_cache_hits": 3100,
+        "ep_body_proofs": 1024,
+        "ep_body_read_anchor_rejections": 3102,
+        "ep_body_target_anchor_cache_hits": 5,
+        "ep_identity_proofs": 5800,
+        "ep_scalar_attempts": 5800,
+        "ep_scalar_proofs": 5800,
         "finite_bilinear_banks": 1,
         "finite_state_reuse_banks": 1,
-        "floating_lane_transport_visits": 1,
         "fp_idiom_power_constructions": 0,
         "fp_idiom_rm_producers": 0,
         "ideal_additive_compiler_exp_sequences": 0,
         "ideal_compiler_exp_sequences": 0,
+        "ideal_compiler_log1p_polynomials": 1,
         "ideal_compiler_log2_polynomials": 0,
         "ideal_compiler_lse_sequences": 0,
-        "ideal_single_constant_exp_sequences": 1,
-        "imported_context_nodes": 108,
+        "ideal_single_constant_exp_sequences": 2,
+        "imported_context_nodes": 92307,
+        "importer_occurrence_binder_hits": 15,
         "importer_scope_banks": 1,
-        "importer_scope_binder_hits": 1,
         "importer_scope_binders_created": 1,
-        "importer_scope_leaf_lookups": 2,
-        "intern_requests": 399,
-        "known_bits_cache_hits": 3,
-        "known_bits_edges": 10,
-        "known_bits_nodes": 10,
-        "predicate_integer_affine_normalizations": 1,
-        "proved_select_arms_imported": 2,
+        "importer_scope_leaf_lookups": 1,
+        "intern_requests": 2770241,
+        "known_bits_cache_hits": 9546,
+        "known_bits_edges": 0,
+        "known_bits_nodes": 2,
+        "local_pattern_candidates": 4126,
+        "masked_sum_prefix_queries": 8,
+        "normalization_cache_context_changes": 3,
+        "normalization_node_visits": 159038,
+        "parametric_state_attempts": 0,
+        "pattern_build_peak_nodes": 18,
+        "pattern_build_unique_nodes": 144,
+        "pattern_node_visits": 54302,
+        "predicate_integer_affine_normalizations": 2,
+        "proved_select_arms_imported": 4777,
         "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_calls": 23840,
         "select_max_probe_temporary_nodes": 0,
+        "summary_concat_nodes": 1016,
         "symbolic_byte_reads_without_extent_proof": 0
       },
       "definedness": {
         "partial_equivalence_families": 0,
-        "proved_families": 0,
-        "status": "not_proven"
+        "proved_families": 4776,
+        "status": "proved"
       },
-      "diagnostics": [
-        {
-          "code": "expression_form_unsupported",
-          "details": {},
-          "message": "integer-built f32 exponent field is not proved in the normal range [1,254] (bounds 0..511)",
-          "stage": "right_import_s"
-        }
-      ],
-      "elapsed_s": 0.042562439,
+      "diagnostics": [],
+      "elapsed_s": 0.662909118,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -263,7 +282,7 @@
           "shared_hits": 0,
           "unique_query_nodes": 0
         },
-        "query_count": 0,
+        "query_count": 5800,
         "reset_s": 0.0,
         "reuse_cache": true,
         "shared_evictions": 0
@@ -275,10 +294,11 @@
         "scoped_predicates": 0
       },
       "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
-      "equivalent_families": 0,
-      "finished_families": 0,
+      "equivalent_families": 4776,
+      "finished_families": 4776,
       "idealizations_applied": [
-        "compiler Exp2 with binary32 log2(e) multiplier is ideal Exp"
+        "compiler Exp2 with binary32 log2(e) multiplier is ideal Exp",
+        "complete typed RN-FMA binary32 log1pf polynomial with exponent-field reduction and exceptional guards is ideal Log(1+u) on proved finite nonnegative input"
       ],
       "input_contract": [
         {
@@ -305,51 +325,76 @@
       "legacy_scalar_fallback": false,
       "mapping_input_memory_constraints": {},
       "native_context": null,
-      "normalized_reachable_nodes": 0,
-      "numerical_result": "unsupported",
-      "pattern_nodes": 2,
-      "peak_rss_kib": 819732,
+      "normalized_reachable_nodes": 29066,
+      "numerical_result": "verified",
+      "pattern_nodes": 59,
+      "peak_rss_kib": 819452,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
-      "piece_nodes": 0,
+      "piece_nodes": 2040,
+      "piece_union": {
+        "abstract_optimized_replacements": 0,
+        "abstract_reference_replacements": 0,
+        "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+        "collected_pieces": 0,
+        "late_certificates": "accepted_until_each_schema_is_complete",
+        "method": "complete_output_equalities_with_finite_piece_union",
+        "replacements": 0,
+        "schemas": [],
+        "stored_dag_work": 0,
+        "work_limit": 2000000
+      },
       "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
       "raw_nodes": [
         303,
         52383
       ],
-      "reference_term_patterns": 0,
+      "reference_term_patterns": 2,
       "row_groups": [
         {
-          "count": 1,
+          "count": 4776,
           "families": [
             [
               0,
-              0
+              4775
             ]
           ],
-          "record": {},
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "scalar_engine": "mandatory_exponential_polynomial",
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
           "timing_s": {
-            "left_import_s": 0.00029665099999999847
+            "affine_state_pattern_s": 0.005934425999997078,
+            "cumulative_elapsed_s": 0.634402722,
+            "left_import_s": 0.21017008200000475,
+            "left_normalize_s": 0.07468564000000147,
+            "parametric_state_s": 0.00032967000000123925,
+            "piece_union_record_s": 0.00014315000000234349,
+            "piece_union_seal_s": 0.00011344000000180349,
+            "right_import_s": 0.26429038900000046,
+            "right_normalize_s": 0.036571920999999175
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 0.0,
+        "affine_state_pattern_s": 0.005934425999997078,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.00029665099999999847,
-        "left_normalize_s": 0.0,
-        "parametric_state_s": 0.0,
-        "piece_union_record_s": 0.0,
+        "left_import_s": 0.21017008200000475,
+        "left_normalize_s": 0.07468564000000147,
+        "parametric_state_s": 0.00032967000000123925,
+        "piece_union_record_s": 0.00014315000000234349,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 0.0,
+        "piece_union_seal_s": 0.00011344000000180349,
         "proof_reuse_s": 0.0,
-        "right_import_s": 0.0,
-        "right_normalize_s": 0.0,
+        "right_import_s": 0.26429038900000046,
+        "right_normalize_s": 0.036571920999999175,
         "state_pattern_s": 0.0
       },
       "timings": {
-        "load_and_scope_analysis": 0.008487926
+        "load_and_scope_analysis": 0.00858683
       },
       "total_output_families": 4776,
       "transport": "in_memory_cpp_objects",
@@ -646,7 +691,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 11305,
-      "hb_query_seconds": 0.007468398999999999,
+      "hb_query_seconds": 0.007330186999999999,
       "overlap_queries": 10,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 10
@@ -654,7 +699,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 787.0078125,
+    "peak_footprint_mib": 801.58203125,
     "required_order_domains": 0,
     "required_orders": 0,
     "same_value_writes": {
@@ -722,7 +767,7 @@
     "value_analysis": {
       "diagnostics": [],
       "duplicate_write_value_checks": 16,
-      "equivalence_check": "translation_or_supported_fragment_blocked",
+      "equivalence_check": "equivalent",
       "initial_memory_regions": 53,
       "initial_read_families": 4979,
       "memory_action_storage": {
@@ -808,16 +853,16 @@
         "action_patterns": 29337,
         "binding_patterns": 29337,
         "domain_refinements": 343924,
-        "elapsed_seconds": 0.328102923,
+        "elapsed_seconds": 0.334191924,
         "event_families": 55427,
         "expanded_event_records": 0,
         "largest_batch_members": 48,
         "logical_actions": 34243,
         "logical_events": 540928,
-        "peak_rss_mib_at_completion": 285.34765625,
+        "peak_rss_mib_at_completion": 285.33203125,
         "reachability_queries": 0,
         "relations": 250001,
-        "rss_mib_at_completion": 221.10546875,
+        "rss_mib_at_completion": 221.09375,
         "scheduled_batches": 55427,
         "singleton_batches": 4485,
         "value_families": 41337
@@ -829,12 +874,12 @@
     "value_ir_instance_count": 317248,
     "value_ir_node_count": 27318,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 0.365068564,
+    "verification_elapsed_seconds": 0.363035199,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 800.51953125,
-  "pipeline_elapsed_seconds": 4.525252968,
-  "result": "unsupported",
+  "peak_rss_mib": 801.58203125,
+  "pipeline_elapsed_seconds": 5.264279769,
+  "result": "verified",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
@@ -893,5 +938,5 @@
     }
   ],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.46
+  "whole_pipeline_timeout_seconds": 498.467
 }

@@ -145,6 +145,36 @@ std::optional<Integer> ParameterRegion::ReadInteger(std::int64_t offset,
     bits -= Integer(1) << (8 * width);
   return bits;
 }
+// PTX ISA 5.4.5: a variable "will be aligned to an address which is an integer multiple of
+// byte-count" (its .align, by default its base-type size); no more is guaranteed. So an object
+// placed at `base` with declared alignment A may also be placed at any other multiple of A, unless
+// the input fixed its base, and window offset `offset` inside it moves with it. The offset is
+// `modulus`-aligned under every legal placement when it is aligned under this one and A is a
+// multiple of `modulus` (or the base is fixed); otherwise this placement, or the one at base + A
+// (congruent to A modulo `modulus`), is a witness. An offset outside every object is decided at
+// its window placement alone. Placement capacity is not re-checked for the witness placement.
+// O(shared objects).
+std::optional<nlohmann::json> FrontendConfig::SharedMisalignment(std::uint64_t offset,
+                                                                 std::uint64_t modulus) const {
+  const SharedObjectPlacement *holder = nullptr;
+  for (const auto &object : shared_objects)
+    if (offset >= object.base && (object.dynamic || offset - object.base < object.bytes)) {
+      holder = &object;
+      break;
+    }
+  if (!holder) return offset % modulus ? std::optional(nlohmann::json::object()) : std::nullopt;
+  nlohmann::json details{{"shared_object", holder->symbol}, {"declared_alignment", holder->alignment},
+                         {"offset_in_object", offset - holder->base}};
+  if (offset % modulus) {
+    details["witness_object_base"] = holder->base;
+    details["witness_address"] = offset;
+    return details;
+  }
+  if (holder->input_base || holder->alignment % modulus == 0) return std::nullopt;
+  details["witness_object_base"] = holder->base + holder->alignment;
+  details["witness_address"] = offset + holder->alignment;
+  return details;
+}
 std::uint64_t FrontendConfig::Threads() const {
   Integer threads = Integer(block_dim[0]) * block_dim[1] * block_dim[2];
   if (threads > UINT64_MAX)
@@ -704,6 +734,9 @@ FrontendConfig BindLaunchObjects(const Module &module, const Function &function,
     }
   if (std::any_of(shared_order.begin(), shared_order.end(), [&](const auto &s) { return referenced.contains(s); }))
     std::erase_if(shared_order, [&](const auto &s) { return !referenced.contains(s); });
+  std::set<std::string> input_bases;
+  for (const auto &name : shared_order)
+    if (out.parameters.contains(name)) input_bases.insert(name);
   std::vector<std::pair<Integer,Integer>> reserved;
   Integer cursor = 0;
   for (const auto &name : shared_order) {
@@ -745,6 +778,7 @@ FrontendConfig BindLaunchObjects(const Module &module, const Function &function,
   if (dynamic_base < cursor || dynamic_base % dynamic_alignment != 0)
     Bad("dynamic shared placement overlaps static objects or violates alignment");
   Json layout = Json::array();
+  out.shared_objects.clear();
   for (const auto &name : shared_order) {
     const auto &object = shared.at(name);
     if (object.dynamic) out.parameters[name] = dynamic_base;
@@ -753,6 +787,11 @@ FrontendConfig BindLaunchObjects(const Module &module, const Function &function,
     layout.push_back({{"symbol", name}, {"base", out.parameters[name].convert_to<std::uint64_t>()},
         {"alignment", object.alignment.convert_to<std::uint64_t>()},
         {"bytes", object.bytes.convert_to<std::uint64_t>()}, {"dynamic", object.dynamic}});
+    // The extern declarations alias one address, which therefore meets each one's alignment.
+    out.shared_objects.push_back({name, out.parameters[name].convert_to<std::uint64_t>(),
+        (object.dynamic ? dynamic_alignment : object.alignment).convert_to<std::uint64_t>(),
+        object.bytes.convert_to<std::uint64_t>(), object.dynamic,
+        object.dynamic ? !dynamic_bases.empty() : input_bases.contains(name)});
   }
   out.raw["shared_object_layout"] = std::move(layout);
   for (auto it = out.tma_descriptors.begin(); it != out.tma_descriptors.end();

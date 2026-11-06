@@ -39,6 +39,7 @@ RESULTS = {
     'not_wellsynced': STATUSES['synchronization_candidate'],
     'potential_race': STATUSES['race_candidate'],
     'invalid_lifecycle': STATUSES['unsafe_lifecycle'],
+    'undefined_behavior': ('UNDEFINED BEHAVIOR', 'An executed instruction can reach behavior the PTX ISA leaves undefined; the diagnostic names the condition, the value source and a witness value. No equivalence is checked.'),
     'equivalence_not_proven': ('EQUIVALENCE NOT PROVEN', 'The numerical comparison did not establish equivalence; memory and synchronization checks remain separate below.'),
     'unsupported': ('ANALYSIS UNSUPPORTED', 'A required operation is unsupported. The saved checks identify which analyses completed.'),
     'invalid_input': ('INVALID INPUT', 'The verifier rejected the input; no successful verification is inferred.'),
@@ -804,6 +805,11 @@ def render_result(run_input, result, ptx, artifacts, title=None, *, report_path=
     status = _view_kind(result)
     vocabulary = RESULTS if 'result' in result else STATUSES
     headline, description = vocabulary.get(saved if isinstance(saved, str) else '', ('RESULT NOT RECOGNIZED', 'No success verdict is inferred from a missing, null or unrecognized status.'))
+    if saved == 'race_free' and _mapping(result.get('checks')).get('equivalence') == 'not_requested':
+        # No reference was supplied: race_free (equivalence checking skipped).
+        headline += '<br/>EQUIVALENCE CHECKING SKIPPED'
+        description += (' No reference was supplied, so equivalence checking was skipped, and with it the'
+                        ' value-stage checks that run with the reference (such as sparse-metadata validity).')
     lifecycle_diagnostics_only = saved == 'invalid_lifecycle' and not any(key in result for key in ('failed_required_orders', 'failed_required_orders_count'))
     if lifecycle_diagnostics_only:
         headline = 'LIFECYCLE CHECK FAILED'

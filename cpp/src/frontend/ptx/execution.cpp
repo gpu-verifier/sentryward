@@ -1407,6 +1407,12 @@ private:
     property_decisions_->Insert(property.object, instruction);
     return true;
   }
+  // Whether every value within the bounds is unchanged by a load of its low-order `width`
+  // bytes, read as a `width`-byte integer (signed when `sign`).
+  static bool NarrowElementFits(const TensorProperty &property, std::uint32_t width, bool sign) {
+    const Integer range = Integer(1) << (8 * width - (sign ? 1 : 0));
+    return property.lower >= (sign ? Integer(-range) : Integer(0)) && property.upper < range;
+  }
   void NoteBoundedDecision(std::uint32_t instruction, std::initializer_list<const Scalar *> operands) const {
     for (const auto &object : BoundedSources(operands)) property_decisions_->Insert(object, instruction);
   }
@@ -2568,18 +2574,23 @@ void Executor::Data(const Decoded &d, State &s, std::uint32_t warp,
       return;
     }
     // A whole aligned element of an object with tensor_properties is bounded; its
-    // identity is the element, which the read-only contract keeps unchanged.
+    // identity is the element, which the read-only contract keeps unchanged. A scalar
+    // load of an element's low-order bytes (at the element's address, little-endian) is
+    // that element when every value within the bounds fits the load's type.
     if (auto pointer = std::get_if<AllocationPointer>(&pointer_value);
         pointer && tensor_properties_.contains(pointer->resource)) {
       const auto &property = tensor_properties_.at(pointer->resource);
       const auto bytes = property.bits / 8;
       const auto count = d.destination_slots.size();
-      if (*i.memory_width != count * bytes) { Invalidate(d, s); return; }
+      const bool narrow = count == 1 && *i.memory_width < bytes &&
+                          NarrowElementFits(property, *i.memory_width, SignedModifier(i));
+      if (*i.memory_width != count * bytes && !narrow) { Invalidate(d, s); return; }
       std::vector<Scalar> values;
       for (std::size_t index = 0; index < count; ++index) {
         const Integer offset = pointer->offset + displacement + Integer(index * bytes);
         if (offset < 0 || offset % bytes != 0) { values.push_back(Scalar{}); continue; }
         if (ExactElement(property, i.id, values)) continue;
+        if (narrow) property_decisions_->Insert(property.object, i.id);
         const auto type = property.Type();
         values.push_back(MakeBounded(property.lower, property.upper,
             "element:" + property.object + "+" + offset.convert_to<std::string>() + ":" + type,

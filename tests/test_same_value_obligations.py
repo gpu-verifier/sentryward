@@ -3,8 +3,8 @@
 Lane 0 of several warps stores to one shared word. Each pair of those stores that is unordered covers the same
 bytes, so the race search accepts it as a same-value obligation. The search must find every such pair, also when an
 obligation breaks the chain of order constraints that certifies its neighbours: the obligation groups and site pairs
-it reports are those of all unordered pairs. Without a reference the value stage does not run, so every kernel
-reports the obligations as unchecked.
+it reports are those of all unordered pairs. Without a reference memory elimination still runs and decides them:
+stores of different values are unproven (potential_race), equal ones proven (race_free, equivalence skipped).
 
 These runs need the native executable; they are skipped when it is not built.
 """
@@ -97,21 +97,27 @@ def _run(directory, entry, threads, body):
 
 @unittest.skipUnless(native_executable().is_file(), "native executable not built")
 class SameValueObligationTests(unittest.TestCase):
-    def assert_obligations(self, result, groups, writes, site_pairs):
-        self.assertEqual(result["result"], "potential_race", result)
-        self.assertEqual(result["diagnostics"][0]["code"], "same_value_writes_unchecked")
+    def assert_obligations(self, result, groups, writes, site_pairs, proven=False):
+        if proven:
+            self.assertEqual(result["result"], "race_free", result)
+            self.assertEqual(result["checks"]["equivalence"], "not_requested")
+        else:
+            self.assertEqual(result["result"], "potential_race", result)
+            self.assertEqual(result["diagnostics"][0]["code"], "same_value_writes_unproven")
         found = result["internal"]["same_value_writes"]
+        self.assertEqual(found["status"], "proven" if proven else "unproven")
         self.assertEqual((found["groups"], found["writes"], found["site_pairs"]), (groups, writes, site_pairs))
 
     def test_pairs_around_a_broken_chain(self):
         with tempfile.TemporaryDirectory() as scratch:
             result = _run(scratch, "broken_chain", 64, BROKEN_CHAIN.format())
-        # One group of the four stores: (u, v), (x, v), (u, y), (x, y).
+        # One group of the four stores: (u, v), (x, v), (u, y), (x, y); x = 1 and v = 5 differ.
         self.assert_obligations(result, groups=1, writes=4, site_pairs=4)
 
     def test_pair_between_linked_groups(self):
         with tempfile.TemporaryDirectory() as scratch:
             result = _run(scratch, "linked_groups", 128, LINKED_GROUPS.format(count=64, sync=""))
+        # A = 1 and D = 2 differ.
         self.assert_obligations(result, groups=1, writes=4, site_pairs=3)
 
     def test_ordered_neighbours_keep_two_groups(self):
@@ -119,7 +125,8 @@ class SameValueObligationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as scratch:
             result = _run(scratch, "linked_groups_ordered", 128,
                           LINKED_GROUPS.format(count=96, sync="\n\tbar.sync \t1, 96;"))
-        self.assert_obligations(result, groups=2, writes=4, site_pairs=2)
+        # A = B = 1 and C = D = 2: every unordered pair stores equal values.
+        self.assert_obligations(result, groups=2, writes=4, site_pairs=2, proven=True)
 
 
 if __name__ == "__main__":

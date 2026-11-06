@@ -13,6 +13,9 @@
 #include "caller_context.hpp"
 #include "affine_output_dispatch.hpp"
 #include "finite_bilinear_projection.hpp"
+#include "common_shell.hpp"
+#include "output_guard_split.hpp"
+#include "conditional_select.hpp"
 #include <filesystem>
 #include <iostream>
 #include <sys/resource.h>
@@ -122,11 +125,14 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
     Importer l(a, std::move(left), mapping, "left", *prepared),
         o(a, std::move(right), mapping, "right", *prepared);
     l.range_premise = o.range_premise = options.floating_range_premise;
+    o.hardware_values = options.kernel_hardware_values;
     FiniteStateReuse piece_equalities(checker, mapping);
     UnaryReductionComposition unary_reductions(checker);
     AffineStatePattern affine_states(checker);
     AffineOutputDispatch affine_outputs(checker, affine_states);
     FiniteBilinearProjection bilinear(checker);
+    OutputGuardSplit guard_split(checker);
+    ConditionalSelect conditional_selects(checker);
     r["timings"]["load_and_scope_analysis"] = elapsed();
     if (!l.doc.value("outputs", J::array()).empty() ||
         !o.doc.value("outputs", J::array()).empty())
@@ -363,6 +369,120 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
         }
         row["proof_reuse_s"] = elapsed() - start;
       }
+      if (!equal && !template_equal) {
+        // An output root the projection stage does not classify may be a
+        // shell of outer factors and addends identical on both sides. Retry
+        // that stage on the differing inner pair, rebuild the shell around the
+        // (equal) replacements and compare again. Only otherwise unproved
+        // families take this path.
+        const auto shell = CommonShell::of(a, lr, rr);
+        if (shell.peeled()) {
+          phase = "common_shell";
+          const double start = elapsed();
+          try {
+            Id inner_left = shell.left, inner_right = shell.right, read = invalid, axis = invalid;
+            bool scope = false;
+            if (auto proof = affine_outputs.rewrite(inner_left)) {
+              inner_left = proof->replacement; read = proof->projection_read; axis = proof->projection_axis; scope = true;
+            }
+            scope |= affine_outputs.has_projection_sum();
+            if (scope) {
+              if (auto projected = bilinear.rewrite(inner_left, read, axis)) inner_left = projected->replacement;
+              if (auto projected = bilinear.rewrite(inner_right, read, axis)) inner_right = projected->replacement;
+            }
+            const Id rebuilt_left = shell.rebuild_left(a, inner_left), rebuilt_right = shell.rebuild_right(a, inner_right);
+            if (rebuilt_left != lr || rebuilt_right != rr) {
+              ++a.stats["common_shell_rewrites"];
+              const Id expected = checker.normalize(rebuilt_left, true), optimized = checker.normalize(rebuilt_right);
+              equal = checker.scalar.equal(expected, optimized);
+              if (!equal) {
+                LinearReductionPattern linear(checker);
+                if (auto proof = linear.prove(expected, optimized)) {
+                  equal = true;
+                  row["common_shell_reduction_proof"] = proof->receipt;
+                }
+              }
+              if (equal) {
+                row["common_shell_proof"] = "identical outer factors and addends; exact projection rewrites of the inner pair";
+                ln = expected; rn = optimized;
+              } else checker.normalize(lr, true);
+            }
+          } catch (const Unsupported &) {
+            ++a.stats["common_shell_declines"];
+          }
+          row["common_shell_s"] = elapsed() - start;
+        }
+      }
+      if (!equal) {
+        // Cases on an output coordinate guard: every part must be equal on its own.
+        phase = "output_guard_split";
+        double start = elapsed();
+        try {
+          if (auto parts = guard_split.split(ln, rn)) {
+            // Prove each part's obligations right after normalizing that part:
+            // a later part's reference normalization replaces the active
+            // reduction vocabulary these proofs consult.
+            std::set<std::pair<Id, Id>> proved;
+            J proofs = J::array();
+            bool all = true;
+            for (const auto &part : *parts) {
+              std::vector<std::pair<Id, Id>> pairs;
+              guard_split.obligations(checker.normalize(part.left, true), checker.normalize(part.right), pairs);
+              for (const auto &pair : pairs) {
+                const auto &[expected, optimized] = pair;
+                if (proved.contains(pair)) continue;
+                if (checker.scalar.equal(expected, optimized)) { proofs.push_back("exact_normal_form"); proved.insert(pair); continue; }
+                LinearReductionPattern linear(checker);
+                if (auto reduction = linear.prove(expected, optimized)) { proofs.push_back(reduction->receipt); proved.insert(pair); continue; }
+                all = false;
+                row["output_guard_split_decline"] = linear.last_failure;
+                break;
+              }
+              if (!all) break;
+            }
+            if (all) {
+              equal = true;
+              row["output_guard_split_proof"] = {{"method", "cases_on_one_output_coordinate"},
+                  {"parts", parts->size()}, {"coverage", "the parts partition the coordinate's domain"},
+                  {"obligations", std::move(proofs)}};
+            }
+          } else if (!guard_split.last_failure.empty()) row["output_guard_split_decline"] = guard_split.last_failure;
+        } catch (const Unsupported &) {
+          row["output_guard_split_decline"] = "unsupported_restricted_normalization";
+        }
+        row["output_guard_split_s"] = elapsed() - start;
+      }
+      if (!equal) {
+        // Selects whose arms agree wherever their condition holds are their unguarded arm.
+        phase = "conditional_select";
+        double start = elapsed();
+        try {
+          Id expected = conditional_selects.eliminate(ln), optimized = conditional_selects.eliminate(rn);
+          if (expected != ln || optimized != rn) {
+            expected = checker.normalize(expected, true);
+            optimized = checker.normalize(optimized);
+            J proof = {{"method", "selects_with_arms_equal_under_their_condition"}};
+            equal = checker.scalar.equal(expected, optimized);
+            if (!equal) {
+              OnlineSoftmaxPattern online(checker);
+              if (auto softmax = online.prove(expected, optimized)) {
+                equal = true;
+                proof["then"] = {{"method", "online_softmax"}, {"common_scale", a.render(softmax->common_scale, 6)}};
+              } else if (!online.last_failure.empty()) row["conditional_select_online_softmax_decline"] = online.last_failure;
+            }
+            if (!equal) {
+              LinearReductionPattern linear(checker);
+              if (auto reduction = linear.prove(expected, optimized)) { equal = true; proof["then"] = reduction->receipt; }
+              else row["conditional_select_decline"] = linear.last_failure;
+            }
+            if (equal) row["conditional_select_proof"] = std::move(proof);
+          } else if (!conditional_selects.last_failure.empty())
+            row["conditional_select_decline"] = conditional_selects.last_failure;
+        } catch (const Unsupported &) {
+          row["conditional_select_decline"] = "unsupported_rewritten_normalization";
+        }
+        row["conditional_select_s"] = elapsed() - start;
+      }
       bool partial_equal = false;
       if (!equal) {
         // Retain pre-normalization domains: cancellation must not erase holes.
@@ -402,8 +522,10 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
       row["cumulative_elapsed_s"]=elapsed();
       row["status"] = equal ? "equivalent" : "not_proven";
       if (!equal) {
-        row["left"] = a.render(ln, 5);
-        row["right"] = a.render(rn, 5);
+        // Diagnostic text only: each shared subexpression once, at most 4096
+        // bytes per side (Arena::render_shared).
+        row["left"] = a.render_shared(ln, 5, 4096);
+        row["right"] = a.render_shared(rn, 5, 4096);
       }
       ++finished;
       if (equal)
@@ -448,6 +570,15 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
     r["idealizations_applied"].push_back("complete binary32 PTX lg2 LSE tail is ln(mass)+ln(2)*base2_pivot; mass and pivot coefficients are retained");
   if (a.stats["ideal_compiler_log2_polynomials"])
     r["idealizations_applied"].push_back("complete typed RN-FMA binary32 log2 polynomial with subnormal and exceptional guards is ideal Log2 on proved finite positive input");
+  // Looked up without inserting: an absent counter stays absent from the counters report.
+  const auto counted = [&](const char *key) {
+    const auto it = a.stats.find(key);
+    return it != a.stats.end() && it->second;
+  };
+  if (counted("ideal_compiler_log1p_polynomials"))
+    r["idealizations_applied"].push_back("complete typed RN-FMA binary32 log1pf polynomial with exponent-field reduction and exceptional guards is ideal Log(1+u) on proved finite nonnegative input");
+  if (counted("ideal_compiler_log_sequences"))
+    r["idealizations_applied"].push_back("binary32 PTX lg2.approx times the binary32 ln(2) literal is ideal Log on proved finite positive input");
   r["input_contract_applied_reads"] = J::array();
   for(const auto &[side,object,type]:(prepared ? prepared->contract.applied : contract.applied))
     r["input_contract_applied_reads"].push_back(J{{"side",side},{"object",object},{"element_type",type}});

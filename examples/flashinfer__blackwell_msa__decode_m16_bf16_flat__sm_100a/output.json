@@ -955,16 +955,16 @@
             "code": "tma_data_dependent_coordinate",
             "details": {
               "cta": 0,
-              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes [%r1149], [%rd30, {%r2180, %r1150, %r2180, %r1853}], [%r1151];",
-              "instruction_index": 1604,
+              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes [%r1189], [%rd31, {%r2182, %r1194, %r2182, %r1192}], [%r1188];",
+              "instruction_index": 1688,
               "location": {
                 "file": "corpus/flashinfer__blackwell_msa__decode_m16_bf16_flat__sm_100a.ptx",
-                "line": 2360
+                "line": 2484
               },
               "occurrence": 0,
               "thread": 448
             },
-            "message": "TMA tile coordinate %r1150 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+            "message": "TMA tile coordinate %r1194, %r1192 is data-dependent (not a constant of the execution) and its range is not proven to keep the tile inside the tensor (0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its tile region are not modeled",
             "stage": "value_lowering"
           }
         ],
@@ -1401,7 +1401,7 @@
     "memory_analysis_complete": false,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 960.73046875,
+    "peak_footprint_mib": 967.7421875,
     "required_order_domains": 13183,
     "required_orders": 413920,
     "semantic_assumptions": {
@@ -1418,7 +1418,7 @@
       "binding_diagnostics": [
         {
           "code": "incomplete_value_semantics",
-          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r1150 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
+          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r1194, %r1192 is data-dependent (not a constant of the execution) and its range is not proven to keep the tile inside the tensor (0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its tile region are not modeled"
         }
       ],
       "execution_cohorts": 33,
@@ -1430,13 +1430,13 @@
       "synchronization_groups": 23258,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 521,
-      "thread_prefix_groups": 5617,
+      "thread_prefix_groups": 25527,
       "value_diagnostic_count": 1,
       "value_diagnostics": [
         {
           "code": "tma_data_dependent_coordinate",
-          "line": 2360,
-          "message": "TMA tile coordinate %r1150 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
+          "line": 2484,
+          "message": "TMA tile coordinate %r1194, %r1192 is data-dependent (not a constant of the execution) and its range is not proven to keep the tile inside the tensor (0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its tile region are not modeled"
         }
       ]
     },
@@ -1503,12 +1503,12 @@
         ]
       }
     },
-    "value_ir_instance_count": 96409,
-    "value_ir_node_count": 3741,
+    "value_ir_instance_count": 189531,
+    "value_ir_node_count": 22684,
     "value_view_complete": false
   },
-  "peak_rss_mib": 964.09375,
-  "pipeline_elapsed_seconds": 5.22429933,
+  "peak_rss_mib": 995.7890625,
+  "pipeline_elapsed_seconds": 5.276992728,
   "result": "not_wellsynced",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -1518,5 +1518,5 @@
   "verification_limitations": [],
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.47
+  "whole_pipeline_timeout_seconds": 498.469
 }

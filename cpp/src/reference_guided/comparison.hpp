@@ -16,6 +16,9 @@ struct ComparisonOptions {
   // The documented floating range premise (assumption floating_values_in_range,
   // docs/assumptions.md); without it the importers drop no range bound.
   bool floating_range_premise=true;
+  // The right document is a PTX kernel's expression: import it with the hardware value rule
+  // (Importer::hardware_value), which reads the PTX instruction images of its nodes.
+  bool kernel_hardware_values=false;
 };
 struct ComparisonResult {
   ComparisonStatus status;

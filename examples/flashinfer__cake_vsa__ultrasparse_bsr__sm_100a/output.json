@@ -216,7 +216,7 @@
               "occurrence": 0,
               "thread": 480
             },
-            "message": "TMA tile coordinate %r3564 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+            "message": "TMA tile coordinate %r3564 is data-dependent (not a constant of the execution) and its range is not proven to keep the tile inside the tensor (0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its tile region are not modeled",
             "stage": "value_lowering"
           }
         ],
@@ -504,7 +504,7 @@
         "hb_member_enumerations": 0,
         "logical_accesses": 960229
       },
-      "first_race_seconds": 0.287064794,
+      "first_race_seconds": 0.28728423,
       "hb_algorithm": "member-relations",
       "hb_batches": 1,
       "hb_cache_hits": 0,
@@ -513,7 +513,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 608,
-      "hb_query_seconds": 0.014439347,
+      "hb_query_seconds": 0.014668859,
       "overlap_queries": 1,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 1
@@ -521,7 +521,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 699.2421875,
+    "peak_footprint_mib": 700.3671875,
     "required_order_domains": 19193,
     "required_orders": 611200,
     "search_complete": false,
@@ -539,7 +539,7 @@
       "binding_diagnostics": [
         {
           "code": "incomplete_value_semantics",
-          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r3564 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
+          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r3564 is data-dependent (not a constant of the execution) and its range is not proven to keep the tile inside the tensor (0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its tile region are not modeled"
         }
       ],
       "execution_cohorts": 21,
@@ -557,7 +557,7 @@
         {
           "code": "tma_data_dependent_coordinate",
           "line": 9389,
-          "message": "TMA tile coordinate %r3564 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
+          "message": "TMA tile coordinate %r3564 is data-dependent (not a constant of the execution) and its range is not proven to keep the tile inside the tensor (0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its tile region are not modeled"
         }
       ]
     },
@@ -633,8 +633,8 @@
     "value_ir_node_count": 6788,
     "value_view_complete": false
   },
-  "peak_rss_mib": 699.2421875,
-  "pipeline_elapsed_seconds": 4.37634875,
+  "peak_rss_mib": 700.3671875,
+  "pipeline_elapsed_seconds": 4.378458669,
   "result": "potential_race",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -646,5 +646,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.497
+  "whole_pipeline_timeout_seconds": 498.49
 }

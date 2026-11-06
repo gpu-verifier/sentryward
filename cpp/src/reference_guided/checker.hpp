@@ -71,12 +71,24 @@ inline bool cover_boxes(const std::vector<Box> &boxes, const Z &count,
   return std::all_of(diff.begin(), diff.end(),
                      [](const auto &p) { return p.second == 0; });
 }
+// A Call argument position (the axis excluded) and the integer interval its
+// value had when the spec's Facts were derived.
+struct SlotDomain {
+  size_t argument;
+  Q lo, hi;
+  bool operator<(const SlotDomain &o) const {
+    return std::tie(argument, lo, hi) < std::tie(o.argument, o.lo, o.hi);
+  }
+};
 struct Spec {
   Id pattern;
   size_t slots, axis;
   Z count;
   Facts facts;
   bool maximum = false;
+  // The Facts depend on these arguments' values. A Call has them only when
+  // each such argument is an integer inside its domain.
+  std::vector<SlotDomain> domains;
 };
 struct Key {
   Id sid;
@@ -100,7 +112,7 @@ struct Checker {
   Arena patterns;
   CertifiedStatePatternCanonicalizer state_patterns;
   std::vector<Spec> specs;
-  std::map<std::tuple<Id, size_t, size_t, Z, bool>, Id> spec_index;
+  std::map<std::tuple<Id, size_t, size_t, Z, bool, std::vector<SlotDomain>>, Id> spec_index;
   // Exact instantiated definition identities, local to this Checker. These
   // never enumerate reduction elements or infer equality from samples.
   std::unordered_map<Id, Id> call_definition_cache;
@@ -123,6 +135,7 @@ struct Checker {
   std::map<std::tuple<Id, Id, Id>, Id> restricted_axis_cache;
   std::map<std::tuple<Id, Id, Z>, Z> masked_prefix_cache;
   std::map<std::tuple<Id, Id, Z>, std::pair<Id, Id>> restricted_sum_bodies;
+  std::map<std::tuple<Id, Id, Z>, std::pair<Id, Id>> restricted_max_bodies;
   uint64_t domain_binder_serial = 0;
   struct Match {
     std::vector<Id> params;
@@ -179,6 +192,7 @@ struct Checker {
   std::map<std::pair<Id, std::vector<Id>>, Facts> scoped_call_facts;
   std::unordered_map<Id, Id> coefficient_normal_cache;
   std::map<std::pair<Id, Id>, bool> coefficient_equal_cache;
+  std::map<std::pair<Id, Id>, bool> equal_arm_cache;
   std::vector<PieceNode> pieces;
   std::map<std::string, uint64_t> failures;
   // Different complete coverage proofs describe the same exact contribution.
@@ -198,6 +212,30 @@ struct Checker {
     coefficient_normal_cache.emplace(value, result);
     ++a.stats["coefficient_normalizations"];
     return result;
+  }
+  // select(p, A, B) denotes A for every p when both arms are total and the
+  // scalar engine proves A = B (normal-form or fraction cross-product). Only
+  // arms built from that engine's algebra (sums, products, reciprocals,
+  // exponentials) over the same free coordinates can be such a pair; any
+  // other pair is kept without a query. One memoized query per arm pair; the
+  // kept arm is the older node, independent of the predicate's polarity.
+  Id equal_arm_select(Id id) {
+    const auto &n = a.nodes[id];
+    if (!exponential_mode || n.op != "select" || n.args.size() != 3) return id;
+    const Id x = n.args[1], y = n.args[2];
+    auto algebraic = [&](Id arm) {
+      const auto &op = a.nodes[arm].op;
+      return a.nodes[arm].facts.finite &&
+             (op == "add" || op == "add_raw" || op == "mul" || op == "recip" ||
+              op == "exp" || op == "exp2");
+    };
+    if (!algebraic(x) || !algebraic(y) || a.nodes[x].free != a.nodes[y].free) return id;
+    auto [it, fresh] = equal_arm_cache.emplace(std::minmax(x, y), false);
+    if (fresh) {
+      it->second = scalar.equal(x, y);
+      ++a.stats[it->second ? "select_equal_arm_proofs" : "select_equal_arm_declines"];
+    }
+    return it->second ? std::min(x, y) : id;
   }
   bool equal_coefficients(Id left, Id right) {
     if (left == right) return true;
@@ -238,10 +276,52 @@ struct Checker {
     ++a.stats["summary_bind_nodes"];
     return Id(pieces.size() - 1);
   }
-  std::tuple<Id, size_t, size_t, std::vector<Id>> pattern(
-      Id root, Id var, bool allow_parameterized = true, bool allow_derived = true) {
+  // An enclosing reference reduction binder other than var, wherever it
+  // occurs in the body (a mask such as s < r, too). pattern() slots it as a
+  // Call parameter instead of keeping it as a literal: the Call's arguments,
+  // and hence its free set, then carry the dependence, instantiate_body
+  // substitutes it, and the outer Fold's invariance tests see it.
+  bool enclosing_binder(Id id, Id var) const {
+    return id != var && a.nodes[id].op == "var" && reference_binders.contains(id);
+  }
+  struct SpecPattern {
+    Id pattern;
+    size_t slots, axis;
+    std::vector<Id> values;
+    // Per slot. valued: the body's Facts depend on the slot's value, because
+    // it occurs outside every coordinate position (an enclosing binder in a
+    // sum or mask) or inside an argument a nested Call's Facts depend on.
+    // coordinate: it occurs in a coordinate position, or is the axis.
+    std::vector<bool> valued, coordinate;
+  };
+  // Every slot a coordinate pattern refers to, including the residual slots
+  // that affine_param and coordinate_sum keep in their data. O(pattern nodes).
+  void coordinate_slots(Id root, std::vector<size_t> &out) const {
+    std::vector<Id> todo{root};
+    std::unordered_set<Id> seen{root};
+    while (!todo.empty()) {
+      const auto &n = patterns.nodes[todo.back()];
+      todo.pop_back();
+      if (n.op == "slot") out.push_back(n.data[0].numerator().convert_to<size_t>());
+      else if ((n.op == "affine_param" || n.op == "coordinate_sum") && n.data.size() > 1 && n.data[1] >= 0)
+        out.push_back(n.data[1].numerator().convert_to<size_t>());
+      for (Id child : n.args) if (seen.insert(child).second) todo.push_back(child);
+    }
+  }
+  SpecPattern pattern(Id root, Id var, bool allow_parameterized = true, bool allow_derived = true) {
     std::unordered_map<Id, Id> slots;
     std::vector<Id> slot_values;
+    std::vector<bool> valued, coordinate;
+    auto slot = [&](Id value, bool coordinate_position) {
+      auto [it, fresh] = slots.emplace(value, Id(slots.size()));
+      if (fresh) {
+        slot_values.push_back(value);
+        valued.push_back(false);
+        coordinate.push_back(false);
+      }
+      if (coordinate_position) coordinate[it->second] = true;
+      return it->second;
+    };
     std::unordered_map<uint64_t, Id> memo;
     struct Work {
       Id n;
@@ -260,21 +340,18 @@ struct Checker {
       if (memo.contains(k))
         continue;
       const auto &n = a.nodes[w.n];
-      if (w.n == var || (w.coord && !a.depends(w.n, var))) {
+      if (w.n == var || (w.coord && !a.depends(w.n, var)) || enclosing_binder(w.n, var)) {
         if (w.n == var) anchored = true;
-        auto [it, newslot] = slots.emplace(w.n, Id(slots.size()));
-        if (newslot)
-          slot_values.push_back(w.n);
-        memo[k] = patterns.intern("slot", {}, {Q(it->second)});
+        const Id index = slot(w.n, w.coord || w.n == var);
+        if (!w.coord && w.n != var) valued[index] = true;
+        memo[k] = patterns.intern("slot", {}, {Q(index)});
         continue;
       }
       // Record quotient/remainder relationships before the binder subtree
       // becomes a slot. The surrounding read/call structure remains exact.
       if (allow_derived && w.coord) {
         if (auto relation = CoordinateRelations::describe(a, w.n, var)) {
-          auto [it, fresh] = slots.emplace(var, Id(slots.size()));
-          if (fresh) slot_values.push_back(var);
-          (*relation)[0] = Q(it->second);
+          (*relation)[0] = Q(slot(var, true));
           if (relation->size() == 7) {
             auto key = CoordinateRelations::pair_key(*relation);
             if (!coordinate_pairs.contains(key) && coordinate_pairs.size() == CoordinateRelations::max_groups)
@@ -286,15 +363,9 @@ struct Checker {
           continue;
         }
         if (auto recipe = CoordinateRelations::describe_sum(a, w.n, var)) {
-          auto [it, fresh] = slots.emplace(var, Id(slots.size()));
-          if (fresh) slot_values.push_back(var);
-          Id axis = it->second;
+          Id axis = slot(var, true);
           Q residual_slot(-1);
-          if (recipe->residual != invalid) {
-            auto [ri, added] = slots.emplace(recipe->residual, Id(slots.size()));
-            if (added) slot_values.push_back(recipe->residual);
-            residual_slot = Q(ri->second);
-          }
+          if (recipe->residual != invalid) residual_slot = Q(slot(recipe->residual, true));
           std::vector<Id> relations;
           for (auto &relation : recipe->relations) {
             relation[0] = Q(axis);
@@ -325,9 +396,7 @@ struct Checker {
         }
         if (affine && coefficient != 0 && coefficient.denominator() == 1 &&
             offset.denominator() == 1 && (allow_parameterized || !parameterized)) {
-          auto [it, added] = slots.emplace(var, Id(slots.size()));
-          if (added) slot_values.push_back(var);
-          Id axis = it->second;
+          Id axis = slot(var, true);
           if (parameterized) {
             used_parameterized = true;
             std::vector<Id> residual_terms;
@@ -335,10 +404,8 @@ struct Checker {
               if (term != var)
                 residual_terms.push_back(a.mul({a.constant(scale), term}));
             Id residual = a.add(std::move(residual_terms));
-            auto [ri, fresh] = slots.emplace(residual, Id(slots.size()));
-            if (fresh) slot_values.push_back(residual);
             memo[k] = patterns.intern("affine_param", {},
-                                     {Q(axis), Q(ri->second), coefficient});
+                                     {Q(axis), Q(slot(residual, true)), coefficient});
           } else {
             anchored = true;
             memo[k] = patterns.intern("affine_slot", {},
@@ -362,6 +429,15 @@ struct Checker {
       as.reserve(n.args.size());
       for (Id x : n.args)
         as.push_back(memo.at(key(x, childcoord)));
+      // A nested Call's Facts depend on the arguments its domains name.
+      if (n.op == "call" && n.data.size() == 1 && n.data[0].denominator() == 1 &&
+          n.data[0] >= 0 && n.data[0] < Q(specs.size())) {
+        std::vector<size_t> inside;
+        for (const auto &domain : specs[n.data[0].numerator().convert_to<Id>()].domains)
+          if (domain.argument < as.size()) coordinate_slots(as[domain.argument], inside);
+        for (size_t index : inside)
+          if (slot_values[index] != var) valued[index] = true;
+      }
       memo[k] = patterns.intern(n.op, std::move(as), n.data, n.tag);
       ++visits;
     }
@@ -387,25 +463,105 @@ struct Checker {
       throw Unsupported(
           "reference has no reduction coordinate capture");
     return {memo.at(key(root, false)), slots.size(), slots.at(var),
-            slot_values};
+            std::move(slot_values), std::move(valued), std::move(coordinate)};
+  }
+  // Every variable that was a Fold binder in a normalization by this Checker,
+  // on either side. Never cleared: a spec outlives the normalization that
+  // registered it, and a re-normalized part of a reference may hold a binder
+  // of the whole reference as a free variable.
+  std::unordered_set<Id> fold_binders;
+  // True when no spec reachable from sid through nested Calls keeps a Fold
+  // binder as a literal. Such a literal is a dangling reduction binder: the
+  // Call's value depends on it, but its arguments and free set do not.
+  // pattern() slots enclosing binders; this is the independent check for proof
+  // rules that evaluate a spec's members. A literal that never was a Fold
+  // binder (an output coordinate, a template axis) is a parameter of the whole
+  // proof, which no reduction iterates. Memoized per spec while fold_binders
+  // is unchanged; a Call names an earlier spec, so the recursion terminates.
+  // O(total pattern nodes).
+  std::unordered_map<Id, bool> literal_free_specs;
+  size_t literal_free_binders = 0;
+  bool literal_binder_free(Id sid) {
+    if (literal_free_binders != fold_binders.size()) {
+      literal_free_specs.clear();
+      literal_free_binders = fold_binders.size();
+    }
+    if (auto it = literal_free_specs.find(sid); it != literal_free_specs.end()) return it->second;
+    bool free = true;
+    std::vector<Id> todo{specs[sid].pattern};
+    std::unordered_set<Id> seen{specs[sid].pattern};
+    while (!todo.empty() && free) {
+      a.check(); const Id id = todo.back(); todo.pop_back();
+      const auto &n = patterns.nodes[id];
+      if (n.op == "var" && n.args.empty()) {
+        const auto actual = a.find_node(n.op, n.args, n.data, n.tag);
+        free = actual && !fold_binders.contains(*actual);
+      } else if (n.op == "call") {
+        free = n.data.size() == 1 && n.data[0].denominator() == 1 && n.data[0] >= 0 && n.data[0] < Q(sid) &&
+               literal_binder_free(n.data[0].numerator().convert_to<Id>());
+      }
+      for (Id child : n.args) if (seen.insert(child).second) todo.push_back(child);
+    }
+    literal_free_specs.emplace(sid, free);
+    return free;
   }
   Id intern_spec(Id p, size_t slots, size_t axis, Z count, Facts f,
-                 bool maximum = false) {
-    auto k = std::tuple(p, slots, axis, count, maximum);
+                 bool maximum = false, std::vector<SlotDomain> domains = {}) {
+    auto k = std::tuple(p, slots, axis, count, maximum, domains);
     auto it = spec_index.find(k);
     if (it != spec_index.end())
       return it->second;
     Id id = Id(specs.size());
     spec_index.emplace(std::move(k), id);
-    specs.push_back({p, slots, axis, std::move(count), f, maximum});
+    specs.push_back({p, slots, axis, std::move(count), f, maximum, std::move(domains)});
     return id;
   }
+  // The integer interval of a valued slot's value, narrowed by its sign
+  // Facts; nothing when the value is not provably an integer with bounds.
+  std::optional<std::pair<Q, Q>> integer_domain(Id value) {
+    const auto &n = a.nodes[value];
+    if (!n.bounds || n.bounds->first.denominator() != 1 || n.bounds->second.denominator() != 1 ||
+        !CoordinateRelations::integer(a, value)) return {};
+    Q lo = n.bounds->first;
+    if (n.facts.pos) lo = std::max(lo, Q(1));
+    else if (n.facts.nn) lo = std::max(lo, Q(0));
+    return std::pair(lo, n.bounds->second);
+  }
+  // Domains of the valued slots, by Call argument position; nothing when a
+  // valued slot's value has no integer domain.
+  std::optional<std::vector<SlotDomain>> slot_domains(const std::vector<Id> &values,
+                                                      const std::vector<bool> &valued, size_t axis) {
+    std::vector<SlotDomain> domains;
+    for (size_t i = 0; i < values.size(); ++i) {
+      if (i == axis || !valued[i]) continue;
+      auto domain = integer_domain(values[i]);
+      if (!domain) return {};
+      domains.push_back({i < axis ? i : i - 1, domain->first, domain->second});
+    }
+    return domains;
+  }
+  // The same narrowing as integer_domain, so a reference value is inside the
+  // domain it defined.
+  bool in_domain(Id argument, const SlotDomain &domain) {
+    if (auto v = a.value(argument)) return v->denominator() == 1 && domain.lo <= *v && *v <= domain.hi;
+    const auto range = integer_domain(argument);
+    return range && domain.lo <= range->first && range->second <= domain.hi;
+  }
+  // A Call denotes the spec's body at its arguments for any argument values.
+  // Its Facts are the spec's only at arguments inside every domain; elsewhere
+  // nothing is known. O(domains) per Call.
   Id call(Id sid, const std::vector<Id> &args) {
-    const auto s = specs[sid];
-    Facts facts{s.facts.finite, s.count > 0 && s.facts.pos,
-                s.count == 0 || s.facts.nn};
-    if (s.maximum && s.count > 0)
-      facts.finite_or_neginf = s.facts.finite_or_negative_infinity();
+    const Spec &s = specs[sid];
+    Facts facts;
+    if (std::all_of(s.domains.begin(), s.domains.end(), [&](const SlotDomain &domain) {
+          return domain.argument < args.size() && in_domain(args[domain.argument], domain);
+        })) {
+      facts = {s.facts.finite, s.count > 0 && s.facts.pos, s.count == 0 || s.facts.nn};
+      if (s.maximum && s.count > 0)
+        facts.finite_or_neginf = s.facts.finite_or_negative_infinity();
+    } else {
+      ++a.stats["reference_call_domain_misses"];
+    }
     if (auto it = scoped_call_facts.find({sid, args}); it != scoped_call_facts.end()) facts = it->second;
     Id raw = a.intern("call", args, {Q(sid)}, "",
                     facts);
@@ -505,25 +661,39 @@ struct Checker {
       }
       if (std::none_of(pairs.begin(), pairs.end(),
                        [](const auto &entry) { return entry.second == 3; })) continue;
-      auto [p, slots, dimension, values] = pattern(call_id, axis);
-      Id auxiliary = intern_spec(p, slots, dimension, variable.bounds->second.numerator() + 1,
-                                 call_node.facts, true);
+      auto shape = pattern(call_id, axis);
+      auto domains = slot_domains(shape.values, shape.valued, shape.axis);
+      Id auxiliary = intern_spec(shape.pattern, shape.slots, shape.axis, variable.bounds->second.numerator() + 1,
+                                 domains ? call_node.facts : Facts{}, true, domains ? std::move(*domains) : std::vector<SlotDomain>{});
       if (active.insert(auxiliary).second) ++a.stats["paired_maximum_reference_domains"];
     }
   }
   Id reg(Id body, Id var, Z count, bool maximum=false) {
     // Scalar normalization belongs to the body equality query.
-    auto [p, ns, axis, slots] = pattern(body, var);
+    auto shape = pattern(body, var);
+    auto &[p, ns, axis, slots, valued, coordinate] = shape;
     if (!maximum && a.nodes[body].facts.finite) {
       if (auto canonical = state_patterns.canonicalize(p, ns, axis)) {
         std::vector<Id> reordered(ns);
-        for (size_t i = 0; i < ns; ++i) reordered[canonical->old_to_new[i]] = slots[i];
+        std::vector<bool> reordered_valued(ns), reordered_coordinate(ns);
+        for (size_t i = 0; i < ns; ++i) {
+          const size_t to = canonical->old_to_new[i];
+          reordered[to] = slots[i];
+          reordered_valued[to] = valued[i];
+          reordered_coordinate[to] = coordinate[i];
+        }
         p = canonical->pattern;
         axis = canonical->axis;
         slots = std::move(reordered);
+        valued = std::move(reordered_valued);
+        coordinate = std::move(reordered_coordinate);
       }
     }
-    Id sid = intern_spec(p, ns, axis, count, a.nodes[body].facts, maximum);
+    // The body's Facts were derived with each valued slot at its value. They
+    // are the spec's only together with those values' domains.
+    auto domains = slot_domains(slots, valued, axis);
+    Id sid = intern_spec(p, ns, axis, count, domains ? a.nodes[body].facts : Facts{}, maximum,
+                         domains ? std::move(*domains) : std::vector<SlotDomain>{});
     active.insert(sid);
     std::vector<Id> args;
     for (size_t i = 0; i < slots.size(); ++i)
@@ -563,25 +733,35 @@ struct Checker {
               v.bounds->first == v.data[0] && v.bounds->second == v.data[1] &&
               n.bounds && n.bounds->first == *offset &&
               n.bounds->second == *offset + v.data[1]) {
-            auto [mp, ms, ma, values] = pattern(c, index);
-            Id aux = intern_spec(mp, ms, ma, v.data[1].numerator() + 1,
-                                 a.nodes[c].facts, true);
+            auto window = pattern(c, index);
+            auto window_domains = slot_domains(window.values, window.valued, window.axis);
+            Id aux = intern_spec(window.pattern, window.slots, window.axis, v.data[1].numerator() + 1,
+                                 window_domains ? a.nodes[c].facts : Facts{}, true,
+                                 window_domains ? std::move(*window_domains) : std::vector<SlotDomain>{});
             active.insert(aux);
             ++a.stats["shifted_maximum_reference_domains"];
           }
         }
         continue;
       }
+      // A binder that occurs only as a value (a mask bound, an addend) is no
+      // coordinate of a Max domain.
       if (n.op != "var" || !n.bounds || n.bounds->first != 0 ||
-          n.bounds->second < 1)
+          n.bounds->second < 1 || !coordinate[j < axis ? j : j + 1])
         continue;
       std::vector<Id> ps;
       for (size_t i = 0; i < args.size(); ++i)
         ps.push_back(patterns.intern("slot", {}, {Q(i)}));
       Id pat = patterns.intern("call", ps, {Q(sid)});
+      // The axis j ranges over exactly its own domain [0, hi]; the other
+      // domains move to the auxiliary's argument positions.
+      std::vector<SlotDomain> aux_domains;
+      for (const auto &domain : specs[sid].domains)
+        if (domain.argument != j)
+          aux_domains.push_back({domain.argument < j ? domain.argument : domain.argument - 1, domain.lo, domain.hi});
       Id aux =
           intern_spec(pat, args.size(), j, n.bounds->second.numerator() + 1,
-                      a.nodes[c].facts, true);
+                      a.nodes[c].facts, true, std::move(aux_domains));
       active.insert(aux);
     }
     register_paired_maximum(c, var);
@@ -1781,6 +1961,26 @@ struct Checker {
       return {};
     return *closed.begin();
   }
+  // log(x) * (1/log 2) is log2(x) for finite positive x (a finite log), the
+  // shape PTX lg2 imports to. Both sides share this canonical form. Only a
+  // product with exactly one finite natural log and one 1/log(2) factor is
+  // contracted. O(factors).
+  std::optional<Id> base2_logarithm_product(const std::vector<Id> &args, const Q &scalar) {
+    size_t inverse = args.size(), logarithm = args.size(), inverses = 0, logarithms = 0;
+    for (size_t i = 0; i < args.size(); ++i) {
+      const auto &n = a.nodes[args[i]];
+      if (n.op == "recip" && n.args.size() == 1 && a.nodes[n.args[0]].op == "log" &&
+          a.value(a.nodes[n.args[0]].args[0]) == Q(2)) { inverse = i; ++inverses; }
+      else if (n.op == "log" || n.op == "log2") { logarithm = i; ++logarithms; }
+    }
+    if (inverses != 1 || logarithms != 1 || a.nodes[args[logarithm]].op != "log" ||
+        !a.nodes[args[logarithm]].facts.finite) return {};
+    std::vector<Id> xs{a.constant(scalar), a.logarithm(a.nodes[args[logarithm]].args[0], true)};
+    for (size_t i = 0; i < args.size(); ++i)
+      if (i != inverse && i != logarithm) xs.push_back(args[i]);
+    ++a.stats["canonical_base2_logarithms"];
+    return a.mul(std::move(xs));
+  }
   Id reapply(Id original, const std::vector<Id> &args) {
     const auto &n = a.nodes[original];
     const auto &op = n.op;
@@ -1804,6 +2004,8 @@ struct Checker {
         xs.push_back(a.mul({a.constant(d[j]), args[j]}));
       return a.factor_sum(a.add(xs));
     }
+    if (op == "mul")
+      if (auto contracted = base2_logarithm_product(args, d[0])) return *contracted;
     if (op == "mul") {
       std::vector<Id> rec, others{a.constant(d[0])};
       for (Id x : args)
@@ -1837,7 +2039,7 @@ struct Checker {
     if (op == "exp2" || op == "exp")
       return a.exponential(args[0], op == "exp2");
     if (op == "select")
-      return a.select(args[0], args[1], args[2]);
+      return equal_arm_select(a.select(args[0], args[1], args[2]));
     if (op == "compare")
       return a.compare(n.tag, args[0], args[1]);
     if (op == "xor")
@@ -1932,6 +2134,29 @@ struct Checker {
   // Fold(z, c*f) -> z + c*Fold(0, f), never Fold(c*z, c*f).
   // The small shells materialize the SumNF view in the existing IR. No element
   // expansion, new IR operator, or reference-dependent alternative is needed.
+  // A Max over a -infinity-masked body keeps only the possible prefix of its
+  // mask (masked_max_prefix), rebound to a fresh binder as for Sum. Returns
+  // the new (binder, body) and narrows count; nothing if no index is dropped.
+  std::optional<std::pair<Id, Id>> masked_max_domain(Id value, Id axis, Z &count) {
+    const Z prefix = masked_max_prefix(a, value, axis, count);
+    if (prefix >= count) return {};
+    ++a.stats["canonical_max_trimmed_domains"];
+    count = prefix;
+    if (prefix == 0) return std::pair(axis, value);
+    const auto key = std::tuple(value, axis, prefix);
+    auto found = restricted_max_bodies.find(key);
+    if (found == restricted_max_bodies.end()) {
+      Id fresh;
+      size_t before;
+      do {
+        before = a.nodes.size();
+        fresh = a.var("canonical-max-domain:" + std::to_string(domain_binder_serial++),
+                      Q(0), Q(prefix - 1));
+      } while (fresh < before);
+      found = restricted_max_bodies.emplace(key, std::pair(fresh, restrict_axis(value, axis, fresh))).first;
+    }
+    return found->second;
+  }
   Id canonicalize_fold(Id original, const std::vector<Id> &args) {
     const auto &n = a.nodes[original];
     if (n.args.size() != 2 || n.data.size() != 2 ||
@@ -1973,6 +2198,15 @@ struct Checker {
         axis = found->second.first;
         value = found->second.second;
       }
+    } else if (auto trimmed = masked_max_domain(value, axis, count)) {
+      if (count == 0) return args[0];
+      std::tie(axis, value) = *trimmed;
+    }
+    // Max is idempotent: count >= 1 copies of an axis-invariant body b give
+    // max(z, b), and its identity -infinity leaves the seed z.
+    if (n.tag == "Max" && !a.depends(value, axis)) {
+      ++a.stats["canonical_max_invariant_bodies"];
+      return a.maximum({args[0], value});
     }
     std::vector<Q> domain{Q(axis), Q(count)};
     Facts facts = reduction_facts(args[0], value, axis, count, n.tag == "Max");
@@ -2066,8 +2300,11 @@ struct Checker {
       if (!ready) {
         // Visit the Fold before its body, so reg() can recognize an enclosing
         // reference axis without a second DAG traversal or variable-name tests.
-        if (reference && raw.op == "fold")
-          reference_binders.insert(raw.data[0].numerator().convert_to<Id>());
+        if (raw.op == "fold") {
+          const Id binder = raw.data[0].numerator().convert_to<Id>();
+          fold_binders.insert(binder);
+          if (reference) reference_binders.insert(binder);
+        }
         todo.emplace_back(old, true);
         for (size_t j = raw.args.size(); j-- > 0;)
           if (!cache.contains(raw.args[j]))

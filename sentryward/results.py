@@ -111,6 +111,10 @@ def normalize(report, *, operation=None):
     stage = out.get("stage", out.get("blocked_stage", out.get("active_stage",
                     "equivalence_check" if operation == "equivalence" else "pipeline")))
     result = category(status, reason, out.get("resource"))
+    # A skipped equivalence check (no reference) keeps the synchronization verdict; only the
+    # equivalence section has this status.
+    if operation == "equivalence" and status == "skipped":
+        result = "race_free"
     raw_diagnostics = out.get("diagnostics", [])
     diagnostics = [dict(d) for d in raw_diagnostics if isinstance(d, dict)] if isinstance(raw_diagnostics,list) else []
     if status in {"invalid_source_ir","invalid_event_view","invalid_source"}:
@@ -147,7 +151,9 @@ def normalize(report, *, operation=None):
         if isinstance(out.get(key),dict) and ("status" in out[key] or "result" in out[key]):
             out[key] = normalize(out[key], operation="equivalence" if key=="equivalence" else key)
     if operation=="equivalence" or status in {"equivalent","not_proven","partial_scope_equivalent","translation_or_supported_fragment_blocked"}:
-        checks["equivalence"] = "passed" if result=="verified" else "not_run" if status in {"blocked","missing_reference","missing_input"} or reason=="verification_prerequisite_not_satisfied" else "incomplete"
+        # Reachable undefined behavior: the outputs are undefined, so no equivalence is checked.
+        # Without a reference the check is skipped: its result keeps the synchronization verdict.
+        checks["equivalence"] = "passed" if result=="verified" else "not_requested" if status=="skipped" else "not_run" if status in {"blocked","missing_input"} or reason=="verification_prerequisite_not_satisfied" or result=="undefined_behavior" else "incomplete"
         # Equivalence requires equal domains and equal values on that domain;
         # total definedness is a separate property, not a success prerequisite.
         if result=="verified" and out.get("definedness",{}).get("status")=="not_proven":
@@ -302,6 +308,19 @@ class ResultArgumentParser(argparse.ArgumentParser):
     def error(self, message):
         print(json.dumps(publish(failure("invalid_input", "invalid_arguments", message))))
         raise SystemExit(2)
+
+
+def verdict_suffix(result, checks=None):
+    """What the printed verdict adds to a result: " (equivalence checking skipped)" for a race_free
+    result without a requested equivalence check (no reference was supplied), else nothing."""
+    if result == "race_free" and (checks or {}).get("equivalence") == "not_requested":
+        return " (equivalence checking skipped)"
+    return ""
+
+
+def verdict(result, checks=None):
+    """The printed verdict: the result's name and its verdict_suffix."""
+    return result + verdict_suffix(result, checks)
 
 
 def diagnostic_code(report):

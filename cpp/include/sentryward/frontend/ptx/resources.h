@@ -141,11 +141,21 @@ struct PreparedKey {
   AllocationKey key;
   FormattedAllocation formatted;
 };
+// An abstract global endpoint's place in its tile region (TmaBody): the region (a
+// tile::gather4 row, else 0), the endpoint's first byte from the region's first byte when its
+// bytes are contiguous in the tensor, and whether every symbolic coordinate of the region is a
+// bounded integer whose range keeps the region's box inside the tensor.
+struct TmaRegionPlace {
+  std::uint32_t region = 0;
+  std::optional<std::uint64_t> offset;
+  bool in_bounds = false;
+};
 struct TmaPair {
   std::optional<Fragment> source;
   std::optional<Fragment> destination;
   std::uint64_t logical_offset;
   std::uint32_t target_rank;
+  std::optional<TmaRegionPlace> place = std::nullopt;  // an abstract global endpoint
 };
 struct TmaAccesses {
   std::vector<TmaPair> pairs;
@@ -242,6 +252,7 @@ struct ResolvedTma {
     std::size_t shared;
     std::uint64_t bytes, logical_offset;
     std::uint32_t target_rank;
+    std::optional<TmaRegionPlace> place = std::nullopt;  // an abstract global endpoint
   };
   std::vector<Pair> pairs;
   std::vector<std::pair<std::size_t, std::uint64_t>> completions;
@@ -284,8 +295,10 @@ public:
       facts_.Note(query::BindingRead{id});
     return addresses_.bindings.at(id.value());
   }
-  // bulk_reduce's base alignment (its only caller): an AbsoluteCheck event, then
-  // the bulk_reduction_alignment throw when binding.offset % modulus != 0.
+  // bulk_reduce's base alignment (its only caller): an AbsoluteCheck event, then the
+  // bulk_reduction_alignment throw for a shared offset that some legal placement leaves
+  // misaligned (FrontendConfig::SharedMisalignment), or bulk_reduction_base_alignment_unknown
+  // for another address space's offset with offset % modulus != 0.
   void RequireAligned(const ConstantAddressBinding &binding, std::uint64_t modulus, AddressId id) const;
   // BarrierTable::Location (executor only).
   std::tuple<std::string, Coordinates, std::string> Location(BarrierLifetimeId id) const {

@@ -49,6 +49,7 @@ public:
 private:
   std::set<Id> conditional_nodes, conditional_nonzero;
   size_t initial_nodes, stored_terms = 0;
+  Id inverse_log2 = invalid;
   std::map<Id, Polynomial> cache;
   std::unordered_map<Id, Id> normal_cache;
   struct Fraction { Id numerator, denominator; };
@@ -192,8 +193,12 @@ private:
       if (a.nodes[term].op == "mul" && a.nodes[term].args.size() == 1) {
         coefficient *= a.nodes[term].data[0]; term = a.nodes[term].args[0];
       }
+      const char *logop = base2 ? "log2" : "log";
+      if (base2) if (Id natural = natural_log_of_base2_term(term, coefficient); natural != invalid) {
+        term = natural; logop = "log";
+      }
       const auto &candidate = a.nodes[term];
-      if (candidate.op == (base2 ? "log2" : "log") && candidate.args.size() == 1 &&
+      if (candidate.op == logop && candidate.args.size() == 1 &&
           candidate.facts.finite && a.nodes[candidate.args[0]].facts.finite &&
           a.nodes[candidate.args[0]].facts.pos && coefficient.denominator() == 1) {
         const Q absolute = coefficient < 0 ? -coefficient : coefficient;
@@ -208,6 +213,48 @@ private:
     }
     result.remainder = a.exponential(a.add(std::move(residual)),base2);
     return result;
+  }
+  // 1/log(2), the factor of every base-2 logarithm in the normal form.
+  Id inverse_natural_log2() {
+    if (inverse_log2 == invalid) inverse_log2 = a.recip(a.logarithm(a.constant(2)));
+    return inverse_log2;
+  }
+  // The normal form of c*log2(x) is c*log(x)*(1/log 2) (logarithm_polynomial).
+  // Returns log(x) and folds c into the coefficient; invalid otherwise.
+  Id natural_log_of_base2_term(Id term, Q &coefficient) {
+    const Node &n = a.nodes[term];
+    if (n.op != "mul" || n.args.size() != 2) return invalid;
+    const Id inverse = inverse_natural_log2();
+    for (unsigned i = 0; i < 2; ++i)
+      if (n.args[1 - i] == inverse && a.nodes[n.args[i]].op == "log") {
+        coefficient *= n.data[0];
+        return n.args[i];
+      }
+    return invalid;
+  }
+  // A logarithm of a finite positive x is keyed by the normal form of x, and
+  // log2(x) is the monomial log(x)*(1/log 2), so equal arguments of either
+  // shape and either base meet. Both rewrites are exact real identities. An
+  // argument whose normal form leaves the bounded fragment, or does not keep
+  // its proved positivity, keeps its own atom. O(normal form of x), once per
+  // logarithm node and query.
+  std::optional<Polynomial> logarithm_polynomial(Id root, size_t depth) {
+    const Node &n = a.nodes[root];
+    if ((n.op != "log" && n.op != "log2") || n.args.size() != 1 || !n.facts.finite) return {};
+    const bool base2 = n.op == "log2";
+    Id argument = n.args[0];
+    try {
+      const Id normalized = normal(argument, depth + 1);
+      if (a.nodes[normalized].facts.finite && a.nodes[normalized].facts.pos) argument = normalized;
+    } catch (const Miss &) {}
+    Polynomial p;
+    const Id natural = a.logarithm(argument);
+    if (natural == a.zero) return p;
+    Monomial key{alpha.representative(natural)};
+    if (base2) key.push_back(alpha.representative(inverse_natural_log2()));
+    std::sort(key.begin(), key.end());
+    insert(p, std::move(key), Q(1));
+    return p;
   }
   // Used only by exponent keys and a failed scalar comparison. This is not
   // the stored representation of every expression. No gcd/factorization.
@@ -307,6 +354,8 @@ private:
         Polynomial inverse; insert(inverse,{alpha.representative(a.recip(factor))},Q(1));
         p = multiply(p,inverse,depth+1);
       }
+    } else if (auto logarithm = logarithm_polynomial(root, depth)) {
+      p = std::move(*logarithm);
     } else {
       // Reciprocal is an opaque factor in the ordinary normal form. Its
       // original domain remains intact; fraction() handles crossing later.

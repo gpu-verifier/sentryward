@@ -32,6 +32,23 @@ struct RefHash {
   std::size_t operator()(const Ref&) const;
 };
 
+// The modes of the PTX instructions a node is the direct image of (Graph::instructionModes): the
+// node computes that instruction's operation on the instruction's operands. A mul, add or sub
+// without rounding modifier rounds to nearest even and may be contracted into an fma (`contractible`);
+// `nearest`, `toward_zero`, `toward_negative` and `toward_positive` are the explicit .rn, .rz, .rm and
+// .rp; `flush` and `no_flush` record .ftz (an ex2.approx carries only these). `synthesized` marks a
+// node that a construction which is no single instruction also made (a reassociated, canonical or
+// accumulated sum): it is then no instruction image. One interned node made several times carries
+// the union of its marks. 0: no instruction image.
+namespace instruction_mode {
+inline constexpr std::uint8_t contractible = 1, nearest = 2, toward_zero = 4, toward_negative = 8,
+    toward_positive = 16, flush = 32, no_flush = 64, synthesized = 128;
+// Whether `modes` describes an instruction image.
+inline bool instruction(std::uint8_t modes) { return modes && !(modes & synthesized); }
+// A node generalizing two nodes (one per use) is an instruction image only when both are.
+inline std::uint8_t common(std::uint8_t a, std::uint8_t b) { return a && b ? std::uint8_t(a | b) : 0; }
+}
+
 struct FoldInfo {
   Reducer reducer = Reducer::Sum;
   std::uint32_t binder_level = 0;
@@ -75,6 +92,10 @@ class Graph {
   Ref fold(Reducer, Ref initial, Ref body, std::uint32_t binder_level,
            std::uint64_t count, std::string type);
   Ref convert(Ref, std::string target_type, std::string step);
+  // Provenance, not identity: never part of a node's equality, hash or attributes. Adds `modes`
+  // (instruction_mode bits) to an Operation node; any other node is left unmarked.
+  void markInstruction(const Ref&, std::uint8_t modes);
+  std::uint8_t instructionModes(Id id) const { return id < instructions_.size() ? instructions_[id] : 0; }
   Ref withPointer(Ref, std::string provenance);
   Ref ref(Id) const;
 
@@ -112,6 +133,8 @@ class Graph {
   std::uint64_t owner_;
   std::vector<Node> nodes_;
   std::vector<IndexSlot> index_;
+  // instruction_mode bits per node ID; shorter than nodes_ when the tail is unmarked.
+  std::vector<std::uint8_t> instructions_;
 };
 
 struct Statistics {

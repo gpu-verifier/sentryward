@@ -197,7 +197,10 @@ struct Match {
         result=graph.fold(node.fold->reducer,args.at(0),args.at(1),binder,node.fold->count,node.type);
       } else if(changed) {
         if(node.kind==Kind::InitialCell)result=graph.initialCell(node.name,args.at(0),node.type);
-        else result=graph.operation(node.name,node.type,std::move(args),node.attributes);
+        else {
+          result=graph.operation(node.name,node.type,std::move(args),node.attributes);
+          graph.markInstruction(result,graph.instructionModes(id));
+        }
       }
       lifted.emplace(id,result);
     }
@@ -253,6 +256,13 @@ struct Match {
       return false;
     }
     if (x.kind != Kind::Operation && x.kind != Kind::InitialCell && x.kind != Kind::Fold) return false;
+    // The body takes the common instruction modes of the two prototypes (bodyImpl); every further
+    // instance must be an image whose modes the body includes, or the body must be no image.
+    if (x.kind == Kind::Operation) {
+      const auto modes=instruction_mode::common(graph.instructionModes(a.node),graph.instructionModes(b.node));
+      const auto own=graph.instructionModes(actual.node);
+      if (instruction_mode::instruction(modes) && (!instruction_mode::instruction(own) || (own & ~modes))) return false;
+    }
     if (address && x.kind != Kind::InitialCell) {
       // sameUse already proved identical edge conversions. Keep them around
       // the parameterized operation, including narrowing and bitcasts; do not
@@ -342,6 +352,7 @@ struct Match {
       } else {
         result=x.kind == Kind::InitialCell ? graph.initialCell(std::move(x.name),args.at(0),std::move(x.type))
             : graph.operation(std::move(x.name),std::move(x.type),std::move(args),std::move(x.attributes));
+        graph.markInstruction(result,instruction_mode::common(graph.instructionModes(a.node),graph.instructionModes(b.node)));
       }
     }
     if(!a.conversion.empty() || result.conversion.empty()) {
@@ -641,8 +652,10 @@ std::optional<Ref> ReductionBuilder::appendBlock(Ref accumulator,Ref term,
       // later bodies at this level reuse it. This is not O(1) construction.
       if(accepted) {
         auto body=graph_.constant(type,"0");
-        for(std::size_t i=0;i<p;++i)
+        for(std::size_t i=0;i<p;++i) {
           body=graph_.operation("Add",type,{body,match.body(state.terms[i],state.terms[p+i])});
+          graph_.markInstruction(body,instruction_mode::synthesized);
+        }
         state.first.assign(state.terms.begin(),state.terms.begin()+p);
         state.second.assign(state.terms.begin()+p,state.terms.begin()+2*p);
         state.body=body;state.count=3;state.terms.clear();state.prefixes.clear();

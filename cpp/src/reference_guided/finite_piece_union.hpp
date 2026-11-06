@@ -43,6 +43,14 @@ struct FinitePieceCoordinates {
   Z last_offset = 0;
 };
 
+// A box image: on each schema axis either one fixed coordinate (local axis
+// invalid, the offset is the coordinate) or offset+t for a distinct local
+// integer variable t. Every free variable of both bodies is one of the locals.
+struct FinitePieceBox {
+  std::vector<Id> locals;
+  std::vector<Z> offsets;
+};
+
 struct FinitePieceUnionLimits {
   size_t pieces = 8192;
   size_t work = 524288;
@@ -206,6 +214,78 @@ public:
     const Z length = local_high - local_low + 1;
     pieces_.push_back({equality, instance, coordinates, local_low, local_high, start, length});
     ++a.stats["finite_piece_union_accepted_pieces"];
+    last_failure.clear();
+    return true;
+  }
+
+  // Same trust boundary as add_proved_piece, for a box image. In row-major
+  // order a box is the union of the contiguous runs over its outer axes: with
+  // p the outermost axis after which the box spans every axis fully, it has
+  // one run per coordinate tuple of the axes before p. Those runs are stored
+  // as intervals, so the cost is O(rank + runs), bounded by the piece budget
+  // before any run is stored; no cell inside a run is enumerated.
+  bool add_proved_box(const FinitePieceEquality &equality, const FinitePieceBox &box,
+                      const FinitePieceInstanceWitness &instance) {
+    if (sealed_) return decline("sealed");
+    if (!valid) return decline("invalid_schema");
+    const size_t rank = schema_.axes.size();
+    if (!tick(16 + 8 * rank)) return false;
+    if (equality.context != schema_.context || instance.context != schema_.context)
+      return decline("context");
+    if (instance.left_template != schema_.left_template ||
+        instance.right_template != schema_.right_template)
+      return decline("template_identity");
+    if (!id_valid(equality.left_body) || !id_valid(equality.right_body) ||
+        !a.nodes[equality.left_body].facts.finite ||
+        !a.nodes[equality.right_body].facts.finite ||
+        instance.left_instance != equality.left_body ||
+        instance.right_instance != equality.right_body)
+      return decline("whole_body_instance");
+    if (box.locals.size() != rank || box.offsets.size() != rank || instance.coordinates.size() != rank)
+      return decline("coordinate_arity");
+    std::vector<Z> begin(rank), end(rank);
+    std::set<Id> locals;
+    for (size_t d = 0; d < rank; ++d) {
+      const Z &offset = box.offsets[d];
+      if (!small(offset)) return decline("coordinate_size");
+      if (box.locals[d] == invalid) {
+        begin[d] = end[d] = offset;
+        if (instance.coordinates[d] != a.constant(Q(offset))) return decline("coordinate_instance");
+      } else {
+        Z lo, hi;
+        const Id local = box.locals[d];
+        if (!integer_var(local, lo, hi) || !locals.insert(local).second ||
+            std::find(schema_.axes.begin(), schema_.axes.end(), local) != schema_.axes.end())
+          return decline("local_axis");
+        begin[d] = offset + lo; end[d] = offset + hi;
+        if (instance.coordinates[d] != a.add({a.constant(Q(offset)), local}) &&
+            !(lo == hi && instance.coordinates[d] == a.constant(Q(begin[d]))))
+          return decline("coordinate_instance");
+      }
+      if (begin[d] < lows[d] || end[d] > highs[d]) return decline("coordinate_range");
+    }
+    for (Id root : {equality.left_body, equality.right_body})
+      for (Id v : a.nodes[root].free)
+        if (!locals.contains(v)) return decline("body_free_variable");
+    size_t split = rank - 1;
+    while (split > 0 && begin[split] == lows[split] && end[split] == highs[split]) --split;
+    Z runs = 1;
+    for (size_t d = 0; d < split; ++d) runs *= end[d] - begin[d] + 1;
+    if (runs > Z(limits.pieces - std::min(pieces_.size(), limits.pieces))) return decline("piece_budget");
+    const size_t count = runs.convert_to<size_t>();
+    if (!tick(count)) return false;
+    const Z length = (end[split] - begin[split] + 1) * strides[split];
+    std::vector<Z> cursor(begin.begin(), begin.begin() + split);
+    for (size_t run = 0; run < count; ++run) {
+      Z start = (begin[split] - lows[split]) * strides[split];
+      for (size_t d = 0; d < split; ++d) start += (cursor[d] - lows[d]) * strides[d];
+      pieces_.push_back({equality, instance, FinitePieceCoordinates{}, Z(0), Z(0), std::move(start), length});
+      for (size_t d = split; d-- > 0;) {
+        if (cursor[d] < end[d]) { ++cursor[d]; break; }
+        cursor[d] = begin[d];
+      }
+    }
+    a.stats["finite_piece_union_accepted_box_runs"] += count;
     last_failure.clear();
     return true;
   }

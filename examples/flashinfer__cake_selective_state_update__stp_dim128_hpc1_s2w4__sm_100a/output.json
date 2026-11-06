@@ -65,11 +65,11 @@
   },
   "diagnostics": [
     {
-      "code": "tma_data_dependent_coordinate",
+      "code": "unit_restart_limit_exceeded",
       "details": {
-        "internal_stage": "value_lowering"
+        "internal_stage": "value_lifting"
       },
-      "message": "TMA tile coordinate %r29 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+      "message": "The class-mode value analysis refused lifting at partial_memory_overlap_unsupported (Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented.); the per-unit re-run would build about 136691712 value instances (1024 units from 1 analysed), above the limit 67108864.",
       "stage": "equivalence"
     }
   ],
@@ -182,68 +182,72 @@
     "equivalence": {
       "diagnostics": [
         {
-          "code": "tma_data_dependent_coordinate",
-          "message": "TMA tile coordinate %r29 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-          "stage": "value_lowering"
+          "code": "unit_restart_limit_exceeded",
+          "message": "The class-mode value analysis refused lifting at partial_memory_overlap_unsupported (Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented.); the per-unit re-run would build about 136691712 value instances (1024 units from 1 analysed), above the limit 67108864.",
+          "stage": "value_lifting"
         }
       ],
       "expression_diagnostic": {
+        "class_mode_diagnostic": {
+          "code": "partial_memory_overlap_unsupported",
+          "message": "Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented."
+        },
+        "diagnostic": {
+          "code": "unit_restart_limit_exceeded",
+          "message": "The class-mode value analysis refused lifting at partial_memory_overlap_unsupported (Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented.); the per-unit re-run would build about 136691712 value instances (1024 units from 1 analysed), above the limit 67108864."
+        },
         "diagnostics": [
           {
-            "code": "tma_data_dependent_coordinate",
-            "message": "TMA tile coordinate %r29 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-            "stage": "value_lowering"
+            "code": "unit_restart_limit_exceeded",
+            "details": {
+              "resource": {
+                "estimate": 136691712,
+                "kind": "per_unit_value_instances",
+                "limit": 67108864,
+                "origin": "algorithm_budget"
+              }
+            },
+            "message": "The class-mode value analysis refused lifting at partial_memory_overlap_unsupported (Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented.); the per-unit re-run would build about 136691712 value instances (1024 units from 1 analysed), above the limit 67108864.",
+            "stage": "value_lifting"
           }
         ],
-        "line": 1480,
-        "serialization": {
-          "action_patterns": 0,
-          "binding_patterns": 0,
-          "domain_refinements": 0,
-          "elapsed_seconds": 4.719e-05,
-          "event_families": 0,
-          "expanded_event_records": 0,
-          "largest_batch_members": 0,
-          "logical_actions": 0,
-          "logical_events": 0,
-          "peak_rss_mib_at_completion": 175.76953125,
-          "reachability_queries": 0,
-          "relations": 0,
-          "rss_mib_at_completion": 110.296875,
-          "scheduled_batches": 0,
-          "singleton_batches": 0,
-          "value_families": 0
+        "resource": {
+          "estimate": 136691712,
+          "kind": "per_unit_value_instances",
+          "limit": 67108864,
+          "origin": "algorithm_budget"
         },
-        "stage": "value_lowering"
+        "serialization": {
+          "action_patterns": 4111,
+          "binding_patterns": 4111,
+          "domain_refinements": 110664,
+          "elapsed_seconds": 0.089236698,
+          "event_families": 21973,
+          "expanded_event_records": 0,
+          "largest_batch_members": 84,
+          "logical_actions": 12055,
+          "logical_events": 281307,
+          "peak_rss_mib_at_completion": 209.66015625,
+          "reachability_queries": 0,
+          "relations": 86337,
+          "rss_mib_at_completion": 147.515625,
+          "scheduled_batches": 21973,
+          "singleton_batches": 5179,
+          "value_families": 12933
+        },
+        "stage": "value_lifting"
       },
-      "stage": "value_lowering"
+      "stage": "value_lifting"
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "tma_data_dependent_coordinate",
-            "details": {
-              "cta": 0,
-              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes [%r500], [%rd209, {%r501, %r533, %r555, %r29}], [%r502];",
-              "instruction_index": 895,
-              "location": {
-                "file": "corpus/flashinfer__cake_selective_state_update__stp_dim128_hpc1_s2w4__sm_100a.ptx",
-                "line": 1480
-              },
-              "occurrence": 0,
-              "thread": 128
-            },
-            "message": "TMA tile coordinate %r29 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-            "stage": "value_lowering"
-          }
-        ],
+        "diagnostics": [],
         "first_unavailable_reason": "",
         "queries": 0,
         "resolved": 0,
         "source": "value_lowering",
         "unavailable": 0,
-        "value_view_complete": false
+        "value_view_complete": true
       },
       "cluster_completion_joins": 0,
       "cta_count": 1024,
@@ -564,7 +568,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 10906400,
       "hb_queries": 5146,
-      "hb_query_seconds": 7.948e-05,
+      "hb_query_seconds": 8.3031e-05,
       "overlap_queries": 12,
       "strategy": "conflict-first",
       "unordered_candidates_examined": 12
@@ -572,7 +576,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 177.703125,
+    "peak_footprint_mib": 196.05859375,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -586,31 +590,20 @@
       "representative_election": true
     },
     "semantic_program": {
-      "binding_diagnostic_count": 1,
-      "binding_diagnostics": [
-        {
-          "code": "incomplete_value_semantics",
-          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r29 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
-        }
-      ],
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
       "execution_cohorts": 17,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
-      "memory_linking_templates_used": false,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 4111,
+      "memory_binding_templates": 2000,
+      "memory_bindings": 12055,
+      "memory_linking_templates_used": true,
       "synchronization_groups": 867,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 0,
-      "thread_prefix_groups": 1180,
-      "value_diagnostic_count": 1,
-      "value_diagnostics": [
-        {
-          "code": "tma_data_dependent_coordinate",
-          "line": 1480,
-          "message": "TMA tile coordinate %r29 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
-        }
-      ]
+      "thread_prefix_groups": 18272,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
     "source_violations": [],
     "synchronization_input": {
@@ -642,15 +635,36 @@
     },
     "unresolved_count": 0,
     "value_analysis": {
+      "class_mode_diagnostic": {
+        "code": "partial_memory_overlap_unsupported",
+        "message": "Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented."
+      },
+      "diagnostic": {
+        "code": "unit_restart_limit_exceeded",
+        "message": "The class-mode value analysis refused lifting at partial_memory_overlap_unsupported (Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented.); the per-unit re-run would build about 136691712 value instances (1024 units from 1 analysed), above the limit 67108864."
+      },
       "diagnostics": [
         {
-          "code": "tma_data_dependent_coordinate",
-          "message": "TMA tile coordinate %r29 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-          "stage": "value_lowering"
+          "code": "unit_restart_limit_exceeded",
+          "details": {
+            "resource": {
+              "estimate": 136691712,
+              "kind": "per_unit_value_instances",
+              "limit": 67108864,
+              "origin": "algorithm_budget"
+            }
+          },
+          "message": "The class-mode value analysis refused lifting at partial_memory_overlap_unsupported (Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented.); the per-unit re-run would build about 136691712 value instances (1024 units from 1 analysed), above the limit 67108864.",
+          "stage": "value_lifting"
         }
       ],
-      "equivalence_check": "unsupported",
-      "line": 1480,
+      "equivalence_check": "analysis_budget_exceeded",
+      "resource": {
+        "estimate": 136691712,
+        "kind": "per_unit_value_instances",
+        "limit": 67108864,
+        "origin": "algorithm_budget"
+      },
       "scalar_fold": {
         "diagnostics": [
           {
@@ -660,34 +674,34 @@
         ]
       },
       "serialization": {
-        "action_patterns": 0,
-        "binding_patterns": 0,
-        "domain_refinements": 0,
-        "elapsed_seconds": 4.719e-05,
-        "event_families": 0,
+        "action_patterns": 4111,
+        "binding_patterns": 4111,
+        "domain_refinements": 110664,
+        "elapsed_seconds": 0.089236698,
+        "event_families": 21973,
         "expanded_event_records": 0,
-        "largest_batch_members": 0,
-        "logical_actions": 0,
-        "logical_events": 0,
-        "peak_rss_mib_at_completion": 175.76953125,
+        "largest_batch_members": 84,
+        "logical_actions": 12055,
+        "logical_events": 281307,
+        "peak_rss_mib_at_completion": 209.66015625,
         "reachability_queries": 0,
-        "relations": 0,
-        "rss_mib_at_completion": 110.296875,
-        "scheduled_batches": 0,
-        "singleton_batches": 0,
-        "value_families": 0
+        "relations": 86337,
+        "rss_mib_at_completion": 147.515625,
+        "scheduled_batches": 21973,
+        "singleton_batches": 5179,
+        "value_families": 12933
       },
-      "stage": "value_lowering"
+      "stage": "value_lifting"
     },
-    "value_ir_instance_count": 14236,
-    "value_ir_node_count": 749,
-    "value_view_complete": false,
-    "verification_elapsed_seconds": 7.394596226,
+    "value_ir_instance_count": 133488,
+    "value_ir_node_count": 7619,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 7.538052508,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 177.703125,
-  "pipeline_elapsed_seconds": 7.398470229,
-  "result": "unsupported",
+  "peak_rss_mib": 209.66015625,
+  "pipeline_elapsed_seconds": 7.658352701,
+  "result": "analysis_budget_exceeded",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
@@ -698,5 +712,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.14
+  "whole_pipeline_timeout_seconds": 498.16
 }

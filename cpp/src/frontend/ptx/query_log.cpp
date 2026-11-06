@@ -369,6 +369,14 @@ void PutTmaTail(std::string &out, const ResolvedTma &resolved) {
     Put(out, pair.bytes);
     Put(out, pair.logical_offset);
     Put(out, pair.target_rank);
+    // An abstract endpoint's place, tagged by its presence (pairs are not counted): its
+    // offset and the region's bounds proof (TmaBody).
+    Put(out, pair.place ? 1 : 0);
+    if (pair.place) {
+      Put(out, pair.place->region);
+      Put(out, pair.place->offset ? *pair.place->offset + 1 : 0);
+      Put(out, pair.place->in_bounds ? 1 : 0);
+    }
   }
   out += '|';
   for (const auto &[step, bytes] : resolved.completions) {

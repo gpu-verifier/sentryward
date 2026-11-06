@@ -62,6 +62,9 @@ struct TmemPublicationRead {
 struct TmemLifetimeIssue {
   std::string code, message;
   TmemAtomSite site;
+  // Decided statically over the function's instructions: `site` names a PTX line only, no
+  // executed warp or occurrence.
+  bool static_site = false;
   auto operator<=>(const TmemLifetimeIssue &) const = default;
 };
 struct TmemOrderObligation {

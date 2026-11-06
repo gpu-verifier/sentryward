@@ -65,11 +65,11 @@
   },
   "diagnostics": [
     {
-      "code": "tma_data_dependent_coordinate",
+      "code": "unit_restart_limit_exceeded",
       "details": {
-        "internal_stage": "value_lowering"
+        "internal_stage": "value_analysis.scalar_fold"
       },
-      "message": "TMA tile coordinate %r512 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+      "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 799169024 value instances (512 units from 1 analysed), above the limit 67108864.",
       "stage": "equivalence"
     }
   ],
@@ -186,68 +186,53 @@
     "equivalence": {
       "diagnostics": [
         {
-          "code": "tma_data_dependent_coordinate",
-          "message": "TMA tile coordinate %r512 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-          "stage": "value_lowering"
+          "code": "unit_restart_limit_exceeded",
+          "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 799169024 value instances (512 units from 1 analysed), above the limit 67108864.",
+          "stage": "value_analysis.scalar_fold"
         }
       ],
       "expression_diagnostic": {
+        "class_mode_diagnostic": {
+          "code": "expression_node_limit_exceeded",
+          "message": "lifted member outputs exceed the scalar graph node budget"
+        },
+        "diagnostic": {
+          "code": "unit_restart_limit_exceeded",
+          "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 799169024 value instances (512 units from 1 analysed), above the limit 67108864."
+        },
         "diagnostics": [
           {
-            "code": "tma_data_dependent_coordinate",
-            "message": "TMA tile coordinate %r512 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-            "stage": "value_lowering"
+            "code": "unit_restart_limit_exceeded",
+            "details": {
+              "resource": {
+                "estimate": 799169024,
+                "kind": "per_unit_value_instances",
+                "limit": 67108864,
+                "origin": "algorithm_budget"
+              }
+            },
+            "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 799169024 value instances (512 units from 1 analysed), above the limit 67108864.",
+            "stage": "pipeline"
           }
         ],
-        "line": 1340,
-        "serialization": {
-          "action_patterns": 0,
-          "binding_patterns": 0,
-          "domain_refinements": 0,
-          "elapsed_seconds": 5.5951e-05,
-          "event_families": 0,
-          "expanded_event_records": 0,
-          "largest_batch_members": 0,
-          "logical_actions": 0,
-          "logical_events": 0,
-          "peak_rss_mib_at_completion": 1975.39453125,
-          "reachability_queries": 0,
-          "relations": 0,
-          "rss_mib_at_completion": 486.62890625,
-          "scheduled_batches": 0,
-          "singleton_batches": 0,
-          "value_families": 0
-        },
-        "stage": "value_lowering"
+        "resource": {
+          "estimate": 799169024,
+          "kind": "per_unit_value_instances",
+          "limit": 67108864,
+          "origin": "algorithm_budget"
+        }
       },
-      "stage": "value_lowering"
+      "stage": "value_analysis.scalar_fold"
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "tma_data_dependent_coordinate",
-            "details": {
-              "cta": 0,
-              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes [%r424], [%rd192, {%r425, %r425, %r609, %r512}], [%r426];",
-              "instruction_index": 773,
-              "location": {
-                "file": "corpus/flashinfer__cake_selective_state_update__mtp_short_ring_heads64_groups8_t1__sm_100a.ptx",
-                "line": 1340
-              },
-              "occurrence": 0,
-              "thread": 256
-            },
-            "message": "TMA tile coordinate %r512 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-            "stage": "value_lowering"
-          }
-        ],
+        "diagnostics": [],
         "first_unavailable_reason": "",
         "queries": 0,
         "resolved": 0,
         "source": "value_lowering",
         "unavailable": 0,
-        "value_view_complete": false
+        "value_view_complete": true
       },
       "cluster_completion_joins": 0,
       "cta_count": 512,
@@ -567,7 +552,7 @@
       "hb_filtered_queries": 16720,
       "hb_peak_index_bytes": 16777216,
       "hb_queries": 409188,
-      "hb_query_seconds": 5.4196147240000005,
+      "hb_query_seconds": 5.4654692990000004,
       "overlap_queries": 992,
       "strategy": "conflict-first",
       "unordered_candidates_examined": 992
@@ -575,7 +560,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 1976.984375,
+    "peak_footprint_mib": 3569.74609375,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -589,31 +574,20 @@
       "representative_election": true
     },
     "semantic_program": {
-      "binding_diagnostic_count": 1,
-      "binding_diagnostics": [
-        {
-          "code": "incomplete_value_semantics",
-          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r512 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
-        }
-      ],
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
       "execution_cohorts": 35,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
-      "memory_linking_templates_used": false,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 71978,
+      "memory_binding_templates": 30799,
+      "memory_bindings": 151256,
+      "memory_linking_templates_used": true,
       "synchronization_groups": 15080,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 0,
-      "thread_prefix_groups": 2237,
-      "value_diagnostic_count": 1,
-      "value_diagnostics": [
-        {
-          "code": "tma_data_dependent_coordinate",
-          "line": 1340,
-          "message": "TMA tile coordinate %r512 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
-        }
-      ]
+      "thread_prefix_groups": 252327,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
     "source_violations": [],
     "synchronization_input": {
@@ -645,52 +619,120 @@
     },
     "unresolved_count": 0,
     "value_analysis": {
-      "diagnostics": [
+      "diagnostics": [],
+      "duplicate_write_value_checks": 0,
+      "equivalence_check": "analysis_budget_exceeded",
+      "initial_memory_regions": 289,
+      "initial_read_families": 3780,
+      "memory_action_storage": {
+        "logical_actions": 151256,
+        "stored_runs": 71978
+      },
+      "output_region_families": 0,
+      "output_regions": 1056,
+      "passes": [
         {
-          "code": "tma_data_dependent_coordinate",
-          "message": "TMA tile coordinate %r512 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-          "stage": "value_lowering"
+          "name": "packing",
+          "rewritten_instances": 131072,
+          "rewritten_nodes": 8192,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 1430011,
+          "name": "type_edges",
+          "removed_nodes": 91176
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 288,
+          "layouts": 0,
+          "mapping_blocks": 93376,
+          "name": "view_normalization",
+          "original_pieces": 65536,
+          "reused_initial_reads": 3906,
+          "reused_views": 1208,
+          "segmented": 32,
+          "slices": 67776,
+          "stored_mapping_blocks": 92168,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
         }
       ],
-      "equivalence_check": "unsupported",
-      "line": 1340,
+      "processed_memory_actions": 151256,
+      "processed_memory_families": 0,
+      "read_substitutions": 84480,
       "scalar_fold": {
+        "class_mode_diagnostic": {
+          "code": "expression_node_limit_exceeded",
+          "message": "lifted member outputs exceed the scalar graph node budget"
+        },
+        "diagnostic": {
+          "code": "unit_restart_limit_exceeded",
+          "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 799169024 value instances (512 units from 1 analysed), above the limit 67108864."
+        },
         "diagnostics": [
           {
-            "code": "memory_elimination_not_completed",
+            "code": "unit_restart_limit_exceeded",
+            "details": {
+              "resource": {
+                "estimate": 799169024,
+                "kind": "per_unit_value_instances",
+                "limit": 67108864,
+                "origin": "algorithm_budget"
+              }
+            },
+            "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 799169024 value instances (512 units from 1 analysed), above the limit 67108864.",
             "stage": "pipeline"
           }
-        ]
+        ],
+        "resource": {
+          "estimate": 799169024,
+          "kind": "per_unit_value_instances",
+          "limit": 67108864,
+          "origin": "algorithm_budget"
+        }
       },
       "serialization": {
-        "action_patterns": 0,
-        "binding_patterns": 0,
-        "domain_refinements": 0,
-        "elapsed_seconds": 5.5951e-05,
-        "event_families": 0,
+        "action_patterns": 71978,
+        "binding_patterns": 71978,
+        "domain_refinements": 1574922,
+        "elapsed_seconds": 1.843993964,
+        "event_families": 323049,
         "expanded_event_records": 0,
-        "largest_batch_members": 0,
-        "logical_actions": 0,
-        "logical_events": 0,
-        "peak_rss_mib_at_completion": 1975.39453125,
+        "largest_batch_members": 84,
+        "logical_actions": 151256,
+        "logical_events": 3667688,
+        "peak_rss_mib_at_completion": 2240.5859375,
         "reachability_queries": 0,
-        "relations": 0,
-        "rss_mib_at_completion": 486.62890625,
-        "scheduled_batches": 0,
-        "singleton_batches": 0,
-        "value_families": 0
+        "relations": 1252914,
+        "rss_mib_at_completion": 841.86328125,
+        "scheduled_batches": 323049,
+        "singleton_batches": 66950,
+        "value_families": 187128
       },
-      "stage": "value_lowering"
+      "shared_read_families": 1509,
+      "shared_read_instances": 12478,
+      "stored_read_substitutions": 72002
     },
-    "value_ir_instance_count": 24650,
-    "value_ir_node_count": 1484,
-    "value_view_complete": false,
-    "verification_elapsed_seconds": 50.242549089,
+    "value_ir_instance_count": 1560877,
+    "value_ir_node_count": 100009,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 52.072044065,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 1976.984375,
-  "pipeline_elapsed_seconds": 50.299228732,
-  "result": "unsupported",
+  "peak_rss_mib": 3596.26953125,
+  "pipeline_elapsed_seconds": 78.935369569,
+  "result": "analysis_budget_exceeded",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
@@ -701,5 +743,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 497.839
+  "whole_pipeline_timeout_seconds": 497.799
 }

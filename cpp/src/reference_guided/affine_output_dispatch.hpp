@@ -87,26 +87,184 @@ class AffineOutputDispatch {
     if (!found) throw Decline{"uncertified_projection_state"};
     return *found;
   }
+  // Coordinates of two reads of one tensor at points p and q, fitted as one
+  // read in the axis: equal coordinates stay, constant ones become the integer
+  // affine line through both points. Declines with the caller's reasons.
+  std::vector<Id> fit_coordinates(const Node &r, const Z &p, const Node &s, const Z &q, Id axis,
+                                  const char *fit, const char *noninteger) {
+    std::vector<Id> coordinates;
+    for (size_t i = 0; i < r.args.size(); ++i) {
+      tick();
+      if (r.args[i] == s.args[i]) { coordinates.push_back(r.args[i]); continue; }
+      auto left = a.value(r.args[i]), right = a.value(s.args[i]);
+      if (!left || !right || left->denominator() != 1 || right->denominator() != 1) throw Decline{fit};
+      const Q slope = (*right - *left) / Q(q - p);
+      if (slope.denominator() != 1) throw Decline{noninteger};
+      coordinates.push_back(a.add({r.args[i], a.mul({a.constant(slope), a.sub(axis, a.constant(Q(p)))})}));
+    }
+    return coordinates;
+  }
   Id read_template(const Dot &first, const Z &first_point,
                    const Dot &second, const Z &second_point, Id axis) {
     const auto &r = a.nodes[first.read], &s = a.nodes[second.read];
     if (r.tag != s.tag || r.args.size() != s.args.size() || first.binder != second.binder ||
         first_point == second_point) throw Decline{"projection_template_shape"};
-    std::vector<Id> coordinates;
-    for (size_t i = 0; i < r.args.size(); ++i) {
-      tick();
-      if(r.args[i]==s.args[i]) {coordinates.push_back(r.args[i]);continue;}
-      auto left=a.value(r.args[i]),right=a.value(s.args[i]);
-      if(!left || !right || left->denominator()!=1 || right->denominator()!=1)
-        throw Decline{"projection_coordinate_fit"};
-      Q slope = (*right-*left) / Q(second_point-first_point);
-      if (slope.denominator() != 1) throw Decline{"projection_coordinate_noninteger"};
-      coordinates.push_back(a.add({r.args[i],a.mul({a.constant(slope),a.sub(axis,a.constant(Q(first_point)))})}));
-    }
+    const auto coordinates = fit_coordinates(r, first_point, s, second_point, axis,
+                                             "projection_coordinate_fit", "projection_coordinate_noninteger");
     auto split = r.tag.rfind('\n');
     if (split == std::string::npos || !r.tag.substr(split+1).starts_with("real"))
       throw Decline{"projection_read_type"};
     return a.read(r.tag.substr(0,split),coordinates,r.tag.substr(split+1));
+  }
+  // Dispatcher arms of the form shell_p(Sum_p): the Sums take the ordinary
+  // dispatch below, and the shell becomes one expression in the output
+  // coordinate. Each arm is split at its unique projection Sum (a path of
+  // Add/Mul nodes with exactly one Sum-containing operand), the Sum replaced
+  // by a placeholder: an opaque finite real atom, so every identity proved
+  // with it holds for the Sum's real value. The shells of two arms fit a template
+  // (equal nodes, or typed reads whose integer coordinates are affine in the
+  // point, as read_template); the template at every arm's point must equal
+  // that arm's shell by the exact scalar engine. Then the dispatched Sum fills
+  // the placeholder. O(arms * shell) plus one bounded EP query per arm.
+  struct ArmShell { Id hole = invalid, shell = invalid; };
+  static constexpr unsigned max_shell_depth = 4;
+  Id shell_hole = invalid;
+  // Memoized per arm_shells call: split_shell asks every child at every level.
+  std::map<std::pair<Id, unsigned>, bool> sum_memo;
+  bool contains_sum(Id id, unsigned depth) {
+    if (auto it = sum_memo.find({id, depth}); it != sum_memo.end()) return it->second;
+    tick(); const auto &n = a.nodes[id];
+    bool found = false;
+    if (n.op == "fold") found = n.tag == "Sum";
+    else if (depth < max_shell_depth && (n.op == "add" || n.op == "mul") && n.args.size() <= max_factors)
+      for (Id child : n.args) if (contains_sum(child, depth + 1)) { found = true; break; }
+    sum_memo.emplace(std::pair(id, depth), found);
+    return found;
+  }
+  Id split_shell(Id id, Id &sum, unsigned depth) {
+    tick(); const auto &n = a.nodes[id];
+    if (n.op == "fold" && n.tag == "Sum") { sum = id; return shell_hole; }
+    if (depth >= max_shell_depth || (n.op != "add" && n.op != "mul") || !n.facts.finite ||
+        n.args.size() > max_factors) throw Decline{"projection_sum_form"};
+    size_t chosen = n.args.size();
+    for (size_t i = 0; i < n.args.size(); ++i)
+      if (contains_sum(n.args[i], depth + 1)) {
+        if (chosen != n.args.size()) throw Decline{"shell_sum_ambiguous"};
+        chosen = i;
+      }
+    if (chosen == n.args.size()) throw Decline{"projection_sum_form"};
+    std::vector<Id> args = n.args;
+    args[chosen] = split_shell(n.args[chosen], sum, depth + 1);
+    return checker.reapply(id, args);
+  }
+  Id shell_template(Id x, const Z &px, Id y, const Z &py, Id axis, std::map<std::pair<Id, Id>, Id> &memo) {
+    tick();
+    if (x == y) return x;
+    if (auto it = memo.find({x, y}); it != memo.end()) return it->second;
+    const auto &m = a.nodes[x], &n = a.nodes[y];
+    const bool commutative = m.op == "add" || m.op == "mul";
+    if (m.op != n.op || m.tag != n.tag || m.args.size() != n.args.size() ||
+        (!commutative && m.data != n.data) || (m.op == "mul" && m.data != n.data) ||
+        m.op == "const" || m.op == "var" || m.op == "fold" || m.op == "call")
+      throw Decline{"shell_template"};
+    Id result;
+    if (commutative) {
+      // Operand order follows Arena creation order, which may differ between
+      // arms: pair equal operands first, then the rest by a unique structural
+      // signature (operator, tag, arity, coefficient).
+      const bool sum = m.op == "add";
+      auto operands = [&](const Node &node) {
+        std::vector<std::pair<Id, Q>> out;
+        for (size_t i = 0; i < node.args.size(); ++i) out.emplace_back(node.args[i], sum ? node.data[i] : Q(1));
+        return out;
+      };
+      auto left = operands(m), right = operands(n);
+      auto signature = [&](const std::pair<Id, Q> &term) {
+        const auto &t = a.nodes[term.first];
+        return std::tuple(t.op, t.tag, t.args.size(), term.second);
+      };
+      std::vector<Id> terms;
+      if (!sum) terms.push_back(a.constant(m.data[0]));
+      std::vector<bool> used(right.size(), false);
+      for (const auto &l : left) {
+        tick();
+        size_t match = right.size();
+        for (size_t j = 0; j < right.size() && match == right.size(); ++j)
+          if (!used[j] && right[j] == l) match = j;
+        if (match == right.size())
+          for (size_t j = 0; j < right.size(); ++j)
+            if (!used[j] && signature(right[j]) == signature(l)) {
+              if (match != right.size()) throw Decline{"shell_template_ambiguous"};
+              match = j;
+            }
+        if (match == right.size()) throw Decline{"shell_template"};
+        used[match] = true;
+        const Id fitted = shell_template(l.first, px, right[match].first, py, axis, memo);
+        terms.push_back(sum ? a.mul({a.constant(l.second), fitted}) : fitted);
+      }
+      result = sum ? a.add(std::move(terms)) : a.mul(std::move(terms));
+    } else if (m.op == "read") {
+      const auto coordinates = fit_coordinates(m, px, n, py, axis, "shell_coordinate_fit", "shell_coordinate_noninteger");
+      const auto split = m.tag.rfind('\n');
+      if (split == std::string::npos || m.bounds || !m.tag.substr(split + 1).starts_with("real"))
+        throw Decline{"shell_read_type"};
+      result = a.read(m.tag.substr(0, split), coordinates, m.tag.substr(split + 1));
+    } else {
+      std::vector<Id> args;
+      for (size_t i = 0; i < m.args.size(); ++i) args.push_back(shell_template(m.args[i], px, n.args[i], py, axis, memo));
+      result = checker.reapply(x, args);
+    }
+    memo.emplace(std::pair(x, y), result);
+    return result;
+  }
+  // The shell with one node (the output axis variable or the placeholder
+  // atom) replaced by a value. A subtree without the axis is kept unchanged,
+  // as is every Fold for the placeholder: split_shell puts the placeholder
+  // above every Fold it keeps, and an opaque atom has no free variable to
+  // test. Only a Fold over the axis declines, so no binder is captured.
+  // Operators are rebuilt by the shared reapply. O(changed shell nodes).
+  Id replace(Id root, Id needle, Id value) {
+    std::unordered_map<Id, Id> memo;
+    const bool placeholder = needle == shell_hole;
+    std::function<Id(Id)> visit = [&](Id id) -> Id {
+      tick();
+      if (id == needle) return value;
+      if (auto it = memo.find(id); it != memo.end()) return it->second;
+      const auto &n = a.nodes[id];
+      if (placeholder ? n.op == "fold" : !a.depends(id, needle)) return id;
+      if (n.op == "fold") throw Decline{"shell_fold"};
+      std::vector<Id> args;
+      bool changed = false;
+      for (Id child : n.args) { args.push_back(visit(child)); changed |= args.back() != child; }
+      return memo.emplace(id, changed ? checker.reapply(id, args) : id).first->second;
+    };
+    return visit(root);
+  }
+  // Replaces each arm by its Sum and returns the fitted shell; nothing when
+  // the arms are Sums already (the ordinary dispatcher form).
+  std::optional<ArmShell> arm_shells(std::map<Z, Id> &arms, Id axis) {
+    if (a.nodes[arms.begin()->second].op == "fold") return {};
+    if (shell_hole == invalid)
+      shell_hole = a.intern("shell_hole", {}, {}, "affine-output-dispatch", {true, false, false});
+    sum_memo.clear();
+    std::map<Z, Id> sums, shells;
+    for (const auto &[point, arm] : arms) {
+      Id sum = invalid;
+      const Id shell = split_shell(arm, sum, 0);
+      if (sum == invalid) throw Decline{"projection_sum_form"};
+      sums.emplace(point, sum); shells.emplace(point, shell);
+    }
+    auto f = shells.begin(), s = std::next(f);
+    std::map<std::pair<Id, Id>, Id> memo;
+    const Id shell = shell_template(f->second, f->first, s->second, s->first, axis, memo);
+    for (const auto &[point, actual] : shells) {
+      tick();
+      const Id expected = replace(shell, axis, a.constant(Q(point)));
+      if (!checker.scalar.equal(expected, actual)) throw Decline{"shell_alignment"};
+    }
+    arms = std::move(sums);
+    ++a.stats["affine_output_shell_dispatches"];
+    return ArmShell{shell_hole, shell};
   }
   std::optional<AffineOutputProof> single_projection(Id root) {
     const auto &fold=a.nodes[root];
@@ -187,6 +345,7 @@ public:
         if (missing > hi || !arms.emplace(missing,cursor).second) throw Decline{"dispatcher_default"};
       }
       if (Z(arms.size()) != hi-lo+1 || arms.size() < 2) throw Decline{"dispatcher_coverage"};
+      const auto shell = arm_shells(arms, axis);
       auto f = arms.begin(), s = std::next(f);
       Dot first = dot(f->second);
       if(first.binder==axis)throw Decline{"projection_output_capture"};
@@ -238,6 +397,7 @@ public:
       Id body = a.mul({projection,state});
       Id result = a.intern("fold",{a.zero,body},{Q(first.binder),Q(first.count)},"Sum",
                            {a.nodes[body].facts.finite,false,false});
+      if (shell) result = replace(shell->shell, shell->hole, result);
       a.stats["affine_output_dispatch_arms"] += arms.size();
       ++a.stats["affine_output_dispatch_proofs"];
       return AffineOutputProof{result,projection,first.binder,

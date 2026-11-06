@@ -214,7 +214,7 @@ inline std::vector<FixedInputElement> decode_verified(const J &input,const J &re
       if(!row.is_array() || row.empty() || (rank && rank!=row.size()))reject("invalid fixed element row rank");
       rank=row.size();
       for(const auto &value:row) {
-        if(result.size()>=4096)reject("fixed element count cap");
+        if(result.size()>=fixed_input_element_limit)reject("fixed element count cap");
         Z literal=natural(value);
         if(literal>(type[0]=='s'?Z(pow2(bits-1)-1):Z(pow2(bits)-1)))reject("fixed literal outside integer type");
         auto coordinate=coordinates(optimized,position);
@@ -257,8 +257,11 @@ inline std::vector<FixedInputElement> decode_binding(
 } // namespace fixed_input
 
 inline J fixed_input_context_report(const PreparedContext &context) {
+  // Distinct configured elements that either side used; `applied` lists each use with its side.
+  std::set<size_t> used(context.applied_fixed_inputs.begin(),context.applied_fixed_inputs.end());
+  used.insert(context.optimized_fixed_inputs.begin(),context.optimized_fixed_inputs.end());
   J result={{"configured_elements",context.fixed_inputs.size()},
-            {"applied_elements",context.applied_fixed_inputs.size()},
+            {"applied_elements",used.size()},
             {"configured",J::array()},{"applied",J::array()}};
   auto describe=[](const FixedInputElement &entry) {
     J coordinates=J::array();
@@ -269,6 +272,10 @@ inline J fixed_input_context_report(const PreparedContext &context) {
   for(const auto &entry:context.fixed_inputs)result["configured"].push_back(describe(entry));
   for(size_t index:context.applied_fixed_inputs) {
     J entry=describe(context.fixed_inputs.at(index));entry["side"]="left";
+    result["applied"].push_back(std::move(entry));
+  }
+  for(size_t index:context.optimized_fixed_inputs) {
+    J entry=describe(context.fixed_inputs.at(index));entry["side"]="right";
     result["applied"].push_back(std::move(entry));
   }
   return result;

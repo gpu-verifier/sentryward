@@ -5,27 +5,31 @@
   },
   "diagnostics": [
     {
-      "code": "timeout",
+      "code": "process_memory_budget_exceeded",
       "details": {
-        "internal_stage": "verification",
+        "cta_progress": 2,
+        "internal_stage": "value_view_construction",
+        "peak_rss_mib": 85398.5703125,
         "resource": {
-          "kind": "time",
-          "limit": 498.502,
-          "origin": "configured_budget",
-          "unit": "seconds"
-        }
+          "kind": "memory",
+          "limit": 85274.0,
+          "origin": "default_budget",
+          "unit": "MiB"
+        },
+        "rss_limit_mib": null
       },
-      "stage": "synchronization"
+      "stage": "equivalence"
     }
   ],
-  "elapsed_seconds": 498.530311035,
+  "elapsed_seconds": 202.796558724,
   "internal": {
-    "active_stage": "verification",
+    "active_stage": "semantic_ir.cta2",
     "equivalence": {
       "diagnostics": [
         {
           "code": "prerequisite_check_not_passed",
           "details": {
+            "cta_progress": 2,
             "prerequisite_checks": {
               "equivalence": "not_run",
               "memory": "not_run",
@@ -33,292 +37,47 @@
             },
             "prerequisite_diagnostics": [
               {
-                "code": "timeout",
+                "code": "process_memory_budget_exceeded",
                 "details": {
+                  "cta_progress": 2,
+                  "peak_rss_mib": 85398.5703125,
                   "resource": {
-                    "kind": "time",
-                    "limit": 498.502,
-                    "origin": "configured_budget",
-                    "unit": "seconds"
-                  }
+                    "kind": "memory",
+                    "limit": 85274.0,
+                    "origin": "default_budget",
+                    "unit": "MiB"
+                  },
+                  "rss_limit_mib": null
                 },
-                "stage": "verification"
+                "stage": "value_view_construction"
               }
             ],
-            "prerequisite_result": "timeout",
-            "prerequisite_status": "timeout"
+            "prerequisite_result": "memory_budget_exceeded",
+            "prerequisite_status": "memory_limit_exceeded"
           },
-          "stage": "verification"
+          "stage": "value_view_construction"
         }
       ],
-      "prerequisite_status": "timeout",
-      "stage": "verification"
+      "prerequisite_status": "memory_limit_exceeded",
+      "stage": "semantic_ir.cta2"
     },
-    "frontend": {
-      "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "tma_data_dependent_coordinate",
-            "details": {
-              "cta": 0,
-              "instruction": "@p cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.L2::cache_hint [%r346], [%rd173, {%r347, %r348, %r349}], [%r343], %rd172;",
-              "instruction_index": 229,
-              "location": {
-                "file": "corpus/tirx-curated-vsa.ptx",
-                "line": 393
-              },
-              "occurrence": 0,
-              "thread": 448
-            },
-            "message": "TMA tile coordinate %r348 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-            "stage": "value_lowering"
-          }
-        ],
-        "first_unavailable_reason": "",
-        "queries": 0,
-        "resolved": 0,
-        "source": "value_lowering",
-        "unavailable": 0,
-        "value_view_complete": false
-      },
-      "cluster_completion_joins": 0,
-      "cta_count": 148,
-      "dependency_compression": {
-        "bulk_read_wait": {
-          "consumers": 416,
-          "emitted_references": 26,
-          "original_references": 98,
-          "prefix_effects": 0
-        },
-        "tcgen_commit": {
-          "consumers": 3367,
-          "emitted_references": 20044,
-          "original_references": 11304648,
-          "prefix_effects": 3367
-        },
-        "tcgen_load_wait": {
-          "consumers": 108160,
-          "emitted_references": 1277952,
-          "original_references": 47988736,
-          "prefix_effects": 0
-        },
-        "tcgen_store_wait": {
-          "consumers": 316160,
-          "emitted_references": 1251328,
-          "original_references": 257152000,
-          "prefix_effects": 0
-        }
-      },
-      "diagnostic_sample_count": 0,
-      "discharged_codes": [
-        "mma_memory_effect_refinement",
-        "tcgen_pipeline_effect_refinement",
-        "tcgen_commit_notification_order_refinement"
-      ],
-      "executed_records": 8845410084,
-      "frontend_assumptions": {
-        "assertion_failure_forms": [
-          "trap",
-          "__assertfail"
-        ],
-        "assertion_uses": 0,
-        "atomic_uses": 0,
-        "bounded_loop_uses": 0,
-        "clc_failure": true,
-        "clc_uses": 0,
-        "data_branch_decisions": [],
-        "election_policy": {
-          "fallback": "lowest_member",
-          "preferred_lane": 0,
-          "strategy": "preferred_member"
-        },
-        "election_uses": 8402816,
-        "fixed_election": true,
-        "isolated_launch": true,
-        "noalias_unbounded": false,
-        "opaque_compute_regions": [],
-        "pointer_contract": {
-          "aliasing": "distinct_objects_noalias",
-          "extent_bytes": "unbounded"
-        },
-        "representative_branch_uses": 0,
-        "tensor_properties": {
-          "kind": "fixed_read_only",
-          "origin": "tensor_properties",
-          "properties": [
-            {
-              "element_type": "s32",
-              "object": "q2k_indices",
-              "property": "lower_bound",
-              "value": 0
-            },
-            {
-              "element_type": "s32",
-              "object": "q2k_indices",
-              "property": "upper_bound",
-              "value": 127
-            }
-          ],
-          "regions": [
-            {
-              "allocation": "q2k_indices",
-              "byte_offset": 0,
-              "bytes": "whole_object",
-              "resource": "input.arg0.0"
-            }
-          ],
-          "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
-        },
-        "tensor_property_decisions": [],
-        "trap_only_equality_assertions_hold": true
-      },
-      "implementation": "cpp",
-      "input_objects": [
-        {
-          "bytes": 8,
-          "object": "q2k_indices",
-          "offset": 0,
-          "parameter": "vsa_attn_blk128_kernel_param_0",
-          "source": "declaration"
-        }
-      ],
-      "lowered_instruction_count": 35592339,
-      "mma_refinement": {
-        "blocked": [],
-        "discharged": 13312
-      },
-      "reached_opcodes": {
-        "add.ftz.f32": 8388608,
-        "add.rn.f32x2": 544997376,
-        "add.s32": 193021280,
-        "add.s64": 4202556,
-        "and.b32": 26738008,
-        "and.pred": 8126464,
-        "bar.arrive": 8707584,
-        "bar.sync": 8792832,
-        "bar.warp.sync": 8393344,
-        "bra": 31843612,
-        "bra.uni": 169728,
-        "cp.async.bulk.commit_group": 32768,
-        "cp.async.bulk.prefetch.tensor.3d.L2.global.tile": 1752,
-        "cp.async.bulk.tensor.3d.global.shared::cta.tile.bulk_group.L2::cache_hint": 2048,
-        "cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.L2::cache_hint": 264192,
-        "cp.async.bulk.wait_group.read": 32768,
-        "cvt.rn.bf16x2.f32": 545259520,
-        "cvt.u64.u32": 33592320,
-        "cvta.param.u64": 2182508,
-        "elect.sync": 8402816,
-        "ex2.approx.ftz.f32": 1082130432,
-        "fence.mbarrier_init.release.cluster": 75776,
-        "fence.proxy.async.shared::cta": 206848,
-        "fma.rn.f32x2": 536870912,
-        "fma.rn.ftz.f32": 131072,
-        "ld.global.s32": 135808,
-        "ld.param.b32": 75776,
-        "ld.param.b64": 75776,
-        "ld.shared.f32": 8650752,
-        "ld.shared.u32": 66304,
-        "max.f32": 553779200,
-        "mbarrier.arrive.expect_tx.shared.b64": 132096,
-        "mbarrier.arrive.shared.b64": 34248704,
-        "mbarrier.init.shared.b64": 4440,
-        "mbarrier.try_wait.parity.acquire.cta.shared::cta.b64": 57063296,
-        "mov.b32": 133497808,
-        "mov.b64": 3802013696,
-        "mov.s32": 262588,
-        "mov.u32": 151996,
-        "mul.f32": 16515072,
-        "mul.ftz.f32": 8781824,
-        "mul.rn.f32x2": 536870912,
-        "mul.wide.s32": 2031616,
-        "mul.wide.u32": 41020,
-        "neg.ftz.f32": 37888,
-        "or.b32": 202988,
-        "or.b64": 33592320,
-        "or.pred": 32768,
-        "prefetch.global.L2": 3072,
-        "prefetch.tensormap": 18944,
-        "rcp.approx.ftz.f32": 131072,
-        "ret": 75776,
-        "selp.b32": 33522688,
-        "selp.f32": 33554432,
-        "setmaxnreg.dec.sync.aligned.u32": 37888,
-        "setmaxnreg.inc.sync.aligned.u32": 37888,
-        "setp.eq.b32": 25225344,
-        "setp.gt.s32": 75776,
-        "setp.gt.u32": 8414208,
-        "setp.lt.ftz.f32": 8126464,
-        "setp.lt.u32": 8683520,
-        "setp.ltu.ftz.f32": 8126464,
-        "setp.ne.b32": 116195908,
-        "setp.neu.ftz.f32": 8912896,
-        "shfl.sync.idx.b32": 89984,
-        "shl.b32": 38597532,
-        "shl.b64": 444,
-        "shr.u32": 9298668,
-        "st.shared.f32": 8650752,
-        "st.shared.v4.u32": 2097152,
-        "sub.f32": 8126464,
-        "sub.ftz.f32": 262144,
-        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 4736,
-        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 265216,
-        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 4736,
-        "tcgen05.ld.sync.aligned.32x32b.x16.b32": 67108864,
-        "tcgen05.ld.sync.aligned.32x32b.x32.b32": 33554432,
-        "tcgen05.mma.cta_group::1.kind::f16": 1048576,
-        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 4736,
-        "tcgen05.st.sync.aligned.32x32b.x16.b32": 98566144,
-        "tcgen05.wait::ld.sync.aligned": 8519680,
-        "tcgen05.wait::st.sync.aligned": 24903680,
-        "vote.sync.ballot.b32": 8126464,
-        "xor.b32": 44205568
-      },
-      "shared_constant_propagation": {
-        "read_from_dependencies": 0,
-        "representation": "sparse_known_bytes",
-        "validation": "pending_backend"
-      },
-      "source_binding_storage": {
-        "binding_templates": 28,
-        "generated_address_rows": 0,
-        "generated_body_rows": 0,
-        "generated_memory_instances": 0,
-        "logical_instructions": 35592339,
-        "stored_bindings": 272351
-      },
-      "source_edge_storage": {
-        "binding_templates": 45956,
-        "logical_edges": 35591315,
-        "stored_bindings": 45956
-      },
-      "tcgen_history_refinement": {
-        "blocked": [],
-        "notifications": 3367,
-        "operations": 13312
-      },
-      "thread_count": 75776,
-      "unsupported_occurrence_counts": {},
-      "user_branch_decisions": []
-    },
-    "frontend_source_violations": [],
     "implementation": "cpp",
     "memory_analysis_complete": false,
-    "peak_footprint_mib": 54542.25390625
+    "peak_footprint_mib": 85398.578125
   },
-  "peak_rss_mib": 54542.25390625,
+  "peak_rss_mib": 85398.5703125,
   "resource": {
-    "kind": "time",
-    "limit": 498.502,
-    "origin": "configured_budget",
-    "unit": "seconds"
+    "kind": "memory",
+    "limit": 85274.0,
+    "origin": "default_budget",
+    "unit": "MiB"
   },
-  "result": "timeout",
+  "result": "memory_budget_exceeded",
   "rss_limit_mib": null,
   "schema": "spverify.native-ptx-run/v1",
   "scope": {
     "operation": "kernel_verification"
   },
   "timeout_scope": "whole_pipeline",
-  "verification_limitations": [],
   "warnings_complete": false
 }

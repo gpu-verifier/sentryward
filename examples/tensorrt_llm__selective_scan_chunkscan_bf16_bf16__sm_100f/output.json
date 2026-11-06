@@ -60,18 +60,10 @@
     }
   ],
   "checks": {
-    "equivalence": "incomplete",
+    "equivalence": "passed",
     "synchronization": "passed"
   },
-  "diagnostics": [
-    {
-      "code": "not_proven",
-      "details": {
-        "internal_stage": "equivalence_check"
-      },
-      "stage": "equivalence"
-    }
-  ],
+  "diagnostics": [],
   "evidence": {
     "race_count": 0,
     "race_samples_truncated": false,
@@ -138,8 +130,8 @@
     },
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
-      "arena_nodes": 1141328,
-      "comparison_elapsed_seconds": 4.787302415,
+      "arena_nodes": 712970,
+      "comparison_elapsed_seconds": 3.722793817,
       "context_declaration": {
         "assumptions": [],
         "fixed_inputs": [
@@ -158,93 +150,97 @@
       },
       "context_policy": "explicit native caller premises; no implied provenance certification",
       "counters": {
-        "add_term_visits": 1927540,
-        "affine_coordinate_captures": 33090,
+        "add_term_visits": 1350455,
+        "affine_coordinate_captures": 8256,
         "affine_state_banks": 1,
-        "call_definition_node_visits": 106560,
+        "call_definition_node_visits": 114337,
         "canonical_domain_invariant_reuse": 32322,
         "canonical_domain_rebind_nodes": 81600,
         "canonical_factor_visits": 261248,
-        "canonical_node_visits": 532049,
+        "canonical_node_visits": 378945,
         "canonical_sum_initials": 8128,
-        "canonical_sum_trimmed_domains": 25056,
-        "canonical_sum_zero_domains": 16896,
-        "certified_state_pattern_cache_hits": 16379,
-        "certified_state_pattern_decline_no_certified_state": 3,
-        "certified_state_pattern_decline_nonplain_pattern": 2,
-        "certified_state_pattern_work": 98,
+        "canonical_sum_trimmed_domains": 23009,
+        "canonical_sum_zero_domains": 14849,
+        "certified_state_pattern_cache_hits": 16375,
+        "certified_state_pattern_decline_no_certified_state": 5,
+        "certified_state_pattern_decline_nonplain_pattern": 4,
+        "certified_state_pattern_work": 161,
         "coefficient_normalizations": 33,
         "completed_reductions": 16320,
         "constant_binary32_bitcasts": 8192,
         "coverage_polynomial_peak": 4,
-        "coverage_polynomial_visits": 65536,
+        "coverage_polynomial_visits": 65408,
         "coverage_stored_piece_visits": 16384,
-        "ep_body_anchor_edges": 581914,
-        "ep_body_anchor_nodes": 684355,
+        "ep_body_anchor_edges": 546022,
+        "ep_body_anchor_nodes": 637266,
         "ep_body_bound_read_exact_hits": 2096,
-        "ep_body_bound_read_matcher_fallbacks": 2015,
-        "ep_body_instance_cache_entries": 16802,
-        "ep_body_instance_cache_hits": 3026,
-        "ep_body_missing_opaque_read": 1083,
+        "ep_body_bound_read_matcher_fallbacks": 870,
+        "ep_body_instance_cache_entries": 16801,
+        "ep_body_instance_cache_hits": 3057,
+        "ep_body_missing_opaque_read": 4,
         "ep_body_obligations": 16800,
-        "ep_body_pattern_anchor_cache_hits": 206283,
+        "ep_body_pattern_anchor_cache_hits": 183727,
         "ep_body_payload_summary_nodes": 2210,
         "ep_body_proofs": 16384,
-        "ep_body_read_anchor_rejections": 206064,
-        "ep_body_read_match_cache_entries": 33500,
-        "ep_body_read_match_cache_hits": 37212,
-        "ep_body_target_anchor_cache_hits": 94604,
-        "ep_cross_products": 352,
-        "ep_identity_proofs": 24512,
+        "ep_body_read_anchor_rejections": 183448,
+        "ep_body_read_match_cache_entries": 770,
+        "ep_body_read_match_cache_hits": 3542,
+        "ep_body_target_anchor_cache_hits": 83509,
+        "ep_cross_products": 288,
+        "ep_identity_proofs": 24544,
+        "ep_polynomial_proofs": 32,
+        "ep_reduction_outer_obligations": 64,
         "ep_scalar_attempts": 25056,
-        "ep_scalar_proofs": 24512,
+        "ep_scalar_proofs": 24576,
+        "exact_proof_reuse_certificates": 64,
         "finite_bilinear_banks": 1,
         "finite_state_reuse_banks": 1,
-        "fold_alpha_root_cache_hits": 3039,
-        "fold_alpha_signature_edges": 3240,
-        "fold_alpha_signatures": 2345,
-        "fold_alpha_states": 2345,
+        "fold_alpha_root_cache_hits": 2079,
+        "fold_alpha_signature_edges": 1292,
+        "fold_alpha_signatures": 813,
+        "fold_alpha_states": 813,
         "fp_idiom_power_constructions": 0,
         "fp_idiom_rm_producers": 0,
         "ideal_additive_compiler_exp_sequences": 0,
         "ideal_compiler_exp_sequences": 0,
         "ideal_compiler_log2_polynomials": 0,
         "ideal_compiler_lse_sequences": 0,
-        "ideal_single_constant_exp_sequences": 13727,
-        "imported_context_nodes": 850153,
+        "ideal_single_constant_exp_sequences": 8705,
+        "imported_context_nodes": 470366,
+        "importer_occurrence_binder_hits": 94847,
         "importer_scope_banks": 2,
-        "importer_scope_binder_hits": 39496,
-        "importer_scope_binders_created": 8192,
-        "importer_scope_budget_fallbacks": 47416,
-        "importer_scope_leaf_lookups": 95104,
+        "importer_scope_binders_created": 257,
+        "importer_scope_leaf_lookups": 257,
         "importer_scope_nested_body_fallbacks": 20480,
-        "intern_requests": 8509466,
-        "known_bits_cache_hits": 8160,
+        "intern_requests": 6092465,
+        "known_bits_cache_hits": 509,
         "known_bits_edges": 0,
-        "known_bits_nodes": 8160,
-        "linear_reduction_decline_incomplete_targets": 128,
-        "linear_reduction_distributed_products": 128,
+        "known_bits_nodes": 1,
+        "linear_reduction_closed_groups": 0,
+        "linear_reduction_distributed_products": 64,
         "linear_reduction_existing_scalar_calls": 64,
-        "linear_reduction_pattern_attempts": 128,
-        "linear_reduction_shared_target_fallbacks": 64,
-        "linear_reduction_weighted_add_edges": 448,
-        "linear_reduction_weighted_states": 1472,
-        "local_pattern_candidates": 218660,
+        "linear_reduction_instantiated_targets": 64,
+        "linear_reduction_pattern_attempts": 64,
+        "linear_reduction_pattern_proofs": 64,
+        "linear_reduction_preserved_partial_groups": 32,
+        "linear_reduction_weighted_add_edges": 224,
+        "linear_reduction_weighted_states": 736,
+        "local_pattern_candidates": 198572,
         "masked_sum_predicate_nodes": 16320,
-        "masked_sum_prefix_queries": 53166,
+        "masked_sum_prefix_queries": 51119,
         "maximum_dominated_operands": 0,
         "normalization_cache_context_changes": 318,
-        "normalization_node_visits": 508180,
+        "normalization_node_visits": 470174,
         "parametric_state_attempts": 0,
         "pattern_build_peak_nodes": 8,
         "pattern_build_unique_nodes": 90112,
-        "pattern_node_visits": 515335,
-        "proved_select_arms_imported": 32,
+        "pattern_node_visits": 369053,
+        "proved_select_arms_imported": 1,
         "select_max_probe_ancestor_nodes": 0,
-        "select_max_probe_calls": 24512,
+        "select_max_probe_calls": 8702,
         "select_max_probe_hits": 8192,
         "select_max_probe_temporary_nodes": 0,
-        "summary_bind_nodes": 24576,
+        "summary_bind_nodes": 24512,
         "symbolic_byte_reads_without_extent_proof": 0,
         "unary_reduction_composition_attempts": 64,
         "unary_reduction_composition_context_changes": 5
@@ -254,13 +250,8 @@
         "proved_families": 8192,
         "status": "proved"
       },
-      "diagnostics": [
-        {
-          "code": "not_proven",
-          "stage": "equivalence_check"
-        }
-      ],
-      "elapsed_s": 3.51275821,
+      "diagnostics": [],
+      "elapsed_s": 2.587246368,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -274,7 +265,7 @@
           "previously_completed": 0,
           "repeated_across_queries": 0,
           "requests": 0,
-          "shared_hits": 2452,
+          "shared_hits": 2484,
           "unique_query_nodes": 0
         },
         "fraction_witness_s": 0.0,
@@ -284,7 +275,7 @@
           "previously_completed": 0,
           "repeated_across_queries": 0,
           "requests": 0,
-          "shared_hits": 781,
+          "shared_hits": 829,
           "unique_query_nodes": 0
         },
         "ordinary_polynomial_s": 0.0,
@@ -293,10 +284,10 @@
           "previously_completed": 0,
           "repeated_across_queries": 0,
           "requests": 0,
-          "shared_hits": 3053,
+          "shared_hits": 3357,
           "unique_query_nodes": 0
         },
-        "query_count": 24992,
+        "query_count": 25056,
         "reset_s": 0.0,
         "reuse_cache": true,
         "shared_evictions": 0
@@ -308,7 +299,7 @@
         "scoped_predicates": 0
       },
       "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
-      "equivalent_families": 8128,
+      "equivalent_families": 8192,
       "finished_families": 8192,
       "fixed_input_context": {
         "applied": [],
@@ -339,11 +330,11 @@
         "provenance_sha256": "12f77dac803d8c0c8ec3b9ff4042d6d97cdb775d99dec45bf98505d8bcf0e7e8"
       },
       "normalized_reachable_nodes": 107497,
-      "numerical_result": "equivalence_not_proven",
-      "pattern_nodes": 605,
-      "peak_rss_kib": 4637356,
+      "numerical_result": "verified",
+      "pattern_nodes": 616,
+      "peak_rss_kib": 4650304,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
-      "piece_nodes": 41056,
+      "piece_nodes": 40896,
       "piece_union": {
         "abstract_optimized_replacements": 0,
         "abstract_reference_replacements": 0,
@@ -361,7 +352,7 @@
         638,
         210097
       ],
-      "reference_term_patterns": 290,
+      "reference_term_patterns": 292,
       "row_groups": [
         {
           "count": 1,
@@ -373,25 +364,41 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](read[Z\nreal:bf16](0,0,),-256,),recip[](add[,1,1](1,exp[](mul[,-1](max#55,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,0,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,0](0,),),call[,1](0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](read[Z\nreal:bf16](0,0,),-256,),recip[](add[,1,1](1,exp[](mul[,-1](max#55,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,0,),),mul[,1](read[X\nreal:bf16](0,0,),read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,0](0,),),),)",
             "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
+            "state_pattern_proof": {
+              "closures": [],
+              "contribution_pieces": 0,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 5,
+              "instantiated_targets": [
+                {
+                  "count": "1",
+                  "spec": 1
+                }
+              ],
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 131,
+              "weighted_add_edges": 3,
+              "witness_nodes": 12
+            },
+            "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 2.549999999996999e-06,
-            "cumulative_elapsed_s": 0.058652948,
-            "left_import_s": 0.0003805010000000053,
-            "left_normalize_s": 0.00017551999999999846,
-            "parametric_state_s": 8.000000000021878e-07,
-            "piece_union_reuse_s": 2.5000000000025e-07,
-            "piece_union_seal_s": 6.299999999945238e-07,
-            "right_import_s": 0.0003353819999999952,
-            "right_normalize_s": 0.0002441609999999997,
-            "state_pattern_s": 0.00021655100000000232,
-            "unary_reduction_s": 4.579999999997086e-06
+            "affine_state_pattern_s": 1.3399999999996748e-05,
+            "cumulative_elapsed_s": 0.068300273,
+            "left_import_s": 0.0004204810000000003,
+            "left_normalize_s": 0.00022196099999999275,
+            "parametric_state_s": 1.0099999999957365e-06,
+            "piece_union_record_s": 3.199999999980996e-07,
+            "piece_union_seal_s": 4.2000000000097515e-07,
+            "right_import_s": 0.011765248999999998,
+            "right_normalize_s": 0.0002780510000000014,
+            "state_pattern_s": 0.00012033000000000182,
+            "unary_reduction_s": 5.3200000000031e-06
           }
         },
         {
@@ -404,955 +411,88 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,1,),),recip[](add[,1,1](1,exp[](mul[,-1](max#126,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,1,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,1,),),call[,3](1,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,1,),),recip[](add[,1,1](1,exp[](mul[,-1](max#126,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,1,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,1,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,1,),),),)",
             "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
+            "state_pattern_proof": {
+              "closures": [],
+              "contribution_pieces": 0,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 5,
+              "instantiated_targets": [
+                {
+                  "count": "1",
+                  "spec": 3
+                }
+              ],
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 131,
+              "weighted_add_edges": 3,
+              "witness_nodes": 12
+            },
+            "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.2100000000014877e-06,
-            "cumulative_elapsed_s": 0.059362331,
-            "left_import_s": 0.000145411000000005,
-            "left_normalize_s": 0.00010071999999999859,
-            "parametric_state_s": 2.5000000000025e-07,
-            "piece_union_reuse_s": 3.299999999997749e-07,
-            "piece_union_seal_s": 6.000000000311312e-08,
-            "right_import_s": 9.670000000003287e-06,
-            "right_normalize_s": 0.00016089100000000328,
-            "state_pattern_s": 0.00015698999999999574,
-            "unary_reduction_s": 2.550000000003938e-06
+            "affine_state_pattern_s": 9.100000000067388e-07,
+            "cumulative_elapsed_s": 0.068768715,
+            "left_import_s": 9.184099999999529e-05,
+            "left_normalize_s": 8.136000000000254e-05,
+            "parametric_state_s": 2.6000000000192536e-07,
+            "piece_union_record_s": 7.000000000478845e-08,
+            "piece_union_seal_s": 6.000000001005201e-08,
+            "right_import_s": 9.149999999999436e-06,
+            "right_normalize_s": 0.00015297100000000174,
+            "state_pattern_s": 7.722000000000284e-05,
+            "unary_reduction_s": 2.6699999999962865e-06
           }
         },
         {
-          "count": 1,
+          "count": 30,
           "families": [
             [
               2,
-              2
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,2,),),recip[](add[,1,1](1,exp[](mul[,-1](max#400,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,2,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,2,),),call[,3](2,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,2,),),recip[](add[,1,1](1,exp[](mul[,-1](max#400,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,2,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,2,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,2,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.5399999999943237e-06,
-            "cumulative_elapsed_s": 0.060357785,
-            "left_import_s": 0.0001617100000000024,
-            "left_normalize_s": 8.601999999999915e-05,
-            "parametric_state_s": 1.899999999971369e-07,
-            "piece_union_reuse_s": 1.899999999971369e-07,
-            "piece_union_seal_s": 5.999999999617422e-08,
-            "right_import_s": 0.00029362200000000033,
-            "right_normalize_s": 0.0001410309999999998,
-            "state_pattern_s": 0.00017235000000000167,
-            "unary_reduction_s": 2.9500000000015625e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              3,
-              3
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,3,),),recip[](add[,1,1](1,exp[](mul[,-1](max#472,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,3,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,3,),),call[,3](3,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,3,),),recip[](add[,1,1](1,exp[](mul[,-1](max#472,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,3,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,3,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,3,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.0400000000007625e-06,
-            "cumulative_elapsed_s": 0.061126078,
-            "left_import_s": 0.00014893099999999798,
-            "left_normalize_s": 8.853000000000333e-05,
-            "parametric_state_s": 1.7000000000072513e-07,
-            "piece_union_reuse_s": 7.99999999995249e-08,
-            "piece_union_seal_s": 4.000000000670134e-08,
-            "right_import_s": 8.010000000002737e-06,
-            "right_normalize_s": 0.0001620910000000031,
-            "state_pattern_s": 0.00015908100000000536,
-            "unary_reduction_s": 2.849999999998687e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              4,
-              4
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,4,),),recip[](add[,1,1](1,exp[](mul[,-1](max#754,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,4,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,4,),),call[,3](4,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,4,),),recip[](add[,1,1](1,exp[](mul[,-1](max#754,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,4,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,4,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,4,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.3499999999971868e-06,
-            "cumulative_elapsed_s": 0.062214542,
-            "left_import_s": 0.00020717099999999905,
-            "left_normalize_s": 8.711100000000083e-05,
-            "parametric_state_s": 2.2999999999689935e-07,
-            "piece_union_reuse_s": 9.000000000120023e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.0003698410000000027,
-            "right_normalize_s": 0.00014737000000000083,
-            "state_pattern_s": 0.00015070100000000308,
-            "unary_reduction_s": 2.080000000001525e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              5,
-              5
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,5,),),recip[](add[,1,1](1,exp[](mul[,-1](max#826,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,5,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,5,),),call[,3](5,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,5,),),recip[](add[,1,1](1,exp[](mul[,-1](max#826,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,5,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,5,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,5,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.100000000038632e-07,
-            "cumulative_elapsed_s": 0.062863125,
-            "left_import_s": 0.00013829099999999872,
-            "left_normalize_s": 7.361000000000173e-05,
-            "parametric_state_s": 1.8000000000240046e-07,
-            "piece_union_reuse_s": 9.000000000813912e-08,
-            "piece_union_seal_s": 3.999999999976245e-08,
-            "right_import_s": 7.4899999999988864e-06,
-            "right_normalize_s": 0.00015855099999999983,
-            "state_pattern_s": 0.0001449209999999923,
-            "unary_reduction_s": 2.2499999999953113e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              6,
-              6
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,6,),),recip[](add[,1,1](1,exp[](mul[,-1](max#1097,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,6,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,6,),),call[,3](6,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,6,),),recip[](add[,1,1](1,exp[](mul[,-1](max#1097,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,6,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,6,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,6,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.0100000000096143e-06,
-            "cumulative_elapsed_s": 0.063783879,
-            "left_import_s": 0.00013270099999999896,
-            "left_normalize_s": 7.814000000000432e-05,
-            "parametric_state_s": 1.599999999990498e-07,
-            "piece_union_reuse_s": 1.0000000000287557e-07,
-            "piece_union_seal_s": 3.9999999992823554e-08,
-            "right_import_s": 0.0002831010000000078,
-            "right_normalize_s": 0.00014034099999998828,
-            "state_pattern_s": 0.00014999000000000262,
-            "unary_reduction_s": 2.219999999997224e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              7,
-              7
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,7,),),recip[](add[,1,1](1,exp[](mul[,-1](max#1169,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,7,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,7,),),call[,3](7,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,7,),),recip[](add[,1,1](1,exp[](mul[,-1](max#1169,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,7,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,7,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,7,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 7.99999999995249e-07,
-            "cumulative_elapsed_s": 0.064398171,
-            "left_import_s": 0.00012312000000000434,
-            "left_normalize_s": 7.592099999999269e-05,
-            "parametric_state_s": 1.8000000000240046e-07,
-            "piece_union_reuse_s": 9.000000000813912e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 7.649999999997936e-06,
-            "right_normalize_s": 0.00014192999999999845,
-            "state_pattern_s": 0.0001438510000000004,
-            "unary_reduction_s": 2.4499999999871847e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              8,
-              8
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,8,),),recip[](add[,1,1](1,exp[](mul[,-1](max#1440,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,8,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,8,),),call[,3](8,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,8,),),recip[](add[,1,1](1,exp[](mul[,-1](max#1440,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,8,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,8,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,8,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.1200000000072263e-06,
-            "cumulative_elapsed_s": 0.065366305,
-            "left_import_s": 0.000139670999999994,
-            "left_normalize_s": 7.665099999999703e-05,
-            "parametric_state_s": 1.9999999999187335e-07,
-            "piece_union_reuse_s": 1.0999999999761201e-07,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.00033700099999998956,
-            "right_normalize_s": 0.00015496000000000953,
-            "state_pattern_s": 0.00014237100000000225,
-            "unary_reduction_s": 2.04999999998956e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              9,
-              9
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,9,),),recip[](add[,1,1](1,exp[](mul[,-1](max#1511,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,9,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,9,),),call[,3](9,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,9,),),recip[](add[,1,1](1,exp[](mul[,-1](max#1511,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,9,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,9,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,9,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.500000000105645e-07,
-            "cumulative_elapsed_s": 0.066046038,
-            "left_import_s": 0.00012433099999999142,
-            "left_normalize_s": 9.362999999999733e-05,
-            "parametric_state_s": 1.4999999999043556e-07,
-            "piece_union_reuse_s": 9.000000000813912e-08,
-            "piece_union_seal_s": 3.9999999992823554e-08,
-            "right_import_s": 6.66000000000555e-06,
-            "right_normalize_s": 0.00019329099999999821,
-            "state_pattern_s": 0.0001436999999999966,
-            "unary_reduction_s": 1.860000000006301e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              10,
-              10
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,10,),),recip[](add[,1,1](1,exp[](mul[,-1](max#1790,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,10,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,10,),),call[,3](10,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,10,),),recip[](add[,1,1](1,exp[](mul[,-1](max#1790,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,10,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,10,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,10,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 9.300000000100894e-07,
-            "cumulative_elapsed_s": 0.066970792,
-            "left_import_s": 0.00012680000000001024,
-            "left_normalize_s": 9.111100000000483e-05,
-            "parametric_state_s": 1.7000000000766402e-07,
-            "piece_union_reuse_s": 9.000000000813912e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.0002864009999999917,
-            "right_normalize_s": 0.00014993000000000645,
-            "state_pattern_s": 0.00014758999999998912,
-            "unary_reduction_s": 2.060000000012052e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              11,
-              11
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,11,),),recip[](add[,1,1](1,exp[](mul[,-1](max#1860,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,11,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,11,),),call[,3](11,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,11,),),recip[](add[,1,1](1,exp[](mul[,-1](max#1860,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,11,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,11,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,11,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.499999999966867e-07,
-            "cumulative_elapsed_s": 0.067610604,
-            "left_import_s": 0.0001196500000000128,
-            "left_normalize_s": 7.938999999999863e-05,
-            "parametric_state_s": 1.5000000000431335e-07,
-            "piece_union_reuse_s": 9.000000000813912e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 7.030000000005088e-06,
-            "right_normalize_s": 0.00014587100000000575,
-            "state_pattern_s": 0.00014843100000000442,
-            "unary_reduction_s": 2.0300000000000873e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              12,
-              12
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,12,),),recip[](add[,1,1](1,exp[](mul[,-1](max#2130,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,12,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,12,),),call[,3](12,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,12,),),recip[](add[,1,1](1,exp[](mul[,-1](max#2130,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,12,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,12,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,12,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.799999999947739e-07,
-            "cumulative_elapsed_s": 0.068528128,
-            "left_import_s": 0.00013845099999999777,
-            "left_normalize_s": 8.150000000001212e-05,
-            "parametric_state_s": 1.7000000000766402e-07,
-            "piece_union_reuse_s": 8.999999999426134e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.00027676100000000037,
-            "right_normalize_s": 0.00015116099999999688,
-            "state_pattern_s": 0.00014609100000000097,
-            "unary_reduction_s": 2.16000000000105e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              13,
-              13
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,13,),),recip[](add[,1,1](1,exp[](mul[,-1](max#2202,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,13,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,13,),),call[,3](13,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,13,),),recip[](add[,1,1](1,exp[](mul[,-1](max#2202,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,13,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,13,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,13,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.189999999998137e-06,
-            "cumulative_elapsed_s": 0.06917537,
-            "left_import_s": 0.00012025999999999704,
-            "left_normalize_s": 8.083100000000343e-05,
-            "parametric_state_s": 1.3999999999569912e-07,
-            "piece_union_reuse_s": 1.0000000000287557e-07,
-            "piece_union_seal_s": 2.000000000335067e-08,
-            "right_import_s": 6.759999999994548e-06,
-            "right_normalize_s": 0.00014972000000000596,
-            "state_pattern_s": 0.00015513999999999806,
-            "unary_reduction_s": 2.1500000000063135e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              14,
-              14
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,14,),),recip[](add[,1,1](1,exp[](mul[,-1](max#2472,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,14,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,14,),),call[,3](14,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,14,),),recip[](add[,1,1](1,exp[](mul[,-1](max#2472,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,14,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,14,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,14,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.999999999981245e-07,
-            "cumulative_elapsed_s": 0.070121464,
-            "left_import_s": 0.00012310000000000099,
-            "left_normalize_s": 8.47510000000079e-05,
-            "parametric_state_s": 3.29999999992836e-07,
-            "piece_union_reuse_s": 7.99999999995249e-08,
-            "piece_union_seal_s": 5.000000000143778e-08,
-            "right_import_s": 0.00031676099999999874,
-            "right_normalize_s": 0.00014517000000000002,
-            "state_pattern_s": 0.00014524100000000428,
-            "unary_reduction_s": 2.3099999999914855e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              15,
-              15
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,15,),),recip[](add[,1,1](1,exp[](mul[,-1](max#2542,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,15,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,15,),),call[,3](15,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,15,),),recip[](add[,1,1](1,exp[](mul[,-1](max#2542,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,15,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,15,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,15,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 7.900000000005125e-07,
-            "cumulative_elapsed_s": 0.070767747,
-            "left_import_s": 0.00011906099999998976,
-            "left_normalize_s": 8.850999999999998e-05,
-            "parametric_state_s": 1.400000000095769e-07,
-            "piece_union_reuse_s": 9.000000000813912e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 7.090000000001262e-06,
-            "right_normalize_s": 0.00015231099999998832,
-            "state_pattern_s": 0.0001431409999999994,
-            "unary_reduction_s": 2.020000000005351e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              16,
-              16
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,16,),),recip[](add[,1,1](1,exp[](mul[,-1](max#2818,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,16,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,16,),),call[,3](16,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,16,),),recip[](add[,1,1](1,exp[](mul[,-1](max#2818,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,16,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,16,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,16,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.100000000038632e-07,
-            "cumulative_elapsed_s": 0.071678941,
-            "left_import_s": 0.00012452100000000244,
-            "left_normalize_s": 8.286999999999878e-05,
-            "parametric_state_s": 1.6000000001292758e-07,
-            "piece_union_reuse_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.00027893099999999615,
-            "right_normalize_s": 0.00014608100000000623,
-            "state_pattern_s": 0.0001567999999999986,
-            "unary_reduction_s": 2.4799999999991496e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              17,
-              17
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,17,),),recip[](add[,1,1](1,exp[](mul[,-1](max#2886,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,17,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,17,),),call[,3](17,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,17,),),recip[](add[,1,1](1,exp[](mul[,-1](max#2886,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,17,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,17,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,17,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.500000000105645e-07,
-            "cumulative_elapsed_s": 0.072628294,
-            "left_import_s": 0.00012181999999999471,
-            "left_normalize_s": 8.154100000000442e-05,
-            "parametric_state_s": 1.2000000000622624e-07,
-            "piece_union_reuse_s": 8.000000001340268e-08,
-            "piece_union_seal_s": 3.9999999992823554e-08,
-            "right_import_s": 7.270000000003662e-06,
-            "right_normalize_s": 0.0004592310000000044,
-            "state_pattern_s": 0.000157690000000002,
-            "unary_reduction_s": 2.080000000001525e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              18,
-              18
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,18,),),recip[](add[,1,1](1,exp[](mul[,-1](max#3155,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,18,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,18,),),call[,3](18,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,18,),),recip[](add[,1,1](1,exp[](mul[,-1](max#3155,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,18,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,18,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,18,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 9.200000000014752e-07,
-            "cumulative_elapsed_s": 0.073575568,
-            "left_import_s": 0.0001259599999999944,
-            "left_normalize_s": 0.00011124100000001191,
-            "parametric_state_s": 1.6999999999378623e-07,
-            "piece_union_reuse_s": 1.0000000000287557e-07,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.00027976100000000337,
-            "right_normalize_s": 0.00014402999999998944,
-            "state_pattern_s": 0.00014815099999999914,
-            "unary_reduction_s": 2.080000000001525e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              19,
-              19
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,19,),),recip[](add[,1,1](1,exp[](mul[,-1](max#3224,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,19,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,19,),),call[,3](19,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,19,),),recip[](add[,1,1](1,exp[](mul[,-1](max#3224,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,19,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,19,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,19,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 6.900000000115147e-07,
-            "cumulative_elapsed_s": 0.074522572,
-            "left_import_s": 0.00012635099999999677,
-            "left_normalize_s": 8.091000000000348e-05,
-            "parametric_state_s": 1.1999999999234845e-07,
-            "piece_union_reuse_s": 7.000000000478845e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 7.20999999999361e-06,
-            "right_normalize_s": 0.00046111199999999963,
-            "state_pattern_s": 0.00014775100000000152,
-            "unary_reduction_s": 2.130000000002963e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              20,
-              20
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,20,),),recip[](add[,1,1](1,exp[](mul[,-1](max#3494,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,20,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,20,),),call[,3](20,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,20,),),recip[](add[,1,1](1,exp[](mul[,-1](max#3494,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,20,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,20,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,20,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.300000000072139e-07,
-            "cumulative_elapsed_s": 0.075449726,
-            "left_import_s": 0.00012703099999999967,
-            "left_normalize_s": 7.9990000000002e-05,
-            "parametric_state_s": 1.8000000000240046e-07,
-            "piece_union_reuse_s": 1.0000000000287557e-07,
-            "piece_union_seal_s": 3.9999999992823554e-08,
-            "right_import_s": 0.00028725100000000225,
-            "right_normalize_s": 0.00014769100000000535,
-            "state_pattern_s": 0.00014662099999999956,
-            "unary_reduction_s": 2.250000000009189e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              21,
-              21
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,21,),),recip[](add[,1,1](1,exp[](mul[,-1](max#3564,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,21,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,21,),),call[,3](21,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,21,),),recip[](add[,1,1](1,exp[](mul[,-1](max#3564,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,21,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,21,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,21,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.499999999966867e-07,
-            "cumulative_elapsed_s": 0.076082529,
-            "left_import_s": 0.00013511099999999332,
-            "left_normalize_s": 7.933000000000245e-05,
-            "parametric_state_s": 1.4999999999043556e-07,
-            "piece_union_reuse_s": 1.0000000000287557e-07,
-            "piece_union_seal_s": 7.000000000478845e-08,
-            "right_import_s": 6.639999999988322e-06,
-            "right_normalize_s": 0.00014916100000000876,
-            "state_pattern_s": 0.00014476000000000766,
-            "unary_reduction_s": 2.409999999994361e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              22,
-              22
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,22,),),recip[](add[,1,1](1,exp[](mul[,-1](max#3842,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,22,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,22,),),call[,3](22,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,22,),),recip[](add[,1,1](1,exp[](mul[,-1](max#3842,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,22,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,22,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,22,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 9.900000000062636e-07,
-            "cumulative_elapsed_s": 0.076991462,
-            "left_import_s": 0.0001231400000000077,
-            "left_normalize_s": 9.000100000000621e-05,
-            "parametric_state_s": 1.599999999990498e-07,
-            "piece_union_reuse_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 4.000000000670134e-08,
-            "right_import_s": 0.00027462100000000267,
-            "right_normalize_s": 0.00014746000000000203,
-            "state_pattern_s": 0.0001495310000000083,
-            "unary_reduction_s": 2.020000000005351e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              23,
-              23
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,23,),),recip[](add[,1,1](1,exp[](mul[,-1](max#3912,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,23,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,23,),),call[,3](23,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,23,),),recip[](add[,1,1](1,exp[](mul[,-1](max#3912,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,23,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,23,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,23,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.199999999985996e-07,
-            "cumulative_elapsed_s": 0.077631265,
-            "left_import_s": 0.00011742100000000644,
-            "left_normalize_s": 7.740000000000524e-05,
-            "parametric_state_s": 1.5000000000431335e-07,
-            "piece_union_reuse_s": 7.99999999995249e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 6.870000000006038e-06,
-            "right_normalize_s": 0.0001574510000000029,
-            "state_pattern_s": 0.00015589100000000522,
-            "unary_reduction_s": 2.299999999996749e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              24,
-              24
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,24,),),recip[](add[,1,1](1,exp[](mul[,-1](max#4181,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,24,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,24,),),call[,3](24,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,24,),),recip[](add[,1,1](1,exp[](mul[,-1](max#4181,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,24,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,24,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,24,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 9.900000000062636e-07,
-            "cumulative_elapsed_s": 0.078529878,
-            "left_import_s": 0.00012642999999999682,
-            "left_normalize_s": 8.028999999999675e-05,
-            "parametric_state_s": 1.7000000000766402e-07,
-            "piece_union_reuse_s": 9.999999998899778e-08,
-            "piece_union_seal_s": 5.000000000143778e-08,
-            "right_import_s": 0.00027966199999999997,
-            "right_normalize_s": 0.00014165000000000705,
-            "state_pattern_s": 0.00014250000000000373,
-            "unary_reduction_s": 1.970000000003913e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              25,
-              25
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,25,),),recip[](add[,1,1](1,exp[](mul[,-1](max#4251,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,25,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,25,),),call[,3](25,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,25,),),recip[](add[,1,1](1,exp[](mul[,-1](max#4251,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,25,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,25,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,25,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.60000000005301e-07,
-            "cumulative_elapsed_s": 0.079200091,
-            "left_import_s": 0.00013654999999999917,
-            "left_normalize_s": 8.255000000000068e-05,
-            "parametric_state_s": 1.7000000000766402e-07,
-            "piece_union_reuse_s": 7.000000000478845e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 6.659999999991673e-06,
-            "right_normalize_s": 0.00016407100000000174,
-            "state_pattern_s": 0.00014473099999999517,
-            "unary_reduction_s": 2.299999999996749e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              26,
-              26
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,26,),),recip[](add[,1,1](1,exp[](mul[,-1](max#4521,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,26,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,26,),),call[,3](26,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,26,),),recip[](add[,1,1](1,exp[](mul[,-1](max#4521,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,26,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,26,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,26,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.109999999998612e-06,
-            "cumulative_elapsed_s": 0.080129185,
-            "left_import_s": 0.00012386100000000289,
-            "left_normalize_s": 7.925999999999767e-05,
-            "parametric_state_s": 2.0000000000575113e-07,
-            "piece_union_reuse_s": 9.000000000813912e-08,
-            "piece_union_seal_s": 4.000000000670134e-08,
-            "right_import_s": 0.00030263099999999765,
-            "right_normalize_s": 0.00014952099999999968,
-            "state_pattern_s": 0.00015108099999999736,
-            "unary_reduction_s": 2.299999999996749e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              27,
-              27
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,27,),),recip[](add[,1,1](1,exp[](mul[,-1](max#4591,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,27,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,27,),),call[,3](27,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,27,),),recip[](add[,1,1](1,exp[](mul[,-1](max#4591,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,27,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,27,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,27,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.400000000019503e-07,
-            "cumulative_elapsed_s": 0.080762458,
-            "left_import_s": 0.0001169300000000012,
-            "left_normalize_s": 8.292000000000022e-05,
-            "parametric_state_s": 1.6000000001292758e-07,
-            "piece_union_reuse_s": 1.0000000000287557e-07,
-            "piece_union_seal_s": 2.000000000335067e-08,
-            "right_import_s": 6.850999999988283e-06,
-            "right_normalize_s": 0.00014402999999998944,
-            "state_pattern_s": 0.0001452999999999871,
-            "unary_reduction_s": 2.1999999999938735e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              28,
-              28
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,28,),),recip[](add[,1,1](1,exp[](mul[,-1](max#4869,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,28,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,28,),),call[,3](28,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,28,),),recip[](add[,1,1](1,exp[](mul[,-1](max#4869,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,28,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,28,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,28,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.0699999999919108e-06,
-            "cumulative_elapsed_s": 0.081721581,
-            "left_import_s": 0.00012538000000000826,
-            "left_normalize_s": 8.194100000000204e-05,
-            "parametric_state_s": 1.6999999999378623e-07,
-            "piece_union_reuse_s": 8.999999999426134e-08,
-            "piece_union_seal_s": 3.9999999992823554e-08,
-            "right_import_s": 0.00028828100000000134,
-            "right_normalize_s": 0.00014706999999999915,
-            "state_pattern_s": 0.00019423100000000304,
-            "unary_reduction_s": 2.189999999999137e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              29,
-              29
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,29,),),recip[](add[,1,1](1,exp[](mul[,-1](max#4939,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,29,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,29,),),call[,3](29,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,29,),),recip[](add[,1,1](1,exp[](mul[,-1](max#4939,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,29,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,29,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,29,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.4399999999914481e-06,
-            "cumulative_elapsed_s": 0.082353894,
-            "left_import_s": 0.0001224599999999909,
-            "left_normalize_s": 8.233000000000545e-05,
-            "parametric_state_s": 1.6999999999378623e-07,
-            "piece_union_reuse_s": 1.0000000000287557e-07,
-            "piece_union_seal_s": 2.000000000335067e-08,
-            "right_import_s": 7.250000000000312e-06,
-            "right_normalize_s": 0.00015035099999999302,
-            "state_pattern_s": 0.00014383099999999704,
-            "unary_reduction_s": 2.1399999999976993e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              30,
-              30
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,30,),),recip[](add[,1,1](1,exp[](mul[,-1](max#5209,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,30,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,30,),),call[,3](30,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,30,),),recip[](add[,1,1](1,exp[](mul[,-1](max#5209,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,30,),),mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,30,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,30,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 9.70000000002913e-07,
-            "cumulative_elapsed_s": 0.083288468,
-            "left_import_s": 0.00012281100000000045,
-            "left_normalize_s": 8.236000000000354e-05,
-            "parametric_state_s": 1.5000000000431335e-07,
-            "piece_union_reuse_s": 7.99999999995249e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.0003139909999999996,
-            "right_normalize_s": 0.00014697100000000962,
-            "state_pattern_s": 0.0001458210000000043,
-            "unary_reduction_s": 2.1000000000048757e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              31,
               31
             ]
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](0,31,),),recip[](add[,1,1](1,exp[](mul[,-1](max#5279,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,31,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,31,),),call[,3](31,0,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](0,31,),),recip[](add[,1,1](1,exp[](mul[,-1](max#5279,),),),),add[,1,1,1](mul[,1](read[CB\nreal:bf16](0,0,),read[dc\nreal:f32](0,),read[X\nreal:bf16](0,31,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](0,31,),),mul[,1](exp[](read[dA\nreal:f32](0,),),call[,2](0,31,),),),)",
             "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
+            "state_pattern_proof": {
+              "closures": [],
+              "contribution_pieces": 0,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 5,
+              "instantiated_targets": [
+                {
+                  "count": "1",
+                  "spec": 3
+                }
+              ],
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 133,
+              "weighted_add_edges": 3,
+              "witness_nodes": 12
+            },
+            "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 7.100000000009876e-07,
-            "cumulative_elapsed_s": 0.08391965,
-            "left_import_s": 0.00011626000000000691,
-            "left_normalize_s": 7.886099999999951e-05,
-            "parametric_state_s": 1.5000000000431335e-07,
-            "piece_union_reuse_s": 9.000000000813912e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 6.6900000000036375e-06,
-            "right_normalize_s": 0.00016206000000000553,
-            "state_pattern_s": 0.00014495999999999953,
-            "unary_reduction_s": 1.9699999999900353e-06
+            "affine_state_pattern_s": 2.2219999999961715e-05,
+            "cumulative_elapsed_s": 0.086358238,
+            "left_import_s": 0.001920263999999991,
+            "left_normalize_s": 0.002264035999999997,
+            "parametric_state_s": 6.7700000000586735e-06,
+            "piece_union_record_s": 1.4599999999947988e-06,
+            "piece_union_seal_s": 7.509999999655292e-07,
+            "right_import_s": 0.004738109000000032,
+            "right_normalize_s": 0.004788050999999974,
+            "state_pattern_s": 0.002359086999999996,
+            "unary_reduction_s": 5.9700000000009745e-05
           }
         },
         {
@@ -1365,25 +505,41 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,0,),),recip[](add[,1,1](1,exp[](mul[,-1](max#5546,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,0,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,0,),),call[,4](0,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,0,),),recip[](add[,1,1](1,exp[](mul[,-1](max#5546,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,0,),),mul[,1](read[X\nreal:bf16](0,0,),read[dc\nreal:f32](0,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[X\nreal:bf16](1,0,),read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,0,),),),)",
             "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
+            "state_pattern_proof": {
+              "closures": [],
+              "contribution_pieces": 1,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 20,
+              "instantiated_targets": [
+                {
+                  "count": "2",
+                  "spec": 5
+                }
+              ],
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 1,
+              "visited_nodes": 168,
+              "weighted_add_edges": 4,
+              "witness_nodes": 12
+            },
+            "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 8.999999999981245e-07,
-            "cumulative_elapsed_s": 0.085161545,
-            "left_import_s": 0.00012881099999999257,
-            "left_normalize_s": 8.055099999999815e-05,
-            "parametric_state_s": 1.6999999999378623e-07,
-            "piece_union_reuse_s": 8.999999999426134e-08,
-            "piece_union_seal_s": 3.00000000119649e-08,
-            "right_import_s": 0.0003152110000000097,
-            "right_normalize_s": 0.0002758309999999903,
-            "state_pattern_s": 0.0002760210000000013,
-            "unary_reduction_s": 2.410000000008239e-06
+            "affine_state_pattern_s": 8.900000000033881e-07,
+            "cumulative_elapsed_s": 0.087392652,
+            "left_import_s": 9.660000000000224e-05,
+            "left_normalize_s": 9.212999999999583e-05,
+            "parametric_state_s": 1.7999999998852267e-07,
+            "piece_union_record_s": 6.999999999091067e-08,
+            "piece_union_seal_s": 2.999999999808711e-08,
+            "right_import_s": 0.0003271720000000006,
+            "right_normalize_s": 0.0002575609999999895,
+            "state_pattern_s": 0.0001949309999999954,
+            "unary_reduction_s": 2.3200000000000998e-06
           }
         },
         {
@@ -1396,955 +552,88 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,1,),),recip[](add[,1,1](1,exp[](mul[,-1](max#5624,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,1,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,0](1,),),call[,5](1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,1,),),recip[](add[,1,1](1,exp[](mul[,-1](max#5624,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,1,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,1,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,1,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,0](1,),),),)",
             "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.60000000005301e-07,
-            "cumulative_elapsed_s": 0.086033819,
-            "left_import_s": 0.00012581000000000397,
-            "left_normalize_s": 7.632000000000472e-05,
-            "parametric_state_s": 1.5000000000431335e-07,
-            "piece_union_reuse_s": 1.0999999999761201e-07,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 7.1900000000041375e-06,
-            "right_normalize_s": 0.0002335910000000052,
-            "state_pattern_s": 0.00026524200000001275,
-            "unary_reduction_s": 2.299999999996749e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              34,
-              34
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,2,),),recip[](add[,1,1](1,exp[](mul[,-1](max#5977,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,2,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,2,),),call[,4](2,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,2,),),recip[](add[,1,1](1,exp[](mul[,-1](max#5977,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,2,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,2,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,2,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,2,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 9.299999999962116e-07,
-            "cumulative_elapsed_s": 0.087262674,
-            "left_import_s": 0.00013592100000001106,
-            "left_normalize_s": 9.317999999999826e-05,
-            "parametric_state_s": 1.899999999971369e-07,
-            "piece_union_reuse_s": 1.0000000000287557e-07,
-            "piece_union_seal_s": 1.9999999989472883e-08,
-            "right_import_s": 0.0002968309999999974,
-            "right_normalize_s": 0.0002543210000000018,
-            "state_pattern_s": 0.0002704919999999972,
-            "unary_reduction_s": 2.2100000000024878e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              35,
-              35
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,3,),),recip[](add[,1,1](1,exp[](mul[,-1](max#6046,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,3,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,3,),),call[,4](3,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,3,),),recip[](add[,1,1](1,exp[](mul[,-1](max#6046,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,3,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,3,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,3,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,3,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.700000000000374e-07,
-            "cumulative_elapsed_s": 0.088136677,
-            "left_import_s": 0.00012989100000000697,
-            "left_normalize_s": 7.888000000000339e-05,
-            "parametric_state_s": 1.599999999990498e-07,
-            "piece_union_reuse_s": 7.000000000478845e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 6.999999999993123e-06,
-            "right_normalize_s": 0.00023253099999999416,
-            "state_pattern_s": 0.0002682009999999957,
-            "unary_reduction_s": 2.3700000000015375e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              36,
-              36
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,4,),),recip[](add[,1,1](1,exp[](mul[,-1](max#6403,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,4,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,4,),),call[,4](4,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,4,),),recip[](add[,1,1](1,exp[](mul[,-1](max#6403,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,4,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,4,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,4,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,4,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.2499999999943112e-06,
-            "cumulative_elapsed_s": 0.089282592,
-            "left_import_s": 0.00013319999999999999,
-            "left_normalize_s": 8.059099999999098e-05,
-            "parametric_state_s": 1.9999999999187335e-07,
-            "piece_union_reuse_s": 8.999999999426134e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.0002939110000000078,
-            "right_normalize_s": 0.00020951000000000997,
-            "state_pattern_s": 0.00026751099999999806,
-            "unary_reduction_s": 2.1499999999924357e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              37,
-              37
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,5,),),recip[](add[,1,1](1,exp[](mul[,-1](max#6472,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,5,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,5,),),call[,4](5,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,5,),),recip[](add[,1,1](1,exp[](mul[,-1](max#6472,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,5,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,5,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,5,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,5,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.700000000000374e-07,
-            "cumulative_elapsed_s": 0.090133986,
-            "left_import_s": 0.00012664099999999678,
-            "left_normalize_s": 7.775000000000143e-05,
-            "parametric_state_s": 1.400000000095769e-07,
-            "piece_union_reuse_s": 1.0000000000287557e-07,
-            "piece_union_seal_s": 2.000000000335067e-08,
-            "right_import_s": 6.6400000000022e-06,
-            "right_normalize_s": 0.00023098099999999122,
-            "state_pattern_s": 0.00026030100000000445,
-            "unary_reduction_s": 1.9200000000024753e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              38,
-              38
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,6,),),recip[](add[,1,1](1,exp[](mul[,-1](max#6820,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,6,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,6,),),call[,4](6,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,6,),),recip[](add[,1,1](1,exp[](mul[,-1](max#6820,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,6,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,6,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,6,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,6,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.0299999999990872e-06,
-            "cumulative_elapsed_s": 0.09124425,
-            "left_import_s": 0.00015715000000000867,
-            "left_normalize_s": 7.462100000001082e-05,
-            "parametric_state_s": 1.5000000000431335e-07,
-            "piece_union_reuse_s": 1.0000000000287557e-07,
-            "piece_union_seal_s": 3.9999999992823554e-08,
-            "right_import_s": 0.00029090100000001007,
-            "right_normalize_s": 0.00019994099999999515,
-            "state_pattern_s": 0.00024108099999999022,
-            "unary_reduction_s": 2.050000000003438e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              39,
-              39
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,7,),),recip[](add[,1,1](1,exp[](mul[,-1](max#6889,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,7,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,7,),),call[,4](7,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,7,),),recip[](add[,1,1](1,exp[](mul[,-1](max#6889,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,7,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,7,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,7,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,7,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
+            "state_pattern_proof": {
+              "closures": [],
+              "contribution_pieces": 1,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 20,
+              "instantiated_targets": [
+                {
+                  "count": "2",
+                  "spec": 7
+                }
+              ],
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 1,
+              "visited_nodes": 168,
+              "weighted_add_edges": 4,
+              "witness_nodes": 12
+            },
+            "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
             "affine_state_pattern_s": 7.699999999971618e-07,
-            "cumulative_elapsed_s": 0.092165344,
-            "left_import_s": 0.00012527099999999625,
-            "left_normalize_s": 0.0001966110000000132,
-            "parametric_state_s": 1.4999999999043556e-07,
-            "piece_union_reuse_s": 7.000000000478845e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 7.649999999997936e-06,
-            "right_normalize_s": 0.00020279000000000824,
-            "state_pattern_s": 0.000243069999999998,
-            "unary_reduction_s": 2.1199999999943486e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              40,
-              40
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,8,),),recip[](add[,1,1](1,exp[](mul[,-1](max#7237,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,8,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,8,),),call[,4](8,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,8,),),recip[](add[,1,1](1,exp[](mul[,-1](max#7237,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,8,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,8,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,8,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,8,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.0400000000077014e-06,
-            "cumulative_elapsed_s": 0.093263318,
-            "left_import_s": 0.00012895000000000267,
-            "left_normalize_s": 7.305000000000506e-05,
-            "parametric_state_s": 1.599999999990498e-07,
-            "piece_union_reuse_s": 1.0000000000287557e-07,
+            "cumulative_elapsed_s": 0.087945944,
+            "left_import_s": 4.255000000000231e-05,
+            "left_normalize_s": 7.948099999999236e-05,
+            "parametric_state_s": 2.0999999998660979e-07,
+            "piece_union_record_s": 5.999999999617422e-08,
             "piece_union_seal_s": 2.000000000335067e-08,
-            "right_import_s": 0.00029121199999999903,
-            "right_normalize_s": 0.00019524099999999878,
-            "state_pattern_s": 0.0002618610000000021,
-            "unary_reduction_s": 1.9500000000005624e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              41,
-              41
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,9,),),recip[](add[,1,1](1,exp[](mul[,-1](max#7306,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,9,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,9,),),call[,4](9,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,9,),),recip[](add[,1,1](1,exp[](mul[,-1](max#7306,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,9,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,9,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,9,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,9,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 7.499999999938112e-07,
-            "cumulative_elapsed_s": 0.094062342,
-            "left_import_s": 0.00012582099999999818,
-            "left_normalize_s": 7.081999999999922e-05,
-            "parametric_state_s": 1.3999999999569912e-07,
-            "piece_union_reuse_s": 8.999999999426134e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 6.98000000000365e-06,
-            "right_normalize_s": 0.0002107110000000023,
-            "state_pattern_s": 0.00024199099999999696,
-            "unary_reduction_s": 1.8100000000048633e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              42,
-              42
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,10,),),recip[](add[,1,1](1,exp[](mul[,-1](max#7662,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,10,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,10,),),call[,4](10,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,10,),),recip[](add[,1,1](1,exp[](mul[,-1](max#7662,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,10,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,10,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,10,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,10,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 9.399999999909481e-07,
-            "cumulative_elapsed_s": 0.095151576,
-            "left_import_s": 0.00012751999999999208,
-            "left_normalize_s": 9.606100000000839e-05,
-            "parametric_state_s": 2.0000000000575113e-07,
-            "piece_union_reuse_s": 8.999999999426134e-08,
-            "piece_union_seal_s": 6.000000001005201e-08,
-            "right_import_s": 0.0002841609999999911,
-            "right_normalize_s": 0.00019402999999999782,
-            "state_pattern_s": 0.00023995100000000213,
+            "right_import_s": 7.220000000002225e-06,
+            "right_normalize_s": 0.00020334099999999578,
+            "state_pattern_s": 0.00016854000000000868,
             "unary_reduction_s": 2.080000000001525e-06
           }
         },
         {
-          "count": 1,
+          "count": 30,
           "families": [
             [
-              43,
-              43
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,11,),),recip[](add[,1,1](1,exp[](mul[,-1](max#7730,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,11,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,11,),),call[,4](11,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,11,),),recip[](add[,1,1](1,exp[](mul[,-1](max#7730,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,11,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,11,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,11,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,11,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 7.399999999990747e-07,
-            "cumulative_elapsed_s": 0.095966049,
-            "left_import_s": 0.00012538100000000774,
-            "left_normalize_s": 7.208000000000214e-05,
-            "parametric_state_s": 1.8000000000240046e-07,
-            "piece_union_reuse_s": 1.0000000000287557e-07,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 7.269999999989785e-06,
-            "right_normalize_s": 0.00022783099999999779,
-            "state_pattern_s": 0.00023835099999999776,
-            "unary_reduction_s": 2.0100000000106144e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              44,
-              44
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,12,),),recip[](add[,1,1](1,exp[](mul[,-1](max#8078,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,12,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,12,),),call[,4](12,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,12,),),recip[](add[,1,1](1,exp[](mul[,-1](max#8078,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,12,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,12,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,12,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,12,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 9.70000000002913e-07,
-            "cumulative_elapsed_s": 0.097043104,
-            "left_import_s": 0.00013206099999998888,
-            "left_normalize_s": 7.350000000000412e-05,
-            "parametric_state_s": 1.8000000000240046e-07,
-            "piece_union_reuse_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 3.9999999992823554e-08,
-            "right_import_s": 0.00027311100000000643,
-            "right_normalize_s": 0.00021503099999999054,
-            "state_pattern_s": 0.00023699099999999196,
-            "unary_reduction_s": 1.8299999999943362e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              45,
-              45
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,13,),),recip[](add[,1,1](1,exp[](mul[,-1](max#8147,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,13,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,13,),),call[,4](13,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,13,),),recip[](add[,1,1](1,exp[](mul[,-1](max#8147,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,13,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,13,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,13,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,13,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.300000000072139e-07,
-            "cumulative_elapsed_s": 0.097836307,
-            "left_import_s": 0.000125489999999992,
-            "left_normalize_s": 6.980100000000822e-05,
-            "parametric_state_s": 1.6999999999378623e-07,
-            "piece_union_reuse_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 6.829999999999337e-06,
-            "right_normalize_s": 0.00019476000000000215,
-            "state_pattern_s": 0.00025038099999999397,
-            "unary_reduction_s": 1.7100000000019877e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              46,
-              46
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,14,),),recip[](add[,1,1](1,exp[](mul[,-1](max#8494,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,14,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,14,),),call[,4](14,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,14,),),recip[](add[,1,1](1,exp[](mul[,-1](max#8494,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,14,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,14,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,14,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,14,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.400000000019503e-07,
-            "cumulative_elapsed_s": 0.098897991,
-            "left_import_s": 0.0001290810000000031,
-            "left_normalize_s": 7.777999999999952e-05,
-            "parametric_state_s": 2.0000000000575113e-07,
-            "piece_union_reuse_s": 8.999999999426134e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.00027362100000000167,
-            "right_normalize_s": 0.00020576099999999875,
-            "state_pattern_s": 0.00023702100000000392,
-            "unary_reduction_s": 1.8100000000048633e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              47,
-              47
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,15,),),recip[](add[,1,1](1,exp[](mul[,-1](max#8562,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,15,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,15,),),call[,4](15,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,15,),),recip[](add[,1,1](1,exp[](mul[,-1](max#8562,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,15,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,15,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,15,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,15,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 7.600000000024254e-07,
-            "cumulative_elapsed_s": 0.099655934,
-            "left_import_s": 0.00012880099999999783,
-            "left_normalize_s": 7.058999999999538e-05,
-            "parametric_state_s": 1.899999999971369e-07,
-            "piece_union_reuse_s": 7.99999999995249e-08,
-            "piece_union_seal_s": 3.00000000119649e-08,
-            "right_import_s": 6.799999999987372e-06,
-            "right_normalize_s": 0.00018138099999999435,
-            "state_pattern_s": 0.000244051000000009,
-            "unary_reduction_s": 1.689999999998637e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              48,
-              48
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,16,),),recip[](add[,1,1](1,exp[](mul[,-1](max#8916,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,16,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,16,),),call[,4](16,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,16,),),recip[](add[,1,1](1,exp[](mul[,-1](max#8916,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,16,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,16,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,16,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,16,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.499999999966867e-07,
-            "cumulative_elapsed_s": 0.100756539,
-            "left_import_s": 0.00012752099999999156,
-            "left_normalize_s": 7.150999999999685e-05,
-            "parametric_state_s": 1.8000000000240046e-07,
-            "piece_union_reuse_s": 8.999999999426134e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.00027104099999999964,
-            "right_normalize_s": 0.0001766109999999932,
-            "state_pattern_s": 0.0003097209999999989,
-            "unary_reduction_s": 1.7400000000000748e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              49,
-              49
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,17,),),recip[](add[,1,1](1,exp[](mul[,-1](max#8983,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,17,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,17,),),call[,4](17,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,17,),),recip[](add[,1,1](1,exp[](mul[,-1](max#8983,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,17,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,17,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,17,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,17,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.099999999899854e-07,
-            "cumulative_elapsed_s": 0.101477082,
-            "left_import_s": 0.00012442999999999482,
-            "left_normalize_s": 6.984100000000104e-05,
-            "parametric_state_s": 2.1999999999522402e-07,
-            "piece_union_reuse_s": 7.99999999995249e-08,
-            "piece_union_seal_s": 5.000000000143778e-08,
-            "right_import_s": 6.880000000000774e-06,
-            "right_normalize_s": 0.00017876999999999477,
-            "state_pattern_s": 0.00021920000000000273,
-            "unary_reduction_s": 1.7000000000072513e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              50,
-              50
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,18,),),recip[](add[,1,1](1,exp[](mul[,-1](max#9331,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,18,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,18,),),call[,4](18,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,18,),),recip[](add[,1,1](1,exp[](mul[,-1](max#9331,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,18,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,18,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,18,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,18,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.0100000000096143e-06,
-            "cumulative_elapsed_s": 0.102474236,
-            "left_import_s": 0.00013948999999999212,
-            "left_normalize_s": 7.234100000000354e-05,
-            "parametric_state_s": 2.0000000000575113e-07,
-            "piece_union_reuse_s": 1.0999999999761201e-07,
-            "piece_union_seal_s": 4.000000000670134e-08,
-            "right_import_s": 0.0002654509999999999,
-            "right_normalize_s": 0.00017581000000001235,
-            "state_pattern_s": 0.00022458999999999674,
-            "unary_reduction_s": 1.7900000000015126e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              51,
-              51
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,19,),),recip[](add[,1,1](1,exp[](mul[,-1](max#9400,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,19,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,19,),),call[,4](19,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,19,),),recip[](add[,1,1](1,exp[](mul[,-1](max#9400,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,19,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,19,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,19,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,19,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.400000000019503e-07,
-            "cumulative_elapsed_s": 0.103203479,
-            "left_import_s": 0.0001375599999999949,
-            "left_normalize_s": 7.035099999999628e-05,
-            "parametric_state_s": 1.8000000000240046e-07,
-            "piece_union_reuse_s": 9.999999998899778e-08,
-            "piece_union_seal_s": 5.000000000143778e-08,
-            "right_import_s": 7.1299999999940855e-06,
-            "right_normalize_s": 0.0001785400000000048,
-            "state_pattern_s": 0.00021717000000000264,
-            "unary_reduction_s": 1.7409999999995485e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              52,
-              52
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,20,),),recip[](add[,1,1](1,exp[](mul[,-1](max#9747,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,20,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,20,),),call[,4](20,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,20,),),recip[](add[,1,1](1,exp[](mul[,-1](max#9747,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,20,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,20,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,20,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,20,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.0200000000043508e-06,
-            "cumulative_elapsed_s": 0.104191863,
-            "left_import_s": 0.00012756999999999352,
-            "left_normalize_s": 6.872099999999381e-05,
-            "parametric_state_s": 1.4999999999043556e-07,
-            "piece_union_reuse_s": 7.99999999995249e-08,
-            "piece_union_seal_s": 4.000000000670134e-08,
-            "right_import_s": 0.000284550999999994,
-            "right_normalize_s": 0.00017356000000000316,
-            "state_pattern_s": 0.00021459000000000061,
-            "unary_reduction_s": 1.8199999999995997e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              53,
-              53
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,21,),),recip[](add[,1,1](1,exp[](mul[,-1](max#9815,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,21,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,21,),),call[,4](21,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,21,),),recip[](add[,1,1](1,exp[](mul[,-1](max#9815,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,21,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,21,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,21,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,21,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 9.600000000081765e-07,
-            "cumulative_elapsed_s": 0.104958406,
-            "left_import_s": 0.00017541999999999558,
-            "left_normalize_s": 6.876000000000104e-05,
-            "parametric_state_s": 1.6999999999378623e-07,
-            "piece_union_reuse_s": 8.000000001340268e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 7.389999999996011e-06,
-            "right_normalize_s": 0.00018517099999999787,
-            "state_pattern_s": 0.0002125209999999933,
-            "unary_reduction_s": 1.8499999999976868e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              54,
-              54
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,22,),),recip[](add[,1,1](1,exp[](mul[,-1](max#10169,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,22,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,22,),),call[,4](22,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,22,),),recip[](add[,1,1](1,exp[](mul[,-1](max#10169,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,22,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,22,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,22,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,22,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 9.499999999995623e-07,
-            "cumulative_elapsed_s": 0.10593412,
-            "left_import_s": 0.0001246400000000092,
-            "left_normalize_s": 6.941000000000586e-05,
-            "parametric_state_s": 1.7000000000766402e-07,
-            "piece_union_reuse_s": 8.999999999426134e-08,
-            "piece_union_seal_s": 4.000000000670134e-08,
-            "right_import_s": 0.00026726199999999034,
-            "right_normalize_s": 0.00018284099999998915,
-            "state_pattern_s": 0.0002131310000000053,
-            "unary_reduction_s": 1.8199999999995997e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              55,
-              55
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,23,),),recip[](add[,1,1](1,exp[](mul[,-1](max#10237,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,23,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,23,),),call[,4](23,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,23,),),recip[](add[,1,1](1,exp[](mul[,-1](max#10237,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,23,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,23,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,23,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,23,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.700000000000374e-07,
-            "cumulative_elapsed_s": 0.106683073,
-            "left_import_s": 0.00012235000000000718,
-            "left_normalize_s": 6.817100000000575e-05,
-            "parametric_state_s": 1.8000000000240046e-07,
-            "piece_union_reuse_s": 7.99999999995249e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 7.130000000007963e-06,
-            "right_normalize_s": 0.00018112000000000683,
-            "state_pattern_s": 0.0002436509999999975,
-            "unary_reduction_s": 1.689999999998637e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              56,
-              56
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,24,),),recip[](add[,1,1](1,exp[](mul[,-1](max#10584,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,24,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,24,),),call[,4](24,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,24,),),recip[](add[,1,1](1,exp[](mul[,-1](max#10584,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,24,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,24,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,24,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,24,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 9.100000000067388e-07,
-            "cumulative_elapsed_s": 0.107707877,
-            "left_import_s": 0.0001275700000000074,
-            "left_normalize_s": 7.804999999999618e-05,
-            "parametric_state_s": 1.8000000000240046e-07,
-            "piece_union_reuse_s": 8.999999999426134e-08,
-            "piece_union_seal_s": 5.000000000143778e-08,
-            "right_import_s": 0.00027669199999999505,
-            "right_normalize_s": 0.00017889100000000047,
-            "state_pattern_s": 0.0002366509999999905,
-            "unary_reduction_s": 1.970000000003913e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              57,
-              57
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,25,),),recip[](add[,1,1](1,exp[](mul[,-1](max#10653,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,25,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,25,),),call[,4](25,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,25,),),recip[](add[,1,1](1,exp[](mul[,-1](max#10653,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,25,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,25,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,25,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,25,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 6.699999999942863e-07,
-            "cumulative_elapsed_s": 0.10846011,
-            "left_import_s": 0.00012646099999999438,
-            "left_normalize_s": 7.779999999998899e-05,
-            "parametric_state_s": 1.599999999990498e-07,
-            "piece_union_reuse_s": 7.99999999995249e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 7.309999999996486e-06,
-            "right_normalize_s": 0.00018185099999999677,
-            "state_pattern_s": 0.00023060099999999695,
-            "unary_reduction_s": 1.6399999999971993e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              58,
-              58
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,26,),),recip[](add[,1,1](1,exp[](mul[,-1](max#11000,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,26,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,26,),),call[,4](26,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,26,),),recip[](add[,1,1](1,exp[](mul[,-1](max#11000,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,26,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,26,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,26,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,26,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 9.799999999976494e-07,
-            "cumulative_elapsed_s": 0.109508634,
-            "left_import_s": 0.000143960999999998,
-            "left_normalize_s": 7.818999999999188e-05,
-            "parametric_state_s": 2.0000000000575113e-07,
-            "piece_union_reuse_s": 8.999999999426134e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.0002902310000000019,
-            "right_normalize_s": 0.00018248099999999823,
-            "state_pattern_s": 0.00022421100000000194,
-            "unary_reduction_s": 1.7900000000015126e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              59,
-              59
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,27,),),recip[](add[,1,1](1,exp[](mul[,-1](max#11068,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,27,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,27,),),call[,4](27,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,27,),),recip[](add[,1,1](1,exp[](mul[,-1](max#11068,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,27,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,27,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,27,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,27,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 2.4800000000130273e-06,
-            "cumulative_elapsed_s": 0.110266687,
-            "left_import_s": 0.0001303909999999936,
-            "left_normalize_s": 7.778999999999425e-05,
-            "parametric_state_s": 1.599999999990498e-07,
-            "piece_union_reuse_s": 7.000000000478845e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 6.850000000002687e-06,
-            "right_normalize_s": 0.00018402099999999255,
-            "state_pattern_s": 0.0002239809999999981,
-            "unary_reduction_s": 1.689999999998637e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              60,
-              60
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,28,),),recip[](add[,1,1](1,exp[](mul[,-1](max#11422,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,28,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,28,),),call[,4](28,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,28,),),recip[](add[,1,1](1,exp[](mul[,-1](max#11422,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,28,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,28,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,28,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,28,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.60000000005301e-07,
-            "cumulative_elapsed_s": 0.111283811,
-            "left_import_s": 0.00012994099999999453,
-            "left_normalize_s": 7.677000000000378e-05,
-            "parametric_state_s": 1.599999999990498e-07,
-            "piece_union_reuse_s": 8.999999999426134e-08,
-            "piece_union_seal_s": 5.999999999617422e-08,
-            "right_import_s": 0.00029296099999999436,
-            "right_normalize_s": 0.00017239099999999397,
-            "state_pattern_s": 0.00022128100000000372,
-            "unary_reduction_s": 1.8099999999909855e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              61,
-              61
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,29,),),recip[](add[,1,1](1,exp[](mul[,-1](max#11490,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,29,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,29,),),call[,4](29,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,29,),),recip[](add[,1,1](1,exp[](mul[,-1](max#11490,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,29,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,29,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,29,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,29,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.000000000091267e-07,
-            "cumulative_elapsed_s": 0.112009214,
-            "left_import_s": 0.00012463100000000005,
-            "left_normalize_s": 7.337999999999789e-05,
-            "parametric_state_s": 1.400000000095769e-07,
-            "piece_union_reuse_s": 1.0000000000287557e-07,
-            "piece_union_seal_s": 3.9999999992823554e-08,
-            "right_import_s": 6.779999999997899e-06,
-            "right_normalize_s": 0.00018584099999999215,
-            "state_pattern_s": 0.0002179910000000007,
-            "unary_reduction_s": 1.6499999999919357e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              62,
-              62
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,30,),),recip[](add[,1,1](1,exp[](mul[,-1](max#11837,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,30,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,30,),),call[,4](30,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,30,),),recip[](add[,1,1](1,exp[](mul[,-1](max#11837,),),),),add[,1,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,30,),),mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,30,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,30,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,30,),),),)",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 1.109999999998612e-06,
-            "cumulative_elapsed_s": 0.113105159,
-            "left_import_s": 0.0001290709999999945,
-            "left_normalize_s": 8.794099999999416e-05,
-            "parametric_state_s": 2.3000000000383825e-07,
-            "piece_union_reuse_s": 8.999999999426134e-08,
-            "piece_union_seal_s": 5.999999999617422e-08,
-            "right_import_s": 0.000343661000000009,
-            "right_normalize_s": 0.00016847999999999863,
-            "state_pattern_s": 0.00022053099999999604,
-            "unary_reduction_s": 1.8900000000043882e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              63,
+              34,
               63
             ]
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](max[](-256,read[Z\nreal:bf16](1,31,),),recip[](add[,1,1](1,exp[](mul[,-1](max#11905,),),),),add[,1,1,1](mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,31,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,31,),),call[,4](31,1,),),)",
-            "linear_reduction_decline": "incomplete_targets",
-            "right": "mul[,1](max[](-256,read[Z\nreal:bf16](1,31,),),recip[](add[,1,1](1,exp[](mul[,-1](max#11905,),),),),add[,1,1,1,1](mul[,1](read[dc\nreal:f32](0,),read[X\nreal:bf16](0,31,),exp[](add[,-1,1](read#24,read#5518,),),read[CB\nreal:bf16](1,0,),),mul[,1](read[CB\nreal:bf16](1,1,),read[dc\nreal:f32](1,),read[X\nreal:bf16](1,31,),),mul[,1](read[D\nreal:bf16](0,),read[X\nreal:bf16](1,31,),),mul[,1](exp[](read[dA\nreal:f32](1,),),call[,2](1,31,),),),)",
             "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
+            "state_pattern_proof": {
+              "closures": [],
+              "contribution_pieces": 1,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 20,
+              "instantiated_targets": [
+                {
+                  "count": "2",
+                  "spec": 5
+                }
+              ],
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 1,
+              "visited_nodes": 170,
+              "weighted_add_edges": 4,
+              "witness_nodes": 12
+            },
+            "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 7.600000000024254e-07,
-            "cumulative_elapsed_s": 0.113846582,
-            "left_import_s": 0.0001297100000000051,
-            "left_normalize_s": 7.721100000000758e-05,
-            "parametric_state_s": 1.6999999999378623e-07,
-            "piece_union_reuse_s": 9.000000000813912e-08,
-            "piece_union_seal_s": 3.00000000119649e-08,
-            "right_import_s": 6.720000000001725e-06,
-            "right_normalize_s": 0.00018224000000000018,
-            "state_pattern_s": 0.00021879099999999596,
-            "unary_reduction_s": 1.8400000000029504e-06
+            "affine_state_pattern_s": 2.614099999999342e-05,
+            "cumulative_elapsed_s": 0.108865371,
+            "left_import_s": 0.0013341859999999595,
+            "left_normalize_s": 0.0023306880000000113,
+            "parametric_state_s": 5.799999999986372e-06,
+            "piece_union_record_s": 1.530000000013465e-06,
+            "piece_union_seal_s": 7.799999999780205e-07,
+            "right_import_s": 0.004466309999999987,
+            "right_normalize_s": 0.005950883999999948,
+            "state_pattern_s": 0.005241021999999998,
+            "unary_reduction_s": 5.8180000000060406e-05
           }
         },
         {
@@ -2362,36 +651,36 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.007474625000003454,
-            "cumulative_elapsed_s": 3.415590706,
-            "left_import_s": 0.9200961359999946,
-            "left_normalize_s": 0.5430912400000052,
-            "parametric_state_s": 0.0007933709999742161,
-            "piece_union_record_s": 0.00020606100000251926,
-            "piece_union_seal_s": 0.0002275799999978123,
-            "right_import_s": 1.097562290000004,
-            "right_normalize_s": 0.664523778000013
+            "affine_state_pattern_s": 0.006677444000004723,
+            "cumulative_elapsed_s": 2.494753907,
+            "left_import_s": 0.3017104519999933,
+            "left_normalize_s": 0.49213422799999756,
+            "parametric_state_s": 0.0006709030000049548,
+            "piece_union_record_s": 0.00021198099999719666,
+            "piece_union_seal_s": 0.0002046000000008319,
+            "right_import_s": 0.9824727999999865,
+            "right_normalize_s": 0.5397346380000101
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 0.007537425000003539,
+        "affine_state_pattern_s": 0.006741775000004682,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.9287438499999946,
-        "left_normalize_s": 0.5484154040000053,
-        "parametric_state_s": 0.000805110999974254,
-        "piece_union_record_s": 0.00020606100000251926,
-        "piece_union_reuse_s": 6.140000000036394e-06,
-        "piece_union_seal_s": 0.00023047999999779162,
+        "left_import_s": 0.30561637399999325,
+        "left_normalize_s": 0.49720388399999754,
+        "parametric_state_s": 0.0006851330000049727,
+        "piece_union_record_s": 0.0002154909999971949,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 0.0002066610000007879,
         "proof_reuse_s": 0.0,
-        "right_import_s": 1.1072054490000038,
-        "right_normalize_s": 0.6764133600000131,
-        "state_pattern_s": 0.012576918999999985
+        "right_import_s": 1.0037860099999865,
+        "right_normalize_s": 0.55136549700001,
+        "state_pattern_s": 0.008161130000000003
       },
       "timings": {
-        "load_and_scope_analysis": 0.039037468
+        "load_and_scope_analysis": 0.038256119
       },
       "total_output_families": 8192,
       "transport": "in_memory_cpp_objects",
@@ -2661,7 +950,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 553472,
-      "hb_query_seconds": 0.13507798199999999,
+      "hb_query_seconds": 0.134875521,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -2669,7 +958,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 4530.265625,
+    "peak_footprint_mib": 4543.2890625,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -2730,7 +1019,7 @@
     "value_analysis": {
       "diagnostics": [],
       "duplicate_write_value_checks": 0,
-      "equivalence_check": "not_proven",
+      "equivalence_check": "equivalent",
       "initial_memory_regions": 27650,
       "initial_read_families": 78144,
       "memory_action_storage": {
@@ -2816,16 +1105,16 @@
         "action_patterns": 315830,
         "binding_patterns": 315830,
         "domain_refinements": 1585894,
-        "elapsed_seconds": 3.060615507,
+        "elapsed_seconds": 3.072514699,
         "event_families": 278484,
         "expanded_event_records": 0,
         "largest_batch_members": 96,
         "logical_actions": 374784,
         "logical_events": 8198948,
-        "peak_rss_mib_at_completion": 1938.375,
+        "peak_rss_mib_at_completion": 1954.15234375,
         "reachability_queries": 0,
         "relations": 2102822,
-        "rss_mib_at_completion": 1137.640625,
+        "rss_mib_at_completion": 1153.82421875,
         "scheduled_batches": 278484,
         "singleton_batches": 38692,
         "value_families": 253784
@@ -2837,12 +1126,12 @@
     "value_ir_instance_count": 5815937,
     "value_ir_node_count": 228893,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 3.535432026,
+    "verification_elapsed_seconds": 3.537112533,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 4530.265625,
-  "pipeline_elapsed_seconds": 49.683558031,
-  "result": "equivalence_not_proven",
+  "peak_rss_mib": 4543.2890625,
+  "pipeline_elapsed_seconds": 48.290497345,
+  "result": "verified",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
@@ -2853,5 +1142,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.504
+  "whole_pipeline_timeout_seconds": 498.505
 }

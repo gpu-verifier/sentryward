@@ -2791,7 +2791,7 @@
               "occurrence": 0,
               "thread": 448
             },
-            "message": "TMA tile coordinate %r26 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+            "message": "TMA tile coordinate %r26 is data-dependent (not a constant of the execution) and its range is not proven to keep the tile inside the tensor (0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its tile region are not modeled",
             "stage": "value_lowering"
           }
         ],
@@ -3059,7 +3059,7 @@
     "memory_analysis_complete": false,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 5746.82421875,
+    "peak_footprint_mib": 5998.07421875,
     "required_order_domains": 169984,
     "required_orders": 5439488,
     "semantic_assumptions": {
@@ -3076,7 +3076,7 @@
       "binding_diagnostics": [
         {
           "code": "incomplete_value_semantics",
-          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r26 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
+          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r26 is data-dependent (not a constant of the execution) and its range is not proven to keep the tile inside the tensor (0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its tile region are not modeled"
         }
       ],
       "execution_cohorts": 336,
@@ -3094,7 +3094,7 @@
         {
           "code": "tma_data_dependent_coordinate",
           "line": 521,
-          "message": "TMA tile coordinate %r26 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
+          "message": "TMA tile coordinate %r26 is data-dependent (not a constant of the execution) and its range is not proven to keep the tile inside the tensor (0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its tile region are not modeled"
         }
       ]
     },
@@ -4036,8 +4036,8 @@
     "value_ir_node_count": 25019,
     "value_view_complete": false
   },
-  "peak_rss_mib": 6160.03515625,
-  "pipeline_elapsed_seconds": 55.409356675,
+  "peak_rss_mib": 6181.41015625,
+  "pipeline_elapsed_seconds": 56.41529168,
   "result": "invalid_lifecycle",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
@@ -4047,5 +4047,5 @@
   "verification_limitations": [],
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.488
+  "whole_pipeline_timeout_seconds": 498.492
 }

@@ -38,9 +38,26 @@ struct ScalarFoldOutput {
   ConstantRegion region;
   scalar_fold::Ref value;
 };
+// A reachable undefined behavior (docs/output-json.md, result undefined_behavior): the ISA
+// condition an instruction instance violates, where the offending value comes from and a
+// value the input contract allows there that violates it.
+struct UndefinedBehaviorWitness {
+  std::string condition, isa_reference;
+  std::string isa_section;       // the PTX ISA section that states the condition
+  std::string isa_wording;       // "undefined": it names the rest undefined; "only_meaningful": it lists the only meaningful values
+  std::string source;            // "input_object", "constant" or "unwritten_tensor_memory"
+  std::string object;            // input_object: the object
+  std::string property;          // input_object: "field_values", or "none" (every value)
+  std::uint64_t operand_byte = 0; // byte of the operand value (its documented layout)
+  unsigned field = 0;            // 4-bit field within that byte: 0 low, 1 high
+  std::uint64_t value = 0;       // the witness field value
+  std::optional<std::uint64_t> object_byte_offset;
+  std::vector<std::uint64_t> declared_values, defined_values;
+};
 struct ScalarFoldDiagnostic {
   std::string code, message;
   std::optional<MemoryInstance> operation;
+  std::optional<UndefinedBehaviorWitness> undefined_behavior = std::nullopt;
 };
 struct ScalarFoldResult {
   scalar_fold::Graph graph;

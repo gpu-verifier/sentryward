@@ -192,6 +192,10 @@ Results:
   `same_value_writes_unproven`. The witness pairs that write with a write that
   the race check accepted with it: the two are unordered and cover the same
   bytes.
+- The value analysis that decides them (memory elimination) runs in every
+  verification of the Python API and of the example runner's default mode,
+  with or without a reference; the native executable runs it with
+  `--analyze-values`.
 - Obligations not decided, because the value analysis was not requested,
   stopped before reaching them, or reached the equality proof's bounds on one
   of them (reason `stored_value_equality_limit_exceeded`): `potential_race`
@@ -257,6 +261,12 @@ constant -MAX_T (+MAX_T) cannot decide the result and is dropped (counter
 `range_premise_bounds_dropped`). Example: a running maximum clamped from below
 by -FLT_MAX before it is used as an exponent pivot (`max.f32 m, x, 0fFF7FFFFF`).
 It adds no bound on inputs, no finiteness of any value and no other algebra.
+When another operand's hardware value set keeps it at or above -MAX_T (at or
+below MAX_T for a `Minimum`) and excludes NaN, the comparison drops the constant
+without this premise, exactly (counter `range_bounds_proved`; for example `max(m, -MAX_T)`
+with m a running maximum that starts at a finite constant). See the
+value sets of the [numerical model](reference-binding-json.md#equivalence-contract)
+(constant propagation in the instruction's own type).
 
 - **Enabled:** drop such operands. In the result's `assumptions` entry,
   `triggered` is `true` when the comparison dropped one, `false` when it

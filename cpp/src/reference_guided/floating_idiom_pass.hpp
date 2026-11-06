@@ -13,10 +13,12 @@ struct FloatingIdiomPlan {
   std::vector<bool> rounded;
   std::vector<Id> power_source;
   std::vector<Id> log2_source;
+  std::vector<Id> log1p_source;
   size_t producers=0, powers=0;
   FloatingIdiomPlan() = default;
   FloatingIdiomPlan(const std::vector<RawNode> &nodes, Arena &arena)
-      : rounded(nodes.size(),false),power_source(nodes.size(),invalid),log2_source(nodes.size(),invalid) {
+      : rounded(nodes.size(),false),power_source(nodes.size(),invalid),log2_source(nodes.size(),invalid),
+        log1p_source(nodes.size(),invalid) {
     // A literal of `type`, or the same binary32 bits written as a 32-bit integer constant and reinterpreted
     // on this edge (`mov.b32 %r, 0f4B400001` feeding an f32 operand): compared as exact rationals.
     auto constant=[&](const Edge &e,const char *value,const char *type) {
@@ -54,6 +56,7 @@ struct FloatingIdiomPlan {
     for(size_t i=0;i<nodes.size();++i) {
       if((i&4095)==0)arena.check();
       log2_source[i]=match_log2(nodes,Id(i));
+      log1p_source[i]=match_log1p(nodes,Id(i));
     }
   }
   // Complete binary32 log2 polynomial, including subnormal normalization,
@@ -139,6 +142,103 @@ struct FloatingIdiomPlan {
     if(!plain(first[0],delta) || !constant(first[1],coefficients[0]) || !constant(first[2],coefficients[1]))return invalid;
     return input;
   }
+  // Complete binary32 log1pf of the CUDA math library, as nvcc expands log1pf (with and without
+  // -ftz=true, which marks every RN-FMA and the zero test). For the input u and t = u + 1 (whose
+  // rounding the scalar fold does not keep), e = (bits(t) - bits(0.75)) & 0xff800000 is the exponent
+  // k of 1 + u in [0.75, 1.5)*2^k, shifted into the exponent field; f = fma(4*2^-k, 1/4, -1) + u*2^-k
+  // with both scalings built by subtracting e from the bits; the result is k*RN32(ln 2) + f + f^2*P(f)
+  // with the RN-FMA Horner polynomial P below. Guards: a u that is not below +inf as an unsigned word
+  // (+inf, NaN or negative) gives fma(u, inf, inf) when its s32 word exceeds that of -1, and -0 when
+  // u == 0. Fixed-size pattern only: do not inspect the mathematical input's ancestors.
+  static Id match_log1p(const std::vector<RawNode>& nodes,Id root) {
+    auto operation=[&](Id id,const char* name,const char* type,size_t arity,const char* attributes="") {
+      if(id>=nodes.size())return false;
+      const auto& n=nodes[id];return n.kind=="Operation" && n.name==name && n.type==type &&
+        n.operands.size()==arity && n.attributes==attributes;
+    };
+    // Floating Add and Multiply carry no rounding in the scalar fold.
+    auto arithmetic=[&](Id id,const char* name) {
+      return operation(id,name,"f32",2) || operation(id,name,"f32",2,"ideal_arithmetic");
+    };
+    auto plain=[](const Edge& e,Id id) {return e.node==id && e.conversion.empty();};
+    auto constant=[&](const Edge& e,const char* literal,const char* type="f32") {
+      if(!e.conversion.empty() || e.node>=nodes.size())return false;
+      const auto& n=nodes[e.node];return n.kind=="Constant" && n.type==type && n.name==literal &&
+        n.operands.empty() && n.attributes.empty();
+    };
+    auto child=[&](const Edge& e,const char* name,const char* type,size_t arity,const char* attributes="") {
+      return e.conversion.empty() && operation(e.node,name,type,arity,attributes);
+    };
+    if(!operation(root,"Select","f32",3))return invalid;
+    const auto& finite=nodes[root].operands;Id result=finite[1].node;
+    if(!finite[1].conversion.empty() || result>=nodes.size())return invalid;
+    // Every RN-FMA of one expansion has the same spelling; ftz also marks the zero test.
+    const std::string& rounding=nodes[result].attributes;
+    const bool ftz=rounding=="rounding=nearest-even flush_to_zero " || rounding=="rounding=nearest-even flush_to_zero";
+    if(!ftz && rounding!="rounding=nearest-even " && rounding!="rounding=nearest-even")return invalid;
+    auto fma=[&](Id id) {return operation(id,"Fma","f32",3,rounding.c_str());};
+    if(!fma(result) || !child(finite[0],"Compare","pred",2,"predicate=lt") || !child(finite[2],"Select","f32",3))return invalid;
+    const auto& below=nodes[finite[0].node].operands;Id input=below[0].node;
+    if(input>=nodes.size() || nodes[input].type!="f32" || below[0].conversion!="Bitcast(f32 -> u32)" ||
+       !constant(below[1],"2139095040","u32"))return invalid;
+    const auto& zero=nodes[finite[2].node].operands;
+    if(!child(zero[0],"Compare","pred",2,ftz?"flush_to_zero predicate=eq":"predicate=eq") ||
+       !constant(zero[1],"-0") || !child(zero[2],"Select","f32",3))return invalid;
+    const auto& equality=nodes[zero[0].node].operands;
+    if(!plain(equality[0],input) || !constant(equality[1],"0"))return invalid;
+    const auto& special=nodes[zero[2].node].operands;
+    if(!child(special[0],"Compare","pred",2,"predicate=gt") || !special[1].conversion.empty() ||
+       !fma(special[1].node) || !plain(special[2],result))return invalid;
+    const auto& order=nodes[special[0].node].operands;
+    if(order[0].node!=input || order[0].conversion!="Bitcast(f32 -> s32)" ||
+       !constant(order[1],"-1082130432","s32"))return invalid;
+    const auto& infinite=nodes[special[1].node].operands;
+    if(!plain(infinite[0],input) || !constant(infinite[1],"inf") || !constant(infinite[2],"inf"))return invalid;
+    const auto& sum=nodes[result].operands;
+    if(!sum[0].conversion.empty() || !arithmetic(sum[0].node,"Multiply") ||
+       !constant(sum[1],"0.693147182464599609375") || !sum[2].conversion.empty() || !fma(sum[2].node))return invalid;
+    const auto& exponent=nodes[sum[0].node].operands;Id field=exponent[0].node;
+    if(exponent[0].conversion!="Bitcast(b32 -> s32); Convert rounding=nearest-even (s32 -> f32)" ||
+       !operation(field,"BitAnd","b32",2) || !constant(exponent[1],"0.00000011920928955078125"))return invalid;
+    const auto& tail=nodes[sum[2].node].operands;Id reduced=tail[1].node;
+    if(!tail[0].conversion.empty() || !arithmetic(tail[0].node,"Multiply") || !plain(tail[1],reduced) ||
+       !plain(tail[2],reduced) || !arithmetic(reduced,"Add"))return invalid;
+    const auto& product=nodes[tail[0].node].operands;
+    if(!plain(product[0],reduced) || !product[1].conversion.empty())return invalid;
+    static constexpr const char* coefficients[]={
+      "-0.0453486144542694091796875","0.10546888411045074462890625","-0.132297039031982421875",
+      "0.14491446316242218017578125","-0.16641564667224884033203125","0.1998886764049530029296875",
+      "-0.250001966953277587890625","0.333335101604461669921875","-0.5"};
+    Id horner=product[1].node;
+    for(unsigned i=8;i>1;--i) {
+      if(!fma(horner))return invalid;const auto& step=nodes[horner].operands;
+      if(!step[0].conversion.empty() || !plain(step[1],reduced) || !constant(step[2],coefficients[i]))return invalid;
+      horner=step[0].node;
+    }
+    if(!fma(horner))return invalid;const auto& first=nodes[horner].operands;
+    if(!plain(first[0],reduced) || !constant(first[1],coefficients[0]) || !constant(first[2],coefficients[1]))return invalid;
+    const auto& parts=nodes[reduced].operands;
+    if(!parts[0].conversion.empty() || !fma(parts[0].node) || parts[1].conversion!="Bitcast(s32 -> f32)" ||
+       !operation(parts[1].node,"Subtract","s32",2))return invalid;
+    const auto& shifted=nodes[parts[0].node].operands;
+    if(shifted[0].conversion!="Bitcast(s32 -> f32)" || !operation(shifted[0].node,"Subtract","s32",2) ||
+       !constant(shifted[1],"0.25") || !constant(shifted[2],"-1"))return invalid;
+    const auto& four=nodes[shifted[0].node].operands;
+    if(!constant(four[0],"1082130432","s32") || four[1].node!=field || four[1].conversion!="Bitcast(b32 -> s32)")return invalid;
+    const auto& scaled=nodes[parts[1].node].operands;
+    if(scaled[0].node!=input || scaled[0].conversion!="Bitcast(f32 -> s32)" ||
+       scaled[1].node!=field || scaled[1].conversion!="Bitcast(b32 -> s32)")return invalid;
+    const auto& mask=nodes[field].operands;
+    if(mask[0].conversion!="Bitcast(s32 -> b32)" || !operation(mask[0].node,"Add","s32",2) ||
+       !constant(mask[1],"4286578688","b32"))return invalid;
+    const auto& offset=nodes[mask[0].node].operands;
+    if(offset[0].conversion!="Bitcast(f32 -> s32)" || !arithmetic(offset[0].node,"Add") ||
+       !constant(offset[1],"-1061158912","s32"))return invalid;
+    const auto& successor=nodes[offset[0].node].operands;
+    if(!plain(successor[0],input) || !constant(successor[1],"1"))return invalid;
+    return input;
+  }
+  Id log1p_input(Id id) const {return id<log1p_source.size()?log1p_source[id]:invalid;}
   Id log2_input(Id id) const {return id<log2_source.size()?log2_source[id]:invalid;}
   bool is_rounding(Id id) const {return id<rounded.size() && rounded[id];}
   bool is_power(Id id) const {return id<power_source.size() && power_source[id]!=invalid;}

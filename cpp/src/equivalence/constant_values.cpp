@@ -16,10 +16,7 @@ namespace {
 enum class Encoding { Ieee, E2M1, UE8M0, UE4M3 };
 struct Type { unsigned width, fraction=0, exponent=0; bool sign=false; Encoding encoding=Encoding::Ieee; };
 std::optional<Type> typeOf(const std::string& type) {
-  if(type=="f16")return Type{16,10,5};
-  if(type=="bf16")return Type{16,7,8};
-  if(type=="f32")return Type{32,23,8};
-  if(type=="f64")return Type{64,52,11};
+  if(const auto ieee=ieeeFormat(type))return Type{ieee->width,ieee->fraction,ieee->width-1-ieee->fraction};
   if(type=="e2m1")return Type{4,1,2,false,Encoding::E2M1};
   if(type=="ue8m0")return Type{8,0,8,false,Encoding::UE8M0};
   if(type=="ue4m3")return Type{8,3,4,false,Encoding::UE4M3};

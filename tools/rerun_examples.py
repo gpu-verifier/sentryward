@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 
-from sentryward.results import ResultArgumentParser, normalize, failure, publish, is_public, diagnostic_code, run_cli, REPORT_FIELDS
+from sentryward.results import ResultArgumentParser, normalize, failure, publish, is_public, diagnostic_code, run_cli, verdict, verdict_suffix, REPORT_FIELDS
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -363,6 +363,16 @@ def publish_report(source: Path, destination: Path, root: Path) -> None:
         outgoing.write(tail)
 
 
+def missing_reference_files(source: Path, config: Path, mapping: Path) -> list[Path] | None:
+    """The files an example's equivalence check lacks, or None when it has no reference at all
+    (neither the reference function nor its binding). Without a reference the check is skipped,
+    and memory elimination still runs for the synchronization check; a partial reference is
+    missing input."""
+    if not source.is_file() and not mapping.is_file():
+        return None
+    return [path for path in (source, config, mapping) if not path.is_file()]
+
+
 def run_case(case: Path, corpus: Path, archive: Path, *, include_timeouts=False,
              timeout=300, wellsync_timeout=120, rss_limit=None, default_budget_jobs=None,
              analyze_values: bool = False, check_equivalence: bool = True,
@@ -384,13 +394,18 @@ def run_case(case: Path, corpus: Path, archive: Path, *, include_timeouts=False,
     ptx = corpus / (case.name + ".ptx")
     ptx_sha256 = _file_sha256(ptx)
     reference, mapping, reference_failure, reference_provenance = None, None, None, None
+    # Whether the run checks equivalence: with a reference, or with a reference failure to report.
+    with_reference = check_equivalence
     capture_started = time.monotonic()
     if check_equivalence:
         from tools._example_files import reference_files
         source, config, mapping = reference_files(ROOT, case.name)
-        missing = [str(p.relative_to(ROOT)) for p in (source, config, mapping) if not p.is_file()]
-        if missing:
-            reference_failure = dict(result="missing_input", reason="missing_reference_config_or_mapping", missing=missing)
+        missing = missing_reference_files(source, config, mapping)
+        if missing is None:
+            mapping, with_reference = None, False
+        elif missing:
+            reference_failure = dict(result="missing_input", reason="missing_reference_config_or_mapping",
+                                     missing=[str(p.relative_to(ROOT)) for p in missing])
         else:
             shutil.copyfile(mapping, destination / "reference_binding.json")
             mapping = destination / "reference_binding.json"
@@ -418,12 +433,12 @@ def run_case(case: Path, corpus: Path, archive: Path, *, include_timeouts=False,
                                         wellsync_timeout=wellsync_timeout, rss_limit=rss_limit,
                                         default_budget_jobs=None if rss_limit is not None else default_budget_jobs,
                                         analyze_values=analyze_values or check_equivalence,
-                                        scalar_fold=check_equivalence,
+                                        scalar_fold=with_reference,
                                         reference=reference, mapping=mapping,
                                         reference_provenance=reference_provenance,
                                         export_expressions=export_expressions,
                                         equivalence_timeout=equivalence_timeout,
-                                        require_equivalence=check_equivalence, reference_failure=reference_failure)
+                                        require_equivalence=with_reference, reference_failure=reference_failure)
     assert (case / "input.json").read_bytes() == original_input, "Input changed during run"
     supplied_choices = json.loads(original_input).get("branch_decisions", [])
     if report is None:
@@ -531,7 +546,7 @@ def write_index(examples: Path, records: list[dict]) -> None:
         name = record["name"]
         row = previous.get(name, {})
         row.update({"Example": name, "PTX": f"[PTX](../corpus/{name}.ptx)",
-                    "Verify Result": f"`{record['result']}`"})
+                    "Verify Result": f"`{record['result']}`" + verdict_suffix(record["result"], record.get("checks"))})
         row.setdefault("Report", f"[Report — previous run]({name}/report.md)"
                        if (examples / name / "report.md").exists() else "—")
         row.setdefault("Correctness Check", "not run")
@@ -539,7 +554,9 @@ def write_index(examples: Path, records: list[dict]) -> None:
             row["Report"] = (f"[Report — previous run]({name}/report.md)"
                              if (examples / name / "report.md").exists() else "—")
         check = record.get("equivalence")
-        if check:
+        if check and check.get("check") == "not_requested":
+            row["Correctness Check"] = "skipped (no reference)"
+        elif check:
             # Saved tokens appear as code, as in the Verify Result column.
             row["Correctness Check"] = f"`{check['result']}`"
             if check.get("analysis_scope", {}).get("kind") == "configured_branch_scenario":
@@ -618,10 +635,12 @@ def main(argv=None) -> int:
         for record in pool.map(run, cases):
             records.append(record)
             (archive / "summary.json").write_text(json.dumps(records, indent=2) + "\n")
-            print(record["name"], record["result"], "" if record["rerun"] else "(skipped)", flush=True)
+            print(record["name"], verdict(record["result"], record.get("checks")), "" if record["rerun"] else "(skipped)", flush=True)
     by_name = {r["name"]: r for r in records}
-    write_index(examples, [by_name.get(p.name) or {"name": p.name,
-        "result": verification_status(read_result(p) or {"result": "unsupported"}), "rerun": False} for p in all_cases])
+    def saved(case):
+        report = read_result(case) or {"result": "unsupported"}
+        return {"name": case.name, "result": verification_status(report), "checks": report.get("checks"), "rerun": False}
+    write_index(examples, [by_name.get(p.name) or saved(p) for p in all_cases])
     print(f"Summary: {archive / 'summary.json'}")
     return int(any(r["result"] == "tool_failure" for r in records))
 

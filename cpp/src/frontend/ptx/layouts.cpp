@@ -392,8 +392,11 @@ MmaDescriptor DecodeBlockScaledDescriptor(std::uint64_t value, std::string_view 
   if (kind == "mxf4" || kind == "mxf4nvf4") {
     if (value & (0xbULL | (1ULL << 6) | (3ULL << 15) | (1ULL << 31)))
       Fail("packed FP4 requires K-major operands and zero reserved bits");
-    if (((value >> 7) & 7) != 1 || ((value >> 10) & 7) != 1)
+    // PTX ISA instruction descriptor for these kinds: atype bits 7-9, btype bits 10-11,
+    // Sparsity version bit 12 (v1 = 2:4, sm_107a only; not modeled).
+    if (((value >> 7) & 7) != 1 || ((value >> 10) & 3) != 1)
       Fail("packed FP4 operands must use E2M1");
+    if (value & (1ULL << 12)) Fail("packed FP4 SparsityVersion v1 is not modeled");
     if (kind == "mxf4") {
       if (!(value & (1ULL << 23))) Fail("MXF4 scale type must be UE8M0");
       if (value & ((1ULL << 4) | (1ULL << 29))) Fail("block32 scale IDs must be 0 or 2");

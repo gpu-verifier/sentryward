@@ -148,10 +148,13 @@ The CLI prints a JSON result to stdout, and `verify` returns the same structure
 as a dictionary:
 
 - `result` is the overall verdict. `race_free` means the synchronization check
-  passed and no reference was given; `verified` means equivalence to the
-  reference was proved as well. Other values name a finding, such as
-  `potential_race`, or the reason the analysis stopped, such as `unsupported`
-  or `timeout`.
+  passed and no reference was given, so equivalence checking was skipped, and
+  with it the scalar fold's checks, such as sparse-metadata validity (the
+  example runner and its `index.md` show `race_free (equivalence checking
+  skipped)`); `verified` means equivalence to the reference was proved as well. Other values name a finding, such as
+  `potential_race` or `undefined_behavior` (an executed instruction can reach
+  behavior the PTX ISA leaves undefined), or the reason the analysis stopped,
+  such as `unsupported` or `timeout`.
 - `checks` gives the status of the two checks: `synchronization`
   (synchronization, memory races and resource lifecycles) and `equivalence`.
 - `diagnostics` and `warnings` hold the details; `evidence` holds race and

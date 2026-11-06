@@ -35,6 +35,19 @@ class FiniteStateReuse {
     AnchorKey key;
     Id row = invalid, column = invalid;
     const Layout *layout = nullptr;
+    // Open prefix positions: an integer coordinate there instead of a
+    // constant. The key holds invalid at each, so one group spans them.
+    std::vector<size_t> open;
+    std::vector<Id> open_values;
+  };
+  // A complete proof of a family with several non-singleton output axes. Its
+  // anchor coordinates are, per schema axis, a constant or one family axis
+  // plus a constant, and every family axis occurs exactly once: the family's
+  // cells map one-to-one onto a box of the schema domain.
+  struct BoxPiece {
+    Id left, right;
+    std::vector<Id> coordinates;
+    FinitePieceBox box;
   };
   struct Piece {
     Id left, right, axis, row, column;
@@ -54,12 +67,20 @@ class FiniteStateReuse {
     size_t seed_cursor = 0, first_seed = SIZE_MAX, second_seed = SIZE_MAX, column_seed = SIZE_MAX;
     J parametric_receipt;
     size_t attempted_pieces = 0;
+    // Box groups: schema extents (open prefix positions, row, column).
+    std::vector<Z> extents;
+    std::vector<BoxPiece> boxes;
+    bool boxed() const { return !extents.empty(); }
   };
   Checker &checker;
   Arena &a;
   const uint64_t context;
   std::map<std::string, Layout> layouts;
   std::map<AnchorKey, size_t> group_index;
+  // Box groups have their own index: a multi-axis family whose anchor has no
+  // open position shares its AnchorKey with single-axis row families, and
+  // neither kind may displace the other's group.
+  std::map<AnchorKey, size_t> box_group_index;
   std::vector<Group> groups;
   std::unordered_map<Id, Id> rewrite_memo;
   std::unordered_map<Id, Id> reference_abstraction_memo, optimized_abstraction_memo;
@@ -139,7 +160,7 @@ class FiniteStateReuse {
       }
     }
   }
-  std::optional<Anchor> read_anchor(Id id) const {
+  std::optional<Anchor> read_anchor(Id id, bool open_prefix = false) const {
     const auto &n = a.nodes[id];
     if (n.op != "read" || !n.facts.finite || n.args.size() < 2 || n.args.size() > 4) return {};
     auto separator = n.tag.find('\n');
@@ -150,6 +171,10 @@ class FiniteStateReuse {
     result.key.tag = n.tag; result.key.data = n.data; result.layout = &layout->second;
     for (size_t i = 0; i + 2 < n.args.size(); ++i) {
       auto value = a.value(n.args[i]);
+      if (!value && open_prefix && inside(n.args[i], layout->second.shape[i])) {
+        result.key.prefix.push_back(invalid); result.open.push_back(i);
+        result.open_values.push_back(n.args[i]); continue;
+      }
       if (!value || !small_integer(*value) || *value < 0 || *value >= Q(layout->second.shape[i])) return {};
       result.key.prefix.push_back(n.args[i]);
     }
@@ -158,7 +183,7 @@ class FiniteStateReuse {
   }
   // This bounded scan does not enter reductions or nonlinear producers. It
   // never proves an expression equality; the whole-template module does that.
-  std::vector<Anchor> anchors(Id root, bool rewriting) {
+  std::vector<Anchor> anchors(Id root, bool rewriting, bool open_prefix = false) {
     std::vector<Anchor> result;
     std::vector<std::pair<Id, size_t>> todo{{root, 0}};
     std::unordered_set<Id> seen;
@@ -168,7 +193,7 @@ class FiniteStateReuse {
       if (!seen.insert(id).second) continue;
       if (++work > anchor_nodes || (rewriting && !charge())) return {};
       const auto &n = a.nodes[id];
-      if (auto anchor = read_anchor(id)) result.push_back(std::move(*anchor));
+      if (auto anchor = read_anchor(id, open_prefix)) result.push_back(std::move(*anchor));
       if (depth == anchor_depth || (n.op != "add" && n.op != "mul")) continue;
       if (n.args.size() > anchor_nodes - work) return {};
       work += n.args.size();
@@ -210,6 +235,147 @@ class FiniteStateReuse {
     }
     return found_axis ? offset : std::optional<Z>{};
   }
+  // All non-singleton output axes of a family, in shape order.
+  std::optional<std::vector<Id>> family_axes(const J &left, const J &right) {
+    if (!left.contains("shape") || !right.contains("shape") || left.at("shape") != right.at("shape")) return {};
+    const auto &shape = left.at("shape");
+    if (!shape.is_array() || shape.size() > 4) return {};
+    std::vector<Id> axes;
+    for (size_t i = 0; i < shape.size(); ++i) {
+      Q count = jq(shape[i]);
+      if (!small_integer(count) || count < 1) return {};
+      if (count > 1) axes.push_back(a.var("output:" + std::to_string(i), 0, count - 1));
+    }
+    return axes;
+  }
+  // A schema coordinate as a constant (axis index npos) or one axis plus a
+  // constant offset. Anything else, including strides, is not a box image.
+  std::optional<std::pair<size_t, Z>> axis_offset(Id coordinate, const std::vector<Id> &axes) const {
+    if (auto value = a.value(coordinate)) {
+      if (!small_integer(*value)) return {};
+      return std::pair(std::string::npos, value->numerator());
+    }
+    for (size_t k = 0; k < axes.size(); ++k)
+      if (auto offset = column_offset(coordinate, axes[k])) return std::pair(k, *offset);
+    return {};
+  }
+  static std::vector<Id> schema_coordinates(const Anchor &anchor) {
+    std::vector<Id> result = anchor.open_values;
+    result.push_back(anchor.row); result.push_back(anchor.column);
+    return result;
+  }
+  // Records a family whose output has two or more non-singleton axes as one
+  // box of its anchor's schema domain. O(anchors^2 + rank * axes) per family.
+  void record_box(Id left, Id right, const J &left_family, const J &right_family) {
+    auto axes = family_axes(left_family, right_family);
+    if (!axes || axes->size() < 2) return;
+    const std::set<Id> axis_set(axes->begin(), axes->end());
+    for (Id body : {left, right})
+      for (Id v : a.nodes[body].free)
+        if (!axis_set.contains(v)) { ++a.stats["finite_state_reuse_open_body_declines"]; return; }
+    auto left_anchors = anchors(left, false, true), right_anchors = anchors(right, false, true);
+    std::optional<Anchor> chosen;
+    std::vector<Id> coordinates;
+    FinitePieceBox box;
+    Z volume = 0;
+    for (const auto &la : left_anchors) {
+      const auto &shape = la.layout->shape;
+      std::vector<Z> extents;
+      for (size_t i : la.open) extents.push_back(shape[i]);
+      extents.push_back(shape[shape.size() - 2]); extents.push_back(shape.back());
+      auto values = schema_coordinates(la);
+      FinitePieceBox candidate{std::vector<Id>(values.size(), invalid), std::vector<Z>(values.size())};
+      std::vector<bool> used(axes->size(), false);
+      Z cells = 1;
+      bool image = true;
+      for (size_t d = 0; d < values.size() && image; ++d) {
+        auto offset = axis_offset(values[d], *axes);
+        if (!offset) { image = false; break; }
+        candidate.offsets[d] = offset->second;
+        Z extent = 1;
+        if (offset->first != std::string::npos) {
+          if (used[offset->first]) { image = false; break; }
+          used[offset->first] = true;
+          candidate.locals[d] = (*axes)[offset->first];
+          extent = a.nodes[(*axes)[offset->first]].data[1].numerator() + 1;
+        }
+        image = offset->second >= 0 && offset->second + extent <= extents[d];
+        cells *= extent;
+      }
+      if (!image || std::find(used.begin(), used.end(), false) != used.end()) continue;
+      for (const auto &ra : right_anchors) {
+        if (!(la.key == ra.key) || la.row != ra.row || la.column != ra.column ||
+            la.open_values != ra.open_values) continue;
+        if (chosen) { ++a.stats["finite_state_reuse_ambiguous_anchor_declines"]; return; }
+        chosen = la; coordinates = values; box = candidate; volume = cells;
+      }
+    }
+    if (!chosen) return;
+    auto found = box_group_index.find(chosen->key);
+    if (found == box_group_index.end()) {
+      if (groups.size() == max_groups) { ++a.stats["finite_state_reuse_group_declines"]; return; }
+      const auto &shape = chosen->layout->shape;
+      Group group; group.key = chosen->key;
+      group.rows = shape[shape.size() - 2]; group.columns = shape.back();
+      for (size_t i : chosen->open) group.extents.push_back(shape[i]);
+      group.extents.push_back(group.rows); group.extents.push_back(group.columns);
+      size_t index = groups.size();
+      groups.push_back(std::move(group));
+      found = box_group_index.emplace(chosen->key, index).first;
+    }
+    auto &group = groups[found->second];
+    if (group.cover && group.cover->sealed()) return;
+    if (piece_count == max_pieces) { group.overflow = true; ++a.stats["finite_state_reuse_piece_declines"]; return; }
+    group.boxes.push_back({left, right, std::move(coordinates), std::move(box)});
+    group.recorded_cells += volume;
+    refresh_requested = true;
+    ++piece_count; ++a.stats["finite_state_reuse_collected_box_pieces"];
+  }
+  // Box groups use the same template and union theorem as row pieces; their
+  // coverage is the exact interval union of the recorded boxes.
+  bool seal_box_group(size_t index, Group &group) {
+    Z total = 1;
+    for (const Z &extent : group.extents) total *= extent;
+    if (group.recorded_cells != total) {
+      group.failure = group.recorded_cells < total ? "preflight_incomplete" : "preflight_overlap";
+      return false;
+    }
+    if (group.attempted_pieces == group.boxes.size()) return false;
+    group.attempted_pieces = group.boxes.size();
+    const BoxPiece &first = group.boxes.front();
+    const BoxPiece *second = nullptr;
+    for (const auto &piece : group.boxes)
+      if (piece.coordinates != first.coordinates) { second = &piece; break; }
+    if (!second) { group.failure = "independent_seed_boxes"; return false; }
+    const std::string key = "finite-state:" + std::to_string(context) + ":" + std::to_string(index);
+    std::vector<Id> axes;
+    for (size_t d = 0; d < group.extents.size(); ++d)
+      axes.push_back(a.var(key + ":axis:" + std::to_string(d), 0, Q(group.extents[d] - 1)));
+    group.expressions = std::make_unique<WholeExpressionTemplates>(checker, axes, context);
+    std::vector<WholeTemplateSample> seeds{{first.left, first.right, first.coordinates},
+                                           {second->left, second->right, second->coordinates}};
+    if (!group.expressions->build(seeds)) {
+      group.failure = "template_build:" + group.expressions->last_failure;
+      group.expressions.reset(); return false;
+    }
+    FinitePieceUnionSchema schema{group.expressions->left_template(), group.expressions->right_template(), axes, context};
+    group.cover = std::make_unique<FinitePieceUnion>(a, std::move(schema),
+        FinitePieceUnionLimits{max_pieces, 8388608});
+    for (const auto &piece : group.boxes) {
+      a.check();
+      auto witness = group.expressions->validate_piece(piece.left, piece.right, piece.coordinates);
+      if (!witness || !group.cover->add_proved_box({piece.left, piece.right, context}, piece.box, *witness)) {
+        group.failure = witness ? group.cover->last_failure : "whole_body_instance:" + group.expressions->last_failure;
+        group.expressions.reset(); group.cover.reset(); return false;
+      }
+    }
+    if (!group.cover->seal()) {
+      group.failure = group.cover->last_failure;
+      group.expressions.reset(); group.cover.reset(); return false;
+    }
+    ++a.stats["finite_state_reuse_sealed_schemas"];
+    return true;
+  }
   bool preflight(Group &group) {
     if (group.overflow || group.pieces.empty()) { group.failure = "piece_budget"; return false; }
     std::vector<std::pair<Z, Z>> intervals;
@@ -234,6 +400,7 @@ class FiniteStateReuse {
     for (size_t index = 0; index < groups.size(); ++index) {
       auto &group = groups[index];
       if (group.cover && group.cover->sealed()) continue;
+      if (group.boxed()) { added_schema |= seal_box_group(index, group); continue; }
       // Cardinality is a scheduling filter only. Exact disjoint coverage and
       // complete body proofs below remain mandatory. Do not repeatedly sort
       // a growing incomplete collection for each unresolved output.
@@ -292,21 +459,34 @@ class FiniteStateReuse {
   }
   std::optional<Id> replacement(Id target, RewriteMode mode) {
     if (a.nodes[target].op != "add") return {};
-    auto candidates = anchors(target, true);
+    auto candidates = anchors(target, true, true);
     const Anchor *chosen = nullptr;
     Group *group = nullptr;
     size_t group_id = 0;
-    for (const auto &candidate : candidates) {
-      auto found = group_index.find(candidate.key);
-      if (found == group_index.end()) continue;
-      auto &entry = groups[found->second];
-      if (!entry.cover || !entry.cover->sealed()) continue;
-      if (chosen) return {}; // Ambiguous shallow anchors never select a rule.
-      chosen = &candidate; group = &entry; group_id = found->second;
+    bool boxed = false;
+    // Row groups take precedence, as before box groups existed: a unique
+    // anchor with a sealed row group selects it (an anchor with open
+    // positions has a key no row group has); otherwise a unique anchor with a
+    // sealed box group. Ambiguous shallow anchors never select a rule.
+    for (const bool boxes : {false, true}) {
+      const auto &index = boxes ? box_group_index : group_index;
+      for (const auto &candidate : candidates) {
+        auto found = index.find(candidate.key);
+        if (found == index.end()) continue;
+        auto &entry = groups[found->second];
+        if (!entry.cover || !entry.cover->sealed()) continue;
+        if (chosen) return {};
+        chosen = &candidate; group = &entry; group_id = found->second; boxed = boxes;
+      }
+      if (chosen) break;
     }
-    if (!chosen || !inside(chosen->row, group->rows) || !inside(chosen->column, group->columns)) return {};
+    if (!chosen) return {};
+    const std::vector<Id> coordinates = boxed ? schema_coordinates(*chosen)
+                                              : std::vector<Id>{chosen->row, chosen->column};
+    const std::vector<Z> extents = boxed ? group->extents : std::vector<Z>{group->rows, group->columns};
+    for (size_t d = 0; d < coordinates.size(); ++d)
+      if (!inside(coordinates[d], extents[d])) return {};
     ++a.stats["finite_state_reuse_template_attempts"];
-    const std::vector<Id> coordinates{chosen->row, chosen->column};
     std::optional<Id> result;
     if (mode == RewriteMode::ReferenceBody)
       result = group->expressions->rewrite_optimized(target, coordinates);
@@ -423,7 +603,7 @@ public:
     if (a.nodes[left].op != "add" || a.nodes[right].op != "add" ||
         !a.nodes[left].facts.finite || !a.nodes[right].facts.finite) return;
     auto axis = family_axis(left_family, right_family);
-    if (!axis) return;
+    if (!axis) { record_box(left, right, left_family, right_family); return; }
     Z low, high;
     if (!integer_var(*axis, low, high)) return;
     for (Id body : {left, right}) {
@@ -530,6 +710,12 @@ public:
     for (const auto &group : groups) {
       J item{{"anchor", group.key.tag}, {"pieces", group.pieces.size()},
              {"rows", group.rows.str()}, {"columns", group.columns.str()}};
+      if (group.boxed()) {
+        item["pieces"] = group.boxes.size();
+        J extents = J::array();
+        for (const Z &extent : group.extents) extents.push_back(extent.str());
+        item["box_extents"] = std::move(extents);
+      }
       item["parametric"] = group.parametric_receipt;
       if (group.cover) item["certificate"] = group.cover->receipt();
       else item["decline"] = group.failure;

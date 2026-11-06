@@ -115,8 +115,10 @@ std::optional<ValueAccess> Access(const v::Graph& graph, const v::Node& node, st
   if (type && type->hasStaticShape() && !type->element().isParameterized()) {
     const auto bits = type->bitSize();
     if (bits && bits % 8 == 0) result.bytes = bits / 8;
-    // A tensor-map store (tensormap.cp_fenceproxy) writes plain descriptor bytes.
-    result.ordinary_scalar = !attributes.guarded && !attributes.layout && !attributes.descriptor &&
+    // A tensor-map store (tensormap.cp_fenceproxy) writes plain descriptor bytes. A region
+    // fragment's guard is its zero fill: it still binds its whole fragment.
+    result.ordinary_scalar = (!attributes.guarded || attributes.region_offset) && !attributes.layout &&
+        !attributes.descriptor &&
         (attributes.interpretation == v::MemoryAttributes::Interpretation::Ordinary ||
          (store && attributes.interpretation == v::MemoryAttributes::Interpretation::TensorMap));
   }
@@ -370,14 +372,9 @@ void LinkMmaMemory(SemanticProgram& result, const MmaValueLayout& layout,
       const auto& instance = result.values.node(value.reference.node).instances().at(value.reference.instance);
       return dynamic_cast<const v::NativeMatrixOp*>(&result.values.definingNode(instance.operands.at(0)).operation());
     };
-    // tcgen05.mma.sp: metadata index values other than the ISA's listed ones are
-    // undefined behavior, so a value mapping needs a metadata validity premise.
-    if (std::any_of(values.begin(),values.end(),[&](const ValueAccess& value) {
-          const auto* address=native_address(value);
-          return address && address->opcode()==v::NativeMatrixOpcode::TcgenMmaAddress &&
-              address->attributes().role==v::MatrixRole::SparseMetadata;
-        }))
-      throw LayoutError("Sparse MMA value mapping needs a metadata validity premise and is not decoded");
+    // tcgen05.mma.sp: the metadata operand is bound as the bytes of its Tensor Memory
+    // footprint (TcgenMma's metadata type); the scalar fold decides whether every 4-bit
+    // field holds a value the ISA defines (undefined behavior otherwise).
     for (const auto& value : values) {
       const auto* address = native_address(value);
       if (!address || address->opcode()!=v::NativeMatrixOpcode::TcgenMmaAddress || !value.bytes)
@@ -389,7 +386,8 @@ void LinkMmaMemory(SemanticProgram& result, const MmaValueLayout& layout,
         case v::MatrixRole::D: role=MmaOperandRole::D; break;
         case v::MatrixRole::ScaleA: role=MmaOperandRole::ScaleA; break;
         case v::MatrixRole::ScaleB: role=MmaOperandRole::ScaleB; break;
-        default: throw LayoutError("Scaled or sparse MMA value fragments are not decoded");
+        case v::MatrixRole::SparseMetadata: role=MmaOperandRole::SparseMetadata; break;
+        default: throw LayoutError("MMA value fragment role is not decoded");
       }
       for (const auto& modifier : address->attributes().modifiers)
         if (modifier.starts_with("kind::")) kind=modifier.substr(6);
@@ -432,7 +430,9 @@ void LinkMmaMemory(SemanticProgram& result, const MmaValueLayout& layout,
       const auto rows=role==MmaOperandRole::ScaleB ? descriptor.n :
           (role==MmaOperandRole::B ? descriptor.n : descriptor.m)/layout.cta_group;
       const unsigned vector=kind=="mxf4"?2:kind=="mxf4nvf4"?4:1;
-      const auto columns=scale ? vector : role==MmaOperandRole::D ? descriptor.n : packed ? descriptor.k/2 : descriptor.k;
+      // A sparse A operand is stored packed (M x K/2 elements), as TcgenMma types it.
+      const auto columns=scale ? vector : role==MmaOperandRole::D ? descriptor.n :
+          (packed ? descriptor.k/2 : descriptor.k)/(descriptor.sparse && role==MmaOperandRole::A ? 2 : 1);
       const auto bits=scale || (packed && role!=MmaOperandRole::D) ? 8 :
           role==MmaOperandRole::A ? descriptor.a_element_bits : role==MmaOperandRole::B ? descriptor.b_element_bits : descriptor.d_element_bits;
       if (bits%8) throw LayoutError("Subbyte MMA elements require packed element mapping");
@@ -499,6 +499,20 @@ void LinkMmaMemory(SemanticProgram& result, const MmaValueLayout& layout,
           map.payload_offset+=std::uint64_t{part}*rows*columns*bits/8;
           emit(map);
         });
+      }
+      else if (role==MmaOperandRole::SparseMetadata) {
+        // Each physical interval is one data-path lane's row of 4-byte columns
+        // (DecodeSparseMetadataFootprint), in lane order; CTA part p holds rows 128p..128p+127.
+        if (!descriptor.sparse || descriptor.m!=128*layout.cta_group || *value.bytes%descriptor.m)
+          throw LayoutError("Sparse MMA metadata value does not match its descriptor");
+        const auto row_bytes=*value.bytes/descriptor.m;
+        if (intervals.size()!=128) throw LayoutError("Sparse MMA metadata footprint does not cover 128 lanes");
+        std::uint64_t row=0;
+        for (const auto& [offset,access] : intervals) {
+          if (*access->bytes!=row_bytes) throw LayoutError("Sparse MMA metadata lane row disagrees with its value");
+          emit({offset,(std::uint64_t{part}*128+row)*row_bytes,1,row_bytes,1});
+          ++row;
+        }
       }
       else {
         if(packed)throw LayoutError("FP4 TMEM-A logical packing is not implemented");

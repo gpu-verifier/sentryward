@@ -11,7 +11,8 @@
       "6:global1:A": "A",
       "6:global1:D": "D",
       "6:global7:dt_bias": "dt_bias",
-      "6:global19:state_batch_indices": "state_batch_indices"
+      "6:global19:state_batch_indices": "state_batch_indices",
+      "6:global18:intermediate_state": "intermediate_state"
     },
     "parameters": {},
     "layouts": {
@@ -20,19 +21,19 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
-          1,
+          32,
+          64,
           64,
           128
         ],
         "source_strides_bytes": [
-          16384,
+          1048576,
           16384,
           256,
           2
         ],
         "target_strides_bytes": [
-          16384,
+          1048576,
           16384,
           256,
           2
@@ -43,20 +44,20 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
+          32,
           6,
-          1,
+          64,
           64
         ],
         "source_strides_bytes": [
-          768,
-          128,
+          49152,
+          8192,
           128,
           2
         ],
         "target_strides_bytes": [
-          768,
-          128,
+          49152,
+          8192,
           128,
           2
         ]
@@ -66,20 +67,20 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
+          32,
           6,
-          1,
+          8,
           128
         ],
         "source_strides_bytes": [
-          1536,
-          256,
+          12288,
+          2048,
           256,
           2
         ],
         "target_strides_bytes": [
-          1536,
-          256,
+          12288,
+          2048,
           256,
           2
         ]
@@ -89,20 +90,20 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
+          32,
           6,
-          1,
+          8,
           128
         ],
         "source_strides_bytes": [
-          1536,
-          256,
+          12288,
+          2048,
           256,
           2
         ],
         "target_strides_bytes": [
-          1536,
-          256,
+          12288,
+          2048,
           256,
           2
         ]
@@ -112,18 +113,18 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          1,
+          32,
           6,
-          1
+          64
         ],
         "source_strides_bytes": [
-          24,
-          4,
+          1536,
+          256,
           4
         ],
         "target_strides_bytes": [
-          24,
-          4,
+          1536,
+          256,
           4
         ]
       },
@@ -132,7 +133,7 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          1
+          64
         ],
         "source_strides_bytes": [
           4
@@ -146,7 +147,7 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          1
+          64
         ],
         "source_strides_bytes": [
           4
@@ -160,7 +161,7 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          1
+          64
         ],
         "source_strides_bytes": [
           4
@@ -174,13 +175,39 @@
         "target_offset": 0,
         "element_bytes": 8,
         "shape": [
-          1
+          32
         ],
         "source_strides_bytes": [
           8
         ],
         "target_strides_bytes": [
           8
+        ]
+      },
+      "6:global18:intermediate_state": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          32,
+          6,
+          64,
+          64,
+          128
+        ],
+        "source_strides_bytes": [
+          6291456,
+          1048576,
+          16384,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          6291456,
+          1048576,
+          16384,
+          256,
+          2
         ]
       }
     }
@@ -195,7 +222,8 @@
       "6:global1:A": "A",
       "6:global1:D": "D",
       "6:global7:dt_bias": "dt_bias",
-      "6:global19:state_batch_indices": "state_batch_indices"
+      "6:global19:state_batch_indices": "state_batch_indices",
+      "6:global18:intermediate_state": "intermediate_state"
     },
     "parameters": {},
     "layouts": {
@@ -204,19 +232,19 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
-          1,
+          32,
+          64,
           64,
           128
         ],
         "source_strides_bytes": [
-          16384,
+          1048576,
           16384,
           256,
           2
         ],
         "target_strides_bytes": [
-          16384,
+          1048576,
           16384,
           256,
           2
@@ -227,20 +255,20 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
+          32,
           6,
-          1,
+          64,
           64
         ],
         "source_strides_bytes": [
-          768,
-          128,
+          49152,
+          8192,
           128,
           2
         ],
         "target_strides_bytes": [
-          768,
-          128,
+          49152,
+          8192,
           128,
           2
         ]
@@ -250,20 +278,20 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
+          32,
           6,
-          1,
+          8,
           128
         ],
         "source_strides_bytes": [
-          1536,
-          256,
+          12288,
+          2048,
           256,
           2
         ],
         "target_strides_bytes": [
-          1536,
-          256,
+          12288,
+          2048,
           256,
           2
         ]
@@ -273,20 +301,20 @@
         "target_offset": 0,
         "element_bytes": 2,
         "shape": [
-          1,
+          32,
           6,
-          1,
+          8,
           128
         ],
         "source_strides_bytes": [
-          1536,
-          256,
+          12288,
+          2048,
           256,
           2
         ],
         "target_strides_bytes": [
-          1536,
-          256,
+          12288,
+          2048,
           256,
           2
         ]
@@ -296,18 +324,18 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          1,
+          32,
           6,
-          1
+          64
         ],
         "source_strides_bytes": [
-          24,
-          4,
+          1536,
+          256,
           4
         ],
         "target_strides_bytes": [
-          24,
-          4,
+          1536,
+          256,
           4
         ]
       },
@@ -316,7 +344,7 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          1
+          64
         ],
         "source_strides_bytes": [
           4
@@ -330,7 +358,7 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          1
+          64
         ],
         "source_strides_bytes": [
           4
@@ -344,7 +372,7 @@
         "target_offset": 0,
         "element_bytes": 4,
         "shape": [
-          1
+          64
         ],
         "source_strides_bytes": [
           4
@@ -358,7 +386,7 @@
         "target_offset": 0,
         "element_bytes": 8,
         "shape": [
-          1
+          32
         ],
         "source_strides_bytes": [
           8
@@ -366,33 +394,91 @@
         "target_strides_bytes": [
           8
         ]
+      },
+      "6:global18:intermediate_state": {
+        "source_offset": 0,
+        "target_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          32,
+          6,
+          64,
+          64,
+          128
+        ],
+        "source_strides_bytes": [
+          6291456,
+          1048576,
+          16384,
+          256,
+          2
+        ],
+        "target_strides_bytes": [
+          6291456,
+          1048576,
+          16384,
+          256,
+          2
+        ]
       }
     }
   },
   "outputs": {
-    "kind": "dense_tensor",
-    "left_allocation": "6:global6:output",
-    "right_allocation": "6:global6:output",
-    "left_offset": 0,
-    "right_offset": 0,
-    "element_bytes": 2,
-    "shape": [
-      1,
-      6,
-      1,
-      64
-    ],
-    "left_strides_bytes": [
-      768,
-      128,
-      128,
-      2
-    ],
-    "right_strides_bytes": [
-      768,
-      128,
-      128,
-      2
+    "kind": "dense_tensors",
+    "tensors": [
+      {
+        "left_allocation": "6:global6:output",
+        "right_allocation": "6:global6:output",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          32,
+          6,
+          64,
+          64
+        ],
+        "left_strides_bytes": [
+          49152,
+          8192,
+          128,
+          2
+        ],
+        "right_strides_bytes": [
+          49152,
+          8192,
+          128,
+          2
+        ]
+      },
+      {
+        "left_allocation": "6:global18:intermediate_state",
+        "right_allocation": "6:global18:intermediate_state",
+        "left_offset": 0,
+        "right_offset": 0,
+        "element_bytes": 2,
+        "shape": [
+          32,
+          6,
+          64,
+          64,
+          128
+        ],
+        "left_strides_bytes": [
+          6291456,
+          1048576,
+          16384,
+          256,
+          2
+        ],
+        "right_strides_bytes": [
+          6291456,
+          1048576,
+          16384,
+          256,
+          2
+        ]
+      }
     ]
   },
   "reference": {
@@ -443,6 +529,16 @@
         "dtype": "int64"
       },
       {
+        "name": "intermediate_state",
+        "allocation": "6:global18:intermediate_state",
+        "dtype": "bfloat16"
+      },
+      {
+        "name": "intermediate_state_indices",
+        "allocation": "6:global19:state_batch_indices",
+        "dtype": "int64"
+      },
+      {
         "name": "nheads",
         "parameter": 12
       },
@@ -453,6 +549,10 @@
       {
         "name": "total_tiles",
         "parameter": 14
+      },
+      {
+        "name": "intermediate_stride_slot",
+        "parameter": 15
       },
       {
         "name": "dt_softplus",
@@ -466,6 +566,18 @@
   },
   "provenance": {
     "source": "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_selective_state_update/cuda/cake_selective_state_update_mtp_horizontal.cu",
-    "optimized_input_sha256": "b8186d443ca112fa23b7a044ac04679042020bfea21babd5e2832e1bf9c355c6"
+    "upstream": [
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_selective_state_update/cuda/cake_selective_state_update_mtp_horizontal.cu",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/csrc/cake_selective_state_update/host/cake_selective_state_update_mtp_horizontal.cc",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/jit/mamba/cake_selective_state_update.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/mamba/selective_state_update.py",
+      "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/mamba/test_cake_selective_state_update.py"
+    ],
+    "optimized_input": "examples/flashinfer__cake_selective_state_update__mtp_horizontal__sm_100a/input.json",
+    "optimized_input_sha256": "744340856790938d04a77bdd781e2b656f945b6c09f25635ef528ae61c426be8",
+    "ptx_sha256": "6efd9aca98e6e93cc01e37cb706691f109a5235af181ee364cdaa4337b598af0",
+    "scope": "Upstream parity test test_cake_selective_state_update_matches_flashinfer, row mtp_horizontal (tests/mamba/test_cake_selective_state_update.py L261): batch=32, nheads=64, ngroups=8, dim=64, dstate=128, token_steps=6, BF16 state pool of 32 slots (TMA global_shape [128,64,64,32], box [128,32,1,1]), algorithm horizontal, cache_intermediate=1, dt_softplus=1, disable_state_update; compact FP32 dt [32,6,64], A/D/dt_bias [64]; intermediate buffer [32,6,64,64,128], stride(0) 3145728 elements. Program mtp_horizontal: total_tiles=2048, 256 persistent CTAs of 288 threads (_balanced_worker_count(1024, 2*148) on a 148-SM B200). The test passes state_batch_indices = torch.arange(32) also as intermediate_state_indices, so parameters 9 and 11 name one object (tensor_properties bounds [0, 31] and injective). The kernel never writes the state. Reference handles out-of-range source slots and permuted cache slots generally. Outputs: output [32,6,64,64] and the full intermediate buffer (input contents kept where no row stores). Scenario changed on 2026-11-05 (owner decision O2) from the custom 2026-09-18 scenario (batch 1, nheads 1, ngroups 1, cache_intermediate=0) to this upstream row; the PTX regenerated for the row (nvcc V13.2.51, -arch=sm_100a --std=c++17 -O3 --fmad=false) is identical to the previous corpus PTX.",
+    "scope_branch_choices": [],
+    "scope_shape_arrays": []
   }
 }

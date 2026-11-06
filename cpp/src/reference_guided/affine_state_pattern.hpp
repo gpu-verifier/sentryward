@@ -257,6 +257,12 @@ class AffineStatePattern {
     }
     eligible_roots.emplace(root, found); return found;
   }
+  // A typed finite input read (such as an initial state tensor) can also be
+  // the incoming state of a new potential origin. It is an opaque finite
+  // value, so the closed prefix exp(p_k)*S + sum_s exp(p_k-p_s)*U_s is exact
+  // for it as for a certified state. contains() has already excluded the read
+  // from the update and both potentials.
+  bool incoming_input_state(Id id) { return typed_read(id); }
   bool recognize(Id root) {
     if (states.contains(root)) return true;
     const auto &n = a.nodes[root];
@@ -272,7 +278,8 @@ class AffineStatePattern {
       if (d->previous_potential == a.zero) {
         // A new local potential origin: preserve the whole incoming state.
         // It is never confused with a cross-chunk difference g_new-g_old.
-        if (prior == states.end() || !a.nodes[d->previous].facts.finite) continue;
+        if ((prior == states.end() || !a.nodes[d->previous].facts.finite) &&
+            !incoming_input_state(d->previous)) continue;
         insert_state(root, {d->current_potential, update, d->previous, SIZE_MAX, 0});
         ++certified_updates; return true;
       }

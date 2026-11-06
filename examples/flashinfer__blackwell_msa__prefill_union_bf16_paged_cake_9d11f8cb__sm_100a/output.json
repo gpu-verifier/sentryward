@@ -65,11 +65,11 @@
   },
   "diagnostics": [
     {
-      "code": "tma_data_dependent_coordinate",
+      "code": "expression_node_limit_exceeded",
       "details": {
-        "internal_stage": "value_lowering"
+        "internal_stage": "value_analysis.scalar_fold"
       },
-      "message": "TMA tile coordinate %r3538 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+      "message": "scalar graph node limit exceeded",
       "stage": "equivalence"
     }
   ],
@@ -193,88 +193,79 @@
     "equivalence": {
       "diagnostics": [
         {
-          "code": "tma_data_dependent_coordinate",
-          "message": "TMA tile coordinate %r3538 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-          "stage": "value_lowering"
+          "code": "expression_node_limit_exceeded",
+          "message": "scalar graph node limit exceeded",
+          "stage": "value_analysis.scalar_fold"
         }
       ],
       "expression_diagnostic": {
+        "construction_collections": 26,
+        "diagnostic": {
+          "code": "expression_node_limit_exceeded",
+          "instance": 0,
+          "instruction": "@leader tcgen05.mma.cta_group::1.kind::f16 [%r4030], [ta], db, id, p1;",
+          "line": 9691,
+          "message": "scalar graph node limit exceeded",
+          "value_node": 699578
+        },
         "diagnostics": [
           {
-            "code": "tma_data_dependent_coordinate",
-            "message": "TMA tile coordinate %r3538 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-            "stage": "value_lowering"
+            "code": "expression_node_limit_exceeded",
+            "details": {
+              "instance": 0,
+              "instruction": "@leader tcgen05.mma.cta_group::1.kind::f16 [%r4030], [ta], db, id, p1;",
+              "line": 9691,
+              "resource": {
+                "kind": "expression_node_limit_exceeded",
+                "origin": "algorithm_budget"
+              },
+              "value_node": 699578
+            },
+            "message": "scalar graph node limit exceeded",
+            "stage": "pipeline"
           }
         ],
-        "line": 11128,
-        "serialization": {
-          "action_patterns": 0,
-          "binding_patterns": 0,
-          "domain_refinements": 0,
-          "elapsed_seconds": 4.61e-05,
-          "event_families": 0,
-          "expanded_event_records": 0,
-          "largest_batch_members": 0,
-          "logical_actions": 0,
-          "logical_events": 0,
-          "peak_rss_mib_at_completion": 1111.59765625,
-          "reachability_queries": 0,
-          "relations": 0,
-          "rss_mib_at_completion": 849.90234375,
-          "scheduled_batches": 0,
-          "singleton_batches": 0,
-          "value_families": 0
+        "partial_node_count": 2000002,
+        "partial_output_count": 748,
+        "peak_construction_nodes": 2000002,
+        "resource": {
+          "kind": "expression_node_limit_exceeded",
+          "origin": "algorithm_budget"
         },
-        "stage": "value_lowering"
+        "shared_view_projection_hits": 3223871,
+        "source_outputs": 6760
       },
-      "stage": "value_lowering"
+      "stage": "value_analysis.scalar_fold"
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "tma_data_dependent_coordinate",
-            "details": {
-              "cta": 0,
-              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes [%r3519], [%rd1017, {%r3520, %r3520, %r3520, %r3538}], [%r3517];",
-              "instruction_index": 6510,
-              "location": {
-                "file": "corpus/flashinfer__blackwell_msa__prefill_union_bf16_paged_cake_9d11f8cb__sm_100a.ptx",
-                "line": 11128
-              },
-              "occurrence": 0,
-              "thread": 448
-            },
-            "message": "TMA tile coordinate %r3538 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-            "stage": "value_lowering"
-          }
-        ],
+        "diagnostics": [],
         "first_unavailable_reason": "",
         "queries": 0,
         "resolved": 0,
         "source": "value_lowering",
         "unavailable": 0,
-        "value_view_complete": false
+        "value_view_complete": true
       },
       "cluster_completion_joins": 0,
       "cta_count": 8,
       "dependency_compression": {
         "tcgen_commit": {
-          "consumers": 24,
-          "emitted_references": 206,
-          "original_references": 1192,
-          "prefix_effects": 24
+          "consumers": 96,
+          "emitted_references": 824,
+          "original_references": 4768,
+          "prefix_effects": 96
         },
         "tcgen_load_wait": {
-          "consumers": 11520,
-          "emitted_references": 12800,
-          "original_references": 222720,
+          "consumers": 46080,
+          "emitted_references": 51200,
+          "original_references": 890880,
           "prefix_effects": 0
         },
         "tcgen_store_wait": {
-          "consumers": 3328,
-          "emitted_references": 9984,
-          "original_references": 25856,
+          "consumers": 13312,
+          "emitted_references": 39936,
+          "original_references": 103424,
           "prefix_effects": 0
         }
       },
@@ -445,10 +436,10 @@
           "source": "declaration"
         }
       ],
-      "lowered_instruction_count": 145308,
+      "lowered_instruction_count": 581232,
       "mma_refinement": {
         "blocked": [],
-        "discharged": 160
+        "discharged": 640
       },
       "reached_opcodes": {
         "add.ftz.f32": 15360,
@@ -564,24 +555,28 @@
         "validation": "pending_backend"
       },
       "source_binding_storage": {
-        "binding_templates": 26,
+        "binding_templates": 104,
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
-        "logical_instructions": 145308,
-        "stored_bindings": 5504
+        "logical_instructions": 581232,
+        "stored_bindings": 22016
       },
       "source_edge_storage": {
-        "binding_templates": 1684,
-        "logical_edges": 144284,
-        "stored_bindings": 1684
+        "binding_templates": 6736,
+        "logical_edges": 577136,
+        "stored_bindings": 6736
       },
       "tcgen_history_refinement": {
         "blocked": [],
-        "notifications": 24,
-        "operations": 160
+        "notifications": 96,
+        "operations": 640
       },
       "thread_count": 4096,
+      "unit_restart": {
+        "kept_synchronization_verdict": true,
+        "reason": "value_lifting"
+      },
       "unsupported_occurrence_counts": {},
       "user_branch_decisions": []
     },
@@ -645,7 +640,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 1423482,
-      "hb_query_seconds": 1.971237271000002,
+      "hb_query_seconds": 2.0076497290000006,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -653,7 +648,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 972.23046875,
+    "peak_footprint_mib": 12803.7109375,
     "required_order_domains": 23825,
     "required_orders": 757440,
     "search_complete": true,
@@ -667,31 +662,20 @@
       "representative_election": true
     },
     "semantic_program": {
-      "binding_diagnostic_count": 1,
-      "binding_diagnostics": [
-        {
-          "code": "incomplete_value_semantics",
-          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r3538 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
-        }
-      ],
-      "execution_cohorts": 46,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
-      "memory_linking_templates_used": false,
-      "synchronization_groups": 3467,
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 184,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 2578656,
+      "memory_binding_templates": 84825,
+      "memory_bindings": 3203288,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 13868,
       "synchronization_groups_materialized": true,
-      "synthetic_synchronization_nodes": 330,
-      "thread_prefix_groups": 19025,
-      "value_diagnostic_count": 1,
-      "value_diagnostics": [
-        {
-          "code": "tma_data_dependent_coordinate",
-          "line": 11128,
-          "message": "TMA tile coordinate %r3538 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)"
-        }
-      ]
+      "synthetic_synchronization_nodes": 1320,
+      "thread_prefix_groups": 975132,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
     "source_violations": [],
     "synchronization_input": {
@@ -723,52 +707,126 @@
     },
     "unresolved_count": 0,
     "value_analysis": {
-      "diagnostics": [
+      "diagnostics": [],
+      "duplicate_write_value_checks": 0,
+      "equivalence_check": "analysis_budget_exceeded",
+      "initial_memory_regions": 2228,
+      "initial_read_families": 2780,
+      "memory_action_storage": {
+        "logical_actions": 3203288,
+        "stored_runs": 2581260
+      },
+      "output_region_families": 0,
+      "output_regions": 6760,
+      "passes": [
         {
-          "code": "tma_data_dependent_coordinate",
-          "message": "TMA tile coordinate %r3538 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
-          "stage": "value_lowering"
+          "name": "packing",
+          "rewritten_instances": 1075936,
+          "rewritten_nodes": 19360,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 10079744,
+          "name": "type_edges",
+          "removed_nodes": 237848
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 64928,
+          "layouts": 152,
+          "mapping_blocks": 913048,
+          "name": "view_normalization",
+          "original_pieces": 2486272,
+          "reused_initial_reads": 3724,
+          "reused_views": 1344,
+          "segmented": 1152,
+          "slices": 52864,
+          "stored_mapping_blocks": 519672,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
         }
       ],
-      "equivalence_check": "unsupported",
-      "line": 11128,
+      "processed_memory_actions": 3203288,
+      "processed_memory_families": 0,
+      "read_substitutions": 152112,
       "scalar_fold": {
+        "construction_collections": 26,
+        "diagnostic": {
+          "code": "expression_node_limit_exceeded",
+          "instance": 0,
+          "instruction": "@leader tcgen05.mma.cta_group::1.kind::f16 [%r4030], [ta], db, id, p1;",
+          "line": 9691,
+          "message": "scalar graph node limit exceeded",
+          "value_node": 699578
+        },
         "diagnostics": [
           {
-            "code": "memory_elimination_not_completed",
+            "code": "expression_node_limit_exceeded",
+            "details": {
+              "instance": 0,
+              "instruction": "@leader tcgen05.mma.cta_group::1.kind::f16 [%r4030], [ta], db, id, p1;",
+              "line": 9691,
+              "resource": {
+                "kind": "expression_node_limit_exceeded",
+                "origin": "algorithm_budget"
+              },
+              "value_node": 699578
+            },
+            "message": "scalar graph node limit exceeded",
             "stage": "pipeline"
           }
-        ]
+        ],
+        "partial_node_count": 2000002,
+        "partial_output_count": 748,
+        "peak_construction_nodes": 2000002,
+        "resource": {
+          "kind": "expression_node_limit_exceeded",
+          "origin": "algorithm_budget"
+        },
+        "shared_view_projection_hits": 3223871,
+        "source_outputs": 6760
       },
       "serialization": {
-        "action_patterns": 0,
-        "binding_patterns": 0,
-        "domain_refinements": 0,
-        "elapsed_seconds": 4.61e-05,
-        "event_families": 0,
+        "action_patterns": 2581260,
+        "binding_patterns": 2578656,
+        "domain_refinements": 12480404,
+        "elapsed_seconds": 22.709083916,
+        "event_families": 1507064,
         "expanded_event_records": 0,
-        "largest_batch_members": 0,
-        "logical_actions": 0,
-        "logical_events": 0,
-        "peak_rss_mib_at_completion": 1111.59765625,
+        "largest_batch_members": 224,
+        "logical_actions": 3203288,
+        "logical_events": 25431020,
+        "peak_rss_mib_at_completion": 8622.38671875,
         "reachability_queries": 0,
-        "relations": 0,
-        "rss_mib_at_completion": 849.90234375,
-        "scheduled_batches": 0,
-        "singleton_batches": 0,
-        "value_families": 0
+        "relations": 7671712,
+        "rss_mib_at_completion": 4859.6171875,
+        "scheduled_batches": 7710108,
+        "singleton_batches": 7377096,
+        "value_families": 769760
       },
-      "stage": "value_lowering"
+      "shared_read_families": 568,
+      "shared_read_instances": 29292,
+      "stored_read_substitutions": 122820
     },
-    "value_ir_instance_count": 342212,
-    "value_ir_node_count": 15449,
-    "value_view_complete": false,
-    "verification_elapsed_seconds": 8.680460015,
+    "value_ir_instance_count": 12750750,
+    "value_ir_node_count": 620094,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 10.271806257,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 1111.59765625,
-  "pipeline_elapsed_seconds": 8.764250672,
-  "result": "unsupported",
+  "peak_rss_mib": 12841.70703125,
+  "pipeline_elapsed_seconds": 267.383489938,
+  "result": "analysis_budget_exceeded",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
@@ -779,5 +837,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 497.783
+  "whole_pipeline_timeout_seconds": 497.747
 }

@@ -63,7 +63,7 @@ class UnaryReductionComposition {
       if(n.op=="call" && n.data.size()==1 && n.data[0].denominator()==1 &&
          n.data[0]>=0 && n.data[0]<Q(checker.specs.size())) {
         Id sid=n.data[0].numerator().convert_to<Id>();const auto &s=checker.specs[sid];
-        if(checker.active.contains(sid) && !s.maximum && s.facts.finite && s.count>0) return true;
+        if(checker.active.contains(sid) && !s.maximum && s.facts.finite && n.facts.finite && s.count>0) return true;
       }
       if(n.op=="add" || n.op=="mul") {
         charge(n.args.size());todo.insert(todo.end(),n.args.begin(),n.args.end());

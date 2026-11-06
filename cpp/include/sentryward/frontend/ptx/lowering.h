@@ -1,10 +1,13 @@
 #pragma once
+#include <initializer_list>
+#include <string_view>
 #include "sentryward/algorithm/io/source_json.h"
 #include "sentryward/frontend/ptx/execution.h"
 #include "sentryward/frontend/ptx/unit_classes.h"
 #include "sentryward/frontend/ptx/unit_facts.h"
 #include <functional>
 #include <array>
+#include <bitset>
 #include <memory>
 namespace sentryward::algorithm { struct UnitQuotient; }
 namespace sentryward::frontend::ptx {
@@ -14,6 +17,50 @@ struct MmaValueAccess {
   MmaOperandRole role;
   std::uint32_t cta_part;
 };
+// Lowering diagnostics that are reachable undefined behavior (result undefined_behavior):
+// the lowering decided them from the concrete values of an executed instruction, and each
+// violates a PTX ISA sentence that is explicit ("undefined") or a "must" (owner rule
+// 2026-11-05: PTX is followed strictly). docs/output-json.md lists the sentences.
+inline bool LoweringUndefinedBehavior(std::string_view code) noexcept {
+  for (const auto known : {"cp_async_source_size", "tmem_lane_alignment_mismatch",
+                           "invalid_bulk_transfer_size", "bulk_reduction_size", "bulk_reduction_alignment",
+                           "tmem_address_not_uniform", "tmem_aligned_lanes_missing",
+                           "tmem_lifetime_lanes_missing", "tmem_invalid_alloc_size",
+                           "tmem_nonuniform_alloc_size", "tmem_nonuniform_dealloc_size",
+                           "tmem_increasing_alloc_size", "mma_sparsity_version", "bulk_copy_alignment",
+                           "tmem_alloc_destination_outside_shared_window", "tmem_alloc_after_relinquish",
+                           "tcgen05_cta_group_mixed", "aligned_lanes_missing"})
+    if (code == known) return true;
+  return false;
+}
+// The diagnostic that decides a stopped lowering's result: the first reachable undefined behavior
+// (LoweringUndefinedBehavior), wherever it is, else the first diagnostic. `diagnostics` is a
+// nonempty array in lowering order. O(diagnostics).
+inline std::size_t DecidingLoweringDiagnostic(const nlohmann::json &diagnostics) {
+  for (std::size_t k = 0; k < diagnostics.size(); ++k)
+    if (LoweringUndefinedBehavior(diagnostics[k].value("code", std::string()))) return k;
+  return 0;
+}
+// Whether lowering an executed instruction registers its lane at the instruction's .aligned site,
+// whose warp participation ModelLowerer checks: barrier.cluster .aligned, tcgen05.wait, tcgen05.ld
+// and tcgen05.st, the tcgen05 lifetime operations, tensormap.cp_fenceproxy and the per-lane matrix
+// accesses (ldmatrix, stmatrix). A lane whose lowering of such an instruction fails executed it.
+bool RegistersAlignedLanes(const Instruction &);
+// The participation of a full warp in one occurrence of an .aligned instruction: lanes that
+// neither lowered it (`lowered`) nor executed it and failed to lower it (`failed`) are missing,
+// which violates .aligned (undefined behavior); with no lane missing but a failed one, the warp's
+// participation is incomplete, not undefined. O(32).
+struct AlignedParticipation {
+  std::vector<std::uint32_t> missing;
+  bool incomplete = false;
+};
+inline AlignedParticipation AlignedSiteParticipation(const std::bitset<32> &lowered, const std::bitset<32> &failed) {
+  AlignedParticipation result;
+  for (std::uint32_t lane = 0; lane < 32; ++lane)
+    if (!lowered.test(lane) && !failed.test(lane)) result.missing.push_back(lane);
+  result.incomplete = result.missing.empty() && (failed & ~lowered).any();
+  return result;
+}
 struct MmaValueLayout {
   algorithm::InstId instruction;
   std::uint64_t descriptor, a_base, b_descriptor, d_base;

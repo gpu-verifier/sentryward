@@ -12,6 +12,7 @@ In older outputs, integrated `equivalence` and `value_analysis` have their own o
 | `potential_race` / older `race_candidate` | A retained potentially conflicting pair | Affected accesses, overlap and unresolved bindings; no inferred cause or fix |
 | `not_wellsynced` / older `synchronization_candidate` | The rejected synchronization requirement | Its direction, involved events and witness truncation |
 | `invalid_lifecycle` / older `unsafe_lifecycle` | The failed lifecycle or protocol requirement | Each diagnostic category and its own supporting relations |
+| `undefined_behavior` | The violated ISA condition, the instruction and the source of the offending value (`diagnostics[].details`: `condition`, `source`, `object`, `property`, `witness_value`) | The witness as a value the input contract allows, not an observed failure; whether the input declares the value set (`property`); no equivalence verdict |
 | `equivalence_not_proven` | The unestablished numerical comparison | Independent synchronization/memory outcomes |
 | `unsupported` | The unavailable analysis and direct diagnostic | Completed checks, stopped stage and useful retained evidence |
 | `invalid_input`, `missing_input` | Rejected or unavailable input | Exact diagnostic and available identity information |

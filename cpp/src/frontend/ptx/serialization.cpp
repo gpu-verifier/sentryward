@@ -98,23 +98,31 @@ class ActorIndex {
 // AffineOffsetJson): {"operator":"add","operands":[constant, {"operator":"mul","operands":
 // [{"operator":"gather","symbol":TensorPropertySymbol(object,type),"args":[element byte
 // offset]}, coefficient]}...]}, the symbol read back by ParseTensorPropertySymbol. Any other
-// expression has no position. O(terms).
+// expression has no position, except a TMA tile region (ParseTmaRegion). O(terms).
 struct AbstractAffinePosition {std::int64_t constant=0;std::vector<va::SymbolicAddressTerm> base;};
+std::optional<AbstractAffinePosition> ParseAffineOffset(const nlohmann::json& offset);
+std::optional<AbstractAffinePosition> ParseTmaRegion(const nlohmann::json& region);
 std::optional<AbstractAffinePosition> ParseAbstractAffine(const a::ConstantAddressBinding& address) {
   if(address.expression.empty() || address.offset || !address.alias_scope.empty())return {};
   const auto json=nlohmann::json::parse(address.expression,nullptr,false);
+  if(json.is_object() && json.value("operator",std::string())=="tma_region" &&
+     !address.allocation.empty() && address.allocation!="unresolved")return ParseTmaRegion(json);
   if(!json.is_object() || !json.contains("address") || !json["address"].is_object())return {};
   const auto& where=json["address"];
   const auto base=where.find("base");const auto offset=where.find("offset");
   if(base==where.end() || offset==where.end() || !base->is_object() ||
-     base->value("identity",std::string())!=address.allocation || !offset->is_object() ||
-     offset->value("operator",std::string())!="add" || !offset->contains("operands"))return {};
+     base->value("identity",std::string())!=address.allocation)return {};
+  return ParseAffineOffset(*offset);
+}
+// The footprint form of an offset (above).
+std::optional<AbstractAffinePosition> ParseAffineOffset(const nlohmann::json& offset) {
+  if(!offset.is_object() || offset.value("operator",std::string())!="add" || !offset.contains("operands"))return {};
   const auto integer=[](const nlohmann::json& x)->std::optional<std::int64_t> {
     if(x.is_number_integer() && (x.is_number_unsigned()?x.get<std::uint64_t>()<=std::uint64_t(INT64_MAX):true))
       return x.get<std::int64_t>();
     return {};
   };
-  const auto& operands=(*offset)["operands"];
+  const auto& operands=offset["operands"];
   if(!operands.is_array() || operands.size()<2)return {};
   AbstractAffinePosition result;
   const auto constant=integer(operands[0]);if(!constant)return {};
@@ -131,6 +139,64 @@ std::optional<AbstractAffinePosition> ParseAbstractAffine(const a::ConstantAddre
     if(!element || !symbol)return {};
     result.base.push_back({std::move(symbol->first),std::move(symbol->second),*element,*coefficient});
   }
+  return result;
+}
+// The first byte of a TMA tile region (slot_resolver.cpp TmaBody: {"operator":"tma_region",
+// "descriptor":D,"coordinates":[...]}, a tile::gather4 row's region {column, row}) in its
+// allocation: D's base_byte_offset + sum of coordinate x coordinate_strides_bytes, each
+// coordinate an integer or an affine form as above. Equal atoms merge; the terms are sorted by
+// atom. No position without such coordinates, integer strides and base, for a packed map, when
+// the constant part is negative (a fragment adds its nonnegative place to it), or when a value
+// leaves int64. O(rank + terms log terms).
+std::optional<AbstractAffinePosition> ParseTmaRegion(const nlohmann::json& region) {
+  // References into the parsed expression, and the coordinates first: most regions have an
+  // opaque coordinate, which ends the parse before the descriptor is read. O(rank).
+  const auto coordinates=region.find("coordinates");
+  if(coordinates==region.end() || !coordinates->is_array())return {};
+  for(const auto& coordinate:*coordinates)
+    if(!coordinate.is_number_integer() && (!coordinate.is_object() ||
+       coordinate.value("operator",std::string())!="add"))return {};
+  const auto descriptor=region.find("descriptor");
+  if(descriptor==region.end() || !descriptor->is_object())return {};
+  const auto strides=descriptor->find("coordinate_strides_bytes");
+  const auto base=descriptor->find("base_byte_offset");
+  const auto packed=descriptor->find("packed_element_bits");
+  if(strides==descriptor->end() || !strides->is_array() || strides->size()!=coordinates->size() ||
+     (base!=descriptor->end() && !base->is_number_integer()) ||
+     (packed!=descriptor->end() && !packed->is_null()))return {};
+  __int128 constant=base==descriptor->end()?0:base->get<std::int64_t>();
+  AbstractAffinePosition result;
+  for(std::size_t d=0;d<coordinates->size();++d) {
+    if(!(*strides)[d].is_number_integer())return {};
+    const __int128 stride=(*strides)[d].get<std::int64_t>();
+    const auto& coordinate=(*coordinates)[d];
+    if(coordinate.is_number_integer()){constant+=__int128(coordinate.get<std::int64_t>())*stride;continue;}
+    const auto form=ParseAffineOffset(coordinate);
+    if(!form)return {};
+    constant+=__int128(form->constant)*stride;
+    for(auto term:form->base) {
+      const auto scaled=__int128(term.coefficient)*stride;
+      if(scaled<INT64_MIN || scaled>INT64_MAX)return {};
+      term.coefficient=static_cast<std::int64_t>(scaled);
+      result.base.push_back(std::move(term));
+    }
+  }
+  if(constant<0 || constant>INT64_MAX)return {};
+  result.constant=static_cast<std::int64_t>(constant);
+  // Sorted by atom, equal atoms merged (their coefficients add; zero sums drop).
+  const auto atom=[](const va::SymbolicAddressTerm& t){return std::tie(t.object,t.element_type,t.element_offset);};
+  std::sort(result.base.begin(),result.base.end(),[&](const auto& x,const auto& y){return atom(x)<atom(y);});
+  std::vector<va::SymbolicAddressTerm> merged;
+  for(const auto& term:result.base) {
+    if(!merged.empty() && atom(merged.back())==atom(term)) {
+      const auto sum=__int128(merged.back().coefficient)+term.coefficient;
+      if(sum<INT64_MIN || sum>INT64_MAX)return {};
+      merged.back().coefficient=static_cast<std::int64_t>(sum);
+    } else merged.push_back(term);
+  }
+  std::erase_if(merged,[](const auto& t){return !t.coefficient;});
+  if(merged.empty())return {};
+  result.base=std::move(merged);
   return result;
 }
 
@@ -460,14 +526,19 @@ class Serializer {
           // The payload bytes of a positioned action (as for symbolic_region: a Load's result,
           // a Store's value); a fragmented native access has no position.
           std::uint64_t payload=0;
+          // A TMA region fragment lies at its place in the region (MemoryAttributes::region_offset).
+          std::uint64_t region_offset=0;
           if(!symbolic_pieces.empty() && !binding.value_byte_offset) {
             const auto& node=program_.values.node(binding.value.node);
-            const auto value=dynamic_cast<const v::LoadOp*>(&node.operation())?node.result(0,binding.value.instance):
-                dynamic_cast<const v::StoreOp*>(&node.operation())?node.instanceOperands(binding.value.instance).at(1):v::Value{};
+            const auto* load=dynamic_cast<const v::LoadOp*>(&node.operation());
+            const auto* store=dynamic_cast<const v::StoreOp*>(&node.operation());
+            const auto value=load?node.result(0,binding.value.instance):
+                store?node.instanceOperands(binding.value.instance).at(1):v::Value{};
             if(program_.values.contains(value)) {
               const auto bits=program_.values.type(value).bitSize();
               if(bits && bits%8==0)payload=bits/8;
             }
+            if(load || store)region_offset=(load?load->attributes():store->attributes()).region_offset.value_or(0);
           }
           const auto emit=[&](va::OrderedMemoryAction part,const va::MemoryActionCodec::Delta& delta,
               std::size_t begin,std::size_t length) {
@@ -490,7 +561,7 @@ class Serializer {
               const auto last=std::min(begin+length,j+(piece->begin+piece->count-index+step-1)/step);
               auto member=Advance<va::OrderedMemoryAction,va::MemoryActionCodec>(action,action_delta,j);
               member.duplicate_write_group=group;
-              const auto constant=__int128(piece->constant)+__int128(piece->step)*(index-piece->begin);
+              const auto constant=__int128(piece->constant)+__int128(piece->step)*(index-piece->begin)+region_offset;
               const auto stride=__int128(piece->step)*step;
               Require(constant>=0 && constant<=INT64_MAX && stride>=INT64_MIN && stride<=INT64_MAX,
                   "invalid_template_binding","Symbolic position progression overflows");
@@ -500,9 +571,20 @@ class Serializer {
               emit(std::move(member),delta,j,last-j);j=last;
             }
           };
+          // The duplicate groups on the access-id progression, in order. A group between members
+          // jumps to the next member at or after it: O(log groups) per member or skipped gap, not
+          // one step per group in the progression's hull.
           for(auto it=duplicate_groups_.lower_bound(std::uint32_t(access_ids.first));
               it!=duplicate_groups_.end() && it->first<=access_ids.last();++it) {
-            const auto m=a::IntersectAffine(access_ids,{it->first,0,1});if(!m.count)continue;
+            const auto m=a::IntersectAffine(access_ids,{it->first,0,1});
+            if(!m.count) {
+              if(!access_ids.step)break;
+              const auto member=access_ids.first+((it->first-access_ids.first)/access_ids.step+1)*access_ids.step;
+              if(member>access_ids.last() || member>UINT32_MAX)break;
+              const auto jump=duplicate_groups_.lower_bound(std::uint32_t(member));
+              if(jump==duplicate_groups_.end())break;
+              it=std::prev(jump);continue;
+            }
             append(next,m.left-next,{});
             const auto length=access_ids.step?1:match.count;
             append(m.left,length,it->second);next=m.left+length;
@@ -749,9 +831,21 @@ class Serializer {
         if(found->is_number_unsigned() && found->get<std::uint64_t>()>std::uint64_t(INT64_MAX))return {};
         return found->get<std::int64_t>();
       };
-      result_.contract.tensor_properties.push_back({record["object"].get<std::string>(),
+      va::TensorPropertyFact fact{record["object"].get<std::string>(),
           record["element_type"].get<std::string>(),bound("lower_bound"),bound("upper_bound"),
-          record.value("injective",false)});
+          record.value("injective",false)};
+      if(const auto bits=record.find("field_bits");bits!=record.end()) {
+        Require(bits->is_number_unsigned() && bits->get<unsigned>()>=1 && bits->get<unsigned>()<=8 &&
+            record.contains("field_values") && record["field_values"].is_array(),
+            "invalid_tensor_properties","Tensor property field values are malformed");
+        fact.field_bits=bits->get<unsigned>();
+        for(const auto& value:record["field_values"]) {
+          Require(value.is_number_unsigned() && value.get<std::uint64_t>()<(std::uint64_t{1}<<fact.field_bits),
+              "invalid_tensor_properties","Tensor property field value does not fit its width");
+          fact.field_values.set(value.get<std::size_t>());
+        }
+      }
+      result_.contract.tensor_properties.push_back(std::move(fact));
     }
   }
 };

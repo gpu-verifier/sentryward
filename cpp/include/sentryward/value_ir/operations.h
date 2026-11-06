@@ -221,6 +221,11 @@ struct MemoryAttributes final {
     ElementType element;
   };
   std::optional<Reduction> reduction = std::nullopt;
+  // A fragment of a TMA tile region whose global address is not a constant of the
+  // execution (an address binding with an expression): its first byte from the region's
+  // first byte. The address operand is then the fragment's allocation-relative byte
+  // offset (a pointer naming its allocation), and a guard is the region's zero fill.
+  std::optional<std::uint64_t> region_offset = std::nullopt;
 };
 
 class LoadOp final : public TypedOperation {

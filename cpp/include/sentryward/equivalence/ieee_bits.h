@@ -1,7 +1,20 @@
 #pragma once
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
+#include <string_view>
 namespace sentryward::equivalence {
+// The IEEE binary formats of the floating types f16, bf16, f32 and f64: `width` bits, of which
+// `fraction` are fraction bits and width - 1 - fraction exponent bits. The one table of these
+// parameters for constant evaluation (constant_values.cpp) and the equivalence import's value sets.
+struct IeeeFormat { unsigned width, fraction; };
+inline std::optional<IeeeFormat> ieeeFormat(std::string_view type) {
+  if (type == "f16") return IeeeFormat{16, 10};
+  if (type == "bf16") return IeeeFormat{16, 7};
+  if (type == "f32") return IeeeFormat{32, 23};
+  if (type == "f64") return IeeeFormat{64, 52};
+  return std::nullopt;
+}
 // An exact dyadic value (-1)^negative x significand x 2^exponent.
 struct DyadicValue { bool negative; std::uint64_t significand; int exponent; };
 // The value of IEEE-style bits: `width` bits, `fraction` fraction bits and E = width - 1 - fraction

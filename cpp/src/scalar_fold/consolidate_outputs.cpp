@@ -127,7 +127,10 @@ std::optional<Ref> generalizeSingletons(Graph& graph,Ref first,Ref next,
       case Kind::Parameter:value=graph.parameter(p.type,p.name);break;
       case Kind::Index:value=graph.index(p.index_level);break;
       case Kind::InitialCell:value=graph.initialCell(p.name,operands.at(0),p.type);break;
-      case Kind::Operation:value=graph.operation(p.name,p.type,std::move(operands),p.attributes);break;
+      case Kind::Operation:
+        value=graph.operation(p.name,p.type,std::move(operands),p.attributes);
+        graph.markInstruction(value,instruction_mode::common(graph.instructionModes(x.node),graph.instructionModes(y.node)));
+        break;
       case Kind::Fold:value=graph.fold(p.fold->reducer,operands.at(0),operands.at(1),
         p.fold->binder_level,p.fold->count,p.type);break;
     }
@@ -195,7 +198,10 @@ Ref addOuterBinder(Graph& graph,Ref root,std::map<Id,Ref>& mapped) {
       case Kind::Parameter:value=graph.parameter(node.type,node.name);break;
       case Kind::InitialCell:value=graph.initialCell(node.name,args.at(0),node.type);break;
       case Kind::Index:value=graph.index(level(node.index_level));break;
-      case Kind::Operation:value=graph.operation(node.name,node.type,std::move(args),node.attributes);break;
+      case Kind::Operation:
+        value=graph.operation(node.name,node.type,std::move(args),node.attributes);
+        graph.markInstruction(value,graph.instructionModes(id));
+        break;
       case Kind::Fold:value=graph.fold(node.fold->reducer,args.at(0),args.at(1),level(node.fold->binder_level),node.fold->count,node.type);break;
     }
     mapped.emplace(id,value);

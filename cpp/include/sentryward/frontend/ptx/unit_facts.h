@@ -254,6 +254,9 @@ public:
     return config_->pointer_parameters;
   }
   [[nodiscard]] const nlohmann::json &resources() const noexcept { return config_->resources; }
+  [[nodiscard]] std::optional<nlohmann::json> SharedMisalignment(std::uint64_t offset, std::uint64_t modulus) const {
+    return config_->SharedMisalignment(offset, modulus);
+  }
   [[nodiscard]] const nlohmann::json &instruction_contracts() const noexcept { return config_->instruction_contracts; }
   [[nodiscard]] const nlohmann::json &InstructionContract(std::uint32_t line, std::uint32_t instruction,
                                                          std::optional<std::uint32_t> warp = {},

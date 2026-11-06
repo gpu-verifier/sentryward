@@ -128,6 +128,7 @@ read as `element_type` (`s32`, `u32`, `s64` or `u64`):
 | `injective` | The elements are pairwise distinct. |
 | `lower_bound` | Every element is at least `value`. |
 | `upper_bound` | Every element is at most `value`. |
+| `field_values` | Every `field_bits`-wide bit field of every element holds one of `values`. |
 
 ```json
 {
@@ -144,12 +145,39 @@ pointer-array entry object. A bound requires `value`, which must fit
 An object's properties use one element type; repeated bounds combine to the
 tightest, and contradictory bounds make the input invalid.
 
+`field_values` takes `field_bits` (1, 2, 4 or 8) and `values`, a strictly
+increasing list of the field values, each below 2^`field_bits`; it takes no
+`value`. Fields start at the element's least significant bit, so every byte of
+the object holds whole fields. Repeated `field_values` records of one object
+intersect and must use one `field_bits`; an empty intersection makes the input
+invalid. Field values are not checked against the object's bounds: a contradiction
+between them is not detected, and the value analysis reads the declared field values
+as given. The value analysis reads the fields of a byte loaded from the object
+as ranging over `values`, and an undeclared object's fields as ranging over
+every value. It decides with these domains whether an instruction can reach
+undefined behavior (for example `tcgen05.mma.sp` sparsity metadata,
+[output-json.md](output-json.md#undefined-behavior)). Declare the values the
+object's producer can generate. For example, the CUTLASS structured-sparse
+compressor (`SM90StructuredSparseCompressor`, also used for SM100) writes for
+every 4-element chunk the ascending pair of nonzero positions, pads a chunk
+with one nonzero with position 3 (with 0 when the nonzero is at 3), and writes
+`0b0000` for an all-zero chunk and for padding:
+
+```json
+{"object": "E.metadata", "element_type": "u64", "property": "field_values",
+ "field_bits": 4, "values": [0, 4, 8, 9, 12, 13, 14]}
+```
+
 Properties are trusted, not checked. An object with properties is read-only
 input memory for the analyzed launch: a write to it makes the input invalid.
 The element values themselves stay unknown. A load of one whole, aligned
 element yields an unknown value within the bounds, and an integer comparison
 that the bounds decide (for example a `-1` sentinel test against a nonnegative
-index) takes its decided outcome. Loads of other widths are plain unknown
+index) takes its decided outcome. A scalar load of an element's low-order
+bytes at the element's address (memory is little-endian) yields the same
+element when every value within the bounds fits the load's type: an `s64`
+index in `[0, 31]` read by `ld.b32`, as compilers emit for `(int)idx[b]`. That
+load is listed among the decided lines. Loads of other widths are plain unknown
 values. Results list the properties under
 `frontend_assumptions.tensor_properties`, the source lines decided by them
 under `frontend_assumptions.tensor_property_decisions`, and set

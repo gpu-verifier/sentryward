@@ -24,6 +24,19 @@
 #include <type_traits>
 #include <unordered_map>
 namespace sentryward::frontend::ptx {
+// The instructions whose lowering registers each lane at its .aligned site (aligned[...].calls):
+// Collective (barrier.cluster), Tcgen (wait_load/wait_store, load/store), Lifetime, the
+// tensormap.cp_fenceproxy copy of Instruction and Matrix.
+bool RegistersAlignedLanes(const Instruction &i) {
+  const auto &s = i.semantics;
+  const auto &operation = s.operation;
+  if (operation == "cluster_arrive" || operation == "cluster_wait") return Has(i, "aligned");
+  if (s.category == "tmem_lifetime") return true;
+  if (i.opcode == "tcgen05")
+    return operation == "wait_load" || operation == "wait_store" || operation == "load" || operation == "store";
+  if (i.opcode == "tensormap") return s.modeled && operation != "tensor_map_replace";
+  return s.category == "memory" && i.address_lanes.has_value();
+}
 using Json = nlohmann::json;
 namespace {
 // An ordinary load or store: lowered by its address operand's Memory slot alone (Instruction's
@@ -174,8 +187,36 @@ Site Key(std::uint32_t warp, const RecordView &e) {
 Site Key(const TmemAtomSite &s) {
   return {s.warp, s.instruction_index, s.occurrence};
 }
+// The TMEM lifetime issue that stops lowering: a reachable undefined behavior first
+// (LoweringUndefinedBehavior; the issues are ordered by code, so an unsupported one could
+// otherwise hide it), else the first issue other than tmem_multiple_dealloc (reported as a
+// lifecycle violation). O(issues).
+const TmemLifetimeIssue *BlockingTmemIssue(const std::vector<TmemLifetimeIssue> &issues) {
+  for (const auto &issue : issues)
+    if (LoweringUndefinedBehavior(issue.code)) return &issue;
+  for (const auto &issue : issues)
+    if (issue.code != "tmem_multiple_dealloc") return &issue;
+  return nullptr;
+}
+// Throws a blocking TMEM issue; a reachable undefined behavior names its own site (the
+// instruction that violates the rule, which need not be the one being lowered). A static
+// issue's site has a PTX line only, no executed warp or occurrence.
+[[noreturn]] void ThrowTmemIssue(const TmemLifetimeIssue &issue) {
+  if (!LoweringUndefinedBehavior(issue.code)) throw SemanticError(issue.code, issue.message);
+  Json details{{"violation_ptx_line", issue.site.ptx_line}};
+  if (!issue.static_site) {
+    details["violation_warp"] = issue.site.warp;
+    details["violation_occurrence"] = issue.site.occurrence;
+  }
+  throw SemanticError(issue.code, issue.message, std::move(details));
+}
 struct Aligned {
   std::map<std::uint32_t, std::pair<InstId, InstId>> calls;
+  // Lanes that executed this occurrence but whose lowering of it failed (their own diagnostic
+  // reports why): they did execute the instruction, so they are not missing from it.
+  std::set<std::uint32_t> failed;
+  // tcgen05.ld/st: each lane's resolved taddr (allocation resource, encoded address).
+  std::map<std::uint32_t, std::pair<std::string, std::uint64_t>> tmem_addresses;
   bool completions = false;
   // Executed inside a merged arm: lanes still must all participate, but the site does
   // not publish memory across lanes (a skipping execution lacks the rendezvous).
@@ -573,12 +614,38 @@ struct ModelLowerer::Impl {
                        std::string_view field, std::uint64_t max = UINT64_MAX) {
     return Unsigned(resources->ScalarValue(e, s, field), field, max);
   }
-  // cp.async.bulk's size operand: a positive u32 multiple of 16.
+  // cp.async.bulk's size operand. PTX ISA cp.async.bulk: "size must be a multiple of 16. If
+  // the value is not a multiple of 16, then the behavior is undefined" (a known size that is
+  // not one is undefined behavior, LoweringUndefinedBehavior). A zero-byte transfer is a
+  // multiple of 16 but is not modeled.
   std::uint64_t BulkSize(const RecordView &e, std::string_view operand) {
-    const auto size = Scalar(e, operand, "bulk transfer size");
-    if (!size || size % 16 || size > UINT32_MAX)
-      throw SemanticError("invalid_bulk_transfer_size", "size must be positive multiple of 16");
+    const auto size = Scalar(e, operand, "bulk transfer size", UINT32_MAX);
+    if (size % 16)
+      throw SemanticError("invalid_bulk_transfer_size", "bulk transfer size is not a multiple of 16 (undefined behavior)",
+                          {{"size", size}, {"isa_section", "9.7.10.28.4.1 cp.async.bulk"}});
+    if (!size) throw SemanticError("bulk_transfer_size_zero", "a zero-byte bulk transfer is not modeled");
     return size;
+  }
+  // PTX ISA cp.async.bulk: "The addresses dstMem and srcMem must be aligned to 16 bytes." A
+  // constant shared binding's offset is its address in the shared window; its misalignment
+  // under some placement that the shared objects' declared alignments permit is decided
+  // (undefined behavior, with that placement: FrontendConfig::SharedMisalignment). A global
+  // address is relative to an input object whose base alignment is not given, and a symbolic
+  // one is not decided. O(shared objects).
+  void RequireBulkCopyAlignment(const std::pair<Fragment, Fragment> &footprints) {
+    for (const auto *fragment : {&footprints.first, &footprints.second}) {
+      const auto binding = resources->Binding(fragment->first);
+      if (!binding.expression.empty() || binding.address_space != "shared") continue;
+      if (auto witness = facts->launch().SharedMisalignment(binding.offset, 16)) {
+        Json details{{"address_space", binding.address_space}, {"offset", binding.offset}, {"alignment", 16},
+                     {"operand", fragment == &footprints.first ? "srcMem" : "dstMem"},
+                     {"isa_section", "9.7.10.28.4.1 cp.async.bulk"}};
+        details.update(*witness);
+        throw SemanticError("bulk_copy_alignment",
+                            "bulk copy shared address is not 16-byte aligned under a legal placement (undefined behavior)",
+                            std::move(details));
+      }
+    }
   }
   // A linear bulk transfer's footprints (copy and reduction): `source` read, then `destination`
   // written, each one fragment of its request's bytes; otherwise SemanticError(code, message).
@@ -859,7 +926,7 @@ void ModelLowerer::Impl::Collective(Thread &t, const RecordView &e,
       ++cluster_phases[t.actor.id];
     }
     auto id = sites.at(Key(warp, e)).back();
-    if (Has(function.instructions[e.instruction_id()],"aligned")) aligned[Key(warp, e)].calls[lane] = {id, id};
+    if (RegistersAlignedLanes(function.instructions[e.instruction_id()])) aligned[Key(warp, e)].calls[lane] = {id, id};
     cluster_warp_rendezvous[{warp,std::string(operation),phase}][t.actor.id]=id;
     return;
   }
@@ -947,9 +1014,8 @@ TmemAddress ModelLowerer::Impl::ResolveTmem(Thread &t,
   if (!tmem)
     throw SemanticError("unresolved_tmem_pointer",
                         "TMEM provenance unavailable");
-  for (const auto &issue : tmem->issues)
-    if (issue.code != "tmem_multiple_dealloc")
-      throw SemanticError(issue.code, issue.message);
+  if (const auto *issue = BlockingTmemIssue(tmem->issues))
+    ThrowTmemIssue(*issue);
   auto scalar =
       tmem->provenance.Resolve(t.actor.warp.value(), e, operand, t.actor.lane);
   auto pointer = tmem->provenance.NormalizeTaddr(scalar);
@@ -1022,6 +1088,23 @@ void ModelLowerer::Impl::Mma(Thread &t, const RecordView &e,
   };
   const auto layout_mask = UINT32_MAX & ~((1U << 13) | (1U << 14) | (sparse ? 3U : 0U));
   const auto [fixed, known] = resources->FixedBits(e, ops[descriptor_index], 32, scale_bits);
+  // PTX ISA instruction descriptor, .kind::mxf4 and .kind::mxf4nvf4: "Bit 12 for sparsity
+  // version must map to v0 for architectures sm_100a, sm_103a, sm_110a and to v1 for
+  // architecture sm_107a, otherwise behavior is undefined." Decided for those targets.
+  if (packed_fp4 && ((known >> 12) & 1)) {
+    const auto target = TargetArchitecture(module);
+    const std::optional<unsigned> required =
+        target == "sm_100a" || target == "sm_103a" || target == "sm_110a" ? std::optional<unsigned>(0)
+        : target == "sm_107a" ? std::optional<unsigned>(1) : std::nullopt;
+    const unsigned version = static_cast<unsigned>((fixed >> 12) & 1);
+    if (required && version != *required)
+      throw SemanticError("mma_sparsity_version",
+                          "instruction descriptor SparsityVersion (bit 12) is v" + std::to_string(version) +
+                              " on target " + target + ", which requires v" + std::to_string(*required) +
+                              " (undefined behavior)",
+                          {{"target", target}, {"sparsity_version", version}, {"required", *required},
+                           {"isa_section", "9.7.18.4.2.1 Instruction descriptor, Target ISA Note"}});
+  }
   const auto idesc = (known & layout_mask) == layout_mask ? fixed & layout_mask :
       Scalar(e, ops[descriptor_index], "MMA descriptor");
   auto desc = scaled ? DecodeBlockScaledDescriptor(idesc, kinds[0]) : DecodeMmaDescriptor(kinds[0], idesc);
@@ -1103,7 +1186,10 @@ void ModelLowerer::Impl::Mma(Thread &t, const RecordView &e,
   if (const auto path = DecodeMmaDataPath(desc.m, group, ws, sparse); path && path->half_quarters) {
     const auto lane = [](const TmemAddress &address) { return (address.address >> 16) & 0x7f; };
     if ((a && lane(*a) != lane(d)) || (metadata && lane(*metadata) != lane(d)))
-      throw SemanticError("tcgen_mma_variant", "layout C and F MMA operands need the lane alignment of D");
+      throw SemanticError("tmem_lane_alignment_mismatch",
+                          "layout C and F MMA operands need the lane alignment of D (undefined behavior)",
+                          {{"d_lane", lane(d)}, {"a_lane", a ? Json(lane(*a)) : Json()},
+                           {"metadata_lane", metadata ? Json(lane(*metadata)) : Json()}});
   }
   std::vector<Fragment> reads, writes;
   std::vector<std::pair<MmaOperandRole,std::uint32_t>> read_roles, write_roles;
@@ -1533,6 +1619,7 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const RecordView &e,
     auto tail = Emit(t, e, Await{});
     aligned[key].calls[t.actor.lane] = {id, tail};
     aligned[key].merged_arm |= t.merged_arm.has_value();
+    aligned[key].tmem_addresses[t.actor.lane] = {address.resource, address.address};
     return;
   }
   if (operation == "mma") {
@@ -1623,9 +1710,8 @@ void ModelLowerer::Impl::Lifetime(Thread &t, const RecordView &e) {
   ProfileScope profile("frontend.model.lifetime");
   if (!tmem)
     throw SemanticError("tmem_allocation_identity", "no lifetime analysis");
-  for (const auto &issue : tmem->issues)
-    if (issue.code != "tmem_multiple_dealloc")
-      throw SemanticError(issue.code, issue.message);
+  if (const auto *issue = BlockingTmemIssue(tmem->issues))
+    ThrowTmemIssue(*issue);
   const auto &i = function.instructions[e.instruction_id()];
   auto key = Key(t.actor.warp.value(), e);
   if (i.semantics.operation == "alloc") {
@@ -2064,9 +2150,12 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
                               {{"operand_role", control}, {"operand", ops[3]}});
       }
     }
+    // A known source size above the copy size is reachable undefined behavior
+    // (LoweringUndefinedBehavior); an unknown one is refused above.
     if (source_size > size)
       throw SemanticError("cp_async_source_size",
-                          "source size exceeds copy size");
+                          "source size exceeds copy size (undefined behavior)",
+                          {{"source_size", source_size}, {"copy_size", size}});
     std::vector<Fragment> reads;
     // With a data-dependent count the read is possible, not certain: it is modeled as a
     // read of the largest count. A count of 0 reads nothing, so the source may then be
@@ -2218,7 +2307,10 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     if (ops.size()!=(match[2].matched?4U:3U) || brackets.size()!=2)
       throw SemanticError("bulk_reduction_variant","reduction operand count mismatch");
     const auto bytes=Scalar(e,ops[2],"bulk reduction size",UINT32_MAX);
-    if (bytes%16) throw SemanticError("bulk_reduction_variant","reduction size must be a u32 multiple of 16");
+    // PTX ISA cp.reduce.async.bulk: "size must be a multiple of 16. If the value is not a
+    // multiple of 16, then the behavior is undefined."
+    if (bytes%16) throw SemanticError("bulk_reduction_size","bulk reduction size is not a multiple of 16 (undefined behavior)",
+                                      {{"size",bytes},{"isa_section","9.7.10.28.4.2 cp.reduce.async.bulk"}});
     const auto element=std::stoul(type.substr(type.find_first_of("0123456789")))/8;
     const auto [read, write] = BulkFootprints(e, MemoryRequest(brackets[1], Json::object(), bytes, "shared"),
                                               MemoryRequest(brackets[0], Json::object(), bytes, "global"),
@@ -2268,7 +2360,9 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
       if (!destination || destination->first==resources->frame.self())
         throw SemanticError("bulk_copy_variant","shared bulk copy requires a resolved remote destination");
     }
-    const auto [read, write] = BulkCopyFootprints(e, b, contract, size, spaces);
+    const auto footprints = BulkCopyFootprints(e, b, contract, size, spaces);
+    RequireBulkCopyAlignment(footprints);
+    const auto [read, write] = footprints;
     Copy(t, e, {read}, {write}, CompleteTxEffect{resources->Barrier(e, b[2], contract), size});
     return;
   }
@@ -2286,7 +2380,9 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     if (b.size() != 2)
       throw SemanticError("bulk_copy_variant", "bulk copy address count");
     const auto size = BulkSize(e, ops[2]);
-    const auto [read, write] = BulkCopyFootprints(e, b, contract, size, spaces);
+    const auto footprints = BulkCopyFootprints(e, b, contract, size, spaces);
+    RequireBulkCopyAlignment(footprints);
+    const auto [read, write] = footprints;
     t.bulk.Issue(Copy(t, e, {read}, {write}));
     return;
   }
@@ -3090,12 +3186,75 @@ void ModelLowerer::Impl::Add(const CtaFacts &cta_facts, ValueAddresses value_add
   terminals.clear();
   {
     ProfileScope joins("frontend.model.cta_joins");
+    // Threads of each warp of the CTA (a partial last warp has fewer). O(lanes).
+    std::map<std::uint32_t, std::uint32_t> warp_threads;
+    for (std::size_t k = 0; k < lane_count; ++k) ++warp_threads[cta_facts.Warp(cta_facts.Lane(k))];
     for (auto &[site, entry] : aligned) {
-      (void)site;
+      const bool full_warp = warp_threads[std::get<0>(site)] == 32;
+      std::bitset<32> lowered, failed;
+      for (const auto &[lane, call] : entry.calls) { (void)call; lowered.set(lane); }
+      for (const auto lane : entry.failed) failed.set(lane);
+      const auto participation = AlignedSiteParticipation(lowered, failed);
+      // Every executing lane failed to lower it, and no lane of a full warp is missing: those
+      // lanes' diagnostics report the site.
+      if (entry.calls.empty() && (participation.missing.empty() || !full_warp)) continue;
+      const auto &instruction = function.instructions[std::get<1>(site)];
+      const bool tmem_access = instruction.opcode == "tcgen05" &&
+          (instruction.semantics.operation == "load" || instruction.semantics.operation == "store");
+      const auto location = [&](Json details) {
+        details["line"] = instruction.line;
+        details["warp"] = std::get<0>(site);
+        details["occurrence"] = std::get<2>(site);
+        details["instruction"] = std::string(module.view(instruction.source));
+        return details;
+      };
       if (entry.calls.size() != 32) {
+        // PTX ISA tcgen05.ld/st: all threads of the warp must execute it (.aligned), and "the
+        // behavior of tcgen05.ld [st] is undefined if ... any thread in the warp has exited".
+        // In a full warp a lane without this occurrence exited or diverged: undefined behavior.
+        // Every other .aligned instruction: "all threads in the warp must execute the same
+        // ... instruction" (tcgen05.wait, barrier.cluster .aligned, tensormap.cp_fenceproxy,
+        // ldmatrix, stmatrix, tcgen05 lifetime operations); a missing lane of a full warp
+        // violates it. A lane that executed the occurrence but failed to lower it is not missing.
+        const Json missing = participation.missing;
+        if (!tmem_access && full_warp && !missing.empty()) {
+          const auto &op = instruction.opcode;
+          // A tcgen05 site other than ld/st is tcgen05.wait or a lifetime operation.
+          const char *section = op == "tcgen05" ? (instruction.semantics.operation.starts_with("wait")
+                                                       ? "9.7.18.8.5 tcgen05.wait" : "9.7.18.7.1 tcgen05.alloc") :
+              op == "barrier" ? "9.7.15.3 barrier.cluster" : op == "tensormap" ? "9.7.15.17 tensormap.cp_fenceproxy" :
+              op == "ldmatrix" ? "9.7.16.5.15 ldmatrix" : op == "stmatrix" ? "9.7.16.5.16 stmatrix" : "the instruction's .aligned qualifier";
+          Diagnostic("aligned_lanes_missing",
+                     op + " .aligned is not executed by every thread of its full warp (undefined behavior)",
+                     nullptr, nullptr, location({{"missing_lanes", missing}, {"isa_section", section}}));
+          continue;
+        }
+        if (tmem_access && full_warp && !missing.empty()) {
+          Diagnostic("tmem_aligned_lanes_missing",
+                     "tcgen05." + std::string(instruction.semantics.operation == "load" ? "ld" : "st") +
+                         " is not executed by every thread of its full warp (undefined behavior)",
+                     nullptr, nullptr, location({{"missing_lanes", missing},
+                         {"isa_section", instruction.semantics.operation == "load" ? "9.7.18.8.3 tcgen05.ld" : "9.7.18.8.4 tcgen05.st"}}));
+          continue;
+        }
         Diagnostic("incomplete_aligned_warp",
                    "aligned instruction is not executed by all32 lanes");
         continue;
+      }
+      // PTX ISA tcgen05.ld/st: "The behavior of tcgen05.ld [st] is undefined if all threads do
+      // not use the same values of taddr". O(32) per site.
+      if (tmem_access && entry.tmem_addresses.size() == 32) {
+        const auto &first = entry.tmem_addresses.begin()->second;
+        for (const auto &[lane, value] : entry.tmem_addresses)
+          if (value != first) {
+            Diagnostic("tmem_address_not_uniform",
+                       "tcgen05." + std::string(instruction.semantics.operation == "load" ? "ld" : "st") +
+                           " lanes use different taddr values (undefined behavior)",
+                       nullptr, nullptr, location({{"lane", lane}, {"taddr", value.second}, {"resource", value.first},
+                           {"lane0_taddr", first.second}, {"lane0_resource", first.first},
+                           {"isa_section", instruction.semantics.operation == "load" ? "9.7.18.8.3 tcgen05.ld" : "9.7.18.8.4 tcgen05.st"}}));
+            break;
+          }
       }
       std::vector<std::pair<InstId, InstId>> calls;
       for (std::uint32_t lane = 0; lane < 32; ++lane) {
@@ -3169,15 +3328,22 @@ void ModelLowerer::Impl::LowerThread(const CtaFacts &cta_facts, LaneRef lane_ref
       Poll();
     const auto &i = function.instructions[e.instruction_id()];
     if (occurrence_counts[i.id]++ == 0 && lane) lane->counted.push_back(i.id);
+    // A lane whose lowering of an .aligned site fails executed it (RegistersAlignedLanes).
+    const auto executed_aligned = [&] {
+      if (RegistersAlignedLanes(i)) aligned[Key(thread.actor.warp.value(), e)].failed.insert(thread.actor.lane);
+    };
     try {
       Instruction(thread, e);
     } catch (const SemanticError &error) {
+      executed_aligned();
       Diagnostic(error.code, error.what(), &thread, &e, error.details);
     } catch (const LayoutError &error) {
+      executed_aligned();
       Diagnostic(error.code, error.what(), &thread, &e, error.details);
     } catch (const std::bad_alloc &) {
       throw;
     } catch (const std::exception &error) {
+      executed_aligned();
       Diagnostic("unexpected_exception", error.what(), &thread, &e,
                  {{"exception_type",typeid(error).name()}});
     }
@@ -3470,6 +3636,8 @@ bool ModelLowerer::Impl::Absorb(Impl &shadow) {
   for (const auto &[key, entry] : shadow.aligned) {
     auto &to = aligned[key];
     for (const auto &[lane_id, call] : entry.calls) to.calls[lane_id] = {ids(call.first), ids(call.second)};
+    to.failed.insert(entry.failed.begin(), entry.failed.end());
+    for (const auto &[lane_id, value] : entry.tmem_addresses) to.tmem_addresses[lane_id] = value;
     to.completions |= entry.completions;
     to.merged_arm |= entry.merged_arm;
   }

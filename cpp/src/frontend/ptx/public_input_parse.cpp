@@ -300,18 +300,45 @@ KernelInput ParseKernelInput(const Json &value) {
     }
   }
   // Trusted element properties of an input object: one property per record
-  // (injective, lower_bound or upper_bound) under the stated integer element type.
+  // (injective, lower_bound, upper_bound or field_values) under the stated integer element type.
   for (std::size_t i = 0; i < root["tensor_properties"].size(); ++i) {
     auto &t = root["tensor_properties"][i];
     auto path = ItemPath("tensor_properties", i);
-    Object(t, {"object", "element_type", "property", "value"}, path);
+    Object(t, {"object", "element_type", "property", "value", "field_bits", "values"}, path);
     String(t.value("object", Json()), path + ".object");
     const auto type = t.value("element_type", Json());
     if (type != "s32" && type != "u32" && type != "s64" && type != "u64")
       Fail("invalid_tensor_property", path + ".element_type", "expected s32, u32, s64 or u64");
     const auto property = t.value("property", Json());
-    if (property != "injective" && property != "lower_bound" && property != "upper_bound")
-      Fail("invalid_tensor_property", path + ".property", "expected injective, lower_bound or upper_bound");
+    if (property != "injective" && property != "lower_bound" && property != "upper_bound" &&
+        property != "field_values")
+      Fail("invalid_tensor_property", path + ".property",
+           "expected injective, lower_bound, upper_bound or field_values");
+    // field_values: every field_bits-wide bit field of every element (fields start at
+    // the element's least significant bit) holds one of `values`.
+    if (property == "field_values") {
+      if (t.contains("value"))
+        Fail("invalid_tensor_property", path + ".value", "field_values takes field_bits and values, not value");
+      const auto bits = Natural(t.value("field_bits", Json()), path + ".field_bits", 1);
+      if (bits != 1 && bits != 2 && bits != 4 && bits != 8)
+        Fail("invalid_tensor_property", path + ".field_bits", "expected 1, 2, 4 or 8");
+      const auto values = t.value("values", Json());
+      Array(values, path + ".values");
+      if (values.empty()) Fail("invalid_tensor_property", path + ".values", "expected at least one value");
+      std::uint64_t previous = 0;
+      for (std::size_t k = 0; k < values.size(); ++k) {
+        const auto item = path + ".values[" + std::to_string(k) + "]";
+        const auto value = Natural(values[k], item);
+        if (value >= (std::uint64_t{1} << bits))
+          Fail("invalid_tensor_property", item, "value does not fit field_bits");
+        if (k && value <= previous)
+          Fail("invalid_tensor_property", item, "values must be strictly increasing");
+        previous = value;
+      }
+      continue;
+    }
+    if (t.contains("field_bits") || t.contains("values"))
+      Fail("invalid_tensor_property", path, "field_bits and values belong to field_values");
     if ((property == "injective") == t.contains("value"))
       Fail("invalid_tensor_property", path + ".value", property == "injective" ? "injective takes no value" : "a bound requires a value");
     if (t.contains("value")) Scalar(t["value"], type.get<std::string>(), path + ".value");

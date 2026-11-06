@@ -10,7 +10,7 @@
         "internal_stage": "verification",
         "resource": {
           "kind": "time",
-          "limit": 498.336,
+          "limit": 498.359,
           "origin": "configured_budget",
           "unit": "seconds"
         }
@@ -18,7 +18,7 @@
       "stage": "synchronization"
     }
   ],
-  "elapsed_seconds": 498.376761616,
+  "elapsed_seconds": 498.436331947,
   "internal": {
     "active_stage": "verification",
     "equivalence": {
@@ -37,7 +37,7 @@
                 "details": {
                   "resource": {
                     "kind": "time",
-                    "limit": 498.336,
+                    "limit": 498.359,
                     "origin": "configured_budget",
                     "unit": "seconds"
                   }
@@ -61,16 +61,16 @@
             "code": "tma_data_dependent_coordinate",
             "details": {
               "cta": 0,
-              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes.L2::cache_hint [%r1934], [%rd653, {%r1935, %r1935, %r1935, %r1936}], [%r1932], %rd652;",
-              "instruction_index": 3869,
+              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes [%r1009], [%rd334, {%r1010, %r1011, %r1010, %r1012}], [%r1007];",
+              "instruction_index": 3374,
               "location": {
                 "file": "corpus/flashinfer__blackwell_msa__long_prefill_paged_bf16_gqa16_sm100__sm_100a.ptx",
-                "line": 7034
+                "line": 6245
               },
               "occurrence": 0,
-              "thread": 480
+              "thread": 288
             },
-            "message": "TMA tile coordinate %r1936 is data-dependent (not a constant of the execution); the values of its tile region are not modeled (no index function)",
+            "message": "TMA tile coordinate %r1012 is data-dependent (not a constant of the execution) and its range is not proven to keep the tile inside the tensor (0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its tile region are not modeled",
             "stage": "value_lowering"
           }
         ],
@@ -472,12 +472,12 @@
     "frontend_source_violations": [],
     "implementation": "cpp",
     "memory_analysis_complete": false,
-    "peak_footprint_mib": 35727.109375
+    "peak_footprint_mib": 35774.1015625
   },
-  "peak_rss_mib": 35727.109375,
+  "peak_rss_mib": 35774.0859375,
   "resource": {
     "kind": "time",
-    "limit": 498.336,
+    "limit": 498.359,
     "origin": "configured_budget",
     "unit": "seconds"
   },

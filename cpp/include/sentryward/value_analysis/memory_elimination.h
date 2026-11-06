@@ -1,11 +1,13 @@
 #pragma once
 
+#include <bitset>
 #include <compare>
 #include <cstddef>
 #include <cstdint>
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <span>
 #include <string>
 #include <variant>
@@ -25,11 +27,23 @@ struct AllocationInfo final {
 // A trusted tensor_properties record of a read-only input object (docs/input-json.md):
 // every element, read as `element_type`, lies in [lower, upper]; an absent bound is one
 // outside the signed 64-bit range (never used). Injective: distinct elements differ.
+// field_values: every field_bits-wide bit field of every element (fields start at the
+// element's least significant bit, so every byte of the object holds 8/field_bits whole
+// fields) holds a value whose bit is set in `field_values`; field_bits is 0 without it.
 struct TensorPropertyFact final {
   std::string object, element_type;
   std::optional<std::int64_t> lower, upper;
   bool injective = false;
+  unsigned field_bits = 0;
+  std::bitset<256> field_values;
 };
+// The record of an input object (by its name) that declares field values, or null. O(records).
+[[nodiscard]] inline const TensorPropertyFact* findFieldValues(std::span<const TensorPropertyFact> facts,
+    std::string_view object) noexcept {
+  for (const auto& fact : facts)
+    if (fact.object == object && fact.field_bits) return &fact;
+  return nullptr;
+}
 // The record that describes a symbolic term's atoms: the first one listed for its object
 // read as its element type, or null. The one lookup of every consumer. O(records).
 [[nodiscard]] inline const TensorPropertyFact* findTensorProperty(std::span<const TensorPropertyFact> facts,
@@ -337,9 +351,14 @@ struct MemoryEliminationResult final {
   std::size_t shared_read_instances = 0;
   std::vector<OutputWrite> outputs;
   std::vector<OutputWriteFamily> output_families;
-  // The contract's premises, for outputs at symbolic positions (OutputWrite::base).
+  // The contract's premises: for outputs at symbolic positions (OutputWrite::base) and
+  // the field values of input objects (sparse MMA metadata validity, scalar fold).
   std::vector<TensorPropertyFact> tensor_properties;
   std::vector<InitialMemorySymbol> initial_memory;
+  // Intermediate allocations (no initial contents) with bytes loaded before any covering store.
+  // Those bytes are opaque initial symbols here; the scalar fold refuses any output that still
+  // depends on them (lowerScalarFold), so they may only be read and then discarded.
+  std::set<std::string> unwritten_read_allocations;
   std::map<MemoryInstance,InitialReadFamily> initial_read_families;
   std::size_t processed_families = 0;
   std::optional<MemoryEliminationDiagnostic> diagnostic;

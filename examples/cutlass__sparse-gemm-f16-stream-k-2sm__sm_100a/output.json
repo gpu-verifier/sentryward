@@ -146,6 +146,37 @@
           "extent_bytes": "unbounded"
         },
         "representative_branch_uses": 0,
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "u64",
+              "field_bits": 4,
+              "object": "E.metadata",
+              "property": "field_values",
+              "values": [
+                0,
+                4,
+                8,
+                9,
+                12,
+                13,
+                14
+              ]
+            }
+          ],
+          "regions": [
+            {
+              "allocation": "E.metadata",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "tma.input.2"
+            }
+          ],
+          "text": "Elements of these objects satisfy the stated bounds, injectivity and field values (trusted, not checked); the objects are not written during the analyzed execution."
+        },
+        "tensor_property_decisions": [],
         "trap_only_equality_assertions_hold": true
       },
       "input_objects": [
@@ -167,7 +198,7 @@
       "line": 10016
     },
     "memory_analysis_complete": false,
-    "peak_footprint_mib": 516.87109375,
+    "peak_footprint_mib": 527.19921875,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
@@ -258,8 +289,8 @@
     "value_ir_node_count": 17721,
     "value_view_complete": false
   },
-  "peak_rss_mib": 516.87109375,
-  "pipeline_elapsed_seconds": 3.318857017,
+  "peak_rss_mib": 527.19921875,
+  "pipeline_elapsed_seconds": 3.342154779,
   "result": "unsupported",
   "rss_limit_mib": null,
   "scope": {
@@ -267,5 +298,5 @@
   },
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.443
+  "whole_pipeline_timeout_seconds": 498.469
 }

@@ -60,18 +60,10 @@
     }
   ],
   "checks": {
-    "equivalence": "incomplete",
+    "equivalence": "passed",
     "synchronization": "passed"
   },
-  "diagnostics": [
-    {
-      "code": "not_proven",
-      "details": {
-        "internal_stage": "equivalence_check"
-      },
-      "stage": "equivalence"
-    }
-  ],
+  "diagnostics": [],
   "evidence": {
     "race_count": 0,
     "race_samples_truncated": false,
@@ -170,8 +162,8 @@
     },
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
-      "arena_nodes": 1731378,
-      "comparison_elapsed_seconds": 15.478135786,
+      "arena_nodes": 1984694,
+      "comparison_elapsed_seconds": 20.360816604,
       "context_declaration": {
         "assumptions": [
           {
@@ -193,14 +185,14 @@
       },
       "context_policy": "explicit native caller premises; no implied provenance certification",
       "counters": {
-        "add_term_visits": 6423086,
+        "add_term_visits": 7271748,
         "affine_state_banks": 1,
         "affine_state_certified_updates": 0,
         "affine_state_collect_work": 64815,
         "affine_state_segments": 0,
         "call_definition_node_visits": 3621,
         "canonical_factor_visits": 4900,
-        "canonical_node_visits": 416998,
+        "canonical_node_visits": 418533,
         "canonical_sum_factor_pulls": 259,
         "certified_state_pattern_cache_hits": 1024,
         "certified_state_pattern_decline_no_certified_state": 5,
@@ -209,37 +201,41 @@
         "completed_reductions": 260,
         "constant_binary32_bitcasts": 258,
         "coverage_polynomial_peak": 2,
-        "coverage_polynomial_visits": 33540,
+        "coverage_polynomial_visits": 99717,
         "coverage_stored_piece_visits": 33280,
-        "ep_body_anchor_edges": 3239841,
-        "ep_body_anchor_limited": 1296,
-        "ep_body_anchor_nodes": 2825686,
-        "ep_body_bound_read_exact_hits": 98752,
-        "ep_body_bound_read_matcher_fallbacks": 8427,
+        "ep_body_anchor_edges": 5977263,
+        "ep_body_anchor_limited": 2572,
+        "ep_body_anchor_nodes": 4963418,
+        "ep_body_bound_read_exact_hits": 280139,
+        "ep_body_bound_read_matcher_fallbacks": 92542,
         "ep_body_call_rebuilds": 34330,
-        "ep_body_deferred_call_anchors": 892844,
-        "ep_body_deferred_unmatched_anchors": 892844,
-        "ep_body_instance_cache_entries": 166030,
-        "ep_body_instance_cache_hits": 49846,
-        "ep_body_obligations": 143027,
-        "ep_body_pattern_anchor_cache_hits": 1507389,
-        "ep_body_payload_summary_nodes": 367894,
-        "ep_body_proofs": 33280,
-        "ep_body_read_anchor_rejections": 519636,
-        "ep_body_read_match_cache_entries": 217799,
-        "ep_body_read_match_cache_hits": 55975,
-        "ep_body_target_anchor_cache_hits": 1202975,
-        "ep_cross_products": 2,
-        "ep_decline_depth": 2,
-        "ep_identity_proofs": 33280,
-        "ep_scalar_attempts": 143033,
-        "ep_scalar_proofs": 33280,
+        "ep_body_deferred_call_anchors": 889724,
+        "ep_body_deferred_unmatched_anchors": 889724,
+        "ep_body_instance_cache_entries": 199424,
+        "ep_body_instance_cache_hits": 348260,
+        "ep_body_obligations": 209333,
+        "ep_body_pattern_anchor_cache_hits": 1638623,
+        "ep_body_payload_summary_nodes": 400790,
+        "ep_body_proofs": 66176,
+        "ep_body_read_anchor_rejections": 635853,
+        "ep_body_read_match_cache_entries": 284593,
+        "ep_body_read_match_cache_hits": 294767,
+        "ep_body_target_anchor_cache_hits": 1201100,
+        "ep_cross_products": 9513,
+        "ep_decline_depth": 9256,
+        "ep_fraction_proofs": 257,
+        "ep_identity_proofs": 66178,
+        "ep_polynomial_proofs": 513,
+        "ep_reduction_outer_obligations": 513,
+        "ep_scalar_attempts": 210620,
+        "ep_scalar_proofs": 66948,
+        "exact_proof_reuse_certificates": 3,
         "finite_bilinear_banks": 1,
         "finite_state_reuse_banks": 1,
-        "fold_alpha_root_cache_hits": 944981,
-        "fold_alpha_signature_edges": 2868476,
-        "fold_alpha_signatures": 1353042,
-        "fold_alpha_states": 1353042,
+        "fold_alpha_root_cache_hits": 2118442,
+        "fold_alpha_signature_edges": 1191098,
+        "fold_alpha_signatures": 612004,
+        "fold_alpha_states": 612004,
         "fp_idiom_power_constructions": 0,
         "fp_idiom_rm_producers": 0,
         "ideal_additive_compiler_exp_sequences": 0,
@@ -247,38 +243,45 @@
         "ideal_compiler_log2_polynomials": 0,
         "ideal_compiler_lse_sequences": 0,
         "ideal_single_constant_exp_sequences": 67331,
-        "imported_context_nodes": 775709,
+        "imported_context_nodes": 775707,
+        "importer_occurrence_binder_hits": 1026,
         "importer_scope_banks": 1,
-        "importer_scope_binder_hits": 1026,
-        "importer_scope_binders_created": 2,
-        "importer_scope_leaf_lookups": 1028,
+        "importer_scope_binder_hits": 1,
+        "importer_scope_binders_created": 1,
+        "importer_scope_leaf_lookups": 2,
         "importer_scope_nested_body_fallbacks": 518,
-        "intern_requests": 22915293,
-        "known_bits_cache_hits": 4352,
+        "intern_requests": 33480511,
+        "known_bits_cache_hits": 3839,
         "known_bits_edges": 0,
-        "known_bits_nodes": 514,
-        "linear_reduction_decline_distribution_budget": 2,
-        "linear_reduction_distributed_products": 2,
-        "linear_reduction_distribution_budget_declines": 2,
-        "linear_reduction_existing_scalar_calls": 2,
-        "linear_reduction_pattern_attempts": 2,
-        "linear_reduction_shared_target_fallbacks": 1,
-        "linear_reduction_weighted_add_edges": 4,
-        "linear_reduction_weighted_states": 8,
-        "local_pattern_candidates": 1540639,
+        "known_bits_nodes": 257,
+        "linear_reduction_closed_groups": 513,
+        "linear_reduction_decline_distribution_budget": 513,
+        "linear_reduction_distributed_products": 1,
+        "linear_reduction_distribution_budget_declines": 513,
+        "linear_reduction_existing_scalar_calls": 4,
+        "linear_reduction_factored_weight_retries": 513,
+        "linear_reduction_factored_weighted_sums": 514,
+        "linear_reduction_pattern_attempts": 1026,
+        "linear_reduction_pattern_proofs": 513,
+        "linear_reduction_preserved_partial_groups": 0,
+        "linear_reduction_select_arm_proofs": 2,
+        "linear_reduction_weighted_add_edges": 2,
+        "linear_reduction_weighted_states": 71308,
+        "local_pattern_candidates": 1535451,
         "masked_sum_prefix_queries": 776,
         "normalization_cache_context_changes": 2,
-        "normalization_node_visits": 430842,
+        "normalization_node_visits": 429300,
         "parametric_state_attempts": 0,
         "pattern_build_peak_nodes": 15,
         "pattern_build_unique_nodes": 8741,
-        "pattern_node_visits": 2792250,
+        "pattern_node_visits": 5066237,
         "predicate_integer_affine_normalizations": 512,
         "proved_select_arms_imported": 258,
+        "select_equal_arm_proofs": 257,
         "select_max_probe_ancestor_nodes": 0,
-        "select_max_probe_calls": 4355,
+        "select_max_probe_calls": 4610,
         "select_max_probe_temporary_nodes": 0,
-        "summary_concat_nodes": 33020,
+        "summary_concat_nodes": 98171,
         "symbolic_byte_reads_without_extent_proof": 0,
         "unary_reduction_composition_attempts": 3,
         "unary_reduction_composition_context_changes": 2
@@ -288,13 +291,8 @@
         "proved_families": 3,
         "status": "proved"
       },
-      "diagnostics": [
-        {
-          "code": "not_proven",
-          "stage": "equivalence_check"
-        }
-      ],
-      "elapsed_s": 11.789986886,
+      "diagnostics": [],
+      "elapsed_s": 16.448706016,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -308,7 +306,7 @@
           "previously_completed": 0,
           "repeated_across_queries": 0,
           "requests": 0,
-          "shared_hits": 583100,
+          "shared_hits": 883090,
           "unique_query_nodes": 0
         },
         "fraction_witness_s": 0.0,
@@ -318,7 +316,7 @@
           "previously_completed": 0,
           "repeated_across_queries": 0,
           "requests": 0,
-          "shared_hits": 232961,
+          "shared_hits": 337818,
           "unique_query_nodes": 0
         },
         "ordinary_polynomial_s": 0.0,
@@ -327,13 +325,13 @@
           "previously_completed": 0,
           "repeated_across_queries": 0,
           "requests": 0,
-          "shared_hits": 550591,
+          "shared_hits": 849493,
           "unique_query_nodes": 0
         },
-        "query_count": 143030,
+        "query_count": 210620,
         "reset_s": 0.0,
         "reuse_cache": true,
-        "shared_evictions": 48
+        "shared_evictions": 95
       },
       "equivalence_context": {
         "applied_predicates": 0,
@@ -342,7 +340,7 @@
         "scoped_predicates": 0
       },
       "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
-      "equivalent_families": 0,
+      "equivalent_families": 3,
       "finished_families": 3,
       "idealizations_applied": [
         "compiler Exp2 with binary32 log2(e) multiplier is ideal Exp"
@@ -372,12 +370,12 @@
       "legacy_scalar_fallback": false,
       "mapping_input_memory_constraints": {},
       "native_context": null,
-      "normalized_reachable_nodes": 376620,
-      "numerical_result": "equivalence_not_proven",
+      "normalized_reachable_nodes": 375078,
+      "numerical_result": "verified",
       "pattern_nodes": 1065,
-      "peak_rss_kib": 2551224,
+      "peak_rss_kib": 2703008,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
-      "piece_nodes": 66300,
+      "piece_nodes": 197115,
       "piece_union": {
         "abstract_optimized_replacements": 0,
         "abstract_reference_replacements": 0,
@@ -407,24 +405,49 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "left": "select[](compare[eq](add[,1,-1](var[output:0,0,264](),read[state_indices\ns32](255,),),0,),add[,1,1](mul[,1](read[state\nreal:bf16](read[state_indices\ns32](255,),var[output:1,0,11](),var[output:2,0,127](),mul[,2](var#5,),),exp[](mul[,-5](recip#82,),),),mul[,1](recip[](add[,1,1](1,exp#138,),),read[k\nreal:bf16](255,var[output:1,0,11](),mul[,2](var#5,),),reciprocalsqrt[](add[,8796093/8796093022208,1](1,call#1016495,),),add[,1,-1](read[v\nreal:bf16](255,var#3,var#4,),mul[,1](reciprocalsqrt#1016497,call#1016498,),),),),select[](compare[eq](add[,1,-1](var[output:0,0,264](),read[state_indices\ns32](254,),),0,),add[,1,1](mul[,1](read[state\nreal:bf16](read#149,var#3,var#4,mul#7,),exp[](mul#183,),),mul[,1](recip[](add#229,),read[k\nreal:bf16](254,var#3,mul#7,),reciprocalsqrt[](add#1016506,),add[,1,-1](read#188,mul#1016509,),),),select[](compare[eq](add[,1,-1](var#2,read#238,),0,),add[,1,1](mul[,1](read#255,exp#273,),mul[,1](recip#319,read#321,reciprocalsqrt#1016517,add#1016521,),),select[](compare[eq](add#330,0,),add[,1,1](mul#364,mul#1016533,),select[](compare#420,add#1016544,select#1019305,),),),),)",
-            "right": "select[](compare[eq](add[,1,-1](var[output:0,0,264](),read[state_indices\ns32](255,),),0,),add[,1,1](mul[,1](read[state\nreal:bf16](read[state_indices\ns32](255,),var[output:1,0,11](),var[output:2,0,127](),mul[,2](var#5,),),exp[](mul[,-5](recip#82,),),),mul[,1](read[k\nreal:bf16](255,var[output:1,0,11](),mul[,2](var#5,),),select[](compare[lt](read#136,0,),mul[,1](exp#23782,recip#23784,),recip[](add#139,),),reciprocalsqrt[](add[,8796093/8796093022208,1](1,call#1016495,),),add[,1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1](read[v\nreal:bf16](255,var#3,var#4,),mul[,1](read#22551,read#23884,exp#23896,reciprocalsqrt#1016497,),mul[,1](read#22571,read#23861,exp#23879,reciprocalsqrt#1016497,),mul[,1](read#22592,read#23832,exp#23851,reciprocalsqrt#1016497,),mul[,1](read#22611,read#23799,exp#23818,reciprocalsqrt#1016497,),mul[,1](read#22632,read#24001,exp#24020,reciprocalsqrt#1016497,),mul[,1](read#22651,read#23969,exp#23987,reciprocalsqrt#1016497,),mul[,1](read#22670,read#23941,exp#23959,reciprocalsqrt#1016497,),mul[,1](read#22689,read#23913,exp#23931,reciprocalsqrt#1016497,),mul[,1](read#22711,read#24126,exp#24145,reciprocalsqrt#1016497,),mul[,1](read#22730,read#24094,exp#24112,reciprocalsqrt#1016497,),mul[,1](read#22749,read#24066,exp#24084,reciprocalsqrt#1016497,),mul[,1](read#22768,read#24038,exp#24056,reciprocalsqrt#1016497,),mul[,1](read#22787,read#24247,exp#24265,reciprocalsqrt#1016497,),mul[,1](read#22806,read#24219,exp#24237,reciprocalsqrt#1016497,),mul[,1](read#22825,read#24191,exp#24209,reciprocalsqrt#1016497,),mul[,1](read#22844,read#24163,exp#24181,reciprocalsqrt#1016497,),mul[,1](read#22865,read#24372,exp#24392,reciprocalsqrt#1016497,),mul[,1](read#22884,read#24341,exp#24360,reciprocalsqrt#1016497,),mul[,1](read#22903,read#24312,exp#24331,reciprocalsqrt#1016497,),mul[,1](read#22922,read#24283,exp#24302,reciprocalsqrt#1016497,),mul[,1](read#22941,read#24497,exp#24516,reciprocalsqrt#1016497,),mul[,1](read#22960,read#24468,exp#24487,reciprocalsqrt#1016497,),mul[,1](read#22979,read#24439,exp#24458,reciprocalsqrt#1016497,),mul[,1](read#22998,read#24410,exp#24429,reciprocalsqrt#1016497,),mul[,1](read#23017,read#24621,exp#24640,reciprocalsqrt#1016497,),mul[,1](read#23036,read#24592,exp#24611,reciprocalsqrt#1016497,),mul[,1](read#23055,read#24563,exp#24582,reciprocalsqrt#1016497,),mul[,1](read#23074,read#24534,exp#24553,reciprocalsqrt#1016497,),mul[,1](read#23093,read#24745,exp#24764,reciprocalsqrt#1016497,),mul[,1](read#23112,read#24716,exp#24735,reciprocalsqrt#1016497,),mul[,1](read#23131,read#24687,exp#24706,reciprocalsqrt#1016497,),mul[,1](read#23150,read#24658,exp#24677,reciprocalsqrt#1016497,),mul[,1](read#23171,read#24870,exp#24890,reciprocalsqrt#1016497,),mul[,1](read#23190,read#24840,exp#24859,reciprocalsqrt#1016497,),mul[,1](read#23209,read#24811,exp#24830,reciprocalsqrt#1016497,),mul[,1](read#23228,read#24782,exp#24801,reciprocalsqrt#1016497,),mul[,1](read#23247,read#24995,exp#25014,reciprocalsqrt#1016497,),mul[,1](read#23266,read#24966,exp#24985,reciprocalsqrt#1016497,),mul[,1](read#23285,read#24937,exp#24956,reciprocalsqrt#1016497,),mul[,1](read#23304,read#24908,exp#24927,reciprocalsqrt#1016497,),mul[,1](read#23323,read#25119,exp#25138,reciprocalsqrt#1016497,),mul[,1](read#23342,read#25090,exp#25109,reciprocalsqrt#1016497,),mul[,1](read#23361,read#25061,exp#25080,reciprocalsqrt#1016497,),mul[,1](read#23380,read#25032,exp#25051,reciprocalsqrt#1016497,),mul[,1](read#23399,read#25243,exp#25262,reciprocalsqrt#1016497,),mul[,1](read#23418,read#25214,exp#25233,reciprocalsqrt#1016497,),mul[,1](read#23437,read#25185,exp#25204,reciprocalsqrt#1016497,),mul[,1](read#23456,read#25156,exp#25175,reciprocalsqrt#1016497,),mul[,1](read#23475,read#25367,exp#25386,reciprocalsqrt#1016497,),mul[,1](read#23494,read#25338,exp#25357,reciprocalsqrt#1016497,),mul[,1](read#23513,read#25309,exp#25328,reciprocalsqrt#1016497,),mul[,1](read#23532,read#25280,exp#25299,reciprocalsqrt#1016497,),mul[,1](read#23551,read#25491,exp#25510,reciprocalsqrt#1016497,),mul[,1](read#23570,read#25462,exp#25481,reciprocalsqrt#1016497,),mul[,1](read#23589,read#25433,exp#25452,reciprocalsqrt#1016497,),mul[,1](read#23608,read#25404,exp#25423,reciprocalsqrt#1016497,),mul[,1](read#23627,read#25615,exp#25634,reciprocalsqrt#1016497,),mul[,1](read#23646,read#25586,exp#25605,reciprocalsqrt#1016497,),mul[,1](read#23665,read#25557,exp#25576,reciprocalsqrt#1016497,),mul[,1](read#23684,read#25528,exp#25547,reciprocalsqrt#1016497,),mul[,1](read#23703,read#25739,exp#25758,reciprocalsqrt#1016497,),mul[,1](read#23722,read#25710,exp#25729,reciprocalsqrt#1016497,),mul[,1](read#23741,read#25681,exp#25700,reciprocalsqrt#1016497,),mul[,1](read#23760,read#25652,exp#25671,reciprocalsqrt#1016497,),mul[,1](read#22559,read#25843,exp#25858,reciprocalsqrt#1016497,),mul[,1](read#22578,read#25820,exp#25835,reciprocalsqrt#1016497,),mul[,1](read#22599,read#25797,exp#25812,reciprocalsqrt#1016497,),mul[,1](read#22618,read#25774,exp#25789,reciprocalsqrt#1016497,),mul[,1](read#22639,read#25943,exp#25958,reciprocalsqrt#1016497,),mul[,1](read#22658,read#25920,exp#25935,reciprocalsqrt#1016497,),mul[,1](read#22677,read#25897,exp#25912,reciprocalsqrt#1016497,),mul[,1](read#22696,read#25874,exp#25889,reciprocalsqrt#1016497,),mul[,1](read#22718,read#26043,exp#26058,reciprocalsqrt#1016497,),mul[,1](read#22737,read#26020,exp#26035,reciprocalsqrt#1016497,),mul[,1](read#22756,read#25997,exp#26012,reciprocalsqrt#1016497,),mul[,1](read#22775,read#25974,exp#25989,reciprocalsqrt#1016497,),mul[,1](read#22794,read#26143,exp#26158,reciprocalsqrt#1016497,),mul[,1](read#22813,read#26120,exp#26135,reciprocalsqrt#1016497,),mul[,1](read#22832,read#26097,exp#26112,reciprocalsqrt#1016497,),mul[,1](read#22851,read#26074,exp#26089,reciprocalsqrt#1016497,),mul[,1](read#22872,read#26246,exp#26262,reciprocalsqrt#1016497,),mul[,1](read#22891,read#26222,exp#26238,reciprocalsqrt#1016497,),mul[,1](read#22910,read#26198,exp#26214,reciprocalsqrt#1016497,),mul[,1](read#22929,read#26174,exp#26190,reciprocalsqrt#1016497,),mul[,1](read#22948,read#26350,exp#26366,reciprocalsqrt#1016497,),mul[,1](read#22967,read#26326,exp#26342,reciprocalsqrt#1016497,),mul[,1](read#22986,read#26302,exp#26318,reciprocalsqrt#1016497,),mul[,1](read#23005,read#26278,exp#26294,reciprocalsqrt#1016497,),mul[,1](read#23024,read#26454,exp#26470,reciprocalsqrt#1016497,),mul[,1](read#23043,read#26430,exp#26446,reciprocalsqrt#1016497,),mul[,1](read#23062,read#26406,exp#26422,reciprocalsqrt#1016497,),mul[,1](read#23081,read#26382,exp#26398,reciprocalsqrt#1016497,),mul[,1](read#23100,read#26558,exp#26574,reciprocalsqrt#1016497,),mul[,1](read#23119,read#26534,exp#26550,reciprocalsqrt#1016497,),mul[,1](read#23138,read#26510,exp#26526,reciprocalsqrt#1016497,),mul[,1](read#23157,read#26486,exp#26502,reciprocalsqrt#1016497,),mul[,1](read#23178,read#26662,exp#26678,reciprocalsqrt#1016497,),mul[,1](read#23197,read#26638,exp#26654,reciprocalsqrt#1016497,),mul[,1](read#23216,read#26614,exp#26630,reciprocalsqrt#1016497,),mul[,1](read#23235,read#26590,exp#26606,reciprocalsqrt#1016497,),mul[,1](read#23254,read#26766,exp#26782,reciprocalsqrt#1016497,),mul[,1](read#23273,read#26742,exp#26758,reciprocalsqrt#1016497,),mul[,1](read#23292,read#26718,exp#26734,reciprocalsqrt#1016497,),mul[,1](read#23311,read#26694,exp#26710,reciprocalsqrt#1016497,),mul[,1](read#23330,read#26870,exp#26886,reciprocalsqrt#1016497,),mul[,1](read#23349,read#26846,exp#26862,reciprocalsqrt#1016497,),mul[,1](read#23368,read#26822,exp#26838,reciprocalsqrt#1016497,),mul[,1](read#23387,read#26798,exp#26814,reciprocalsqrt#1016497,),mul[,1](read#23406,read#26974,exp#26990,reciprocalsqrt#1016497,),mul[,1](read#23425,read#26950,exp#26966,reciprocalsqrt#1016497,),mul[,1](read#23444,read#26926,exp#26942,reciprocalsqrt#1016497,),mul[,1](read#23463,read#26902,exp#26918,reciprocalsqrt#1016497,),mul[,1](read#23482,read#27078,exp#27094,reciprocalsqrt#1016497,),mul[,1](read#23501,read#27054,exp#27070,reciprocalsqrt#1016497,),mul[,1](read#23520,read#27030,exp#27046,reciprocalsqrt#1016497,),mul[,1](read#23539,read#27006,exp#27022,reciprocalsqrt#1016497,),mul[,1](read#23558,read#27182,exp#27198,reciprocalsqrt#1016497,),mul[,1](read#23577,read#27158,exp#27174,reciprocalsqrt#1016497,),mul[,1](read#23596,read#27134,exp#27150,reciprocalsqrt#1016497,),mul[,1](read#23615,read#27110,exp#27126,reciprocalsqrt#1016497,),mul[,1](read#23634,read#27286,exp#27302,reciprocalsqrt#1016497,),mul[,1](read#23653,read#27262,exp#27278,reciprocalsqrt#1016497,),mul[,1](read#23672,read#27238,exp#27254,reciprocalsqrt#1016497,),mul[,1](read#23691,read#27214,exp#27230,reciprocalsqrt#1016497,),mul[,1](read#23710,read#27390,exp#27406,reciprocalsqrt#1016497,),mul[,1](read#23729,read#27366,exp#27382,reciprocalsqrt#1016497,),mul[,1](read#23748,read#27342,exp#27358,reciprocalsqrt#1016497,),mul[,1](read#23767,read#27318,exp#27334,reciprocalsqrt#1016497,),),),),select[](compare[eq](add[,1,-1](var[output:0,0,264](),read[state_indices\ns32](254,),),0,),add[,1,1](mul[,1](read[state\nreal:bf16](read#149,var#3,var#4,mul#7,),exp[](mul#183,),),mul[,1](read[k\nreal:bf16](254,var#3,mul#7,),select[](compare#28569,mul#28574,recip#230,),reciprocalsqrt[](add#1016506,),add[,1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1](read#188,mul#1022411,mul#1022429,mul#1022447,mul#1022465,mul#1022483,mul#1022501,mul#1022519,mul#1022537,mul#1022555,mul#1022573,mul#1022591,mul#1022609,mul#1022627,mul#1022645,mul#1022663,mul#1022681,mul#1022699,mul#1022717,mul#1022735,mul#1022753,mul#1022771,mul#1022789,mul#1022807,mul#1022825,mul#1022843,mul#1022861,mul#1022879,mul#1022897,mul#1022915,mul#1022933,mul#1022951,mul#1022969,mul#1022987,mul#1023005,mul#1023023,mul#1023041,mul#1023059,mul#1023077,mul#1023095,mul#1023113,mul#1023131,mul#1023149,mul#1023167,mul#1023185,mul#1023203,mul#1023221,mul#1023239,mul#1023257,mul#1023275,mul#1023293,mul#1023311,mul#1023329,mul#1023347,mul#1023365,mul#1023383,mul#1023401,mul#1023419,mul#1023437,mul#1023455,mul#1023473,mul#1023491,mul#1023509,mul#1023527,mul#1023545,mul#1023563,mul#1023581,mul#1023599,mul#1023617,mul#1023635,mul#1023653,mul#1023671,mul#1023689,mul#1023707,mul#1023725,mul#1023743,mul#1023761,mul#1023779,mul#1023797,mul#1023815,mul#1023833,mul#1023851,mul#1023869,mul#1023887,mul#1023905,mul#1023923,mul#1023941,mul#1023959,mul#1023977,mul#1023995,mul#1024013,mul#1024031,mul#1024049,mul#1024067,mul#1024085,mul#1024103,mul#1024121,mul#1024139,mul#1024157,mul#1024175,mul#1024193,mul#1024211,mul#1024229,mul#1024247,mul#1024265,mul#1024283,mul#1024301,mul#1024319,mul#1024337,mul#1024355,mul#1024373,mul#1024391,mul#1024409,mul#1024427,mul#1024445,mul#1024463,mul#1024481,mul#1024499,mul#1024517,mul#1024535,mul#1024553,mul#1024571,mul#1024589,mul#1024607,mul#1024625,mul#1024643,mul#1024661,mul#1024679,mul#1024697,),),),select[](compare[eq](add[,1,-1](var#2,read#238,),0,),add[,1,1](mul[,1](read#255,exp#273,),mul[,1](read#321,select#32703,reciprocalsqrt#1016517,add#1027554,),),select[](compare[eq](add#330,0,),add[,1,1](mul#364,mul#1030522,),select[](compare#420,add#1033238,select#1713965,),),),),)",
             "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
+            "state_pattern_proof": {
+              "coverage": "same_predicate_nodes_equal_arms",
+              "first_reduction_arm": {
+                "closures": [
+                  {
+                    "coefficient": "mul[,-1](recip[](add[,1,1](1,exp[](mul#137,),),),read[k\nreal:bf16](255,var[output:1,0,11](),mul[,2](var[output:3,0,63](),),),reciprocalsqrt[](add[,8796093/8796093022208,1](1,call[,0](255,var#3,),),),reciprocalsqrt[](add[,8796093/8796093022208,1](1,call[,0](255,var#3,),),),)",
+                    "count": "128",
+                    "spec": 2
+                  }
+                ],
+                "contribution_pieces": 255,
+                "coverage": "exact_multiplicity_one_per_closed_group",
+                "factor_choices": 520,
+                "factored_weighted_sums": 1,
+                "method": "linear_reduction_combination_certificate",
+                "output_polynomial_terms": 0,
+                "polynomial_work": 0,
+                "preserved_partial_groups": 0,
+                "visited_nodes": 2511,
+                "weighted_add_edges": 0,
+                "witness_nodes": 262
+              },
+              "method": "select_arm_congruence",
+              "reduction_arm_pairs": 256,
+              "scalar_arm_pairs": 1,
+              "selects": 256
+            },
+            "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.004076186999999898,
-            "cumulative_elapsed_s": 9.384484684,
-            "left_import_s": 0.066866443,
-            "left_normalize_s": 0.02270768599999995,
-            "parametric_state_s": 1.380000000050785e-06,
-            "piece_union_reuse_s": 7.399999990553852e-07,
-            "piece_union_seal_s": 5.800000000277805e-07,
-            "right_import_s": 3.01622239,
-            "right_normalize_s": 5.100567711999999,
-            "state_pattern_s": 7.009999999141314e-06,
-            "unary_reduction_s": 6.100000000230921e-06
+            "affine_state_pattern_s": 0.00431738699999995,
+            "cumulative_elapsed_s": 12.426833125,
+            "left_import_s": 0.071437941,
+            "left_normalize_s": 0.020971963000000038,
+            "parametric_state_s": 1.3100000000321188e-06,
+            "piece_union_record_s": 5.499999993219262e-07,
+            "piece_union_seal_s": 5.600000001493299e-07,
+            "right_import_s": 3.427998952,
+            "right_normalize_s": 5.608329257,
+            "state_pattern_s": 2.730184438,
+            "unary_reduction_s": 6.969999999384413e-06
           }
         },
         {
@@ -437,24 +460,49 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "left": "select[](compare[eq](add[,1,-1](var[output:0,0,264](),read[state_indices\ns32](255,),),0,),add[,1,1](mul[,1](read[state\nreal:bf16](read[state_indices\ns32](255,),var[output:1,0,11](),var[output:2,0,127](),add[,1,2](1,var#5,),),exp[](mul[,-5](recip#27582,),),),mul[,1](recip[](add[,1,1](1,exp#138,),),read[k\nreal:bf16](255,var[output:1,0,11](),add[,1,2](1,var#5,),),reciprocalsqrt[](add[,8796093/8796093022208,1](1,call#1016495,),),add[,1,-1](read[v\nreal:bf16](255,var#3,var#4,),mul[,1](reciprocalsqrt#1016497,call#1016498,),),),),select[](compare[eq](add[,1,-1](var[output:0,0,264](),read[state_indices\ns32](254,),),0,),add[,1,1](mul[,1](read[state\nreal:bf16](read#149,var#3,var#4,add#27558,),exp[](mul#31710,),),mul[,1](recip[](add#229,),read[k\nreal:bf16](254,var#3,add#27558,),reciprocalsqrt[](add#1016506,),add[,1,-1](read#188,mul#1016509,),),),select[](compare[eq](add[,1,-1](var#2,read#238,),0,),add[,1,1](mul[,1](read#35826,exp#35839,),mul[,1](recip#319,read#35821,reciprocalsqrt#1016517,add#1016521,),),select[](compare[eq](add#330,0,),add[,1,1](mul#39965,mul#1716288,),select[](compare#420,add#1716292,select#1717296,),),),),)",
-            "right": "select[](compare[eq](add[,1,-1](var[output:0,0,264](),read[state_indices\ns32](255,),),0,),add[,1,1](mul[,1](read[state\nreal:bf16](read[state_indices\ns32](255,),var[output:1,0,11](),var[output:2,0,127](),add[,1,2](1,var#5,),),exp[](mul[,-5](recip#27582,),),),mul[,1](select[](compare[lt](read#136,0,),mul[,1](exp#23782,recip#23784,),recip[](add#139,),),read[k\nreal:bf16](255,var[output:1,0,11](),add[,1,2](1,var#5,),),reciprocalsqrt[](add[,8796093/8796093022208,1](1,call#1016495,),),add[,1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1](read[v\nreal:bf16](255,var#3,var#4,),mul[,1](read#22551,read#23884,exp#23896,reciprocalsqrt#1016497,),mul[,1](read#22571,read#23861,exp#23879,reciprocalsqrt#1016497,),mul[,1](read#22592,read#23832,exp#23851,reciprocalsqrt#1016497,),mul[,1](read#22611,read#23799,exp#23818,reciprocalsqrt#1016497,),mul[,1](read#22632,read#24001,exp#24020,reciprocalsqrt#1016497,),mul[,1](read#22651,read#23969,exp#23987,reciprocalsqrt#1016497,),mul[,1](read#22670,read#23941,exp#23959,reciprocalsqrt#1016497,),mul[,1](read#22689,read#23913,exp#23931,reciprocalsqrt#1016497,),mul[,1](read#22711,read#24126,exp#24145,reciprocalsqrt#1016497,),mul[,1](read#22730,read#24094,exp#24112,reciprocalsqrt#1016497,),mul[,1](read#22749,read#24066,exp#24084,reciprocalsqrt#1016497,),mul[,1](read#22768,read#24038,exp#24056,reciprocalsqrt#1016497,),mul[,1](read#22787,read#24247,exp#24265,reciprocalsqrt#1016497,),mul[,1](read#22806,read#24219,exp#24237,reciprocalsqrt#1016497,),mul[,1](read#22825,read#24191,exp#24209,reciprocalsqrt#1016497,),mul[,1](read#22844,read#24163,exp#24181,reciprocalsqrt#1016497,),mul[,1](read#22865,read#24372,exp#24392,reciprocalsqrt#1016497,),mul[,1](read#22884,read#24341,exp#24360,reciprocalsqrt#1016497,),mul[,1](read#22903,read#24312,exp#24331,reciprocalsqrt#1016497,),mul[,1](read#22922,read#24283,exp#24302,reciprocalsqrt#1016497,),mul[,1](read#22941,read#24497,exp#24516,reciprocalsqrt#1016497,),mul[,1](read#22960,read#24468,exp#24487,reciprocalsqrt#1016497,),mul[,1](read#22979,read#24439,exp#24458,reciprocalsqrt#1016497,),mul[,1](read#22998,read#24410,exp#24429,reciprocalsqrt#1016497,),mul[,1](read#23017,read#24621,exp#24640,reciprocalsqrt#1016497,),mul[,1](read#23036,read#24592,exp#24611,reciprocalsqrt#1016497,),mul[,1](read#23055,read#24563,exp#24582,reciprocalsqrt#1016497,),mul[,1](read#23074,read#24534,exp#24553,reciprocalsqrt#1016497,),mul[,1](read#23093,read#24745,exp#24764,reciprocalsqrt#1016497,),mul[,1](read#23112,read#24716,exp#24735,reciprocalsqrt#1016497,),mul[,1](read#23131,read#24687,exp#24706,reciprocalsqrt#1016497,),mul[,1](read#23150,read#24658,exp#24677,reciprocalsqrt#1016497,),mul[,1](read#23171,read#24870,exp#24890,reciprocalsqrt#1016497,),mul[,1](read#23190,read#24840,exp#24859,reciprocalsqrt#1016497,),mul[,1](read#23209,read#24811,exp#24830,reciprocalsqrt#1016497,),mul[,1](read#23228,read#24782,exp#24801,reciprocalsqrt#1016497,),mul[,1](read#23247,read#24995,exp#25014,reciprocalsqrt#1016497,),mul[,1](read#23266,read#24966,exp#24985,reciprocalsqrt#1016497,),mul[,1](read#23285,read#24937,exp#24956,reciprocalsqrt#1016497,),mul[,1](read#23304,read#24908,exp#24927,reciprocalsqrt#1016497,),mul[,1](read#23323,read#25119,exp#25138,reciprocalsqrt#1016497,),mul[,1](read#23342,read#25090,exp#25109,reciprocalsqrt#1016497,),mul[,1](read#23361,read#25061,exp#25080,reciprocalsqrt#1016497,),mul[,1](read#23380,read#25032,exp#25051,reciprocalsqrt#1016497,),mul[,1](read#23399,read#25243,exp#25262,reciprocalsqrt#1016497,),mul[,1](read#23418,read#25214,exp#25233,reciprocalsqrt#1016497,),mul[,1](read#23437,read#25185,exp#25204,reciprocalsqrt#1016497,),mul[,1](read#23456,read#25156,exp#25175,reciprocalsqrt#1016497,),mul[,1](read#23475,read#25367,exp#25386,reciprocalsqrt#1016497,),mul[,1](read#23494,read#25338,exp#25357,reciprocalsqrt#1016497,),mul[,1](read#23513,read#25309,exp#25328,reciprocalsqrt#1016497,),mul[,1](read#23532,read#25280,exp#25299,reciprocalsqrt#1016497,),mul[,1](read#23551,read#25491,exp#25510,reciprocalsqrt#1016497,),mul[,1](read#23570,read#25462,exp#25481,reciprocalsqrt#1016497,),mul[,1](read#23589,read#25433,exp#25452,reciprocalsqrt#1016497,),mul[,1](read#23608,read#25404,exp#25423,reciprocalsqrt#1016497,),mul[,1](read#23627,read#25615,exp#25634,reciprocalsqrt#1016497,),mul[,1](read#23646,read#25586,exp#25605,reciprocalsqrt#1016497,),mul[,1](read#23665,read#25557,exp#25576,reciprocalsqrt#1016497,),mul[,1](read#23684,read#25528,exp#25547,reciprocalsqrt#1016497,),mul[,1](read#23703,read#25739,exp#25758,reciprocalsqrt#1016497,),mul[,1](read#23722,read#25710,exp#25729,reciprocalsqrt#1016497,),mul[,1](read#23741,read#25681,exp#25700,reciprocalsqrt#1016497,),mul[,1](read#23760,read#25652,exp#25671,reciprocalsqrt#1016497,),mul[,1](read#22559,read#25843,exp#25858,reciprocalsqrt#1016497,),mul[,1](read#22578,read#25820,exp#25835,reciprocalsqrt#1016497,),mul[,1](read#22599,read#25797,exp#25812,reciprocalsqrt#1016497,),mul[,1](read#22618,read#25774,exp#25789,reciprocalsqrt#1016497,),mul[,1](read#22639,read#25943,exp#25958,reciprocalsqrt#1016497,),mul[,1](read#22658,read#25920,exp#25935,reciprocalsqrt#1016497,),mul[,1](read#22677,read#25897,exp#25912,reciprocalsqrt#1016497,),mul[,1](read#22696,read#25874,exp#25889,reciprocalsqrt#1016497,),mul[,1](read#22718,read#26043,exp#26058,reciprocalsqrt#1016497,),mul[,1](read#22737,read#26020,exp#26035,reciprocalsqrt#1016497,),mul[,1](read#22756,read#25997,exp#26012,reciprocalsqrt#1016497,),mul[,1](read#22775,read#25974,exp#25989,reciprocalsqrt#1016497,),mul[,1](read#22794,read#26143,exp#26158,reciprocalsqrt#1016497,),mul[,1](read#22813,read#26120,exp#26135,reciprocalsqrt#1016497,),mul[,1](read#22832,read#26097,exp#26112,reciprocalsqrt#1016497,),mul[,1](read#22851,read#26074,exp#26089,reciprocalsqrt#1016497,),mul[,1](read#22872,read#26246,exp#26262,reciprocalsqrt#1016497,),mul[,1](read#22891,read#26222,exp#26238,reciprocalsqrt#1016497,),mul[,1](read#22910,read#26198,exp#26214,reciprocalsqrt#1016497,),mul[,1](read#22929,read#26174,exp#26190,reciprocalsqrt#1016497,),mul[,1](read#22948,read#26350,exp#26366,reciprocalsqrt#1016497,),mul[,1](read#22967,read#26326,exp#26342,reciprocalsqrt#1016497,),mul[,1](read#22986,read#26302,exp#26318,reciprocalsqrt#1016497,),mul[,1](read#23005,read#26278,exp#26294,reciprocalsqrt#1016497,),mul[,1](read#23024,read#26454,exp#26470,reciprocalsqrt#1016497,),mul[,1](read#23043,read#26430,exp#26446,reciprocalsqrt#1016497,),mul[,1](read#23062,read#26406,exp#26422,reciprocalsqrt#1016497,),mul[,1](read#23081,read#26382,exp#26398,reciprocalsqrt#1016497,),mul[,1](read#23100,read#26558,exp#26574,reciprocalsqrt#1016497,),mul[,1](read#23119,read#26534,exp#26550,reciprocalsqrt#1016497,),mul[,1](read#23138,read#26510,exp#26526,reciprocalsqrt#1016497,),mul[,1](read#23157,read#26486,exp#26502,reciprocalsqrt#1016497,),mul[,1](read#23178,read#26662,exp#26678,reciprocalsqrt#1016497,),mul[,1](read#23197,read#26638,exp#26654,reciprocalsqrt#1016497,),mul[,1](read#23216,read#26614,exp#26630,reciprocalsqrt#1016497,),mul[,1](read#23235,read#26590,exp#26606,reciprocalsqrt#1016497,),mul[,1](read#23254,read#26766,exp#26782,reciprocalsqrt#1016497,),mul[,1](read#23273,read#26742,exp#26758,reciprocalsqrt#1016497,),mul[,1](read#23292,read#26718,exp#26734,reciprocalsqrt#1016497,),mul[,1](read#23311,read#26694,exp#26710,reciprocalsqrt#1016497,),mul[,1](read#23330,read#26870,exp#26886,reciprocalsqrt#1016497,),mul[,1](read#23349,read#26846,exp#26862,reciprocalsqrt#1016497,),mul[,1](read#23368,read#26822,exp#26838,reciprocalsqrt#1016497,),mul[,1](read#23387,read#26798,exp#26814,reciprocalsqrt#1016497,),mul[,1](read#23406,read#26974,exp#26990,reciprocalsqrt#1016497,),mul[,1](read#23425,read#26950,exp#26966,reciprocalsqrt#1016497,),mul[,1](read#23444,read#26926,exp#26942,reciprocalsqrt#1016497,),mul[,1](read#23463,read#26902,exp#26918,reciprocalsqrt#1016497,),mul[,1](read#23482,read#27078,exp#27094,reciprocalsqrt#1016497,),mul[,1](read#23501,read#27054,exp#27070,reciprocalsqrt#1016497,),mul[,1](read#23520,read#27030,exp#27046,reciprocalsqrt#1016497,),mul[,1](read#23539,read#27006,exp#27022,reciprocalsqrt#1016497,),mul[,1](read#23558,read#27182,exp#27198,reciprocalsqrt#1016497,),mul[,1](read#23577,read#27158,exp#27174,reciprocalsqrt#1016497,),mul[,1](read#23596,read#27134,exp#27150,reciprocalsqrt#1016497,),mul[,1](read#23615,read#27110,exp#27126,reciprocalsqrt#1016497,),mul[,1](read#23634,read#27286,exp#27302,reciprocalsqrt#1016497,),mul[,1](read#23653,read#27262,exp#27278,reciprocalsqrt#1016497,),mul[,1](read#23672,read#27238,exp#27254,reciprocalsqrt#1016497,),mul[,1](read#23691,read#27214,exp#27230,reciprocalsqrt#1016497,),mul[,1](read#23710,read#27390,exp#27406,reciprocalsqrt#1016497,),mul[,1](read#23729,read#27366,exp#27382,reciprocalsqrt#1016497,),mul[,1](read#23748,read#27342,exp#27358,reciprocalsqrt#1016497,),mul[,1](read#23767,read#27318,exp#27334,reciprocalsqrt#1016497,),),),),select[](compare[eq](add[,1,-1](var[output:0,0,264](),read[state_indices\ns32](254,),),0,),add[,1,1](mul[,1](read[state\nreal:bf16](read#149,var#3,var#4,add#27558,),exp[](mul#31710,),),mul[,1](select[](compare#28569,mul#28574,recip#230,),read[k\nreal:bf16](254,var#3,add#27558,),reciprocalsqrt[](add#1016506,),add[,1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1](read#188,mul#1022411,mul#1022429,mul#1022447,mul#1022465,mul#1022483,mul#1022501,mul#1022519,mul#1022537,mul#1022555,mul#1022573,mul#1022591,mul#1022609,mul#1022627,mul#1022645,mul#1022663,mul#1022681,mul#1022699,mul#1022717,mul#1022735,mul#1022753,mul#1022771,mul#1022789,mul#1022807,mul#1022825,mul#1022843,mul#1022861,mul#1022879,mul#1022897,mul#1022915,mul#1022933,mul#1022951,mul#1022969,mul#1022987,mul#1023005,mul#1023023,mul#1023041,mul#1023059,mul#1023077,mul#1023095,mul#1023113,mul#1023131,mul#1023149,mul#1023167,mul#1023185,mul#1023203,mul#1023221,mul#1023239,mul#1023257,mul#1023275,mul#1023293,mul#1023311,mul#1023329,mul#1023347,mul#1023365,mul#1023383,mul#1023401,mul#1023419,mul#1023437,mul#1023455,mul#1023473,mul#1023491,mul#1023509,mul#1023527,mul#1023545,mul#1023563,mul#1023581,mul#1023599,mul#1023617,mul#1023635,mul#1023653,mul#1023671,mul#1023689,mul#1023707,mul#1023725,mul#1023743,mul#1023761,mul#1023779,mul#1023797,mul#1023815,mul#1023833,mul#1023851,mul#1023869,mul#1023887,mul#1023905,mul#1023923,mul#1023941,mul#1023959,mul#1023977,mul#1023995,mul#1024013,mul#1024031,mul#1024049,mul#1024067,mul#1024085,mul#1024103,mul#1024121,mul#1024139,mul#1024157,mul#1024175,mul#1024193,mul#1024211,mul#1024229,mul#1024247,mul#1024265,mul#1024283,mul#1024301,mul#1024319,mul#1024337,mul#1024355,mul#1024373,mul#1024391,mul#1024409,mul#1024427,mul#1024445,mul#1024463,mul#1024481,mul#1024499,mul#1024517,mul#1024535,mul#1024553,mul#1024571,mul#1024589,mul#1024607,mul#1024625,mul#1024643,mul#1024661,mul#1024679,mul#1024697,),),),select[](compare[eq](add[,1,-1](var#2,read#238,),0,),add[,1,1](mul[,1](read#35826,exp#35839,),mul[,1](select#32703,read#35821,reciprocalsqrt#1016517,add#1027554,),),select[](compare[eq](add#330,0,),add[,1,1](mul#39965,mul#1717368,),select[](compare#420,add#1717394,select#1722931,),),),),)",
             "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
+            "state_pattern_proof": {
+              "coverage": "same_predicate_nodes_equal_arms",
+              "first_reduction_arm": {
+                "closures": [
+                  {
+                    "coefficient": "mul[,-1](recip[](add[,1,1](1,exp[](mul#137,),),),read[k\nreal:bf16](255,var[output:1,0,11](),add[,1,2](1,var[output:3,0,63](),),),reciprocalsqrt[](add[,8796093/8796093022208,1](1,call[,0](255,var#3,),),),reciprocalsqrt[](add[,8796093/8796093022208,1](1,call[,0](255,var#3,),),),)",
+                    "count": "128",
+                    "spec": 2
+                  }
+                ],
+                "contribution_pieces": 255,
+                "coverage": "exact_multiplicity_one_per_closed_group",
+                "factor_choices": 520,
+                "factored_weighted_sums": 1,
+                "method": "linear_reduction_combination_certificate",
+                "output_polynomial_terms": 0,
+                "polynomial_work": 0,
+                "preserved_partial_groups": 0,
+                "visited_nodes": 2511,
+                "weighted_add_edges": 0,
+                "witness_nodes": 262
+              },
+              "method": "select_arm_congruence",
+              "reduction_arm_pairs": 256,
+              "scalar_arm_pairs": 1,
+              "selects": 256
+            },
+            "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.0008755439999994508,
-            "cumulative_elapsed_s": 11.542179506,
-            "left_import_s": 0.021047810000000666,
-            "left_normalize_s": 0.01581228699999926,
-            "parametric_state_s": 1.5700000002283332e-06,
-            "piece_union_reuse_s": 7.200000009532914e-07,
-            "piece_union_seal_s": 4.1000000017277216e-07,
-            "right_import_s": 0.002103448999999813,
-            "right_normalize_s": 1.5230653069999995,
-            "state_pattern_s": 6.4799999996978386e-06,
-            "unary_reduction_s": 3.4000000006528808e-06
+            "affine_state_pattern_s": 0.0009423230000003002,
+            "cumulative_elapsed_s": 16.149055594,
+            "left_import_s": 0.0224434880000004,
+            "left_normalize_s": 0.016203373999999826,
+            "parametric_state_s": 1.1099999994712562e-06,
+            "piece_union_record_s": 1.8000000068241206e-07,
+            "piece_union_seal_s": 5.500000010982831e-07,
+            "right_import_s": 0.0028589720000002927,
+            "right_normalize_s": 1.9942381519999994,
+            "state_pattern_s": 1.6772306789999991,
+            "unary_reduction_s": 3.7800000001197986e-06
           }
         },
         {
@@ -467,46 +515,63 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "left": "mul[,1](reciprocalsqrt[](add[,8796093/8796093022208,1](1,call[,5](var[output:0,0,255](),var[output:1,0,11](),),),),add[,11863283/134217728,11863283/134217728](call[,8](read[state_indices\ns32](var[output:0,0,255](),),var[output:1,0,11](),var[output:2,0,127](),var[output:0,0,255](),),mul[,1](recip[](add[,1,1](1,exp#1723033,),),reciprocalsqrt[](add[,8796093/8796093022208,1](1,call#1727848,),),call[,13](var[output:0,0,255](),var[output:1,0,11](),),add[,1,-1](read[v\nreal:bf16](var#1722937,var#3,var#4,),mul[,1](reciprocalsqrt#1727850,call#1727852,),),),),)",
-            "linear_reduction_decline": "distribution_budget",
-            "right": "mul[,1](reciprocalsqrt[](add[,8796093/8796093022208,1](1,call[,5](var[output:0,0,255](),var[output:1,0,11](),),),),add[,11863283/134217728,11863283/134217728](call[,8](read[state_indices\ns32](var[output:0,0,255](),),var[output:1,0,11](),var[output:2,0,127](),var[output:0,0,255](),),mul[,1](select[](compare[lt](read#1723031,0,),mul[,1](exp#1724734,recip#1724736,),recip[](add#1723034,),),reciprocalsqrt[](add[,8796093/8796093022208,1](1,call#1727848,),),call[,13](var[output:0,0,255](),var[output:1,0,11](),),add[,1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1](read[v\nreal:bf16](var#1722937,var#3,var#4,),mul[,1](read#1723057,read#1724803,exp#1724814,reciprocalsqrt#1727850,),mul[,1](read#1723068,read#1724786,exp#1724799,reciprocalsqrt#1727850,),mul[,1](read#1723079,read#1724767,exp#1724780,reciprocalsqrt#1727850,),mul[,1](read#1723089,read#1724747,exp#1724760,reciprocalsqrt#1727850,),mul[,1](read#1723101,read#1724885,exp#1724898,reciprocalsqrt#1727850,),mul[,1](read#1723111,read#1724865,exp#1724878,reciprocalsqrt#1727850,),mul[,1](read#1723121,read#1724846,exp#1724859,reciprocalsqrt#1727850,),mul[,1](read#1723131,read#1724827,exp#1724840,reciprocalsqrt#1727850,),mul[,1](read#1723143,read#1724970,exp#1724983,reciprocalsqrt#1727850,),mul[,1](read#1723153,read#1724950,exp#1724963,reciprocalsqrt#1727850,),mul[,1](read#1723163,read#1724931,exp#1724944,reciprocalsqrt#1727850,),mul[,1](read#1723173,read#1724912,exp#1724925,reciprocalsqrt#1727850,),mul[,1](read#1723183,read#1725054,exp#1725067,reciprocalsqrt#1727850,),mul[,1](read#1723193,read#1725035,exp#1725048,reciprocalsqrt#1727850,),mul[,1](read#1723203,read#1725016,exp#1725029,reciprocalsqrt#1727850,),mul[,1](read#1723213,read#1724997,exp#1725010,reciprocalsqrt#1727850,),mul[,1](read#1723225,read#1725139,exp#1725152,reciprocalsqrt#1727850,),mul[,1](read#1723235,read#1725119,exp#1725132,reciprocalsqrt#1727850,),mul[,1](read#1723245,read#1725100,exp#1725113,reciprocalsqrt#1727850,),mul[,1](read#1723255,read#1725081,exp#1725094,reciprocalsqrt#1727850,),mul[,1](read#1723265,read#1725223,exp#1725236,reciprocalsqrt#1727850,),mul[,1](read#1723275,read#1725204,exp#1725217,reciprocalsqrt#1727850,),mul[,1](read#1723285,read#1725185,exp#1725198,reciprocalsqrt#1727850,),mul[,1](read#1723295,read#1725166,exp#1725179,reciprocalsqrt#1727850,),mul[,1](read#1723305,read#1725307,exp#1725320,reciprocalsqrt#1727850,),mul[,1](read#1723315,read#1725288,exp#1725301,reciprocalsqrt#1727850,),mul[,1](read#1723325,read#1725269,exp#1725282,reciprocalsqrt#1727850,),mul[,1](read#1723335,read#1725250,exp#1725263,reciprocalsqrt#1727850,),mul[,1](read#1723345,read#1725391,exp#1725404,reciprocalsqrt#1727850,),mul[,1](read#1723355,read#1725372,exp#1725385,reciprocalsqrt#1727850,),mul[,1](read#1723365,read#1725353,exp#1725366,reciprocalsqrt#1727850,),mul[,1](read#1723375,read#1725334,exp#1725347,reciprocalsqrt#1727850,),mul[,1](read#1723387,read#1725476,exp#1725489,reciprocalsqrt#1727850,),mul[,1](read#1723397,read#1725456,exp#1725469,reciprocalsqrt#1727850,),mul[,1](read#1723407,read#1725437,exp#1725450,reciprocalsqrt#1727850,),mul[,1](read#1723417,read#1725418,exp#1725431,reciprocalsqrt#1727850,),mul[,1](read#1723427,read#1725560,exp#1725573,reciprocalsqrt#1727850,),mul[,1](read#1723437,read#1725541,exp#1725554,reciprocalsqrt#1727850,),mul[,1](read#1723447,read#1725522,exp#1725535,reciprocalsqrt#1727850,),mul[,1](read#1723457,read#1725503,exp#1725516,reciprocalsqrt#1727850,),mul[,1](read#1723467,read#1725644,exp#1725657,reciprocalsqrt#1727850,),mul[,1](read#1723477,read#1725625,exp#1725638,reciprocalsqrt#1727850,),mul[,1](read#1723487,read#1725606,exp#1725619,reciprocalsqrt#1727850,),mul[,1](read#1723497,read#1725587,exp#1725600,reciprocalsqrt#1727850,),mul[,1](read#1723507,read#1725728,exp#1725741,reciprocalsqrt#1727850,),mul[,1](read#1723517,read#1725709,exp#1725722,reciprocalsqrt#1727850,),mul[,1](read#1723527,read#1725690,exp#1725703,reciprocalsqrt#1727850,),mul[,1](read#1723537,read#1725671,exp#1725684,reciprocalsqrt#1727850,),mul[,1](read#1723547,read#1725812,exp#1725825,reciprocalsqrt#1727850,),mul[,1](read#1723557,read#1725793,exp#1725806,reciprocalsqrt#1727850,),mul[,1](read#1723567,read#1725774,exp#1725787,reciprocalsqrt#1727850,),mul[,1](read#1723577,read#1725755,exp#1725768,reciprocalsqrt#1727850,),mul[,1](read#1723587,read#1725896,exp#1725909,reciprocalsqrt#1727850,),mul[,1](read#1723597,read#1725877,exp#1725890,reciprocalsqrt#1727850,),mul[,1](read#1723607,read#1725858,exp#1725871,reciprocalsqrt#1727850,),mul[,1](read#1723617,read#1725839,exp#1725852,reciprocalsqrt#1727850,),mul[,1](read#1723627,read#1725980,exp#1725993,reciprocalsqrt#1727850,),mul[,1](read#1723637,read#1725961,exp#1725974,reciprocalsqrt#1727850,),mul[,1](read#1723647,read#1725942,exp#1725955,reciprocalsqrt#1727850,),mul[,1](read#1723657,read#1725923,exp#1725936,reciprocalsqrt#1727850,),mul[,1](read#1723667,read#1726064,exp#1726077,reciprocalsqrt#1727850,),mul[,1](read#1723677,read#1726045,exp#1726058,reciprocalsqrt#1727850,),mul[,1](read#1723687,read#1726026,exp#1726039,reciprocalsqrt#1727850,),mul[,1](read#1723697,read#1726007,exp#1726020,reciprocalsqrt#1727850,),mul[,1](read#1723061,read#1726141,exp#1726153,reciprocalsqrt#1727850,),mul[,1](read#1723071,read#1726124,exp#1726136,reciprocalsqrt#1727850,),mul[,1](read#1723082,read#1726107,exp#1726119,reciprocalsqrt#1727850,),mul[,1](read#1723092,read#1726090,exp#1726102,reciprocalsqrt#1727850,),mul[,1](read#1723104,read#1726217,exp#1726229,reciprocalsqrt#1727850,),mul[,1](read#1723114,read#1726200,exp#1726212,reciprocalsqrt#1727850,),mul[,1](read#1723124,read#1726183,exp#1726195,reciprocalsqrt#1727850,),mul[,1](read#1723134,read#1726166,exp#1726178,reciprocalsqrt#1727850,),mul[,1](read#1723146,read#1726293,exp#1726305,reciprocalsqrt#1727850,),mul[,1](read#1723156,read#1726276,exp#1726288,reciprocalsqrt#1727850,),mul[,1](read#1723166,read#1726259,exp#1726271,reciprocalsqrt#1727850,),mul[,1](read#1723176,read#1726242,exp#1726254,reciprocalsqrt#1727850,),mul[,1](read#1723186,read#1726369,exp#1726381,reciprocalsqrt#1727850,),mul[,1](read#1723196,read#1726352,exp#1726364,reciprocalsqrt#1727850,),mul[,1](read#1723206,read#1726335,exp#1726347,reciprocalsqrt#1727850,),mul[,1](read#1723216,read#1726318,exp#1726330,reciprocalsqrt#1727850,),mul[,1](read#1723228,read#1726445,exp#1726457,reciprocalsqrt#1727850,),mul[,1](read#1723238,read#1726428,exp#1726440,reciprocalsqrt#1727850,),mul[,1](read#1723248,read#1726411,exp#1726423,reciprocalsqrt#1727850,),mul[,1](read#1723258,read#1726394,exp#1726406,reciprocalsqrt#1727850,),mul[,1](read#1723268,read#1726521,exp#1726533,reciprocalsqrt#1727850,),mul[,1](read#1723278,read#1726504,exp#1726516,reciprocalsqrt#1727850,),mul[,1](read#1723288,read#1726487,exp#1726499,reciprocalsqrt#1727850,),mul[,1](read#1723298,read#1726470,exp#1726482,reciprocalsqrt#1727850,),mul[,1](read#1723308,read#1726597,exp#1726609,reciprocalsqrt#1727850,),mul[,1](read#1723318,read#1726580,exp#1726592,reciprocalsqrt#1727850,),mul[,1](read#1723328,read#1726563,exp#1726575,reciprocalsqrt#1727850,),mul[,1](read#1723338,read#1726546,exp#1726558,reciprocalsqrt#1727850,),mul[,1](read#1723348,read#1726673,exp#1726685,reciprocalsqrt#1727850,),mul[,1](read#1723358,read#1726656,exp#1726668,reciprocalsqrt#1727850,),mul[,1](read#1723368,read#1726639,exp#1726651,reciprocalsqrt#1727850,),mul[,1](read#1723378,read#1726622,exp#1726634,reciprocalsqrt#1727850,),mul[,1](read#1723390,read#1726749,exp#1726761,reciprocalsqrt#1727850,),mul[,1](read#1723400,read#1726732,exp#1726744,reciprocalsqrt#1727850,),mul[,1](read#1723410,read#1726715,exp#1726727,reciprocalsqrt#1727850,),mul[,1](read#1723420,read#1726698,exp#1726710,reciprocalsqrt#1727850,),mul[,1](read#1723430,read#1726825,exp#1726837,reciprocalsqrt#1727850,),mul[,1](read#1723440,read#1726808,exp#1726820,reciprocalsqrt#1727850,),mul[,1](read#1723450,read#1726791,exp#1726803,reciprocalsqrt#1727850,),mul[,1](read#1723460,read#1726774,exp#1726786,reciprocalsqrt#1727850,),mul[,1](read#1723470,read#1726901,exp#1726913,reciprocalsqrt#1727850,),mul[,1](read#1723480,read#1726884,exp#1726896,reciprocalsqrt#1727850,),mul[,1](read#1723490,read#1726867,exp#1726879,reciprocalsqrt#1727850,),mul[,1](read#1723500,read#1726850,exp#1726862,reciprocalsqrt#1727850,),mul[,1](read#1723510,read#1726977,exp#1726989,reciprocalsqrt#1727850,),mul[,1](read#1723520,read#1726960,exp#1726972,reciprocalsqrt#1727850,),mul[,1](read#1723530,read#1726943,exp#1726955,reciprocalsqrt#1727850,),mul[,1](read#1723540,read#1726926,exp#1726938,reciprocalsqrt#1727850,),mul[,1](read#1723550,read#1727053,exp#1727065,reciprocalsqrt#1727850,),mul[,1](read#1723560,read#1727036,exp#1727048,reciprocalsqrt#1727850,),mul[,1](read#1723570,read#1727019,exp#1727031,reciprocalsqrt#1727850,),mul[,1](read#1723580,read#1727002,exp#1727014,reciprocalsqrt#1727850,),mul[,1](read#1723590,read#1727129,exp#1727141,reciprocalsqrt#1727850,),mul[,1](read#1723600,read#1727112,exp#1727124,reciprocalsqrt#1727850,),mul[,1](read#1723610,read#1727095,exp#1727107,reciprocalsqrt#1727850,),mul[,1](read#1723620,read#1727078,exp#1727090,reciprocalsqrt#1727850,),mul[,1](read#1723630,read#1727205,exp#1727217,reciprocalsqrt#1727850,),mul[,1](read#1723640,read#1727188,exp#1727200,reciprocalsqrt#1727850,),mul[,1](read#1723650,read#1727171,exp#1727183,reciprocalsqrt#1727850,),mul[,1](read#1723660,read#1727154,exp#1727166,reciprocalsqrt#1727850,),mul[,1](read#1723670,read#1727281,exp#1727293,reciprocalsqrt#1727850,),mul[,1](read#1723680,read#1727264,exp#1727276,reciprocalsqrt#1727850,),mul[,1](read#1723690,read#1727247,exp#1727259,reciprocalsqrt#1727850,),mul[,1](read#1723700,read#1727230,exp#1727242,reciprocalsqrt#1727850,),),),),)",
             "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "not_proven",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,-11863283/134217728](recip[](add[,1,1](1,exp[](mul#1975446,),),),reciprocalsqrt[](add[,8796093/8796093022208,1](1,call[,5](var#1975354,var#3,),),),reciprocalsqrt[](add[,8796093/8796093022208,1](1,call[,0](var#1975354,var#3,),),),reciprocalsqrt[](add[,8796093/8796093022208,1](1,call[,0](var#1975354,var#3,),),),call[,13](var[output:0,0,255](),var[output:1,0,11](),),)",
+                  "count": "128",
+                  "spec": 2
+                }
+              ],
+              "contribution_pieces": 255,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 524,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 2518,
+              "weighted_add_edges": 0,
+              "witness_nodes": 262
+            },
+            "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.8300000007041035e-06,
-            "cumulative_elapsed_s": 11.6808687,
-            "left_import_s": 0.0005083020000000715,
-            "left_normalize_s": 0.0002654209999999324,
-            "parametric_state_s": 3.1800000002135675e-06,
-            "piece_union_reuse_s": 5.699999992003768e-07,
-            "piece_union_seal_s": 2.9999999995311555e-07,
-            "right_import_s": 0.01526914499999954,
-            "right_normalize_s": 0.11583632600000016,
-            "state_pattern_s": 0.0005791930000000889,
-            "unary_reduction_s": 4.810999999982357e-05
+            "affine_state_pattern_s": 2.9999999995311555e-06,
+            "cumulative_elapsed_s": 16.286620839,
+            "left_import_s": 0.0011419640000021047,
+            "left_normalize_s": 0.00028457099999812385,
+            "parametric_state_s": 2.420000001279732e-06,
+            "piece_union_record_s": 1.373000000270963e-05,
+            "piece_union_seal_s": 3.7000000219222784e-07,
+            "right_import_s": 0.017367894999999578,
+            "right_normalize_s": 0.11411316799999938,
+            "state_pattern_s": 0.004370757000000225,
+            "unary_reduction_s": 4.9329999999514484e-05
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 0.004955561000000053,
+        "affine_state_pattern_s": 0.005262709999999782,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.08842255500000074,
-        "left_normalize_s": 0.03878539399999914,
-        "parametric_state_s": 6.130000000492686e-06,
-        "piece_union_record_s": 0.0,
-        "piece_union_reuse_s": 2.0299999992090534e-06,
-        "piece_union_seal_s": 1.2900000001536682e-06,
+        "left_import_s": 0.09502339300000251,
+        "left_normalize_s": 0.03745990799999799,
+        "parametric_state_s": 4.840000000783107e-06,
+        "piece_union_record_s": 1.4460000002713969e-05,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 1.4800000034398408e-06,
         "proof_reuse_s": 0.0,
-        "right_import_s": 3.033594983999999,
-        "right_normalize_s": 6.739469344999999,
-        "state_pattern_s": 0.000592682999998928
+        "right_import_s": 3.4482258189999997,
+        "right_normalize_s": 7.716680576999999,
+        "state_pattern_s": 4.4117858739999996
       },
       "timings": {
-        "load_and_scope_analysis": 0.142572453
+        "load_and_scope_analysis": 0.144576699
       },
       "total_output_families": 3,
       "transport": "in_memory_cpp_objects",
@@ -801,7 +866,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 12585,
-      "hb_query_seconds": 0.017055273,
+      "hb_query_seconds": 0.016834581,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -809,7 +874,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 2493.24609375,
+    "peak_footprint_mib": 2641.00390625,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -870,7 +935,7 @@
     "value_analysis": {
       "diagnostics": [],
       "duplicate_write_value_checks": 0,
-      "equivalence_check": "not_proven",
+      "equivalence_check": "equivalent",
       "initial_memory_regions": 387,
       "initial_read_families": 300,
       "memory_action_storage": {
@@ -956,16 +1021,16 @@
         "action_patterns": 21092,
         "binding_patterns": 21092,
         "domain_refinements": 308156,
-        "elapsed_seconds": 0.491354952,
+        "elapsed_seconds": 0.490572566,
         "event_families": 111432,
         "expanded_event_records": 0,
         "largest_batch_members": 120,
         "logical_actions": 23296,
         "logical_events": 1087420,
-        "peak_rss_mib_at_completion": 515.390625,
+        "peak_rss_mib_at_completion": 525.16796875,
         "reachability_queries": 0,
         "relations": 316679,
-        "rss_mib_at_completion": 434.546875,
+        "rss_mib_at_completion": 444.15625,
         "scheduled_batches": 111432,
         "singleton_batches": 668,
         "value_families": 83614
@@ -977,12 +1042,12 @@
     "value_ir_instance_count": 434481,
     "value_ir_node_count": 49103,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 56.160961441,
+    "verification_elapsed_seconds": 56.533593922,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 2493.24609375,
-  "pipeline_elapsed_seconds": 80.864244115,
-  "result": "equivalence_not_proven",
+  "peak_rss_mib": 2641.00390625,
+  "pipeline_elapsed_seconds": 86.091407695,
+  "result": "verified",
   "rss_limit_mib": null,
   "schema": "spverify.native-result/v1",
   "scope": {
@@ -993,5 +1058,5 @@
   "warning_samples_truncated": false,
   "warnings": [],
   "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 495.81
+  "whole_pipeline_timeout_seconds": 495.786
 }

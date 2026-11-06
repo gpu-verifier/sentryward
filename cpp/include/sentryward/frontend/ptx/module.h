@@ -87,6 +87,22 @@ struct Module {
     return std::string_view(text).substr(range.begin, range.end - range.begin);
   }
 };
+// The module's target architecture: the first name of its .target directive
+// (e.g. "sm_100a"), or empty when there is none.
+[[nodiscard]] inline std::string TargetArchitecture(const Module &module) {
+  for (const auto &directive : module.directives) {
+    if (directive.name != ".target") continue;
+    auto text = module.view(directive.arguments);
+    std::size_t begin = 0;
+    while (begin < text.size() && (text[begin] == ' ' || text[begin] == '\t')) ++begin;
+    auto end = begin;
+    while (end < text.size() && text[end] != ',' && text[end] != ' ' && text[end] != '\t' &&
+           text[end] != ';' && text[end] != '\r')
+      ++end;
+    return std::string(text.substr(begin, end - begin));
+  }
+  return {};
+}
 [[nodiscard]] Semantics Classify(const Instruction &instruction);
 [[nodiscard]] Module Parse(std::string text, std::string source_name);
 } // namespace sentryward::frontend::ptx

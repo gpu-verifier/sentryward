@@ -1,6 +1,7 @@
 #include "sentryward/frontend/ptx/tmem_lifetime.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <deque>
 #include <functional>
@@ -240,6 +241,35 @@ std::optional<Integer> UniformInteger(const FactSource &facts,
   }
   return result;
 }
+// Every lane's integer value of `operand`, or none when a lane's value is not a known
+// integer. O(lanes of the atom).
+std::optional<std::set<Integer>> LaneIntegers(const FactSource &facts, const Atom &atom,
+                                              std::string_view operand) {
+  std::set<Integer> result;
+  const PointerMap empty;
+  for (const auto &[_, execution] : atom.lanes) {
+    const auto value = ResolveExpression(facts, execution, Strip(operand), empty);
+    const auto *integer = std::get_if<Integer>(&value);
+    if (!integer) return std::nullopt;
+    result.insert(*integer);
+  }
+  return result;
+}
+// Whether every thread of `warp` exists in the CTA (a partial last warp has fewer). O(32).
+bool WarpIsFull(const FactSource &facts, std::uint32_t warp) {
+  for (std::uint32_t lane = 0; lane < 32; ++lane)
+    if (!facts.FindLane(warp, lane)) return false;
+  return true;
+}
+// The lanes of a full warp that an aligned lifetime atom lacks, as text.
+std::string MissingLanes(const Atom &atom) {
+  std::set<std::uint32_t> present;
+  for (const auto &[lane, _] : atom.lanes) present.insert(lane);
+  std::string text;
+  for (std::uint32_t lane = 0; lane < 32; ++lane)
+    if (!present.contains(lane)) text += (text.empty() ? "" : ",") + std::to_string(lane);
+  return text;
+}
 std::string Hex(const Integer &integer) {
   std::ostringstream result;
   if (integer < 0)
@@ -259,9 +289,17 @@ void AllocationRecords(const FactSource &facts, const Atoms &atoms,
     const auto issue = [&](std::string code, std::string message) {
       result.issues.push_back({std::move(code), std::move(message), atom.site});
     };
+    // PTX ISA tcgen05.alloc: .aligned ("all threads in the warp must execute the same
+    // instruction") and "the behavior of the instruction is undefined if ... any thread in
+    // the warp has exited": in a full warp a missing lane is undefined behavior.
     if (!FullWarp(atom)) {
-      issue("tmem_noncollective_lifetime",
-            "tcgen05.alloc must be executed by all 32 threads of its warp");
+      if (WarpIsFull(facts, atom.site.warp))
+        issue("tmem_lifetime_lanes_missing",
+              "tcgen05.alloc is not executed by every thread of its full warp (missing lanes " +
+                  MissingLanes(atom) + "; undefined behavior)");
+      else
+        issue("tmem_noncollective_lifetime",
+              "tcgen05.alloc must be executed by all 32 threads of its warp");
       continue;
     }
     const auto group = CtaGroup(instruction);
@@ -276,9 +314,33 @@ void AllocationRecords(const FactSource &facts, const Atoms &atoms,
             "tcgen05.alloc must provide a shared destination and nCols");
       continue;
     }
+    // PTX ISA tcgen05.alloc: "If no state space is specified then Generic Addressing is used.
+    // If the address specified by dst does not fall within the address window of .shared::cta
+    // state space then the behavior is undefined." A generic dst that every lane holds as a
+    // pointer into a global or parameter object is decided outside that window; a .shared::cta
+    // dst, or any other value, is not decided here.
+    if (std::find(instruction.modifiers.begin(), instruction.modifiers.end(), "shared::cta") ==
+        instruction.modifiers.end()) {
+      auto token = Strip(facts.module().view(instruction.operands[0]));
+      if (const auto split = SplitAddress(token)) token = split->first;
+      std::string object;
+      bool outside = !atom.lanes.empty();
+      for (const auto &[_, execution] : atom.lanes) {
+        const auto *value = facts.Value(execution, Trim(token));
+        if (const auto *global = value ? std::get_if<AllocationPointer>(value) : nullptr) object = global->resource;
+        else if (value && std::holds_alternative<ParameterPointer>(*value)) object = "kernel parameter space";
+        else { outside = false; break; }
+      }
+      if (outside) {
+        issue("tmem_alloc_destination_outside_shared_window",
+              "generic tcgen05.alloc destination points into " + object +
+                  ", outside the .shared::cta window (undefined behavior)");
+        continue;
+      }
+    }
     const auto slot = UniformInteger(
         facts, atom, facts.module().view(instruction.operands[0]));
-    const auto columns = UniformInteger(
+    const auto column_values = LaneIntegers(
         facts, atom, facts.module().view(instruction.operands[1]));
     if (!slot) {
       issue("tmem_unresolved_alloc_slot",
@@ -286,15 +348,47 @@ void AllocationRecords(const FactSource &facts, const Atoms &atoms,
             "statically known");
       continue;
     }
-    if (!columns) {
+    if (!column_values) {
       issue("tmem_unresolved_alloc_size",
-            "allocation nCols is not lane-uniform and statically known");
+            "allocation nCols is not statically known in every lane");
       continue;
     }
-    if (*columns < 32 || *columns > 512 || (*columns & (*columns - 1)) != 0) {
+    // PTX ISA tcgen05.alloc: "The behavior of the instruction is undefined if all the threads
+    // in the warp do not use the same values of nCols".
+    if (column_values->size() != 1) {
+      std::string values;
+      for (const auto &value : *column_values) values += (values.empty() ? "" : ",") + value.str();
+      issue("tmem_nonuniform_alloc_size",
+            "allocation lanes use different nCols values (" + values + "; undefined behavior)");
+      continue;
+    }
+    const auto columns = std::optional<Integer>(*column_values->begin());
+    // PTX ISA tcgen05.alloc, Table 58: non-exclusive nCols is a power of two in [32, 512];
+    // exclusive nCols is a multiple of 32 in [32, 512] (sm_100, sm_103, sm_110) or [32, 576]
+    // (sm_107). "Specifying a value of nCols other than those shown results in undefined
+    // behavior."
+    const bool exclusive = std::find(instruction.modifiers.begin(), instruction.modifiers.end(),
+                                     "exclusive") != instruction.modifiers.end();
+    if (!exclusive && (*columns < 32 || *columns > 512 || (*columns & (*columns - 1)) != 0)) {
       issue("tmem_invalid_alloc_size",
             "allocation nCols=" + columns->str() +
-                " is not a power of two in [32, 512]");
+                " is not a Table 58 value for a non-exclusive allocation (a power of two in [32, 512]; "
+                "undefined behavior)");
+      continue;
+    }
+    if (exclusive) {
+      const auto target = TargetArchitecture(facts.module());
+      const bool sm107 = target.starts_with("sm_107");
+      const bool sm100 = target.starts_with("sm_100") || target.starts_with("sm_103") ||
+                         target.starts_with("sm_110");
+      if (*columns < 32 || *columns % 32 != 0 || *columns > 576 || (sm100 && *columns > 512)) {
+        issue("tmem_invalid_alloc_size",
+              "exclusive allocation nCols=" + columns->str() + " is not a Table 58 value on target " + target +
+                  " (undefined behavior)");
+        continue;
+      }
+      issue(*columns > 512 && !sm107 ? "tmem_exclusive_alloc_size_target" : "tmem_exclusive_alloc_unsupported",
+            "exclusive Tensor Memory allocation is not modeled");
       continue;
     }
     if (*slot % 4 != 0) {
@@ -892,6 +986,29 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const CtaFacts &facts, ExpansionSite s
   auto &provenance = result.provenance;
   std::set<TmemLifetimeIssue> issues(provenance.issues.begin(),
                                      provenance.issues.end());
+  // PTX ISA tcgen05.alloc: "All tcgen05 instructions within a kernel must specify the same
+  // value for the .cta_group qualifier." Decided over the analysed function's instructions;
+  // the witness is the first instruction of each value. O(instructions).
+  {
+    std::array<const Instruction *, 3> first{};
+    for (const auto &instruction : function.instructions) {
+      if (instruction.opcode != "tcgen05") continue;
+      for (const auto &modifier : instruction.modifiers)
+        if (modifier == "cta_group::1" || modifier == "cta_group::2") {
+          auto &slot = first[modifier.back() - '0'];
+          if (!slot) slot = &instruction;
+        }
+    }
+    if (first[1] && first[2]) {
+      const auto *later = first[1]->line > first[2]->line ? first[1] : first[2];
+      TmemAtomSite site{0, static_cast<std::uint32_t>(later->id), 0, later->line, later->opcode};
+      issues.insert({"tcgen05_cta_group_mixed",
+                     "tcgen05 instructions use .cta_group::1 (PTX line " + std::to_string(first[1]->line) +
+                         ") and .cta_group::2 (PTX line " + std::to_string(first[2]->line) +
+                         ") in one kernel (undefined behavior)",
+                     site, true});
+    }
+  }
   std::set<TmemUse> uses;
   std::set<std::pair<TmemAtomSite, TmemAllocationId>> deallocations;
   std::map<TmemAllocationId, TmemAllocationId> deallocation_by_site;
@@ -904,10 +1021,17 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const CtaFacts &facts, ExpansionSite s
     const auto issue = [&](std::string code, std::string message) {
       issues.insert({std::move(code), std::move(message), atom.site});
     };
-    if (operation != "alloc" && !FullWarp(atom))
-      issue("tmem_noncollective_lifetime",
-            "tcgen05." + operation +
-                " must be executed by all 32 threads of its warp");
+    if (operation != "alloc" && !FullWarp(atom)) {
+      // As for tcgen05.alloc (AllocationRecords): a missing lane of a full warp is undefined behavior.
+      if (WarpIsFull(facts, atom.site.warp))
+        issue("tmem_lifetime_lanes_missing",
+              "tcgen05." + operation + " is not executed by every thread of its full warp (missing lanes " +
+                  MissingLanes(atom) + "; undefined behavior)");
+      else
+        issue("tmem_noncollective_lifetime",
+              "tcgen05." + operation +
+                  " must be executed by all 32 threads of its warp");
+    }
     if (operation != "dealloc" || !FullWarp(atom))
       continue;
     const auto group = CtaGroup(instruction);
@@ -968,8 +1092,9 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const CtaFacts &facts, ExpansionSite s
       continue;
     }
     if (columns.size() != 1) {
+      // PTX ISA: "undefined if all the threads in the warp do not use the same values of nCols".
       issue("tmem_nonuniform_dealloc_size",
-            "deallocation lanes use different nCols values");
+            "deallocation lanes use different nCols values (undefined behavior)");
       continue;
     }
     if (*columns.begin() != allocation->columns) {
@@ -1085,10 +1210,12 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const CtaFacts &facts, ExpansionSite s
       if (before(larger.site, smaller.site))
         continue;
       if (before(smaller.site, larger.site))
+        // PTX ISA: "Increasing the number of columns between two allocations results in
+        // undefined behavior."
         issues.insert({"tmem_increasing_alloc_size",
                        "allocation nCols increases from " +
                            std::to_string(smaller.columns) + " to " +
-                           std::to_string(larger.columns),
+                           std::to_string(larger.columns) + " (undefined behavior)",
                        larger.site});
       else
         obligations.insert({"larger_allocation_before_smaller",
@@ -1107,9 +1234,12 @@ TmemLifetimeAnalysis AnalyzeTmemLifetimes(const CtaFacts &facts, ExpansionSite s
       if (before(allocation.site, atom.site))
         continue;
       if (before(atom.site, allocation.site))
+        // PTX ISA tcgen05.relinquish_alloc_permit: "it is illegal for a CTA to perform
+        // tcgen05.alloc after any of its constituent threads execute
+        // tcgen05.relinquish_alloc_permit" (a PTX violation, reported as undefined behavior).
         issues.insert({"tmem_alloc_after_relinquish",
                        "tcgen05.alloc executes after allocation permission was "
-                       "relinquished",
+                       "relinquished (PTX ISA: illegal)",
                        allocation.site});
       else
         obligations.insert({"allocation_before_relinquish",

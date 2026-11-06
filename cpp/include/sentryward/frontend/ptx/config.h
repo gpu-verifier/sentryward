@@ -49,6 +49,13 @@ struct PointerParameter {
   std::string resource;
   std::optional<std::uint64_t> extent_bytes;
 };
+// A .shared object of the entry: its place in the CTA's shared window (the input's base when it
+// gives one, else one chosen at the declared alignment) and its declared alignment.
+struct SharedObjectPlacement {
+  std::string symbol;
+  std::uint64_t base{}, alignment{}, bytes{};
+  bool dynamic = false, input_base = false;
+};
 struct FrontendConfig {
   nlohmann::json raw;
   std::string entry;
@@ -62,6 +69,8 @@ struct FrontendConfig {
   std::vector<PointerParameter> pointer_parameters;
   std::vector<LoopBound> loop_bounds;
   std::vector<BranchOverride> branch_overrides;
+  // In shared_order (BindLaunchObjects); every extern declaration names the one dynamic region.
+  std::vector<SharedObjectPlacement> shared_objects;
   // Steps of one thread executed by itself; a template group (threads sharing
   // one path, one step for all of them) has kTemplateStepFactor times as many.
   std::uint64_t max_steps_per_lane = 100000;
@@ -81,6 +90,11 @@ struct FrontendConfig {
   InstructionContract(std::uint32_t line, std::uint32_t instruction,
                       std::optional<std::uint32_t> warp = {},
                       std::optional<std::uint64_t> occurrence = {}) const;
+  // A legal placement under which shared-window `offset` is not `modulus`-aligned (a power of two):
+  // the witness details (the object, its declared alignment and the witness addresses), or nullopt
+  // when every legal placement aligns it.
+  [[nodiscard]] std::optional<nlohmann::json> SharedMisalignment(std::uint64_t offset,
+                                                                 std::uint64_t modulus) const;
 };
 [[nodiscard]] FrontendConfig
 ParseConfig(nlohmann::json value, const std::filesystem::path &base_path = {});

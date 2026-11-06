@@ -1524,6 +1524,20 @@ class Lower {
     }
     return false;
   }
+  // Bytes of an intermediate allocation that no store covered are opaque initial contents
+  // (eliminateMemory). After the final collection every graph node is reachable from an output,
+  // so an InitialCell of such an allocation means an output depends on bytes the kernel never
+  // wrote: refuse. A read whose value is discarded (e.g. by a selp on a known predicate) leaves
+  // no cell. O(graph nodes).
+  void refuseUnwrittenOutputs() {
+    if(memory.unwritten_read_allocations.empty())return;
+    for(s::Id id=0;id<result.graph.size();++id) {
+      const auto& node=result.graph.node(id);
+      if(node.kind==s::Kind::InitialCell && memory.unwritten_read_allocations.contains(node.name))
+        fail("uninitialized_memory_read","An output depends on bytes of intermediate allocation "+node.name+
+            " that are read before a covering store.");
+    }
+  }
   s::Ref covariantCell(std::string allocation,s::Ref offset,std::string type) {
     return result.graph.initialCell(std::move(allocation),std::move(offset),std::move(type));
   }
@@ -1791,8 +1805,12 @@ class Lower {
         case s::Kind::Operation: {
           std::vector<s::Ref> operands;operands.reserve(node.operands.size());
           for(const auto& operand:node.operands)operands.push_back(rebuilt(operand));
+          const auto rebuilt_operands=operands;
           value=kappa?emitOperation(node.name,node.type,std::move(operands),node.attributes):
               result.graph.operation(node.name,node.type,std::move(operands),node.attributes);
+          // The instruction image moves to the rebuilt node, unless emission simplified it away.
+          if(const auto& made=result.graph.node(value);made.name==node.name && made.operands==rebuilt_operands)
+            result.graph.markInstruction(value,result.graph.instructionModes(id));
           // Uses were converted from this type; a folded literal of another
           // type would change their conversion chains.
           if(result.graph.type(value)!=node.type)liftRefuse("instantiated "+node.name+" changes its type");
@@ -2045,6 +2063,7 @@ class Lower {
         }
         case s::Kind::Operation:
           value=result.graph.operation(node.name,node.type,std::move(operands),node.attributes);
+          result.graph.markInstruction(value,result.graph.instructionModes(id));
           break;
         case s::Kind::Fold:
           value=result.graph.fold(node.fold->reducer,operands.at(0),operands.at(1),node.fold->binder_level+p.shift,
@@ -3416,6 +3435,24 @@ class Lower {
         if(const auto position=memory.symbolic_read_positions.find({value.nodeId(),value.instanceIndex()});
            position!=memory.symbolic_read_positions.end())
           return positionedCell(position->second,plus(Offset(integer(position->second.constant.offset)),offset),type.toString());
+      // A TMA region fragment (MemoryAttributes::region_offset): its address operand is its
+      // allocation-relative byte offset, with no pointer root, and its guard is its zero fill.
+      const auto& load=dynamic_cast<const v::LoadOp&>(input.definingNode(value).operation());
+      if(load.attributes().region_offset) {
+        if(options.unit_lifting)liftRefuse("TMA region fragment read at its allocation-relative address");
+        const auto operands=input.instanceOperands(value);
+        const auto use=[&](std::size_t k)->std::shared_ptr<const IndexedSourceUse> {
+          return indexed_context && indexed_context->use &&
+              indexed_context->use->kind==IndexedSourceUse::Kind::Operands?indexed_context->use->children.at(k):nullptr;
+        };
+        auto relative=inUse(use(0),[&]{return scalar(operands[0]);});
+        relative.pointer_provenance.clear();
+        auto cell=repAbsoluteCell(region.allocation,emitOperation("Add","u64",
+            {relative,offsetValue(plus(offset,Offset(integer(region.offset))))}),type.toString());
+        if(!load.attributes().guarded)return cell;
+        const auto guard=inUse(use(1),[&]{return scalar(operands[1]);});
+        return emitOperation("Select",type.toString(),{guard,cell,result.graph.constant(type.toString(),"0")});
+      }
       const auto base=allocation_bases.find(region.allocation);
       if(base==allocation_bases.end())
         fail("symbolic_initial_base_unsupported","No unique pointer root for symbolic initial-memory allocation "+region.allocation);
@@ -3617,23 +3654,27 @@ class Lower {
     if(n.kind!=s::Kind::Constant || !r.pointer_provenance.empty())return {};
     return equivalence::constantValue(n.type,n.name,r.conversion,r.converted_type);
   }
+  // Whether x is the result of a floating mul without rounding modifier, read without conversion:
+  // an add or sub without rounding modifier that reads it may be contracted with it into an fma
+  // (PTX ISA, mul). O(1).
+  bool contractibleProduct(v::Value x) const {
+    if(x.conversion() || !x.indices().empty() || x.threadSelector())return false;
+    const auto* product=dynamic_cast<const v::BinaryOp*>(&input.definingNode(x).operation());
+    return product && product->opcode()==v::BinaryOpcode::Multiply &&
+        product->attributes().rounding==v::RoundingMode::None &&
+        input.type(x).element().kind()==v::ElementKind::Floating;
+  }
   // Exact constants (docs/reference-binding-json.md, numerical model): an IEEE binary32/binary64
   // add, sub, mul, div or fma whose operands are all exact constants has its IEEE round-to-nearest-
   // even result, not the ideal real one. PTX rounds a default-rounding add/sub/mul to nearest even,
   // but may contract a default mul into a default add/sub (PTX ISA, mul/add): such an add/sub keeps
-  // the ideal-real semantics. Other rounding modes, saturation and non-finite results do as well.
-  // O(operands) per operation.
+  // the ideal-real semantics (and is no instruction image when the mul folds: markArithmeticInstruction).
+  // Other rounding modes, saturation and non-finite results do as well. O(operands) per operation.
   std::optional<s::Ref> constantArithmetic(const v::Operation& op,std::span<const v::Value> args,
       const std::vector<s::Ref>& operands,const v::ElementType& type) {
     const auto name=type.toString();
     if(type.kind()!=v::ElementKind::Floating || (name!="f32" && name!="f64"))return {};
-    const auto contractible=[&](v::Value x) {
-      if(x.conversion() || !x.indices().empty() || x.threadSelector())return false;
-      const auto* product=dynamic_cast<const v::BinaryOp*>(&input.definingNode(x).operation());
-      return product && product->opcode()==v::BinaryOpcode::Multiply &&
-          product->attributes().rounding==v::RoundingMode::None &&
-          input.type(x).element().kind()==v::ElementKind::Floating;
-    };
+    const auto contractible=[&](v::Value x){return contractibleProduct(x);};
     std::string operation;bool flush=false;
     if(const auto* binary=dynamic_cast<const v::BinaryOp*>(&op)) {
       const auto& a=binary->attributes();
@@ -3745,8 +3786,12 @@ class Lower {
           case v::BinaryOpcode::Minimum: reducer=s::Reducer::Min; break;
           default: break;
         }
-        if(reducer || binary->opcode()==v::BinaryOpcode::Subtract || binary->opcode()==v::BinaryOpcode::Divide)
-          return real_expressions.operation(std::string(op.name()),type.toString(),std::move(operands),"ideal_arithmetic",domains.size());
+        if(reducer || binary->opcode()==v::BinaryOpcode::Subtract || binary->opcode()==v::BinaryOpcode::Divide) {
+          const auto inputs=operands;
+          auto made=real_expressions.operation(std::string(op.name()),type.toString(),std::move(operands),"ideal_arithmetic",domains.size());
+          markArithmeticInstruction(made,*binary,inputs,input_operands);
+          return made;
+        }
       }
       // Explicit PTX rounding is needed by bit-level numerical idioms (for
       // example exponent construction). Preserve the fused operation until a
@@ -3757,13 +3802,25 @@ class Lower {
           fma->attributes().rounding==v::RoundingMode::None) {
         auto product=real_expressions.operation("Multiply",type.toString(),
                                             {operands.at(0),operands.at(1)},"ideal_arithmetic",domains.size());
-        return real_expressions.operation("Add",type.toString(),{operands.at(2),product},"ideal_arithmetic",domains.size());
+        // The fused value takes the fma's place: never an add instruction's image.
+        auto fused=real_expressions.operation("Add",type.toString(),{operands.at(2),product},"ideal_arithmetic",domains.size());
+        markInstruction(fused,"Add",{operands.at(2),product},s::instruction_mode::synthesized);
+        markInstruction(fused,"Add",{product,operands.at(2)},s::instruction_mode::synthesized);
+        return fused;
       }
       if(const auto* unary=dynamic_cast<const v::UnaryOp*>(&op);
           unary && unary->opcode()==v::UnaryOpcode::Negate && eligible(unary->attributes()))
         return real_expressions.operation("Negate",type.toString(),std::move(operands),"ideal_arithmetic",domains.size());
-      if(isIdealExp2(op))
-        return real_expressions.operation("Exp2",type.toString(),std::move(operands),"ideal_arithmetic",domains.size());
+      if(isIdealExp2(op)) {
+        const auto inputs=operands;
+        auto made=real_expressions.operation("Exp2",type.toString(),std::move(operands),"ideal_arithmetic",domains.size());
+        if(const auto* ptx=dynamic_cast<const v::PtxScalarOp*>(&op)) {
+          const auto& modifiers=ptx->attributes().modifiers;
+          const bool ftz=std::find(modifiers.begin(),modifiers.end(),"ftz")!=modifiers.end();
+          markInstruction(made,"Exp2",inputs,ftz?s::instruction_mode::flush:s::instruction_mode::no_flush);
+        }
+        return made;
+      }
       if(const auto* ptx=dynamic_cast<const v::PtxScalarOp*>(&op);
           ptx && ptx->opcode()==v::PtxScalarOpcode::Reciprocal) {
         // rcp's standard approximation belongs to the admitted ideal-real
@@ -3782,7 +3839,74 @@ class Lower {
     auto attr=attributes(op);
     if(node.resultCount()>1)attr+=" result="+std::to_string(value.resultIndex());
     if(const auto* p=dynamic_cast<const v::PtxScalarOp*>(&op))attr+=" source_type="+p->sourceType().toString();
-    return emitOperation(std::string(op.name()),type.toString(),std::move(operands),attr);
+    const auto* fma=type.kind()==v::ElementKind::Floating?dynamic_cast<const v::FmaOp*>(&op):nullptr;
+    const auto inputs=fma?operands:std::vector<s::Ref>{};
+    auto made=emitOperation(std::string(op.name()),type.toString(),std::move(operands),attr);
+    if(fma && !fma->attributes().saturate && !fma->attributes().propagate_nan)
+      markInstruction(made,"Fma",inputs,arithmeticModes(fma->attributes()));
+    return made;
+  }
+  // The instruction_mode bits of a floating PTX add, sub, mul, fma, max or min: its rounding (none:
+  // round to nearest even, contractible into an fma) and .ftz. 0 for a rounding the equivalence
+  // import does not model (.rna).
+  static std::uint8_t arithmeticModes(const v::ArithmeticAttributes& attributes) {
+    namespace m=s::instruction_mode;
+    std::uint8_t modes=attributes.flush_to_zero?m::flush:m::no_flush;
+    switch(attributes.rounding) {
+      case v::RoundingMode::None:return modes|m::contractible;
+      case v::RoundingMode::NearestEven:return modes|m::nearest;
+      case v::RoundingMode::TowardZero:return modes|m::toward_zero;
+      case v::RoundingMode::TowardNegative:return modes|m::toward_negative;
+      case v::RoundingMode::TowardPositive:return modes|m::toward_positive;
+      default:return 0;
+    }
+  }
+  // An operand the builders kept, or a constant they respelled (constant normalization).
+  bool sameOperand(const s::Ref& made,const s::Ref& given) const {
+    return made==given || (result.graph.node(made).kind==s::Kind::Constant && result.graph.node(given).kind==s::Kind::Constant);
+  }
+  // Marks `made` as the image of a floating PTX instruction (scalar-graph provenance, not identity)
+  // when the expression builders returned operation `name` on the instruction's own operands. A
+  // Fold, a rewritten exponential factor, a folded constant or a returned operand is no image and
+  // stays unmarked. O(operands).
+  void markInstruction(const s::Ref& made,const char* name,const std::vector<s::Ref>& operands,std::uint8_t modes) {
+    const auto& node=result.graph.node(made);
+    if(node.kind!=s::Kind::Operation || node.name!=name || node.operands.size()!=operands.size())return;
+    for(std::size_t i=0;i<operands.size();++i)if(!sameOperand(node.operands[i],operands[i]))return;
+    result.graph.markInstruction(made,modes);
+  }
+  // A floating PTX add, mul, max or min is the builder's Add, Multiply, Maximum or Minimum of its
+  // operands; a sub is Add(x, Negate(y)) (exact: x - y = x + (-y) in IEEE arithmetic). A max or min
+  // has no rounding: only its .ftz is recorded. A div is a Multiply by a Reciprocal, no rounded
+  // product, and stays unmarked. An add or sub without rounding modifier whose mul operand without
+  // rounding modifier was folded to a constant (constantArithmetic) is marked synthesized, never an
+  // image: the fold hides the product the hardware may fuse with it. O(operands).
+  void markArithmeticInstruction(const s::Ref& made,const v::BinaryOp& binary,const std::vector<s::Ref>& operands,
+      std::span<const v::Value> values) {
+    namespace m=s::instruction_mode;
+    auto modes=arithmeticModes(binary.attributes());
+    if(binary.opcode()==v::BinaryOpcode::Maximum || binary.opcode()==v::BinaryOpcode::Minimum)
+      modes&=m::flush|m::no_flush;
+    if((binary.opcode()==v::BinaryOpcode::Add || binary.opcode()==v::BinaryOpcode::Subtract) && (modes&m::contractible))
+      for(std::size_t i=0;i<values.size() && i<operands.size();++i)
+        if(contractibleProduct(values[i]) && result.graph.node(operands[i]).kind==s::Kind::Constant)modes=m::synthesized;
+    switch(binary.opcode()) {
+      case v::BinaryOpcode::Add:markInstruction(made,"Add",operands,modes);break;
+      case v::BinaryOpcode::Multiply:markInstruction(made,"Multiply",operands,modes);break;
+      case v::BinaryOpcode::Maximum:markInstruction(made,"Maximum",operands,modes);break;
+      case v::BinaryOpcode::Minimum:markInstruction(made,"Minimum",operands,modes);break;
+      case v::BinaryOpcode::Subtract: {
+        const auto& node=result.graph.node(made);
+        if(operands.size()!=2 || node.kind!=s::Kind::Operation || node.name!="Add" || node.operands.size()!=2)break;
+        const auto negation=node.operands[1];
+        const auto& negate=result.graph.node(negation);
+        if(!negation.conversion.empty() || negate.kind!=s::Kind::Operation || negate.name!="Negate" ||
+           negate.operands.size()!=1 || !sameOperand(negate.operands[0],operands[1]))break;
+        markInstruction(made,"Add",{operands[0],negation},modes);
+        break;
+      }
+      default:break;
+    }
   }
   // The K domains of a template-domain partition: one interval or AP per
   // stored region the contraction crosses; none unless they cover K.
@@ -4040,12 +4164,219 @@ class Lower {
       domains.resize(level);
       sum=count==1?reductions.append(s::Reducer::Sum,sum,body,"f32",level):
           reductions.appendFold(s::Reducer::Sum,sum,body,level,count,"f32");
+      result.graph.markInstruction(sum,s::instruction_mode::synthesized);
       keys.at(progress.accumulator_key)=sum;
       progress.sub_next=sub+1;progress.pending.clear();
       limit();
     }
     commitReduction(progress,1,sum);
     return sum;
+  }
+  // tcgen05.mma.sp metadata validity (PTX ISA 9.7.18.10.9.1-.3): each 4-bit field of the
+  // metadata matrix must hold one of the listed meaningful index pairs; any other value is
+  // undefined behavior. The metadata operand is the bytes of its Tensor Memory footprint
+  // (TcgenMma, LinkMmaMemory), every 4-bit field of which this MMA consumes. Its fields are
+  // projected through memory elimination to their sources: an input object's cell ranges
+  // over the field values its tensor_properties declare (every value when it declares
+  // none), a literal (TMA out-of-bounds fill or a kernel constant) is itself, and Tensor Memory
+  // that no store wrote before the MMA reads it holds any value. A field that
+  // can hold a value outside the list is reachable undefined behavior, with that value as
+  // the witness (the input contract lets that field take it); a field whose source is
+  // anything else leaves validity unproven. Work: per sparse MMA instance, one projection
+  // and one classification per source span of its metadata (readSpan), at most
+  // 128 x cta_group x 8 bytes; it stops at the first witness.
+  static constexpr std::array<unsigned,7> kSparseMetadataMeaningful{0b0100,0b1000,0b1100,0b1001,0b1101,0b0110,0b1110};
+  static std::bitset<16> meaningfulSparseMetadata() {
+    std::bitset<16> set;for(const auto value:kSparseMetadataMeaningful)set.set(value);return set;
+  }
+  // The global input object named by an allocation identity (AllocationIdentity), else none.
+  static std::optional<std::string> globalObject(std::string_view identity) {
+    const auto colon=identity.find(':');
+    if(colon==std::string_view::npos)return {};
+    std::size_t length=0;
+    try{length=std::stoul(std::string(identity.substr(0,colon)));}catch(const std::exception&){return {};}
+    const auto rest=identity.substr(colon+1);
+    if(rest.size()<length || rest.substr(0,length)!="global")return {};
+    const auto name=rest.substr(length);
+    const auto second=name.find(':');
+    if(second==std::string_view::npos)return {};
+    try{length=std::stoul(std::string(name.substr(0,second)));}catch(const std::exception&){return {};}
+    if(name.size()!=second+1+length)return {};
+    return std::string(name.substr(second+1));
+  }
+  // The values a 4-bit field at bit position `position` (a multiple of 4) of an object can
+  // hold under its field_values declaration: whole 1-, 2- or 4-bit fields combine; an
+  // 8-bit field contributes its low or high half. Exact marginal domain.
+  static std::bitset<16> nibbleDomain(const TensorPropertyFact* fact,unsigned position) {
+    std::bitset<16> domain;
+    if(!fact){domain.set();return domain;}
+    const auto bits=fact->field_bits;
+    if(bits==8) {
+      for(unsigned v=0;v<256;++v)if(fact->field_values.test(v))domain.set((v>>(position%8))&15);
+      return domain;
+    }
+    const unsigned fields=4/bits;
+    for(unsigned nibble=0;nibble<16;++nibble) {
+      bool ok=true;
+      for(unsigned f=0;f<fields && ok;++f)ok=fact->field_values.test((nibble>>(f*bits))&((1u<<bits)-1));
+      if(ok)domain.set(nibble);
+    }
+    return domain;
+  }
+  struct MetadataByteSource {
+    bool known=false;
+    std::array<std::bitset<16>,2> fields{}; // possible values of the low and high 4-bit field
+    std::string source,object,reason;
+    const TensorPropertyFact* fact=nullptr;
+    std::optional<std::uint64_t> object_byte_offset;
+  };
+  MetadataByteSource metadataByteSource(const s::Ref& byte) {
+    MetadataByteSource out;
+    const auto plain=[](const s::Ref& ref){return ref.conversion.empty() || ref.conversion=="Bitcast";};
+    if(!plain(byte)){out.reason="the metadata byte is a converted value";return out;}
+    const auto* node=&result.graph.node(byte);
+    if(node->kind==s::Kind::Constant) {
+      const auto value=literal(node->name);
+      if(!value){out.reason="the metadata byte is a non-integer literal";return out;}
+      const auto bits=std::uint64_t(*value)&0xff;
+      out.known=true;out.source="constant";
+      out.fields[0].set(bits&15);out.fields[1].set(bits>>4);
+      return out;
+    }
+    unsigned shift=0;
+    if(node->kind==s::Kind::Operation && node->name=="ExtractBits" && node->attributes=="width=8" &&
+       node->operands.size()==2) {
+      const auto& amount=result.graph.node(node->operands[1]);
+      const auto value=amount.kind==s::Kind::Constant?literal(amount.name):std::nullopt;
+      if(!value || *value<0 || *value%4 || !plain(node->operands[0])) {
+        out.reason="the metadata byte is a bit field at an unknown or unaligned position";return out;
+      }
+      shift=unsigned(*value);node=&result.graph.node(node->operands[0]);
+    }
+    // Bytes of an allocation without initial contents that no store covered before this read
+    // (memory elimination's initial symbol of it): their contents are unspecified, so either
+    // field can hold any value.
+    if(node->kind==s::Kind::InitialCell && memory.unwritten_read_allocations.contains(node->name)) {
+      out.known=true;out.source="unwritten_tensor_memory";
+      out.fields[0].set();out.fields[1].set();
+      return out;
+    }
+    if(node->kind!=s::Kind::InputValue) {
+      out.reason="the metadata byte is computed by the kernel ("+(node->name.empty()?std::string("expression"):node->name)+")";
+      return out;
+    }
+    const auto object=globalObject(node->name);
+    if(!object){out.reason="the metadata byte is initial memory outside a global input object";return out;}
+    out.known=true;out.source="input_object";out.object=*object;
+    out.fact=findFieldValues(memory.tensor_properties,*object);
+    // Fields are aligned to the object's bytes (field_bits divides 8), so a byte at any
+    // offset holds whole fields; an 8-bit field may be split by an odd 4-bit shift.
+    out.fields[0]=nibbleDomain(out.fact,shift);out.fields[1]=nibbleDomain(out.fact,shift+4);
+    if(!node->operands.empty())
+      if(const auto& offset=result.graph.node(node->operands[0]);offset.kind==s::Kind::Constant)
+        if(const auto value=literal(offset.name);value && *value>=0)out.object_byte_offset=std::uint64_t(*value)+shift/8;
+    return out;
+  }
+  std::optional<UndefinedBehaviorWitness> sparse_metadata_witness;
+  // The PTX ISA sentence for the MMA's kind, quoted. 9.7.18.10.9.2 (.kind::f16, .kind::f8f6f4,
+  // .kind::mxf8f6f4, .kind::i8, .kind::ti16) only lists the meaningful values; 9.7.18.10.9.3
+  // (.kind::mxf4, .kind::mxf4nvf4) also names the rest undefined. Values outside the list have
+  // no meaning in PTX either way (owner rule 2026-11-05: follow PTX strictly).
+  static void sparseMetadataWording(const std::string& kind,UndefinedBehaviorWitness& w) {
+    w.isa_reference="PTX ISA 9.7.18.10.9 Sparse Matrices";
+    if(kind=="mxf4" || kind=="mxf4nvf4") {
+      w.isa_section="9.7.18.10.9.3 Sparse tcgen05.mma.sp with .kind::mxf4 and .kind::mxf4nvf4";
+      w.isa_wording="undefined";
+      w.condition="\"The only meaningful values of the metadata index are: 0b0100, 0b1000, 0b1100, 0b1001, 0b1101, 0b0110, 0b1110. Rest of the values result in undefined behavior.\"";
+    } else {
+      w.isa_section="9.7.18.10.9.2 Sparse tcgen05.mma.sp with .kind::f16, .kind::f8f6f4, .kind::mxf8f6f4, .kind::i8, .kind::ti16";
+      w.isa_wording="only_meaningful";
+      w.condition="\"The only meaningful values of the index are: 0b0100, 0b1000, 0b1100, 0b1001, 0b1101, 0b0110, 0b1110\" (the section gives no meaning to other values)";
+    }
+  }
+  void checkSparseMetadata() {
+    const auto meaningful=meaningfulSparseMetadata();
+    const auto byte=v::ElementType::bit(8);
+    std::optional<std::string> unproven;
+    std::optional<MemoryInstance> unproven_at;
+    const auto note=[&](std::string reason,const MemoryInstance& at) {
+      if(!unproven){unproven=std::move(reason);unproven_at=at;}
+    };
+    for(const auto& node:input.nodes()) {
+      const auto* mma=dynamic_cast<const v::TcgenMmaOp*>(&node.operation());
+      if(!mma || !mma->attributes().sparse)continue;
+      const auto& attr=mma->attributes();
+      // kSparseMetadataMeaningful is the list of 9.7.18.10.9.2 and 9.7.18.10.9.3; another kind
+      // (.kind::tf32, 9.7.18.10.9.1, lists other values) is not decided here.
+      std::string kind;
+      for(const auto& mod:attr.modifiers)if(mod.starts_with("kind::"))kind=mod.substr(6);
+      if(kind!="f16" && kind!="f8f6f4" && kind!="mxf8f6f4" && kind!="i8" && kind!="ti16" &&
+         kind!="mxf4" && kind!="mxf4nvf4") {
+        if(node.instanceCount())
+          note("the sparse MMA kind ("+(kind.empty()?std::string("none"):kind)+") has no modeled metadata value list",
+               MemoryInstance{node.id(),0});
+        continue;
+      }
+      for(std::size_t instance=0;instance<node.instanceCount();++instance) {
+        const MemoryInstance at{node.id(),instance};
+        const auto value=node.result(0,instance);
+        const auto args=input.instanceOperands(value);
+        const auto index=3u+unsigned(attr.accumulate)+(attr.scaled?2u:0u);
+        if(index>=args.size()){note("the sparse MMA has no metadata operand",at);continue;}
+        const auto metadata=args[index];
+        const auto& type=input.type(metadata);
+        if(!type.hasStaticShape() || type.element().isParameterized() || type.bitSize()%8 || !type.bitSize()) {
+          note("the sparse MMA metadata has no fixed layout",at);continue;
+        }
+        const auto total=type.bitSize()/8;
+        const auto level=static_cast<unsigned>(domains.size());
+        for(std::uint64_t begin=0;begin<total;) {
+          domains.resize(level);
+          const auto count=std::max<std::uint64_t>(1,readSpan(metadata,Offset(integer(begin)),1,byte,total-begin));
+          Offset position(integer(begin));
+          if(count>1){domains.push_back(count);position.terms[level]=1;}
+          // A byte whose projection fails is undecided; the scan goes on, since another
+          // byte may still witness undefined behavior (project restores its state).
+          MetadataByteSource source;
+          try{source=metadataByteSource(project(metadata,position,byte));}
+          catch(const Failure& e) {
+            if(e.code.ends_with("_limit_exceeded"))throw;
+            source.reason="a metadata byte does not project ("+e.code+": "+e.what()+")";
+          }
+          domains.resize(level);
+          if(!source.known){note(source.reason,at);begin+=count;continue;}
+          for(unsigned field=0;field<2;++field) {
+            const auto invalid=source.fields[field]&~meaningful;
+            if(invalid.none())continue;
+            std::uint64_t witness=0;while(!invalid.test(witness))++witness;
+            UndefinedBehaviorWitness w;
+            sparseMetadataWording(kind,w);
+            w.source=source.source;w.object=source.object;
+            w.property=source.fact?"field_values":"none";
+            w.operand_byte=begin;w.field=field;w.value=witness;
+            if(source.source=="input_object") {
+              // The witness byte's own cell offset (the span's first byte).
+              if(count>1) {
+                try{w.object_byte_offset=metadataByteSource(project(metadata,Offset(integer(begin)),byte)).object_byte_offset;}
+                catch(const Failure& e){if(e.code.ends_with("_limit_exceeded"))throw;}
+              } else w.object_byte_offset=source.object_byte_offset;
+              if(source.fact)for(unsigned v=0;v<(1u<<source.fact->field_bits);++v)
+                if(source.fact->field_values.test(v))w.declared_values.push_back(v);
+            }
+            for(const auto v:kSparseMetadataMeaningful)w.defined_values.push_back(v);
+            std::sort(w.defined_values.begin(),w.defined_values.end());
+            sparse_metadata_witness=std::move(w);
+            current=at;
+            fail("sparse_metadata_invalid","Sparse MMA metadata can hold an index value outside the PTX ISA's meaningful values");
+          }
+          begin+=count;
+        }
+      }
+    }
+    if(unproven) {
+      current=unproven_at;
+      fail("sparse_metadata_validity_not_proven","Sparse MMA metadata validity is not proven: "+*unproven);
+    }
   }
   s::Ref scaledMma(v::Value value,const Offset& index,const v::TcgenMmaAttributes& attr) {
     const auto args=input.instanceOperands(value);
@@ -4161,6 +4492,7 @@ class Lower {
         domains.resize(level);
         sum=count==1?reductions.append(s::Reducer::Sum,sum,body,"f32",level):
             reductions.appendFold(s::Reducer::Sum,sum,body,level,count,"f32");
+        result.graph.markInstruction(sum,s::instruction_mode::synthesized);
         begin+=count;commitReduction(progress,begin,sum);limit();
       }
     }
@@ -4181,8 +4513,10 @@ class Lower {
     auto atype=input.type(args[0]).element(),btype=input.type(args[1]).element(),dtype=dst.element();
     if(native){
       const auto& attr=dynamic_cast<const v::TcgenMmaOp&>(op).attributes();
+      // Sparse MMA arithmetic is not lowered (checkSparseMetadata ran before any output).
+      if(attr.sparse)fail("scalar_fold_mma_variant","sparse MMA arithmetic (ISA metadata placement) is not lowered");
       if(attr.scaled)return scaledMma(value,index,attr);
-      if(attr.scaled || attr.sparse || attr.scale_input_d)
+      if(attr.scale_input_d)
         fail("scalar_fold_mma_variant","scaled, sparse or scaled-D MMA needs scalar semantics");
       auto desc=known(args[2]);
       if(!desc || *desc<0 || std::uint64_t(*desc)>UINT32_MAX)
@@ -4331,6 +4665,7 @@ class Lower {
       // Recognition starts after three terms; a mismatch remains an Add.
       if(count==1)folded=reductions.append(s::Reducer::Sum,folded,body,dtype.toString(),level);
       else folded=reductions.appendFold(s::Reducer::Sum,folded,body,level,count,dtype.toString());
+      result.graph.markInstruction(folded,s::instruction_mode::synthesized);
       keys.at(progress.accumulator_key)=folded;progress.sub_next=sub+1;progress.pending.clear();
       SENTRYWARD_LEDGER(ledger->add("mma_pieces_committed"));
       }
@@ -4806,6 +5141,26 @@ class Lower {
           }
         }
       }
+      // A read assembled from several stores (AssembledRead) has one slice pattern per piece.
+      // A constant byte range across pieces is projected one byte at a time and packed in
+      // PTX's little-endian memory order, as indexed packing is. O(width) projections.
+      if(lo==hi && width>1 && width<=8 && desired.width()==8*width) {
+        bool sliced=true;
+        for(std::uint64_t j=0;sliced && j<width;++j) {
+          const auto* byte=memory.readSlicePattern({value.nodeId(),std::size_t(first)},std::uint64_t(lo)+j,1);
+          sliced=byte && std::uint64_t(last)-byte->first.instance<byte->count;
+        }
+        if(sliced) {
+          const auto target="b"+std::to_string(desired.width());
+          auto packed=result.graph.constant(target,"0");
+          for(std::uint64_t j=0;j<width;++j) {
+            auto byte=result.graph.convert(project(value,plus(offset,Offset(integer(j))),bit(8)),target,"Convert");
+            if(j)byte=emitOperation("ShiftLeft",target,{byte,result.graph.constant("u32",std::to_string(8*j))});
+            packed=emitOperation("BitOr",target,{packed,byte});
+          }
+          return cast(packed,desired);
+        }
+      }
       // Existing read-from patterns may have distinct writers on adjacent
       // member ranges. Refine the output coordinate at those stored boundaries;
       // do not compare writer expressions or enumerate members to find them.
@@ -5084,10 +5439,12 @@ class Lower {
       // A complete numeric scalar (e.g. FP4 conversion or its u4 bitcast)
       // has no byte index. Only storage projection requires byte alignment.
       // Never route a Load through whole(): memory still requires whole bytes.
+      // A conversion view of a Load (the low e2m1 field of a loaded word:
+      // Convert -> u8, Convert -> u4, Bitcast -> e2m1) is not: its source is.
       const auto [lo,hi]=bounds(offset);
       if(!type.isScalar() || !value.indices().empty() || lo!=0 || hi!=0 ||
           !desired.width() || desired.width()!=type.element().width() ||
-          dynamic_cast<const v::LoadOp*>(&input.definingNode(value).operation()))
+          (!value.conversion() && dynamic_cast<const v::LoadOp*>(&input.definingNode(value).operation())))
         fail("scalar_fold_subbyte_value","projection requires byte-aligned scalar elements");
       if(!value.conversion())return cast(whole(value,Offset{}),desired);
       // Conversion handling below retains its exact conversion attributes and
@@ -5140,6 +5497,11 @@ class Lower {
       auto base=inUse(child,[&]{return scalar(child?child->prototype:c.source);});
       std::string step=c.spec->kind==v::TypeConversionKind::Bitcast?"Bitcast":"Convert";
       if(c.spec->kind==v::TypeConversionKind::Convert)step+=" "+attributes(v::ConvertOp(c.spec->target,c.spec->attributes));
+      // e2m1 reads its four storage bits as b4 (as the MMA operand path does); a u4 value
+      // reinterpreted as e2m1 holds the same four bits.
+      if(step=="Bitcast" && type.element().kind()==v::ElementKind::Floating && type.element().width()==4 &&
+         result.graph.type(base)=="u4")
+        base=result.graph.convert(base,"b4","Bitcast");
       auto converted=result.graph.convert(base,type.element().toString(),step);
       if(c.spec->kind==v::TypeConversionKind::Convert)
         if(auto exact=constantConversion(base,c.spec->attributes,type.element()))converted=*exact;
@@ -5804,6 +6166,8 @@ class Lower {
         auto combined=floating?
             real_expressions.operation(name,type,{sum.value(),next},"ideal_arithmetic",domains.size()):
             emitOperation(name,type,{sum.value(),next});
+        if(floating && !(combined==sum.value()) && !(combined==next))
+          result.graph.markInstruction(combined,s::instruction_mode::synthesized);
         sum.value()=std::move(combined);
       }
       return sum.value();
@@ -5899,6 +6263,19 @@ class Lower {
       // retaining intermediate projections until 128 families accumulate.
       if(options.collection_interval)collectCompletedOutputs();
       return;
+  }
+  // The widest scalar an output record holds (64-bit integers and floats).
+  static constexpr std::uint64_t kWidestScalarBytes=8;
+  // An integer or bit record element wider than 64 bits (a u128 built from two u64 halves for
+  // st.shared.b128, then copied out by a TMA store) has no scalar type: its bytes are output as
+  // one-element families of unsigned 64-bit fields at constant offsets, which the output
+  // partition reads as packed lanes. Exact: each field is a bit slice of the stored value.
+  // O(record bytes / 8) families.
+  void wideOutput(const OutputWrite& output,Compared coverage) {
+    const auto field=v::ElementType::unsignedInteger(8*kWidestScalarBytes);
+    if(coverage==Compared::Some){projectComparedBytes(output,field);return;}
+    for(std::uint64_t done=0;done<output.region.bytes;done+=kWidestScalarBytes)
+      outputFamily(output,done,1,field,kWidestScalarBytes);
   }
   bool spatialOutput(std::span<const OutputWrite> outputs) {
     if(outputs.empty())return false;
@@ -6375,6 +6752,8 @@ class Lower {
       next_collection=std::min(options.construction_collection_interval,
                                std::max<std::size_t>(1,options.max_nodes/4));
       next_completed_collection=next_collection;
+      // Reachable undefined behavior precedes every output (and every value failure).
+      checkSparseMetadata();
       stop.phase='d';stop.output_families=!memory.output_families.empty();
       for(const auto& family:memory.output_families) {
         const auto coverage=comparedIn(family);
@@ -6447,6 +6826,10 @@ class Lower {
         if(element.isParameterized())fail("scalar_fold_parameterized_type","output element type is unresolved");
         const auto element_bytes=element.width()/8;
         if(!element_bytes)fail("scalar_fold_subbyte_value","sub-byte output requires bit projection");
+        if(element_bytes>kWidestScalarBytes && element.kind()!=v::ElementKind::Floating &&
+           element_bytes%kWidestScalarBytes==0 && output.region.bytes%kWidestScalarBytes==0) {
+          wideOutput(output,coverage);continue;
+        }
         if(coverage==Compared::Some){projectComparedBytes(output,element);continue;}
         if(options.compact_output_families && output_index>=spatial_failed_end && type.isScalar() &&
            element==type.element() && output.region.bytes==element_bytes && element_bytes<=8) {
@@ -6531,8 +6914,12 @@ class Lower {
         result.output_families=std::move(artifact.output_families);
         for(std::size_t i=0;i<result.outputs.size();++i)result.outputs[i].value=artifact.outputs[i].value;
       }
+      refuseUnwrittenOutputs();
       result.complete=true;
-    }catch(const Failure& e){result.diagnostic=ScalarFoldDiagnostic{e.code,e.what(),current};stop.literal_message=e.literal;}
+    }catch(const Failure& e){
+      result.diagnostic=ScalarFoldDiagnostic{e.code,e.what(),current};stop.literal_message=e.literal;
+      if(e.code=="sparse_metadata_invalid")result.diagnostic->undefined_behavior=std::move(sparse_metadata_witness);
+    }
      catch(const IndexedSourceLimit& e){result.diagnostic=ScalarFoldDiagnostic{e.code,e.what(),current};}
      catch(const frontend::ptx::LayoutError& e){result.diagnostic=ScalarFoldDiagnostic{"scalar_fold_mma_descriptor",e.what(),current};}
     if(result.diagnostic)stop.completed_outputs=result.outputs.size();

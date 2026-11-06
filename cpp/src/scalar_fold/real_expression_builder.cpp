@@ -222,9 +222,18 @@ struct TermCanonicalizer {
         }
         if(!bounded){rebuilt.emplace(id,graph.ref(id));continue;} // the original sum, unchanged below
         std::stable_sort(terms.begin(),terms.end(),[&](const Ref& x,const Ref& y){return before(x,y);});
+        // Two terms are the original add on its operands, in either order (IEEE addition commutes):
+        // it keeps the original's modes. A longer sum rebuilt as itself keeps its nodes and modes.
+        // Otherwise it is reassociated: each partial sum that this rebuild creates and the sum that
+        // takes the original's place are synthesized; an existing partial sum keeps its modes.
         auto total=terms.front();
-        for(std::size_t i=1;i<terms.size();++i)
+        for(std::size_t i=1;i<terms.size();++i) {
+          const auto existing=graph.size();
           total=graph.operation("Add",n.type,{total,terms[i]},n.attributes);
+          if(terms.size()>2 && total.node>=existing)graph.markInstruction(total,instruction_mode::synthesized);
+        }
+        if(terms.size()==2)graph.markInstruction(total,graph.instructionModes(id));
+        else if(total.node!=id)graph.markInstruction(total,instruction_mode::synthesized);
         rebuilt.emplace(id,total);continue;
       }
       // A node whose operands all stay is itself: interning it again would return its own ID
@@ -246,7 +255,10 @@ struct TermCanonicalizer {
         case Kind::Parameter:value=graph.parameter(n.type,n.name);break;
         case Kind::Index:value=graph.index(n.index_level);break;
         case Kind::InitialCell:value=graph.initialCell(n.name,operands.at(0),n.type);break;
-        case Kind::Operation:value=graph.operation(n.name,n.type,std::move(operands),n.attributes);break;
+        case Kind::Operation:
+          value=graph.operation(n.name,n.type,std::move(operands),n.attributes);
+          graph.markInstruction(value,graph.instructionModes(id));
+          break;
         case Kind::Fold:value=graph.fold(n.fold->reducer,operands.at(0),operands.at(1),n.fold->binder_level,n.fold->count,n.type);break;
       }
       rebuilt.emplace(id,value);
@@ -411,6 +423,14 @@ struct RealExpressionBuilder::Impl {
     for(const auto& r:weights)result=literal(result,type,"1")?r:raw("Multiply",type,{result,r});
     return result;
   }
+  // The value of an exponential-factor rewrite, which takes an instruction's place: marked
+  // synthesized (never an instruction image) unless it is a constant or one of the factor's weights.
+  Ref rewritten(Ref value,const Factor& factor) {
+    if(graph.node(value).kind==Kind::Operation &&
+       std::none_of(factor.weights.begin(),factor.weights.end(),[&](const Ref& w){return w.node==value.node;}))
+      graph.markInstruction(value,instruction_mode::synthesized);
+    return value;
+  }
   Ref materialize(const Factor& factor,const std::string& type) {
     auto result=body(factor.weights,type);if(factor.powers.empty())return result;
     auto power=constant(type,"0");
@@ -538,7 +558,7 @@ struct RealExpressionBuilder::Impl {
           auto combined=a;
           if(merge(combined.powers,b.powers,1)) {
             combined.weights.insert(combined.weights.end(),b.weights.begin(),b.weights.end());
-            if(prove(local,source,local.factors(combined),level))return materialize(combined,type);
+            if(prove(local,source,local.factors(combined),level))return rewritten(materialize(combined,type),combined);
           }
         } else if(name=="Add") {
           Powers common;
@@ -547,7 +567,9 @@ struct RealExpressionBuilder::Impl {
             auto target=local.op("Multiply",{local.exp(common),local.op("Add",{local.factors(a),local.factors(b)})});
             if(prove(local,source,target,level)) {
               auto value=reductions.append(Reducer::Sum,materialize(a,type),materialize(b,type),type,level);
-              return materialize(Factor{std::move(common),{value},true},type);
+              graph.markInstruction(value,instruction_mode::synthesized);
+              Factor factor{std::move(common),{value},true};
+              return rewritten(materialize(factor,type),factor);
             }
           }
         }
@@ -563,8 +585,10 @@ struct RealExpressionBuilder::Impl {
             Local local{*this,{},type,{},{}};
             auto source=local.op("Reciprocal",{local.factors(factor)});
             auto target=local.op("Multiply",{local.exp(opposite),local.op("Reciprocal",{local.slot(weight)})});
-            if(prove(local,source,target,level))
-              return materialize(Factor{std::move(opposite),{raw("Reciprocal",type,{weight})},true},type);
+            if(prove(local,source,target,level)) {
+              Factor inverse{std::move(opposite),{raw("Reciprocal",type,{weight})},true};
+              return rewritten(materialize(inverse,type),inverse);
+            }
           }
         }
       }

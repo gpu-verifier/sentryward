@@ -5,6 +5,8 @@
 #include "sentryward/algorithm/memory/symbolic_address_model.h"
 #include <algorithm>
 #include <array>
+#include <functional>
+#include <limits>
 #include <sstream>
 namespace sentryward::frontend::ptx {
 
@@ -46,6 +48,74 @@ Json AffineOffsetJson(const AbstractAffine &affine) {
     operands.push_back({{"operator", "mul"}, {"operands", Json::array({std::move(lookup), term.coefficient})}});
   }
   return Json{{"operator", "add"}, {"operands", std::move(operands)}};
+}
+// The places of a tile's abstract global segments in their regions (TmaRegionPlace), from the
+// resolved descriptor: a segment's first byte from its region's first byte is the sum over the
+// region's dimensions of its box position x stride (a gather row: its column only). A segment
+// is contiguous in the tensor when every box dimension it wraps continues one element on, which
+// is checked per wrap level. A coordinate `c` along a dimension is inside when the dimension's
+// global extent is known and `c` is known (the decode then makes its out-of-bounds elements
+// zero-fill segments) or a bounded integer with 0 <= c and c + box <= global (a gather row's box
+// is one row); with an unknown extent the decode decides no bound. A region is in bounds when all
+// its coordinates are inside; a gather row whose column is not inside has no offset (only its
+// row may be out of bounds). No offsets without integer strides or element size, or for
+// packed tiles. O(rank) per region and per segment.
+std::function<std::optional<TmaRegionPlace>(const TmaTransferSegment &)>
+TmaRegionPlaces(const Json &descriptor, bool gather, const std::vector<bool> &symbolic,
+                const std::vector<std::optional<std::pair<Integer, Integer>>> &ranges) {
+  const auto strides = descriptor.value("coordinate_strides_bytes", Json());
+  const auto box = descriptor.value("box_shape", Json());
+  const auto global = descriptor.value("global_shape", Json());
+  const auto element = descriptor.value("element_bytes", Json());
+  const auto integers = [](const Json &values) {
+    return values.is_array() && std::all_of(values.begin(), values.end(),
+                                            [](const Json &v) { return v.is_number_integer(); });
+  };
+  const bool packed = descriptor.contains("packed_element_bits") && !descriptor["packed_element_bits"].is_null();
+  if (packed || !integers(strides) || !integers(box) || !element.is_number_integer() ||
+      strides.size() != box.size() || (gather && box.size() != 2) || JsonInteger(element) <= 0)
+    return [](const TmaTransferSegment &) { return std::nullopt; };
+  const std::size_t rank = box.size();
+  // Coordinate k along dimension d, a gather row's along dimension 1 with a one-row box.
+  const auto inside = [&](std::size_t coordinate, std::size_t dim) {
+    const bool extent_known = global.is_array() && global.size() == rank && global[dim].is_number_integer();
+    if (coordinate >= symbolic.size() || !symbolic[coordinate]) return extent_known;
+    const auto &range = ranges.at(coordinate);
+    const Integer extent = gather && dim == 1 ? Integer(1) : JsonInteger(box[dim]);
+    return range && extent_known && range->first >= 0 && range->second + extent <= JsonInteger(global[dim]);
+  };
+  // Region r's coordinate along dimension d: coordinate d, or a gather row's {0, 1 + r}.
+  std::array<bool, 4> in_bounds{};
+  for (std::size_t region = 0; region < (gather ? 4 : 1); ++region) {
+    bool all = true;
+    for (std::size_t dim = 0; dim < rank; ++dim) all = all && inside(gather && dim == 1 ? 1 + region : dim, dim);
+    in_bounds[region] = all;
+  }
+  const bool column = !gather || inside(0, 0);
+  return [=](const TmaTransferSegment &segment) -> std::optional<TmaRegionPlace> {
+    TmaRegionPlace place{gather ? segment.gather_row : 0, std::nullopt,
+                         in_bounds.at(gather ? segment.gather_row : 0)};
+    const Integer width = JsonInteger(element);
+    if (!column || segment.logical_offset % width != 0 || segment.bytes % width != 0 || !segment.bytes)
+      return place;
+    const Integer first = Integer(segment.logical_offset) / width,
+                  last = first + Integer(segment.bytes) / width - 1;
+    // A gather row's box is {box[0], 4}: its column is its only position in the row's region.
+    const std::size_t dims = gather ? 1 : rank;
+    Integer offset = 0, period = 1, spanned = 0;
+    for (std::size_t dim = 0; dim < dims; ++dim) {
+      const Integer extent = JsonInteger(box[dim]), stride = JsonInteger(strides[dim]);
+      // Wrapping dimension `dim` (its lower dimensions restart) moves stride - spanned bytes.
+      if (dim && last / period != first / period && stride - spanned != width) return place;
+      offset += first / period % extent * stride;
+      spanned += (extent - 1) * stride;
+      period *= extent;
+    }
+    if (last / period != first / period || offset > Integer(std::numeric_limits<std::uint64_t>::max()))
+      return place;
+    place.offset = offset.convert_to<std::uint64_t>();
+    return place;
+  };
 }
 } // namespace
 SlotResolver::SlotResolver(Resources &core, SlotConfig config)
@@ -573,6 +643,8 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
   std::vector<bool> symbolic_coordinates;
   // Per coordinate, its affine form in tensor-property elements (bounded coordinates).
   std::vector<std::optional<AbstractAffine>> affine_coordinates;
+  // Per symbolic coordinate that is a bounded integer (tensor_properties), its exact range.
+  std::vector<std::optional<std::pair<Integer, Integer>>> ranges;
   bool opaque_coordinate = false;
   auto a = tensor.find('{'), b = tensor.find('}', a);
   if (a == tensor.npos || b == tensor.npos)
@@ -586,7 +658,10 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
     symbolic_coordinates.push_back(!known);
     origins.push_back(known ? Signed(*known, "tensor coordinate") : 0);
     affine_coordinates.emplace_back();
+    ranges.emplace_back();
     if (known) { coordinate_expressions.push_back(origins.back()); continue; }
+    if (const auto *bounded = std::get_if<BoundedInteger>(&value))
+      ranges.back() = std::pair{(*bounded)->lower, (*bounded)->upper};
     // A bounded coordinate (tensor_properties) in the s32 range is its exact affine form in
     // element lookups and element functions (the address model's gathers): no extraction.
     if (const auto *bounded = std::get_if<BoundedInteger>(&value);
@@ -748,6 +823,10 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
   for (const bool row : abstract_rows) step_count += row ? 2 + std::size_t(known_resource) : 0;
   for (const auto &s : mapping.segments) step_count += 1 + (!s.abstract_global && s.global_offset ? 1 : 0);
   steps.reserve(step_count);
+  // Places only for a tile with abstract segments (one closure per such TMA).
+  const auto places = std::any_of(abstract_rows.begin(), abstract_rows.end(), [](bool row) { return row; })
+      ? TmaRegionPlaces(descriptor, gather, symbolic_coordinates, ranges)
+      : std::function<std::optional<TmaRegionPlace>(const TmaTransferSegment &)>{};
   std::array<std::optional<std::size_t>, kRegionRows> region_steps; // each row's ExpressionStep
   for (const auto &s : mapping.segments) {
     std::optional<std::size_t> global;
@@ -784,7 +863,8 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
     }
     auto sh = core_.BindStep("shared", "physical.shared.cta.0", s.shared_offset, s.bytes,
                              frame.Rank(s.target_rank));
-    result.pairs.push_back({global, steps.size(), s.bytes, s.logical_offset, s.target_rank});
+    result.pairs.push_back({global, steps.size(), s.bytes, s.logical_offset, s.target_rank,
+                            s.abstract_global ? places(s) : std::nullopt});
     steps.push_back({std::move(sh)});
   }
   for (const auto &c : mapping.completions) {

@@ -29,6 +29,9 @@ struct FixedInputElement {
   Q value;
   std::string reason;
 };
+// The most fixed elements one verified input supplies (fixed_input::decode_verified). It also bounds
+// the unrolling of a Fold over a fixed table (Importer::fixed_table_unroll_limit).
+inline constexpr size_t fixed_input_element_limit = 4096;
 struct FixedInputKey {
   std::string input, interpretation;
   std::vector<Z> coordinates;
@@ -62,6 +65,9 @@ struct PreparedContext {
   std::unordered_map<std::string,std::unordered_set<std::string>> fixed_input_types;
   mutable std::vector<size_t> applied_fixed_inputs;
   mutable std::vector<bool> fixed_input_applied;
+  // The same for reads of the optimized (kernel) side.
+  mutable std::vector<size_t> optimized_fixed_inputs;
+  mutable std::vector<bool> fixed_input_optimized;
   PreparedContext(Arena &a, const EquivalenceContext &context) {
     if(context.semantics != NumericalSemantics::IdealRealExactWord)
       throw Unsupported("unsupported numerical semantics");
@@ -86,6 +92,7 @@ struct PreparedContext {
       fixed_inputs.push_back(entry);
     }
     fixed_input_applied.resize(fixed_inputs.size(),false);
+    fixed_input_optimized.resize(fixed_inputs.size(),false);
     for(const auto &entry:context.assumptions) {
       if(const auto *p=std::get_if<PredicateAssumption>(&entry)) {
         if(p->predicate>=a.nodes.size()) throw Unsupported("predicate outside comparison Arena");
@@ -176,9 +183,10 @@ struct PreparedContext {
   // O(rank) hashing and expected O(1) lookup; never scans the configured array.
   // Symbolic coordinates remain symbolic. An exact singleton bound is sufficient
   // because it proves the coordinate independently of this premise.
+  // `optimized`: the read is the kernel side's; its uses are recorded separately.
   std::optional<Id> fixed_read(Arena &a,const std::string &input,
                               const std::string &interpretation,
-                              const std::vector<Id> &coordinates) const {
+                              const std::vector<Id> &coordinates,bool optimized=false) const {
     if(fixed_lookup.empty())return {};
     const auto input_types=fixed_input_types.find(input);
     if(input_types==fixed_input_types.end() || !input_types->second.contains(interpretation))return {};
@@ -194,6 +202,14 @@ struct PreparedContext {
     auto found=fixed_lookup.find(key);
     if(found==fixed_lookup.end())return {};
     const auto &entry=fixed_inputs[found->second];
+    if(optimized) {
+      if(!fixed_input_optimized[found->second]) {
+        fixed_input_optimized[found->second]=true;
+        optimized_fixed_inputs.push_back(found->second);
+      }
+      ++a.stats["optimized_fixed_input_reads_substituted"];
+      return a.constant(entry.value);
+    }
     if(!fixed_input_applied[found->second]) {
       fixed_input_applied[found->second]=true;
       applied_fixed_inputs.push_back(found->second);

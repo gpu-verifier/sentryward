@@ -149,6 +149,7 @@ void printMemory(std::ostream& output, const MemoryAttributes& attributes) {
   }
   for (const auto& modifier : attributes.native_modifiers) output << '.' << modifier;
   if (attributes.guarded) output << " guarded";
+  if (attributes.region_offset) output << " region_offset=" << *attributes.region_offset;
   if (attributes.reduction)
     output << " reduction=" << attributes.reduction->operation << '.' << attributes.reduction->element.toString();
   if (attributes.layout) {
