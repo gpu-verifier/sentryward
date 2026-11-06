@@ -47,6 +47,17 @@ bool OrdinaryMemory(const Instruction& i) {
   return s.category=="memory" && s.modeled && !s.atomic_add && (s.memory_mode=="read" || s.memory_mode=="write") &&
          !i.address_lanes && s.memory_space!="param" && s.memory_space!="const";
 }
+// The state spaces a bidirectional generic-async proxy fence orders: fence.proxy.async (all
+// spaces), .shared::cta and .shared::cluster (shared) or .global; membar.proxy is a synonym.
+// Other fences, and the unidirectional fence.proxy.async::generic forms, order no proxies here.
+std::uint8_t ProxyFenceSpaces(const Instruction& i) {
+  const auto& m=i.modifiers;
+  if ((i.opcode!="fence" && i.opcode!="membar") || m.size()<2 || m[0]!="proxy" || m[1]!="async") return 0;
+  if (m.size()==2) return kProxyFenceShared | kProxyFenceGlobal;
+  if (m.size()==3 && (m[2]=="shared::cta" || m[2]=="shared::cluster")) return kProxyFenceShared;
+  if (m.size()==3 && m[2]=="global") return kProxyFenceGlobal;
+  return 0;
+}
 bool IsWarpDataCollective(const Instruction& instruction) {
   return Has(instruction,"sync") &&
       (instruction.opcode=="elect" || instruction.opcode=="shfl" ||
@@ -730,7 +741,8 @@ struct ModelLowerer::Impl {
   void Mma(Thread &, const RecordView &, const Json &);
   InstId Copy(Thread &, const RecordView &, std::vector<Fragment>,
               std::vector<Fragment>,
-              std::optional<CompletionAction> completion = {});
+              std::optional<CompletionAction> completion = {},
+              MemoryProxy proxy = MemoryProxy::kGeneric);
   void Instruction(Thread &, const RecordView &);
   void LowerThread(const CtaFacts &, LaneRef, Thread &, const std::vector<std::size_t> *positions,
                    std::span<const std::optional<std::vector<RegId>>> read_slices, std::uint64_t &visits,

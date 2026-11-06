@@ -68,6 +68,28 @@ with `.warpx2::02_13` and row 32·⌊L/64⌋ + L mod 32 with `.warpx2::01_23`; t
 ISA names the warp pairs but not which half each pair receives, so this follows
 CUTLASS `SM100_UTCCP_2x64dp128bitlw0213` / `…lw0123`.
 
+### Proxy fences
+
+Generic-proxy and async-proxy accesses to the same shared or global bytes are
+ordered only through a proxy fence (PTX ISA, "Proxies"). The async proxy
+covers TMA (`cp.async.bulk.tensor`), bulk copies and reductions, and the
+shared-memory operands of `tcgen05.mma` and `tcgen05.cp`. When happens-before
+orders a generic access before an async access to the same bytes, and one of
+them writes, the memory check requires a `fence.proxy.async` covering the
+state space (`.shared::cta`, `.shared::cluster`, `.global`, or none for every
+space) between them: one that the generic access happens before and that
+happens before the async access, in any thread: the writing thread, the thread
+that issues the async operation, or a thread between them such as one elected
+to signal a barrier after all threads fence. A missing fence is a
+`potential_race` with diagnostic
+`proxy_fence_missing`. In the other direction no explicit fence is required:
+the observed completion of a bulk copy, TMA or reduction is followed by an
+implicit generic-async proxy fence (PTX ISA, "Async Proxy"), and the same is
+assumed for `tcgen05.mma` and `tcgen05.cp` completion observed through
+`tcgen05.commit`. A `.shared::cta` fence is taken to cover all shared memory,
+including a peer CTA's. Other fences (`fence.sc`, `fence.acq_rel`, `membar`,
+`tcgen05.fence`, `fence.mbarrier_init`) add no ordering.
+
 ### Merged forward branches
 
 A conditional forward branch whose predicate the input does not determine, for

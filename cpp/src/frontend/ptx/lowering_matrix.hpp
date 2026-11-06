@@ -306,7 +306,10 @@ void ModelLowerer::Impl::Mma(Thread &t, const RecordView &e,
   std::set<std::size_t> paired;
   for (std::size_t k = 0; k < reads.size(); ++k) {
     auto [address, size] = reads[k];
-    AsyncEffect effect{{MemoryEffect{AccessMode::kRead, address, size}}};
+    // Shared-memory operands are read through the async proxy; TMEM operands are not.
+    const auto proxy = resources->Binding(address).address_space == "shared" ? MemoryProxy::kAsync
+                                                                           : MemoryProxy::kGeneric;
+    AsyncEffect effect{{MemoryEffect{AccessMode::kRead, address, size, std::nullopt, proxy}}};
     if (retain_matrix_layout) value_layout.accesses.push_back({static_cast<std::uint32_t>(plan.effects.size()),0,read_roles.at(k).first,read_roles.at(k).second});
     if (pairs.contains(k) && !separate) {
       auto w = pairs.at(k);

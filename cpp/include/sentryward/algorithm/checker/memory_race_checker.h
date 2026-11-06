@@ -12,6 +12,7 @@
 #include "sentryward/algorithm/analysis/hb_reachability.h"
 #include "sentryward/algorithm/memory/model.h"
 #include "sentryward/algorithm/memory/family_access.h"
+#include "sentryward/algorithm/checker/proxy_fences.h"
 
 namespace sentryward::algorithm {
 struct LaunchUnits;
@@ -68,6 +69,9 @@ struct MemoryRaceOptions final {
   // The launch's units when the per-unit path analyses a multi-unit launch (null otherwise; class
   // mode reads them from `units`): repeated entries are reported per unit (source_json.cpp).
   const LaunchUnits* launch_units = nullptr;
+  // After a search without a race, check that each generic/async pair ordered by happens-before
+  // has a proxy fence between them (proxy_fences.h).
+  bool check_proxy_fences = true;
 };
 
 struct MemoryRaceResult final {
@@ -79,6 +83,11 @@ struct MemoryRaceResult final {
     std::size_t affine_member_rows=0,hb_member_enumerations=0,hb_frontier_pieces=0;
   };
   std::optional<FamilyStats> family_stats;
+  // The cross-proxy check (proxy_fences.h), when it ran. With missing fences, races[0] is the first
+  // such pair (generic access first) and race_count counts them.
+  std::optional<ProxyFenceStats> proxy_fences;
+  std::vector<ProxyFenceSite> proxy_fence_sites;
+  bool proxy_fence_race = false;
   MemoryRaceStatus status = MemoryRaceStatus::kRaceFree;
   std::vector<RaceFinding> races;
   std::vector<RaceFinding> duplicate_tma_store_warnings;

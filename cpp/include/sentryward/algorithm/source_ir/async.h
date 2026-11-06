@@ -59,8 +59,14 @@ struct AsyncOp final {
   friend bool operator==(const AsyncOp&, const AsyncOp&) = default;
 };
 
+// The state spaces a bidirectional generic-async proxy fence (fence.proxy.async) orders.
+enum ProxyFenceSpace : std::uint8_t { kProxyFenceShared = 1, kProxyFenceGlobal = 2 };
+
 struct Await final {
   std::vector<MilestoneRef> requirements;
+  // Nonzero: the await is a fence.proxy.async over these ProxyFenceSpace bits. It orders, in its
+  // thread, prior and subsequent accesses of different proxies (memory_race_checker.h).
+  std::uint8_t proxy_fence = 0;
 
   friend bool operator==(const Await&, const Await&) = default;
 };
