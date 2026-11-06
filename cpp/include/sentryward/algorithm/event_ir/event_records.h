@@ -198,6 +198,7 @@ struct EventRecordCodec {
         if(access.bytes)HashCombine(h,*access.bytes);
         HashCombine(h,access.atomic_scope.has_value());
         if(access.atomic_scope)HashCombine(h,static_cast<unsigned>(*access.atomic_scope));
+        HashCombine(h,static_cast<unsigned>(access.proxy));
       }
       if constexpr(requires { payload.completion; }) {
         HashCombine(h,payload.completion.has_value());

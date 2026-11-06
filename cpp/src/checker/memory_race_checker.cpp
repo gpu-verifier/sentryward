@@ -462,17 +462,65 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
   return output;
 }
 
+// After a search without a race: the generic/async pairs it counts as ordered need a proxy fence
+// between them (proxy_fences.h). Missing fences are races (races[0] is the first pair); a pair whose
+// overlap or state space is unknown leaves a race-free search unresolved.
+static Result<MemoryRaceResult, MemoryAnalysisError> CheckProxies(
+    Result<MemoryRaceResult, MemoryAnalysisError> output, const SourceProgram& source,
+    const PassCertificate& certificate, MemoryModel& memory, const MemoryRaceOptions& options,
+    StaticHbQueries* shared_hb, const MemoryAccessRecords* supplied_accesses) {
+  using Output = Result<MemoryRaceResult, MemoryAnalysisError>;
+  if (!options.check_proxy_fences || !output || output.value().status == MemoryRaceStatus::kRaceFound) return output;
+  ProfileScope profile("memory.proxy_fences");
+  MemoryAccessRecords extracted;
+  if (!supplied_accesses) {
+    auto accesses = ExtractMemoryAccesses(certificate.happensBeforeGraph, source);
+    if (!accesses) return Output::Failure(std::move(accesses).error());
+    extracted = std::move(accesses).value();
+  }
+  StaticHbQueries local_hb(certificate.happensBeforeGraph, options.reachability, options.reachability_factory);
+  auto checked = [&]() -> Result<ProxyFenceResult, MemoryAnalysisError> {
+    try {
+      return CheckProxyFences(source, certificate.happensBeforeGraph, shared_hb ? *shared_hb : local_hb, memory,
+                              supplied_accesses ? MemoryAccessView(*supplied_accesses) : MemoryAccessView(extracted));
+    } catch (const std::logic_error& error) {
+      return Result<ProxyFenceResult, MemoryAnalysisError>::Failure({error.what(), {}, {}});
+    }
+  }();
+  if (!checked) return Output::Failure(std::move(checked).error());
+  auto proxies = std::move(checked).value();
+  auto& result = output.value();
+  result.proxy_fences = proxies.stats;
+  result.proxy_fence_sites = std::move(proxies.sites);
+  if (proxies.first) {
+    result.status = MemoryRaceStatus::kRaceFound;
+    result.proxy_fence_race = true;
+    result.race_count = proxies.stats.missing();
+    result.races.assign(1, {proxies.first->generic, proxies.first->async, std::move(proxies.first->overlap)});
+    if (options.on_race) options.on_race(result.races.front());
+  } else if (proxies.first_unresolved) {
+    result.status = MemoryRaceStatus::kUnresolved;
+    result.unresolved_count += proxies.stats.unresolved;
+    result.unresolved.push_back({proxies.first_unresolved->first, proxies.first_unresolved->second,
+        "a generic and an async-proxy access are ordered without a proxy fence covering every state space, "
+        "and their overlap or state space is unknown", "proxy_fence_space_unresolved"});
+  }
+  return output;
+}
+
 Result<MemoryRaceResult, MemoryAnalysisError> MemoryRaceChecker::Run(
     const SourceProgram& source, const PassCertificate& certificate,
     MemoryModel& memory, const MemoryRaceOptions& options, StaticHbQueries* shared_hb) const {
-  return RunMemoryCheck(source, certificate, memory, options, shared_hb);
+  return CheckProxies(RunMemoryCheck(source, certificate, memory, options, shared_hb), source, certificate,
+                      memory, options, shared_hb, nullptr);
 }
 
 Result<MemoryRaceResult, MemoryAnalysisError> MemoryRaceChecker::RunWithAccesses(
     const SourceProgram& source, const PassCertificate& certificate,
     const MemoryAccessRecords& accesses, std::span<const MemoryAccessFamily> families,
     MemoryModel& memory, const MemoryRaceOptions& options, StaticHbQueries* shared_hb) const {
-  return RunMemoryCheck(source, certificate, memory, options, shared_hb, &accesses, families);
+  return CheckProxies(RunMemoryCheck(source, certificate, memory, options, shared_hb, &accesses, families),
+                      source, certificate, memory, options, shared_hb, &accesses);
 }
 
 }  // namespace sentryward::algorithm

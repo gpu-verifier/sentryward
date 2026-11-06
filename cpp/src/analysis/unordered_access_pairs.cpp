@@ -119,7 +119,8 @@ namespace {
     }
     const MemoryEffect& operand = generic->accesses[access.access_index];
     if (access.mode != operand.mode || access.address != operand.endpoint ||
-        access.bytes != operand.bytes || access.atomic_scope != operand.atomic_scope) {
+        access.bytes != operand.bytes || access.atomic_scope != operand.atomic_scope ||
+        access.proxy != operand.proxy) {
       throw std::invalid_argument(
           "memory access differs from generic effect operand");
     }

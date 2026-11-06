@@ -205,6 +205,14 @@ first race, so `race_count` is not the number of racing pairs in the kernel.
 `race_count`. A race reported with diagnostic `same_value_writes_unproven` or
 `same_value_writes_unchecked` is a pair of unordered writes of the same bytes
 whose values were not proven equal; its `region` is their common footprint.
+A race reported with diagnostic `proxy_fence_missing` is a pair that is ordered,
+but only without a proxy fence: `first` is a generic-proxy access and `second`
+an async-proxy access (`proxy: "async"`) to the same bytes, and no
+`fence.proxy.async` covering their state space lies between them
+([Proxy fences](assumptions.md#proxy-fences)). Its `details` count the missing
+fences by the modes of the two accesses (`read_after_write`,
+`write_after_write`, `write_after_read`), and `memory_analysis.proxy_fences`
+reports the check's counts on every run that reaches it.
 
 Clusters that behave alike, or CTAs when the launch has no clusters, may be
 analyzed once for all of them. A race between two such units carries

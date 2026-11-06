@@ -183,12 +183,13 @@ VisitResult VisitEvents(const EventRecords& events,const SourceProgram& source,c
     const auto append = [&](AccessOperand operand, AccessMode mode,
                             MemoryEndpoint address, std::optional<std::uint64_t> bytes,
                             std::uint32_t access_index = 0,
-                            std::optional<AtomicScope> atomic_scope = std::nullopt) {
+                            std::optional<AtomicScope> atomic_scope = std::nullopt,
+                            MemoryProxy proxy = MemoryProxy::kGeneric) {
       if(visitor_error) return;
       visitor_error=visitor(MemoryAccess{
           AccessId(static_cast<std::uint32_t>(access_count++)), event.id,
           instruction.id, instruction.actor, operand, mode, address, bytes,
-          instruction.location, effect_index, access_index, atomic_scope});
+          instruction.location, effect_index, access_index, atomic_scope, proxy});
     };
     if (immediate) {
       append(AccessOperand::kImmediate,
@@ -210,7 +211,7 @@ VisitResult VisitEvents(const EventRecords& events,const SourceProgram& source,c
                          event.id);
         }
         append(AccessOperand::kEffect, effect.mode, effect.endpoint,
-               effect.bytes, static_cast<std::uint32_t>(index), effect.atomic_scope);
+               effect.bytes, static_cast<std::uint32_t>(index), effect.atomic_scope, effect.proxy);
       }
     }
     if(visitor_error) return VisitResult::Failure(std::move(*visitor_error));

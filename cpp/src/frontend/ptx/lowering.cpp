@@ -33,6 +33,17 @@ bool OrdinaryMemory(const Instruction& i) {
   return s.category=="memory" && s.modeled && !s.atomic_add && (s.memory_mode=="read" || s.memory_mode=="write") &&
          !i.address_lanes && s.memory_space!="param" && s.memory_space!="const";
 }
+// The state spaces a bidirectional generic-async proxy fence orders: fence.proxy.async (all
+// spaces), .shared::cta and .shared::cluster (shared) or .global; membar.proxy is a synonym.
+// Other fences, and the unidirectional fence.proxy.async::generic forms, order no proxies here.
+std::uint8_t ProxyFenceSpaces(const Instruction& i) {
+  const auto& m=i.modifiers;
+  if ((i.opcode!="fence" && i.opcode!="membar") || m.size()<2 || m[0]!="proxy" || m[1]!="async") return 0;
+  if (m.size()==2) return kProxyFenceShared | kProxyFenceGlobal;
+  if (m.size()==3 && (m[2]=="shared::cta" || m[2]=="shared::cluster")) return kProxyFenceShared;
+  if (m.size()==3 && m[2]=="global") return kProxyFenceGlobal;
+  return 0;
+}
 bool IsWarpDataCollective(const Instruction& instruction) {
   return Has(instruction,"sync") &&
       (instruction.opcode=="elect" || instruction.opcode=="shfl" ||
@@ -651,7 +662,8 @@ struct ModelLowerer::Impl {
   void Mma(Thread &, const RecordView &, const Json &);
   InstId Copy(Thread &, const RecordView &, std::vector<Fragment>,
               std::vector<Fragment>,
-              std::optional<CompletionAction> completion = {});
+              std::optional<CompletionAction> completion = {},
+              MemoryProxy proxy = MemoryProxy::kGeneric);
   void Instruction(Thread &, const RecordView &);
   void LowerThread(const CtaFacts &, LaneRef, Thread &, const std::vector<std::size_t> *positions,
                    std::span<const std::optional<std::vector<RegId>>> read_slices, std::uint64_t &visits,
@@ -1226,7 +1238,10 @@ void ModelLowerer::Impl::Mma(Thread &t, const RecordView &e,
   std::set<std::size_t> paired;
   for (std::size_t k = 0; k < reads.size(); ++k) {
     auto [address, size] = reads[k];
-    AsyncEffect effect{{MemoryEffect{AccessMode::kRead, address, size}}};
+    // Shared-memory operands are read through the async proxy; TMEM operands are not.
+    const auto proxy = resources->Binding(address).address_space == "shared" ? MemoryProxy::kAsync
+                                                                           : MemoryProxy::kGeneric;
+    AsyncEffect effect{{MemoryEffect{AccessMode::kRead, address, size, std::nullopt, proxy}}};
     if (retain_matrix_layout) value_layout.accesses.push_back({static_cast<std::uint32_t>(plan.effects.size()),0,read_roles.at(k).first,read_roles.at(k).second});
     if (pairs.contains(k) && !separate) {
       auto w = pairs.at(k);
@@ -1581,7 +1596,8 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const RecordView &e,
     std::vector<AsyncEffect> effects;
     for (const auto &[read, write] : pairs) {
       const auto index = static_cast<std::uint32_t>(effects.size());
-      effects.push_back({{MemoryEffect{AccessMode::kRead, read.first, read.second}}});
+      // tcgen05.cp reads shared memory through the async proxy.
+      effects.push_back({{MemoryEffect{AccessMode::kRead, read.first, read.second, std::nullopt, MemoryProxy::kAsync}}});
       effects.push_back({{MemoryEffect{AccessMode::kWrite, write.first, write.second}},
                          std::nullopt, {Ref(id, Milestone::kEffect, index)}});
     }
@@ -1750,7 +1766,8 @@ void ModelLowerer::Impl::LifetimeOrders() {
 InstId ModelLowerer::Impl::Copy(Thread &t, const RecordView &e,
                                 std::vector<Fragment> reads,
                                 std::vector<Fragment> writes,
-                                std::optional<CompletionAction> completion) {
+                                std::optional<CompletionAction> completion,
+                                MemoryProxy proxy) {
   auto id = Next();
   std::vector<AsyncEffect> effects;
   std::vector<std::tuple<std::uint64_t, std::uint64_t, std::uint32_t>> ranges;
@@ -1763,7 +1780,7 @@ InstId ModelLowerer::Impl::Copy(Thread &t, const RecordView &e,
   for (auto [a, n] : reads) {
     if (!n) throw SemanticError("copy_fragment_mapping", "copy byte extent is unknown");
     ranges.emplace_back(cursor, cursor + *n, effects.size());
-    effects.push_back({{MemoryEffect{AccessMode::kRead, a, n}}});
+    effects.push_back({{MemoryEffect{AccessMode::kRead, a, n, std::nullopt, proxy}}});
     cursor += *n;
   }
   if (cursor > total)
@@ -1800,7 +1817,7 @@ InstId ModelLowerer::Impl::Copy(Thread &t, const RecordView &e,
                                                                        binding.alias_scope, binding.allocation));
       }
       effects.push_back(
-          {{MemoryEffect{AccessMode::kWrite, shifted, *next - *it}},
+          {{MemoryEffect{AccessMode::kWrite, shifted, *next - *it, std::nullopt, proxy}},
            {},
            std::move(refs)});
     }
@@ -2008,7 +2025,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     return;
   }
   if (s.category == "fence") {
-    Emit(t, e, Await{});
+    Emit(t, e, Await{{}, ProxyFenceSpaces(i)});
     return;
   }
   if (s.category == "tmem_lifetime") {
@@ -2142,7 +2159,8 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     // complete_tx (load) or its bulk-group completion (store; not its reads, so not wait_group.read).
     std::optional<InstId> descriptor;
     if (transfer.descriptor) {
-      AsyncEffect read{{MemoryEffect{AccessMode::kRead, transfer.descriptor->first, transfer.descriptor->second}}};
+      AsyncEffect read{{MemoryEffect{AccessMode::kRead, transfer.descriptor->first, transfer.descriptor->second,
+                                     std::nullopt, MemoryProxy::kTensorMap}}};
       descriptor = Async(t, e, {std::move(read)});
       shared_value_reads.emplace(SharedValueSite{current_coordinates, t.actor.warp.value() * 32 + t.actor.lane, e.Key()},
                                  Ref(*descriptor, Milestone::kEffect, 0));
@@ -2160,7 +2178,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
         auto [it, added] =
             reads.try_emplace({a, n, pair.logical_offset}, effects.size());
         if (added)
-          effects.push_back({{MemoryEffect{AccessMode::kRead, a, n}}});
+          effects.push_back({{MemoryEffect{AccessMode::kRead, a, n, std::nullopt, MemoryProxy::kAsync}}});
         refs.push_back(Ref(id, Milestone::kEffect, it->second));
       }
       if (!pair.destination)
@@ -2169,7 +2187,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
           Ref(id, Milestone::kEffect, effects.size()));
       effects.push_back(
           {{MemoryEffect{AccessMode::kWrite, pair.destination->first,
-                         pair.destination->second}},
+                         pair.destination->second, std::nullopt, MemoryProxy::kAsync}},
            {},
            std::move(refs)});
       UniquePush(ranks, pair.target_rank);
@@ -2240,9 +2258,10 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     auto id=Next(); std::vector<AsyncEffect> effects;
     for (std::uint64_t offset=0;offset<bytes;offset+=element) {
       const auto index=effects.size();
-      effects.push_back({{MemoryEffect{AccessMode::kRead,fragment(read_base,read.first,offset),element}}});
+      effects.push_back({{MemoryEffect{AccessMode::kRead,fragment(read_base,read.first,offset),element,
+          std::nullopt,MemoryProxy::kAsync}}});
       effects.push_back({{MemoryEffect{AccessMode::kWrite,fragment(write_base,write.first,offset),element,
-          scope=="cta"?AtomicScope::kCta:scope=="gpu"?AtomicScope::kGpu:AtomicScope::kSys}},
+          scope=="cta"?AtomicScope::kCta:scope=="gpu"?AtomicScope::kGpu:AtomicScope::kSys,MemoryProxy::kAsync}},
           {},{Ref(id,Milestone::kEffect,index)}});
     }
     Async(t,e,std::move(effects)); t.bulk.Issue(id); return;
@@ -2269,7 +2288,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
         throw SemanticError("bulk_copy_variant","shared bulk copy requires a resolved remote destination");
     }
     const auto [read, write] = BulkCopyFootprints(e, b, contract, size, spaces);
-    Copy(t, e, {read}, {write}, CompleteTxEffect{resources->Barrier(e, b[2], contract), size});
+    Copy(t, e, {read}, {write}, CompleteTxEffect{resources->Barrier(e, b[2], contract), size}, MemoryProxy::kAsync);
     return;
   }
   if (operation == "bulk_copy") {
@@ -2287,7 +2306,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
       throw SemanticError("bulk_copy_variant", "bulk copy address count");
     const auto size = BulkSize(e, ops[2]);
     const auto [read, write] = BulkCopyFootprints(e, b, contract, size, spaces);
-    t.bulk.Issue(Copy(t, e, {read}, {write}));
+    t.bulk.Issue(Copy(t, e, {read}, {write}, std::nullopt, MemoryProxy::kAsync));
     return;
   }
   if (operation == "bulk_commit_group") {

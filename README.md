@@ -217,7 +217,9 @@ a report from the current output when needed.
 - Atomics (`atom`, `red`) are analyzed only under
   [Order-independent atomics](docs/assumptions.md#order-independent-atomics),
   off by default.
-- Fences and the full PTX memory model are not modeled. The hardware model
+- Proxy fences (`fence.proxy.async`) are checked between generic and
+  async-proxy accesses ([Proxy fences](docs/assumptions.md#proxy-fences)).
+  Other fences and the full PTX memory model are not modeled. The hardware model
   follows our reading of the PTX documentation, which does not specify every
   detail.
 - Equivalence treats floating-point values as real numbers, and the check is

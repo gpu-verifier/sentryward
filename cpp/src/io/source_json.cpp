@@ -135,7 +135,7 @@ MemoryEndpoint Endpoint(const Json& value) {
 }
 
 MemoryEffect Access(const Json& value) {
-  Fields(value, {"mode", "endpoint", "bytes"}, {"atomic_scope"});
+  Fields(value, {"mode", "endpoint", "bytes"}, {"atomic_scope", "proxy"});
   const auto mode = String(value.at("mode"));
   if (mode != "read" && mode != "write") Fail("unknown access mode: " + mode);
   std::optional<AtomicScope> atomic;
@@ -146,9 +146,16 @@ MemoryEffect Access(const Json& value) {
     else if (scope == "sys") atomic = AtomicScope::kSys;
     else Fail("unsupported atomic scope: " + scope);
   }
+  auto proxy = MemoryProxy::kGeneric;
+  if (value.contains("proxy")) {
+    const auto name = String(value.at("proxy"));
+    if (name == "async") proxy = MemoryProxy::kAsync;
+    else if (name == "tensormap") proxy = MemoryProxy::kTensorMap;
+    else if (name != "generic") Fail("unsupported memory proxy: " + name);
+  }
   return {mode == "read" ? AccessMode::kRead : AccessMode::kWrite,
           Endpoint(value.at("endpoint")), value.at("bytes").is_null() ? std::nullopt
-              : std::optional{UInt<std::uint64_t>(value.at("bytes"))}, atomic};
+              : std::optional{UInt<std::uint64_t>(value.at("bytes"))}, atomic, proxy};
 }
 
 std::optional<CompletionAction> Action(const Json& value) {
@@ -189,8 +196,16 @@ SourceOp Operation(const Json& value) {
     return result;
   }
   if (kind == "await") {
-    Fields(value, {"kind", "requirements"});
-    return Await{References(value.at("requirements"))};
+    Fields(value, {"kind", "requirements"}, {"proxy_fence"});
+    std::uint8_t spaces = 0;
+    if (value.contains("proxy_fence"))
+      for (const auto& space : value.at("proxy_fence")) {
+        const auto name = String(space);
+        if (name == "shared") spaces |= kProxyFenceShared;
+        else if (name == "global") spaces |= kProxyFenceGlobal;
+        else Fail("unsupported proxy fence space: " + name);
+      }
+    return Await{References(value.at("requirements")), spaces};
   }
   if (kind == "sync_threads") {
     Fields(value, {"kind", "sync_id"});
@@ -631,6 +646,8 @@ Json Source(const MemoryAccess& access) {
   if (access.atomic_scope)
     result["atomic_scope"] = *access.atomic_scope == AtomicScope::kCta ? "cta" :
                               *access.atomic_scope == AtomicScope::kGpu ? "gpu" : "sys";
+  if (access.proxy != MemoryProxy::kGeneric)
+    result["proxy"] = access.proxy == MemoryProxy::kAsync ? "async" : "tensormap";
   if (const auto* address = std::get_if<AddressId>(&access.address)) {
     result["endpoint"] = {{"kind", "memory"}, {"address", address->value()}};
   } else {
@@ -1859,6 +1876,16 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
       case VerificationStatus::kInvalidInput: report["status"] = "invalid_event_view"; break;
       case VerificationStatus::kRaceFound:
         report["status"] = "potential_race";
+        if (result.memory->proxy_fence_race) {
+          const auto& proxies = *result.memory->proxy_fences;
+          report["diagnostics"]=Json::array({{{"code","proxy_fence_missing"},{"stage","memory_check"},
+            {"message","A generic-proxy and an async-proxy access to the same bytes are ordered without a "
+                       "proxy fence (fence.proxy.async) between them"},
+            {"details",{{"witnesses_path","races"},{"count",result.memory->race_count},
+                        {"read_after_write",proxies.read_after_write},{"write_after_write",proxies.write_after_write},
+                        {"write_after_read",proxies.write_after_read}}}}});
+          break;
+        }
         report["diagnostics"]=Json::array({{{"code","conflicting_accesses_unordered"},{"stage","memory_check"},
           {"message","Conflicting accesses have no proven required ordering"},
           {"details",{{"witnesses_path","races"},{"count",result.memory->race_count}}}}});
@@ -1967,6 +1994,23 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
           {"logical_accesses",family.logical_accesses},{"access_families",family.access_families},
           {"candidate_relations",family.candidate_relations},{"affine_member_rows",family.affine_member_rows},
           {"hb_member_enumerations",family.hb_member_enumerations},{"hb_frontier_pieces",family.hb_frontier_pieces}};
+      }
+      if (const auto& proxies = result.memory->proxy_fences) {
+        report["memory_analysis"]["proxy_fences"] = {
+            {"async_accesses", proxies->async_accesses}, {"fences", proxies->fences},
+            {"ordered_pairs", proxies->ordered_pairs}, {"read_after_write", proxies->read_after_write},
+            {"write_after_write", proxies->write_after_write}, {"write_after_read", proxies->write_after_read},
+            {"unresolved", proxies->unresolved}};
+        if (!result.memory->proxy_fence_sites.empty()) {
+          auto& sites = report["memory_analysis"]["proxy_fences"]["sites"] = Json::array();
+          for (const auto& site : result.memory->proxy_fence_sites) {
+            Json entry{{"kind", site.kind}, {"count", site.count}, {"generic", Source(site.generic)},
+                       {"async", Source(site.async)}};
+            if (site.generic_ptx) entry["generic"]["ptx_instruction"] = *site.generic_ptx;
+            if (site.async_ptx) entry["async"]["ptx_instruction"] = *site.async_ptx;
+            sites.push_back(std::move(entry));
+          }
+        }
       }
       report["memory_analysis"]["address_model"] = {
           {"refined_pairs", address.refined}, {"cache_hits", address.cache_hits},
