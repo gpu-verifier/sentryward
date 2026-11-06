@@ -439,6 +439,15 @@ private:
                                            const std::string &alias, const nlohmann::json &offset,
                                            std::optional<std::uint64_t> bytes);
 };
+// EventTape's copy of a RecordView. Declared outside EventTape: EventTape::Event checks that its
+// first alternative is default-constructible inside the class, and GCC does not use a nested
+// class's default member initializers before the enclosing class is complete.
+struct EventTapeView {
+  RecordRef at;
+  std::vector<RegId> slice;
+  RecordKind kind = RecordKind::Full;
+  bool positioned = false;
+};
 // A worker's query events (FactSource::WorkerScope), deep-copied in the order it noted them, with
 // their tag and depths. Replay hands them to the consumer's sink on the consuming thread, so the
 // sink sees the events the worker's unit of work would have noted there. Replayed views carry the
@@ -459,12 +468,7 @@ public:
   }
 
 private:
-  struct View {
-    RecordRef at;
-    std::vector<RegId> slice;
-    RecordKind kind = RecordKind::Full;
-    bool positioned = false;
-  };
+  using View = EventTapeView;
   struct ValueRead { View view; RegId reg; std::optional<Scalar> answer; };
   struct LegacyUniform { RecordRef leader; bool expanded; std::string name; std::optional<Integer> answer;
                          std::vector<LaneRef> members; };
