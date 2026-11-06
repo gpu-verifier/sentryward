@@ -32,6 +32,9 @@ def _main():
         from sentryward._reference import extract
         spec = importlib.util.spec_from_file_location("example_reference", args.source)
         module = importlib.util.module_from_spec(spec)
+        # PyTorch capture resolves functions through their defining module.
+        # Match normal import semantics before executing the dynamic reference.
+        sys.modules[spec.name] = module
         spec.loader.exec_module(module)
         from sentryward._reference_binding import derive_reference_input
         config = derive_reference_input(json.loads(args.input.read_text()), json.loads(args.binding.read_text()))
