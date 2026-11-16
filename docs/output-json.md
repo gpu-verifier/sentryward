@@ -5,9 +5,14 @@ result is one of 14 categories; checks and diagnostics explain the conclusion.
 
 ## JSON structure
 
-The CLI writes one raw JSON object to stdout; Python returns the same structure.
-Save it as `output.json` if a file is needed. The following is an abbreviated
-successful result, showing the fields used to read the conclusion:
+The CLI writes one JSON object to stdout by default; Python `verify` returns the
+same structure. `--output PATH` writes that object to a file. `--format summary`
+prints a compact text listing of `result`, `checks`, diagnostics, and warning
+counts on stdout; the JSON object is unchanged, and `--output` still stores it.
+`summarize(result)` returns the same listing from Python.
+
+The following is an abbreviated successful result, showing the fields used to
+read the conclusion:
 
 ```json
 {
@@ -291,7 +296,9 @@ such as `warning_count` remain totals.
 The CLI accepts `--timeout` and `--memory-limit-mib`; Python accepts
 `timeout_seconds` and `memory_limit_mib`. Explicit memory limits must be
 positive integer MiB values within the supported range; operating-system limits
-still apply. See [invocation options](../README.md#verify-a-kernel).
+still apply. `--fail-on` does not change the result object; it only selects when
+a finding or other requested category becomes exit status 1. See
+[invocation options](../README.md#verify-a-kernel).
 
 Omitting the memory option or using Python None applies the default budget:
 90% of the memory the verifier process may use, enforced on it like a
