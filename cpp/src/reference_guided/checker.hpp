@@ -107,16 +107,23 @@ struct PieceNode {
   Id left = invalid, right = invalid, index = invalid, var = invalid;
   Z count = 0;
 };
+class LinearReductionPattern;
 struct Checker {
   Arena &a;
   Arena patterns;
   CertifiedStatePatternCanonicalizer state_patterns;
-  std::vector<Spec> specs;
+  // A deque, as the Arena's nodes: appending never invalidates a reference to an existing element,
+  // so a `const Spec &` held across a call that may register more (the masked matcher's exponent
+  // closure re-enters matching) stays valid. Accessed only by index, size and push_back.
+  std::deque<Spec> specs;
   std::map<std::tuple<Id, size_t, size_t, Z, bool, std::vector<SlotDomain>>, Id> spec_index;
   // Exact instantiated definition identities, local to this Checker. These
   // never enumerate reduction elements or infer equality from samples.
   std::unordered_map<Id, Id> call_definition_cache;
   std::map<std::tuple<Id, Z, bool>, Id> call_definitions;
+  // Shape of an instantiated reduction definition (actual arguments as first-occurrence markers) ->
+  // (the spec registered first for it, its argument recipe): Checker::call respells other specs.
+  std::map<std::tuple<Id, Z, bool>, std::pair<Id, std::vector<std::pair<bool, Id>>>> call_spellings;
   std::set<Id> active, opt_version;
   // Only actual reference reduction axes may create shifted max domains.
   // Free output coordinates are parameters, even when they have integer bounds.
@@ -135,7 +142,14 @@ struct Checker {
   std::map<std::tuple<Id, Id, Id>, Id> restricted_axis_cache;
   std::map<std::tuple<Id, Id, Z>, Z> masked_prefix_cache;
   std::map<std::tuple<Id, Id, Z>, std::pair<Id, Id>> restricted_sum_bodies;
+  // (body, binder, count) of a peeled Max Fold -> (fresh binder, body at fresh - 1) (canonicalize_fold).
+  std::map<std::tuple<Id, Id, Z>, std::pair<Id, Id>> unpeeled_max_bodies;
   std::map<std::tuple<Id, Id, Z>, std::pair<Id, Id>> restricted_max_bodies;
+  // Lemmas of LinearReductionPattern's chain merge (merge_by_finiteness_chain) proved by its exact case
+  // analysis: (kind, three nodes) -> whether the proof accepted a case by identical non-finite values.
+  // Each is a property of those nodes alone (see chain_lemma), so it holds in every later proof of this
+  // comparison.
+  std::map<std::tuple<int, Id, Id, Id>, bool> proved_chain_lemmas;
   uint64_t domain_binder_serial = 0;
   struct Match {
     std::vector<Id> params;
@@ -149,6 +163,17 @@ struct Checker {
   // Anchor inventories contain no captures or proof results. Successful
   // reconstruction below is separately keyed by its complete capture tuple.
   std::unordered_map<Id, std::vector<Id>> pattern_anchor_cache, target_anchor_cache;
+  // Target roots whose anchor inventory above was cut by a discovery limit and, built on demand for
+  // such a root, the exact set (sorted node ids) of read, readbits and packedbits nodes in the
+  // lexical scope of that inventory: anchors are opaque and a nested Fold contributes only its
+  // seed. Nodes are immutable and hash-consed, so an entry stays valid for the whole comparison and
+  // is shared by every family and spec that queries the same target node.
+  std::unordered_set<Id> truncated_target_anchors;
+  std::unordered_map<Id, std::vector<Id>> target_read_index;
+  // Visit marks of one read-index build: a node is visited in the build whose number it holds.
+  // Dense over Arena ids (the store only grows), so a build allocates and hashes nothing per node.
+  std::vector<std::uint32_t> read_index_marks;
+  std::uint32_t read_index_build = 0;
   struct BodyInstanceKey {
     Id pattern; std::vector<Id> captures;
     bool operator==(const BodyInstanceKey &) const = default;
@@ -193,61 +218,32 @@ struct Checker {
   std::unordered_map<Id, Id> coefficient_normal_cache;
   std::map<std::pair<Id, Id>, bool> coefficient_equal_cache;
   std::map<std::pair<Id, Id>, bool> equal_arm_cache;
-  std::vector<PieceNode> pieces;
+  std::deque<PieceNode> pieces;  // a deque for the same reason as specs
   std::map<std::string, uint64_t> failures;
   // Different complete coverage proofs describe the same exact contribution.
   // Export these equalities to the existing per-comparison proof reuse bank;
   // partial matches never enter this list.
   std::vector<std::pair<Id,Id>> complete_reduction_equalities;
   bool exponential_mode = false;
+  // Closes a reduction Call inside a Sum (LinearReductionPattern::owned_closure), set by the
+  // comparison; unset, the masked matcher's exponent closure is not attempted.
+  std::function<std::optional<Id>(Id, Id, const std::vector<Id> &)> exponent_closure;
+  // The linear-reduction pattern whose term match is running (LinearReductionPattern::OwnerScope),
+  // else null. A closure query reached from a closure query's own match is charged to it.
+  LinearReductionPattern *closure_owner = nullptr;
+  // Exponent closure queries (LinearReductionPattern::owned_closure): (value, spec, parameters) ->
+  // R + C * call(spec, parameters), or invalid when the query did not close within its budget (a
+  // decline, also for a query that ran out of it). The result depends on nothing else: the target
+  // is given explicitly (no active-spec state is read), the budget is one fixed standard budget per
+  // query, and a nested query cut off by its enclosing budget is never stored. A success is an exact
+  // identity of immutable hash-consed nodes, so it holds wherever the same query recurs.
+  std::map<std::tuple<Id, Id, std::vector<Id>>, Id> exponent_closure_cache;
   ExponentialPolynomial scalar;
   Checker(Arena &ar, bool ep = false) : a(ar), state_patterns(patterns, a),
       exponential_mode(ep), scalar(ar) { patterns.deadline = a.deadline; }
-  Id canonical_coefficient(Id value) {
-    if (!exponential_mode || !a.nodes[value].facts.finite) return value;
-    if (auto it = coefficient_normal_cache.find(value); it != coefficient_normal_cache.end())
-      return it->second;
-    scalar.reset_query();
-    Id result = scalar.canonicalize(value);
-    coefficient_normal_cache.emplace(value, result);
-    ++a.stats["coefficient_normalizations"];
-    return result;
-  }
-  // select(p, A, B) denotes A for every p when both arms are total and the
-  // scalar engine proves A = B (normal-form or fraction cross-product). Only
-  // arms built from that engine's algebra (sums, products, reciprocals,
-  // exponentials) over the same free coordinates can be such a pair; any
-  // other pair is kept without a query. One memoized query per arm pair; the
-  // kept arm is the older node, independent of the predicate's polarity.
-  Id equal_arm_select(Id id) {
-    const auto &n = a.nodes[id];
-    if (!exponential_mode || n.op != "select" || n.args.size() != 3) return id;
-    const Id x = n.args[1], y = n.args[2];
-    auto algebraic = [&](Id arm) {
-      const auto &op = a.nodes[arm].op;
-      return a.nodes[arm].facts.finite &&
-             (op == "add" || op == "add_raw" || op == "mul" || op == "recip" ||
-              op == "exp" || op == "exp2");
-    };
-    if (!algebraic(x) || !algebraic(y) || a.nodes[x].free != a.nodes[y].free) return id;
-    auto [it, fresh] = equal_arm_cache.emplace(std::minmax(x, y), false);
-    if (fresh) {
-      it->second = scalar.equal(x, y);
-      ++a.stats[it->second ? "select_equal_arm_proofs" : "select_equal_arm_declines"];
-    }
-    return it->second ? std::min(x, y) : id;
-  }
-  bool equal_coefficients(Id left, Id right) {
-    if (left == right) return true;
-    left = canonical_coefficient(left); right = canonical_coefficient(right);
-    if (left == right) return true;
-    if (!exponential_mode) return false;
-    auto key = std::minmax(left, right);
-    auto [it, fresh] = coefficient_equal_cache.emplace(std::pair(key.first, key.second), false);
-    if (fresh) it->second = scalar.equal(left, right);
-    else ++a.stats["coefficient_equality_cache_hits"];
-    return it->second;
-  }
+  Id canonical_coefficient(Id value);
+  Id equal_arm_select(Id id);
+  bool equal_coefficients(Id left, Id right);
   // The same producer-side witness interface is used by import and all
   // reconstruction paths; Checker does not keep a second property engine.
   Id coordinate_at_zero(Id root, Id axis) {
@@ -294,177 +290,8 @@ struct Checker {
     // coordinate: it occurs in a coordinate position, or is the axis.
     std::vector<bool> valued, coordinate;
   };
-  // Every slot a coordinate pattern refers to, including the residual slots
-  // that affine_param and coordinate_sum keep in their data. O(pattern nodes).
-  void coordinate_slots(Id root, std::vector<size_t> &out) const {
-    std::vector<Id> todo{root};
-    std::unordered_set<Id> seen{root};
-    while (!todo.empty()) {
-      const auto &n = patterns.nodes[todo.back()];
-      todo.pop_back();
-      if (n.op == "slot") out.push_back(n.data[0].numerator().convert_to<size_t>());
-      else if ((n.op == "affine_param" || n.op == "coordinate_sum") && n.data.size() > 1 && n.data[1] >= 0)
-        out.push_back(n.data[1].numerator().convert_to<size_t>());
-      for (Id child : n.args) if (seen.insert(child).second) todo.push_back(child);
-    }
-  }
-  SpecPattern pattern(Id root, Id var, bool allow_parameterized = true, bool allow_derived = true) {
-    std::unordered_map<Id, Id> slots;
-    std::vector<Id> slot_values;
-    std::vector<bool> valued, coordinate;
-    auto slot = [&](Id value, bool coordinate_position) {
-      auto [it, fresh] = slots.emplace(value, Id(slots.size()));
-      if (fresh) {
-        slot_values.push_back(value);
-        valued.push_back(false);
-        coordinate.push_back(false);
-      }
-      if (coordinate_position) coordinate[it->second] = true;
-      return it->second;
-    };
-    std::unordered_map<uint64_t, Id> memo;
-    struct Work {
-      Id n;
-      bool coord, ready;
-    };
-    std::vector<Work> todo{{root, false, false}};
-    uint64_t visits = 0;
-    bool anchored = false, used_parameterized = false, used_derived = false;
-    std::map<std::vector<Q>, unsigned> coordinate_pairs;
-    auto key = [](Id n, bool c) { return (uint64_t(n) << 1) | c; };
-    while (!todo.empty()) {
-      a.check();
-      auto w = todo.back();
-      todo.pop_back();
-      auto k = key(w.n, w.coord);
-      if (memo.contains(k))
-        continue;
-      const auto &n = a.nodes[w.n];
-      if (w.n == var || (w.coord && !a.depends(w.n, var)) || enclosing_binder(w.n, var)) {
-        if (w.n == var) anchored = true;
-        const Id index = slot(w.n, w.coord || w.n == var);
-        if (!w.coord && w.n != var) valued[index] = true;
-        memo[k] = patterns.intern("slot", {}, {Q(index)});
-        continue;
-      }
-      // Record quotient/remainder relationships before the binder subtree
-      // becomes a slot. The surrounding read/call structure remains exact.
-      if (allow_derived && w.coord) {
-        if (auto relation = CoordinateRelations::describe(a, w.n, var)) {
-          (*relation)[0] = Q(slot(var, true));
-          if (relation->size() == 7) {
-            auto key = CoordinateRelations::pair_key(*relation);
-            if (!coordinate_pairs.contains(key) && coordinate_pairs.size() == CoordinateRelations::max_groups)
-              return pattern(root, var, allow_parameterized, false);
-            coordinate_pairs[key] |= (*relation)[5] == 0 ? 1u : 2u;
-          }
-          used_derived = true;
-          memo[k] = patterns.intern("derived_coordinate", {}, std::move(*relation));
-          continue;
-        }
-        if (auto recipe = CoordinateRelations::describe_sum(a, w.n, var)) {
-          Id axis = slot(var, true);
-          Q residual_slot(-1);
-          if (recipe->residual != invalid) residual_slot = Q(slot(recipe->residual, true));
-          std::vector<Id> relations;
-          for (auto &relation : recipe->relations) {
-            relation[0] = Q(axis);
-            relations.push_back(patterns.intern("derived_coordinate", {}, std::move(relation)));
-          }
-          std::vector<Q> data{Q(axis), residual_slot, recipe->constant};
-          data.insert(data.end(), recipe->coefficients.begin(), recipe->coefficients.end());
-          memo[k] = patterns.intern("coordinate_sum", std::move(relations), std::move(data));
-          used_derived = true;
-          continue;
-        }
-      }
-      // A coordinate such as k+128 is one affine capture, not a tree that
-      // must have the same constant/parenthesization as each optimized tile.
-      // A parameterized residual is captured only after another coordinate
-      // has anchored the binder. No multivariable address equation is solved.
-      if (w.coord && (n.op == "add" || n.op == "mul") && n.args.size() <= 8) {
-        auto terms = a.terms(w.n);
-        Q coefficient(0), offset(0);
-        bool affine = true, parameterized = false;
-        for (auto [term, scale] : terms) {
-          if (scale.denominator() != 1) { affine = false; break; }
-          if (term == var) coefficient += scale;
-          else if (term == a.one) offset += scale;
-          else if (!a.depends(term, var) && a.nodes[term].facts.finite)
-            parameterized = true;
-          else { affine = false; break; }
-        }
-        if (affine && coefficient != 0 && coefficient.denominator() == 1 &&
-            offset.denominator() == 1 && (allow_parameterized || !parameterized)) {
-          Id axis = slot(var, true);
-          if (parameterized) {
-            used_parameterized = true;
-            std::vector<Id> residual_terms;
-            for (auto [term, scale] : terms)
-              if (term != var)
-                residual_terms.push_back(a.mul({a.constant(scale), term}));
-            Id residual = a.add(std::move(residual_terms));
-            memo[k] = patterns.intern("affine_param", {},
-                                     {Q(axis), Q(slot(residual, true)), coefficient});
-          } else {
-            anchored = true;
-            memo[k] = patterns.intern("affine_slot", {},
-                                     {Q(axis), coefficient, offset});
-          }
-          continue;
-        }
-      }
-      if (!w.coord && n.op == "fold")
-        throw Unsupported("reference nested reduction not closed");
-      bool childcoord = w.coord || n.op == "read" || n.op == "readbits" ||
-                        n.op == "packedbits" || n.op == "call" || n.op == "certified_state";
-      if (!w.ready) {
-        todo.push_back({w.n, w.coord, true});
-        for (size_t i = n.args.size(); i-- > 0;)
-          if (!memo.contains(key(n.args[i], childcoord)))
-            todo.push_back({n.args[i], childcoord, false});
-        continue;
-      }
-      std::vector<Id> as;
-      as.reserve(n.args.size());
-      for (Id x : n.args)
-        as.push_back(memo.at(key(x, childcoord)));
-      // A nested Call's Facts depend on the arguments its domains name.
-      if (n.op == "call" && n.data.size() == 1 && n.data[0].denominator() == 1 &&
-          n.data[0] >= 0 && n.data[0] < Q(specs.size())) {
-        std::vector<size_t> inside;
-        for (const auto &domain : specs[n.data[0].numerator().convert_to<Id>()].domains)
-          if (domain.argument < as.size()) coordinate_slots(as[domain.argument], inside);
-        for (size_t index : inside)
-          if (slot_values[index] != var) valued[index] = true;
-      }
-      memo[k] = patterns.intern(n.op, std::move(as), n.data, n.tag);
-      ++visits;
-    }
-    a.stats["pattern_build_unique_nodes"] += visits;
-    a.stats["pattern_build_peak_nodes"] =
-        std::max(a.stats["pattern_build_peak_nodes"], visits);
-    // Without an independent anchor, retain the previous structural path:
-    // equal-shaped parameterized addresses can still bind k and each input
-    // separately. Rebuild this whole pattern at most once, never per coordinate.
-    bool paired = std::any_of(coordinate_pairs.begin(), coordinate_pairs.end(),
-                             [](const auto &entry) {
-                               return entry.second == 3 && (entry.first[1] == 1 || entry.first[1] == -1);
-                             });
-    if (allow_derived && used_derived && !anchored && !paired) {
-      ++a.stats["derived_coordinate_structural_fallbacks"];
-      return pattern(root, var, allow_parameterized, false);
-    }
-    if (allow_parameterized && used_parameterized && !anchored && !paired) {
-      ++a.stats["parameterized_affine_structural_fallbacks"];
-      return pattern(root, var, false, allow_derived);
-    }
-    if (!slots.contains(var))
-      throw Unsupported(
-          "reference has no reduction coordinate capture");
-    return {memo.at(key(root, false)), slots.size(), slots.at(var),
-            std::move(slot_values), std::move(valued), std::move(coordinate)};
-  }
+  void coordinate_slots(Id root, std::vector<size_t> &out) const;
+  SpecPattern pattern(Id root, Id var, bool allow_parameterized = true, bool allow_derived = true);
   // Every variable that was a Fold binder in a normalization by this Checker,
   // on either side. Never cleared: a spec outlives the normalization that
   // registered it, and a re-normalized part of a reference may hold a binder
@@ -481,65 +308,12 @@ struct Checker {
   // O(total pattern nodes).
   std::unordered_map<Id, bool> literal_free_specs;
   size_t literal_free_binders = 0;
-  bool literal_binder_free(Id sid) {
-    if (literal_free_binders != fold_binders.size()) {
-      literal_free_specs.clear();
-      literal_free_binders = fold_binders.size();
-    }
-    if (auto it = literal_free_specs.find(sid); it != literal_free_specs.end()) return it->second;
-    bool free = true;
-    std::vector<Id> todo{specs[sid].pattern};
-    std::unordered_set<Id> seen{specs[sid].pattern};
-    while (!todo.empty() && free) {
-      a.check(); const Id id = todo.back(); todo.pop_back();
-      const auto &n = patterns.nodes[id];
-      if (n.op == "var" && n.args.empty()) {
-        const auto actual = a.find_node(n.op, n.args, n.data, n.tag);
-        free = actual && !fold_binders.contains(*actual);
-      } else if (n.op == "call") {
-        free = n.data.size() == 1 && n.data[0].denominator() == 1 && n.data[0] >= 0 && n.data[0] < Q(sid) &&
-               literal_binder_free(n.data[0].numerator().convert_to<Id>());
-      }
-      for (Id child : n.args) if (seen.insert(child).second) todo.push_back(child);
-    }
-    literal_free_specs.emplace(sid, free);
-    return free;
-  }
+  bool literal_binder_free(Id sid);
   Id intern_spec(Id p, size_t slots, size_t axis, Z count, Facts f,
-                 bool maximum = false, std::vector<SlotDomain> domains = {}) {
-    auto k = std::tuple(p, slots, axis, count, maximum, domains);
-    auto it = spec_index.find(k);
-    if (it != spec_index.end())
-      return it->second;
-    Id id = Id(specs.size());
-    spec_index.emplace(std::move(k), id);
-    specs.push_back({p, slots, axis, std::move(count), f, maximum, std::move(domains)});
-    return id;
-  }
-  // The integer interval of a valued slot's value, narrowed by its sign
-  // Facts; nothing when the value is not provably an integer with bounds.
-  std::optional<std::pair<Q, Q>> integer_domain(Id value) {
-    const auto &n = a.nodes[value];
-    if (!n.bounds || n.bounds->first.denominator() != 1 || n.bounds->second.denominator() != 1 ||
-        !CoordinateRelations::integer(a, value)) return {};
-    Q lo = n.bounds->first;
-    if (n.facts.pos) lo = std::max(lo, Q(1));
-    else if (n.facts.nn) lo = std::max(lo, Q(0));
-    return std::pair(lo, n.bounds->second);
-  }
-  // Domains of the valued slots, by Call argument position; nothing when a
-  // valued slot's value has no integer domain.
+                 bool maximum = false, std::vector<SlotDomain> domains = {});
+  std::optional<std::pair<Q, Q>> integer_domain(Id value);
   std::optional<std::vector<SlotDomain>> slot_domains(const std::vector<Id> &values,
-                                                      const std::vector<bool> &valued, size_t axis) {
-    std::vector<SlotDomain> domains;
-    for (size_t i = 0; i < values.size(); ++i) {
-      if (i == axis || !valued[i]) continue;
-      auto domain = integer_domain(values[i]);
-      if (!domain) return {};
-      domains.push_back({i < axis ? i : i - 1, domain->first, domain->second});
-    }
-    return domains;
-  }
+                                                      const std::vector<bool> &valued, size_t axis);
   // The same narrowing as integer_domain, so a reference value is inside the
   // domain it defined.
   bool in_domain(Id argument, const SlotDomain &domain) {
@@ -547,289 +321,15 @@ struct Checker {
     const auto range = integer_domain(argument);
     return range && domain.lo <= range->first && range->second <= domain.hi;
   }
-  // A Call denotes the spec's body at its arguments for any argument values.
-  // Its Facts are the spec's only at arguments inside every domain; elsewhere
-  // nothing is known. O(domains) per Call.
-  Id call(Id sid, const std::vector<Id> &args) {
-    const Spec &s = specs[sid];
-    Facts facts;
-    if (std::all_of(s.domains.begin(), s.domains.end(), [&](const SlotDomain &domain) {
-          return domain.argument < args.size() && in_domain(args[domain.argument], domain);
-        })) {
-      facts = {s.facts.finite, s.count > 0 && s.facts.pos, s.count == 0 || s.facts.nn};
-      if (s.maximum && s.count > 0)
-        facts.finite_or_neginf = s.facts.finite_or_negative_infinity();
-    } else {
-      ++a.stats["reference_call_domain_misses"];
-    }
-    if (auto it = scoped_call_facts.find({sid, args}); it != scoped_call_facts.end()) facts = it->second;
-    Id raw = a.intern("call", args, {Q(sid)}, "",
-                    facts);
-    if (auto it = call_definition_cache.find(raw); it != call_definition_cache.end()) {
-      active.insert(a.nodes[it->second].data[0].numerator().convert_to<Id>());
-      return it->second;
-    }
-    if (!s.facts.finite || args.size()+1 != s.slots || s.slots>128) return raw;
-    std::vector<Id> captures(s.slots); size_t next=0;
-    for(size_t i=0;i<s.slots;++i) {
-      if(i==s.axis) captures[i]=patterns.intern("definition_bound_axis",{},{});
-      else {
-        Id arg=args[next++];
-        captures[i]=a.value(arg) ? patterns.constant(*a.value(arg))
-          : patterns.intern("definition_actual",{},{Q(arg)});
-      }
-    }
-    std::unordered_map<Id,Id> memo;
-    std::vector<std::pair<Id,bool>> todo{{s.pattern,false}};
-    bool supported=true; size_t work=0;
-    while(!todo.empty()) {
-      a.check(); auto [id,ready]=todo.back();todo.pop_back();
-      if(memo.contains(id))continue;
-      if(++work>512 || memo.size()>=128){supported=false;break;}
-      const auto &n=patterns.nodes[id];
-      if(n.args.size()>128){supported=false;break;}
-      ++a.stats["call_definition_node_visits"];
-      if(n.op=="slot") {memo[id]=captures.at(n.data[0].numerator().convert_to<size_t>());continue;}
-      // Conservative exact structural specialization. Rich coordinate recipes
-      // keep their existing identity until separately proven equivalent.
-      if(n.op!="const" && n.op!="read" && n.op!="mul" && n.op!="add") {supported=false;break;}
-      if(!ready){todo.emplace_back(id,true);for(Id child:n.args)if(!memo.contains(child))todo.emplace_back(child,false);continue;}
-      std::vector<Id> children;for(Id child:n.args)children.push_back(memo.at(child));
-      auto data=n.data;
-      if(n.op=="mul")std::sort(children.begin(),children.end());
-      if(n.op=="add") {
-        std::vector<std::pair<Id,Q>> terms;for(size_t i=0;i<children.size();++i)terms.emplace_back(children[i],data[i]);
-        std::sort(terms.begin(),terms.end());
-        for(size_t i=0;i<terms.size();++i){children[i]=terms[i].first;data[i]=terms[i].second;}
-      }
-      memo[id]=patterns.intern(n.op,std::move(children),std::move(data),n.tag);
-    }
-    Id result=raw;
-    if(supported) {
-      auto [it,inserted]=call_definitions.emplace(std::tuple(memo.at(s.pattern),s.count,s.maximum),raw);
-      result=it->second;
-      if(!inserted && result!=raw)++a.stats["identical_instantiated_reduction_calls"];
-    }
-    call_definition_cache.emplace(raw,result);
-    active.insert(a.nodes[result].data[0].numerator().convert_to<Id>());
-    return result;
-  }
-  // A paged score Call carries the logical axis through e.g.
-  // page_table[k/D] and k%D, so no individual argument is the axis itself.
-  // Register its maximum vocabulary only for a real enclosing reference
-  // reduction binder and an exact one-step quotient/remainder pair. This
-  // merely defines a template; OnlineSoftmax still proves every Max domain's
-  // complete, multiplicity-one coverage before canonicalizing any pivot.
-  void register_paired_maximum(Id call_id, Id reduced_axis) {
-    constexpr size_t max_binders = 8, max_nodes = 32, max_edges = 64;
-    const auto &call_node = a.nodes[call_id];
-    if (call_node.op != "call" || !call_node.facts.finite || call_node.args.size() > 8 ||
-        reference_binders.size() > max_binders) return;
-    if (std::none_of(reference_binders.begin(), reference_binders.end(),
-          [&](Id axis) { return axis != reduced_axis && a.depends(call_id, axis); })) return;
-    // Check the whole stored argument DAG before invoking pattern(), whose
-    // dependency queries otherwise could walk a large unrelated parameter.
-    std::vector<Id> todo = call_node.args, coordinate_nodes;
-    std::unordered_set<Id> seen;
-    size_t edges = 0;
-    while (!todo.empty()) {
-      a.check(); Id id = todo.back(); todo.pop_back();
-      if (!seen.insert(id).second) continue;
-      if (seen.size() > max_nodes) return;
-      const auto &node = a.nodes[id];
-      if (node.args.size() > 8 || edges + node.args.size() > max_edges) return;
-      if (node.op == "fold" || node.op == "call") return;
-      edges += node.args.size();
-      if (node.op == "idiv" || node.op == "imod") coordinate_nodes.push_back(id);
-      todo.insert(todo.end(), node.args.begin(), node.args.end());
-    }
-    if (coordinate_nodes.empty()) return;
-    for (Id axis : reference_binders) {
-      if (axis == reduced_axis || !seen.contains(axis)) continue;
-      const auto &variable = a.nodes[axis];
-      if (variable.op != "var" || variable.data.size() != 2 || !variable.bounds ||
-          variable.bounds->first != 0 || variable.bounds->second < 1 ||
-          variable.bounds->second.denominator() != 1 ||
-          variable.data[0] != variable.bounds->first || variable.data[1] != variable.bounds->second) continue;
-      std::map<std::vector<Q>, unsigned> pairs;
-      for (Id coordinate : coordinate_nodes) {
-        auto relation = CoordinateRelations::describe(a, coordinate, axis);
-        if (!relation || relation->size() != 7 ||
-            ((*relation)[1] != 1 && (*relation)[1] != -1)) continue;
-        auto key = CoordinateRelations::pair_key(*relation);
-        pairs[key] |= (*relation)[5] == 0 ? 1u : 2u;
-      }
-      if (std::none_of(pairs.begin(), pairs.end(),
-                       [](const auto &entry) { return entry.second == 3; })) continue;
-      auto shape = pattern(call_id, axis);
-      auto domains = slot_domains(shape.values, shape.valued, shape.axis);
-      Id auxiliary = intern_spec(shape.pattern, shape.slots, shape.axis, variable.bounds->second.numerator() + 1,
-                                 domains ? call_node.facts : Facts{}, true, domains ? std::move(*domains) : std::vector<SlotDomain>{});
-      if (active.insert(auxiliary).second) ++a.stats["paired_maximum_reference_domains"];
-    }
-  }
-  Id reg(Id body, Id var, Z count, bool maximum=false) {
-    // Scalar normalization belongs to the body equality query.
-    auto shape = pattern(body, var);
-    auto &[p, ns, axis, slots, valued, coordinate] = shape;
-    if (!maximum && a.nodes[body].facts.finite) {
-      if (auto canonical = state_patterns.canonicalize(p, ns, axis)) {
-        std::vector<Id> reordered(ns);
-        std::vector<bool> reordered_valued(ns), reordered_coordinate(ns);
-        for (size_t i = 0; i < ns; ++i) {
-          const size_t to = canonical->old_to_new[i];
-          reordered[to] = slots[i];
-          reordered_valued[to] = valued[i];
-          reordered_coordinate[to] = coordinate[i];
-        }
-        p = canonical->pattern;
-        axis = canonical->axis;
-        slots = std::move(reordered);
-        valued = std::move(reordered_valued);
-        coordinate = std::move(reordered_coordinate);
-      }
-    }
-    // The body's Facts were derived with each valued slot at its value. They
-    // are the spec's only together with those values' domains.
-    auto domains = slot_domains(slots, valued, axis);
-    Id sid = intern_spec(p, ns, axis, count, domains ? a.nodes[body].facts : Facts{}, maximum,
-                         domains ? std::move(*domains) : std::vector<SlotDomain>{});
-    active.insert(sid);
-    std::vector<Id> args;
-    for (size_t i = 0; i < slots.size(); ++i)
-      if (i != axis)
-        args.push_back(slots[i]);
-    const auto &bf = a.nodes[body].facts;
-    if (maximum && count > 0 && bf.finite_or_negative_infinity() &&
-        reduction_witness_at_zero(body, var, count, false))
-      scoped_call_facts.emplace(std::pair(sid, args), Facts{true, bf.pos, bf.nn, true});
-    else if (!maximum && bf.finite && bf.nn && count > 0 && positive_at_zero(body, var, count))
-      scoped_call_facts.emplace(std::pair(sid, args), Facts{true, true, true});
-    Id c = call(sid, args);
-    for (size_t j = 0; j < args.size(); ++j) {
-      const auto &n = a.nodes[args[j]];
-      // A reference split may pass k+offset to its score Call. Keep this
-      // window in the maximum definition: matching an absolute key must then
-      // recover k=key-offset, not widen the window to [0,offset+count).
-      // Only one isolated unit-stride coordinate is supported here. Checking
-      // the immediate Add before pattern() keeps work proportional to Call
-      // arity; independent coordinates are captured without producer walks.
-      if (n.op == "add" && n.args.size() == 2 && n.data.size() == 2) {
-        Id index = invalid;
-        std::optional<Q> offset;
-        for (size_t k = 0; k < n.args.size(); ++k) {
-          if (n.args[k] == a.one && n.data[k].denominator() == 1)
-            offset = n.data[k];
-          else if (n.data[k] == 1 && a.nodes[n.args[k]].op == "var")
-            index = n.args[k];
-        }
-        if (index != invalid && offset && reference_binders.contains(index)) {
-          const auto &v = a.nodes[index];
-          bool isolated = true;
-          for (size_t k = 0; k < args.size(); ++k)
-            if (k != j && a.depends(args[k], index)) { isolated = false; break; }
-          if (isolated && v.data.size() == 2 && v.bounds &&
-              v.data[0] == 0 && v.data[1].denominator() == 1 && v.data[1] >= 1 &&
-              v.bounds->first == v.data[0] && v.bounds->second == v.data[1] &&
-              n.bounds && n.bounds->first == *offset &&
-              n.bounds->second == *offset + v.data[1]) {
-            auto window = pattern(c, index);
-            auto window_domains = slot_domains(window.values, window.valued, window.axis);
-            Id aux = intern_spec(window.pattern, window.slots, window.axis, v.data[1].numerator() + 1,
-                                 window_domains ? a.nodes[c].facts : Facts{}, true,
-                                 window_domains ? std::move(*window_domains) : std::vector<SlotDomain>{});
-            active.insert(aux);
-            ++a.stats["shifted_maximum_reference_domains"];
-          }
-        }
-        continue;
-      }
-      // A binder that occurs only as a value (a mask bound, an addend) is no
-      // coordinate of a Max domain.
-      if (n.op != "var" || !n.bounds || n.bounds->first != 0 ||
-          n.bounds->second < 1 || !coordinate[j < axis ? j : j + 1])
-        continue;
-      std::vector<Id> ps;
-      for (size_t i = 0; i < args.size(); ++i)
-        ps.push_back(patterns.intern("slot", {}, {Q(i)}));
-      Id pat = patterns.intern("call", ps, {Q(sid)});
-      // The axis j ranges over exactly its own domain [0, hi]; the other
-      // domains move to the auxiliary's argument positions.
-      std::vector<SlotDomain> aux_domains;
-      for (const auto &domain : specs[sid].domains)
-        if (domain.argument != j)
-          aux_domains.push_back({domain.argument < j ? domain.argument : domain.argument - 1, domain.lo, domain.hi});
-      Id aux =
-          intern_spec(pat, args.size(), j, n.bounds->second.numerator() + 1,
-                      a.nodes[c].facts, true, std::move(aux_domains));
-      active.insert(aux);
-    }
-    register_paired_maximum(c, var);
-    return c;
-  }
+  Id call(Id sid, const std::vector<Id> &args);
+  void register_paired_maximum(Id call_id, Id reduced_axis);
+  Id reg(Id body, Id var, Z count, bool maximum=false);
   Id neutral(Id sid) { return specs[sid].maximum ? a.infinity(-1) : a.zero; }
   Id plus(Id sid, std::vector<Id> xs) {
     return specs[sid].maximum ? a.maximum(xs) : a.add(xs);
   }
-  Summary select(const Summary &s, bool max) {
-    Summary r;
-    for (const auto &[k, p] : s)
-      if (specs[k.sid].maximum == max)
-        r.emplace(k, p);
-    return r;
-  }
-  // Nonrecursive local matching. Only commutative nodes branch. Exact capture
-  // agreement is enforced on every occurrence, even with shared pattern nodes.
-  std::optional<Id> instantiated_coordinate(Id root, const std::vector<Id> &captures) {
-    // Only the bounded coordinate pattern is evaluated, never an operand's
-    // numerical ancestry. All variables must already have exact captures.
-    std::unordered_map<Id, Id> memo;
-    std::vector<std::pair<Id, bool>> todo{{root, false}};
-    size_t visits = 0;
-    while (!todo.empty()) {
-      a.check();
-      if (++visits > 128) return {};
-      auto [id, ready] = todo.back(); todo.pop_back();
-      if (memo.contains(id)) continue;
-      const auto &p = patterns.nodes[id];
-      if (p.args.size() > 8) return {};
-      if (p.op == "slot") {
-        size_t slot = p.data.at(0).numerator().convert_to<size_t>();
-        if (slot >= captures.size() || captures[slot] == invalid) return {};
-        memo[id] = captures[slot]; continue;
-      }
-      if (p.op == "var" && p.args.empty()) {
-        // An invariant variable outside read coordinates remains a literal
-        // pattern leaf. Reuse its exact Arena identity; do not invent facts.
-        auto existing = a.find_node(p.op, p.args, p.data, p.tag);
-        if (!existing) return {};
-        memo[id] = *existing; continue;
-      }
-      if (p.op != "const" && p.op != "add" && p.op != "mul" &&
-          p.op != "idiv" && p.op != "imod") return {};
-      if (!ready) {
-        todo.emplace_back(id, true);
-        for (Id child : p.args) if (!memo.contains(child)) todo.emplace_back(child, false);
-        continue;
-      }
-      std::vector<Id> args; for (Id child : p.args) args.push_back(memo.at(child));
-      Id value = invalid;
-      if (p.op == "const" && p.data.size() == 1) value = a.constant(p.data[0]);
-      else if (p.op == "add" && args.size() == p.data.size()) {
-        for (size_t j = 0; j < args.size(); ++j) args[j] = a.mul({a.constant(p.data[j]), args[j]});
-        value = a.add(args);
-      } else if (p.op == "mul" && p.data.size() == 1) {
-        args.push_back(a.constant(p.data[0])); value = a.mul(args);
-      } else if ((p.op == "idiv" || p.op == "imod") && args.size() == 1 &&
-                 p.data.size() == 1 && p.data[0].denominator() == 1 && p.data[0] > 0)
-        value = p.op == "idiv" ? a.idiv(args[0], p.data[0].numerator())
-                                  : a.imod(args[0], p.data[0].numerator());
-      if (value == invalid) return {};
-      memo[id] = value;
-    }
-    ++a.stats["instantiated_coordinate_patterns"];
-    return memo.at(root);
-  }
+  Summary select(const Summary &s, bool max);
+  std::optional<Id> instantiated_coordinate(Id root, const std::vector<Id> &captures);
   const std::optional<std::vector<size_t>> &affine_predicate_slots(Id root) {
     if (auto it = predicate_coordinate_slots.find(root); it != predicate_coordinate_slots.end())
       return it->second;
@@ -865,270 +365,14 @@ struct Checker {
     }
     return predicate_coordinate_slots.emplace(root, std::move(result)).first->second;
   }
-  Captures matches(Id pat, Id target, std::vector<Id> captures, bool fixed_parameters = false) {
-    struct Task {
-      Id pattern, target;
-      size_t child = SIZE_MAX;
-      std::vector<Id> remaining;
-      bool coordinate = false;
-      bool predicate_structural = false;
-    };
-    struct State {
-      std::vector<Task> todo;
-      std::vector<Id> cap;
-      std::vector<Task> deferred;
-      std::vector<std::pair<Id, Id>> coordinate_constraints;
-      std::vector<std::pair<Id, Id>> coordinate_sums;
-      std::vector<std::pair<Id, Id>> fixed_coordinates;
-      std::vector<std::pair<Id, Id>> predicates;
-    };
-    std::vector<State> states{
-        {{{pat, target, SIZE_MAX, {}}}, std::move(captures), {}, {}, {}, {}, {}}};
-    Captures out;
-    uint64_t work = 0;
-    // Arena orders addends by local node Id. Substitution can change that
-    // order, so small sums match by (coefficient, child), not by position.
-    // Keep wider sums on the existing ordered path; the global work budget
-    // also bounds combinations of nested small commutative nodes.
-    auto small_add = [](const auto &n) {
-      return n.op == "add" && n.args.size() > 1 && n.args.size() <= 4 &&
-             n.data.size() == n.args.size();
-    };
-    auto compatible = [&](Id p, Id n, const std::vector<Id> &cap, bool deferred_predicate = true) {
-      const auto &pn = patterns.nodes[p];
-      if (pn.op == "slot") {
-        size_t slot = pn.data[0].numerator().convert_to<size_t>();
-        return slot >= cap.size() || cap[slot] == invalid || cap[slot] == n;
-      }
-      if (pn.op == "affine_slot" || pn.op == "affine_param" || pn.op == "derived_coordinate" ||
-          pn.op == "coordinate_sum") return true;
-      const auto &an = a.nodes[n];
-      if (deferred_predicate && pn.op == "compare" &&
-          (an.op == "compare" || n == a.zero || n == a.one) && affine_predicate_slots(p))
-        return true;
-      if (pn.op != an.op || pn.tag != an.tag || pn.args.size() != an.args.size())
-        return false;
-      if (small_add(pn) && small_add(an))
-        return std::is_permutation(pn.data.begin(), pn.data.end(), an.data.begin());
-      return pn.data == an.data;
-    };
-    while (!states.empty()) {
-      State s = std::move(states.back());
-      states.pop_back();
-      bool ok = true;
-      while (!s.todo.empty()) {
-        a.check();
-        if (++work > 1000000)
-          throw Unsupported("local pattern matching work budget exceeded");
-        Task task = std::move(s.todo.back());
-        s.todo.pop_back();
-        const auto &pn = patterns.nodes[task.pattern];
-        const auto &an = a.nodes[task.target];
-        if (task.child != SIZE_MAX) {
-          if (task.child == pn.args.size())
-            continue;
-          // Branch only over candidates surviving this child's shallow shape
-          // and current captures, then check the child before the next choice.
-          std::vector<Id> choices;
-          std::set<Id> seen;
-          for (Id j : task.remaining)
-            if ((pn.op != "add" || pn.data[task.child] == an.data[j]) &&
-                seen.insert(an.args[j]).second &&
-                compatible(pn.args[task.child], an.args[j], s.cap))
-              choices.push_back(j);
-          if (choices.empty()) {
-            ok = false;
-            break;
-          }
-          auto schedule = [&](State &next, Id j) {
-            Task continuation = task;
-            ++continuation.child;
-            continuation.remaining.erase(
-                std::find(continuation.remaining.begin(),
-                          continuation.remaining.end(), j));
-            next.todo.push_back(std::move(continuation));
-            next.todo.push_back(
-                {pn.args[task.child], an.args[j], SIZE_MAX, {}});
-          };
-          for (size_t i = 1; i < choices.size(); ++i) {
-            State next = s;
-            schedule(next, choices[i]);
-            states.push_back(std::move(next));
-            ++a.stats["pattern_branch_states"];
-          }
-          schedule(s, choices[0]);
-          continue;
-        }
-        ++a.counter(Arena::Hot::pattern_node_visits);
-        if (!task.predicate_structural && pn.op == "compare" &&
-            (an.op == "compare" || task.target == a.zero || task.target == a.one) &&
-            affine_predicate_slots(task.pattern)) {
-          const auto predicate = std::pair(task.pattern, task.target);
-          if (std::find(s.predicates.begin(), s.predicates.end(), predicate) == s.predicates.end()) {
-            if (s.predicates.size() == CoordinateRelations::max_constraints) { ok = false; break; }
-            s.predicates.push_back(predicate);
-          }
-          continue;
-        }
-        if (fixed_parameters && task.coordinate &&
-            (pn.op == "add" || pn.op == "mul" || pn.op == "idiv" || pn.op == "imod")) {
-          if (s.fixed_coordinates.size() == CoordinateRelations::max_constraints) { ok = false; break; }
-          s.fixed_coordinates.emplace_back(task.pattern, task.target);
-          continue;
-        }
-        if (!compatible(task.pattern, task.target, s.cap, !task.predicate_structural)) {
-          ok = false;
-          break;
-        }
-        if (pn.op == "slot") {
-          size_t slot = pn.data[0].numerator().convert_to<size_t>();
-          if (slot >= s.cap.size())
-            s.cap.resize(slot + 1, invalid);
-          s.cap[slot] = task.target;
-          continue;
-        }
-        if (pn.op == "derived_coordinate") {
-          auto constraint = std::pair(task.pattern, task.target);
-          if (std::find(s.coordinate_constraints.begin(), s.coordinate_constraints.end(), constraint) ==
-              s.coordinate_constraints.end()) {
-            if (s.coordinate_constraints.size() == CoordinateRelations::max_constraints) { ok = false; break; }
-            s.coordinate_constraints.push_back(constraint);
-          }
-          continue;
-        }
-        if (pn.op == "coordinate_sum") {
-          // A decoder reuses its input in the fraction, exponent and sign.
-          // Identical constraints are one proof obligation, not independent
-          // work. Different actual coordinates remain separate obligations.
-          auto constraint = std::pair(task.pattern, task.target);
-          if (std::find(s.coordinate_sums.begin(), s.coordinate_sums.end(), constraint) == s.coordinate_sums.end()) {
-            if (s.coordinate_sums.size() == CoordinateRelations::max_constraints) { ok = false; break; }
-            s.coordinate_sums.push_back(constraint);
-          }
-          continue;
-        }
-        if (pn.op == "affine_param") {
-          s.deferred.push_back(std::move(task));
-          continue;
-        }
-        if (pn.op == "affine_slot") {
-          size_t slot = pn.data[0].numerator().convert_to<size_t>();
-          Id captured = a.mul({a.constant(Q(1) / pn.data[1]),
-                               a.sub(task.target, a.constant(pn.data[2]))});
-          if (slot >= s.cap.size()) s.cap.resize(slot + 1, invalid);
-          if (s.cap[slot] != invalid && s.cap[slot] != captured) {
-            ok = false;
-            break;
-          }
-          s.cap[slot] = captured;
-          ++a.stats["affine_coordinate_captures"];
-          continue;
-        }
-        if (((pn.op == "mul" || pn.op == "max") && pn.args.size() > 1) ||
-            small_add(pn)) {
-          std::vector<Id> remaining(an.args.size());
-          std::iota(remaining.begin(), remaining.end(), Id(0));
-          s.todo.push_back(
-              {task.pattern, task.target, 0, std::move(remaining)});
-        } else {
-          for (size_t j = pn.args.size(); j-- > 0;)
-            s.todo.push_back({pn.args[j], an.args[j], SIZE_MAX, {},
-                pn.op == "read" || pn.op == "readbits" || pn.op == "packedbits" || pn.op == "call"});
-        }
-      }
-      // Known output parameters anchor the one unknown axis directly. This
-      // is a single affine equation, not a search for an index transformation.
-      if (ok && fixed_parameters) for (const auto &task : s.deferred) {
-        const auto &p = patterns.nodes[task.pattern];
-        size_t axis = p.data[0].numerator().convert_to<size_t>();
-        size_t residual = p.data[1].numerator().convert_to<size_t>();
-        if (axis < s.cap.size() && s.cap[axis] == invalid && residual < s.cap.size() &&
-            s.cap[residual] != invalid && p.data[2] != 0 &&
-            a.nodes[task.target].args.size() <= 8 && a.nodes[s.cap[residual]].args.size() <= 8) {
-          s.cap[axis] = a.mul({a.constant(Q(1) / p.data[2]), a.sub(task.target, s.cap[residual])});
-          ++a.stats["parameter_anchored_reduction_axes"];
-        }
-      }
-      if (ok && !s.coordinate_constraints.empty())
-        ok = CoordinateRelations::resolve(a, patterns, s.coordinate_constraints, s.cap, work);
-      // Parameterized affine residuals require an axis captured independently:
-      // an ordinary/literal-affine coordinate or a verified quotient/remainder
-      // pair. Residual tasks never determine their own axis.
-      if (ok) for (const auto &task : s.deferred) {
-        a.check();
-        if (++work > 1000000)
-          throw Unsupported("local pattern matching work budget exceeded");
-        const auto &pn = patterns.nodes[task.pattern];
-        size_t axis = pn.data[0].numerator().convert_to<size_t>();
-        size_t residual = pn.data[1].numerator().convert_to<size_t>();
-        if (axis >= s.cap.size() || s.cap[axis] == invalid ||
-            !a.nodes[s.cap[axis]].facts.finite ||
-            !a.nodes[task.target].facts.finite ||
-            a.nodes[s.cap[axis]].args.size() > 8 ||
-            a.nodes[task.target].args.size() > 8) {
-          ok = false;
-          break;
-        }
-        Id captured = a.sub(task.target,
-                            a.mul({a.constant(pn.data[2]), s.cap[axis]}));
-        if (residual >= s.cap.size()) s.cap.resize(residual + 1, invalid);
-        if (s.cap[residual] != invalid && s.cap[residual] != captured) {
-          ok = false;
-          break;
-        }
-        s.cap[residual] = captured;
-        ++a.stats["parameterized_affine_coordinate_captures"];
-      }
-      // Short coordinate sums may only use an axis already captured by an
-      // ordinary coordinate or a verified quotient/remainder pair. Each
-      // residual parameter must agree with every other occurrence; existing
-      // summary binding still rejects parameters dependent on a Fold binder.
-      if (ok) for (const auto &[pattern, actual] : s.coordinate_sums) {
-        if (!CoordinateRelations::resolve_sum(a, patterns, pattern, actual, s.cap, work)) {
-          ok = false;
-          break;
-        }
-      }
-      if (ok) for (const auto &[pattern, actual] : s.fixed_coordinates) {
-        auto expected = instantiated_coordinate(pattern, s.cap);
-        if (!expected || *expected != actual) { ok = false; break; }
-      }
-      if (ok) for (const auto &[pattern, actual] : s.predicates) {
-        const auto &slots = *affine_predicate_slots(pattern);
-        const bool bound = std::all_of(slots.begin(), slots.end(), [&](size_t slot) {
-          return slot < s.cap.size() && s.cap[slot] != invalid;
-        });
-        if (!bound) {
-          // No independent coordinate anchor: preserve the original exact
-          // structural match. This one-way requeue cannot defer itself again.
-          s.todo.push_back({pattern, actual, SIZE_MAX, {}, false, true});
-          ++a.stats["predicate_structural_fallbacks"];
-          continue;
-        }
-        const auto &predicate = patterns.nodes[pattern];
-        auto lhs = instantiated_coordinate(predicate.args[0], s.cap);
-        auto rhs = instantiated_coordinate(predicate.args[1], s.cap);
-        const auto &actual_node = a.nodes[actual];
-        Id canonical_actual = actual_node.op == "compare" && actual_node.args.size() == 2
-            ? a.compare(actual_node.tag, actual_node.args[0], actual_node.args[1]) : actual;
-        ++a.stats["deferred_predicate_checks"];
-        if (!lhs || !rhs || a.compare(predicate.tag, *lhs, *rhs) != canonical_actual) {
-          ++a.stats["deferred_predicate_mismatches"]; ok = false; break;
-        }
-      }
-      if (ok && !s.todo.empty()) {
-        // The completed coordinate obligations remain valid: captures only
-        // become bound, never change. Do not repeat their work after fallback.
-        s.deferred.clear(); s.coordinate_constraints.clear(); s.coordinate_sums.clear();
-        s.fixed_coordinates.clear(); s.predicates.clear();
-        states.push_back(std::move(s));
-        continue;
-      }
-      if (ok)
-        out.push_back(std::move(s.cap));
-    }
-    return out;
-  }
+  // Bounds of the coordinate-rest rule in matches(): pattern summands, target terms, assignments.
+  static constexpr size_t rest_summands = 4, rest_terms = 8, rest_branches = 8;
+  // Defer only coordinate syntax the deferred evaluator can instantiate.
+  // Gathered reads and derived quotient/remainder recipes must instead take
+  // the ordinary structural matcher, which can infer the unknown axis.
+  std::unordered_map<Id, bool> deferred_coordinate_syntax_cache;
+  bool deferred_coordinate_syntax(Id root);
+  Captures matches(Id pat, Id target, std::vector<Id> captures, bool fixed_parameters = false);
 
   // A read anchor with more coordinates is matched only by the general matcher (no cached or
   // scoped matching). scoped_read_anchor visits at most scoped_anchor_visit_limit + 1 pattern nodes
@@ -1140,355 +384,171 @@ struct Checker {
   // Anchor discovery per body (body_candidates): at most this many anchors, edges followed and
   // distinct nodes queued; a cut discovery is counted in ep_body_anchor_limited.
   static constexpr size_t anchor_limit = 16, anchor_edge_limit = 2048, anchor_node_limit = 512;
-  // A read anchor (not cacheable_read_anchor) whose coordinates are integer additions and
-  // constant multiples of derived coordinates, slots and constants, with every derived
-  // coordinate's captured axis an integer inside its scope. O(pattern coordinate nodes).
-  bool scoped_read_anchor(Id pattern,const std::vector<Id> &cap) {
-    const auto &p=patterns.nodes[pattern];
-    if((p.op!="read" && p.op!="readbits" && p.op!="packedbits") || p.args.size()>read_anchor_coordinate_limit)
-      return false;
-    std::vector<Id> todo(p.args.begin(),p.args.end());
-    for(size_t visits=0;!todo.empty();++visits) {
-      if(visits>scoped_anchor_visit_limit)return false;
-      const auto &n=patterns.nodes[todo.back()];todo.pop_back();
-      if(n.op=="derived_coordinate") {
-        if(!n.args.empty() || !CoordinateRelations::valid(n.data))return false;
-        const auto axis=n.data[0].numerator().convert_to<size_t>();
-        if(axis>=cap.size() || cap[axis]==invalid || !CoordinateRelations::within_axis(a,cap[axis],n.data))return false;
-      } else if(n.op=="add" || n.op=="mul") {
-        for(const auto &q:n.data)if(q.denominator()!=1)return false;
-        todo.insert(todo.end(),n.args.begin(),n.args.end());
-      } else if((n.op!="slot" && n.op!="const") || !n.args.empty())return false;
-    }
-    return true;
-  }
-  // The captures under which a scoped read anchor may name a target: `cap` itself when every
-  // slot is captured; otherwise, for one missing slot that is a plain term c * slot of a
-  // single-coordinate address, the integer value (target address - rest) / c per same-kind
-  // target. Each target solved for the slot is one attempt of the body-candidate search
-  // (`attempts`); none when that budget is spent. O(targets).
+  bool scoped_read_anchor(Id pattern,const std::vector<Id> &cap);
   std::optional<Captures> scoped_read_captures(Id pattern,const std::vector<Id> &cap,const std::vector<Id> &ts,
-                                               size_t &attempts) {
-    const auto missing=std::count(cap.begin(),cap.end(),invalid);
-    if(!missing)return Captures{cap};
-    const auto &p=patterns.nodes[pattern];
-    if(missing!=1 || p.args.size()!=1)return Captures{};
-    const auto slot=size_t(std::find(cap.begin(),cap.end(),invalid)-cap.begin());
-    const auto &address=patterns.nodes[p.args[0]];
-    if(address.op!="add" || address.args.size()!=address.data.size())return Captures{};
-    std::optional<Q> coefficient;
-    for(size_t j=0;j<address.args.size();++j) {
-      const auto &term=patterns.nodes[address.args[j]];
-      if(term.op=="slot" && term.data.size()==1 && term.data[0]==Q(slot)) {
-        if(coefficient)return Captures{};
-        coefficient=address.data[j];
+                                               size_t &attempts);
+  bool excluded_anchor(Id root, Id anchor, const Captures &caps);
+  // A read, readbits or packedbits pattern whose coordinate subtrees hold only slots, constants and
+  // ordinary operations (no derived_coordinate, coordinate_sum, affine_slot or affine_param recipe,
+  // no Call). At most 64 visited pattern nodes. O(visited nodes).
+  // With a capture: also a derived coordinate whose axis the capture binds to an integer inside the
+  // coordinate's recorded scope (CoordinateRelations::within_axis), which is then the exact
+  // quotient/remainder of that value (a gathered row read through a concatenated index list).
+  // A read coordinate `actual` against its pattern coordinate (an integer sum, product, quotient or
+  // remainder): every slot the pattern needs is captured, its instantiation is an integer, and the
+  // instantiation and `actual` have the same local index form (the same integer on every input).
+  // Candidates only; the complete body proof follows. O(pattern coordinate + memoized forms).
+  // Whether an integer expression holds a node a local identity acts on (a quotient, a remainder, a
+  // Select, a comparison, a word, or a pattern's derived coordinate, a quotient or remainder of its
+  // axis); reads are leaves. Where neither side holds one, local forms are the
+  // stored forms and local_coordinate_match adds nothing to the structural match. Memoized per node;
+  // at most 64 nodes visited (beyond: true).
+  std::unordered_map<Id, bool> local_shape_cache, pattern_local_shape_cache;
+  bool local_shape(const Arena &arena, Id root, std::unordered_map<Id, bool> &cache);
+  bool local_coordinate_match(Id pattern, Id actual, const std::vector<Id> &cap);
+  // ---- Local index forms (exact, pair-local) -------------------------------------------------
+  // A canonical copy of an integer index expression, built only to compare two specific nodes (an
+  // anchor's instantiated read with a target read; the reads of one instantiated body with its target's
+  // reads; two masks of one masked term). It is never substituted into a stored normal form, a pattern,
+  // or a cache another query reads: callers only test equality of two local forms. Children first, then
+  // exact integer identities under the Arena bounds of the leaves:
+  //   floor((a y + R) / (a m)) = floor(y / m) for the one integer term y with coefficient +-a (a > 1,
+  //     a | d) whose other terms R (integers, a constant included) have bounds inside [0, a - 1]:
+  //     a y + R lies in [a y, a y + a), so the quotient by a m is that of a y;
+  //   c m floor(y / m) + c (y mod m) = c y, with floor(y / m) taken in its local form (so a quotient the
+  //     Arena stores flattened, floor(floor(z / b) / m) = floor(z / (b m)), still pairs with its remainder);
+  //   select([y == k], k, y) = y and select([y != k], y, k) = y (where y = k both arms are k);
+  //   [y <= lo] = [y == lo] and [y >= hi] = [y == hi] at the bounds [lo, hi] of a finite y;
+  //   a word of a constant is the constant modulo 2^w;
+  //   a maximum is the flat maximum of its operands (nested maxima and positive multiples of maxima).
+  // Other nodes are rebuilt by their constructors (reapply). Reads, Folds, Calls and certified states are
+  // leaves (a read's own coordinates are compared by local_read_twin, which never builds a read). Memoized
+  // per node (local_index_cache); at most local_index_visit_limit new nodes per query, beyond which the
+  // query returns its root unchanged.
+  struct LocalIndexCut {};
+  std::unordered_map<Id, Id> local_index_cache;
+  static constexpr size_t local_index_visit_limit = 4096;
+  Id local_quotient(Id n, const Z &d, size_t &visits);
+  Id local_sum(Id sum, size_t &visits);
+  // x with every maximum replaced by its flat local form (local_index_form, coefficient-sized walk): the same
+  // value, one node for two spellings of one running maximum (nested differently, or over extended sums
+  // whose operands are in another order). Maxima are not entered; other nodes are rebuilt by their
+  // constructors (reapply). Folds, Calls and reads are leaves. At most flat_maxima_limit distinct nodes,
+  // else x unchanged. Exact.
+  static constexpr size_t flat_maxima_limit = size_t(1) << 17;
+  Id flat_maxima(Id x);
+  Id sorted_extended_sum(Id x);
+  int infinity_arm(Id x) const;
+  std::optional<Id> masked_infinity_select(Id c, Id then_arm, Id else_arm);
+  size_t local_index_limit_now = local_index_visit_limit;  // the limit of the query in progress
+  Id local_index_form(Id root, size_t limit = local_index_visit_limit);
+  std::vector<Id> scope_reads(Id root);
+  // The target read at the storage element of a read of kind (op, tag, data) at coordinates `coords`:
+  // the unique read of `target`'s scope (scope_reads, or the target's complete anchor inventory) of that
+  // kind whose coordinates have, one by one, the same local index forms, or invalid (none, or several).
+  // A read is the stored value of its allocation and type at its coordinates; equal coordinates name
+  // the same element, so the twin equals the read. The target's reads are grouped by kind and their
+  // coordinate forms computed once per target and kind; O(arity) per lookup after that.
+  using ReadKind = std::tuple<std::string, std::string, std::vector<Q>>;
+  struct TargetReads {
+    std::unordered_set<Id> reads;
+    std::map<ReadKind, std::map<std::vector<Id>, Id>> by_coordinates;
+  };
+  std::unordered_map<Id, TargetReads> target_local_reads;
+  TargetReads &target_reads(Id target) {
+    auto it = target_local_reads.find(target);
+    if (it != target_local_reads.end()) return it->second;
+    TargetReads tr;
+    if (auto inv = target_anchor_cache.find(target); inv != target_anchor_cache.end() && !truncated_target_anchors.contains(target)) {
+      for (Id id : inv->second) {
+        const auto &op = a.nodes[id].op;
+        if (op == "read" || op == "readbits" || op == "packedbits") tr.reads.insert(id);
       }
+    } else {
+      for (Id id : scope_reads(target)) tr.reads.insert(id);
     }
-    if(!coefficient || *coefficient==0)return Captures{};
-    auto zero=cap;zero[slot]=a.zero;
-    const Id rest=instantiate_body(pattern,zero);
-    if(rest==invalid || a.nodes[rest].args.size()!=1)return Captures{};
-    const Id rest_address=a.nodes[rest].args[0];
-    const auto rest_data=a.nodes[rest].data;
-    Captures result;
-    for(Id t:ts) {
-      if(a.nodes[t].op!=p.op || a.nodes[t].tag!=p.tag || a.nodes[t].data!=rest_data || a.nodes[t].args.size()!=1)continue;
-      if(++attempts>body_candidate_attempts)return std::nullopt;
-      const Id target_address=a.nodes[t].args[0];
-      Id value=a.mul({a.constant(Q(1)/ *coefficient),a.sub(target_address,rest_address)});
-      if(!CoordinateRelations::integer(a,value))continue;
-      auto solved=cap;solved[slot]=value;result.push_back(std::move(solved));
-    }
-    return result;
+    return target_local_reads.emplace(target, std::move(tr)).first->second;
   }
-  bool cacheable_read_anchor(Id pattern) const {
-    const auto &p=patterns.nodes[pattern];
-    if((p.op!="read" && p.op!="readbits" && p.op!="packedbits") || p.args.size()>read_anchor_coordinate_limit)
-      return false;
-    for(Id coordinate:p.args) {
-      const auto &n=patterns.nodes[coordinate];
-      if(n.op=="coordinate_sum") {
-        if(n.args.empty() || n.args.size()>4)return false;
-        for(Id relation:n.args) {
-          const auto &child=patterns.nodes[relation];
-          if(child.op!="derived_coordinate" || !child.args.empty())return false;
-        }
-      } else if(!n.args.empty() || (n.op!="slot" && n.op!="affine_slot" && n.op!="affine_param" &&
-                n.op!="derived_coordinate" && n.op!="const" && n.op!="var")) {
-        return false;
-      }
-    }
-    return true;
-  }
-  Captures match_anchor(Id pattern,Id target,const std::vector<Id> &captures) {
-    // These are closed local constraints: no opaque lookup, deferred
-    // predicate, Call registration or new Arena nodes can change the result.
-    // Cache the exact existing matcher result, including an empty result.
-    // Short coordinate recipes run all original integer/scope/residual guards
-    // on the first query. Only that validated result is reusable; merely
-    // reconstructing an existing Read is never a domain proof.
-    if(!cacheable_read_anchor(pattern))return matches(pattern,target,captures);
-    ReadAnchorKey key{pattern,target,captures};
-    if(auto found=read_anchor_matches.find(key);found!=read_anchor_matches.end()) {
-      ++a.stats["ep_body_read_match_cache_hits"];return found->second;
-    }
-    auto result=matches(pattern,target,captures);
-    read_anchor_matches.emplace(std::move(key),result);
-    ++a.stats["ep_body_read_match_cache_entries"];
-    return result;
-  }
+  Id local_twin_at(Id target, const ReadKind &kind, const std::vector<Id> &coords);
+  Id local_read_twin(Id target, Id read);
+  // Rule (read alignment, pair-local): the reads of an instantiated body `expected` that its target
+  // does not hold are replaced, in this copy of the body only, by the unique target read at the same
+  // storage element (local_read_twin: same allocation, type and arity, equal local index forms). A read
+  // denotes the stored value at its coordinates, so the copy equals the body. Returns expected itself
+  // when nothing is replaced. Only reads in the body's scope (scope_reads) are aligned. O(nodes of both
+  // scopes, memoized forms); memoized per (body, target) pair (align_cache).
+  std::map<std::pair<Id, Id>, Id> align_cache;
+  Id align_reads(Id expected, Id target);
+  Id align_reads_uncached(Id expected, Id target);
+  bool plain_read_anchor(Id pattern, const std::vector<Id> *cap = nullptr) const;
+  bool cacheable_read_anchor(Id pattern) const;
+  Captures match_anchor(Id pattern,Id target,const std::vector<Id> &captures);
 
-  // Reconstruct the reference body under a candidate index correspondence.
-  // Opaque leaves must already exist in this Arena: no facts are transferred
-  // from a differently indexed reference read.
-  Id instantiate_body(Id root, const std::vector<Id> &cap) {
-    auto eligibility=body_instance_cacheable.find(root);
-    const bool reusable=eligibility==body_instance_cacheable.end() || eligibility->second;
-    if(reusable) if(auto hit=body_instance_cache.find({root,cap});hit!=body_instance_cache.end()) {
-      ++a.stats["ep_body_instance_cache_hits"];return hit->second;
+  Id instantiate_body(Id root, const std::vector<Id> &cap, Id twin_target = invalid, bool build_max = false);
+  bool target_scope_contains_read(Id target, Id read);
+  // ---- Exact refutation before a body proof: a reduction Call the body needs --------------------
+  // The Call nodes in the scope of `target` (the anchor scope above: reads, slots, variables, Calls
+  // and certified states are leaves and a nested Fold contributes only its seed). Every atom of an
+  // EP normal form of the target that is a Call is one of these: the EP engine descends only
+  // through sums, products, exponentials, logarithms and reciprocals, and creates no Call. Built
+  // once per target, O(scoped nodes + edges).
+  std::unordered_map<Id, std::vector<Id>> target_call_index;
+  const std::vector<Id> &target_scope_calls(Id target) {
+    if(auto found=target_call_index.find(target);found!=target_call_index.end())return found->second;
+    if(read_index_marks.size()<a.nodes.size())read_index_marks.resize(a.nodes.size(),0);
+    if(++read_index_build==0) {  // the build numbers wrapped: no stale mark may match
+      std::fill(read_index_marks.begin(),read_index_marks.end(),0);read_index_build=1;
     }
-    bool encountered_call=false;
-    std::unordered_map<Id,Id> memo;
-    std::function<Id(Id,unsigned)> visit = [&](Id id,unsigned depth)->Id {
-      if(depth>128 || memo.size()>2048) return invalid;
-      if(auto it=memo.find(id);it!=memo.end()) return it->second;
-      const auto &n=patterns.nodes[id];
-      auto slot=[&](size_t j){return j<cap.size()?cap[j]:invalid;};
-      auto index=[&](size_t j){return n.data[j].numerator().convert_to<size_t>();};
-      Id out=invalid;
-      if(n.op=="slot") return slot(index(0));
-      if(n.op=="affine_slot" || n.op=="affine_param") {
-        Id axis=slot(index(0)); if(axis==invalid)return invalid;
-        if(n.op=="affine_slot") out=a.add({a.mul({a.constant(n.data[1]),axis}),a.constant(n.data[2])});
-        else {Id residual=slot(index(1));if(residual==invalid)return invalid;
-          out=a.add({a.mul({a.constant(n.data[2]),axis}),residual});}
-      } else if(n.op=="derived_coordinate") {
-        Id axis=slot(index(0));if(axis==invalid)return invalid;
-        out=CoordinateRelations::evaluate(a,axis,n.data);
-      } else {
-        std::vector<Id> xs;for(Id child:n.args){Id v=visit(child,depth+1);if(v==invalid)return invalid;xs.push_back(v);}
-        if(n.op=="coordinate_sum") {
-          std::vector<Id> terms{a.constant(n.data[2])};
-          if(n.data[1]>=0){Id v=slot(index(1));if(v==invalid)return invalid;terms.push_back(v);}
-          for(size_t j=0;j<xs.size();++j)terms.push_back(a.mul({a.constant(n.data[3+j]),xs[j]}));
-          out=a.add(terms);
-        } else if(n.op=="const") out=a.constant(n.data[0]);
-        else if(n.op=="add" || n.op=="add_raw") {
-          for(size_t j=0;j<xs.size();++j)xs[j]=a.mul({a.constant(n.data[j]),xs[j]});
-          out=a.add(xs);
-        } else if(n.op=="mul") {xs.push_back(a.constant(n.data[0]));out=a.mul(xs);}
-        else if(n.op=="idiv" || n.op=="imod") {
-          // Captured indices may simplify a reference quotient/remainder to
-          // a different operator (or a literal). Reuse the exact coordinate
-          // constructors, just as instantiated_coordinate() does for the
-          // candidate check; an unsimplified node need not exist in Arena.
-          if(xs.size()!=1 || n.data.size()!=1 ||
-             n.data[0].denominator()!=1 || n.data[0]<=0) return invalid;
-          out=n.op=="idiv" ? a.idiv(xs[0],n.data[0].numerator())
-                           : a.imod(xs[0],n.data[0].numerator());
-          ++a.stats["ep_body_coordinate_rebuilds"];
-        }
-        else if(n.op=="signed") {
-          if(xs.size()!=1 || n.data.size()!=1 || n.data[0].denominator()!=1 ||
-             n.data[0]<=0 || n.data[0]>256) return invalid;
-          out=a.signed_word(xs[0],n.data[0].numerator().convert_to<unsigned>());
-        }
-        else if(n.op=="word_or" && xs.size()==2 && n.data.size()==1)
-          out=a.word_or(xs[0],xs[1],n.data[0].numerator().convert_to<unsigned>());
-        else if(n.op=="word_shr" && xs.size()==2 && n.data.size()==2)
-          out=a.word_shr(xs[0],xs[1],n.data[0].numerator().convert_to<unsigned>(),n.data[1]!=0);
-        else if(n.op=="extractbits" && xs.size()==1 && n.data.size()==2)
-          out=a.bit_slice(xs[0],n.data[0].numerator().convert_to<unsigned>(),n.data[1].numerator().convert_to<unsigned>());
-        else if(n.op=="exp" || n.op=="exp2")out=a.exponential(xs[0],n.op=="exp2");
-        else if(n.op=="recip")out=a.divide(a.one,xs[0]);
-        else if(n.op=="compare") {
-          // Candidate substitution can prove a predicate on a narrower binder
-          // domain. Derive the result from the actual operands, not facts
-          // attached to the reference pattern or an opaque-node lookup.
-          if(xs.size()!=2 || !n.data.empty() ||
-             (n.tag!="eq" && n.tag!="ne" && n.tag!="lt" && n.tag!="le" &&
-              n.tag!="gt" && n.tag!="ge"))return invalid;
-          out=a.compare(n.tag,xs[0],xs[1]);
-          ++a.stats["ep_body_predicate_rebuilds"];
-        }
-        else if(n.op=="select") {
-          if(xs.size()!=3 || !n.data.empty() || !n.tag.empty())return invalid;
-          out=a.select(xs[0],xs[1],xs[2]);
-          ++a.stats["ep_body_select_rebuilds"];
-        }
-        else if(n.op=="call") {
-          encountered_call=true;
-          // A captured parameter changes the instantiated definition, not
-          // only a Call's argument list. Reuse the same exact definition
-          // canonicalizer as registration and ordinary reconstruction.
-          if(n.data.size()!=1 || n.data[0].denominator()!=1 ||
-             n.data[0]<0 || n.data[0]>=Q(specs.size()))return invalid;
-          Id sid=n.data[0].numerator().convert_to<Id>();
-          if(xs.size()+1!=specs[sid].slots)return invalid;
-          out=call(sid,xs);
-          ++a.stats["ep_body_call_rebuilds"];
-        }
-        else {
-          if(auto hit=a.find_node(n.op,xs,n.data,n.tag))out=*hit;
-          else ++a.stats["ep_body_missing_opaque_"+n.op];
-        }
+    const auto build=read_index_build;
+    std::vector<Id> calls,todo{target};read_index_marks[target]=build;
+    size_t visited=0;
+    while(!todo.empty()) {
+      if((++visited&1023)==0)a.check();
+      const Id id=todo.back();todo.pop_back();
+      const auto &n=a.nodes[id];
+      if(n.op=="call"){calls.push_back(id);continue;}
+      if(n.op=="read" || n.op=="readbits" || n.op=="packedbits" || n.op=="slot" || n.op=="var" ||
+         n.op=="certified_state")continue;
+      const size_t children=n.op=="fold"?std::min<size_t>(1,n.args.size()):n.args.size();
+      for(size_t j=0;j<children;++j) {
+        const Id child=n.args[j];
+        if(read_index_marks[child]!=build){read_index_marks[child]=build;todo.push_back(child);}
       }
-      memo.emplace(id,out);return out;
-    };
-    Id result=visit(root,0);
-    // A successful call-free construction depends only on immutable template
-    // and capture IDs. Missing opaque nodes can become available later, so
-    // failures are never cached. Call construction also registers active
-    // definitions and must retain that side effect on every invocation.
-    if(encountered_call)body_instance_cacheable[root]=false;
-    else if(result!=invalid) {
-      body_instance_cacheable[root]=true;
-      body_instance_cache.emplace(BodyInstanceKey{root,cap},result);
-      ++a.stats["ep_body_instance_cache_entries"];
     }
-    return result;
+    a.stats["ep_body_target_call_index_nodes"]+=visited;
+    ++a.stats["ep_body_target_call_index_builds"];
+    return target_call_index.emplace(target,std::move(calls)).first->second;
   }
-  // Anchor matching proposes coordinates only; ScalarEqual checks the entire
-  // body. Bounded DAG traversal never enumerates the reduction domain.
-  Captures body_candidates(const Spec &s,Id target,const std::vector<Id> &initial) {
-    if(initial.size()!=s.slots)return {};
-    auto anchors=[&](Arena &arena,Id root,bool pattern)->const std::vector<Id>&{
-      auto &cache=pattern?pattern_anchor_cache:target_anchor_cache;
-      if(auto found=cache.find(root);found!=cache.end()) {
-        ++a.counter(pattern?Arena::Hot::ep_body_pattern_anchor_cache_hits:Arena::Hot::ep_body_target_anchor_cache_hits);
-        return found->second;
-      }
-      // Coordinates in a direct operand must not be starved by one sibling's
-      // numerical history. Traverse stored nodes breadth first; anchor nodes
-      // remain opaque, and all proposals still require a complete body proof.
-      // Bound discovery itself, including wide operand arrays and the queue.
-      std::vector<Id> out,todo{root};std::unordered_set<Id> seen{root};
-      size_t cursor=0,edges=0;bool limited=false;
-      while(cursor<todo.size() && out.size()<anchor_limit){
-        Id id=todo[cursor++];
-        const auto &n=arena.nodes[id];
-        if(n.op=="slot" || n.op=="var" || n.op=="read" || n.op=="readbits" || n.op=="packedbits" || n.op=="call" || n.op=="certified_state")out.push_back(id);
-        else {
-          // A nested Fold owns its body's coordinates. Discovering a read
-          // there would bind this scalar query to a bound member of an entire
-          // reduction. The reduction consumer handles that body separately;
-          // only the seed remains in the current lexical scope. Registered
-          // Calls above are already opaque and retain delayed rebinding.
-          const bool binder=n.op=="fold";
-          if(binder)++a.stats["ep_body_fold_scope_boundaries"];
-          const size_t children=binder?std::min<size_t>(1,n.args.size()):n.args.size();
-          for(size_t j=0;j<children;++j){
-            Id child=n.args[j];
-            if(edges==anchor_edge_limit){limited=true;break;}
-            ++edges;
-            if(seen.contains(child))continue;
-            if(seen.size()==anchor_node_limit){limited=true;continue;}
-            seen.insert(child);todo.push_back(child);
-          }
-        }
-      }
-      a.stats["ep_body_anchor_nodes"]+=cursor;
-      a.stats["ep_body_anchor_edges"]+=edges;
-      if(limited || cursor<todo.size())++a.stats["ep_body_anchor_limited"];
-      if(pattern)std::stable_partition(out.begin(),out.end(),[&](Id id){
-        const auto &op=arena.nodes[id].op;return op!="slot" && op!="var";
-      });
-      return cache.emplace(root,std::move(out)).first->second;
-    };
-    const auto &ps=anchors(patterns,s.pattern,true), &ts=anchors(a,target,false);
-    // Reads/calls bind coordinates even when a bounds-proved predicate has
-    // disappeared from the actual body. A redundant bare slot is not another
-    // required occurrence of that coordinate. This orders candidate discovery,
-    // never proof: instantiate_body + ScalarEqual still check the whole body.
-    Captures caps{initial};
-    size_t attempts=0;
-    for(Id pat:ps){
-      Captures next;
-      const auto &pn=patterns.nodes[pat];
-      for(const auto &cap:caps){
-        // Only abstract anchors may have a different registered spelling of
-        // the same instantiated definition. Direct input anchors still have
-        // to agree on the object, typed view and captured coordinates, even
-        // when an earlier read has already bound every slot. Otherwise a
-        // proper factor of a body can trigger a full EP proof of that body.
-        const bool deferred_definition = pn.op=="call" || pn.op=="certified_state";
-        if(deferred_definition && std::find(cap.begin(),cap.end(),invalid)==cap.end()) {
-          ++a.stats["ep_body_deferred_call_anchors"];
-          next.push_back(cap);continue;
-        }
-        if(pn.op=="var" || (pn.op=="slot" && pn.data.size()==1 &&
-            pn.data[0].denominator()==1 && pn.data[0]>=0 && pn.data[0]<Q(cap.size()) &&
-            cap[pn.data[0].numerator().convert_to<size_t>()]!=invalid)) {
-          next.push_back(cap);continue;
-        }
-        if(cacheable_read_anchor(pat) &&
-           std::find(cap.begin(),cap.end(),invalid)==cap.end()) {
-          Id expected=instantiate_body(pat,cap);
-          if(expected!=invalid && std::find(ts.begin(),ts.end(),expected)!=ts.end()) {
-            const auto validated=match_anchor(pat,expected,cap);
-            if(std::find(validated.begin(),validated.end(),cap)!=validated.end()) {
-              ++a.stats["ep_body_bound_read_exact_hits"];
-              next.push_back(cap);continue;
-            }
-          }
-          // A miss is not a failed constraint. The general anchor matcher
-          // remains available; no unchecked reconstruction is accepted.
-          ++a.stats["ep_body_bound_read_matcher_fallbacks"];
-        } else if(scoped_read_anchor(pat,cap)) {
-          // Coordinates that combine derived digits arithmetically (a packed nibble address)
-          // are not matched structurally. With every captured axis an integer inside each
-          // digit's recorded scope, their exact instantiation names one target read or none.
-          // One uncaptured slot that is a plain term of the address is solved exactly from a
-          // target address (integer, then re-instantiated). Candidates only; the body proof
-          // remains the complete EP equality. The general matcher's budgets apply.
-          const auto candidates=scoped_read_captures(pat,cap,ts,attempts);
-          if(!candidates){++a.stats["ep_body_candidate_budget"];return {};}
-          bool hit=false;
-          for(const auto &candidate:*candidates) {
-            Id expected=instantiate_body(pat,candidate);
-            if(expected!=invalid && std::find(ts.begin(),ts.end(),expected)!=ts.end()) {
-              ++a.stats["ep_body_bound_read_scoped_hits"];
-              if(std::find(next.begin(),next.end(),candidate)==next.end()) {
-                next.push_back(candidate);
-                if(next.size()>body_candidate_limit){++a.stats["ep_body_candidate_budget"];return {};}
-              }
-              hit=true;
-            }
-          }
-          if(hit)continue;
-        }
-        bool discovered=false;
-        for(Id t:ts){
-        if(++attempts>body_candidate_attempts){++a.stats["ep_body_candidate_budget"];return {};}
-        const auto &tn=a.nodes[t];
-        if(pn.op=="slot" ? tn.op!="var" : (pn.op!=tn.op || pn.tag!=tn.tag))continue;
-        for(auto c:match_anchor(pat,t,cap)) {
-          discovered=true;
-          if(std::find(next.begin(),next.end(),c)==next.end()) {
-            next.push_back(std::move(c));
-            if(next.size()>body_candidate_limit){++a.stats["ep_body_candidate_budget"];return {};}}
-        }
-        }
-        // A Call can be rebound only after independent anchors supply its
-        // actual parameters. Keep that delayed proposal, not arbitrary failed
-        // read proposals. This is bounded candidate discovery, not a proof of
-        // inequality: unsupported/absent anchors decline this search path;
-        // every admitted candidate still requires the complete body proof.
-        if(!discovered && !deferred_definition &&
-            (pn.op=="read" || pn.op=="readbits" || pn.op=="packedbits"))
-          ++a.counter(Arena::Hot::ep_body_read_anchor_rejections);
-        if(!discovered && deferred_definition && std::find(next.begin(),next.end(),cap)==next.end()) {
-          next.push_back(cap);
-          ++a.stats["ep_body_deferred_unmatched_anchors"];
-          ++a.stats["ep_body_deferred_call_anchors"];
-          if(next.size()>body_candidate_limit){++a.stats["ep_body_candidate_budget"];return {};}
-        }
-      }
-      if(next.empty())return {};
-      caps=std::move(next);
-    }
-    return caps;
-  }
+  bool nonzero_normal_form(Id id,size_t &visits);
+  // Rule: let X = A + B * C, where C is a Call that X reaches by exactly one path of products and
+  // sums, no other operand on that path holds a node alpha-equal to C anywhere below it, and every
+  // other factor of the products on the path has a nonzero normal form. Then the atom C has degree
+  // one in the EP normal form of X and in the numerator of its fraction, and degree zero in the
+  // denominator. A target with no Call alpha-equal to C in its scope has no atom C in any normal
+  // form, so neither the polynomial nor the cross-multiplied EP equality X = target can hold
+  // (the atom's degree differs on the two sides). Returns whether this refutes X = target; false
+  // leaves the complete EP proof to decide. At most required_call_visits nodes of X per walk and
+  // required_call_candidates Calls; one scope scan per target (target_scope_calls).
+  static constexpr size_t required_call_visits = 256, required_call_candidates = 4;
+  bool missing_required_call(Id x,Id target);
+  // Rule: two Calls denote the same value when their instantiated definitions are one registered
+  // definition (call(): call_definitions). Which Call is the registered one depends on which was
+  // instantiated first, so a pattern Call of spec P with k arguments may have to name a target Call
+  // T spelled with another spec, with more arguments (n > k: the same literal as two parameters of
+  // T) or with fewer (n < k: two parameters of P that T has as one). The candidate argument lists
+  // for P are T's arguments without n - k of them, kept in order, or with k - n of them repeated at
+  // some position; a list names T when it instantiates P to T itself: call(P, list) == T. The
+  // pattern Call is then matched against that respelled node, which captures its slots as any Call
+  // of P does (coordinate relations included). A proposal only: every capture still needs the
+  // complete body proof, whose instantiation of the pattern Call is T again; the choice of the
+  // registered spelling therefore changes which candidates are found, never what is accepted.
+  // |n - k| <= 2, n and k <= 8; at most respelling_limit instantiations per candidate search
+  // (`used`), each one call() plus one bounded match. A list with a repeated argument is tried only
+  // if it agrees with every argument of the pattern Call that is an already captured slot (the
+  // match would refuse it otherwise).
+  static constexpr size_t respelling_limit = 32;
+  Captures respelled_call_captures(Id pat,Id target,const std::vector<Id> &cap,size_t &used);
+  Captures body_candidates(const Spec &s,Id target,const std::vector<Id> &initial);
 
   // This is a conservative search filter for positive polynomial shells, not
   // an inequality theorem. It must not reject cancellation or exponential
@@ -1530,49 +590,30 @@ struct Checker {
     a.stats["ep_body_payload_summary_nodes"]+=seen.size();
     return payload_admission_cache.emplace(root,std::move(result)).first->second;
   }
-  bool admit_payload_coordinates(Id expected,Id actual) {
-    if(expected==actual)return true;
-    // The reduction consumer already owns bounded factor decomposition and
-    // the later binder-independence check. Do not ask a whole-body equality
-    // query to discard an extra ordinary input factor. This is exact root
-    // factor containment, not division and not a recovered coefficient.
-    const auto &e=a.nodes[expected], &v=a.nodes[actual];
-    if(e.op=="mul" && v.op=="mul" && e.data==v.data &&
-       e.args.size()<v.args.size() && v.args.size()<=16) {
-      std::vector<bool> used(v.args.size(),false);bool contained=true;
-      for(Id factor:e.args) {
-        size_t j=0;while(j<v.args.size() && (used[j] || v.args[j]!=factor))++j;
-        if(j==v.args.size()){contained=false;break;}
-        used[j]=true;
-      }
-      if(contained) {
-        bool ordinary=true;
-        for(size_t j=0;j<v.args.size();++j)if(!used[j]) {
-          const auto &extra=a.nodes[v.args[j]];
-          ordinary &= extra.facts.finite &&
-            (extra.op=="read" || extra.op=="readbits" || extra.op=="packedbits");
-        }
-        if(ordinary){++a.stats["ep_body_factor_decomposition_admissions"];return false;}
-      }
-    }
-    const auto &wanted=payload_admission(expected), &found=payload_admission(actual);
-    if(!wanted.positive_shell || !found.positive_shell)return true;
-    // A different Exp/Select/Call can require genuine algebra or delayed
-    // definition binding. Never classify it by looking through its ancestry.
-    for(Id opaque:found.opaque)if(!wanted.opaque.contains(opaque))return true;
-    for(const auto &[source,reads]:found.reads) {
-      // An unrelated outside input factor cannot hide conflicting coordinates
-      // of a source already constrained by this candidate. It is left for the
-      // existing factor-decomposition consumer, not interpreted here.
-      if(!wanted.reads.contains(source))continue;
-      const auto &allowed=wanted.reads.at(source);
-      for(Id read:reads)if(!allowed.contains(read)) {
-        ++a.stats["ep_body_payload_admission_rejections"];
-        return false;
-      }
-    }
-    return true;
-  }
+  bool admit_payload_coordinates(Id expected,Id actual);
+
+  // ---- Mask resolution of a masked product (exact) -------------------------------------------
+  // A Boolean literal: the 0/1 node `node` has the value `truth`.
+  struct MaskLiteral { Id node = invalid; bool truth = true; };
+  std::optional<MaskLiteral> mask_literal(Id condition, bool nonzero);
+  int decide_under(Id c, const MaskLiteral &lit);
+  // A node rebuilt where `lit` holds: a Select or comparison whose condition the literal decides
+  // (decide_under) is its taken arm or its constant truth, the literal's own node is its value, and
+  // every other node is rebuilt from its rebuilt operands by its constructor (Checker::reapply,
+  // strict: no inherited facts). Not entered: Max nodes outside read coordinates (a value Max is a
+  // statistic shared by many guarded terms; rebuilding a guard inside it would give each term its
+  // own copy), Calls, and Folds whose binder the literal depends on. A read whose coordinates change
+  // is rebuilt with the facts of its element type only (a raw storage word: integer in
+  // [0, 2^width - 1]; a typed real element: finite; any other typed read declines, since its bounds
+  // may come from a premise). Equal to the original wherever lit holds. Memoized per (node, literal,
+  // coordinate position). `work` counts visited nodes; beyond the limit the rebuild fails.
+  // deep (only the masked matcher's exponent rebuild, rule exponent under its mask): a Select's condition
+  // and a word of a rebuilt operand are rebuilt too; the ordinary mask resolution (mask_resolved) keeps
+  // them as they are. The memo is keyed by the mode.
+  std::map<std::tuple<Id, Id, bool, bool, bool>, Id> mask_resolution_cache;
+  static constexpr size_t mask_resolution_limit = 20000;
+  Id resolve_under(Id x, const MaskLiteral &lit, bool coordinate, size_t &work, bool &failed, bool deep = false);
+  Id mask_resolved(Id n);
 
   // One bounded local congruence: a product of finite factors may contain a
   // single zero-mask condition and exponentials of one base. No nested mask
@@ -1582,96 +623,37 @@ struct Checker {
     Id predicate, exponent, residual;
     bool base2;
   };
-  std::optional<MaskedExponentialTerm> masked_exponential_term(Id root) {
-    if (!a.nodes[root].facts.finite) return {};
-    Id predicate = a.one;
-    std::vector<Id> exponent, residual{a.one}, todo{root};
-    std::optional<bool> base2;
-    size_t work = 0;
-    while (!todo.empty()) {
-      Id id = todo.back(); todo.pop_back();
-      if (++work > 24) return {};
-      const auto &node = a.nodes[id];
-      if (!node.facts.finite) return {};
-      if (node.op == "mul" && node.data.size() == 1 && node.args.size() <= 8) {
-        const auto factors = node.args;
-        const Q scalar = node.data[0];
-        residual.push_back(a.constant(scalar));
-        todo.insert(todo.end(), factors.begin(), factors.end());
-      } else if (node.op == "select" && node.args.size() == 3 &&
-                 (node.args[1] == a.zero || node.args[2] == a.zero)) {
-        const auto branches = node.args;
-        Id condition = branches[0];
-        if (branches[1] == a.zero) condition = a.compare("eq", condition, a.zero);
-        if (predicate != a.one && !scalar.alpha.equal(predicate, condition)) return {};
-        predicate = condition;
-        Id value = branches[branches[1] == a.zero ? 2 : 1];
-        // Only one mask layer per factor. Its numerical child is not searched
-        // for another condition; otherwise this would become path expansion.
-        if (a.nodes[value].op == "select") return {};
-        todo.push_back(value);
-      } else if ((node.op == "exp" || node.op == "exp2") && node.args.size() == 1 &&
-                 a.nodes[node.args[0]].facts.finite) {
-        bool binary = node.op == "exp2";
-        if (base2 && *base2 != binary) return {};
-        base2 = binary;
-        exponent.push_back(node.args[0]);
-      } else residual.push_back(id);
-    }
-    if (!base2 || exponent.empty()) return {};
-    return MaskedExponentialTerm{predicate, a.add(exponent), a.mul(residual), *base2};
+  // A finite value proved to be 0 or 1: integer known bits and bounds within [0, 1]. O(known_bits).
+  bool boolean_value(Id x) {
+    const auto &n = a.nodes[x];
+    return n.facts.finite && n.bounds && n.bounds->first >= 0 && n.bounds->second <= 1 &&
+           a.known_bits(x).integer;
   }
+  std::optional<MaskedExponentialTerm> masked_exponential_term(Id root);
+  Id substitute_nodes(Id x, const std::unordered_map<Id, Id> &replace);
+  // Rule (cases of a stored byte): two finite values whose only stored readbits leaf of at most 8 bits
+  // is one node B (an e2m1 nibble decoded from the same byte by different formulas, for example) are
+  // equal when they are equal (EP) in every case of B's 2^w values and of the comparisons, at most
+  // two, that are Select conditions in either value and do not depend on B (a nibble chosen by an
+  // index's parity, for example; each is 0 or 1, so fixing it to either value covers every input).
+  // B is an integer in [0, 2^w - 1]. At most 1024 substituted equalities; values of more than 4096
+  // nodes, a second such leaf, or more such conditions decline. Exact.
+  std::map<std::pair<Id, Id>, bool> byte_case_cache;  // (x, y) -> result: a function of immutable nodes
+  bool byte_cases_equal(Id x, Id y);
+  bool byte_cases_equal_uncached(Id x, Id y);
   std::optional<Id> masked_body_coefficient(Id expected, Id actual, bool allow_proved_mask = false) {
-    auto left = masked_exponential_term(expected), right = masked_exponential_term(actual);
-    if (!left || !right || left->base2 != right->base2 ||
-        !scalar.alpha.equal(left->predicate, right->predicate)) return {};
-    if (left->predicate == a.one && !allow_proved_mask) return {};
-    // Match the actual reference exponent before constructing a scale. The
-    // tautology exp(T)=exp(S)*exp(T-S) is not a useful reduction match: choosing
-    // S from a different key would manufacture one unique compensation factor
-    // per anchor, even when both indices are constants. Reuse the ordinary
-    // exponent match's local Add/coefficient contract instead. Numerical
-    // ancestors remain opaque identities; there is no candidate key search.
-    constexpr size_t maximum_exponent_terms = 32;
-    auto bounded_shell = [&](Id exponent) {
-      const auto &shell = a.nodes[exponent];
-      return (shell.op != "add" && shell.op != "mul") ||
-             shell.args.size() <= maximum_exponent_terms;
-    };
-    if (!bounded_shell(left->exponent) || !bounded_shell(right->exponent)) return {};
-    auto expected_terms = a.terms(left->exponent), actual_terms = a.terms(right->exponent);
-    if (expected_terms.size() > maximum_exponent_terms || actual_terms.size() > maximum_exponent_terms)
-      return {};
-    std::map<Id, Q> remaining, expected_by_identity;
-    for (const auto &[term, scale] : actual_terms)
-      remaining[scalar.alpha.representative(term)] += scale;
-    for (const auto &[term, scale] : expected_terms)
-      expected_by_identity[scalar.alpha.representative(term)] += scale;
-    bool matched_anchor = false;
-    for (const auto &[term, scale] : expected_by_identity) {
-      if (scale == 0) continue;
-      if (term == a.one) { remaining[term] -= scale; continue; }
-      auto found = remaining.find(term);
-      if (found == remaining.end() || found->second != scale) {
-        ++a.stats["masked_exponential_unmatched_score_terms"];
-        return {};
-      }
-      matched_anchor = true;
-      remaining.erase(found);
-    }
-    if (!matched_anchor) return {};
-    if (left->residual != right->residual &&
-        (!exponential_mode || !scalar.equal(left->residual, right->residual))) return {};
-    std::vector<Id> offsets;
-    for (const auto &[term, scale] : remaining)
-      if (scale != 0) offsets.push_back(a.mul({a.constant(scale), term}));
-    Id difference = a.add(std::move(offsets));
-    if (!a.nodes[difference].facts.finite) return {};
-    Id coefficient = canonical_coefficient(a.exponential(difference, left->base2));
-    if (!a.nodes[coefficient].facts.finite || !a.nodes[coefficient].facts.pos) return {};
-    ++a.stats["masked_exponential_coefficient_proofs"];
-    return coefficient;
+    return masked_body_coefficient_direct(expected, actual, allow_proved_mask);
   }
+  // A Select factor of x (a product's factor, or x itself) whose condition compares a free output
+  // coordinate v (an integer variable "output:...") with a constant, as (v, first, last): the
+  // interval of v's domain where the condition holds, which must leave a nonempty complement that
+  // is one interval too. O(factors).
+  struct CoordinateGuard { Id axis; Z first, last; bool points = false; };
+  uint64_t mask_case_serial = 0;
+  std::optional<CoordinateGuard> output_coordinate_guard(Id x);
+  static constexpr unsigned max_coordinate_points = 16;
+  bool coordinate_arithmetic(Id x) const;
+  std::optional<Id> masked_body_coefficient_direct(Id expected, Id actual, bool allow_proved_mask);
 
   const std::vector<Match> &match_term(Id sid, Id n, const std::vector<Id> &parameters = {}) {
     auto key = std::tuple(sid, n, parameters);
@@ -1681,7 +663,6 @@ struct Checker {
     ExponentialPolynomial::Timer match_timer(scalar.profiling?&scalar.match_ns:nullptr);
     const auto &s = specs[sid];
     const auto &p = patterns.nodes[s.pattern];
-    const auto &node = a.nodes[n];
     bool masked_reference = p.op == "select";
     if (p.op == "mul" && p.args.size() <= 8)
       for (Id child : p.args) masked_reference |= patterns.nodes[child].op == "select";
@@ -1692,751 +673,105 @@ struct Checker {
       size_t j = 0;
       for (size_t k = 0; k < s.slots; ++k) if (k != s.axis) initial[k] = parameters[j++];
     }
-    std::vector<std::pair<std::vector<Id>, Id>> rs;
-    for (auto cap : matches(s.pattern, n, initial, fixed))
-      rs.emplace_back(std::move(cap), a.one);
-    auto expmatches = [&](Id ep, Id target, const std::vector<Id> &cap,
-                          Id factor) {
-      const auto &t = a.nodes[target];
-      if (t.op != patterns.nodes[ep].op || !a.nodes[t.args[0]].facts.finite)
-        return;
-      const auto &sum = a.nodes[t.args[0]];
-      if (sum.op != "add")
-        return;
-      for (size_t j = 0; j < sum.args.size(); ++j) {
-        Id candidate = a.mul({a.constant(sum.data[j]), sum.args[j]});
-        auto caps = matches(patterns.nodes[ep].args[0], candidate, cap, fixed);
-        if (caps.empty())
-          continue;
-        std::vector<Id> rest;
-        for (size_t k = 0; k < sum.args.size(); ++k)
-          if (k != j)
-            rest.push_back(a.mul({a.constant(sum.data[k]), sum.args[k]}));
-        Id f = a.mul({factor, a.exponential(a.add(rest), t.op == "exp2")});
-        for (auto c : caps)
-          rs.emplace_back(std::move(c), f);
-      }
-    };
-    if (rs.empty() && (p.op == "exp2" || p.op == "exp") && node.op == p.op)
-      expmatches(s.pattern, n, initial, a.one);
-    if (rs.empty() && p.op == "mul" && node.op == "mul" &&
-        p.data == node.data && p.args.size() == 2 && node.args.size() == 2) {
-      for (size_t j = 0; j < 2; ++j) {
-        Id ep = p.args[j], other = p.args[1 - j];
-        if (patterns.nodes[ep].op != "exp2" && patterns.nodes[ep].op != "exp")
-          continue;
-        for (size_t k = 0; k < 2; ++k)
-          for (auto cap : matches(other, node.args[1 - k], initial, fixed))
-            expmatches(ep, node.args[k], cap, a.one);
+    std::set<Match> unique = match_term_target(sid, n, initial, fixed, masked_reference);
+    // Rule (mask resolution, mask_resolved): where nothing matched a masked reference body, the same
+    // matcher once more on the term rebuilt under its own mask (an equal value). Every candidate
+    // still needs the complete body proof against that equal value.
+    Id target = n;
+    if (unique.empty() && exponential_mode && masked_reference) {
+      const Id resolved = mask_resolved(n);
+      if (resolved != n) {
+        target = resolved;
+        unique = match_term_target(sid, resolved, initial, fixed, masked_reference);
+        if (!unique.empty()) ++a.stats["mask_resolved_matches"];
       }
     }
-    if (exponential_mode && rs.empty())
-      for(auto cap:body_candidates(s,n,initial))rs.emplace_back(std::move(cap),a.one);
-    std::set<Match> unique;
-    for (auto &[cap, f] : rs) {
-      if (cap.size() != s.slots ||
-          std::find(cap.begin(), cap.end(), invalid) != cap.end())
-        continue;
-      // EP anchors propose candidates; they cannot override parameters fixed
-      // by the enclosing reduction query.
-      if (fixed) {
-        bool same=true;
-        for (size_t k=0;k<cap.size();++k)
-          if(k!=s.axis && cap[k]!=initial[k])same=false;
-        if(!same)continue;
-      }
-      if(exponential_mode) {
-        Id expected;
-        {ExponentialPolynomial::Timer timer(scalar.profiling?&scalar.instantiate_ns:nullptr);expected=instantiate_body(s.pattern,cap);}
-        if(expected==invalid){++a.stats["ep_body_instantiation_declines"];continue;}
-        if(!admit_payload_coordinates(a.mul({expected,f}),n))continue;
-        ++a.stats["ep_body_obligations"];
-        bool equal;
-        {ExponentialPolynomial::Timer timer(scalar.profiling?&scalar.body_scalar_ns:nullptr);
-          // This theorem proves the complete masked product, not just its
-          // positive branch. An opaque EP atom must not erase the mask.
-          if (auto coefficient = masked_reference ? masked_body_coefficient(expected, n, true) : std::optional<Id>{}) {
-            f = *coefficient; equal = true;
-          } else equal=scalar.equal(a.mul({expected,f}),n);
+    // Rule (match by cases on an output coordinate): with the reduction's parameters fixed, a target
+    // with a factor Select on a comparison of a free output coordinate v with a constant
+    // (output_coordinate_guard) is matched on each part of v's domain: the interval where the
+    // comparison holds and the rest, v replaced by a fresh coordinate over the part in the target
+    // and in every fixed parameter (restrict_axis, a capture-safe substitution; instantiation
+    // commutes with it); for any other comparison whose only free variable is v (at most
+    // max_coordinate_points values), each point of v's domain. It matches the body at index i with
+    // coefficient C when each part gives exactly that one match, with the same i and C (so neither
+    // depends on v). The parts cover v's domain exactly once, so target = C * body(parameters, i)
+    // on all of it. Exact. Two parts, or at most max_coordinate_points points.
+    if (unique.empty() && exponential_mode && masked_reference && fixed)
+      if (const auto guard = output_coordinate_guard(target)) {
+        const auto &bounds = *a.nodes[guard->axis].bounds;
+        const Z lo = bounds.first.numerator(), hi = bounds.second.numerator();
+        std::vector<std::pair<Z, Z>> parts;
+        if (guard->points) for (Z point = lo; point <= hi; ++point) parts.emplace_back(point, point);
+        else {
+          parts.emplace_back(guard->first, guard->last);
+          if (guard->first > lo) parts.emplace_back(lo, guard->first - 1);
+          if (guard->last < hi) parts.emplace_back(guard->last + 1, hi);
         }
-        if(!equal)continue;
-        ++a.stats["ep_body_proofs"];
+        std::optional<Match> common;
+        bool all = guard->points ? parts.size() >= 2 : parts.size() == 2;
+        for (const auto &[first, last] : parts) {
+          if (!all) break;
+          Id value;
+          if (first == last) value = a.constant(Q(first));
+          else {
+            size_t before;
+            do {
+              before = a.nodes.size();
+              value = a.var("match-case:" + std::to_string(mask_case_serial++), Q(first), Q(last));
+            } while (value < before);
+          }
+          std::vector<Id> restricted = initial;
+          for (Id &x : restricted) if (x != invalid) x = restrict_axis(x, guard->axis, value);
+          // Rule (restricted body of a case part): the bodies this part's match instantiates are
+          // restricted as its target is (only this call's own instantiations, not nested queries).
+          const std::pair<Id, Id> restriction{guard->axis, value};
+          const auto part = match_term_target(sid, restrict_axis(target, guard->axis, value), restricted, true, masked_reference, &restriction);
+          if (part.size() != 1) { all = false; break; }
+          const Match &m = *part.begin();
+          if (a.depends(m.index, value) || a.depends(m.coef, value) ||
+              (common && (common->index != m.index || common->coef != m.coef))) { all = false; break; }
+          common = Match{parameters, m.index, m.coef};
+        }
+        if (all && common) {
+          unique = {*common};
+          ++a.stats["match_coordinate_cases"];
+        }
       }
-      std::vector<Id> params;
-      for (size_t j = 0; j < cap.size(); ++j)
-        if (j != s.axis)
-          params.push_back(cap[j]);
-      unique.insert({std::move(params), cap[s.axis], canonical_coefficient(f)});
-    }
     return match_cache
         .emplace(key, std::vector<Match>(unique.begin(), unique.end()))
         .first->second;
   }
-  Summary combine(const std::vector<Summary> &parts) {
-    Summary result;
-    bool first = true;
-    for (const auto &s : parts) {
-      if (s.empty())
-        continue;
-      if (first) {
-        result = s;
-        first = false;
-        continue;
-      }
-      using Prefix = std::pair<Id, std::vector<Id>>;
-      std::map<Prefix, std::vector<std::pair<Key, Id>>> index;
-      for (const auto &[k, p] : s)
-        index[{k.sid, k.params}].emplace_back(k, p);
-      Summary next;
-      for (const auto &[k, p] : result) {
-        auto it = index.find({k.sid, k.params});
-        if (it == index.end())
-          continue;
-        for (const auto &[other, p2] : it->second) {
-          a.check();
-          if (!equal_coefficients(k.coef, other.coef)) continue;
-          Key key = k;
-          key.coef = canonical_coefficient(key.coef);
-          key.residual = plus(k.sid, {k.residual, other.residual});
-          next[key] = concat(p, p2);
-        }
-      }
-      result = std::move(next);
-    }
-    return result;
-  }
-  Summary scale(const Summary &s, Id c) {
-    Summary r;
-    for (const auto &[k, p] : s) {
-      Key key = k;
-      key.coef = canonical_coefficient(a.mul({k.coef, c}));
-      key.residual = a.mul({k.residual, c});
-      r[key] = p;
-    }
-    return r;
-  }
-  Summary residual(const Summary &s, Id n) {
-    Summary r;
-    for (const auto &[k, p] : s) {
-      Key key = k;
-      key.residual = plus(k.sid, {k.residual, n});
-      r[key] = p;
-    }
-    return r;
-  }
-  Summary bind(const Summary &s, Id var, const Z &count) {
-    Summary r;
-    for (const auto &[k, p] : s) {
-      if (a.depends(k.coef, var) ||
-          std::any_of(k.params.begin(), k.params.end(),
-                      [&](Id x) { return a.depends(x, var); })) {
-        ++failures["binder_in_fixed_parameter_or_factor"];
-        continue;
-      }
-      if (a.depends(k.residual, var)) {
-        ++failures["unmatched_binder_dependent_residual"];
-        continue;
-      }
-      Key key = k;
-      if (!specs[k.sid].maximum)
-        key.residual = a.mul({a.constant(Q(count)), k.residual});
-      r[key] = bind_piece(p, var, count);
-    }
-    return r;
-  }
+  std::set<Match> match_term_target(Id sid, Id n, const std::vector<Id> &initial, bool fixed, bool masked_reference,
+                                    const std::pair<Id, Id> *case_restriction = nullptr);
+  bool stored_input_scale(Id pattern_node);
+  Summary combine(const std::vector<Summary> &parts);
+  Summary scale(const Summary &s, Id c);
+  Summary residual(const Summary &s, Id n);
+  Summary bind(const Summary &s, Id var, const Z &count);
   std::optional<Box> box(Id index,
-                         const std::vector<std::pair<Id, Z>> &domains) {
-    std::map<Id, Q> ts;
-    for (auto [t, c] : a.terms(index))
-      ts[t] = c;
-    Q start = 0;
-    if (ts.contains(a.one)) {
-      start = ts[a.one];
-      ts.erase(a.one);
-    }
-    Box b;
-    for (const auto &[v, n] : domains) {
-      Q c = 0;
-      if (ts.contains(v)) {
-        c = ts[v];
-        ts.erase(v);
-      }
-      if (c.denominator() != 1 || n < 0)
-        return {};
-      if (c == 0) {
-        b.mult *= n;
-        continue;
-      }
-      if (c < 0) {
-        start += c * Q(n - 1);
-        c = -c;
-      }
-      b.axes.emplace_back(c.numerator(), n);
-    }
-    for (auto it = ts.begin(); it != ts.end();)
-      if (it->second == 0)
-        it = ts.erase(it);
-      else
-        ++it;
-    if (!ts.empty() || start.denominator() != 1)
-      return {};
-    b.start = start.numerator();
-    return b;
-  }
-  std::optional<std::vector<Box>> boxes(Id p, const Z &count, bool &permuted) {
-    struct W {
-      Id id;
-      bool leave;
-    };
-    std::vector<W> todo{{p, false}};
-    std::vector<std::pair<Id, Z>> domains;
-    std::vector<Box> out;
-    std::optional<Id> common_mask;
-    bool plain = false;
-    permuted = false;
-    while (!todo.empty()) {
-      a.check();
-      auto w = todo.back();
-      todo.pop_back();
-      const auto &n = pieces[w.id];
-      if (w.leave) {
-        domains.pop_back();
-        continue;
-      }
-      if (n.kind == PieceNode::Concat) {
-        todo.push_back({n.right, false});
-        todo.push_back({n.left, false});
-      } else if (n.kind == PieceNode::Bind) {
-        domains.emplace_back(n.var, n.count);
-        todo.push_back({w.id, true});
-        todo.push_back({n.left, false});
-      } else {
-        Id index = n.index;
-        const auto &coordinate = a.nodes[index];
-        if (coordinate.op == "index_xor") {
-          if (plain || coordinate.args.size() != 2 || coordinate.data.size() != 1 ||
-              (coordinate.data[0] != 6 && coordinate.data[0] != 7) ||
-              count != pow2(coordinate.data[0].numerator().convert_to<unsigned>())) return {};
-          Id mask = coordinate.args[1];
-          if (!bounded_coordinate_integer(a, coordinate.args[0], count) ||
-              !bounded_coordinate_integer(a, mask, count) ||
-              (common_mask && *common_mask != mask)) return {};
-          for (const auto &[variable, length] : domains) {
-            (void)length;
-            if (a.depends(mask, variable)) return {};
-          }
-          common_mask = mask; permuted = true; index = coordinate.args[0];
-        } else {
-          if (common_mask) return {};
-          plain = true;
-        }
-        auto b = box(index, domains);
-        if (!b)
-          return {};
-        out.push_back(std::move(*b));
-        ++a.stats["coverage_stored_piece_visits"];
-      }
-    }
-    return out;
-  }
-  std::optional<Id> close(const Summary &s) {
-    std::set<Id> closed;
-    for (const auto &[k, p] : s) {
-      bool permuted = false;
-      auto bs = boxes(p, specs[k.sid].count, permuted);
-      if (bs && cover_boxes(*bs, specs[k.sid].count, a)) {
-        closed.insert(
-            plus(k.sid, {k.residual, a.mul({k.coef, call(k.sid, k.params)})}));
-        ++a.stats["completed_reductions"];
-        if (permuted) ++a.stats["xor_permutation_complete_domains"];
-      }
-    }
-    if (closed.size() > 1) {
-      const auto representative=*closed.begin();
-      for(auto alternative:closed)if(alternative!=representative)
-        complete_reduction_equalities.emplace_back(representative,alternative);
-      ++a.stats["multiple_complete_reduction_proofs"];
-    }
-    if (closed.empty())
-      return {};
-    return *closed.begin();
-  }
-  // log(x) * (1/log 2) is log2(x) for finite positive x (a finite log), the
-  // shape PTX lg2 imports to. Both sides share this canonical form. Only a
-  // product with exactly one finite natural log and one 1/log(2) factor is
-  // contracted. O(factors).
-  std::optional<Id> base2_logarithm_product(const std::vector<Id> &args, const Q &scalar) {
-    size_t inverse = args.size(), logarithm = args.size(), inverses = 0, logarithms = 0;
-    for (size_t i = 0; i < args.size(); ++i) {
-      const auto &n = a.nodes[args[i]];
-      if (n.op == "recip" && n.args.size() == 1 && a.nodes[n.args[0]].op == "log" &&
-          a.value(a.nodes[n.args[0]].args[0]) == Q(2)) { inverse = i; ++inverses; }
-      else if (n.op == "log" || n.op == "log2") { logarithm = i; ++logarithms; }
-    }
-    if (inverses != 1 || logarithms != 1 || a.nodes[args[logarithm]].op != "log" ||
-        !a.nodes[args[logarithm]].facts.finite) return {};
-    std::vector<Id> xs{a.constant(scalar), a.logarithm(a.nodes[args[logarithm]].args[0], true)};
-    for (size_t i = 0; i < args.size(); ++i)
-      if (i != inverse && i != logarithm) xs.push_back(args[i]);
-    ++a.stats["canonical_base2_logarithms"];
-    return a.mul(std::move(xs));
-  }
-  Id reapply(Id original, const std::vector<Id> &args) {
-    const auto &n = a.nodes[original];
-    const auto &op = n.op;
-    const auto &d = n.data;
-    if (op == "call") {
-      if(d.size()!=1 || d[0].denominator()!=1 || d[0]<0 || d[0]>=Q(specs.size()))
-        throw Unsupported("reduction Call reconstruction identity");
-      Id sid=d[0].numerator().convert_to<Id>();
-      if(args.size()+1!=specs[sid].slots)
-        throw Unsupported("reduction Call reconstruction arity");
-      return call(sid,args);
-    }
-    if (op == "fold" && args.size() == 2 && d.size() == 2 &&
-        d[0].denominator() == 1 && d[1].denominator() == 1 && d[1] >= 0 &&
-        (n.tag == "Sum" || n.tag == "Max")) {
-      return canonicalize_fold(original, args);
-    }
-    if (op == "add" || op == "add_raw") {
-      std::vector<Id> xs;
-      for (size_t j = 0; j < args.size(); ++j)
-        xs.push_back(a.mul({a.constant(d[j]), args[j]}));
-      return a.factor_sum(a.add(xs));
-    }
-    if (op == "mul")
-      if (auto contracted = base2_logarithm_product(args, d[0])) return *contracted;
-    if (op == "mul") {
-      std::vector<Id> rec, others{a.constant(d[0])};
-      for (Id x : args)
-        if (a.nodes[x].op == "recip")
-          rec.push_back(a.nodes[x].args[0]);
-        else
-          others.push_back(x);
-      if (rec.size() == 1)
-        return a.divide(a.mul(others), rec[0]);
-      auto xs = args;
-      xs.push_back(a.constant(d[0]));
-      return a.mul(xs);
-    }
-    if (op == "signed") {
-      if(args.size()!=1 || d.size()!=1 || d[0].denominator()!=1 || d[0]<=0 || d[0]>256)
-        throw Unsupported("signed word reconstruction arity/width");
-      return a.signed_word(args[0],d[0].numerator().convert_to<unsigned>());
-    }
-    if (op == "word_or")
-      return a.word_or(args[0],args[1],d[0].numerator().convert_to<unsigned>());
-    if (op == "word_shr")
-      return a.word_shr(args[0],args[1],d[0].numerator().convert_to<unsigned>(),d[1]!=0);
-    if (op == "extractbits")
-      return a.bit_slice(args[0],d[0].numerator().convert_to<unsigned>(),d[1].numerator().convert_to<unsigned>());
-    if ((op == "idiv" || op == "imod") && args.size() == 1 &&
-        d.size() == 1 && d[0].denominator() == 1 && d[0] > 0)
-      return op == "idiv" ? a.idiv(args[0], d[0].numerator())
-                          : a.imod(args[0], d[0].numerator());
-    if (op == "floor")
-      return a.floor_value(args[0],n.bounds);
-    if (op == "exp2" || op == "exp")
-      return a.exponential(args[0], op == "exp2");
-    if (op == "select")
-      return equal_arm_select(a.select(args[0], args[1], args[2]));
-    if (op == "compare")
-      return a.compare(n.tag, args[0], args[1]);
-    if (op == "xor")
-      return a.bitxor(args.at(0), args.at(1));
-    if (op == "abs")
-      return a.absolute(args.at(0));
-    if (op == "log" || op == "log2")
-      return a.logarithm(args.at(0), op == "log2");
-    if (op == "power")
-      return a.power(args.at(0), args.at(1));
-    if (op == "recip")
-      return a.recip(args[0]);
-    if (op == "max")
-      return a.maximum(args);
-    if (op == "clamp")
-      return a.clamp(args[0],d[0],d[1]);
-    if (op == "sqrt" || op == "reciprocalsqrt" || op == "sin" || op == "cos" ||
-        op == "exp" || op == "tanh") {
-      bool f = std::all_of(args.begin(), args.end(),
-                           [&](Id x) { return a.nodes[x].facts.finite; });
-      if (op == "sqrt") f &= a.nodes[args[0]].facts.nn;
-      if (op == "reciprocalsqrt") f &= a.nodes[args[0]].facts.pos;
-      bool p = f && (op == "reciprocalsqrt" || op == "exp" ||
-                            (op == "sqrt" && a.nodes[args[0]].facts.pos));
-      bool nn = p || (f && op == "sqrt");
-      return a.intern(op, args, d, n.tag, {f, p, nn});
-    }
-    return args == n.args ? original
-                          : a.intern(op, args, d, n.tag, n.facts, n.bounds);
-  }
-  // Cached free-variable sets make each independence query logarithmic in the
-  // factor's free-variable count; this never traverses its producer DAG.
-  std::pair<Id, Id> split_invariant_factors(Id body, Id axis) {
-    const auto &n = a.nodes[body];
-    if (!n.facts.finite) return {a.one, body};
-    if (!a.depends(body, axis)) return {body, a.one};
-    if (n.op != "mul" || n.data.size() != 1) return {a.one, body};
-    std::vector<Id> invariant{a.constant(n.data[0])}, varying;
-    for (Id factor : n.args) {
-      a.check();
-      ++a.stats["canonical_factor_visits"];
-      (a.depends(factor, axis) ? varying : invariant).push_back(factor);
-    }
-    return {a.mul(invariant), a.mul(varying)};
-  }
+                         const std::vector<std::pair<Id, Z>> &domains);
+  std::optional<std::vector<Box>> boxes(Id p, const Z &count, bool &permuted);
+  std::optional<Id> close(const Summary &s);
+  std::optional<Id> base2_logarithm_product(const std::vector<Id> &args, const Q &scalar);
+  Id reapply(Id original, const std::vector<Id> &args, bool strict = false);
+  std::pair<Id, Id> split_invariant_factors(Id body, Id axis);
 
-  // Capture-safe restriction of one free coordinate to a subset of its
-  // declared domain. Invariant subgraphs are reused. Facts on immutable reads
-  // remain valid under restriction; coordinate constructors recompute bounds.
-  // The iteration domain is dependent stored DAG nodes, never Fold elements.
-  Id restrict_axis(Id root, Id old_axis, Id new_axis) {
-    auto key = [&](Id id) { return std::tuple(old_axis, new_axis, id); };
-    std::vector<std::pair<Id, bool>> todo{{root, false}};
-    while (!todo.empty()) {
-      a.check();
-      auto [id, ready] = todo.back(); todo.pop_back();
-      if (restricted_axis_cache.contains(key(id))) {
-        ++a.stats["canonical_domain_rebind_cache_hits"];
-        continue;
-      }
-      if (id == old_axis) {
-        restricted_axis_cache.emplace(key(id), new_axis);
-        continue;
-      }
-      if (!a.depends(id, old_axis)) {
-        restricted_axis_cache.emplace(key(id), id);
-        ++a.stats["canonical_domain_invariant_reuse"];
-        continue;
-      }
-      const auto &n = a.nodes[id];
-      const bool shadow = n.op == "fold" && n.args.size() == 2 &&
-                          n.data.size() == 2 && n.data[0] == Q(old_axis);
-      if (!ready) {
-        todo.emplace_back(id, true);
-        for (size_t j = 0; j < n.args.size(); ++j)
-          if (!(shadow && j == 1) && !restricted_axis_cache.contains(key(n.args[j])))
-            todo.emplace_back(n.args[j], false);
-        continue;
-      }
-      std::vector<Id> args;
-      args.reserve(n.args.size());
-      for (size_t j = 0; j < n.args.size(); ++j)
-        args.push_back(shadow && j == 1 ? n.args[j]
-                                      : restricted_axis_cache.at(key(n.args[j])));
-      restricted_axis_cache.emplace(key(id), reapply(id, args));
-      ++a.stats["canonical_domain_rebind_nodes"];
-    }
-    return restricted_axis_cache.at(key(root));
-  }
+  Id substitute_strict(Id root, Id var, Id value);
+  Id restrict_axis(Id root, Id old_axis, Id new_axis);
 
-  // Same orientation for reference and optimized, before either is abstracted:
-  // Fold(z, c*f) -> z + c*Fold(0, f), never Fold(c*z, c*f).
-  // The small shells materialize the SumNF view in the existing IR. No element
-  // expansion, new IR operator, or reference-dependent alternative is needed.
-  // A Max over a -infinity-masked body keeps only the possible prefix of its
-  // mask (masked_max_prefix), rebound to a fresh binder as for Sum. Returns
-  // the new (binder, body) and narrows count; nothing if no index is dropped.
-  std::optional<std::pair<Id, Id>> masked_max_domain(Id value, Id axis, Z &count) {
-    const Z prefix = masked_max_prefix(a, value, axis, count);
-    if (prefix >= count) return {};
-    ++a.stats["canonical_max_trimmed_domains"];
-    count = prefix;
-    if (prefix == 0) return std::pair(axis, value);
-    const auto key = std::tuple(value, axis, prefix);
-    auto found = restricted_max_bodies.find(key);
-    if (found == restricted_max_bodies.end()) {
-      Id fresh;
-      size_t before;
-      do {
-        before = a.nodes.size();
-        fresh = a.var("canonical-max-domain:" + std::to_string(domain_binder_serial++),
-                      Q(0), Q(prefix - 1));
-      } while (fresh < before);
-      found = restricted_max_bodies.emplace(key, std::pair(fresh, restrict_axis(value, axis, fresh))).first;
-    }
-    return found->second;
-  }
-  Id canonicalize_fold(Id original, const std::vector<Id> &args) {
-    const auto &n = a.nodes[original];
-    if (n.args.size() != 2 || n.data.size() != 2 ||
-        n.data[0].denominator() != 1 || n.data[1].denominator() != 1 ||
-        n.data[0] < 0 || n.data[0] >= Q(a.nodes.size()) || n.data[1] < 0)
-      return args == n.args ? original : a.intern(n.op, args, n.data, n.tag, n.facts, n.bounds);
-    Id axis = n.data[0].numerator().convert_to<Id>();
-    Z count = n.data[1].numerator();
-    if (count == 0) return args[0];
-    bool sum = n.tag == "Sum";
-    Id value = args[1];
-    if (sum) {
-      auto key = std::tuple(value, axis, count);
-      auto it = masked_prefix_cache.find(key);
-      if (it == masked_prefix_cache.end())
-        it = masked_prefix_cache.emplace(key, masked_sum_prefix(a, value, axis, count)).first;
-      if (it->second < count) {
-        count = it->second;
-        ++a.stats["canonical_sum_trimmed_domains"];
-        if (count == 0) {
-          ++a.stats["canonical_sum_zero_domains"];
-          return args[0];
-        }
-        auto found = restricted_sum_bodies.find(key);
-        if (found == restricted_sum_bodies.end()) {
-          // A newly allocated binder cannot already occur free or bound in
-          // the old body. Cache the restriction, not a potentially capturing
-          // name shared by unrelated lexical scopes.
-          Id fresh;
-          size_t before;
-          do {
-            before = a.nodes.size();
-            fresh = a.var("canonical-sum-domain:" + std::to_string(domain_binder_serial++),
-                          Q(0), Q(count - 1));
-          } while (fresh < before);
-          Id restricted = restrict_axis(value, axis, fresh);
-          found = restricted_sum_bodies.emplace(key, std::pair(fresh, restricted)).first;
-        }
-        axis = found->second.first;
-        value = found->second.second;
-      }
-    } else if (auto trimmed = masked_max_domain(value, axis, count)) {
-      if (count == 0) return args[0];
-      std::tie(axis, value) = *trimmed;
-    }
-    // Max is idempotent: count >= 1 copies of an axis-invariant body b give
-    // max(z, b), and its identity -infinity leaves the seed z.
-    if (n.tag == "Max" && !a.depends(value, axis)) {
-      ++a.stats["canonical_max_invariant_bodies"];
-      return a.maximum({args[0], value});
-    }
-    std::vector<Q> domain{Q(axis), Q(count)};
-    Facts facts = reduction_facts(args[0], value, axis, count, n.tag == "Max");
-    if (sum && facts.finite && !a.depends(args[0], axis)) {
-      if (auto scalar_sum = simplify_scalar_sum(a, args[0], value, axis, count))
-        return *scalar_sum;
-      auto [coefficient, body] = split_invariant_factors(value, axis);
-      if (coefficient != a.one || args[0] != a.zero) {
-        if (coefficient != a.one) ++a.stats["canonical_sum_factor_pulls"];
-        if (args[0] != a.zero) ++a.stats["canonical_sum_initials"];
-        Id pure = a.intern("fold", {a.zero, body}, domain, "Sum",
-                           reduction_facts(a.zero, body, axis, count, false));
-        // The seed is outside the multiplication and still appears once.
-        return a.factor_sum(a.add({args[0], a.mul({coefficient, pure})}));
-      }
-    }
-    return a.intern("fold", {args[0], value}, domain, n.tag, facts);
-  }
+  std::optional<std::pair<Id, Id>> masked_max_domain(Id value, Id axis, Z &count);
+  Id canonicalize_fold(Id original, const std::vector<Id> &args, bool strict = false);
 
-  Id canonicalize(Id root) {
-    std::vector<std::pair<Id, bool>> todo{{root, false}};
-    // Normalize newly emitted shells too. Already normalized immutable DAG
-    // nodes stay cached; this is not a repeated whole-graph fixed-point scan.
-    std::unordered_map<Id, Id> rewritten;
-    while (!todo.empty()) {
-      a.check();
-      auto [id, ready] = todo.back(); todo.pop_back();
-      if (canonical_cache.contains(id)) continue;
-      if (auto it = rewritten.find(id); it != rewritten.end()) {
-        canonical_cache.emplace(id, canonical_cache.at(it->second));
-        continue;
-      }
-      const auto &n = a.nodes[id];
-      const bool empty = n.op == "fold" && n.args.size() == 2 &&
-                         n.data.size() == 2 && n.data[1] == 0;
-      if (!ready) {
-        todo.emplace_back(id, true);
-        for (size_t j = 0; j < (empty ? 1 : n.args.size()); ++j)
-          if (!canonical_cache.contains(n.args[j])) todo.emplace_back(n.args[j], false);
-        continue;
-      }
-      if (empty) {
-        canonical_cache.emplace(id, canonical_cache.at(n.args[0]));
-        ++a.counter(Arena::Hot::canonical_node_visits);
-        continue;
-      }
-      std::vector<Id> args;
-      args.reserve(n.args.size());
-      for (Id child : n.args) args.push_back(canonical_cache.at(child));
-      Id result = n.op == "fold" ? canonicalize_fold(id, args) : reapply(id, args);
-      if (result != id && !canonical_cache.contains(result)) {
-        rewritten.emplace(id, result);
-        todo.emplace_back(id, true);
-        todo.emplace_back(result, false);
-      } else {
-        canonical_cache.emplace(id, result == id ? id : canonical_cache.at(result));
-      }
-      ++a.counter(Arena::Hot::canonical_node_visits);
-    }
-    return canonical_cache.at(root);
-  }
+  Id canonicalize(Id root);
 
-  // This second stage is intentionally reference-guided: register definitions
-  // on the reference side, prove contributions on the optimized side. The
-  // algebraic canonicalizer above has no such side flag or active-spec state.
-  Id normalize(Id root, bool reference = false) {
-    root = canonicalize(root);
-    std::unordered_map<Id, Entry> local;
-    if (reference) {
-      active.clear();
-      reference_binders.clear();
-    } else if (active != opt_version) {
-      opt_version = active;
-      opt_cache.clear();
-      ++a.stats["normalization_cache_context_changes"];
-    }
-    auto &cache = reference ? local : opt_cache;
-    std::vector<std::pair<Id, bool>> todo{{root, false}};
-    std::unordered_map<Id, Id> redirects;
-    while (!todo.empty()) {
-      a.check();
-      auto [old, ready] = todo.back();
-      todo.pop_back();
-      if (cache.contains(old))
-        continue;
-      if (auto it = redirects.find(old); it != redirects.end()) {
-        cache.emplace(old, cache.at(it->second));
-        continue;
-      }
-      const auto &raw = a.nodes[old];
-      if (!ready) {
-        // Visit the Fold before its body, so reg() can recognize an enclosing
-        // reference axis without a second DAG traversal or variable-name tests.
-        if (raw.op == "fold") {
-          const Id binder = raw.data[0].numerator().convert_to<Id>();
-          fold_binders.insert(binder);
-          if (reference) reference_binders.insert(binder);
-        }
-        todo.emplace_back(old, true);
-        for (size_t j = raw.args.size(); j-- > 0;)
-          if (!cache.contains(raw.args[j]))
-            todo.emplace_back(raw.args[j], false);
-        continue;
-      }
-      std::vector<Id> args;
-      std::vector<const Summary *> child;
-      for (Id x : raw.args) {
-        auto &entry = cache.at(x);
-        args.push_back(entry.n);
-        child.push_back(&entry.summary);
-      }
-      Summary summary;
-      Id n;
-      if (raw.op == "fold") {
-        // Child abstraction can reveal a simpler predicate or finite zero
-        // mask. Re-enter the same normal form before binding summaries or
-        // registering a definition; never bind with a stale domain/axis.
-        Id rebuilt = canonicalize_fold(old, args);
-        const auto &normalized = a.nodes[rebuilt];
-        if (normalized.op != "fold" || normalized.args != args ||
-            normalized.data != raw.data || normalized.tag != raw.tag) {
-          redirects.emplace(old, rebuilt);
-          todo.emplace_back(old, true);
-          todo.emplace_back(rebuilt, false);
-          ++a.stats["normalization_fold_rebuild_redirects"];
-          continue;
-        }
-        Id var = raw.data[0].numerator().convert_to<Id>();
-        Z count = raw.data[1].numerator();
-        bool max = raw.tag == "Max";
-        if (reference) {
-          if(count==0) n=args[0];
-          else {
-            Id call=reg(args[1],var,count,max);
-            n=max ? a.maximum({args[0],call}) : a.add({args[0],call});
-          }
-        }
-        else {
-          Summary initial = select(*child[0], max),
-                  bound = bind(select(*child[1], max), var, count);
-          if (!initial.empty() && !bound.empty())
-            summary = combine({initial, bound});
-          else if (!bound.empty())
-            summary = residual(bound, args[0]);
-          n = a.intern("fold", args, raw.data, raw.tag,
-                       reduction_facts(args[0], args[1], var, count, max));
-          if (count == 0 || (!max && args[1] == a.zero)) {
-            n = args[0];
-            summary = *child[0];
-          }
-        }
-      } else {
-        n = reapply(old, args);
-        if (raw.op == "add" || raw.op == "add_raw") {
-          std::vector<Summary> parts;
-          std::vector<Id> unmatched;
-          for (size_t j = 0; j < child.size(); ++j) {
-            auto s = select(*child[j], false);
-            if (s.empty())
-              unmatched.push_back(a.mul({a.constant(raw.data[j]), args[j]}));
-            else
-              parts.push_back(scale(s, a.constant(raw.data[j])));
-          }
-          summary = residual(combine(parts), a.add(unmatched));
-        } else if (raw.op == "max") {
-          std::vector<Summary> parts;
-          std::vector<Id> unmatched;
-          for (size_t j = 0; j < child.size(); ++j) {
-            auto s = select(*child[j], true);
-            if (s.empty())
-              unmatched.push_back(args[j]);
-            else
-              parts.push_back(std::move(s));
-          }
-          summary = residual(combine(parts), a.maximum(unmatched));
-        } else if (raw.op == "mul") {
-          size_t participating = 0, index = 0;
-          Summary selected;
-          for (size_t j = 0; j < child.size(); ++j) {
-            auto s = select(*child[j], false);
-            if (!s.empty()) {
-              ++participating;
-              index = j;
-              selected = std::move(s);
-            }
-          }
-          if (participating == 1) {
-            std::vector<Id> xs{a.constant(raw.data[0])};
-            for (size_t j = 0; j < args.size(); ++j)
-              if (j != index)
-                xs.push_back(args[j]);
-            summary = scale(selected, a.mul(xs));
-          }
-        }
-      }
-      // Keep the expression DAG compact; normalize only scalar obligations.
-      if (!reference) {
-        auto c = close(summary);
-        if (c) {
-          n = *c;
-          summary.clear();
-        }
-        if (!exponential_mode) n = a.factor_sum(n);
-        auto it = active_byroot.find(a.nodes[n].op);
-        std::vector<Id> candidates;
-        if(it!=active_byroot.end())candidates=it->second;
-        if(exponential_mode && (a.nodes[n].op=="add" || a.nodes[n].op=="mul" || a.nodes[n].op=="recip" || a.nodes[n].op=="exp" || a.nodes[n].op=="exp2"))
-          for(Id sid:active)if(candidates.size()<64 && std::find(candidates.begin(),candidates.end(),sid)==candidates.end())candidates.push_back(sid);
-        for (Id sid : candidates) {
-            ++a.counter(Arena::Hot::local_pattern_candidates);
-            for (const auto &m : match_term(sid, n)) {
-              Key k{sid, m.params, m.coef, neutral(sid)};
-              Id p = leaf(m.index);
-              auto oldpiece = summary.find(k);
-              if (oldpiece == summary.end())
-                summary.emplace(std::move(k), p);
-              else
-                oldpiece->second = concat(oldpiece->second, p);
-            }
-          }
-      }
-      cache.emplace(old, Entry{n, std::move(summary)});
-      ++a.counter(Arena::Hot::normalization_node_visits);
-    }
-    if (reference) {
-      active_byroot.clear();
-      for (Id sid : active)
-        active_byroot[patterns.nodes[specs[sid].pattern].op].push_back(sid);
-    }
-    return cache.at(root).n;
-  }
+  Id normalize(Id root, bool reference = false);
 };
 } // namespace rg
+
+#include "checker_patterns.hpp"
+#include "checker_matching.hpp"
+#include "checker_read_alignment.hpp"
+#include "checker_body_matching.hpp"
+#include "checker_masks.hpp"
+#include "checker_reductions.hpp"
+#include "checker_normalization.hpp"

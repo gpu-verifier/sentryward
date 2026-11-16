@@ -15,6 +15,7 @@ inline J contextDeclaration(const Arena& arena,const EquivalenceContext& context
     if constexpr(std::is_same_v<T,InputElementAssumption>) {
       declaration={{"kind","input_elements"},{"input",p.input},
                    {"interpretation",p.interpretation},{"reason",p.reason}};
+      if(!p.region.whole())declaration["region"]=p.region.declaration();
       if(const auto* interval=std::get_if<Interval>(&p.property)) {
         declaration["interval"]={{"lower",interval->lower?J(str(*interval->lower)):J(nullptr)},
           {"upper",interval->upper?J(str(*interval->upper)):J(nullptr)},

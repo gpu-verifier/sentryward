@@ -71,7 +71,12 @@ struct ScalarFoldResult {
   std::size_t construction_collections = 0;
   std::size_t peak_construction_nodes = 0;
   std::size_t shared_view_projection_hits = 0;
+  // Byte slices of an integer narrowing or constant byte shift taken from the source directly.
+  std::size_t narrowing_slice_projections = 0;
   std::size_t output_families_merged = 0;
+  // Class mode: collections under node pressure that merged pending (not yet lifted) outputs
+  // among themselves. Zero for every lowering that never stays at the pressure point.
+  std::size_t pending_output_merges = 0;
   std::size_t spatial_families_projected = 0;
   std::size_t spatial_outputs_projected = 0;
   std::size_t spatial_template_operations = 0;

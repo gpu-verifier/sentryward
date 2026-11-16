@@ -5,7 +5,7 @@ Source (FlashMLA 395cb3afbb331fef7b1b21e9340861b9436b42d8):
     followed by 16 ue8m0 scale bytes, one per 32 dims; 528 bytes per token);
   csrc/cuda_kernels/sm100/decode/sparse/head64/config.h:38-41 (D_Q = D_K = D_V = 512);
   csrc/cuda_kernels/sm100/dequant_utils.cuh:70-110 and csrc/cuda_kernels/sm100/helpers.h:92-110
-    (fp8 x ue8m0 -> bf16, exact: cvt.rn.bf16x2.ue8m0x2 gives 2**(byte-127));
+    (fp8 x ue8m0 -> bf16, exact: cvt.rn.bf16x2.ue8m0x2 gives 2**(byte-127) for bytes 0..254 and NaN for 0xFF);
   csrc/cuda_kernels/sm100/decode/sparse/head64/kernel.cuh:121-132 (topk_length = params.topk_length[batch]),
     :563-584 (a token is valid iff its index != -1 and its top-k position < topk_length),
     :199-262 (masked exp2 softmax with sm_scale_div_log2 and a running row max),
@@ -29,7 +29,8 @@ def _dequant_v41_fp8(data, raw_bytes):
     tokens = num_blocks * page_block_size
     quant = data.reshape(tokens, token_bytes)[:, :512].float()
     exponent = raw_bytes.reshape(tokens, token_bytes)[:, 512:528].float()
-    scale = torch.exp2(exponent - 127.0)  # ue8m0 byte -> 2**(byte-127)
+    scale = torch.where(exponent == 255.0, float("nan"),
+                        torch.exp2(exponent - 127.0))  # ue8m0: 2**(byte-127), byte 0xFF is NaN
     return (quant.reshape(tokens, 16, 32) * scale.unsqueeze(-1)).reshape(tokens, 512)
 
 

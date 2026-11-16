@@ -106,7 +106,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 271300,
@@ -117,8 +117,8 @@
     },
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
-      "arena_nodes": 770681,
-      "comparison_elapsed_seconds": 3.243642734,
+      "arena_nodes": 663765,
+      "comparison_elapsed_seconds": 5.679155952,
       "context_declaration": {
         "assumptions": [],
         "fixed_inputs": [],
@@ -127,7 +127,7 @@
       },
       "context_policy": "explicit native caller premises; no implied provenance certification",
       "counters": {
-        "add_term_visits": 1725958,
+        "add_term_visits": 1502902,
         "affine_state_banks": 1,
         "call_definition_node_visits": 2,
         "canonical_node_visits": 84668,
@@ -155,6 +155,7 @@
         "ep_identity_proofs": 21872,
         "ep_scalar_attempts": 43744,
         "ep_scalar_proofs": 21872,
+        "exact_exponential_base_changes": 21176,
         "finite_bilinear_banks": 1,
         "finite_state_reuse_banks": 1,
         "fold_alpha_root_cache_hits": 2096,
@@ -166,26 +167,27 @@
         "fp_idiom_power_instances": 21176,
         "fp_idiom_rm_producers": 21176,
         "fp_idiom_rounding_instances": 21176,
-        "ideal_additive_compiler_exp_sequences": 0,
-        "ideal_compiler_exp_sequences": 21176,
         "ideal_compiler_log2_polynomials": 0,
         "ideal_compiler_lse_sequences": 0,
-        "ideal_single_constant_exp_sequences": 0,
-        "imported_context_nodes": 273571,
+        "ideal_rounded_constants": 21176,
+        "ideal_split_constant_pairs": 21176,
+        "imported_context_nodes": 273915,
         "importer_occurrence_binder_hits": 5122,
         "importer_scope_banks": 2,
         "importer_scope_binders_created": 2,
         "importer_scope_leaf_lookups": 2,
-        "intern_requests": 3329244,
-        "known_bits_cache_hits": 344,
+        "intern_requests": 3428258,
+        "known_bits_cache_hits": 7894,
         "known_bits_edges": 0,
-        "known_bits_nodes": 688,
+        "known_bits_nodes": 354,
+        "linear_reduction_case_nonfinite_identities": 0,
         "local_pattern_candidates": 44679,
         "masked_max_prefix_queries": 5120,
         "masked_sum_prefix_queries": 2,
         "maximum_dominated_operands": 0,
         "normalization_cache_context_changes": 1,
         "normalization_node_visits": 91618,
+        "offset_multiple_quotients": 4,
         "parametric_state_attempts": 0,
         "pattern_build_peak_nodes": 2,
         "pattern_build_unique_nodes": 1392,
@@ -195,6 +197,7 @@
         "select_max_probe_calls": 2046,
         "select_max_probe_hits": 2046,
         "select_max_probe_temporary_nodes": 0,
+        "strict_substitution_declines": 5120,
         "sum_positive_coordinate_witnesses": 2,
         "summary_concat_nodes": 20478,
         "symbolic_byte_reads_without_extent_proof": 0
@@ -205,7 +208,7 @@
         "status": "proved"
       },
       "diagnostics": [],
-      "elapsed_s": 2.27351049,
+      "elapsed_s": 4.681247888,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -254,18 +257,25 @@
       },
       "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
       "equivalent_families": 696,
+      "failure_expression_samples": {
+        "failed_families": 0,
+        "omitted_families": 0,
+        "render_byte_limit_per_side": 4096,
+        "sample_limit": 8,
+        "sampled_families": 0
+      },
       "finished_families": 696,
       "idealizations_applied": [
-        "recognized fma.rm exponent encoding with split log2(e) is ideal Exp"
+        "a binary32/binary64 literal equal to the rounded ln(2) or log2(e) of its operation's format is that exact constant in floating Add/Subtract/Multiply/Fma/Divide/Reciprocal",
+        "a high/low split constant Fma(x, RN(c - RN(c)), Fma(x, RN(c), z)) for c = ln(2) or log2(e) is x*c + z"
       ],
       "input_contract_applied_reads": [],
-      "legacy_scalar_fallback": false,
       "mapping_input_memory_constraints": {},
       "native_context": null,
       "normalized_reachable_nodes": 2446,
       "numerical_result": "verified",
       "pattern_nodes": 7,
-      "peak_rss_kib": 1142980,
+      "peak_rss_kib": 1447616,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
       "piece_nodes": 41654,
       "piece_union": {
@@ -283,7 +293,7 @@
       "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
       "raw_nodes": [
         720,
-        269349
+        269693
       ],
       "reference_term_patterns": 1,
       "row_groups": [
@@ -297,41 +307,40 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00019772099999992854,
-            "cumulative_elapsed_s": 2.213171073,
-            "left_import_s": 0.011321070999992307,
-            "left_normalize_s": 0.005576217000003658,
-            "parametric_state_s": 8.580999999807659e-05,
-            "piece_union_record_s": 1.8280000001036356e-05,
-            "piece_union_seal_s": 1.7059999997570685e-05,
-            "right_import_s": 1.016605222000001,
-            "right_normalize_s": 1.1257771779999985
+            "affine_state_pattern_s": 0.00018779199999652274,
+            "cumulative_elapsed_s": 4.613210591,
+            "left_import_s": 0.013374502000001884,
+            "left_normalize_s": 0.005835631000018271,
+            "parametric_state_s": 0.00011703100000104438,
+            "piece_union_record_s": 2.5050000008963735e-05,
+            "piece_union_seal_s": 2.2139999994785775e-05,
+            "right_import_s": 1.038401007,
+            "right_normalize_s": 3.491613282000004
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 0.00019772099999992854,
+        "affine_state_pattern_s": 0.00018779199999652274,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.011321070999992307,
-        "left_normalize_s": 0.005576217000003658,
-        "parametric_state_s": 8.580999999807659e-05,
-        "piece_union_record_s": 1.8280000001036356e-05,
+        "left_import_s": 0.013374502000001884,
+        "left_normalize_s": 0.005835631000018271,
+        "parametric_state_s": 0.00011703100000104438,
+        "piece_union_record_s": 2.5050000008963735e-05,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 1.7059999997570685e-05,
+        "piece_union_seal_s": 2.2139999994785775e-05,
         "proof_reuse_s": 0.0,
-        "right_import_s": 1.016605222000001,
-        "right_normalize_s": 1.1257771779999985,
+        "right_import_s": 1.038401007,
+        "right_normalize_s": 3.491613282000004,
         "state_pattern_s": 0.0
       },
       "timings": {
-        "load_and_scope_analysis": 0.047751646
+        "load_and_scope_analysis": 0.056988666
       },
       "total_output_families": 696,
       "transport": "in_memory_cpp_objects",
@@ -503,19 +512,19 @@
         "access_families": 1417,
         "affine_member_rows": 0,
         "candidate_relations": 337,
-        "hb_frontier_pieces": 0,
+        "hb_frontier_pieces": 105,
         "hb_member_enumerations": 0,
         "logical_accesses": 40258
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 6,
+      "hb_batches": 2,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 15177,
+      "hb_edge_visits": 25094,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 8440,
-      "hb_query_seconds": 0.0033075580000000004,
+      "hb_query_seconds": 0.006740725,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -523,7 +532,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 1056.2890625,
+    "peak_footprint_mib": 1402.296875,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -637,32 +646,33 @@
       "scalar_fold": {
         "construction_collections": 0,
         "diagnostics": [],
+        "narrowing_slice_projections": 1548,
         "output_count": 10240,
         "output_families_merged": 12,
         "output_family_count": 348,
         "output_root_count": 348,
-        "peak_construction_nodes": 277952,
+        "peak_construction_nodes": 278295,
         "shared_view_projection_hits": 16069,
         "source_outputs": 5120,
         "spatial_families_projected": 172,
         "spatial_outputs_projected": 5112,
         "spatial_template_operations": 0,
         "statistics": {
-          "constants": 20492,
-          "edges": 538494,
+          "constants": 20491,
+          "edges": 538838,
           "folds": 2560,
           "indices": 2,
-          "initial_cells": 23392,
+          "initial_cells": 23736,
           "logical_iterations": 20480,
           "logical_iterations_overflow": false,
           "max_fold_nesting": 1,
-          "nodes": 269000,
-          "nodes_before_final_collection": 277952,
+          "nodes": 269343,
+          "nodes_before_final_collection": 278295,
           "nodes_reclaimed": 8969,
           "operations": 222554,
           "parameters": 0,
           "range_descriptions": 2560,
-          "storage_nodes": 269000,
+          "storage_nodes": 269343,
           "unique_fold_bodies": 2560
         }
       },
@@ -670,16 +680,16 @@
         "action_patterns": 2510,
         "binding_patterns": 2510,
         "domain_refinements": 198360,
-        "elapsed_seconds": 0.093279045,
+        "elapsed_seconds": 0.100755044,
         "event_families": 14724,
         "expanded_event_records": 0,
         "largest_batch_members": 744,
         "logical_actions": 27778,
         "logical_events": 1144041,
-        "peak_rss_mib_at_completion": 134.7421875,
+        "peak_rss_mib_at_completion": 134.48828125,
         "reachability_queries": 0,
         "relations": 120043,
-        "rss_mib_at_completion": 113.20703125,
+        "rss_mib_at_completion": 113.26953125,
         "scheduled_batches": 14724,
         "singleton_batches": 2706,
         "value_families": 6990
@@ -691,13 +701,13 @@
     "value_ir_instance_count": 695780,
     "value_ir_node_count": 4908,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 0.380790771,
+    "verification_elapsed_seconds": 0.400967251,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 1116.19140625,
-  "pipeline_elapsed_seconds": 9.704670084,
+  "peak_rss_mib": 1413.6875,
+  "pipeline_elapsed_seconds": 13.83088096,
   "result": "verified",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -706,6 +716,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.569
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.534
 }

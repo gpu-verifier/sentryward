@@ -132,6 +132,19 @@ struct IndexedValueBinding final {
   // Scalar literal map only: coefficients denote the exact bit index, and
   // the value is 1 << index. Never applies to an address or producer offset.
   bool power_of_two = false;
+  // A family of TMA region fragment Loads (PureSourceTemplates): `leaf` is one fragment Load
+  // (MemoryAttributes::region_offset) of an allocation no action writes (a symbolic initial
+  // read) whose address is its region's origin plus its place (frontend ResolvedTma). The
+  // coordinate is the place: member i is the fragment at place base + stride*i of the leaf's
+  // region, its bytes are the allocation's cells at the origin plus that place, and a guarded
+  // fragment is zero where the region's guard is false. Every member shares the leaf's origin,
+  // guard, allocation and width (the template signature). Never a coordinate value: a
+  // consumer that reads a binding as its coordinate refuses it.
+  bool region_fragment = false;
+  // A grid family's induction value (PureSourceTemplates Offset form): the use has one child,
+  // the chain's base, and the value is that base plus the mapped coordinate, in the leaf's
+  // integer type (wrapping). Never a coordinate value on its own.
+  bool addend = false;
 };
 // Evaluate the coordinate map (bit index, not decoded value, for power_of_two).
 std::optional<std::int64_t> indexedBindingValue(const IndexedValueBinding&,std::uint64_t);

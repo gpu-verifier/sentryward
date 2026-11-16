@@ -15,6 +15,7 @@
 #include <utility>
 #include <unordered_map>
 #include "sentryward/value_ir/operations.h"
+#include "sentryward/value_ir/native_matrix.h"
 #include "sentryward/value_ir/type_conversion.h"
 
 namespace sentryward::value_analysis {
@@ -63,6 +64,16 @@ class Normalizer {
     if (!r.complete) throw std::invalid_argument("cannot normalize incomplete memory elimination");
     if (r.views_normalized) return stats;
     sentryward::algorithm::ProfileScope reads_profile("value_analysis.view_normalization.reads");
+    // The reads output records store from (a TMA store's staging read): their partitions are the
+    // outputs' projection domains, and keep the previous template planning (no shared-subtree
+    // policy). The stored records only (store families are register stores, never expanded):
+    // O(records log records).
+    for(const auto& output:r.outputs) {
+      const auto value=g.resolve(output.value);
+      if(!value.conversion() && value.indices().empty() && !value.threadSelector() &&
+         dynamic_cast<const v::LoadOp*>(&g.definingNode(value).operation()))
+        output_reads.insert(r.canonicalRead({value.nodeId(),value.instanceIndex()}));
+    }
     for (const auto& [key, raw]:r.reads) {
       const auto target=g.type(g.node(key.node).result(0,key.instance));
       if (const auto* initial=std::get_if<InitialMemorySymbol>(&raw);
@@ -428,6 +439,12 @@ class Normalizer {
         column.view.blocks[0].axes.insert(column.view.blocks[0].axes.begin(),{1,0,b.bytes});
         carried.push_back(std::move(column));continue;
       }
+      // A grid family's region (indexedRead) is already a two-axis row grid when its outer
+      // axis steps whole rows and its inner axis stays inside one row.
+      if(b.axes.size()==2 && b.axes[1].result_stride%row_bytes==0 && b.result_offset==r.begin &&
+          r.begin%row_bytes+(b.axes[0].count-1)*b.axes[0].result_stride+b.bytes<=row_bytes) {
+        carried.push_back(r);continue;
+      }
       if(b.axes.size()!=1 || !root || root->kind!=IndexedSourceUse::Kind::CoordinateMap ||
           root->children.size()!=1 || !root->binding || root->binding->period ||
           !root->binding->quotient_terms.empty() || root->binding->power_of_two || root->binding->numerical_field ||
@@ -445,8 +462,15 @@ class Normalizer {
           root->binding->stride}].push_back(i);
     }
     std::vector<ReadRegion> merged=std::move(carried);merged.reserve(merged.size()+groups.size());
-    for(auto& [key,indices]:groups) {
-      (void)key;
+    // Rows left single by their group (one payload offset per group) whose payload offset
+    // instead progresses along the rows, e.g. the rows of a transposed operand that read one
+    // source template at the next element of each row: keyed like `groups` without the payload
+    // offset, merged below with that offset as the row axis's source stride.
+    std::map<std::tuple<std::uintptr_t,std::uint64_t,std::uint64_t,std::uint64_t,std::uint64_t,std::int64_t>,
+        std::vector<std::size_t>> singles;
+    // Runs of rows in begin order: equal row steps, exact template-base and payload-offset
+    // progressions. A run of one row is returned to `singles` (first pass) or kept (second pass).
+    const auto runs=[&](std::vector<std::size_t>& indices,bool payload) {
       std::sort(indices.begin(),indices.end(),[&](auto a,auto b){
         return partition.regions[a].begin<partition.regions[b].begin;});
       for(std::size_t start=0;start<indices.size();) {
@@ -454,27 +478,40 @@ class Normalizer {
       const auto& source=*first.view.indexed_source;
       const auto& binding=*source.root->binding;
       std::int64_t delta=0;
+      std::uint64_t payload_step=0;
       auto row_step=row_bytes;
       auto end=start+1;
       if(end<indices.size()) {
-        const auto next=partition.regions[indices[end]].view.indexed_source->root->binding->base;
+        const auto& second=partition.regions[indices[end]];
+        const auto next=second.view.indexed_source->root->binding->base;
         if(__builtin_sub_overflow(next,binding.base,&delta))delta=0;
-        const auto next_begin=partition.regions[indices[end]].begin;
+        const auto next_begin=second.begin;
         if(next_begin>first.begin && (next_begin-first.begin)%row_bytes==0)
           row_step=next_begin-first.begin;
+        if(payload && second.view.blocks[0].source_offset>first.view.blocks[0].source_offset)
+          payload_step=second.view.blocks[0].source_offset-first.view.blocks[0].source_offset;
       }
       for(;end<indices.size();++end) {
         const auto row=end-start;const auto& r=partition.regions[indices[end]];
         if(static_cast<unsigned __int128>(r.begin)!=static_cast<unsigned __int128>(first.begin)+
                 static_cast<unsigned __int128>(row)*row_step || r.bytes!=first.bytes ||
             static_cast<__int128>(binding.base)+static_cast<__int128>(row)*delta!=
-                r.view.indexed_source->root->binding->base)break;
+                r.view.indexed_source->root->binding->base ||
+            static_cast<unsigned __int128>(r.view.blocks[0].source_offset)!=
+                static_cast<unsigned __int128>(first.view.blocks[0].source_offset)+
+                static_cast<unsigned __int128>(row)*payload_step)break;
       }
       const auto count=end-start;
       // Each group owns its exact row interval and column progression. Different
       // groups need not have identical/aligned heights: consumers validate their
       // AP intersections on overlapping row intervals, not bounding rectangles.
       if(count==1){
+        const auto& b=first.view.blocks[0];const auto& root=first.view.indexed_source->root;
+        if(!payload) {
+          singles[{reinterpret_cast<std::uintptr_t>(root->children[0].get()),first.begin%row_bytes,
+              b.bytes,b.axes[0].count,b.axes[0].result_stride,root->binding->stride}].push_back(indices[start]);
+          start=end;continue;
+        }
         auto r=first;r.view.blocks[0].axes.push_back({1,0,row_bytes});
         merged.push_back(std::move(r));start=end;continue;
       }
@@ -483,10 +520,12 @@ class Normalizer {
       map->period=source.count;map->outer_stride=delta;
       auto root=std::make_shared<IndexedSourceUse>(*source.root);root->binding=std::move(map);
       pattern->root=std::move(root);pattern->count*=count;r.view.indexed_source=std::move(pattern);
-      r.view.blocks[0].axes.push_back({count,0,row_step});
+      r.view.blocks[0].axes.push_back({count,payload_step,row_step});
       r.bytes=add(r.bytes,(count-1)*row_step);merged.push_back(std::move(r));start=end;
       }
-    }
+    };
+    for(auto& [key,indices]:groups){(void)key;runs(indices,false);}
+    for(auto& [key,indices]:singles){(void)key;runs(indices,true);}
     std::sort(merged.begin(),merged.end(),[](const auto& a,const auto& b){return a.begin<b.begin;});
     partition.regions=std::move(merged);
     destination=std::move(partition);
@@ -569,6 +608,54 @@ class Normalizer {
     std::sort(merged.begin(),merged.end(),[](const auto& a,const auto& b){return a.begin<b.begin;});
     partition.regions=std::move(merged);
   }
+  // A transposed read: pieces of equal width whose sources are few existing values,
+  // each source read at one constant payload step and one constant result step (a column-major
+  // MMA operand over row values, e.g. V tokens written row by row). One region per source with
+  // that axis: the result domains interleave and stay disjoint (distinct residues of one common
+  // result step). Exact: every piece keeps its source and payload byte; each region is checked at
+  // every piece. Applies only when every source contributes at least two pieces and all share
+  // one result step, the uniform interleaved contract of the fold's partition check, and only
+  // in place of a partition that stays fragmented (indexedRead). O(pieces log sources); no
+  // member enumeration beyond the stored pieces.
+  std::optional<PartitionedRead> transposedRead(const v::ValueType& target,const std::vector<Piece>& pieces) {
+    if(pieces.size()<4)return std::nullopt;
+    const auto width=pieces.front().size;
+    struct Group {ViewSource source;std::uint64_t begin,source_offset,result_step=0,source_step=0,count=0,last;};
+    using Key=std::tuple<std::size_t,std::size_t,std::size_t,std::size_t>;
+    std::map<Key,std::size_t> index;std::vector<Group> groups;
+    std::uint64_t dest=0;
+    for(const auto& piece:pieces) {
+      const auto* value=std::get_if<v::Value>(&piece.source);
+      if(!value || piece.size!=width || !width)return std::nullopt;
+      const Key k{value->graphIdentity(),value->nodeId(),value->resultIndex(),value->instanceIndex()};
+      auto [found,fresh]=index.try_emplace(k,groups.size());
+      if(fresh)groups.push_back({piece.source,dest,piece.offset,0,0,1,dest});
+      else {
+        auto& g=groups[found->second];
+        if(!same(g.source,piece.source))return std::nullopt;
+        const auto result_step=dest-g.begin,source_offset=piece.offset;
+        if(g.count==1) {
+          if(source_offset<g.source_offset)return std::nullopt;
+          g.result_step=result_step;g.source_step=source_offset-g.source_offset;
+        } else if(result_step!=g.result_step*g.count ||
+                  source_offset!=g.source_offset+g.source_step*g.count)return std::nullopt;
+        ++g.count;g.last=dest;
+      }
+      dest=add(dest,piece.size);
+    }
+    if(dest!=bytes(target) || groups.size()*2>pieces.size())return std::nullopt;
+    const auto step=groups.front().result_step;
+    if(!step || step<=width)return std::nullopt;
+    for(const auto& g:groups)if(g.count<2 || g.result_step!=step)return std::nullopt;
+    PartitionedRead partition{target,{},true};
+    for(const auto& g:groups) {
+      MemoryView view{target,MemoryViewKind::Layout,{g.source},
+          {{0,g.source_offset,g.begin,width,{{g.count,g.source_step,step}}}},{}};
+      partition.regions.push_back({g.begin,(g.count-1)*step+width,std::move(view)});
+    }
+    std::sort(partition.regions.begin(),partition.regions.end(),[](const auto& a,const auto& b){return a.begin<b.begin;});
+    return partition;
+  }
   bool indexedRead(MemoryInstance key,const v::ValueType& target,const std::vector<Piece>& pieces) {
     PartitionedRead partition{target,{},true};
     const bool uniform_width=std::all_of(pieces.begin(),pieces.end(),[&](const auto& p){
@@ -634,15 +721,40 @@ class Normalizer {
         }
         // The same source-domain plan is consumed by output projection.
         // Existing finite records are validated, never expanded a second time.
-        for(const auto& domain:pure_templates.map(values,uniform_width,payload_offsets)) {
+        // Grid families (two-axis domains) only for equal-width pieces of a read that is not an
+        // output staging read: their regions are two-axis views over the family's member index.
+        const bool staging=output_reads.contains(key);
+        auto plan=pure_templates.map(values,uniform_width,payload_offsets,!staging,uniform_width && !staging,
+            /*grid_runs=*/false);
+        // A two-axis region must be a row grid of the read's matrix: its outer axis steps one row,
+        // its inner axis stays inside a row. Other layouts (every second row, with another
+        // family's rows between) keep the one-axis plan, which the fold's partitions refine.
+        const auto rowGrid=[&](const IndexedSourceDomain& d) {
+          if(d.outer_count==1)return true;
+          const auto& shape=target.shape();
+          if(shape.size()!=2 || target.element().width()%8)return false;
+          const auto row_bytes=shape[1]*(target.element().width()/8);
+          const auto size=pieces[i+d.begin].size;
+          const auto begin=add(dest,d.begin*size);
+          return row_bytes && d.outer_stride*size==row_bytes &&
+              begin%row_bytes+(d.count-1)*d.result_stride*size+size<=row_bytes;
+        };
+        if(!std::all_of(plan.begin(),plan.end(),rowGrid))
+          plan=pure_templates.map(values,uniform_width,payload_offsets,!staging);
+        for(const auto& domain:plan) {
           const auto& piece=pieces[i+domain.begin];
-          if(domain.count>UINT64_MAX/piece.size)throw std::invalid_argument("indexed view size overflow");
+          if(domain.count>UINT64_MAX/piece.size || domain.outer_count>UINT64_MAX/piece.size/std::max<std::size_t>(domain.outer_stride,1))
+            throw std::invalid_argument("indexed view size overflow");
           const auto start=add(dest,domain.begin*piece.size);
-          const auto extent=add((domain.count-1)*domain.result_stride*piece.size,piece.size);
+          auto extent=add((domain.count-1)*domain.result_stride*piece.size,piece.size);
           MemoryView view{target,domain.source?MemoryViewKind::Layout:MemoryViewKind::Slice,
               {piece.source},{{0,piece.offset,start,piece.size,{}}},{},domain.source};
           if(domain.source) {
             view.blocks[0].axes.push_back({domain.count,0,domain.result_stride*piece.size});compressed=true;
+            if(domain.outer_count>1) {
+              view.blocks[0].axes.push_back({domain.outer_count,0,domain.outer_stride*piece.size});
+              extent=add(extent,(domain.outer_count-1)*domain.outer_stride*piece.size);
+            }
           }
           partition.regions.push_back({start,extent,std::move(view)});
         }
@@ -659,6 +771,11 @@ class Normalizer {
     coalesceInitialRows(partition);
     coalesceIndexedRows(partition);
     coalescePayloadRows(partition);
+    // A partition that stays fragmented (about one region per piece): the transposed form when
+    // it applies.
+    if(partition.regions.size()*4>=pieces.size()*3)
+      if(auto transposed=transposedRead(target,pieces);transposed && transposed->regions.size()<partition.regions.size())
+        partition=std::move(*transposed);
     stats.mapping_blocks+=partition.regions.size();stats.stored_mapping_blocks+=partition.regions.size();
     if(partition.regions.size()==1) {
       ++stats.layouts;r.normalized_reads.emplace(key,std::move(partition.regions[0].view));
@@ -994,7 +1111,33 @@ class Normalizer {
         }
         // A finite proof may end inside a row. Split its physical image into
         // prefix/full-rows/suffix (at most three rectangles), not scalar cells.
-        const auto plan=pure_templates.map(values);
+        // Grid families (two-axis domains): rows of equal source domains at one record step, e.g.
+        // the heads of a [head, column] tensor whose columns come in several blocks. Their byte
+        // layout must be two-axis too: one physical run, or whole physical rows per grid row.
+        auto line=pure_templates.mapLine(values,false,{},true);
+        auto plan=pure_templates.gridDomains(values,{},line);
+        const auto gridLayout=[&](const IndexedSourceDomain& d) {
+          if(rows==1 || (d.outer_count==1 && d.result_stride==1))return true;
+          if(d.begin%columns+(d.count-1)*d.result_stride>=columns)return false;
+          return d.outer_count==1 || (d.outer_stride%columns==0 &&
+              d.begin/columns+(d.outer_count-1)*(d.outer_stride/columns)<rows);
+        };
+        // A grid plan is taken where the strided-row merge of the final consolidation would merge
+        // the rows too (consolidate_outputs.cpp, tensorizeRows): families of at least
+        // kGridOutputRows rows in a regular tiling, i.e. every domain of the rectangle has one
+        // length. Rows cut into pieces of different lengths (column ranges computed differently)
+        // keep their one-axis domains, whose per-row comparison those pieces need. O(domains).
+        constexpr std::uint64_t kGridOutputRows=16;
+        const auto regular=[&] {
+          for(const auto& d:plan)
+            if(d.count!=plan.front().count || (d.outer_count>1 && d.outer_count<kGridOutputRows))return false;
+          return true;
+        };
+        if(plan.size()!=line.size() && !(std::all_of(plan.begin(),plan.end(),gridLayout) && regular()))plan=std::move(line);
+        // A shared-subtree plan (one template per row whose shared parts are that row's own
+        // Values) is projected row by row: its domains are not widened to several rows here.
+        // (mapLine's answer; gridDomains does not change it.)
+        const bool row_domains=pure_templates.last_map_shared;
         SENTRYWARD_AUDIT((void)audit;for(const auto& domain:plan) {
           if(geometry_witnesses>=2)break;
           ++geometry_witnesses;
@@ -1023,11 +1166,24 @@ class Normalizer {
         });
         OutputViewGroup group{{records.begin()+record_begin,records.begin()+record_end},{}};
         for(const auto& domain:plan) {
+          if(domain.outer_count>1 || domain.result_stride!=1) {
+            // A grid family: one domain of shape [outer, inner] over the family's member index.
+            const auto members=domain.count*domain.outer_count;
+            MemoryView view{v::ValueType::matrix(first.element,{members}),MemoryViewKind::Layout,
+                {values[domain.begin]},{{0,0,0,width,{{members,0,width}}}},{},domain.source};
+            const auto row_step=rows==1?domain.outer_stride*width:(domain.outer_stride/columns)*stride;
+            const auto offset=add(first.offset,add((domain.begin/columns)*stride,(domain.begin%columns)*width));
+            std::vector<std::uint64_t> shape{domain.count},strides{domain.result_stride*width};
+            if(domain.outer_count>1){shape={domain.outer_count,domain.count};strides={row_step,domain.result_stride*width};}
+            group.domains.push_back({{std::get<0>(bucket),offset,members*width},first.element,std::move(view),
+                std::move(shape),std::move(strides),0});
+            continue;
+          }
           const auto type=v::ValueType::matrix(first.element,{domain.count});
           auto at=domain.begin,left=domain.count;
           while(left) {
             const auto column=at%columns;
-            const auto full_rows=column==0?left/columns:0;
+            const auto full_rows=column==0?(row_domains?std::min<std::uint64_t>(1,left/columns):left/columns):0;
             const auto count=full_rows?full_rows*columns:std::min<std::uint64_t>(left,columns-column);
             MemoryView view{type,domain.source?MemoryViewKind::Layout:MemoryViewKind::Slice,
                 {values[domain.begin]},{{0,0,0,width,{}}},{},domain.source};
@@ -1175,6 +1331,20 @@ class Normalizer {
         append(out,{std::move(source),offset,size});
         return;
       }
+      // A tcgen05.cp value of its source's type is that source byte for byte (the identity
+      // transfer the scalar fold projects through): its pieces are the source's. A consumer
+      // that reads the copy in another layout (an MMA operand over a swizzled tile) then meets
+      // the tile's own sources, where the two layouts compose. O(1) here; the source read is
+      // expanded once (cache).
+      if (*value==node.result(value->resultIndex(),value->instanceIndex()))
+        if (const auto* copy=dynamic_cast<const v::NativeMatrixOp*>(&node.operation());
+            copy && copy->opcode()==v::NativeMatrixOpcode::TcgenCopyValue) {
+          const auto operands=g.instanceOperands(*value);
+          if (operands.size()==1 && g.type(operands[0])==g.type(*value)) {
+            expand(operands[0],offset,size,out);
+            return;
+          }
+        }
       if (*value==node.result(value->resultIndex(),value->instanceIndex()) &&
           dynamic_cast<const v::LoadOp*>(&node.operation())) {
         const auto key=r.canonicalRead({value->nodeId(),value->instanceIndex()});
@@ -1273,6 +1443,8 @@ class Normalizer {
   std::map<MemoryInstance,std::vector<Piece>> cache;
   std::map<MemoryInstance,std::vector<std::uint64_t>> piece_ends;
   std::set<MemoryInstance> active;
+  // Canonical reads of output records (run()).
+  std::set<MemoryInstance> output_reads;
 };
 }
 ViewNormalizationStatistics normalizeMemoryViews(const value_ir::Graph& graph,

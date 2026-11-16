@@ -15,7 +15,11 @@ enum class CanonicalForms {
 // Constructs ideal-real expressions and extends structurally matched finite folds.
 class RealExpressionBuilder {
  public:
-  RealExpressionBuilder(Graph&, ReductionBuilder&, std::function<void()> poll = {});
+  // `opaque_initial`: the allocations whose InitialCell values are opaque bytes (an intermediate
+  // allocation's bytes no store wrote). Such a value may be NaN or infinite, so it carries no
+  // finiteness fact and no rule that needs a finite operand (0 * x -> 0, ...) drops it.
+  RealExpressionBuilder(Graph&, ReductionBuilder&, std::function<void()> poll = {},
+                        std::function<bool(const std::string&)> opaque_initial = {});
   ~RealExpressionBuilder();
   RealExpressionBuilder(const RealExpressionBuilder&) = delete;
   RealExpressionBuilder& operator=(const RealExpressionBuilder&) = delete;
@@ -43,6 +47,11 @@ class RealExpressionBuilder {
   std::size_t collect(std::span<Ref> roots);
   std::size_t collect(std::span<Ref> roots,std::span<const Ref> extendable,
                       std::span<std::optional<Id>> weak_nodes = {});
+  // The observer for a collection of the graph made outside collect() (Graph::collect, which
+  // keeps live order): the bounded summaries of surviving nodes stay, under their new IDs,
+  // instead of being recomputed for the whole graph. Exact: a node's summary is a function of
+  // the node and its operands' summaries. O(summarized nodes).
+  Graph::RemapObserver summaryObserver();
   struct Statistics {
     std::size_t templates=0,compiles=0,cache_hits=0,cache_misses=0,
       cache_capacity_rejections=0,query_work=0,compile_nodes=0,

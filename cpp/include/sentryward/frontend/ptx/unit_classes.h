@@ -106,4 +106,72 @@ struct StructureKey {
   std::uint64_t hash = 0;
 };
 [[nodiscard]] StructureKey ComputeStructureKey(const CtaFacts &facts);
+
+// Containment classes (query_log.cpp): a unit whose structure key differs from a representative's may
+// still be admitted when, lane by lane, its record sequence is the representative's with some
+// records removed and some taken branches added: the removed records are plain synchronous global
+// loads and stores, pure compute or opaque compute regions, whose lowering changed no state later
+// records' lowering reads (ContainmentRecord::touched), and the added ones are `bra` records, which
+// lower to nothing. Its events are then the representative's minus the removed records' events
+// (UnitDelta::contained).
+//   kAccess:  ld/st of the global state space with no async, bulk or strong semantics
+//   kCompute: a register-only arithmetic, logic, move, comparison or conversion instruction
+//   kBranch:  bra (no register operand)
+//   kOpaque:  an opaque compute region (a data-dependent forward branch over pure computation whose
+//             outcome the executor left open): removable like kCompute; a member may have the same
+//             branch taken (kBranch) in its place
+//   kFixed:   anything else, and any record with other executor metadata beyond its predicate
+enum class ContainmentKind : std::uint8_t { kAccess, kCompute, kBranch, kOpaque, kFixed };
+struct ContainmentRecord {
+  std::uint32_t instruction = 0, occurrence = 0;
+  // A hash of the record's register origins (the defining record of each register it reads), and of
+  // every other ExecutionMetadata field but the predicate.
+  std::uint64_t origins = 0, meta = 0;
+  // The record's origins: [origin_begin, origin_begin + origin_count) of its path's `origins`.
+  std::uint32_t origin_begin = 0, origin_count = 0;
+  std::uint8_t predicate = 0;  // 0: unpredicated, 1: predicate true, 2: predicated off
+  ContainmentKind kind = ContainmentKind::kFixed;
+  // Lowering reads this record's register origins (a state token's arrival: 1) or follows its
+  // definition chains (a cp.async copy size, a tcgen05.mma descriptor: 2); 0 otherwise. A member's
+  // origins there (and along those chains) must be the representative's (query_log.cpp ContainMap).
+  std::uint8_t chases = 0;
+  // A founder's record whose lowering overwrote a register with a pending asynchronous write
+  // (query::RegisterTouch). Removing it leaves its written registers pending in the member until
+  // the next tcgen05.wait::ld (`clears`): later records may read them (lowering orders such reads
+  // after the pending write); one that writes them is refused, or, a tcgen05.ld, marks the member
+  // (query_log.cpp ContainMap; query_log.h UnitDelta::hazard).
+  bool touched = false;
+  // A founder's record whose lowering read a register with a pending asynchronous write
+  // (query::RegisterTouch::reads): its events, and the thread's later ones, are ordered after that
+  // write. Removing it leaves the registers it reads pending in the member in the same way.
+  bool touched_reads = false;
+  bool clears = false; // a tcgen05.wait::ld: no register write is pending after it
+  // A tcgen05.ld: its register writes are asynchronous effects without a predecessor, pending until a
+  // record reads or overwrites the register or a tcgen05.wait::ld completes them (lowering.cpp).
+  bool async_load = false;
+  // The record's register reads and writes (ids of `ContainmentProfile::register_ids`; kUnknownRegister
+  // when a name is not one of them): [reads_begin, +reads_count) and [writes_begin, +writes_count) of
+  // its path's `registers`.
+  std::uint32_t reads_begin = 0, reads_count = 0, writes_begin = 0, writes_count = 0;
+  friend bool operator==(const ContainmentRecord &, const ContainmentRecord &) = default;
+};
+inline constexpr std::uint32_t kUnknownRegister = UINT32_MAX;
+// One CTA's records for containment admission: one record sequence per template path (the first
+// lane of each template group; one per lane on the lane path), each lane's path, and `key`, the
+// containment key: equal on every unit a containment admission can relate (lanes, warps, lane ids,
+// per lane the path's kFixed records with predicates and metadata, and the rank-relative shared
+// sites; the lane aggregates are accounted per unit). Empty (no lanes) for a CTA that reads
+// runtime-written tensor maps.
+// O(paths x records + lanes).
+struct ContainmentProfile {
+  std::vector<std::uint32_t> lane_path;
+  std::vector<std::vector<ContainmentRecord>> paths;
+  // Per path: the records' register origins, (instruction, occurrence) of each defining record.
+  std::vector<std::vector<std::pair<std::uint32_t, std::uint32_t>>> origins;
+  // Per path: the records' register reads and writes (register ids by name, the function's
+  // instruction text order: equal on every CTA of the function).
+  std::vector<std::vector<std::uint32_t>> registers;
+  std::uint64_t key = 0;
+};
+[[nodiscard]] ContainmentProfile ComputeContainmentProfile(const CtaFacts &facts);
 } // namespace sentryward::frontend::ptx

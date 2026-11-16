@@ -108,8 +108,11 @@ struct Match {
     Ref a,b;bool address;
     bool operator==(const Pair&) const = default;
   };
+  // An accepted triple's three Refs share one use (checkImpl requires sameUse), so its
+  // memo entry is the three nodes, k, the address flag, the owner and that use, numbered by
+  // `uses` (0: no conversion or provenance): equal entries are exactly equal triples.
   struct Triple {
-    Pair pair;Ref actual;std::uint64_t k;
+    Id a,b,actual;std::uint64_t k,owner;std::size_t use;bool address;
     bool operator==(const Triple&) const = default;
   };
   struct PairHash {
@@ -120,8 +123,10 @@ struct Match {
   };
   struct TripleHash {
     std::size_t operator()(const Triple& p) const {
-      const auto h=PairHash{}(p.pair),q=RefHash{}(p.actual);
-      return h^(q+0x9e3779b9+(h<<6)+(h>>2))^std::hash<std::uint64_t>{}(p.k);
+      std::size_t h=p.a;
+      for(const std::size_t v:{p.b,p.actual,std::size_t(p.k),std::size_t(p.owner),p.use,std::size_t(p.address)})
+        h^=v+0x9e3779b97f4a7c15ULL+(h<<6)+(h>>2);
+      return h;
     }
   };
   // Local to one immutable-epoch match and binder level. Proof/body traversal
@@ -129,7 +134,17 @@ struct Match {
   // preserve use-site conversion and pointer annotations, as well as whether
   // a node is being interpreted as an address or a numerical expression.
   std::unordered_set<Triple,TripleHash> checked{};
+  std::vector<std::array<std::string,3>> uses{};
   std::unordered_map<Pair,Ref,PairHash> bodies{};
+  // The number of r's use in `uses`, added when `add`; nullopt when absent.
+  std::optional<std::size_t> useNumber(const Ref& r,bool add) {
+    if(r.conversion.empty() && r.converted_type.empty() && r.pointer_provenance.empty())return 0;
+    for(std::size_t i=0;i<uses.size();++i)
+      if(uses[i][0]==r.conversion && uses[i][1]==r.converted_type && uses[i][2]==r.pointer_provenance)return i+1;
+    if(!add)return std::nullopt;
+    uses.push_back({r.conversion,r.converted_type,r.pointer_provenance});
+    return uses.size();
+  }
 
   // One plus the deepest Index level or Fold binder in a subtree; zero if none.
   // Each node is evaluated once per epoch, so lifting never rescans unaffected subtrees.
@@ -217,10 +232,12 @@ struct Match {
         audit->add(AuditCounter::fold_shared_identity_checks));
       return a==actual;
     }
-    const Triple key{{a,b,address},actual,k};
-    if(checked.contains(key))return true;
+    // Only triples with one use are ever accepted (and memoized).
+    if(sameUse(a,b) && sameUse(a,actual))
+      if(const auto use=useNumber(a,false);use && checked.contains(Triple{a.node,b.node,actual.node,k,a.owner,*use,address}))
+        return true;
     const bool accepted=checkImpl(a,b,actual,k,address,depth);
-    if(accepted)checked.insert(key);
+    if(accepted)checked.insert(Triple{a.node,b.node,actual.node,k,a.owner,*useNumber(a,true),address});
     return accepted;
   }
   bool checkImpl(const Ref& a, const Ref& b, const Ref& actual, std::uint64_t k,
@@ -375,16 +392,14 @@ std::size_t ReductionBuilder::collect(std::span<Ref> live_roots,
                                       const Graph::RemapObserver& observer) {
   // Dense marks over this epoch's IDs: the membership answers of a node set,
   // without a heap node and rehash per live node.
+  // Node IDs are topological: one descending sweep marks every descendant of a root,
+  // reading live nodes in storage order. O(nodes + live edges).
   std::vector<char> live(graph_.size());
   const auto isLive=[&](Id id){return id<live.size() && live[id];};
-  std::vector<Id> work;work.reserve(extendable_roots.size());
-  for(const auto& root:extendable_roots){graph_.node(root);work.push_back(root.node);}
-  while(!work.empty()) {
-    const auto id=work.back();work.pop_back();
-    if(isLive(id))continue;
-    const auto& node=graph_.node(id);live[id]=1;  // an invalid ID throws here
-    for(const auto& child:node.operands)work.push_back(child.node);
-  }
+  for(const auto& root:extendable_roots){graph_.node(root);live[root.node]=1;}
+  const auto& nodes=graph_.nodes();
+  for(Id id=live.size();id-->0;)if(live[id])
+    for(const auto& child:nodes[id].operands)live[child.node]=1;
   // Live matcher entries leave their tables as node handles, in iteration
   // order; their Refs travel through the collector by move and return to the
   // same handles. No Run/Pending/Block copy and no node reallocation for a
@@ -417,8 +432,14 @@ std::size_t ReductionBuilder::collect(std::span<Ref> live_roots,
     else {
       static_assert(std::is_same_v<Value,Block>);
       if(v.count)f(v.body);
-      for(auto* values:{&v.terms,&v.prefixes,&v.first,&v.second})
-        for(auto& value:*values)f(value);
+      // A Ref shared by several entries' views is passed once per entry: each pass remaps
+      // it to the same node.
+      if(v.window) {
+        for(auto i=v.begin;i<v.end;++i)f(v.window->terms[i]);
+        for(auto i=v.begin;i<v.end;++i)f(v.window->prefixes[i]);
+      }
+      for(auto* values:{v.first.get(),v.second.get()})
+        if(values)for(auto& value:*values)f(value);
     }
   };
   const auto forEachEntryRef=[&](auto&& f) {
@@ -430,7 +451,14 @@ std::size_t ReductionBuilder::collect(std::span<Ref> live_roots,
   forEachEntryRef([&](Ref&){++count;});
   std::vector<Ref> roots;roots.reserve(count);
   for(auto& r:live_roots)roots.push_back(std::move(r));
-  forEachEntryRef([&](Ref& x){roots.push_back(std::move(x));});
+  // An entry's Ref goes to the collector as its node and owner only (the collector reads and
+  // remaps no more of a root); its use strings stay in place. The collector's check of a
+  // root's conversion fields is made here.
+  forEachEntryRef([&](Ref& x){
+    if(x.conversion.empty()!=x.converted_type.empty())
+      throw std::invalid_argument("scalar-fold reference has incomplete conversion");
+    roots.push_back(Ref{x.node,{},{},x.owner,{}});
+  });
   const auto removed=graph_.collect(roots,weak_nodes,
       [&](std::span<const Id> remap,std::uint64_t owner) {
         // These caches describe immutable nodes, not a scheduling epoch.
@@ -466,7 +494,7 @@ std::size_t ReductionBuilder::collect(std::span<Ref> live_roots,
   // clear() keeps, so each table's layout matches emplacing those entries;
   // the survivors' nodes are reused.
   runs_.clear();pending_.clear();
-  const auto restore=[&](Ref& x){x=std::move(roots[position++]);};
+  const auto restore=[&](Ref& x){const auto& r=roots[position++];x.node=r.node;x.owner=r.owner;};
   for(auto& e:runs){forEachRef(e,restore);runs_.insert(std::move(e));}
   for(auto& e:pending){forEachRef(e,restore);pending_.insert(std::move(e));}
   for(auto& e:blocks){forEachRef(e,restore);blocks_.insert(std::move(e));}
@@ -485,17 +513,63 @@ void ReductionBuilder::refreshBounds() {
   }
 }
 
+std::pair<std::size_t,bool> ReductionBuilder::KeyTable::intern(std::span<const std::uint64_t> key) {
+  std::uint64_t h=0x9e3779b97f4a7c15ULL^key.size();
+  for(const auto word:key) {
+    h^=word+0x9e3779b97f4a7c15ULL+(h<<6)+(h>>2);
+    h*=0xff51afd7ed558ccdULL;
+  }
+  const auto hash=static_cast<std::size_t>(h^(h>>29));
+  if(2*(size()+1)>slots_.size())grow();
+  const auto mask=slots_.size()-1;
+  const auto equal=[&](std::size_t k) {
+    const auto begin=starts_[k],end=k+1<starts_.size()?starts_[k+1]:words_.size();
+    return end-begin==key.size() && std::equal(key.begin(),key.end(),words_.begin()+std::ptrdiff_t(begin));
+  };
+  for(auto i=hash&mask;;i=(i+1)&mask) {
+    const auto slot=slots_[i];
+    if(!slot) {
+      starts_.push_back(words_.size());hashes_.push_back(hash);
+      words_.insert(words_.end(),key.begin(),key.end());
+      slots_[i]=starts_.size();
+      return {starts_.size(),true};
+    }
+    if(hashes_[slot-1]==hash && equal(slot-1))return {slot,false};
+  }
+}
+void ReductionBuilder::KeyTable::grow() {
+  std::vector<std::size_t> grown(slots_.empty()?std::size_t{64}:2*slots_.size(),0);
+  const auto mask=grown.size()-1;
+  for(std::size_t k=0;k<starts_.size();++k) {
+    auto i=hashes_[k]&mask;
+    while(grown[i])i=(i+1)&mask;
+    grown[i]=k+1;
+  }
+  slots_=std::move(grown);
+}
+void ReductionBuilder::KeyTable::clear() {
+  words_.clear();starts_.clear();hashes_.clear();
+  std::fill(slots_.begin(),slots_.end(),0);
+}
+std::uint64_t ReductionBuilder::stringId(const std::string& value) {
+  if(value.empty())return 0;
+  if(const auto found=string_ids_.find(value);found!=string_ids_.end())return found->second;
+  return string_ids_.emplace(value,string_ids_.size()+1).first->second;
+}
+
 std::size_t ReductionBuilder::templateId(Ref value) {
   // Demand-driven postorder, once per reachable node per graph epoch. A small
   // candidate must not summarize unrelated outputs already stored in the DAG.
   // Keys contain direct child IDs, never serialized ancestor trees.
-  const auto field=[](std::string& key,const std::string& v) {
-    key+=std::to_string(v.size())+":"+v;
-  };
-  const auto intern=[&](std::string key) {
-    auto [it,inserted]=template_keys_.try_emplace(std::move(key),template_keys_.size()+1);
-    return it->second;
-  };
+  // A key is the sequence of its fields: a node key (tag 0) has the node's kind, type,
+  // name (or "<index>" for an address offset), attributes, binder level, fold (when
+  // present) and, per operand, the operand's template ID and use (conversion, converted
+  // type, pointer provenance); a use key (tag 1) has a template ID and a use. Two keys are
+  // equal exactly when all their fields are, so IDs (first-insertion positions) identify
+  // the same templates as length-prefixed key strings of those fields. O(node fields) per
+  // node, without key strings.
+  static const std::string index_name="<index>";
+  auto& key=key_scratch_;
   template_ids_.resize(graph_.size());
   parameter_roots_.resize(graph_.size());
   std::vector<Id> work{value.node};
@@ -512,41 +586,56 @@ std::size_t ReductionBuilder::templateId(Ref value) {
     ++stats_.template_nodes;
     stats_.template_edges+=n.operands.size();
     std::array<std::size_t,2> ids,parameter_ids;
+    const auto node_offset=offset(n);
+    const auto type=stringId(n.type),name=stringId(n.name),attributes=stringId(n.attributes);
     for(unsigned address=0;address<2;++address) {
-      std::string key=std::to_string(int(n.kind))+"/";
-      field(key,n.type);field(key,address && offset(n)?"<index>":n.name);
-      field(key,n.attributes);key+=std::to_string(n.index_level)+"/";
-      if(n.fold)key+=std::to_string(int(n.fold->reducer))+"/"+
-          std::to_string(n.fold->binder_level)+"/"+std::to_string(n.fold->count)+"/";
-      for(const auto& child:n.operands) {
-        key+=std::to_string(template_ids_.at(child.node)[address || n.kind==Kind::InitialCell])+"/";
-        field(key,child.conversion);field(key,child.converted_type);field(key,child.pointer_provenance);
+      const unsigned side=address || n.kind==Kind::InitialCell;
+      key.clear();
+      key.push_back(0);key.push_back(std::uint64_t(n.kind));key.push_back(type);
+      key.push_back(address && node_offset?stringId(index_name):name);
+      key.push_back(attributes);key.push_back(n.index_level);
+      key.push_back(n.fold.has_value());
+      if(n.fold) {
+        key.push_back(std::uint64_t(n.fold->reducer));key.push_back(n.fold->binder_level);key.push_back(n.fold->count);
       }
-      ids[address]=intern(std::move(key));
+      for(const auto& child:n.operands) {
+        key.push_back(template_ids_.at(child.node)[side]);
+        key.push_back(stringId(child.conversion));key.push_back(stringId(child.converted_type));
+        key.push_back(stringId(child.pointer_provenance));
+      }
+      ids[address]=template_keys_.intern(key).first;
       // Persistent parameter-only DAG. Unary numerical structure disappears;
       // shared parameter subtrees stay shared instead of copying leaf arrays.
-      ParameterTree tree;
-      if(address)tree.value=offset(n);
-      if(!tree.value)for(const auto& child:n.operands) {
-        const auto root=parameter_roots_.at(child.node)[address || n.kind==Kind::InitialCell];
-        if(root)tree.children.push_back(root);
-      }
-      if(!tree.value && tree.children.empty())parameter_ids[address]=0;
-      else if(!tree.value && tree.children.size()==1)parameter_ids[address]=tree.children[0];
+      // Its key: (0, value) for an offset leaf, (1, children...) otherwise.
+      const auto leaf=address?node_offset:std::nullopt;
+      key.clear();
+      if(leaf){key.push_back(0);key.push_back(*leaf);}
       else {
-        std::string key=tree.value?"v"+std::to_string(*tree.value):"c";
-        for(auto child:tree.children)key+="/"+std::to_string(child);
-        auto [it,inserted]=parameter_keys_.try_emplace(std::move(key),parameter_trees_.size());
-        if(inserted)parameter_trees_.push_back(std::move(tree));
-        parameter_ids[address]=it->second;
+        key.push_back(1);
+        for(const auto& child:n.operands)
+          if(const auto root=parameter_roots_.at(child.node)[side])key.push_back(root);
+      }
+      if(!leaf && key.size()==1)parameter_ids[address]=0;
+      else if(!leaf && key.size()==2)parameter_ids[address]=key[1];
+      else {
+        const auto [position,inserted]=parameter_keys_.intern(key);
+        if(inserted) {
+          if(position!=parameter_trees_.size())throw std::logic_error("parameter tree table out of step");
+          ParameterTree tree;tree.value=leaf;
+          if(!leaf)tree.children.assign(key.begin()+1,key.end());
+          parameter_trees_.push_back(std::move(tree));
+        }
+        parameter_ids[address]=position;
       }
     }
     template_ids_[id]=ids;
     parameter_roots_[id]=parameter_ids;
   }
-  std::string key=std::to_string(template_ids_.at(value.node)[0])+"/";
-  field(key,value.conversion);field(key,value.converted_type);field(key,value.pointer_provenance);
-  return intern(std::move(key));
+  key.clear();
+  key.push_back(1);key.push_back(template_ids_.at(value.node)[0]);
+  key.push_back(stringId(value.conversion));key.push_back(stringId(value.converted_type));
+  key.push_back(stringId(value.pointer_provenance));
+  return template_keys_.intern(key).first;
 }
 
 std::optional<std::size_t> ReductionBuilder::parameterDifference(std::size_t a,std::size_t b) {
@@ -581,6 +670,21 @@ std::optional<std::size_t> ReductionBuilder::parameterDifference(std::size_t a,s
   parameter_differences_.insert_or_assign(std::pair{a,b},result);return result;
 }
 
+void ReductionBuilder::Block::push(const Ref& term,const Ref& prefix) {
+  // A view that starts this far into its buffer moves to a fresh one: a buffer then holds at
+  // most a constant number of dead entries per live one, and the copy is amortized over them.
+  constexpr std::size_t compact_after=64;
+  if(!window || window->terms.size()!=end || begin>=compact_after) {
+    auto fresh=std::make_shared<Window>();
+    if(window) {
+      fresh->terms.assign(window->terms.begin()+std::ptrdiff_t(begin),window->terms.begin()+std::ptrdiff_t(end));
+      fresh->prefixes.assign(window->prefixes.begin()+std::ptrdiff_t(begin),window->prefixes.begin()+std::ptrdiff_t(end));
+    }
+    window=std::move(fresh);end-=begin;begin=0;
+  }
+  window->terms.push_back(term);window->prefixes.push_back(prefix);++end;
+}
+
 std::optional<Ref> ReductionBuilder::appendBlock(Ref accumulator,Ref term,
     const std::string& type,std::uint32_t level) {
   constexpr std::size_t window=24,max_period=8,budget=4096;
@@ -588,30 +692,30 @@ std::optional<Ref> ReductionBuilder::appendBlock(Ref accumulator,Ref term,
   if(auto it=blocks_.find(accumulator);it!=blocks_.end() &&
       it->second.type==type && it->second.level==level)state=it->second;
   else {state.initial=accumulator;state.type=type;state.level=level;}
-  state.terms.push_back(term);state.prefixes.push_back(accumulator);
+  state.push(term,accumulator);
   if(state.count) {
-    const auto pos=state.terms.size()-1;
+    const auto pos=state.size()-1;
     Match match{graph_,level,binder_bounds_,lifted_by_level_[level]};match.remaining=budget;
-    const bool accepted=match.check(state.first[pos],state.second[pos],term,state.count);
+    const bool accepted=match.check((*state.first)[pos],(*state.second)[pos],term,state.count);
     stats_.block_checks+=budget-match.remaining;
     if(accepted) {
-      if(state.terms.size()==state.first.size()) {
+      if(state.size()==state.first->size()) {
         auto out=graph_.fold(Reducer::Sum,state.initial,state.body,level,++state.count,type);
-        state.terms.clear();state.prefixes.clear();blocks_.insert_or_assign(out,std::move(state));
+        state.clearTerms();blocks_.insert_or_assign(out,std::move(state));
         ++stats_.block_extended;return out;
       }
     } else {
       state=Block{};state.initial=accumulator;state.type=type;state.level=level;
-      state.terms.push_back(term);state.prefixes.push_back(accumulator);
+      state.push(term,accumulator);
     }
   } else {
-    if(state.terms.size()>window) {
-      state.terms.erase(state.terms.begin());state.prefixes.erase(state.prefixes.begin());
-      state.initial=state.prefixes.front();
+    if(state.size()>window) {
+      ++state.begin;
+      state.initial=state.prefix(0);
     }
     // KMP proposes ONE shortest structural period; no loop over block lengths.
-    std::vector<std::size_t> ids,pi(state.terms.size());
-    for(auto v:state.terms)ids.push_back(templateId(v));
+    std::vector<std::size_t> ids,pi(state.size());
+    for(std::size_t i=0;i<state.size();++i)ids.push_back(templateId(state.term(i)));
     for(std::size_t i=1;i<ids.size();++i) {
       auto j=pi[i-1];while(j && ids[i]!=ids[j])j=pi[j-1];
       if(ids[i]==ids[j])++j;pi[i]=j;
@@ -623,9 +727,9 @@ std::optional<Ref> ReductionBuilder::appendBlock(Ref accumulator,Ref term,
     if(p==1 && ids.size()>=6) {
       std::vector<std::size_t> differences;
       bool complete=true;
-      for(std::size_t i=1;i<state.terms.size();++i) {
-        auto difference=parameterDifference(parameter_roots_.at(state.terms[i-1].node)[0],
-                                             parameter_roots_.at(state.terms[i].node)[0]);
+      for(std::size_t i=1;i<state.size();++i) {
+        auto difference=parameterDifference(parameter_roots_.at(state.term(i-1).node)[0],
+                                             parameter_roots_.at(state.term(i).node)[0]);
         if(!difference){complete=false;break;}
         differences.push_back(*difference);
       }
@@ -643,7 +747,7 @@ std::optional<Ref> ReductionBuilder::appendBlock(Ref accumulator,Ref term,
       Match match{graph_,level,binder_bounds_,lifted_by_level_[level]};match.remaining=budget;
       bool accepted=true;
       for(std::size_t i=0;i<p && accepted;++i)
-        accepted=match.check(state.terms[i],state.terms[p+i],state.terms[2*p+i],2);
+        accepted=match.check(state.term(i),state.term(p+i),state.term(2*p+i),2);
       stats_.block_checks+=budget-match.remaining;
       if(!accepted)++stats_.block_match_rejected;
       // Varying pairs were bounded by check(). Fixed subgraphs use the shared
@@ -653,12 +757,13 @@ std::optional<Ref> ReductionBuilder::appendBlock(Ref accumulator,Ref term,
       if(accepted) {
         auto body=graph_.constant(type,"0");
         for(std::size_t i=0;i<p;++i) {
-          body=graph_.operation("Add",type,{body,match.body(state.terms[i],state.terms[p+i])});
+          body=graph_.operation("Add",type,{body,match.body(state.term(i),state.term(p+i))});
           graph_.markInstruction(body,instruction_mode::synthesized);
         }
-        state.first.assign(state.terms.begin(),state.terms.begin()+p);
-        state.second.assign(state.terms.begin()+p,state.terms.begin()+2*p);
-        state.body=body;state.count=3;state.terms.clear();state.prefixes.clear();
+        const auto terms=state.window->terms.begin()+std::ptrdiff_t(state.begin);
+        state.first=std::make_shared<std::vector<Ref>>(terms,terms+std::ptrdiff_t(p));
+        state.second=std::make_shared<std::vector<Ref>>(terms+std::ptrdiff_t(p),terms+std::ptrdiff_t(2*p));
+        state.body=body;state.count=3;state.clearTerms();
         auto out=graph_.fold(Reducer::Sum,state.initial,body,level,3,type);
         blocks_.insert_or_assign(out,std::move(state));++stats_.block_created;return out;
       }

@@ -56,71 +56,18 @@
       "key": "floating_values_in_range",
       "label": "Floating values stay in range",
       "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
-      "triggered": null
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "not_run",
-    "synchronization": "failed"
+    "equivalence": "passed",
+    "synchronization": "passed"
   },
-  "diagnostics": [
-    {
-      "code": "conflicting_accesses_unordered",
-      "details": {
-        "count": 1,
-        "internal_stage": "memory_check",
-        "witnesses_path": "races"
-      },
-      "message": "Conflicting accesses have no proven required ordering",
-      "stage": "synchronization"
-    }
-  ],
+  "diagnostics": [],
   "evidence": {
-    "race_count": 1,
+    "race_count": 0,
     "race_samples_truncated": false,
-    "races": [
-      {
-        "first": {
-          "access_index": 0,
-          "actor": 0,
-          "bytes": 4,
-          "effect_index": 1,
-          "endpoint": {
-            "actor": 0,
-            "kind": "register",
-            "name": "%r3940"
-          },
-          "event": 118,
-          "instruction": 56,
-          "location": {
-            "column": 2,
-            "file": "corpus/flashinfer__cake_vsa__ultrasparse_bsr__sm_100a.ptx",
-            "line": 293
-          },
-          "mode": "write"
-        },
-        "overlap": "same actor-owned register",
-        "second": {
-          "access_index": 128,
-          "actor": 0,
-          "bytes": 4,
-          "effect_index": 0,
-          "endpoint": {
-            "actor": 0,
-            "kind": "register",
-            "name": "%r3940"
-          },
-          "event": 393,
-          "instruction": 64,
-          "location": {
-            "column": 2,
-            "file": "corpus/flashinfer__cake_vsa__ultrasparse_bsr__sm_100a.ptx",
-            "line": 306
-          },
-          "mode": "write"
-        }
-      }
-    ]
+    "races": []
   },
   "frontend_assumptions": {
     "assertion_failure_forms": [
@@ -153,6 +100,48 @@
       "extent_bytes": "unbounded"
     },
     "representative_branch_uses": 0,
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "s32",
+          "object": "bsr_indices",
+          "property": "lower_bound",
+          "value": 0
+        },
+        {
+          "element_type": "s32",
+          "object": "bsr_indices",
+          "property": "upper_bound",
+          "value": 7
+        },
+        {
+          "element_type": "s32",
+          "object": "bsr_indices",
+          "property": "injective"
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "bsr_indices",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg6.0"
+        }
+      ],
+      "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [
+      {
+        "lines": [
+          304,
+          2184,
+          4074
+        ],
+        "object": "bsr_indices"
+      }
+    ],
     "trap_only_equality_assertions_hold": true
   },
   "internal": {
@@ -164,68 +153,2357 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
-      "edges": 3372336,
-      "events": 1172294,
-      "instructions": 172756,
-      "memory_accesses": 960229,
+      "edges": 4446000,
+      "events": 1757510,
+      "instructions": 367828,
+      "memory_accesses": 1155301,
       "threads": 512
     },
     "equivalence": {
-      "diagnostics": [
-        {
-          "code": "prerequisite_check_not_passed",
-          "details": {
-            "prerequisite_checks": {
-              "equivalence": "not_run",
-              "memory": "failed",
-              "synchronization": "passed"
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 2920665,
+      "comparison_elapsed_seconds": 21.508903606,
+      "context_declaration": {
+        "assumptions": [
+          {
+            "input": "bsr_indices",
+            "interpretation": "s32",
+            "interval": {
+              "lower": "0",
+              "lower_inclusive": true,
+              "upper": "7",
+              "upper_inclusive": true
             },
-            "prerequisite_diagnostics": [
-              {
-                "code": "conflicting_accesses_unordered",
-                "details": {
-                  "count": 1,
-                  "witnesses_path": "races"
-                },
-                "message": "Conflicting accesses have no proven required ordering",
-                "stage": "memory_check"
-              }
-            ],
-            "prerequisite_result": "potential_race"
-          },
-          "stage": "equivalence_check"
+            "kind": "input_elements",
+            "reason": "tensor_properties"
+          }
+        ],
+        "fixed_inputs": [],
+        "inputs": [],
+        "predicate_nodes": []
+      },
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 16288191,
+        "affine_state_banks": 1,
+        "boolean_fold_bounds": 1792,
+        "boolean_fold_integer_bits": 512,
+        "call_definition_node_visits": 771554,
+        "canonical_factor_visits": 644800,
+        "canonical_max_unpeeled_folds": 8184,
+        "canonical_node_visits": 1122922,
+        "canonical_sum_initials": 58368,
+        "certified_state_pattern_cache_hits": 3063,
+        "certified_state_pattern_decline_no_certified_state": 2,
+        "certified_state_pattern_decline_nonplain_pattern": 7,
+        "certified_state_pattern_work": 125,
+        "coefficient_normalizations": 12034,
+        "completed_reductions": 92378,
+        "constant_binary32_bitcasts": 15616,
+        "contracted_raw_words": 6,
+        "coordinate_digit_node_visits": 130,
+        "coverage_polynomial_peak": 4,
+        "coverage_polynomial_visits": 1008966,
+        "coverage_stored_piece_visits": 695712,
+        "derived_coordinate_constraints_checked": 298736,
+        "disjoint_integer_or_fields": 6,
+        "ep_body_anchor_edges": 2613288,
+        "ep_body_anchor_nodes": 2377245,
+        "ep_body_call_rebuilds": 140152,
+        "ep_body_call_respelling_attempts": 8749,
+        "ep_body_deferred_anchor_retries": 26880,
+        "ep_body_deferred_call_anchors": 545446,
+        "ep_body_deferred_unmatched_anchors": 545446,
+        "ep_body_fold_scope_boundaries": 709784,
+        "ep_body_instance_cache_entries": 107328,
+        "ep_body_obligations": 238264,
+        "ep_body_pattern_anchor_cache_hits": 1331673,
+        "ep_body_payload_summary_nodes": 76800,
+        "ep_body_proofs": 182968,
+        "ep_body_read_anchor_rejections": 775486,
+        "ep_body_read_match_cache_entries": 6948,
+        "ep_body_respelled_call_anchors": 24,
+        "ep_body_target_anchor_cache_hits": 1024608,
+        "ep_body_target_call_index_builds": 87904,
+        "ep_body_target_call_index_nodes": 634720,
+        "ep_cross_products": 768,
+        "ep_identity_proofs": 183736,
+        "ep_scalar_attempts": 246968,
+        "ep_scalar_proofs": 183736,
+        "ep_select_common_scales": 524,
+        "exact_proof_reuse_certificates": 768,
+        "finite_bilinear_banks": 1,
+        "finite_state_reuse_banks": 1,
+        "floating_lane_transport_visits": 3328,
+        "fold_alpha_root_cache_hits": 75011,
+        "fold_alpha_signature_edges": 713166,
+        "fold_alpha_signatures": 369956,
+        "fold_alpha_states": 1077810,
+        "fp_idiom_power_constructions": 0,
+        "fp_idiom_rm_producers": 0,
+        "hardware_infinities": 1,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "identical_instantiated_reduction_calls": 36,
+        "imported_context_nodes": 1620917,
+        "importer_occurrence_binder_hits": 198397,
+        "importer_scope_banks": 2,
+        "importer_scope_binders_created": 5,
+        "importer_scope_leaf_lookups": 5,
+        "importer_scope_nested_body_fallbacks": 271104,
+        "input_index_radix_followups": 512,
+        "input_index_radix_quotients": 3711,
+        "intern_requests": 45474133,
+        "known_bits_cache_hits": 431139,
+        "known_bits_edges": 164172,
+        "known_bits_nodes": 108915,
+        "linear_reduction_case_nonfinite_identities": 0,
+        "linear_reduction_maximum_rescale_bounds": 3072,
+        "linear_reduction_vote_bound_cases": 0,
+        "linear_reduction_vote_rescale_selects": 3072,
+        "linear_reduction_vote_zero_one_readings": 7866,
+        "linear_reduction_vote_zero_one_selects": 3072,
+        "local_pattern_candidates": 2241734,
+        "masked_max_prefix_queries": 178008,
+        "masked_sum_prefix_queries": 248448,
+        "nested_remainder_terms": 4992,
+        "normalization_cache_context_changes": 257,
+        "normalization_fold_rebuild_redirects": 8184,
+        "normalization_node_visits": 1752623,
+        "offset_multiple_quotients": 20852,
+        "online_softmax_maximum_domains": 4782,
+        "online_softmax_pattern_attempts": 768,
+        "online_softmax_pattern_proofs": 768,
+        "online_softmax_vote_rescale_aliases": 3072,
+        "packed_radix_probes": 3711,
+        "packed_radix_rewrites": 3711,
+        "paired_maximum_reference_domains": 768,
+        "parametric_state_attempts": 0,
+        "pattern_build_peak_nodes": 7,
+        "pattern_build_unique_nodes": 18432,
+        "pattern_coordinate_rest_branches": 165762,
+        "pattern_node_visits": 4220800,
+        "predicate_boolean_complements": 512,
+        "proved_select_arms_imported": 12930,
+        "quotient_remainder_coordinate_anchors": 149368,
+        "reciprocal_exponential_factors": 257,
+        "select_complementary_polarities": 512,
+        "select_equal_arm_declines": 7168,
+        "select_floating_bitcasts": 3328,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_calls": 28927,
+        "select_max_probe_temporary_nodes": 0,
+        "select_rescaling_identity": 512,
+        "strict_substitution_declines": 25428,
+        "sum_positive_coordinate_witnesses": 128,
+        "summary_bind_nodes": 511320,
+        "summary_concat_nodes": 317365,
+        "symbolic_byte_reads_without_extent_proof": 0,
+        "unary_reduction_composition_attempts": 768,
+        "unary_reduction_composition_context_changes": 288,
+        "weighted_reduction_coverage_proofs": 1536,
+        "welford_fragment_misses": 768,
+        "welford_reference_candidates": 768
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 768,
+        "status": "proved"
+      },
+      "diagnostics": [],
+      "elapsed_s": 18.493152799,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 135786,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 17422,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 175923,
+          "unique_query_nodes": 0
+        },
+        "query_count": 246968,
+        "reset_s": 0.0,
+        "reuse_cache": true,
+        "shared_evictions": 7
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 1,
+        "fixed_input_elements": 0,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 768,
+      "failure_expression_samples": {
+        "failed_families": 0,
+        "omitted_families": 0,
+        "render_byte_limit_per_side": 4096,
+        "sample_limit": 8,
+        "sampled_families": 0
+      },
+      "finished_families": 768,
+      "idealizations_applied": [],
+      "input_contract": [
+        {
+          "element_type": "s32",
+          "max_inclusive": 7,
+          "min_inclusive": 0,
+          "object": "bsr_indices",
+          "region": "whole_object",
+          "source": "tensor_properties"
         }
-      ]
+      ],
+      "input_contract_applied_reads": [
+        {
+          "element_type": "s32",
+          "object": "bsr_indices",
+          "side": "left"
+        },
+        {
+          "element_type": "s32",
+          "object": "bsr_indices",
+          "side": "right"
+        }
+      ],
+      "mapping_input_memory_constraints": {},
+      "native_context": null,
+      "normalized_reachable_nodes": 201588,
+      "numerical_result": "verified",
+      "pattern_nodes": 178999,
+      "peak_rss_kib": 4409184,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 1287535,
+      "piece_union": {
+        "abstract_optimized_replacements": 0,
+        "abstract_reference_replacements": 0,
+        "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+        "collected_pieces": 0,
+        "late_certificates": "accepted_until_each_schema_is_complete",
+        "method": "complete_output_equalities_with_finite_piece_union",
+        "replacements": 0,
+        "schemas": [],
+        "stored_dag_work": 0,
+        "work_limit": 2000000
+      },
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        598,
+        261611
+      ],
+      "reference_term_patterns": 11,
+      "row_groups": [
+        {
+          "count": 1,
+          "families": [
+            [
+              0,
+              0
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 297,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 3,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 2,
+              "visited_nodes": 7201
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 7.279999999998399e-06,
+            "cumulative_elapsed_s": 0.166677341,
+            "left_import_s": 0.0007572330000000099,
+            "left_normalize_s": 0.00016875099999999477,
+            "parametric_state_s": 9.09999999992861e-07,
+            "piece_union_record_s": 6.300000000014627e-07,
+            "piece_union_seal_s": 5.699999999914107e-07,
+            "right_import_s": 0.047241100999999994,
+            "right_normalize_s": 0.041514459000000004,
+            "state_pattern_s": 0.0034434030000000115,
+            "unary_reduction_s": 7.430000000002712e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              1,
+              1
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 297,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 3,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 4,
+              "visited_nodes": 7204
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 8.899999999756325e-07,
+            "cumulative_elapsed_s": 0.183519405,
+            "left_import_s": 0.00028724099999999364,
+            "left_normalize_s": 8.911999999999809e-05,
+            "parametric_state_s": 4.7000000000241293e-07,
+            "piece_union_record_s": 5.999999999617422e-08,
+            "piece_union_seal_s": 5.999999999617422e-08,
+            "right_import_s": 1.234999999999431e-05,
+            "right_normalize_s": 0.013006750000000011,
+            "state_pattern_s": 0.0033010320000000093,
+            "unary_reduction_s": 4.439999999994448e-06
+          }
+        },
+        {
+          "count": 4,
+          "families": [
+            [
+              2,
+              5
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 297,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 3,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 4,
+              "visited_nodes": 7212
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.609999999958479e-06,
+            "cumulative_elapsed_s": 0.222973707,
+            "left_import_s": 0.0010957839999999885,
+            "left_normalize_s": 0.0003372220000000259,
+            "parametric_state_s": 1.1900000000120148e-06,
+            "piece_union_record_s": 3.000000000363823e-07,
+            "piece_union_seal_s": 2.500000000071889e-07,
+            "right_import_s": 0.008085480999999978,
+            "right_normalize_s": 0.016133172,
+            "state_pattern_s": 0.01322754100000001,
+            "unary_reduction_s": 1.6889999999991634e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              6,
+              6
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 552,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 8,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 7,
+              "visited_nodes": 4564
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.429999999968956e-06,
+            "cumulative_elapsed_s": 0.322424209,
+            "left_import_s": 0.00037234199999999773,
+            "left_normalize_s": 0.0001232010000000172,
+            "parametric_state_s": 4.899999999641302e-07,
+            "piece_union_record_s": 2.899999999583791e-07,
+            "piece_union_seal_s": 5.999999996841865e-08,
+            "right_import_s": 0.04125015800000001,
+            "right_normalize_s": 0.05497593099999998,
+            "state_pattern_s": 0.002219998000000001,
+            "unary_reduction_s": 6.730000000010339e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              7,
+              7
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 552,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 8,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 9,
+              "visited_nodes": 4567
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 7.309999999760564e-07,
+            "cumulative_elapsed_s": 0.340359608,
+            "left_import_s": 0.0002710109999999877,
+            "left_normalize_s": 7.885000000001918e-05,
+            "parametric_state_s": 3.1000000000336314e-07,
+            "piece_union_record_s": 8.000000001340268e-08,
+            "piece_union_seal_s": 5.999999996841865e-08,
+            "right_import_s": 1.1369999999955027e-05,
+            "right_normalize_s": 0.015148718000000005,
+            "state_pattern_s": 0.0022813389999999933,
+            "unary_reduction_s": 4.4200000000049755e-06
+          }
+        },
+        {
+          "count": 8,
+          "families": [
+            [
+              8,
+              11
+            ],
+            [
+              26,
+              29
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 552,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 8,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 10,
+              "visited_nodes": 4575
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 9.260000000010926e-06,
+            "cumulative_elapsed_s": 0.841106693,
+            "left_import_s": 0.00210435699999989,
+            "left_normalize_s": 0.000662654999999901,
+            "parametric_state_s": 2.7299999999508273e-06,
+            "piece_union_record_s": 6.400000001072215e-07,
+            "piece_union_seal_s": 4.5000000015171793e-07,
+            "right_import_s": 0.017137557000000025,
+            "right_normalize_s": 0.04218653099999997,
+            "state_pattern_s": 0.01677636299999996,
+            "unary_reduction_s": 3.096100000005153e-05
+          }
+        },
+        {
+          "count": 4,
+          "families": [
+            [
+              12,
+              12
+            ],
+            [
+              18,
+              18
+            ],
+            [
+              24,
+              24
+            ],
+            [
+              30,
+              30
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 552,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 8,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 7,
+              "visited_nodes": 4563
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 5.1600000001150725e-06,
+            "cumulative_elapsed_s": 0.935527586,
+            "left_import_s": 0.001504744999999974,
+            "left_normalize_s": 0.00046073200000007475,
+            "parametric_state_s": 2.069999999798622e-06,
+            "piece_union_record_s": 6.599999998191386e-07,
+            "piece_union_seal_s": 2.399999999846969e-07,
+            "right_import_s": 0.15592633000000006,
+            "right_normalize_s": 0.21977457500000014,
+            "state_pattern_s": 0.009439395999999933,
+            "unary_reduction_s": 2.6560999999980517e-05
+          }
+        },
+        {
+          "count": 3,
+          "families": [
+            [
+              13,
+              13
+            ],
+            [
+              19,
+              19
+            ],
+            [
+              31,
+              31
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 552,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 8,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 10,
+              "visited_nodes": 4566
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 5.010000000083004e-06,
+            "cumulative_elapsed_s": 0.953138263,
+            "left_import_s": 0.0008016929999999922,
+            "left_normalize_s": 0.00025127000000008115,
+            "parametric_state_s": 9.400000000048259e-07,
+            "piece_union_record_s": 3.29999999992836e-07,
+            "piece_union_seal_s": 1.799999999607671e-07,
+            "right_import_s": 3.3480000000085663e-05,
+            "right_normalize_s": 0.046268317999999975,
+            "state_pattern_s": 0.0063603829999999695,
+            "unary_reduction_s": 1.2580000000039782e-05
+          }
+        },
+        {
+          "count": 12,
+          "families": [
+            [
+              14,
+              17
+            ],
+            [
+              20,
+              23
+            ],
+            [
+              32,
+              35
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 552,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 8,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 10,
+              "visited_nodes": 4574
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.0410000000238284e-05,
+            "cumulative_elapsed_s": 0.98613888,
+            "left_import_s": 0.003274912000000074,
+            "left_normalize_s": 0.001016275000000233,
+            "parametric_state_s": 3.7200000000403577e-06,
+            "piece_union_record_s": 9.899999998674858e-07,
+            "piece_union_seal_s": 6.700000000359196e-07,
+            "right_import_s": 0.022931729000000067,
+            "right_normalize_s": 0.047025152000000014,
+            "state_pattern_s": 0.02524979699999985,
+            "unary_reduction_s": 4.592999999974978e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              25,
+              25
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 552,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 8,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 10,
+              "visited_nodes": 4567
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 1.180000000045034e-06,
+            "cumulative_elapsed_s": 0.806365709,
+            "left_import_s": 0.0002693810000000685,
+            "left_normalize_s": 8.150000000006763e-05,
+            "parametric_state_s": 5.800000000277805e-07,
+            "piece_union_record_s": 7.000000001866624e-08,
+            "piece_union_seal_s": 1.6999999996603066e-07,
+            "right_import_s": 1.1631000000011937e-05,
+            "right_normalize_s": 0.018780302000000026,
+            "state_pattern_s": 0.0020230379999999215,
+            "unary_reduction_s": 4.340000000047084e-06
+          }
+        },
+        {
+          "count": 26,
+          "families": [
+            [
+              36,
+              36
+            ],
+            [
+              42,
+              42
+            ],
+            [
+              48,
+              48
+            ],
+            [
+              54,
+              54
+            ],
+            [
+              60,
+              60
+            ],
+            [
+              66,
+              66
+            ],
+            [
+              72,
+              72
+            ],
+            [
+              78,
+              78
+            ],
+            [
+              84,
+              84
+            ],
+            [
+              90,
+              90
+            ],
+            [
+              96,
+              96
+            ],
+            [
+              102,
+              102
+            ],
+            [
+              108,
+              108
+            ],
+            [
+              114,
+              114
+            ],
+            [
+              120,
+              120
+            ],
+            [
+              126,
+              126
+            ],
+            [
+              132,
+              132
+            ],
+            [
+              138,
+              138
+            ],
+            [
+              144,
+              144
+            ],
+            [
+              150,
+              150
+            ],
+            [
+              156,
+              156
+            ],
+            [
+              162,
+              162
+            ],
+            [
+              168,
+              168
+            ],
+            [
+              174,
+              174
+            ],
+            [
+              180,
+              180
+            ],
+            [
+              186,
+              186
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 552,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 8,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 7,
+              "visited_nodes": 4567
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.5490000000804045e-05,
+            "cumulative_elapsed_s": 4.696759421,
+            "left_import_s": 0.010217324999997612,
+            "left_normalize_s": 0.0028158890000005155,
+            "parametric_state_s": 1.1680000000069413e-05,
+            "piece_union_record_s": 7.010000002694028e-06,
+            "piece_union_seal_s": 2.7600000003236147e-06,
+            "right_import_s": 0.9643322489999979,
+            "right_normalize_s": 1.4117406880000014,
+            "state_pattern_s": 0.07116561300000046,
+            "unary_reduction_s": 0.00016627999999996312
+          }
+        },
+        {
+          "count": 26,
+          "families": [
+            [
+              37,
+              37
+            ],
+            [
+              43,
+              43
+            ],
+            [
+              49,
+              49
+            ],
+            [
+              55,
+              55
+            ],
+            [
+              61,
+              61
+            ],
+            [
+              67,
+              67
+            ],
+            [
+              73,
+              73
+            ],
+            [
+              79,
+              79
+            ],
+            [
+              85,
+              85
+            ],
+            [
+              91,
+              91
+            ],
+            [
+              97,
+              97
+            ],
+            [
+              103,
+              103
+            ],
+            [
+              109,
+              109
+            ],
+            [
+              115,
+              115
+            ],
+            [
+              121,
+              121
+            ],
+            [
+              127,
+              127
+            ],
+            [
+              133,
+              133
+            ],
+            [
+              139,
+              139
+            ],
+            [
+              145,
+              145
+            ],
+            [
+              151,
+              151
+            ],
+            [
+              157,
+              157
+            ],
+            [
+              163,
+              163
+            ],
+            [
+              169,
+              169
+            ],
+            [
+              175,
+              175
+            ],
+            [
+              181,
+              181
+            ],
+            [
+              187,
+              187
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 552,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 8,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 10,
+              "visited_nodes": 4570
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 4.957000000005429e-05,
+            "cumulative_elapsed_s": 4.714034117,
+            "left_import_s": 0.007868179000000142,
+            "left_normalize_s": 0.002242860000000624,
+            "parametric_state_s": 1.064999999922378e-05,
+            "piece_union_record_s": 2.1700000001345643e-06,
+            "piece_union_seal_s": 3.4500000007930964e-06,
+            "right_import_s": 0.0003232560000006046,
+            "right_normalize_s": 0.39130455099999994,
+            "state_pattern_s": 0.048843843,
+            "unary_reduction_s": 0.00010998999999989323
+          }
+        },
+        {
+          "count": 104,
+          "families": [
+            [
+              38,
+              41
+            ],
+            [
+              44,
+              47
+            ],
+            [
+              50,
+              53
+            ],
+            [
+              56,
+              59
+            ],
+            [
+              62,
+              65
+            ],
+            [
+              68,
+              71
+            ],
+            [
+              74,
+              77
+            ],
+            [
+              80,
+              83
+            ],
+            [
+              86,
+              89
+            ],
+            [
+              92,
+              95
+            ],
+            [
+              98,
+              101
+            ],
+            [
+              104,
+              107
+            ],
+            [
+              110,
+              113
+            ],
+            [
+              116,
+              119
+            ],
+            [
+              122,
+              125
+            ],
+            [
+              128,
+              131
+            ],
+            [
+              134,
+              137
+            ],
+            [
+              140,
+              143
+            ],
+            [
+              146,
+              149
+            ],
+            [
+              152,
+              155
+            ],
+            [
+              158,
+              161
+            ],
+            [
+              164,
+              167
+            ],
+            [
+              170,
+              173
+            ],
+            [
+              176,
+              179
+            ],
+            [
+              182,
+              185
+            ],
+            [
+              188,
+              191
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 552,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 8,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 10,
+              "visited_nodes": 4578
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 9.241199999499017e-05,
+            "cumulative_elapsed_s": 4.745777189,
+            "left_import_s": 0.02729092700000102,
+            "left_normalize_s": 0.008380623999997727,
+            "parametric_state_s": 3.287999999757041e-05,
+            "piece_union_record_s": 8.269999997478905e-06,
+            "piece_union_seal_s": 6.139999999321688e-06,
+            "right_import_s": 0.19125494200000048,
+            "right_normalize_s": 0.395867108999999,
+            "state_pattern_s": 0.1943358740000014,
+            "unary_reduction_s": 0.00038415199999297656
+          }
+        },
+        {
+          "count": 96,
+          "families": [
+            [
+              192,
+              192
+            ],
+            [
+              198,
+              198
+            ],
+            [
+              204,
+              204
+            ],
+            [
+              210,
+              210
+            ],
+            [
+              216,
+              216
+            ],
+            [
+              222,
+              222
+            ],
+            [
+              228,
+              228
+            ],
+            [
+              234,
+              234
+            ],
+            [
+              240,
+              240
+            ],
+            [
+              246,
+              246
+            ],
+            [
+              252,
+              252
+            ],
+            [
+              258,
+              258
+            ],
+            [
+              264,
+              264
+            ],
+            [
+              270,
+              270
+            ],
+            [
+              276,
+              276
+            ],
+            [
+              282,
+              282
+            ],
+            [
+              288,
+              288
+            ],
+            [
+              294,
+              294
+            ],
+            [
+              300,
+              300
+            ],
+            [
+              306,
+              306
+            ],
+            [
+              312,
+              312
+            ],
+            [
+              318,
+              318
+            ],
+            [
+              324,
+              324
+            ],
+            [
+              330,
+              330
+            ],
+            [
+              336,
+              336
+            ],
+            [
+              342,
+              342
+            ],
+            [
+              348,
+              348
+            ],
+            [
+              354,
+              354
+            ],
+            [
+              360,
+              360
+            ],
+            [
+              366,
+              366
+            ],
+            [
+              372,
+              372
+            ],
+            [
+              378,
+              378
+            ],
+            [
+              384,
+              384
+            ],
+            [
+              390,
+              390
+            ],
+            [
+              396,
+              396
+            ],
+            [
+              402,
+              402
+            ],
+            [
+              408,
+              408
+            ],
+            [
+              414,
+              414
+            ],
+            [
+              420,
+              420
+            ],
+            [
+              426,
+              426
+            ],
+            [
+              432,
+              432
+            ],
+            [
+              438,
+              438
+            ],
+            [
+              444,
+              444
+            ],
+            [
+              450,
+              450
+            ],
+            [
+              456,
+              456
+            ],
+            [
+              462,
+              462
+            ],
+            [
+              468,
+              468
+            ],
+            [
+              474,
+              474
+            ],
+            [
+              480,
+              480
+            ],
+            [
+              486,
+              486
+            ],
+            [
+              492,
+              492
+            ],
+            [
+              498,
+              498
+            ],
+            [
+              504,
+              504
+            ],
+            [
+              510,
+              510
+            ],
+            [
+              516,
+              516
+            ],
+            [
+              522,
+              522
+            ],
+            [
+              528,
+              528
+            ],
+            [
+              534,
+              534
+            ],
+            [
+              540,
+              540
+            ],
+            [
+              546,
+              546
+            ],
+            [
+              552,
+              552
+            ],
+            [
+              558,
+              558
+            ],
+            [
+              564,
+              564
+            ],
+            [
+              570,
+              570
+            ],
+            [
+              576,
+              576
+            ],
+            [
+              582,
+              582
+            ],
+            [
+              588,
+              588
+            ],
+            [
+              594,
+              594
+            ],
+            [
+              600,
+              600
+            ],
+            [
+              606,
+              606
+            ],
+            [
+              612,
+              612
+            ],
+            [
+              618,
+              618
+            ],
+            [
+              624,
+              624
+            ],
+            [
+              630,
+              630
+            ],
+            [
+              636,
+              636
+            ],
+            [
+              642,
+              642
+            ],
+            [
+              648,
+              648
+            ],
+            [
+              654,
+              654
+            ],
+            [
+              660,
+              660
+            ],
+            [
+              666,
+              666
+            ],
+            [
+              672,
+              672
+            ],
+            [
+              678,
+              678
+            ],
+            [
+              684,
+              684
+            ],
+            [
+              690,
+              690
+            ],
+            [
+              696,
+              696
+            ],
+            [
+              702,
+              702
+            ],
+            [
+              708,
+              708
+            ],
+            [
+              714,
+              714
+            ],
+            [
+              720,
+              720
+            ],
+            [
+              726,
+              726
+            ],
+            [
+              732,
+              732
+            ],
+            [
+              738,
+              738
+            ],
+            [
+              744,
+              744
+            ],
+            [
+              750,
+              750
+            ],
+            [
+              756,
+              756
+            ],
+            [
+              762,
+              762
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 493,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 8,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 7,
+              "visited_nodes": 4169
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 0.00011965999999752341,
+            "cumulative_elapsed_s": 18.33367136,
+            "left_import_s": 0.039090419000006094,
+            "left_normalize_s": 0.010826332000006822,
+            "parametric_state_s": 4.2450000007576705e-05,
+            "piece_union_record_s": 1.9720000003609073e-05,
+            "piece_union_seal_s": 8.889999991268382e-06,
+            "right_import_s": 3.6008985760000014,
+            "right_normalize_s": 5.069648060999992,
+            "state_pattern_s": 0.1814459420000123,
+            "unary_reduction_s": 0.0005773830000030955
+          }
+        },
+        {
+          "count": 96,
+          "families": [
+            [
+              193,
+              193
+            ],
+            [
+              199,
+              199
+            ],
+            [
+              205,
+              205
+            ],
+            [
+              211,
+              211
+            ],
+            [
+              217,
+              217
+            ],
+            [
+              223,
+              223
+            ],
+            [
+              229,
+              229
+            ],
+            [
+              235,
+              235
+            ],
+            [
+              241,
+              241
+            ],
+            [
+              247,
+              247
+            ],
+            [
+              253,
+              253
+            ],
+            [
+              259,
+              259
+            ],
+            [
+              265,
+              265
+            ],
+            [
+              271,
+              271
+            ],
+            [
+              277,
+              277
+            ],
+            [
+              283,
+              283
+            ],
+            [
+              289,
+              289
+            ],
+            [
+              295,
+              295
+            ],
+            [
+              301,
+              301
+            ],
+            [
+              307,
+              307
+            ],
+            [
+              313,
+              313
+            ],
+            [
+              319,
+              319
+            ],
+            [
+              325,
+              325
+            ],
+            [
+              331,
+              331
+            ],
+            [
+              337,
+              337
+            ],
+            [
+              343,
+              343
+            ],
+            [
+              349,
+              349
+            ],
+            [
+              355,
+              355
+            ],
+            [
+              361,
+              361
+            ],
+            [
+              367,
+              367
+            ],
+            [
+              373,
+              373
+            ],
+            [
+              379,
+              379
+            ],
+            [
+              385,
+              385
+            ],
+            [
+              391,
+              391
+            ],
+            [
+              397,
+              397
+            ],
+            [
+              403,
+              403
+            ],
+            [
+              409,
+              409
+            ],
+            [
+              415,
+              415
+            ],
+            [
+              421,
+              421
+            ],
+            [
+              427,
+              427
+            ],
+            [
+              433,
+              433
+            ],
+            [
+              439,
+              439
+            ],
+            [
+              445,
+              445
+            ],
+            [
+              451,
+              451
+            ],
+            [
+              457,
+              457
+            ],
+            [
+              463,
+              463
+            ],
+            [
+              469,
+              469
+            ],
+            [
+              475,
+              475
+            ],
+            [
+              481,
+              481
+            ],
+            [
+              487,
+              487
+            ],
+            [
+              493,
+              493
+            ],
+            [
+              499,
+              499
+            ],
+            [
+              505,
+              505
+            ],
+            [
+              511,
+              511
+            ],
+            [
+              517,
+              517
+            ],
+            [
+              523,
+              523
+            ],
+            [
+              529,
+              529
+            ],
+            [
+              535,
+              535
+            ],
+            [
+              541,
+              541
+            ],
+            [
+              547,
+              547
+            ],
+            [
+              553,
+              553
+            ],
+            [
+              559,
+              559
+            ],
+            [
+              565,
+              565
+            ],
+            [
+              571,
+              571
+            ],
+            [
+              577,
+              577
+            ],
+            [
+              583,
+              583
+            ],
+            [
+              589,
+              589
+            ],
+            [
+              595,
+              595
+            ],
+            [
+              601,
+              601
+            ],
+            [
+              607,
+              607
+            ],
+            [
+              613,
+              613
+            ],
+            [
+              619,
+              619
+            ],
+            [
+              625,
+              625
+            ],
+            [
+              631,
+              631
+            ],
+            [
+              637,
+              637
+            ],
+            [
+              643,
+              643
+            ],
+            [
+              649,
+              649
+            ],
+            [
+              655,
+              655
+            ],
+            [
+              661,
+              661
+            ],
+            [
+              667,
+              667
+            ],
+            [
+              673,
+              673
+            ],
+            [
+              679,
+              679
+            ],
+            [
+              685,
+              685
+            ],
+            [
+              691,
+              691
+            ],
+            [
+              697,
+              697
+            ],
+            [
+              703,
+              703
+            ],
+            [
+              709,
+              709
+            ],
+            [
+              715,
+              715
+            ],
+            [
+              721,
+              721
+            ],
+            [
+              727,
+              727
+            ],
+            [
+              733,
+              733
+            ],
+            [
+              739,
+              739
+            ],
+            [
+              745,
+              745
+            ],
+            [
+              751,
+              751
+            ],
+            [
+              757,
+              757
+            ],
+            [
+              763,
+              763
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 493,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 8,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 10,
+              "visited_nodes": 4172
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 0.00021699999999302833,
+            "cumulative_elapsed_s": 18.34932354,
+            "left_import_s": 0.027095710999987865,
+            "left_normalize_s": 0.008300225000007266,
+            "parametric_state_s": 3.460999999926884e-05,
+            "piece_union_record_s": 1.1289999998886913e-05,
+            "piece_union_seal_s": 1.0920000002023755e-05,
+            "right_import_s": 0.0010685139999919713,
+            "right_normalize_s": 1.3156085320000024,
+            "state_pattern_s": 0.16762665400000376,
+            "unary_reduction_s": 0.0004211530000048924
+          }
+        },
+        {
+          "count": 384,
+          "families": [
+            [
+              194,
+              197
+            ],
+            [
+              200,
+              203
+            ],
+            [
+              206,
+              209
+            ],
+            [
+              212,
+              215
+            ],
+            [
+              218,
+              221
+            ],
+            [
+              224,
+              227
+            ],
+            [
+              230,
+              233
+            ],
+            [
+              236,
+              239
+            ],
+            [
+              242,
+              245
+            ],
+            [
+              248,
+              251
+            ],
+            [
+              254,
+              257
+            ],
+            [
+              260,
+              263
+            ],
+            [
+              266,
+              269
+            ],
+            [
+              272,
+              275
+            ],
+            [
+              278,
+              281
+            ],
+            [
+              284,
+              287
+            ],
+            [
+              290,
+              293
+            ],
+            [
+              296,
+              299
+            ],
+            [
+              302,
+              305
+            ],
+            [
+              308,
+              311
+            ],
+            [
+              314,
+              317
+            ],
+            [
+              320,
+              323
+            ],
+            [
+              326,
+              329
+            ],
+            [
+              332,
+              335
+            ],
+            [
+              338,
+              341
+            ],
+            [
+              344,
+              347
+            ],
+            [
+              350,
+              353
+            ],
+            [
+              356,
+              359
+            ],
+            [
+              362,
+              365
+            ],
+            [
+              368,
+              371
+            ],
+            [
+              374,
+              377
+            ],
+            [
+              380,
+              383
+            ],
+            [
+              386,
+              389
+            ],
+            [
+              392,
+              395
+            ],
+            [
+              398,
+              401
+            ],
+            [
+              404,
+              407
+            ],
+            [
+              410,
+              413
+            ],
+            [
+              416,
+              419
+            ],
+            [
+              422,
+              425
+            ],
+            [
+              428,
+              431
+            ],
+            [
+              434,
+              437
+            ],
+            [
+              440,
+              443
+            ],
+            [
+              446,
+              449
+            ],
+            [
+              452,
+              455
+            ],
+            [
+              458,
+              461
+            ],
+            [
+              464,
+              467
+            ],
+            [
+              470,
+              473
+            ],
+            [
+              476,
+              479
+            ],
+            [
+              482,
+              485
+            ],
+            [
+              488,
+              491
+            ],
+            [
+              494,
+              497
+            ],
+            [
+              500,
+              503
+            ],
+            [
+              506,
+              509
+            ],
+            [
+              512,
+              515
+            ],
+            [
+              518,
+              521
+            ],
+            [
+              524,
+              527
+            ],
+            [
+              530,
+              533
+            ],
+            [
+              536,
+              539
+            ],
+            [
+              542,
+              545
+            ],
+            [
+              548,
+              551
+            ],
+            [
+              554,
+              557
+            ],
+            [
+              560,
+              563
+            ],
+            [
+              566,
+              569
+            ],
+            [
+              572,
+              575
+            ],
+            [
+              578,
+              581
+            ],
+            [
+              584,
+              587
+            ],
+            [
+              590,
+              593
+            ],
+            [
+              596,
+              599
+            ],
+            [
+              602,
+              605
+            ],
+            [
+              608,
+              611
+            ],
+            [
+              614,
+              617
+            ],
+            [
+              620,
+              623
+            ],
+            [
+              626,
+              629
+            ],
+            [
+              632,
+              635
+            ],
+            [
+              638,
+              641
+            ],
+            [
+              644,
+              647
+            ],
+            [
+              650,
+              653
+            ],
+            [
+              656,
+              659
+            ],
+            [
+              662,
+              665
+            ],
+            [
+              668,
+              671
+            ],
+            [
+              674,
+              677
+            ],
+            [
+              680,
+              683
+            ],
+            [
+              686,
+              689
+            ],
+            [
+              692,
+              695
+            ],
+            [
+              698,
+              701
+            ],
+            [
+              704,
+              707
+            ],
+            [
+              710,
+              713
+            ],
+            [
+              716,
+              719
+            ],
+            [
+              722,
+              725
+            ],
+            [
+              728,
+              731
+            ],
+            [
+              734,
+              737
+            ],
+            [
+              740,
+              743
+            ],
+            [
+              746,
+              749
+            ],
+            [
+              752,
+              755
+            ],
+            [
+              758,
+              761
+            ],
+            [
+              764,
+              767
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "common_scale": "1",
+              "contribution_pieces": 493,
+              "coverage": "exact_uniform_weighted_coverage_and_equal_total_scales",
+              "denominator_spec": 8,
+              "method": "online_softmax_common_scale_certificate",
+              "numerator_spec": 10,
+              "visited_nodes": 4180
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 0.0004030320000190102,
+            "cumulative_elapsed_s": 18.380602772,
+            "left_import_s": 0.10214990899999332,
+            "left_normalize_s": 0.03175295799999933,
+            "parametric_state_s": 0.00012490999999759111,
+            "piece_union_record_s": 3.7920000020896794e-05,
+            "piece_union_seal_s": 2.5779999996089487e-05,
+            "right_import_s": 0.7212496020000074,
+            "right_normalize_s": 1.5379686330000286,
+            "state_pattern_s": 0.6966372370000169,
+            "unary_reduction_s": 0.0014483430000167274
+          }
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 0.0009611250000057803,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.22445116899998602,
+        "left_normalize_s": 0.0675884640000127,
+        "parametric_state_s": 0.00027059000000109745,
+        "piece_union_record_s": 9.043000002351143e-05,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 6.064999998985077e-05,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 5.771768326,
+        "right_normalize_s": 10.636951482000024,
+        "state_pattern_s": 1.4443774530000346
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.069961809
+      },
+      "total_output_families": 768,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {
+        "binder_in_fixed_parameter_or_factor": 9216
+      }
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "tma_data_dependent_coordinate",
-            "details": {
-              "cta": 0,
-              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes [%r3562], [%rd1062, {%r3563, %r3564, %r3563, %r3746}], [%r3560];",
-              "instruction_index": 4682,
-              "location": {
-                "file": "corpus/flashinfer__cake_vsa__ultrasparse_bsr__sm_100a.ptx",
-                "line": 9389
-              },
-              "occurrence": 0,
-              "thread": 480
-            },
-            "message": "TMA tile coordinate %r3564 is data-dependent (not a constant of the execution) and its range is not proven to keep the tile inside the tensor (0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its tile region are not modeled",
-            "stage": "value_lowering"
-          }
-        ],
+        "diagnostics": [],
         "first_unavailable_reason": "",
         "queries": 0,
         "resolved": 0,
         "source": "value_lowering",
         "unavailable": 0,
-        "value_view_complete": false
+        "value_view_complete": true
       },
       "cluster_completion_joins": 0,
       "cta_count": 1,
@@ -287,6 +2565,48 @@
           "extent_bytes": "unbounded"
         },
         "representative_branch_uses": 0,
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "s32",
+              "object": "bsr_indices",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s32",
+              "object": "bsr_indices",
+              "property": "upper_bound",
+              "value": 7
+            },
+            {
+              "element_type": "s32",
+              "object": "bsr_indices",
+              "property": "injective"
+            }
+          ],
+          "regions": [
+            {
+              "allocation": "bsr_indices",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg6.0"
+            }
+          ],
+          "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+        },
+        "tensor_property_decisions": [
+          {
+            "lines": [
+              304,
+              2184,
+              4074
+            ],
+            "object": "bsr_indices"
+          }
+        ],
         "trap_only_equality_assertions_hold": true
       },
       "implementation": "cpp",
@@ -320,7 +2640,7 @@
           "source": "declaration"
         }
       ],
-      "lowered_instruction_count": 172756,
+      "lowered_instruction_count": 367828,
       "mma_refinement": {
         "blocked": [],
         "discharged": 96
@@ -417,7 +2737,9 @@
         "xor.b32": 2368
       },
       "shared_constant_propagation": {
-        "read_from_dependencies": 0,
+        "bounded_read_from_dependencies": 1152,
+        "bounded_write_sites": 6,
+        "read_from_dependencies": 1152,
         "representation": "sparse_known_bytes",
         "validation": "pending_backend"
       },
@@ -426,12 +2748,12 @@
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
-        "logical_instructions": 172756,
-        "stored_bindings": 3307
+        "logical_instructions": 367828,
+        "stored_bindings": 6355
       },
       "source_edge_storage": {
         "binding_templates": 1058,
-        "logical_edges": 172244,
+        "logical_edges": 367316,
         "stored_bindings": 1058
       },
       "tcgen_history_refinement": {
@@ -452,6 +2774,10 @@
         }
       ]
     },
+    "frontend_value_validation": {
+      "required_orders": 1152,
+      "status": "validated"
+    },
     "hb_queries": {
       "memory": {
         "algorithm": "not-built",
@@ -465,22 +2791,32 @@
       },
       "required_orders": {
         "algorithm": "member-relations",
-        "batches": 29,
-        "edge_visits": 3256945,
+        "batches": 8,
+        "edge_visits": 2724016,
         "member_enumerations": 0,
         "request_construction": {
           "concrete_pair_materializations": 0,
-          "endpoint_reads": 157305,
-          "family_requests": 4318,
-          "logical_orders": 611200,
-          "owner_bindings": 234334,
-          "stored_orders": 19193
+          "endpoint_reads": 159609,
+          "family_requests": 5470,
+          "logical_orders": 612352,
+          "owner_bindings": 235486,
+          "stored_orders": 20345
         }
+      },
+      "shared_constant_interference": {
+        "algorithm": "event-family-relations",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
       }
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 608,
+      "address_candidates": 1207360,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -497,34 +2833,33 @@
       "candidate_generation_fallback": false,
       "exhaustive": false,
       "family_analysis": {
-        "access_families": 71451,
+        "access_families": 74499,
         "affine_member_rows": 0,
-        "candidate_relations": 77,
-        "hb_frontier_pieces": 505,
+        "candidate_relations": 650599,
+        "hb_frontier_pieces": 227417,
         "hb_member_enumerations": 0,
-        "logical_accesses": 960229
+        "logical_accesses": 1155301
       },
-      "first_race_seconds": 0.28728423,
       "hb_algorithm": "member-relations",
-      "hb_batches": 1,
+      "hb_batches": 183,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 111851,
+      "hb_edge_visits": 3982412,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
-      "hb_queries": 608,
-      "hb_query_seconds": 0.014668859,
-      "overlap_queries": 1,
+      "hb_queries": 1207360,
+      "hb_query_seconds": 0.6624319170000001,
+      "overlap_queries": 0,
       "strategy": "conflict-family",
-      "unordered_candidates_examined": 1
+      "unordered_candidates_examined": 0
     },
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 700.3671875,
-    "required_order_domains": 19193,
-    "required_orders": 611200,
-    "search_complete": false,
+    "peak_footprint_mib": 4307.453125,
+    "required_order_domains": 20345,
+    "required_orders": 612352,
+    "search_complete": true,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
@@ -535,34 +2870,22 @@
       "representative_election": true
     },
     "semantic_program": {
-      "binding_diagnostic_count": 1,
-      "binding_diagnostics": [
-        {
-          "code": "incomplete_value_semantics",
-          "message": "tma_data_dependent_coordinate: TMA tile coordinate %r3564 is data-dependent (not a constant of the execution) and its range is not proven to keep the tile inside the tensor (0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its tile region are not modeled"
-        }
-      ],
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
       "execution_cohorts": 21,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
-      "memory_linking_templates_used": false,
-      "synchronization_groups": 2311,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 415862,
+      "memory_binding_templates": 12511,
+      "memory_bindings": 505709,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 5359,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 321,
-      "thread_prefix_groups": 7698,
-      "value_diagnostic_count": 1,
-      "value_diagnostics": [
-        {
-          "code": "tma_data_dependent_coordinate",
-          "line": 9389,
-          "message": "TMA tile coordinate %r3564 is data-dependent (not a constant of the execution) and its range is not proven to keep the tile inside the tensor (0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its tile region are not modeled"
-        }
-      ]
+      "thread_prefix_groups": 80104,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
     "source_violations": [],
-    "stage": "memory_check",
     "synchronization_input": {
       "compute_access_binding": "after_happens_before",
       "kind": "ordering_endpoints",
@@ -573,12 +2896,12 @@
       "coordinate_bindings": 0,
       "logical_thread_steps": 833919,
       "path_entries": 12684,
-      "record_bindings": 6695,
+      "record_bindings": 20577,
       "record_nodes": 12271,
       "splits": 10,
       "template_steps": 12479,
       "thread_memberships": 512,
-      "value_nodes": 5532
+      "value_nodes": 14357
     },
     "thread_record_compression": {
       "completed_ctas": 1,
@@ -592,51 +2915,123 @@
     },
     "unresolved_count": 0,
     "value_analysis": {
-      "diagnostics": [
+      "diagnostics": [],
+      "duplicate_write_value_checks": 0,
+      "equivalence_check": "equivalent",
+      "initial_memory_regions": 1382,
+      "initial_read_families": 1444,
+      "memory_action_storage": {
+        "logical_actions": 505709,
+        "stored_runs": 415862
+      },
+      "output_region_families": 0,
+      "output_regions": 8192,
+      "passes": [
         {
-          "code": "prerequisite_check_not_passed",
-          "details": {
-            "prerequisite_checks": {
-              "equivalence": "not_run",
-              "memory": "failed",
-              "synchronization": "passed"
-            },
-            "prerequisite_diagnostics": [
-              {
-                "code": "conflicting_accesses_unordered",
-                "details": {
-                  "count": 1,
-                  "witnesses_path": "races"
-                },
-                "message": "Conflicting accesses have no proven required ordering",
-                "stage": "memory_check"
-              }
-            ],
-            "prerequisite_result": "potential_race",
-            "prerequisite_status": "potential_race"
-          },
-          "stage": "pipeline"
+          "name": "packing",
+          "rewritten_instances": 182560,
+          "rewritten_nodes": 2480,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 1468753,
+          "name": "type_edges",
+          "removed_nodes": 22337
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 4193,
+          "layouts": 96,
+          "mapping_blocks": 12112,
+          "name": "view_normalization",
+          "original_pieces": 431104,
+          "reused_initial_reads": 1382,
+          "reused_views": 82,
+          "segmented": 100,
+          "slices": 11312,
+          "stored_mapping_blocks": 12030,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
         }
       ],
-      "equivalence_check": "blocked",
-      "prerequisite_status": "potential_race",
+      "processed_memory_actions": 505709,
+      "processed_memory_families": 0,
+      "read_substitutions": 18718,
       "scalar_fold": {
-        "diagnostics": [
-          {
-            "code": "memory_elimination_not_completed",
-            "stage": "pipeline"
-          }
-        ]
-      }
+        "construction_collections": 25,
+        "diagnostics": [],
+        "narrowing_slice_projections": 34583,
+        "output_count": 8192,
+        "output_families_merged": 7808,
+        "output_family_count": 384,
+        "output_root_count": 384,
+        "peak_construction_nodes": 1805810,
+        "shared_view_projection_hits": 6325825,
+        "source_outputs": 8192,
+        "spatial_families_projected": 1,
+        "spatial_outputs_projected": 128,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 278,
+          "edges": 526520,
+          "folds": 136928,
+          "indices": 6,
+          "initial_cells": 1418,
+          "logical_iterations": 1502352,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 5,
+          "nodes": 261225,
+          "nodes_before_final_collection": 827945,
+          "nodes_reclaimed": 11791302,
+          "operations": 122595,
+          "parameters": 0,
+          "range_descriptions": 136928,
+          "storage_nodes": 261225,
+          "unique_fold_bodies": 136432
+        }
+      },
+      "serialization": {
+        "action_patterns": 415862,
+        "binding_patterns": 415862,
+        "domain_refinements": 1617346,
+        "elapsed_seconds": 1.916212585,
+        "event_families": 197228,
+        "expanded_event_records": 0,
+        "largest_batch_members": 128,
+        "logical_actions": 505709,
+        "logical_events": 4655869,
+        "peak_rss_mib_at_completion": 1522.6640625,
+        "reachability_queries": 0,
+        "relations": 1478679,
+        "rss_mib_at_completion": 943.40234375,
+        "scheduled_batches": 197228,
+        "singleton_batches": 150436,
+        "value_families": 61667
+      },
+      "shared_read_families": 42,
+      "shared_read_instances": 1635,
+      "stored_read_substitutions": 17083
     },
-    "value_ir_instance_count": 87742,
-    "value_ir_node_count": 6788,
-    "value_view_complete": false
+    "value_ir_instance_count": 1900106,
+    "value_ir_node_count": 45074,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 8.729438813,
+    "verification_result": "race_free"
   },
-  "peak_rss_mib": 700.3671875,
-  "pipeline_elapsed_seconds": 4.378458669,
-  "result": "potential_race",
-  "rss_limit_mib": null,
+  "peak_rss_mib": 4307.453125,
+  "pipeline_elapsed_seconds": 129.731150764,
+  "result": "verified",
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -645,6 +3040,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.49
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.478
 }

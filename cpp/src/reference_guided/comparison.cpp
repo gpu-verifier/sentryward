@@ -16,8 +16,7 @@
 #include "common_shell.hpp"
 #include "output_guard_split.hpp"
 #include "conditional_select.hpp"
-#include <filesystem>
-#include <iostream>
+#include "family_report.hpp"
 #include <sys/resource.h>
 using namespace rg;
 ComparisonResult rg::compare(Document left, Document right, J mapping, const ComparisonOptions& options,
@@ -31,6 +30,9 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
   std::optional<PreparedContext> prepared;
   Arena a(options.seconds);
   Checker checker(a, true);
+  checker.exponent_closure = [&checker](Id value, Id sid, const std::vector<Id> &parameters) {
+    return LinearReductionPattern::owned_closure(checker, value, sid, parameters);
+  };
   checker.scalar.profiling=options.ep_profile;
   // Reuse EP normal forms across scalar queries. They are exact functions of
   // immutable Arena nodes (partial-domain queries clear the shared memo before
@@ -49,39 +51,14 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
                        "import; no added assumptions"},
          {"context_policy",
           "sidecar contexts not consumed; mapping premises retained"}};
-  // Families with the same record (every field but the family id and stage
-  // timings) form one group with family ranges, a count and summed timings.
-  // A family is merged as soon as its record is complete; per-family rows are
-  // never retained. `row` lives outside the try so an interrupted family is kept.
+  // Keep the active row across exceptions so interrupted work is reported.
   J row;
   bool row_open = false;
-  std::vector<J> groups;
-  std::unordered_map<std::string, size_t> group_index;
+  FamilyReport family_report;
   const auto merge_row = [&] {
     if (!row_open) return;
     row_open = false;
-    const auto family = row.at("family").get<size_t>();
-    row.erase("family");
-    J timing = J::object();
-    for (auto it = row.begin(); it != row.end();) {
-      if (it.key().ends_with("_s")) { timing[it.key()] = *it; it = row.erase(it); }
-      else ++it;
-    }
-    auto [found, inserted] = group_index.try_emplace(row.dump(), groups.size());
-    if (inserted)
-      groups.push_back({{"count", 0}, {"families", J::array()}, {"record", std::move(row)}, {"timing_s", J::object()}});
-    auto &group = groups[found->second];
-    group["count"] = group["count"].get<size_t>() + 1;
-    auto &ranges = group["families"];
-    if (!ranges.empty() && ranges.back()[1].get<size_t>() + 1 == family) ranges.back()[1] = family;
-    else ranges.push_back({family, family});
-    auto &sums = group["timing_s"];
-    for (const auto &[key, value] : timing.items()) {
-      const double seconds = value.get<double>();
-      // cumulative_elapsed_s is a timestamp: keep the group's latest one.
-      if (key == "cumulative_elapsed_s") sums[key] = std::max(sums.value(key, 0.0), seconds);
-      else sums[key] = sums.value(key, 0.0) + seconds;
-    }
+    family_report.add(std::move(row));
   };
   std::string phase = "load";
   size_t passed = 0, finished = 0;
@@ -107,8 +84,8 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
     if (!contract.rules.empty()) r["input_contract"]=contract.declaration;
     for(const auto &[key,rule]:contract.rules) {
       if(rule.range) context.assumptions.emplace_back(std::in_place_type<InputElementAssumption>,InputElementAssumption{
-          rule.object,rule.element_type,Interval{rule.range->first,rule.range->second,true,true},rule.source});
-      else context.assumptions.emplace_back(std::in_place_type<InputElementAssumption>,InputElementAssumption{rule.object,rule.element_type,Finite{},rule.source});
+          rule.object,rule.element_type,Interval{rule.range->first,rule.range->second,true,true},rule.source,rule.region});
+      else context.assumptions.emplace_back(std::in_place_type<InputElementAssumption>,InputElementAssumption{rule.object,rule.element_type,Finite{},rule.source,rule.region});
     }
     appendCallerPredicates(a,mapping,context);
     if (build_context) {
@@ -125,6 +102,9 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
     Importer l(a, std::move(left), mapping, "left", *prepared),
         o(a, std::move(right), mapping, "right", *prepared);
     l.range_premise = o.range_premise = options.floating_range_premise;
+    // Each side's typed-word predicates use the interpretation the other side reads an input with.
+    l.paired_integer_reads = Importer::integer_reads(o.document, mapping.at("right_inputs"));
+    o.paired_integer_reads = Importer::integer_reads(l.document, mapping.at("left_inputs"));
     o.hardware_values = options.kernel_hardware_values;
     FiniteStateReuse piece_equalities(checker, mapping);
     UnaryReductionComposition unary_reductions(checker);
@@ -145,6 +125,7 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
     const auto &outputs = mapping["outputs"]["tensors"];
     r["total_output_families"] = outputs.size();
     size_t count = options.family_limit ? std::min(options.family_limit, outputs.size()) : outputs.size();
+    size_t point_case_declines = 0;  // families whose output point cases declined (see below)
     for (size_t j = 0; j < count; ++j) {
       if (elapsed() > options.seconds)
         throw Timeout();
@@ -162,6 +143,8 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
       }
       row = J{{"family", j}};
       row_open = true;
+      // Case analyses of this family that accepted a case by two identical non-finite values.
+      const auto nonfinite_identities_before = a.stats["linear_reduction_case_nonfinite_identities"];
       auto stage = [&](const char *name, auto fn) {
         phase = name;
         double start = elapsed();
@@ -255,7 +238,6 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
         row["piece_union_decline"] = linear.last_failure;
         return false;
       };
-      row["scalar_engine"] = "mandatory_exponential_polynomial";
       bool equal = template_equal || checker.scalar.equal(ln, rn);
       if (!equal && state_abstracted) {
         phase = "piece_union_reuse";
@@ -483,6 +465,81 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
         }
         row["conditional_select_s"] = elapsed() - start;
       }
+      if (!equal && !template_equal) {
+        // Cases on one output coordinate with a small domain. A family whose only free output
+        // coordinate takes at most max_output_points values is equal when its instance at every
+        // value is: both sides are imported again with the coordinate fixed (their coordinate
+        // arithmetic and selections fold as for a single output), normalized, and compared by the
+        // exact normal form or a complete linear reduction proof. Every instance is proved right
+        // after its reference normalization, which sets the reduction vocabulary those proofs
+        // consult. The first instance that is not proved ends the attempt; the last value is tried
+        // first (a boundary of the domain). At most max_output_points instances per family. After
+        // max_point_case_declines families declined here the route is not tried again in this
+        // comparison: a bound on its work (instances cost time and nodes), not a statement about
+        // the verdict. A family that declines here can still be proved by the partial-function
+        // route below.
+        constexpr size_t max_output_points = 64, max_point_case_declines = 8;
+        phase = "output_point_cases";
+        double start = elapsed();
+        std::optional<size_t> axis; Z extent = 0;
+        for (size_t i = 0; i < lf["shape"].size(); ++i) {
+          const Q n = jq(lf["shape"][i]);
+          if (n == 1) continue;
+          if (axis || n.denominator() != 1 || n < 2 || n > Q(max_output_points)) { axis.reset(); extent = 0; break; }
+          axis = i; extent = n.numerator();
+        }
+        if (axis && extent >= 2 && point_case_declines < max_point_case_declines) {
+          try {
+            size_t proved = 0; bool all = true;
+            J methods = J::object();
+            for (Z step = 0; step < extent && all; ++step) {
+              if (elapsed() > options.seconds) throw Timeout();
+              const Z value = step == 0 ? Z(extent - 1) : Z(step - 1);
+              const Importer::OutputPoint point{std::pair(*axis, value)};
+              const Id expected = checker.normalize(l.family(lf, "", point), true);
+              const Id optimized = checker.normalize(o.family(rf, l.family_type(lf), point));
+              ++a.stats["output_point_instances"];
+              if (checker.scalar.equal(expected, optimized)) { ++proved; methods["exact_normal_form"] = methods.value("exact_normal_form", 0) + 1; continue; }
+              LinearReductionPattern linear(checker);
+              if (auto reduction = linear.prove(expected, optimized)) {
+                ++proved;
+                const std::string method = reduction->receipt.value("method", "linear_reduction");
+                methods[method] = methods.value(method, 0) + 1;
+                continue;
+              }
+              all = false;
+              row["output_point_cases_decline"] = {{"value", value.str()}, {"reason", linear.last_failure}, {"proved_before", proved}};
+            }
+            if (all) {
+              equal = true;
+              ++a.stats["output_point_case_proofs"];
+              row["output_point_cases_proof"] = {{"method", "cases_on_one_output_coordinate_by_value"},
+                  {"axis", *axis}, {"values", extent.str()},
+                  {"coverage", "every value of the coordinate's domain, each instance imported with the coordinate fixed"},
+                  {"instances", std::move(methods)}};
+            }
+          } catch (const Unsupported &) {
+            row["output_point_cases_decline"] = "unsupported_point_instance";
+          }
+          // Later stages and families consult the family's own reference vocabulary again. Restoring
+          // it is part of this optional route: a refusal there (the matcher's work budget, for
+          // example) must not turn the comparison into a translation blocker, so it is only counted;
+          // the next family normalizes its own reference in any case.
+          if (!equal) {
+            try { checker.normalize(lr, true); }
+            catch (const Unsupported &) { ++a.stats["output_point_case_restore_declines"]; }
+            ++point_case_declines; ++a.stats["output_point_case_declines"];
+          }
+        }
+        else if (axis && extent >= 2) {
+          // Eligible, but the route had stopped: recorded so that a family it never tried is not
+          // read as one it tried and could not prove.
+          row["output_point_cases_not_attempted"] = {{"reason", "route_stopped_after_declined_families"},
+              {"declined_families", point_case_declines}};
+          ++a.stats["output_point_case_not_attempted"];
+        }
+        row["output_point_cases_s"] = elapsed() - start;
+      }
       bool partial_equal = false;
       if (!equal) {
         // Retain pre-normalization domains: cancellation must not erase holes.
@@ -508,7 +565,15 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
       }
       row["total_definedness"] = a.nodes[lr].facts.finite && a.nodes[rr].facts.finite
           ? "proved" : "not_proven";
-      row["equivalence_contract"] = partial_equal ? "same_domain_and_equal_values" : "existing_total_value_proof";
+      // A family whose proofs included a case analysis that accepted a case by two identical
+      // values not proved finite (the same -inf, or the same undefinedness) is not labelled a total
+      // value proof: its two sides are equal as partial functions in every case. Counted over the
+      // family's whole comparison, so an analysis in a route that did not end the proof marks it too.
+      const bool nonfinite_identity = equal && !partial_equal &&
+          a.stats["linear_reduction_case_nonfinite_identities"] != nonfinite_identities_before;
+      row["equivalence_contract"] = partial_equal ? "same_domain_and_equal_values"
+          : nonfinite_identity ? "same_value_in_every_case_with_identical_nonfinite_values"
+          : "existing_total_value_proof";
       if (equal && !partial_equal) {
         if (state_abstracted)
           row["piece_union_proof"] = "complete proved pieces; exact finite-domain coverage; shared defined state; complete outer equality";
@@ -521,12 +586,8 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
       }
       row["cumulative_elapsed_s"]=elapsed();
       row["status"] = equal ? "equivalent" : "not_proven";
-      if (!equal) {
-        // Diagnostic text only: each shared subexpression once, at most 4096
-        // bytes per side (Arena::render_shared).
-        row["left"] = a.render_shared(ln, 5, 4096);
-        row["right"] = a.render_shared(rn, 5, 4096);
-      }
+      if (!equal)
+        family_report.addFailureExpressions(row, a, ln, rn);
       ++finished;
       if (equal)
         ++passed;
@@ -560,12 +621,6 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
     r["blocked_stage"] = phase;
   }
   r["idealizations_applied"] = J::array();
-  if (a.stats["ideal_compiler_exp_sequences"])
-    r["idealizations_applied"].push_back("recognized fma.rm exponent encoding with split log2(e) is ideal Exp");
-  if (a.stats["ideal_single_constant_exp_sequences"])
-    r["idealizations_applied"].push_back("compiler Exp2 with binary32 log2(e) multiplier is ideal Exp");
-  if (a.stats["ideal_additive_compiler_exp_sequences"])
-    r["idealizations_applied"].push_back("typed additive compiler Exp2 idealizes only binary32 log2(e)-scaled terms as Exp; unscaled residual terms retain base two");
   if (a.stats["ideal_compiler_lse_sequences"])
     r["idealizations_applied"].push_back("complete binary32 PTX lg2 LSE tail is ln(mass)+ln(2)*base2_pivot; mass and pivot coefficients are retained");
   if (a.stats["ideal_compiler_log2_polynomials"])
@@ -577,8 +632,10 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
   };
   if (counted("ideal_compiler_log1p_polynomials"))
     r["idealizations_applied"].push_back("complete typed RN-FMA binary32 log1pf polynomial with exponent-field reduction and exceptional guards is ideal Log(1+u) on proved finite nonnegative input");
-  if (counted("ideal_compiler_log_sequences"))
-    r["idealizations_applied"].push_back("binary32 PTX lg2.approx times the binary32 ln(2) literal is ideal Log on proved finite positive input");
+  if (counted("ideal_rounded_constants"))
+    r["idealizations_applied"].push_back("a binary32/binary64 literal equal to the rounded ln(2) or log2(e) of its operation's format is that exact constant in floating Add/Subtract/Multiply/Fma/Divide/Reciprocal");
+  if (counted("ideal_split_constant_pairs"))
+    r["idealizations_applied"].push_back("a high/low split constant Fma(x, RN(c - RN(c)), Fma(x, RN(c), z)) for c = ln(2) or log2(e) is x*c + z");
   r["input_contract_applied_reads"] = J::array();
   for(const auto &[side,object,type]:(prepared ? prepared->contract.applied : contract.applied))
     r["input_contract_applied_reads"].push_back(J{{"side",side},{"object",object},{"element_type",type}});
@@ -593,14 +650,18 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
   if (prepared && !context.fixed_inputs.empty())
     r["fixed_input_context"] = fixed_input_context_report(*prepared);
   merge_row();
-  size_t defined_families = 0, partial_families = 0;
-  for (const auto &group : groups) {
+  size_t defined_families = 0, partial_families = 0, nonfinite_identity_families = 0;
+  for (const auto &group : family_report.groups()) {
     const auto members = group["count"].get<size_t>();
     if (group["record"].value("total_definedness", "not_proven") == "proved") defined_families += members;
     if (group["record"].contains("partial_function_proof")) partial_families += members;
+    if (group["record"].value("equivalence_contract", "") == "same_value_in_every_case_with_identical_nonfinite_values")
+      nonfinite_identity_families += members;
   }
   r["definedness"] = {{"status", finished && finished == r.value("total_output_families", size_t(0)) && defined_families == finished ? "proved" : "not_proven"},
       {"proved_families", defined_families}, {"partial_equivalence_families", partial_families}};
+  // Reported only when present, so that other reports keep their form.
+  if (nonfinite_identity_families) r["definedness"]["nonfinite_identity_families"] = nonfinite_identity_families;
   r["equivalence_contract"] = "same_domain_and_equal_values; total definedness reported separately";
   r["equivalent_families"] = passed;
   r["finished_families"] = finished;
@@ -617,7 +678,6 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
   r["reference_term_patterns"] = checker.specs.size();
   r["piece_nodes"] = checker.pieces.size();
   r["scalar_engine"] = "mandatory_exponential_polynomial";
-  r["legacy_scalar_fallback"] = false;
   r["ep_profile"] = checker.scalar.profile();
   r["counters"] = a.stats;
   r["unmatched_reasons"] = checker.failures;
@@ -626,11 +686,12 @@ ComparisonResult rg::compare(Document left, Document right, J mapping, const Com
                             "right_import_s", "right_normalize_s", "state_pattern_s", "proof_reuse_s",
                             "piece_union_record_s", "piece_union_reuse_s", "piece_union_seal_s", "parametric_state_s", "affine_state_pattern_s", "exponential_polynomial_s"}) {
     double sum = 0;
-    for (const auto &group : groups)
+    for (const auto &group : family_report.groups())
       sum += group["timing_s"].value(stage, 0.0);
     r["stages_s"][stage] = sum;
   }
-  r["row_groups"] = std::move(groups);
+  r["failure_expression_samples"] = family_report.expressionSamples();
+  r["row_groups"] = family_report.takeGroups();
   std::unordered_set<Id> reachable;
   while (!roots.empty()) {
     Id n = roots.back();

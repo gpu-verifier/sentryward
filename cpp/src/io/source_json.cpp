@@ -20,6 +20,9 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <type_traits>
+#if defined(__GLIBC__)
+#include <malloc.h>
+#endif
 
 #include <nlohmann/json.hpp>
 
@@ -603,9 +606,9 @@ SourceArtifact Decode(ParsedArtifact parsed) {
   }
   if (memory.contains("solver")) {
     const auto& solver = memory.at("solver");
-    Fields(solver, {"timeout_ms"});
-    parsed.records.address_solver.timeout_ms = UInt<unsigned>(solver.at("timeout_ms"));
-    if (parsed.records.address_solver.timeout_ms == 0) Fail("solver timeout_ms must be positive");
+    Fields(solver, {"rlimit"});
+    parsed.records.address_solver.rlimit = UInt<unsigned>(solver.at("rlimit"));
+    if (parsed.records.address_solver.rlimit == 0) Fail("solver rlimit must be positive");
   }
   (void)Array(root.at("required_orders"));
   if (root.contains("verification_limitations")) (void)Array(root.at("verification_limitations"));
@@ -652,6 +655,17 @@ SourceArtifact ReadSourceArtifact(std::istream& input) {
 }
 
 namespace {
+// Returns the allocator's free pages to the system (glibc). The stages after WellSync allocate
+// their large arrays with mmap, which never reuses free heap pages, so the pages of a released
+// structure would stay resident and count against the memory budget. O(free heap chunks).
+void ReturnFreedPages(const char* stage) {
+#if defined(__GLIBC__)
+  ProfileCall(stage, [] { malloc_trim(0); });
+#else
+  (void)stage;
+#endif
+}
+
 Json LocationJson(const SourceLocation& location) {
   return {{"file", location.file}, {"line", location.line}, {"column", location.column}};
 }
@@ -714,10 +728,12 @@ Json PhaseJson(PhaseKey phase) {
   return {{"barrier", phase.barrier.value()}, {"generation", phase.phase}};
 }
 
-// Bound witness lists and resolve only the event IDs included in the report.
+// Bound witness lists and resolve only the event IDs included in the report. `source`: the program
+// the synchronization check read, whose instructions give the source events' locations.
 class RejectionReport final {
  public:
-  void Write(Json& report, const RejectionWitness& witness, const RejectionContext* context) {
+  void Write(Json& report, const RejectionWitness& witness, const RejectionContext* context,
+             const SourceProgram& source) {
     static constexpr const char* names[] = {"reference_deadlock", "semantic_violation",
         "initialization_order", "previous_phase_separation", "phase_boundary",
         "wait_condition", "barrier_lifecycle", "hb_graph_mutation", "hb_cycle", "exit_gate"};
@@ -738,20 +754,49 @@ class RejectionReport final {
     report["source_event_scope"] = "reported_witness_events";
     report["witness_event_list_limit"] = kEventLimit;
     report["witness_event_lists_truncated"] = truncated_;
-    report["provenance_events_total"] = context ? context->provenance.events.size() : 0;
+    report["provenance_events_total"] = context ? context->provenance.total : 0;
     report["source_events"] = Json::array();
     report["synthetic_events"] = Json::array();
     report["unmapped_witness_events"] = Json::array();
+    // The named source events' locations: each instruction's location in the program (instruction
+    // ids are unique in a checked program). An id at its own index, the usual case, is one record
+    // read; for any other, one pass over the program's instruction ids (ids only) finds its first
+    // record. O(named events x log segments), plus O(instructions) id reads only for ids that are
+    // not their indexes. (Before: one pass over the instruction records.)
+    std::map<InstId, SourceLocation> locations;
+    if (context)
+      for (const auto event : events_)
+        if (const auto instruction = context->provenance.source(event)) locations.emplace(*instruction, SourceLocation{});
+    if (!locations.empty()) {
+      const auto count = source.instructions.size();
+      std::map<InstId, std::size_t> missing;
+      for (auto& [id, location] : locations) {
+        if (id.value() < count && source.instructions.id(id.value()) == id) location = source.instructions.at(id.value()).location;
+        else missing.emplace(id, count);
+      }
+      if (!missing.empty()) {
+        std::size_t found = 0;
+        for (std::size_t i = 0; i < count && found < missing.size(); ++i) {
+          const auto at = missing.find(source.instructions.id(i));
+          if (at == missing.end() || at->second != count) continue;
+          at->second = i;
+          ++found;
+        }
+        if (found != missing.size())
+          throw std::logic_error("rejection report: a source event's instruction is not in the checked program");
+        for (const auto& [id, index] : missing) locations.at(id) = source.instructions.at(index).location;
+      }
+    }
     for (const auto event : events_) {
-      const auto* provenance = context ? context->provenance.find(event) : nullptr;
-      if (!provenance) {
+      if (!context || !context->provenance.contains(event)) {
         report["unmapped_witness_events"].push_back(event.value());
-      } else if (const auto* origin = std::get_if<SourceEventProvenance>(provenance)) {
+      } else if (const auto instruction = context->provenance.source(event)) {
+        const auto& location = locations.at(*instruction);
         report["source_events"].push_back({{"event", event.value()},
-            {"instruction", origin->instruction.value()}, {"file", origin->location.file},
-            {"line", origin->location.line}, {"column", origin->location.column}});
+            {"instruction", instruction->value()}, {"file", location.file},
+            {"line", location.line}, {"column", location.column}});
       } else {
-        const auto& synthetic = std::get<SyntheticEventProvenance>(*provenance);
+        const auto synthetic = context->provenance.syntheticOf(event);
         static constexpr const char* kinds[] = {"collective_completion", "mbarrier_phase_completion", "internal_derived"};
         Json item{{"event", event.value()}, {"kind", CodeName(synthetic.kind, kinds)}};
         if (synthetic.sync_id) item["sync_id"] = synthetic.sync_id->value();
@@ -762,7 +807,7 @@ class RejectionReport final {
   }
 
  private:
-  static constexpr std::size_t kEventLimit = 32;
+  static constexpr std::size_t kEventLimit = kWitnessEventListLimit; // as ForEachReportedEvent
   std::set<EventId> events_;
   bool truncated_ = false;
 
@@ -936,6 +981,12 @@ struct LifecycleAnswer {
   }
 };
 
+// Required orders into a CTA's exit join (frontend CtaExitJoin), which no event follows: a source
+// is ordered with the join exactly when it happens before it. One traversal from each join, in both
+// directions (only the reverse one can prove anything), decides every source of every such order at
+// once, instead of one forward traversal per source family. A failed order records its join.
+constexpr std::string_view kOwnerExitOrder="distributed_shared_access_before_owner_exit";
+
 // No concrete source/target pair list. Source endpoints and shared target
 // domains are resolved once; only family partitions form query products.
 std::vector<LifecycleAnswer> CheckRequiredOrders(
@@ -1006,8 +1057,25 @@ std::vector<LifecycleAnswer> CheckRequiredOrders(
     }
     flush();pending.clear();
   };
+  // Exit-join orders (kOwnerExitOrder): per join, its source members by family and order. The
+  // sources of an order with effects are those effects (the conjunction); the whole operation
+  // preceding the join implies each of them, so it needs no separate query.
+  struct ExitSource {std::size_t order;MemberSet members;};
+  struct ExitJoin {std::size_t family=0,member=0;std::map<std::size_t,std::vector<ExitSource>> sources;};
+  std::map<std::uint64_t,ExitJoin> exit_joins;
   for(std::size_t i=0;i<input.required_orders.size();++i) {
     const auto& order=input.required_orders[i];
+    if(order.kind.view()==kOwnerExitOrder) {
+      const auto join=Resolve(lowered,order.to);++endpoint_reads;++logical_orders;
+      auto [it,fresh]=exit_joins.try_emplace(join.value());
+      if(fresh)std::tie(it->second.family,it->second.member)=layout.locate(join);
+      LifecycleDomain sources;
+      if(order.from_effects)for(auto effect:*order.from_effects) {
+        add(sources,Resolve(lowered,{order.from.instruction,Milestone::kEffect,effect}));++endpoint_reads;
+      } else {add(sources,Resolve(lowered,order.from));++endpoint_reads;}
+      for(auto& [family,members]:sources)it->second.sources[family].push_back({i,std::move(members)});
+      continue;
+    }
     LifecycleDomain singleton;
     const LifecycleDomain* targets=&singleton;
     if(order.target_domain) {
@@ -1025,7 +1093,7 @@ std::vector<LifecycleAnswer> CheckRequiredOrders(
   run();
   for(std::size_t i=0;i<input.required_orders.size();++i) {
     const auto& order=input.required_orders[i];
-    if(answers[i].failed.empty() || !order.from_effects)continue;
+    if(answers[i].failed.empty() || !order.from_effects || order.kind.view()==kOwnerExitOrder)continue;
     auto [it,fresh]=effect_cache.try_emplace(
         std::make_pair(order.from.instruction,order.from_effects.storage_identity()));
     if(fresh)for(auto effect:*order.from_effects) {
@@ -1036,6 +1104,45 @@ std::vector<LifecycleAnswer> CheckRequiredOrders(
     enqueue(i,it->second,targets);
   }
   run();
+  {
+    std::vector<FamilyRelationBatch> batch;
+    std::vector<const ExitJoin*> joins;
+    const auto flush=[&] {
+      if(batch.empty())return;
+      reachability.checkOrderBatch(batch,false,true);
+      for(std::size_t b=0;b<batch.size();++b) {
+        const auto& join=*joins[b];
+        const auto extent=layout.families()[join.family].count;
+        MemberSet left(extent);left.set(join.member);
+        std::size_t q=0;
+        for(const auto& [family,list]:join.sources) {
+          (void)family;
+          const auto failed=batch[b].requests[q++].uncoveredTargets(&left);
+          if(failed.empty())continue;
+          for(const auto& source:list)if(failed.intersects(source.members)) {
+            auto [it,fresh]=answers[source.order].failed.try_emplace(join.family,extent);
+            it->second.set(join.member);
+          }
+        }
+      }
+      batch.clear();joins.clear();
+    };
+    for(const auto& [event,join]:exit_joins) {
+      (void)event;
+      if(batch.size()==kMaxRelationBatchSources)flush();
+      const auto extent=layout.families()[join.family].count;
+      MemberSet left(extent);left.set(join.member);
+      FamilyRelationBatch query{join.family,{}};
+      for(const auto& [family,list]:join.sources) {
+        MemberSet right(layout.families()[family].count);
+        for(const auto& source:list)right.unite(source.members);
+        query.requests.push_back({family,{MemberRelation::Rectangle(left,right)}});
+        ++requests;owner_bindings+=list.size();
+      }
+      batch.push_back(std::move(query));joins.push_back(&join);
+    }
+    flush();
+  }
   assembly.nodes=requests;assembly.edges=owner_bindings;
   if(statistics)*statistics={{"stored_orders",input.required_orders.size()},
       {"logical_orders",logical_orders},{"family_requests",requests},
@@ -1323,7 +1430,8 @@ class RepeatedEntries {
     std::uint32_t source = unit, lowest = unit;
     if (quotient_) {
       source = quotient_->units.at(unit).klass;
-      lowest = quotient_->classes.at(source).units.front();
+      const auto &members = quotient_->classes.at(source).units;
+      lowest = *std::min_element(members.begin(), members.end());
     }
     auto key = Key(item, cta, fields, message_ids);
     if (!key) {
@@ -1464,7 +1572,7 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
     const auto address_invariants = Json::parse(input.address_invariants_json);
     report["address_model"] = {{"kind", "symbolic"}, {"layers", {0, 2}},
         {"solver", SymbolicAddressModel::SolverName()},
-        {"solver_timeout_ms", input.address_solver.timeout_ms},
+        {"solver_rlimit", input.address_solver.rlimit},
         {"address_invariants", address_invariants}};
     report["assumption_dependent"] = !address_invariants.empty() ||
         report["frontend_assumptions"].contains("tensor_properties") ||
@@ -1599,7 +1707,7 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
         bind_accesses(events);
         model = std::make_unique<SymbolicAddressModel>(
             input.addresses, input.address_invariants_json, input.address_solver, 4096,
-            input.tensor_properties_json);
+            input.tensor_properties_json, input.table_atoms_json);
         ReportAddressMemory(model->constantModel(), "memory.address_model");
         if (const auto error = model->validate()) Fail(error->message);
       }
@@ -1666,6 +1774,11 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
     auto synchronization = WellSyncChecker{}.RunPrepared(input.program, *prepared, checker_options);
     auto lifecycle_origins=std::move(*prepared).takeOrigins();
     prepared.reset();
+    // Nothing after WellSync reads a passed certificate's reference trace: its HB graph keeps the
+    // trace order, and the required orders, the memory check and the value stage's serialization
+    // read only the graph. Release it with the lowered program.
+    if (auto* certificate = synchronization.certificate()) certificate->reference = ReferenceTrace{};
+    ReturnFreedPages("sync.return_freed_pages");
     if (synchronization.passed() && !input.source_violations.empty()) {
       report["status"] = "source_lifecycle_violation";
       report["stage"] = "lifecycle_check";
@@ -1735,8 +1848,17 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
         const auto event=EventId(f.first.value()+f.stride*members.first());
         const auto target=lifecycle_origins.origin(event);
         if(!target)throw std::logic_error("required-order witness lacks source origin");
+        // Each endpoint's source location (debug line when present, else PTX line) and PTX site.
+        const auto site=[&](InstId id) {
+          const auto instruction=input.program.instructions[id.value()];
+          Json out={{"location",LocationJson(instruction.location)}};
+          if(instruction.ptx_origin)out["ptx"]={{"instruction_index",instruction.ptx_origin->instruction_index},
+              {"occurrence",instruction.ptx_origin->occurrence},{"opcode",instruction.ptx_origin->opcode.str()}};
+          return out;
+        };
         Json witness={{"kind",order.kind.str()},{"message",order.message.str()},
           {"from_instruction",order.from.instruction.value()},{"to_instruction",target->value()},
+          {"from_site",site(order.from.instruction)},{"to_site",site(*target)},
           {"failed_target_count",ordered[index].count()}};
         if(order.from_effects) {
           auto effects=Json::array();
@@ -1844,6 +1966,7 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
       auto families = ProfileCall("memory.bind_compute_families", [&] {
         return BindMemoryAccessFamilies(result.synchronization.certificate()->happensBeforeGraph.events(), *compute_accesses);
       });
+      ReturnFreedPages("memory.return_freed_pages");
       auto memory = ProfileCall("memory.check", [&] { return MemoryRaceChecker{}.RunWithAccesses(
           input.program, *result.synchronization.certificate(), *compute_accesses, families,
           memory_model, memory_options, &*static_hb); });
@@ -1874,7 +1997,7 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
     }
     if (result.memory_error) report["message"] = result.memory_error->message;
     if (const auto* rejection = result.synchronization.rejection()) {
-      RejectionReport{}.Write(report, *rejection, result.synchronization.rejectionContext());
+      RejectionReport{}.Write(report, *rejection, result.synchronization.rejectionContext(), input.program);
     }
     const auto finding_json = [](const RaceFinding& race) {
       Json finding{{"first", Source(race.first)}, {"second", Source(race.second)},
@@ -2068,6 +2191,10 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
     };
     if (on_verified && result.status() == VerificationStatus::kRaceFree &&
         result.memory && result.memory->search_complete) {
+      // The value stage reads the certificate, the accesses and the address model, never the static
+      // HB queries (their relation index and caches): release them, and the freed pages, first.
+      static_hb.reset();
+      ReturnFreedPages("value.return_freed_pages");
       auto rendered = RenderReport(report);
       report_rendered = true;
       const auto failure = on_verified(input, *result.synchronization.certificate(), *result.memory,

@@ -4,31 +4,39 @@
 #include <map>
 #include <numeric>
 #include <set>
+#include <string_view>
 #include <stdexcept>
 #include <tuple>
 #include <unordered_map>
 
 namespace sentryward::algorithm {
-FamilyConflictOrder::FamilyConflictOrder(const std::vector<MemoryAccessFamily>& families,
+FamilyConflictOrder::FamilyConflictOrder(const FamilyTable& families,
     const std::vector<FamilyFootprint>& footprints,const TraceOrder* order,
     std::span<const std::uint8_t> blocked_families)
     :buckets_(families.size(),SIZE_MAX),peers_(families.size()),shares_event_(families.size()) {
   if(!order)return;
   using I=address_solver::Int;
-  using Storage=std::pair<std::string,std::string>;
+  // Names are views of `footprints`, which outlive the construction.
+  using Name=std::pair<std::string_view,std::string_view>;
   using Pattern=std::tuple<I,I,std::size_t,std::uint64_t>;
-  struct Bucket { I lo,hi;bool valid=true;std::vector<std::size_t> families; };
-  std::map<Storage,std::vector<std::size_t>> spaces;
-  std::map<Storage,bool> blocked;
-  std::set<std::string> blocked_spaces;
+  struct Bucket { I lo,hi;bool valid=true;std::size_t begin,end; };
   // Different allocations interact only through a shared alias scope. A scope
   // naming one allocation aliases nothing, so its storage is reduced as usual.
-  std::map<Storage,std::set<std::string>> alias_allocations;
+  std::map<Name,std::set<std::string_view>> alias_allocations;
   for(const auto& p:footprints)
     if(!p.empty && !p.alias.empty())alias_allocations[{p.space,p.alias}].insert(p.allocation);
+  // Each storage (space, allocation) by a compact id, and the storage of each placed family:
+  // one name lookup per family (O(F log S) for F families on S storages), no per-family lists.
+  constexpr auto kUnplaced=UINT32_MAX;
+  std::map<Name,std::uint32_t> storage_ids;
+  std::vector<std::uint32_t> storage_of(families.size(),kUnplaced);
+  std::vector<std::uint8_t> blocked;
+  std::set<std::string_view> blocked_spaces;
   for(std::size_t i=0;i<families.size();++i) {
     const auto& p=footprints[i];if(p.empty)continue;
-    const Storage key{p.space,p.allocation};spaces[key].push_back(i);
+    const auto [entry,added]=storage_ids.try_emplace(Name{p.space,p.allocation},std::uint32_t(blocked.size()));
+    if(added)blocked.push_back(0);
+    const auto storage=storage_of[i]=entry->second;
     const bool aliased=!p.alias.empty() && alias_allocations.at({p.space,p.alias}).size()>1;
     // A tolerated write/write gap (a blocked family) cannot certify adjacent conflict orders.
     // Disable reduction only for its storage; other allocations stay reduced.
@@ -38,31 +46,57 @@ FamilyConflictOrder::FamilyConflictOrder(const std::vector<MemoryAccessFamily>& 
     if((!blocked_families.empty() && blocked_families[i]) ||
         !p.affine || aliased || !p.symbolic.empty() ||
         (families[i].count>1 && (p.step<0?-p.step:p.step)<I(p.bytes) &&
-         !(families[i].first.mode==AccessMode::kRead && p.step==0)))blocked[key]=true;
+         !(families[i].first.mode==AccessMode::kRead && p.step==0)))blocked[storage]=1;
     // An unbounded footprint may overlap any allocation of its space.
     if(p.allocation.empty() || p.space.empty())blocked_spaces.insert(p.space);
   }
   if(blocked_spaces.contains(""))return;
+  // The families of each storage in family order, storages in name order: one counting sort into
+  // `items` (storage s holds items[start[s], start[s + 1])). O(F + S).
+  std::vector<std::uint32_t> position(storage_ids.size());
+  std::vector<Name> names;names.reserve(storage_ids.size());
+  for(const auto& [name,id]:storage_ids) {position[id]=std::uint32_t(names.size());names.push_back(name);}
+  std::vector<std::size_t> start(names.size()+1,0),items;
+  for(const auto storage:storage_of)if(storage!=kUnplaced)++start[position[storage]+1];
+  for(std::size_t s=0;s<names.size();++s)start[s+1]+=start[s];
+  items.resize(start.back());
+  {
+    auto next=start;
+    for(std::size_t i=0;i<families.size();++i)
+      if(storage_of[i]!=kUnplaced)items[next[position[storage_of[i]]]++]=i;
+  }
+  std::vector<std::uint32_t>().swap(storage_of);
   std::size_t next_bucket=0;
-  for(const auto& [storage,items]:spaces) {
-    if(blocked[storage] || blocked_spaces.contains(storage.first))continue;
-    if(std::all_of(items.begin(),items.end(),[&](auto i){return families[i].count==1;})) {
-      reduceMembers(items,families,footprints,*order,next_bucket++);
+  std::vector<Bucket> buckets;
+  std::vector<std::pair<std::size_t,std::size_t>> ranks;
+  for(std::size_t s=0;s<names.size();++s) {
+    if(blocked[storage_ids.at(names[s])] || blocked_spaces.contains(names[s].first))continue;
+    const std::span<std::size_t> storage(items.data()+start[s],start[s+1]-start[s]);
+    if(std::all_of(storage.begin(),storage.end(),[&](auto i){return families[i].count==1;})) {
+      reduceMembers(storage,families,footprints,*order,next_bucket++);
       continue;
     }
-    std::map<Pattern,std::vector<std::size_t>> patterns;
-    for(auto i:items) {
+    // The families of each pattern (first member's address, stride, count, width), patterns in
+    // order and families in family order: one sort of (pattern, family) keys, O(n log n) for the
+    // storage's n families, then each bucket is a range of `storage`; no list per pattern.
+    std::vector<std::pair<Pattern,std::size_t>> keyed;keyed.reserve(storage.size());
+    for(const auto i:storage) {
       const auto& f=families[i];const auto& p=footprints[i];
-      patterns[{p.offset+p.step*I(f.first_member),f.count==1?I(0):p.step,f.count,p.bytes}].push_back(i);
+      keyed.push_back({{p.offset+p.step*I(f.first_member),f.count==1?I(0):p.step,f.count,p.bytes},i});
     }
-    std::vector<Bucket> buckets;
-    for(auto& [pattern,members]:patterns) {
+    std::sort(keyed.begin(),keyed.end());
+    buckets.clear();
+    for(std::size_t begin=0,end=0;begin<keyed.size();begin=end) {
+      const auto& key=keyed[begin].first;
+      for(end=begin+1;end<keyed.size() && keyed[end].first==key;)++end;
       // A pattern names its first member's address; a descending progression
       // starts at its highest member. Its envelope spans both ends.
-      const auto [start,step,count,bytes]=pattern;
-      const auto last=start+step*I(count-1);
-      buckets.push_back({std::min(start,last),std::max(start,last)+I(bytes),true,std::move(members)});
+      const auto [first,step,count,bytes]=key;
+      const auto last=first+step*I(count-1);
+      buckets.push_back({std::min(first,last),std::max(first,last)+I(bytes),true,begin,end});
     }
+    for(std::size_t k=0;k<keyed.size();++k)storage[k]=keyed[k].second;
+    std::vector<std::pair<Pattern,std::size_t>>().swap(keyed);
     std::sort(buckets.begin(),buckets.end(),[](const auto& a,const auto& b){return a.lo<b.lo;});
     // Envelope order is address order. Mark every envelope involved in overlap.
     I maximum=-(I(1)<<125);std::size_t owner=0;
@@ -75,13 +109,13 @@ FamilyConflictOrder::FamilyConflictOrder(const std::vector<MemoryAccessFamily>& 
     // certified one. Order those families exactly by one member-interval sweep.
     std::vector<std::size_t> sweep;
     for(auto& bucket:buckets) {
-      if(!bucket.valid) {sweep.insert(sweep.end(),bucket.families.begin(),bucket.families.end());continue;}
-      if(bucket.families.size()<2)continue;
-      auto& members=bucket.families;
-      std::vector<std::pair<std::size_t,std::size_t>> ranks;
+      const auto members=storage.subspan(bucket.begin,bucket.end-bucket.begin);
+      if(!bucket.valid) {sweep.insert(sweep.end(),members.begin(),members.end());continue;}
+      if(members.size()<2)continue;
+      ranks.clear();
       for(auto i:members)ranks.emplace_back(order->rank(families[i].first.event),i);
       std::sort(ranks.begin(),ranks.end());
-      members.clear();for(const auto& item:ranks)members.push_back(item.second);
+      for(std::size_t k=0;k<members.size();++k)members[k]=ranks[k].second;
       // A trace establishes orientation, not HB; every retained constraint is checked.
       for(std::size_t j=1;j<members.size() && bucket.valid;++j) {
         const auto& a=families[members[j-1]];const auto& b=families[members[j]];
@@ -90,7 +124,7 @@ FamilyConflictOrder::FamilyConflictOrder(const std::vector<MemoryAccessFamily>& 
         if(x.second<y.first)continue;
         for(std::size_t k=0;k<a.count;++k) {
           ++member_checks_;
-          if(order->rank(a.at(a.first_member+k).event)>=order->rank(b.at(b.first_member+k).event)) {
+          if(order->rank(a.event(a.first_member+k))>=order->rank(b.event(b.first_member+k))) {
             bucket.valid=false;break;
           }
         }
@@ -115,8 +149,8 @@ FamilyConflictOrder::FamilyConflictOrder(const std::vector<MemoryAccessFamily>& 
     if(!sweep.empty())reduceMembers(sweep,families,footprints,*order,next_bucket++);
   }
 }
-void FamilyConflictOrder::reduceMembers(const std::vector<std::size_t>& items,
-    const std::vector<MemoryAccessFamily>& families,const std::vector<FamilyFootprint>& footprints,
+void FamilyConflictOrder::reduceMembers(std::span<const std::size_t> items,
+    const FamilyTable& families,const std::vector<FamilyFootprint>& footprints,
     const TraceOrder& order,std::size_t bucket) {
   using I=address_solver::Int;
   // Reuse the exact interval sweep over member accesses: O(N log N + H) for N
@@ -151,14 +185,21 @@ void FamilyConflictOrder::reduceMembers(const std::vector<std::size_t>& items,
     }
   }
   auto stream=MakeConflictOrder(std::move(regions),ranks);
+  // The stream repeats a family pair once per member and slab; a repeat of a family's last partner
+  // is not stored (the sort below removes every other repeat), and each list keeps no spare capacity.
+  const auto add=[&](std::size_t a,std::size_t b) {
+    auto& peers=peers_[a];
+    if(peers.empty() || peers.back()!=b)peers.push_back(b);
+  };
   while(auto pair=stream->next()) {
     const auto a=owners[pair->first.value()],b=owners[pair->second.value()];
-    peers_[a].push_back(b);peers_[b].push_back(a);
+    add(a,b);add(b,a);
   }
   for(auto i:items) {
     buckets_[i]=bucket;
     auto& peers=peers_[i];std::sort(peers.begin(),peers.end());
     peers.erase(std::unique(peers.begin(),peers.end()),peers.end());
+    peers.shrink_to_fit();
   }
   reduced_families_+=items.size();
 }

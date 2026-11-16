@@ -1,4 +1,5 @@
 #include "sentryward/algorithm/memory/symbolic_address_model.h"
+#include "sentryward/algorithm/memory/table_valuation.h"
 
 #include <algorithm>
 #include <functional>
@@ -190,14 +191,34 @@ struct SymbolicAddressModel::Impl {
 
   std::list<std::pair<PairKey, OverlapResult>> lru;
   std::unordered_map<PairKey, decltype(lru)::iterator, PairHash> cache;
+  // Class mode's fixed tables (table_valuation.h): their lookups have exact values in the analysed
+  // program (the representatives' own elements), memoized per atom.
+  TableValuation tables;
+  std::vector<std::optional<std::optional<Int>>> atom_values;
 
   Impl(const std::vector<ConstantAddressBinding>& bindings, std::string_view invariants,
-       SymbolicSolverOptions solver_options, std::size_t cache_capacity, std::string_view tensor_properties)
+       SymbolicSolverOptions solver_options, std::size_t cache_capacity, std::string_view tensor_properties,
+       std::string_view table_atoms)
       : constants(bindings, cache_capacity), options(solver_options),
         solver(address_solver::MakeSolver()), capacity(cache_capacity) {
     error = constants.validate();
     try {
-      if (options.timeout_ms == 0) throw std::invalid_argument("SMT timeout_ms must be positive");
+      if (options.rlimit == 0) throw std::invalid_argument("SMT rlimit must be positive");
+      tables = TableValuation(table_atoms);
+      // A table's plain lookups (either signedness): its exact range and injectivity, and pinned
+      // (a decision depends on which elements they are).
+      for (const auto& [object, bytes] : tables.Objects())
+        for (const bool sign : {false, true}) {
+          const auto symbol = TensorPropertySymbol(object, std::string(sign ? "s" : "u") + std::to_string(8 * bytes));
+          gather_objects[symbol] = object;
+          pinned_gathers.insert(symbol);
+          if (const auto range = tables.RangeOf(object, sign)) {
+            auto& policy = gather_policies[symbol];
+            policy.lower = range->lower;
+            policy.upper = range->upper;
+            policy.injective = policy.injective || range->injective;
+          }
+        }
       ParseInvariants(invariants);
       for (const auto& bound : term_bounds)
         for (const auto& [atom, ignored] : bound.term.terms) {
@@ -287,6 +308,7 @@ struct SymbolicAddressModel::Impl {
         policy.lower = policy.lower ? std::max(*policy.lower, *lower) : *lower;
         policy.upper = policy.upper ? std::min(*policy.upper, *upper) : *upper;
         gather_objects[symbol] = value.at("object").get<std::string>();
+        if (tables.Has(gather_objects[symbol])) pinned_gathers.insert(symbol);
       }
       std::vector<Int> args;
       for (const auto& arg : value.at("args")) {
@@ -637,7 +659,7 @@ struct SymbolicAddressModel::Impl {
     // Unknown is not proof of consistency; each pair rechecks its own ground
     // environment before an unsat overlap is accepted.
     std::map<AtomId, std::size_t> variables;
-    if (solver->consistent(Instantiate(std::move(selected), variables), options.timeout_ms) ==
+    if (solver->consistent(Instantiate(std::move(selected), variables), options.rlimit) ==
         address_solver::Verdict::kUnsat)
       throw std::invalid_argument("address invariants are unsatisfiable");
   }
@@ -654,8 +676,45 @@ struct SymbolicAddressModel::Impl {
     return "unresolved " + names[shape.space] + " allocation";
   }
 
+  // The exact value of a table lookup atom, else nullopt. Memoized.
+  std::optional<Int> AtomValue(AtomId atom) {
+    if (tables.empty() || atoms[atom].gather.empty() || atoms[atom].args.size() != 1) return std::nullopt;
+    if (atom_values.size() <= atom) atom_values.resize(atoms.size());
+    auto& memo = atom_values[atom];
+    if (!memo) memo = tables.Value(atoms[atom].gather, atoms[atom].args.front());
+    return *memo;
+  }
+  // `form` with every table lookup replaced by its exact value; nullopt on overflow.
+  std::optional<Affine> Valued(const Affine& form) {
+    if (tables.empty()) return form;
+    Affine result{form.constant, {}};
+    for (const auto& [atom, coefficient] : form.terms) {
+      if (const auto value = AtomValue(atom)) {
+        const auto product = Checked(coefficient, *value, true);
+        const auto sum = product ? Checked(result.constant, *product, false) : std::nullopt;
+        if (!sum) return std::nullopt;
+        result.constant = *sum;
+      } else result.terms.emplace_back(atom, coefficient);
+    }
+    return result;
+  }
+  // Decide on the exact values of the analysed program's table lookups.
   OverlapResult Decide(const Shape& a, std::optional<std::uint64_t> wa,
                        const Shape& b, std::optional<std::uint64_t> wb) {
+    if (!tables.empty() && ((a.offset && !a.offset->terms.empty()) || (b.offset && !b.offset->terms.empty()))) {
+      Shape va = a, vb = b;
+      for (auto* shape : {&va, &vb})
+        if (shape->offset) {
+          auto valued = Valued(*shape->offset);
+          if (!valued) return OverlapResult::Unknown("symbolic offset overflows", "address_arithmetic_overflow");
+          shape->offset = std::move(*valued);
+        }
+      return DecideValued(va, wa, vb, wb);
+    }
+    return DecideValued(a, wa, b, wb);
+  }
+  OverlapResult DecideValued(const Shape& a, std::optional<std::uint64_t> wa,
+                             const Shape& b, std::optional<std::uint64_t> wb) {
     if (a.region_bytes) wa=a.region_bytes;
     if (b.region_bytes) wb=b.region_bytes;
     // Layer 0: allocation separation.
@@ -761,7 +820,7 @@ struct SymbolicAddressModel::Impl {
     query.goal_lower = goal_lower;
     query.goal_upper = goal_upper;
     ++stats.solver_queries;
-    const auto answer = solver->solve(query, options.timeout_ms);
+    const auto answer = solver->solve(query, options.rlimit);
     using address_solver::Verdict;
     if (answer.environment == Verdict::kUnsat) {
       ++stats.solver_unknown;
@@ -808,10 +867,21 @@ struct SymbolicAddressModel::Impl {
     if(!first || (first->region_bytes && !cross_unit) || !first->offset || !KnownSpace(names[first->space]) ||
         first->base!=Base::kAllocation)return {};
     auto suffix=*first->offset;suffix.constant=0;
+    // The family checker decides the analysed program: its table lookups are their exact values (every
+    // member has the same lookups, checked below). The cross-unit pass keeps them as lookups.
+    Int valued_constant=0;
+    if(!cross_unit && !tables.empty() && !suffix.terms.empty()) {
+      auto valued=Valued(suffix);
+      if(!valued)return {};
+      valued_constant=valued->constant;
+      suffix=std::move(*valued);
+      suffix.constant=0;
+    }
     FamilyFootprint result{names[first->space],
         names[first->identity],
         names[first->alias_scope],suffix.key(),first->offset->constant,0,
         first->region_bytes?*first->region_bytes:*family.first.bytes,true,first->absent,{}};
+    if(suffix.terms.empty())result.symbolic.clear(); // every lookup valued: a ground footprint
     if(first->region_bytes){result.region_axes=first->region_axes;result.region_element=first->region_element;}
     for(std::size_t k=1;k<family.count;++k) {
       const auto* current=shape(family.at(family.first_member+k));
@@ -829,6 +899,7 @@ struct SymbolicAddressModel::Impl {
     if(!bias)return {};
     Int offset;
     if(__builtin_sub_overflow(result.offset,*bias,&offset))return {};
+    if(__builtin_add_overflow(offset,valued_constant,&offset))return {};
     result.offset=offset;
     if(cross_unit)for(const auto& [atom,coefficient]:suffix.terms) {
       const auto& lookup=atoms[atom];
@@ -916,8 +987,10 @@ SymbolicAddressModel::SymbolicAddressModel(const std::vector<ConstantAddressBind
                                            std::string_view address_invariants,
                                            SymbolicSolverOptions solver,
                                            std::size_t cache_capacity,
-                                           std::string_view tensor_properties)
-    : impl_(std::make_unique<Impl>(bindings, address_invariants, solver, cache_capacity, tensor_properties)) {}
+                                           std::string_view tensor_properties,
+                                           std::string_view table_atoms)
+    : impl_(std::make_unique<Impl>(bindings, address_invariants, solver, cache_capacity, tensor_properties,
+                                   table_atoms)) {}
 SymbolicAddressModel::~SymbolicAddressModel() = default;
 SymbolicAddressModel::SymbolicAddressModel(SymbolicAddressModel&&) noexcept = default;
 SymbolicAddressModel& SymbolicAddressModel::operator=(SymbolicAddressModel&&) noexcept = default;
@@ -966,6 +1039,10 @@ OverlapResult SymbolicAddressModel::translatedFamilyOverlap(const MemoryAccessFa
   return impl_->Decide(*sa,x.bytes,*sb,y.bytes);
 }
 const ConstantAddressModel& SymbolicAddressModel::constantModel() const noexcept { return impl_->constants; }
+std::optional<address_solver::Int> SymbolicAddressModel::lookupValue(const GatherTerm& term, address_solver::Int arg) {
+  if (impl_->error || impl_->tables.empty()) return std::nullopt;
+  return impl_->tables.Value(term.symbol, arg);
+}
 std::unique_ptr<MemoryConflictCandidates> SymbolicAddressModel::conflictCandidatesWithExemptions(
     MemoryAccessView accesses, std::span<const std::size_t> ranks,
     std::span<const AccessId> exempt_writes) {

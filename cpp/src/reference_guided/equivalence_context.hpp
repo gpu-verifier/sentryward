@@ -13,6 +13,7 @@ struct InputElementAssumption {
   std::string input, interpretation;
   std::variant<Interval, Finite> property;
   std::string reason = "caller-provided premise";
+  InputRegion region = {}; // the covered bytes (input_contract.hpp); whole_object by default
 };
 struct PredicateAssumption { Id predicate = invalid; }; // Boolean node in this comparison's Arena
 using Assumption = std::variant<InputElementAssumption, PredicateAssumption, ScopedPredicateAssumption>;
@@ -116,7 +117,7 @@ struct PreparedContext {
         scoped_predicates.add(a,*p);
       } else {
         const auto &e=std::get<InputElementAssumption>(entry);
-        InputContract::Rule r{e.input,e.interpretation,e.reason,false,{},{},{}};
+        InputContract::Rule r{e.input,e.interpretation,e.reason,false,{},{},{},e.region};
         if(e.input.empty() || e.reason.empty()) throw Unsupported("input premise needs input and provenance");
         static const std::set<std::string> types{"u8","u16","u32","u64","s8","s16","s32","s64","f16","bf16","f32","f64","e4m3","e5m2","e8m0"};
         if(!types.contains(e.interpretation)) throw Unsupported("unsupported input premise interpretation");
@@ -160,6 +161,8 @@ struct PreparedContext {
         auto [it,inserted]=contract.rules.emplace(key,r);
         if(!inserted) {
           auto &old=it->second;
+          // Premises on different byte regions of one object/type are not one rule.
+          if(!(old.region==r.region)) throw Unsupported("conflicting input premise regions: "+r.object+" "+r.element_type);
           if(r.lower) old.lower=old.lower?std::max(*old.lower,*r.lower):r.lower;
           if(r.upper) old.upper=old.upper?std::min(*old.upper,*r.upper):r.upper;
           if(old.lower && old.upper) {

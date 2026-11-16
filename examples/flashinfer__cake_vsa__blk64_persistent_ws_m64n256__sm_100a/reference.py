@@ -7,10 +7,16 @@ contract: flashinfer/cake_vsa.py and tests/attention/test_cake_vsa.py (same comm
 q/out are bf16 [M, H, 128], k/v are bf16 [N, H, 128], q2k_indices is int32
 [H, M/64, topk] and q2k_num is int32 [H, M/64]. Query block b of head h attends
 the 64-token KV blocks q2k_indices[h, b, j] for j < 4 * (q2k_num[h, b] // 4):
-the kernel consumes whole groups of four list entries. Every list entry is
-processed on its own, so a repeated block id is counted once per entry. A key
-token outside [0, N) is read through the TMA zero fill (K = V = 0). The kernel
-never loads kv_block_lens, so it is not a reference input. LSE is written only
+the kernel consumes whole groups of four list entries. The attended key set of
+a row is the union of its selected blocks: upstream's oracle builds a boolean
+block mask from the first q2k_num entries (tests/attention/test_cake_vsa.py
+L371-376), so a block id repeated within a row is attended once. Upstream's
+direct q2k path does not reject or canonicalize repeated ids (cake_vsa.py
+L420-463 checks only dtype, shape, counts and the [0, NB) range). The kernel
+processes every list entry on its own; on rows with repeated ids it differs
+from this reference. A key token outside [0, N) is read through the TMA zero
+fill (K = V = 0); upstream rejects active ids outside [0, NB) (L462-463).
+The kernel never loads kv_block_lens, so it is not a reference input. LSE is written only
 when return_lse != 0; this scenario passes 1, as the upstream test
 test_cake_vsa_blk64_full_group_rows_use_weight_stationary_profile does
 (wrapper.run(..., return_lse=True)). lse is float32 [M, H], the natural-log
@@ -43,7 +49,16 @@ def reference(q, k, v, q2k_indices, q2k_num, scale_log2):
     # equals count - count % 4 on the kernel's domain count >= 4.
     count = q2k_num.to(torch.int64).reshape(heads, q_blocks, 1, 1)
     slot = torch.arange(topk, device=device).reshape(1, 1, topk, 1)
-    active = (slot < count - count % 4) & (offsets < BLOCK)
+    # Union of the row's selected blocks: entry j counts only when no earlier
+    # entry j' < j of the same row names the same block (j' < j < count, so
+    # j' is a live entry too).
+    ids = q2k_indices.to(torch.int64).reshape(heads, q_blocks, topk)
+    same = ids.unsqueeze(-1) == ids.unsqueeze(-2)
+    position = torch.arange(topk, device=device)
+    earlier = position.reshape(topk, 1) > position.reshape(1, topk)
+    first = torch.where(same & earlier, 1, 0).sum(dim=-1) == 0
+    first = first.reshape(heads, q_blocks, topk, 1)
+    active = (slot < count - count % 4) & first & (offsets < BLOCK)
     active = active.reshape(heads, q_blocks, 1, topk * BLOCK)
     # Ideal-real softmax: the running-max offset and the bf16 P rounding of
     # the kernel are abstracted, as in examples/_reference/pytorch_models.py.

@@ -395,12 +395,19 @@ struct PartitionRead { RecordRef leader; std::size_t evaluated; std::uint32_t in
 // member and does not.
 enum class ReportKind : std::uint8_t { LoweringDiagnostic, RenderedViolation };
 struct ReportBearing { ReportKind kind; std::string_view code; };
+// Lowering's register dependency tracking met, at this record (a compute or ordinary memory record it
+// lifted into register events), a register with a pending asynchronous write: the record overwrote
+// it (`writes`; the register is no longer pending after it) or read it (`reads`; the record's
+// events, and so the thread's later ones, are ordered after that write). Later records' register
+// events depend on this record: a containment member without it keeps those registers pending
+// (unit_classes.h ContainmentRecord::touched, touched_reads).
+struct RegisterTouch { RecordRef at; bool writes = true; bool reads = false; };
 } // namespace query
 using QueryEvent = std::variant<query::ValueRead, query::ValueAtRead, query::LegacyUniform, query::UniformBinding,
                                 query::SpecialRead, query::SlotBegin, query::SlotEnd, query::SlotMemory,
                                 query::SlotTma, query::MemoFill, query::MemoHit, query::UniformBodySkip,
                                 query::BindingRead, query::AbsoluteCheck, query::PartitionRead,
-                                query::ReportBearing>;
+                                query::ReportBearing, query::RegisterTouch>;
 // The recorder interface. noexcept: SlotScope's
 // destructor notes SlotEnd; a recorder failure only closes its class.
 class QuerySink {
@@ -778,6 +785,11 @@ public:
   }
   [[nodiscard]] std::span<const SharedValueDependency> SharedValueDependencies() const noexcept {
     return program_->shared_value_dependencies;
+  }
+  // Statistics only: write sites that stored a bounded integer in shared memory, and
+  // SharedValueDependencies() entries whose read restored one.
+  [[nodiscard]] std::pair<std::uint64_t, std::uint64_t> SharedBoundedCounts() const noexcept {
+    return {program_->shared_bounded_writes, program_->shared_bounded_reads};
   }
   // Structure-key input only. Every SharedConstantWrites() site, then each
   // SharedValueDependencies() entry's write and read site, then each TensorMapReads()

@@ -18,6 +18,22 @@
 #include <numeric>
 
 namespace sentryward::value_analysis {
+// See indexed_source.h. Recursion depth 4; deeper annotations are left out of the key.
+std::size_t annotatedValueKey(const value_ir::Value& value,unsigned depth) {
+  std::size_t h=0;
+  const auto mix=[&](std::size_t x){h^=std::hash<std::size_t>{}(x)+std::size_t(0x9e3779b97f4a7c15ULL)+(h<<6)+(h>>2);};
+  mix(value.nodeId());mix(value.instanceIndex());mix(value.resultIndex());mix(value.indices().size());
+  if(depth>=4)return h;
+  for(const auto& index:value.indices())mix(annotatedValueKey(index,depth+1));
+  mix(bool(value.pointer()));
+  if(const auto& conversion=value.conversion()) {
+    mix(1+std::size_t(conversion->spec->kind));mix(std::size_t(conversion->spec->target.element().kind()));
+    mix(annotatedValueKey(conversion->source,depth+1));
+  } else mix(0);
+  if(const auto* selector=value.threadSelector())mix(annotatedValueKey(*selector,depth+1));
+  else mix(1);
+  return h;
+}
 namespace {
 namespace v = value_ir;
 std::string attrs(const v::Operation& op) {
@@ -97,7 +113,8 @@ class Matcher {
   struct SelectorBounds {std::uint64_t lo,hi;std::size_t end=SIZE_MAX;const CoordinateTree* coordinates=nullptr;};
   struct FixedSelector {v::Value value;std::size_t end=SIZE_MAX;};
   struct SelectorFact {v::Value value;std::optional<SelectorBounds> bounds;};
-  using SelectorKey=std::tuple<const void*,std::uint64_t,std::size_t,std::size_t,std::size_t,std::size_t,std::size_t,std::size_t>;
+  // (context domain, CTA, context member, value node, member, result, annotation key, selector scope).
+  using SelectorKey=std::tuple<const void*,std::uint64_t,std::size_t,std::size_t,std::size_t,std::size_t,std::size_t,std::size_t,std::size_t>;
   std::map<SelectorKey,std::vector<SelectorFact>> selector_facts;
   struct FixedFact {v::Value value;std::optional<FixedSelector> proof;};
   std::map<SelectorKey,std::vector<FixedFact>> fixed_selector_facts;
@@ -176,7 +193,7 @@ class Matcher {
     const auto origin=context_node.instanceOrigin(context.instanceIndex());
     if(!context_node.hasUniformThreadTemplate() || !origin.cta)return {};
     const SelectorKey key{context_node.instanceThreads().storageIdentity(),*origin.cta,context.instanceIndex(),
-        value.nodeId(),value.instanceIndex(),value.resultIndex(),selector_scope_begin,selector_scope_end};
+        value.nodeId(),value.instanceIndex(),value.resultIndex(),annotatedValueKey(value),selector_scope_begin,selector_scope_end};
     if(auto found=fixed_selector_facts.find(key);found!=fixed_selector_facts.end())
       for(const auto& entry:found->second){selectorWork();++selector_collision_checks;
         if(entry.value==value){++selector_hits;return entry.proof;}}
@@ -242,7 +259,7 @@ class Matcher {
     // Fixed/SameDomain is relative to the concrete context binding; retain
     // it until a separate normalized-domain proof can justify sharing.
     const SelectorKey key{domain,*context_origin.cta,context.instanceIndex(),
-        value.nodeId(),value.instanceIndex(),value.resultIndex(),selector_scope_begin,selector_scope_end};
+        value.nodeId(),value.instanceIndex(),value.resultIndex(),annotatedValueKey(value),selector_scope_begin,selector_scope_end};
     if(auto found=selector_facts.find(key);found!=selector_facts.end())
       for(const auto& entry:found->second){selectorWork();++selector_collision_checks;
         if(entry.value==value){++selector_hits;return entry.bounds;}}
@@ -801,7 +818,7 @@ class Matcher {
          a->producer_uses_bindings!=b->producer_uses_bindings || a->period!=b->period ||
          a->outer_stride!=b->outer_stride || a->numerical_field!=b->numerical_field ||
          a->quotient_terms!=b->quotient_terms || a->power_of_two!=b->power_of_two ||
-         bool(a->initial)!=bool(b->initial))return false;
+         a->region_fragment!=b->region_fragment || a->addend!=b->addend || bool(a->initial)!=bool(b->initial))return false;
       if(!a->initial)return true;
       const auto& x=*a->initial;const auto& y=*b->initial;
       return x.id==y.id && x.region.allocation==y.region.allocation &&
@@ -1053,7 +1070,7 @@ class Matcher {
       if(old->kind==Kind::Binding) {
         const auto& previous=*old->binding;
         if(bool(previous.initial)!=bool(initial) || !sameProducer(previous) || previous.numerical_field!=field ||
-           previous.power_of_two!=power_of_two ||
+           previous.power_of_two!=power_of_two || previous.region_fragment || previous.addend ||
            (initial && previous.initial->region.allocation!=initial->region.allocation))return {};
         fit=grid_fits.at(old.get());
         binding=previous;
@@ -1110,7 +1127,7 @@ class Matcher {
     if(old->kind==Kind::Binding) {
       const auto& binding=*old->binding;
       if(binding.base!=a || bool(binding.initial)!=bool(initial) || !sameProducer(binding) || binding.numerical_field!=field ||
-          binding.power_of_two!=power_of_two ||
+          binding.power_of_two!=power_of_two || binding.region_fragment || binding.addend ||
           (initial && binding.initial->region.allocation!=initial->region.allocation))return {};
       const auto expected=indexedBindingValue(binding,index);if(!expected)return {};
       if(*expected==b)return bindingCertificate(old,index);

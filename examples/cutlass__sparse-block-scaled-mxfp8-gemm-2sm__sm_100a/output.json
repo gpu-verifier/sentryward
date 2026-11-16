@@ -178,12 +178,12 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
-      "edges": 10626056,
-      "events": 4408232,
-      "instructions": 811754,
+      "edges": 10638424,
+      "events": 4416488,
+      "instructions": 815866,
       "memory_accesses": 2904320,
       "threads": 4096
     },
@@ -473,7 +473,7 @@
       },
       "implementation": "cpp",
       "input_objects": [],
-      "lowered_instruction_count": 811754,
+      "lowered_instruction_count": 815866,
       "mma_refinement": {
         "blocked": [],
         "discharged": 32
@@ -580,13 +580,13 @@
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
-        "logical_instructions": 811754,
-        "stored_bindings": 66001
+        "logical_instructions": 815866,
+        "stored_bindings": 70113
       },
       "source_edge_storage": {
-        "binding_templates": 4641,
-        "logical_edges": 807658,
-        "stored_bindings": 4642
+        "binding_templates": 4818,
+        "logical_edges": 811770,
+        "stored_bindings": 4819
       },
       "tcgen_copy_refinement": {
         "blocked": [],
@@ -614,16 +614,16 @@
       },
       "required_orders": {
         "algorithm": "member-relations",
-        "batches": 9,
-        "edge_visits": 945098,
+        "batches": 4,
+        "edge_visits": 1894542,
         "member_enumerations": 0,
         "request_construction": {
           "concrete_pair_materializations": 0,
-          "endpoint_reads": 37824,
-          "family_requests": 2688,
-          "logical_orders": 802816,
-          "owner_bindings": 50176,
-          "stored_orders": 16832
+          "endpoint_reads": 65603,
+          "family_requests": 21362,
+          "logical_orders": 807758,
+          "owner_bindings": 73013,
+          "stored_orders": 21774
         }
       }
     },
@@ -649,19 +649,19 @@
         "access_families": 448783,
         "affine_member_rows": 0,
         "candidate_relations": 1178443,
-        "hb_frontier_pieces": 1606,
+        "hb_frontier_pieces": 978,
         "hb_member_enumerations": 0,
         "logical_accesses": 2904320
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 879,
+      "hb_batches": 342,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 2380621,
+      "hb_edge_visits": 1666144,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 13101792,
-      "hb_query_seconds": 0.5231658430000001,
+      "hb_query_seconds": 0.739924394,
       "overlap_queries": 698368,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 698368
@@ -669,9 +669,9 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 5216.953125,
-    "required_order_domains": 16832,
-    "required_orders": 802816,
+    "peak_footprint_mib": 4868.0546875,
+    "required_order_domains": 21774,
+    "required_orders": 807758,
     "search_complete": true,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
@@ -691,9 +691,9 @@
       "memory_binding_templates": 45443,
       "memory_bindings": 1999216,
       "memory_linking_templates_used": true,
-      "synchronization_groups": 33190,
+      "synchronization_groups": 33415,
       "synchronization_groups_materialized": true,
-      "synthetic_synchronization_nodes": 273,
+      "synthetic_synchronization_nodes": 289,
       "thread_prefix_groups": 694333,
       "value_diagnostic_count": 0,
       "value_diagnostics": []
@@ -765,14 +765,14 @@
           "elements": 0,
           "identities": 315,
           "layouts": 120,
-          "mapping_blocks": 100496,
+          "mapping_blocks": 98960,
           "name": "view_normalization",
-          "original_pieces": 615424,
+          "original_pieces": 621056,
           "reused_initial_reads": 8304,
-          "reused_views": 22590,
+          "reused_views": 22654,
           "segmented": 45128,
           "slices": 8192,
-          "stored_mapping_blocks": 55366,
+          "stored_mapping_blocks": 53486,
           "typed_output_pieces": 0,
           "typed_output_regions": 0
         }
@@ -881,18 +881,18 @@
         "action_patterns": 1318067,
         "binding_patterns": 642227,
         "domain_refinements": 2506360,
-        "elapsed_seconds": 6.440335069,
-        "event_families": 1009090,
+        "elapsed_seconds": 6.866000977,
+        "event_families": 1017346,
         "expanded_event_records": 0,
         "largest_batch_members": 62,
         "logical_actions": 1999216,
-        "logical_events": 13700981,
-        "peak_rss_mib_at_completion": 5226.59375,
+        "logical_events": 13709237,
+        "peak_rss_mib_at_completion": 5007.5625,
         "reachability_queries": 0,
-        "relations": 3575144,
-        "rss_mib_at_completion": 3349.5390625,
-        "scheduled_batches": 1009090,
-        "singleton_batches": 571068,
+        "relations": 3587512,
+        "rss_mib_at_completion": 3171.6484375,
+        "scheduled_batches": 1017346,
+        "singleton_batches": 579324,
         "value_families": 470182
       },
       "shared_read_families": 22706,
@@ -902,13 +902,13 @@
     "value_ir_instance_count": 5757595,
     "value_ir_node_count": 382465,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 18.811269872,
+    "verification_elapsed_seconds": 19.888288129,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 5226.59375,
-  "pipeline_elapsed_seconds": 42.660268747,
+  "peak_rss_mib": 5007.5625,
+  "pipeline_elapsed_seconds": 40.90287462,
   "result": "undefined_behavior",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -1670,6 +1670,6 @@
       }
     }
   ],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.407
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.415
 }

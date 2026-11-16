@@ -229,6 +229,23 @@
    }
   ]
  },
+ "checker_context": {
+  "input_contract": [
+   {
+    "object": "KV",
+    "element_type": "e8m0",
+    "region": {
+     "kind": "record_bytes",
+     "offset_bytes": 0,
+     "record_stride_bytes": 528,
+     "first_byte": 512,
+     "byte_count": 16
+    },
+    "finite": true,
+    "source": "Additional decoded finite-scale premise (analysis scope); exact e8m0 interpretation, not generic uint8 finiteness. The 16 ue8m0 scale bytes of every 528-byte V4.1 fp8 token (bytes 512..527: 512 e4m3 data bytes, then the scales) are not NaN; the data bytes are not covered."
+   }
+  ]
+ },
  "reference": {
   "arguments": [
    {

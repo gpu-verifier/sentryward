@@ -1,7 +1,8 @@
 #include "sentryward/algorithm/memory/address_solver.h"
 
-#include <chrono>
+#include <cstdint>
 #include <exception>
+#include <stdexcept>
 
 #include <z3++.h>
 
@@ -10,23 +11,19 @@ namespace {
 
 class Z3Solver final : public Solver {
  public:
-  Answer solve(const Query& query, unsigned timeout_ms) override {
+  Answer solve(const Query& query, unsigned rlimit) override {
     Answer answer;
     try {
-      const auto start = std::chrono::steady_clock::now();
-      auto remaining = [&]() -> unsigned {
-        const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - start).count();
-        return elapsed >= timeout_ms ? 0U : timeout_ms - static_cast<unsigned>(elapsed);
-      };
+      // One budget for both checks: the goal check gets what the environment check left.
+      unsigned remaining = rlimit;
       z3::solver solver(context_);
       const auto variables = declare(query);
       environment(solver, query, variables);
-      answer.environment = check(solver, remaining(), answer.detail);
+      answer.environment = check(solver, remaining, answer.detail);
       if (answer.environment != Verdict::kSat) return answer;
       const auto goal = encode(query.goal, variables);
       solver.add(goal > number(query.goal_lower) && goal < number(query.goal_upper));
-      answer.goal = check(solver, remaining(), answer.detail);
+      answer.goal = check(solver, remaining, answer.detail);
       if (answer.goal == Verdict::kSat) answer.detail = witness(solver.get_model(), query, variables);
     } catch (const std::exception& error) {
       answer.detail = std::string("SMT failure: ") + error.what();
@@ -34,12 +31,13 @@ class Z3Solver final : public Solver {
     return answer;
   }
 
-  Verdict consistent(const Query& query, unsigned timeout_ms) override {
+  Verdict consistent(const Query& query, unsigned rlimit) override {
     try {
       z3::solver solver(context_);
       environment(solver, query, declare(query));
       std::string ignored;
-      return check(solver, timeout_ms, ignored);
+      unsigned remaining = rlimit;
+      return check(solver, remaining, ignored);
     } catch (const std::exception&) {
       return Verdict::kUnknown;
     }
@@ -82,20 +80,38 @@ class Z3Solver final : public Solver {
     }
   }
 
-  static Verdict check(z3::solver& solver, unsigned timeout_ms, std::string& detail) {
-    if (timeout_ms == 0) {
+  // The context's resource count. z3 counts work steps per context, the same for the same
+  // sequence of queries whatever the machine load; the solver statistics report it as
+  // "rlimit count" (32 bits, wrapping).
+  static unsigned ResourceCount(z3::solver& solver) {
+    const z3::stats stats = solver.statistics();
+    for (unsigned i = 0; i < stats.size(); ++i)
+      if (stats.key(i) == "rlimit count")
+        return stats.is_uint(i) ? stats.uint_value(i)
+                                : static_cast<unsigned>(static_cast<std::uint64_t>(stats.double_value(i)));
+    throw std::runtime_error("z3 statistics lack \"rlimit count\"");
+  }
+
+  // One check within `budget` resource units (the solver parameter "rlimit", counted from the
+  // context's count when the check starts; no time limit). The units the check used are deducted.
+  static Verdict check(z3::solver& solver, unsigned& budget, std::string& detail) {
+    if (budget == 0) {
       detail = "SMT budget exhausted";
       return Verdict::kUnknown;
     }
     z3::params params(solver.ctx());
-    params.set("timeout", timeout_ms);
+    params.set("rlimit", budget);
     solver.set(params);
-    switch (solver.check()) {
+    const unsigned before = ResourceCount(solver);
+    const auto result = solver.check();
+    const unsigned used = ResourceCount(solver) - before;  // modulo 2^32; one check stops at `budget`
+    budget = used < budget ? budget - used : 0U;
+    switch (result) {
       case z3::unsat: return Verdict::kUnsat;
       case z3::sat: return Verdict::kSat;
       case z3::unknown: break;
     }
-    detail = "SMT unknown: " + solver.reason_unknown();
+    detail = budget == 0 ? std::string("SMT budget exhausted") : "SMT unknown: " + solver.reason_unknown();
     return Verdict::kUnknown;
   }
 

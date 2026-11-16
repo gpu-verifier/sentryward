@@ -1,83 +1,1224 @@
 {
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": null
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
+    }
+  ],
   "checks": {
     "equivalence": "not_run",
-    "synchronization": "not_run"
+    "synchronization": "failed"
   },
   "diagnostics": [
     {
-      "code": "process_memory_budget_exceeded",
+      "code": "issue_not_ordered_before_next_phase",
       "details": {
-        "cta_progress": 2,
-        "internal_stage": "value_view_construction",
-        "peak_rss_mib": 85398.5703125,
-        "resource": {
-          "kind": "memory",
-          "limit": 85274.0,
-          "origin": "default_budget",
-          "unit": "MiB"
+        "internal_stage": "synchronization_check",
+        "issue": 108382870,
+        "phase": {
+          "barrier": 28,
+          "generation": 1
         },
-        "rss_limit_mib": null
+        "required_events": {
+          "events": [
+            108902763,
+            108904143,
+            108905523
+          ],
+          "total": 3,
+          "truncated": false
+        }
       },
-      "stage": "equivalence"
+      "message": "Wait check failed: issue_not_ordered_before_next_phase.",
+      "stage": "synchronization"
     }
   ],
-  "elapsed_seconds": 202.796558724,
+  "evidence": {
+    "counterexample": {
+      "candidate_order": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          189117,
+          189120,
+          189118,
+          189119,
+          189121,
+          189122,
+          189123,
+          378010,
+          378013,
+          378011,
+          378012,
+          378014,
+          378015,
+          378016,
+          566903,
+          566906,
+          566904,
+          566905,
+          566907,
+          566908,
+          566909,
+          755796,
+          755799,
+          755797,
+          755798
+        ],
+        "total": 206408497,
+        "truncated": true
+      },
+      "candidate_order_preserved": false,
+      "executed_prefix": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          189117,
+          189120,
+          189118,
+          189119,
+          189121,
+          189122,
+          189123,
+          378010,
+          378013,
+          378011,
+          378012,
+          378014,
+          378015,
+          378016,
+          566903,
+          566906,
+          566904,
+          566905,
+          566907,
+          566908,
+          566909,
+          755796,
+          755799,
+          755797,
+          755798
+        ],
+        "total": 206394963,
+        "truncated": true
+      },
+      "first_unexecuted": 108385889,
+      "replayed_candidate_order": {
+        "events": [
+          0,
+          3,
+          1,
+          2,
+          4,
+          5,
+          6,
+          189117,
+          189120,
+          189118,
+          189119,
+          189121,
+          189122,
+          189123,
+          378010,
+          378013,
+          378011,
+          378012,
+          378014,
+          378015,
+          378016,
+          566903,
+          566906,
+          566904,
+          566905,
+          566907,
+          566908,
+          566909,
+          755796,
+          755799,
+          755797,
+          755798
+        ],
+        "total": 206386709,
+        "truncated": true
+      },
+      "unexecuted_candidate": {
+        "events": [
+          108385889,
+          108385890,
+          108385891,
+          108385892,
+          108385893,
+          108385894,
+          108385895,
+          108385896,
+          108385897,
+          108385898,
+          108385899,
+          108385900,
+          108385901,
+          108385902,
+          108385903,
+          108385904,
+          108385905,
+          108385906,
+          108385907,
+          108385908,
+          108385909,
+          108385910,
+          108385911,
+          108385912,
+          108385913,
+          108385914,
+          108385915,
+          108385916,
+          108385917,
+          108385918,
+          108385919,
+          108385920
+        ],
+        "total": 1672,
+        "truncated": true
+      }
+    },
+    "provenance_events_total": 206408497,
+    "rejection": {
+      "code": "issue_not_ordered_before_next_phase",
+      "issue": 108382870,
+      "message": "Wait check failed: issue_not_ordered_before_next_phase.",
+      "phase": {
+        "barrier": 28,
+        "generation": 1
+      },
+      "required_events": {
+        "events": [
+          108902763,
+          108904143,
+          108905523
+        ],
+        "total": 3,
+        "truncated": false
+      }
+    },
+    "rejection_kind": "wait_condition",
+    "source_event_scope": "reported_witness_events",
+    "source_events": [
+      {
+        "column": 2,
+        "event": 0,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 0,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 1,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 0,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 2,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 0,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 3,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 0,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 4,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 1,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 5,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 1,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 6,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 2,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 189117,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 36320,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 189118,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 36320,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 189119,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 36320,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 189120,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 36320,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 189121,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 36321,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 189122,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 36321,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 189123,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 36322,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 378010,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 72416,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 378011,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 72416,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 378012,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 72416,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 378013,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 72416,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 378014,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 72417,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 378015,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 72417,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 378016,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 72418,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 566903,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 108512,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 566904,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 108512,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 566905,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 108512,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 566906,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 108512,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 566907,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 108513,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 566908,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 108513,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 566909,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 108514,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 755796,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 144608,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 755797,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 144608,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 755798,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 144608,
+        "line": 39
+      },
+      {
+        "column": 2,
+        "event": 755799,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 144608,
+        "line": 39
+      },
+      {
+        "column": 1,
+        "event": 108382870,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19045138,
+        "line": 814
+      },
+      {
+        "column": 1,
+        "event": 108385889,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046647,
+        "line": 991
+      },
+      {
+        "column": 1,
+        "event": 108385890,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046648,
+        "line": 1010
+      },
+      {
+        "column": 1,
+        "event": 108385891,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046648,
+        "line": 1010
+      },
+      {
+        "column": 1,
+        "event": 108385892,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046649,
+        "line": 1027
+      },
+      {
+        "column": 1,
+        "event": 108385893,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046649,
+        "line": 1027
+      },
+      {
+        "column": 1,
+        "event": 108385894,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046650,
+        "line": 1104
+      },
+      {
+        "column": 1,
+        "event": 108385895,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046650,
+        "line": 1104
+      },
+      {
+        "column": 1,
+        "event": 108385896,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046651,
+        "line": 1158
+      },
+      {
+        "column": 1,
+        "event": 108385897,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046651,
+        "line": 1158
+      },
+      {
+        "column": 1,
+        "event": 108385898,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046652,
+        "line": 1193
+      },
+      {
+        "column": 1,
+        "event": 108385899,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046652,
+        "line": 1193
+      },
+      {
+        "column": 1,
+        "event": 108385900,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046653,
+        "line": 1212
+      },
+      {
+        "column": 1,
+        "event": 108385901,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046653,
+        "line": 1212
+      },
+      {
+        "column": 1,
+        "event": 108385902,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046654,
+        "line": 1224
+      },
+      {
+        "column": 1,
+        "event": 108385903,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046654,
+        "line": 1224
+      },
+      {
+        "column": 1,
+        "event": 108385904,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046655,
+        "line": 1299
+      },
+      {
+        "column": 1,
+        "event": 108385905,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046655,
+        "line": 1299
+      },
+      {
+        "column": 1,
+        "event": 108385906,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046656,
+        "line": 1350
+      },
+      {
+        "column": 1,
+        "event": 108385907,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046656,
+        "line": 1350
+      },
+      {
+        "column": 1,
+        "event": 108385908,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046657,
+        "line": 991
+      },
+      {
+        "column": 1,
+        "event": 108385909,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046657,
+        "line": 991
+      },
+      {
+        "column": 1,
+        "event": 108385910,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046658,
+        "line": 1010
+      },
+      {
+        "column": 1,
+        "event": 108385911,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046658,
+        "line": 1010
+      },
+      {
+        "column": 1,
+        "event": 108385912,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046659,
+        "line": 1027
+      },
+      {
+        "column": 1,
+        "event": 108385913,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046659,
+        "line": 1027
+      },
+      {
+        "column": 1,
+        "event": 108385914,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046660,
+        "line": 1104
+      },
+      {
+        "column": 1,
+        "event": 108385915,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046660,
+        "line": 1104
+      },
+      {
+        "column": 1,
+        "event": 108385916,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046661,
+        "line": 1158
+      },
+      {
+        "column": 1,
+        "event": 108385917,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046661,
+        "line": 1158
+      },
+      {
+        "column": 1,
+        "event": 108385918,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046662,
+        "line": 1193
+      },
+      {
+        "column": 1,
+        "event": 108385919,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046662,
+        "line": 1193
+      },
+      {
+        "column": 1,
+        "event": 108385920,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19046663,
+        "line": 1212
+      },
+      {
+        "column": 43,
+        "event": 108902763,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19117243,
+        "line": 419
+      },
+      {
+        "column": 43,
+        "event": 108904143,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19117244,
+        "line": 427
+      },
+      {
+        "column": 43,
+        "event": 108905523,
+        "file": "corpus/tirx-curated-vsa.ptx",
+        "instruction": 19117245,
+        "line": 432
+      }
+    ],
+    "synthetic_events": [],
+    "unmapped_witness_events": [],
+    "witness_event_list_limit": 32,
+    "witness_event_lists_truncated": true
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 8402816,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "s32",
+          "object": "q2k_indices",
+          "property": "lower_bound",
+          "value": 0
+        },
+        {
+          "element_type": "s32",
+          "object": "q2k_indices",
+          "property": "upper_bound",
+          "value": 127
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "q2k_indices",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg0.0"
+        }
+      ],
+      "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [],
+    "trap_only_equality_assertions_hold": true
+  },
   "internal": {
-    "active_stage": "semantic_ir.cta2",
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_rlimit": 100000
+    },
+    "counts": {
+      "edges": 559843527,
+      "events": 206396635,
+      "instructions": 35592339,
+      "threads": 1024
+    },
     "equivalence": {
       "diagnostics": [
         {
           "code": "prerequisite_check_not_passed",
           "details": {
-            "cta_progress": 2,
             "prerequisite_checks": {
               "equivalence": "not_run",
               "memory": "not_run",
-              "synchronization": "not_run"
+              "synchronization": "failed"
             },
             "prerequisite_diagnostics": [
               {
-                "code": "process_memory_budget_exceeded",
+                "code": "issue_not_ordered_before_next_phase",
                 "details": {
-                  "cta_progress": 2,
-                  "peak_rss_mib": 85398.5703125,
-                  "resource": {
-                    "kind": "memory",
-                    "limit": 85274.0,
-                    "origin": "default_budget",
-                    "unit": "MiB"
+                  "issue": 108382870,
+                  "phase": {
+                    "barrier": 28,
+                    "generation": 1
                   },
-                  "rss_limit_mib": null
+                  "required_events": {
+                    "events": [
+                      108902763,
+                      108904143,
+                      108905523
+                    ],
+                    "total": 3,
+                    "truncated": false
+                  }
                 },
-                "stage": "value_view_construction"
+                "message": "Wait check failed: issue_not_ordered_before_next_phase.",
+                "stage": "synchronization_check"
               }
             ],
-            "prerequisite_result": "memory_budget_exceeded",
-            "prerequisite_status": "memory_limit_exceeded"
+            "prerequisite_result": "not_wellsynced"
           },
-          "stage": "value_view_construction"
+          "stage": "equivalence_check"
+        }
+      ]
+    },
+    "frontend": {
+      "address_value_bridge": {
+        "diagnostics": [],
+        "first_unavailable_reason": "",
+        "queries": 0,
+        "resolved": 0,
+        "source": "value_lowering",
+        "unavailable": 0,
+        "value_view_complete": false,
+        "values_suspended": {
+          "deferred_ctas": 1,
+          "value_view_ctas": 1
+        }
+      },
+      "cluster_completion_joins": 0,
+      "cta_count": 148,
+      "dependency_compression": {
+        "bulk_read_wait": {
+          "consumers": 416,
+          "emitted_references": 26,
+          "original_references": 98,
+          "prefix_effects": 0
+        },
+        "tcgen_commit": {
+          "consumers": 3367,
+          "emitted_references": 20044,
+          "original_references": 11304648,
+          "prefix_effects": 3367
+        },
+        "tcgen_load_wait": {
+          "consumers": 108160,
+          "emitted_references": 1277952,
+          "original_references": 47988736,
+          "prefix_effects": 0
+        },
+        "tcgen_store_wait": {
+          "consumers": 316160,
+          "emitted_references": 1251328,
+          "original_references": 257152000,
+          "prefix_effects": 0
+        }
+      },
+      "diagnostic_sample_count": 0,
+      "discharged_codes": [
+        "mma_memory_effect_refinement",
+        "tcgen_pipeline_effect_refinement",
+        "tcgen_commit_notification_order_refinement"
+      ],
+      "executed_records": 8845410084,
+      "frontend_assumptions": {
+        "assertion_failure_forms": [
+          "trap",
+          "__assertfail"
+        ],
+        "assertion_uses": 0,
+        "atomic_uses": 0,
+        "bounded_loop_uses": 0,
+        "clc_failure": true,
+        "clc_uses": 0,
+        "data_branch_decisions": [],
+        "election_policy": {
+          "fallback": "lowest_member",
+          "preferred_lane": 0,
+          "strategy": "preferred_member"
+        },
+        "election_uses": 8402816,
+        "fixed_election": true,
+        "isolated_launch": true,
+        "noalias_unbounded": false,
+        "opaque_compute_regions": [],
+        "pointer_contract": {
+          "aliasing": "distinct_objects_noalias",
+          "extent_bytes": "unbounded"
+        },
+        "representative_branch_uses": 0,
+        "tensor_properties": {
+          "kind": "fixed_read_only",
+          "origin": "tensor_properties",
+          "properties": [
+            {
+              "element_type": "s32",
+              "object": "q2k_indices",
+              "property": "lower_bound",
+              "value": 0
+            },
+            {
+              "element_type": "s32",
+              "object": "q2k_indices",
+              "property": "upper_bound",
+              "value": 127
+            }
+          ],
+          "regions": [
+            {
+              "allocation": "q2k_indices",
+              "byte_offset": 0,
+              "bytes": "whole_object",
+              "resource": "input.arg0.0"
+            }
+          ],
+          "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+        },
+        "tensor_property_decisions": [],
+        "trap_only_equality_assertions_hold": true
+      },
+      "implementation": "cpp",
+      "input_objects": [
+        {
+          "bytes": 8,
+          "object": "q2k_indices",
+          "offset": 0,
+          "parameter": "vsa_attn_blk128_kernel_param_0",
+          "source": "declaration"
         }
       ],
-      "prerequisite_status": "memory_limit_exceeded",
-      "stage": "semantic_ir.cta2"
+      "lowered_instruction_count": 35592339,
+      "mma_refinement": {
+        "blocked": [],
+        "discharged": 13312
+      },
+      "reached_opcodes": {
+        "add.ftz.f32": 8388608,
+        "add.rn.f32x2": 544997376,
+        "add.s32": 193021280,
+        "add.s64": 4202556,
+        "and.b32": 26738008,
+        "and.pred": 8126464,
+        "bar.arrive": 8707584,
+        "bar.sync": 8792832,
+        "bar.warp.sync": 8393344,
+        "bra": 31843612,
+        "bra.uni": 169728,
+        "cp.async.bulk.commit_group": 32768,
+        "cp.async.bulk.prefetch.tensor.3d.L2.global.tile": 1752,
+        "cp.async.bulk.tensor.3d.global.shared::cta.tile.bulk_group.L2::cache_hint": 2048,
+        "cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.L2::cache_hint": 264192,
+        "cp.async.bulk.wait_group.read": 32768,
+        "cvt.rn.bf16x2.f32": 545259520,
+        "cvt.u64.u32": 33592320,
+        "cvta.param.u64": 2182508,
+        "elect.sync": 8402816,
+        "ex2.approx.ftz.f32": 1082130432,
+        "fence.mbarrier_init.release.cluster": 75776,
+        "fence.proxy.async.shared::cta": 206848,
+        "fma.rn.f32x2": 536870912,
+        "fma.rn.ftz.f32": 131072,
+        "ld.global.s32": 135808,
+        "ld.param.b32": 75776,
+        "ld.param.b64": 75776,
+        "ld.shared.f32": 8650752,
+        "ld.shared.u32": 66304,
+        "max.f32": 553779200,
+        "mbarrier.arrive.expect_tx.shared.b64": 132096,
+        "mbarrier.arrive.shared.b64": 34248704,
+        "mbarrier.init.shared.b64": 4440,
+        "mbarrier.try_wait.parity.acquire.cta.shared::cta.b64": 57063296,
+        "mov.b32": 133497808,
+        "mov.b64": 3802013696,
+        "mov.s32": 262588,
+        "mov.u32": 151996,
+        "mul.f32": 16515072,
+        "mul.ftz.f32": 8781824,
+        "mul.rn.f32x2": 536870912,
+        "mul.wide.s32": 2031616,
+        "mul.wide.u32": 41020,
+        "neg.ftz.f32": 37888,
+        "or.b32": 202988,
+        "or.b64": 33592320,
+        "or.pred": 32768,
+        "prefetch.global.L2": 3072,
+        "prefetch.tensormap": 18944,
+        "rcp.approx.ftz.f32": 131072,
+        "ret": 75776,
+        "selp.b32": 33522688,
+        "selp.f32": 33554432,
+        "setmaxnreg.dec.sync.aligned.u32": 37888,
+        "setmaxnreg.inc.sync.aligned.u32": 37888,
+        "setp.eq.b32": 25225344,
+        "setp.gt.s32": 75776,
+        "setp.gt.u32": 8414208,
+        "setp.lt.ftz.f32": 8126464,
+        "setp.lt.u32": 8683520,
+        "setp.ltu.ftz.f32": 8126464,
+        "setp.ne.b32": 116195908,
+        "setp.neu.ftz.f32": 8912896,
+        "shfl.sync.idx.b32": 89984,
+        "shl.b32": 38597532,
+        "shl.b64": 444,
+        "shr.u32": 9298668,
+        "st.shared.f32": 8650752,
+        "st.shared.v4.u32": 2097152,
+        "sub.f32": 8126464,
+        "sub.ftz.f32": 262144,
+        "tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32": 4736,
+        "tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64": 265216,
+        "tcgen05.dealloc.cta_group::1.sync.aligned.b32": 4736,
+        "tcgen05.ld.sync.aligned.32x32b.x16.b32": 67108864,
+        "tcgen05.ld.sync.aligned.32x32b.x32.b32": 33554432,
+        "tcgen05.mma.cta_group::1.kind::f16": 1048576,
+        "tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned": 4736,
+        "tcgen05.st.sync.aligned.32x32b.x16.b32": 98566144,
+        "tcgen05.wait::ld.sync.aligned": 8519680,
+        "tcgen05.wait::st.sync.aligned": 24903680,
+        "vote.sync.ballot.b32": 8126464,
+        "xor.b32": 44205568
+      },
+      "shared_constant_propagation": {
+        "read_from_dependencies": 0,
+        "representation": "sparse_known_bytes",
+        "validation": "pending_backend"
+      },
+      "source_binding_storage": {
+        "binding_templates": 28,
+        "generated_address_rows": 0,
+        "generated_body_rows": 0,
+        "generated_memory_instances": 0,
+        "logical_instructions": 35592339,
+        "stored_bindings": 272351
+      },
+      "source_edge_storage": {
+        "binding_templates": 45956,
+        "logical_edges": 35591315,
+        "stored_bindings": 45956
+      },
+      "tcgen_history_refinement": {
+        "blocked": [],
+        "notifications": 3367,
+        "operations": 13312
+      },
+      "thread_count": 75776,
+      "unsupported_occurrence_counts": {},
+      "user_branch_decisions": []
     },
     "implementation": "cpp",
     "memory_analysis_complete": false,
-    "peak_footprint_mib": 85398.578125
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 67775.3125,
+    "required_order_domains": 2621656,
+    "required_orders": 83892992,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 50,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 0,
+      "memory_binding_templates": 0,
+      "memory_bindings": 0,
+      "memory_linking_templates_used": false,
+      "synchronization_groups": 447374,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 27458,
+      "thread_prefix_groups": 5870444,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": [],
+      "value_view_released_before_verification": true
+    },
+    "source_violations": [],
+    "stage": "synchronization_check",
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 148,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 8911988368,
+      "path_entries": 145489492,
+      "record_bindings": 415275912,
+      "record_nodes": 145215840,
+      "splits": 1776,
+      "template_steps": 147741232,
+      "thread_memberships": 75776,
+      "value_nodes": 169687455
+    },
+    "thread_record_compression": {
+      "completed_ctas": 148,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 8845410084,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "value_analysis": {
+      "diagnostics": [
+        {
+          "code": "prerequisite_check_not_passed",
+          "details": {
+            "prerequisite_checks": {
+              "equivalence": "not_run",
+              "memory": "not_run",
+              "synchronization": "failed"
+            },
+            "prerequisite_diagnostics": [
+              {
+                "code": "issue_not_ordered_before_next_phase",
+                "details": {
+                  "issue": 108382870,
+                  "phase": {
+                    "barrier": 28,
+                    "generation": 1
+                  },
+                  "required_events": {
+                    "events": [
+                      108902763,
+                      108904143,
+                      108905523
+                    ],
+                    "total": 3,
+                    "truncated": false
+                  }
+                },
+                "message": "Wait check failed: issue_not_ordered_before_next_phase.",
+                "stage": "synchronization_check"
+              }
+            ],
+            "prerequisite_result": "not_wellsynced",
+            "prerequisite_status": "not_wellsynced"
+          },
+          "stage": "pipeline"
+        }
+      ],
+      "equivalence_check": "blocked",
+      "prerequisite_status": "not_wellsynced",
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      }
+    },
+    "value_ir_instance_count": 274328933,
+    "value_ir_node_count": 4875885,
+    "value_view_complete": true
   },
-  "peak_rss_mib": 85398.5703125,
-  "resource": {
-    "kind": "memory",
-    "limit": 85274.0,
-    "origin": "default_budget",
-    "unit": "MiB"
-  },
-  "result": "memory_budget_exceeded",
-  "rss_limit_mib": null,
-  "schema": "spverify.native-ptx-run/v1",
+  "peak_rss_mib": 67775.3125,
+  "pipeline_elapsed_seconds": 1093.361801838,
+  "result": "not_wellsynced",
+  "rss_limit_mib": 85274,
+  "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "timeout_scope": "whole_pipeline",
-  "warnings_complete": false
+  "verification_limitations": [],
+  "warnings": [],
+  "wellsync_timeout_seconds": 2000.0,
+  "whole_pipeline_timeout_seconds": 1998.5
 }

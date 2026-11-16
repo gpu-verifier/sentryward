@@ -24,8 +24,10 @@ def reference(activations, expert_weights, weight_scales, row_end_0, row_end_1, 
     weights = _weights(expert_weights, experts, activations.shape[1], n)
     parts = []
     for e, (start, end) in enumerate(_rows(row_end_0, row_end_1, row_end_2, row_end_3)):
-        # B is dequantized in fp16 and converted to e4m3 (cvt.rn.satfinite) before the e4m3 MMA.
-        b = (weights[e] * weight_scales[e][None, :]).float().clamp(-448.0, 448.0).to(torch.float8_e4m3fn)
+        # B is dequantized as int4 * scale in the activation dtype (fp16), as in upstream's W4A8_AWQ oracle
+        # (tests/unittest/_torch/moe/quantize_utils.py:2834-2836 @ef567dd); upstream applies no fp8 rounding to
+        # the dequantized weight (the kernel's cvt.rn.satfinite to e4m3 before its e4m3 MMA is not part of it).
+        b = weights[e] * weight_scales[e][None, :]
         acc = activations[start:end].float() @ b.float()
         parts.append(torch.clamp(acc, min=0.0))
     return torch.cat(parts).to(torch.float16)

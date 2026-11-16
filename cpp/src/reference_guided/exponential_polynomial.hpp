@@ -1,3 +1,4 @@
+#include <unordered_set>
 #pragma once
 #include "core.hpp"
 #include "alpha_identity.hpp"
@@ -51,6 +52,11 @@ private:
   size_t initial_nodes, stored_terms = 0;
   Id inverse_log2 = invalid;
   std::map<Id, Polynomial> cache;
+  // Shared normal forms this query has charged to its budget, used in place: a shared entry is
+  // never erased during a query (clear_shared runs only between queries, after reset_query),
+  // so the reference stays valid, and the per-query budget is charged once, as a copy into
+  // `cache` was. Saves copying (often large) polynomials into every query.
+  std::unordered_map<Id, const Polynomial *> shared_refs;
   std::unordered_map<Id, Id> normal_cache;
   struct Fraction { Id numerator, denominator; };
   std::unordered_map<Id, Fraction> fraction_cache;
@@ -102,7 +108,10 @@ private:
     for (const auto &[key, value] : from) insert(to, key, scale * value);
   }
   // Every exponential in a product contributes its exponent to one sum per
-  // base. exp and exp2 remain distinct; no approximate log(2) conversion.
+  // base. exp and exp2 remain distinct; no approximate log(2) conversion. The
+  // only base change is exact: a term carrying the ideal constant ln 2 (or
+  // 1/ln 2) moves to the other base (Arena::exponent_bases), and ln 2 * (1/ln 2)
+  // cancels.
   Monomial product_key(const Monomial &left, const Monomial &right, size_t depth) {
     tick();
     if (left.size() + right.size() > budget.degree) throw Miss{"degree"};
@@ -114,13 +123,34 @@ private:
       else if (n.op == "exp2") binary.push_back(n.args[0]);
       else result.push_back(id);
     }
-    auto append = [&](const std::vector<Id> &exponents, bool base2) {
-      if (exponents.empty()) return;
-      Id exponent = exponent_normal(a.add(exponents), depth + 1);
+    for (bool cancelled = true; cancelled;) {
+      const auto ln2 = std::find_if(result.begin(), result.end(), [&](Id f) { return a.is_natural_log2(f); });
+      const auto inverse = std::find_if(result.begin(), result.end(), [&](Id f) { return a.is_inverse_natural_log2(f); });
+      cancelled = ln2 != result.end() && inverse != result.end();
+      if (cancelled) {
+        const size_t i = size_t(ln2 - result.begin()), j = size_t(inverse - result.begin());
+        result.erase(result.begin() + std::max(i, j));
+        result.erase(result.begin() + std::min(i, j));
+      }
+    }
+    Id natural_exponent = natural.empty() ? a.zero : exponent_normal(a.add(natural), depth + 1);
+    Id binary_exponent = binary.empty() ? a.zero : exponent_normal(a.add(binary), depth + 1);
+    if (auto bases = a.exponent_bases(natural_exponent, binary_exponent)) {
+      natural_exponent = exponent_normal(bases->first, depth + 1);
+      binary_exponent = exponent_normal(bases->second, depth + 1);
+    }
+    auto append = [&](Id exponent, bool base2) {
+      if (exponent == a.zero) return;
       Id value = a.exponential(exponent, base2);
-      if (value != a.one) result.push_back(alpha.representative(value));
+      const Node &v = a.nodes[value];
+      // A residual base change returns exp(.)*exp2(.): keep each as its own factor.
+      if (v.op == "mul" && v.data[0] == 1 && std::all_of(v.args.begin(), v.args.end(), [&](Id f) {
+            return a.nodes[f].op == "exp" || a.nodes[f].op == "exp2"; })) {
+        const auto factors = v.args;
+        for (Id f : factors) result.push_back(alpha.representative(f));
+      } else if (value != a.one) result.push_back(alpha.representative(value));
     };
-    append(natural, false); append(binary, true);
+    append(natural_exponent, false); append(binary_exponent, true);
     std::sort(result.begin(), result.end());
     return result;
   }
@@ -216,8 +246,47 @@ private:
   }
   // 1/log(2), the factor of every base-2 logarithm in the normal form.
   Id inverse_natural_log2() {
-    if (inverse_log2 == invalid) inverse_log2 = a.recip(a.logarithm(a.constant(2)));
+    if (inverse_log2 == invalid) inverse_log2 = a.inverse_natural_log2();
     return inverse_log2;
+  }
+  // Rule: for finite positive factors, log(k * f_1 * ... * f_n) = log k + sum_i log f_i, with
+  // log(exp z) = z, log(exp2 z) = z * ln 2 and log(2^j) = j * ln 2, all exact real identities. Only an
+  // argument whose normal form is one monomial with a positive coefficient and factors each proved
+  // finite and positive is split; any other argument keeps its logarithm atom. Returns the natural
+  // logarithm. O(monomial degree + exponent normal forms).
+  std::optional<Polynomial> logarithm_of_product(Id argument, size_t depth) {
+    const Polynomial argument_polynomial = polynomial(argument, depth + 1);
+    if (argument_polynomial.size() != 1) return {};
+    const auto [key, coefficient] = *argument_polynomial.begin();
+    if (coefficient <= 0) return {};
+    for (Id f : key) {
+      const Node &n = a.nodes[f];
+      const bool exponential = (n.op == "exp" || n.op == "exp2") && n.args.size() == 1 &&
+                               a.nodes[n.args[0]].facts.finite;
+      if (!exponential && (!n.facts.finite || !n.facts.pos)) return {};
+    }
+    Polynomial p;
+    const Id ln2 = alpha.representative(a.natural_log2());
+    const auto power_of_two = [](const Z &x) { return x > 0 && (x & (x - 1)) == 0; };
+    const Z numerator = coefficient.numerator(), denominator = coefficient.denominator();
+    if (coefficient != 1) {
+      if (denominator == 1 && power_of_two(numerator))
+        insert(p, {ln2}, Q(Z(boost::multiprecision::msb(numerator))));
+      else if (numerator == 1 && power_of_two(denominator))
+        insert(p, {ln2}, -Q(Z(boost::multiprecision::msb(denominator))));
+      else insert(p, {alpha.representative(a.logarithm(a.constant(coefficient)))}, Q(1));
+    }
+    for (Id f : key) {
+      tick();
+      const Node &n = a.nodes[f];
+      if (n.op == "exp") add(p, polynomial(n.args[0], depth + 1));
+      else if (n.op == "exp2") {
+        Polynomial scale; insert(scale, {ln2}, Q(1));
+        add(p, multiply(polynomial(n.args[0], depth + 1), scale, depth + 1));
+      } else insert(p, {alpha.representative(a.logarithm(f))}, Q(1));
+    }
+    ++a.stats["logarithm_product_splits"];
+    return p;
   }
   // The normal form of c*log2(x) is c*log(x)*(1/log 2) (logarithm_polynomial).
   // Returns log(x) and folds c into the coefficient; invalid otherwise.
@@ -243,6 +312,13 @@ private:
     if ((n.op != "log" && n.op != "log2") || n.args.size() != 1 || !n.facts.finite) return {};
     const bool base2 = n.op == "log2";
     Id argument = n.args[0];
+    try {
+      if (auto split = logarithm_of_product(argument, depth)) {
+        if (!base2) return split;
+        Polynomial inverse; insert(inverse, {alpha.representative(inverse_natural_log2())}, Q(1));
+        return multiply(*split, inverse, depth + 1);
+      }
+    } catch (const Miss &) {}
     try {
       const Id normalized = normal(argument, depth + 1);
       if (a.nodes[normalized].facts.finite && a.nodes[normalized].facts.pos) argument = normalized;
@@ -326,14 +402,58 @@ private:
     Id inverse = a.intern("recip", {denominator}, {}, "", {true, false, false});
     return normal(a.mul({numerator, inverse}), depth + 1);
   }
+  // A Select whose arms share a constant factor k (both k*x and k*y, or one of them and a constant):
+  // (k, the Select of the unscaled arms). nullopt otherwise (and for k = 0 or 1). O(1).
+  std::optional<std::pair<Q, Id>> common_arm_scale(Id root) {
+    const auto &n = a.nodes[root];
+    if (n.op != "select" || n.args.size() != 3) return std::nullopt;
+    const auto scale = [&](Id x) -> std::optional<Q> {
+      const auto &m = a.nodes[x];
+      if (m.op == "mul" && m.data.size() == 1 && m.data[0] != 0 && m.data[0] != 1 && !m.args.empty()) return m.data[0];
+      return std::nullopt;
+    };
+    const Id c = n.args[0], x = n.args[1], y = n.args[2];
+    const auto kx = scale(x), ky = scale(y);
+    const auto vx = a.value(x), vy = a.value(y);
+    std::optional<Q> k;
+    if (kx && ky) { if (*kx == *ky) k = kx; }
+    else if (kx && vy) k = kx;
+    else if (ky && vx) k = ky;
+    if (!k) return std::nullopt;
+    const auto unscaled = [&](Id z) {
+      if (const auto v = a.value(z)) return a.constant(*v / *k);
+      const auto args = a.nodes[z].args;
+      return a.mul(args);
+    };
+    const Id ux = unscaled(x), uy = unscaled(y);
+    // Only for arms built without -infinity: no -infinity node within the arms (Folds and Calls are not
+    // entered; at most 256 nodes visited, beyond that no rule). Where a pivot is built from values that may be
+    // -infinity (masked rows), the chain lemmas of the linear-reduction pattern reason about its spellings.
+    {
+      std::vector<Id> todo{ux, uy}; std::unordered_set<Id> seen;
+      while (!todo.empty()) {
+        const Id z = todo.back(); todo.pop_back();
+        if (!seen.insert(z).second) continue;
+        if (seen.size() > 256 || a.neginf(z)) return std::nullopt;
+        const auto &m = a.nodes[z];
+        if (m.op == "fold" || m.op == "call") continue;
+        todo.insert(todo.end(), m.args.begin(), m.args.end());
+      }
+    }
+    const Id inner = a.select(c, ux, uy);
+    if (!a.nodes[inner].facts.finite) return std::nullopt;
+    return std::pair(*k, inner);
+  }
   const Polynomial &polynomial(Id root, size_t depth) {
     depth_check(depth);
     observe(poly_visits,root);
     if (auto it = cache.find(root); it != cache.end()) return it->second;
+    if (auto it = shared_refs.find(root); it != shared_refs.end()) return *it->second;
     if(reuse_cache)if(auto it=shared_poly.find(root);it!=shared_poly.end()){
       if(stored_terms+it->second.size()>budget.cached_terms)throw Miss{"cached_terms"};
       stored_terms+=it->second.size();++poly_visits.shared_hits;
-      return cache.emplace(root,it->second).first->second;
+      shared_refs.emplace(root,&it->second);
+      return it->second;
     }
     const Node &n = a.nodes[root];
     if (!n.facts.finite && !conditional_nodes.contains(root)) throw Miss{"nonfinite_or_undefined"};
@@ -356,6 +476,16 @@ private:
       }
     } else if (auto logarithm = logarithm_polynomial(root, depth)) {
       p = std::move(*logarithm);
+    } else if (auto pulled = common_arm_scale(root)) {
+      // Rule (common scale of the arms): select(c, k*x, k*y) = k*select(c, x, y), and
+      // select(c, k*x, v) = k*select(c, x, v/k) (or mirrored) for constants k (not 0, 1) and v: pointwise the
+      // Select takes one arm, which is k times that arm of the unscaled Select. The normal form keeps the
+      // unscaled Select as the atom with coefficient k, so a pivot kept in score units and in scaled units
+      // (k*select(c, m, p) and select(c, k*m, k*p)) is one atom. Only the normal form changes; the
+      // expression keeps its spelling. Exact. O(1) plus the unscaled Select's constructor.
+      insert(p, {}, pulled->first);
+      p = multiply(p, polynomial(pulled->second, depth + 1), depth + 1);
+      ++a.stats["ep_select_common_scales"];
     } else {
       // Reciprocal is an opaque factor in the ordinary normal form. Its
       // original domain remains intact; fraction() handles crossing later.
@@ -364,7 +494,13 @@ private:
     if (stored_terms + p.size() > budget.cached_terms) throw Miss{"cached_terms"};
     stored_terms += p.size();computed(poly_visits,root);
     if(reuse_cache && !shared_full && !shared_poly.contains(root)) {
-      if(shared_terms+p.size()<=budget.cached_terms && shared_poly.size()<budget.cached_terms){shared_terms+=p.size();shared_poly.emplace(root,p);}
+      if(shared_terms+p.size()<=budget.cached_terms && shared_poly.size()<budget.cached_terms) {
+        // Stored once, shared; this query uses it in place (shared_refs).
+        shared_terms+=p.size();
+        const auto &stored=shared_poly.emplace(root,std::move(p)).first->second;
+        shared_refs.emplace(root,&stored);
+        return stored;
+      }
       else shared_full=true;
     }
     return cache.emplace(root, std::move(p)).first->second;
@@ -374,7 +510,7 @@ public:
       : a(arena), alpha(arena), budget(b), initial_nodes(arena.nodes.size()) {}
   void reset() {clear_shared();reset_query();}
   void reset_query() {
-    cache.clear(); normal_cache.clear(); fraction_cache.clear();
+    cache.clear(); shared_refs.clear(); normal_cache.clear(); fraction_cache.clear();
     stored_terms=0; work=0; initial_nodes=a.nodes.size(); last_failure.clear();
   }
   // Canonicalization is bounded; equal() starts fresh per-query budgets/caches.

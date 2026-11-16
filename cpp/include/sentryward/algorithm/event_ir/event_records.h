@@ -234,4 +234,13 @@ struct EventRecordCodec {
   }
 };
 using EventRecords=TemplateRecords<Event,EventRecordCodec>;
+// Whether event `index` is urgent-derived (Event::isUrgentDerived), read from its stored record's
+// scheduling class, which EventRecordCodec::bind never changes: no record is rebuilt.
+// O(log segments).
+inline bool IsUrgentDerived(const EventRecords& events,std::size_t index) {
+  return events.header(index,[](const Event& prototype,const EventRecordCodec::Binding*,
+      const EventRecordCodec::Delta*,std::size_t,const EventRecordCodec::Delta*,std::size_t) {
+    return prototype.scheduling_class;
+  })==EventSchedulingClass::kUrgentDerived;
+}
 } // namespace sentryward::algorithm

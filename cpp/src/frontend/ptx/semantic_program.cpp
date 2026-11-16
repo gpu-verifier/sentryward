@@ -25,6 +25,7 @@
 #include "sentryward/algorithm/diagnostics/performance_profile.h"
 #include "sentryward/algorithm/base/affine_index.h"
 #include "sentryward/algorithm/base/template_records.h"
+#include "sentryward/algorithm/memory/table_valuation.h"
 
 namespace sentryward::frontend::ptx {
 namespace {
@@ -39,6 +40,8 @@ struct SourceAccess {
   std::optional<std::uint64_t> bytes;
   bool immediate;
   bool ordered_native;
+  // A TMA transfer fragment (cp.async.bulk.tensor): its value may be a source row (LinkTmaRuns).
+  bool tma = false;
 };
 
 std::vector<SourceAccess> Accesses(const a::SourceInstruction& instruction) {
@@ -51,7 +54,8 @@ std::vector<SourceAccess> Accesses(const a::SourceInstruction& instruction) {
         opcode.starts_with("tcgen05.ld.") || opcode.starts_with("tcgen05.st.") ||
         opcode.starts_with("clusterlaunchcontrol.try_cancel.") || opcode.starts_with("cp.async.bulk.tensor.") ||
         opcode.starts_with("cp.reduce.async.bulk.global.");
-    result.push_back({{instruction.id, operand, effect, access}, mode, address, bytes, immediate, ordered_native});
+    result.push_back({{instruction.id, operand, effect, access}, mode, address, bytes, immediate, ordered_native,
+        opcode.starts_with("cp.async.bulk.tensor.")});
   };
   std::visit([&](const auto& op) {
     using T = std::decay_t<decltype(op)>;
@@ -553,11 +557,33 @@ void LinkMmaMemory(SemanticProgram& result, const MmaValueLayout& layout,
   });
 }
 
+// Class mode's fixed shape-array tables (table_valuation.h), set while LinkMemory runs: the analysed
+// program is the representatives', whose table lookups are their own exact elements.
+thread_local const a::TableValuation* link_tables = nullptr;
+thread_local std::unordered_map<std::string, std::optional<std::uint64_t>>* link_valued = nullptr;
+// The exact allocation offset of a table-lookup footprint (TableValuation::FootprintOffset): the
+// representative's own address. Memoized per expression text.
+std::optional<std::uint64_t> ValuedTableOffset(const a::ConstantAddressBinding& binding) {
+  if (!link_tables || link_tables->empty() || !link_valued) return std::nullopt;
+  const auto [cached, added] = link_valued->try_emplace(binding.expression);
+  if (added) cached->second = link_tables->FootprintOffset(binding.expression, binding.address_space, binding.allocation);
+  return cached->second;
+}
+
 SemanticMemoryBinding BindMemoryValue(const SourceAccess& access, const ValueAccess& value,
     SemanticOccurrence occurrence, std::uint64_t offset,
     const a::ConstantAddressBinding* address) {
   SemanticMemoryBinding binding{access.key, occurrence, value.reference, access.mode,
       access.address, *access.bytes, {}, {}, offset};
+  // A table-lookup footprint of the analysed program is its exact address there.
+  std::optional<a::ConstantAddressBinding> valued;
+  if (address && !address->expression.empty())
+    if (const auto exact = ValuedTableOffset(*address)) {
+      valued = *address;
+      valued->expression.clear();
+      valued->offset = *exact;
+      address = &*valued;
+    }
   if (!address) binding.unsupported_reason = "Source access has no address binding";
   else if (!address->expression.empty()) binding.unsupported_reason = "Memory address remains symbolic";
   else if (!address->alias_scope.empty() && address->address_space!="tensor")
@@ -568,6 +594,42 @@ SemanticMemoryBinding BindMemoryValue(const SourceAccess& access, const ValueAcc
     binding.unsupported_reason = "Vector component address overflows";
   else binding.region = va::ConstantRegion{AllocationIdentity(*address), address->offset + offset, *value.bytes};
   return binding;
+}
+
+// A TMA transfer whose value lowering made one Load and one Store per source row (value_ir.cpp,
+// ResolvedTma): each value, in lowering order, takes the next fragments of its own direction, in
+// source order, until its bytes are covered. Returns per fragment (in source order) its value
+// index and, for a value of several fragments, its value byte offset; nullopt unless every
+// fragment is a TMA fragment, every value an ordinary byte extent, fewer values than fragments,
+// and the fragments cover every value exactly once in order. O(fragments + values).
+struct TmaRunPart { std::size_t source, value; std::optional<std::uint64_t> value_byte_offset; };
+template<class S,class V>
+std::optional<std::vector<TmaRunPart>> TmaRunAssignment(std::size_t sources,std::size_t values,S&& source,V&& value) {
+  if(!sources || !values || values>=sources)return std::nullopt;
+  std::map<a::AccessMode,std::vector<std::size_t>> by_mode;
+  for(std::size_t i=0;i<sources;++i) {
+    const SourceAccess& access=source(i);
+    if(!access.tma || !access.ordered_native || !access.bytes || !*access.bytes)return std::nullopt;
+    by_mode[access.mode].push_back(i);
+  }
+  std::map<a::AccessMode,std::size_t> next;
+  std::vector<TmaRunPart> parts;parts.reserve(sources);
+  for(std::size_t j=0;j<values;++j) {
+    const ValueAccess& v=value(j);
+    if(!v.ordinary_scalar || !v.bytes || !*v.bytes || !by_mode.contains(v.mode))return std::nullopt;
+    const auto& queue=by_mode.at(v.mode);auto& at=next[v.mode];
+    const auto begin=parts.size();std::uint64_t payload=0;
+    while(payload<*v.bytes) {
+      if(at==queue.size())return std::nullopt;
+      const auto i=queue[at++];const auto bytes=*source(i).bytes;
+      if(bytes>*v.bytes-payload)return std::nullopt;
+      parts.push_back({i,j,payload});payload+=bytes;
+    }
+    if(parts.size()==begin+1)parts.back().value_byte_offset.reset();
+  }
+  for(const auto& [mode,queue]:by_mode)if(next[mode]!=queue.size())return std::nullopt;
+  std::sort(parts.begin(),parts.end(),[](const auto& x,const auto& y){return x.source<y.source;});
+  return parts;
 }
 
 bool LinkCopyMemory(SemanticProgram& result,const SemanticOccurrence& occurrence,
@@ -755,6 +817,20 @@ void LinkMemory(SemanticProgram& result, bool compact,
     }
     for (const auto& [mode, endpoint] : endpoints)
       if (!endpoint->bytes || totals[mode] != *endpoint->bytes) contiguous = false;
+    if (!contiguous && !ordered_native)
+      if (const auto parts = TmaRunAssignment(source.size(), values.size(),
+              [&](std::size_t i) -> const SourceAccess& { return source[i]; },
+              [&](std::size_t j) -> const ValueAccess& { return values[j]; })) {
+        for (const auto& part : *parts) {
+          const auto& access = source[part.source];
+          auto value = values[part.value]; value.bytes = access.bytes;
+          const auto address = addresses.find(access.address);
+          auto binding = BindMemoryValue(access, value, occurrence, 0, address == addresses.end() ? nullptr : address->second);
+          binding.value_byte_offset = part.value_byte_offset;
+          AppendMemoryBinding(result.memory_bindings, std::move(binding));
+        }
+        continue;
+      }
     if (!contiguous && !ordered_native) {
       Diagnostic(result, "unsupported_memory_value_mapping",
           "Exact memory/value mapping requires a unique endpoint per direction and matching scalar byte extents (" +
@@ -823,6 +899,9 @@ struct SemanticProgramBuilder::Impl {
   std::string address_unavailable;
   // CTAs whose value view was built / was never built (values on demand).
   std::size_t value_view_ctas = 0, deferred_value_view_ctas = 0;
+  // SuspendValues: views only on a bridge query from now on; Finish links no memory.
+  bool values_suspended = false;
+  std::function<void()> value_view_hook; // SetValueViewHook
   SemanticProgramOptions options;
   Impl(const Module& m, const Function& f, std::function<void()> poll, SemanticProgramOptions options)
       : module(m), function(f),
@@ -871,7 +950,8 @@ void SemanticProgramBuilder::AddCta(const CtaFacts& facts) {
     ++impl_->value_view_ctas;
     if (a::MemoryProfileEnabled()) ReportValueGraph(impl_->graph, cta);
   };
-  if (!impl_->options.values_on_demand || impl_->value_view_ctas) build_values();
+  if (!impl_->values_suspended && (!impl_->options.values_on_demand || impl_->value_view_ctas)) build_values();
+  if (address_values && impl_->value_view_hook) impl_->value_view_hook();
   const auto instruction_begin = impl_->model.currentProgram().instructions.size();
   // A value view that fails inside a bridge query skips lowering's handlers:
   // AddCta throws its exception, as when the view is built before lowering.
@@ -902,6 +982,9 @@ void SemanticProgramBuilder::AddCta(const CtaFacts& facts) {
   }
 }
 void SemanticProgramBuilder::TrackUnits(a::UnitQuotient* quotient) noexcept { impl_->model.TrackUnits(quotient); }
+void SemanticProgramBuilder::SuspendValues() noexcept { impl_->values_suspended = true; }
+void SemanticProgramBuilder::SetValueViewHook(std::function<void()> hook) { impl_->value_view_hook = std::move(hook); }
+std::size_t SemanticProgramBuilder::valueViewCtas() const noexcept { return impl_->value_view_ctas; }
 const v::Graph& SemanticProgramBuilder::graph() const noexcept { return impl_->graph; }
 const std::vector<ValueIrDiagnostic>& SemanticProgramBuilder::valueDiagnostics() const noexcept { return impl_->values.diagnostics(); }
 SemanticProgram SemanticProgramBuilder::Finish(std::function<void(std::string_view)> stage) {
@@ -948,8 +1031,19 @@ SemanticProgram SemanticProgramBuilder::Finish(std::function<void(std::string_vi
         Occurrence(diagnostic.origin));
     return result;
   }
-  if (impl_->options.link_numerical_memory)
+  if (impl_->values_suspended)
+    result.lowering.metadata["address_value_bridge"]["values_suspended"] = {
+        {"value_view_ctas", impl_->value_view_ctas}, {"deferred_ctas", impl_->deferred_value_view_ctas}};
+  if (impl_->options.link_numerical_memory && !impl_->values_suspended) {
+    // Table-lookup footprints bind at the representatives' exact addresses (ValuedTableOffset).
+    const a::TableValuation tables(impl_->options.table_atoms);
+    std::unordered_map<std::string, std::optional<std::uint64_t>> valued;
+    struct Scope {
+      Scope(const a::TableValuation* t, decltype(valued)* v) { link_tables = t; link_valued = v; }
+      ~Scope() { link_tables = nullptr; link_valued = nullptr; }
+    } scope(&tables, &valued);
     LinkMemory(result, impl_->options.compact_memory_linking, stage);
+  }
   result.numerical_mma_layouts=std::move(result.lowering.mma_layouts);
   return result;
 }

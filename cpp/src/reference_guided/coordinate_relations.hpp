@@ -1,6 +1,7 @@
 #pragma once
 #include "core.hpp"
 #include <array>
+#include <set>
 
 namespace rg {
 // Exact coordinate constraints, independent of tensor contents. The data is
@@ -29,7 +30,7 @@ struct CoordinateRelations {
         if (!n.bounds || n.bounds->first.denominator() != 1 ||
             n.bounds->second.denominator() != 1) return false;
       } else if (n.op == "readbits" || n.op == "packedbits" || n.op == "extractbits" ||
-                 n.op == "word" || n.op == "signed" || n.op == "floor" || n.op == "word_shr" || n.op == "word_or") {
+                 n.op == "word" || n.op == "signed" || n.op == "floor" || n.op == "word_shr" || n.op == "word_shl" || n.op == "word_or") {
         continue;
       } else if (n.op == "read") {
         auto separator = n.tag.rfind('\n');
@@ -190,6 +191,54 @@ struct CoordinateRelations {
     const auto &n = a.nodes[value];
     return n.bounds && n.bounds->first >= data[3] && n.bounds->second <= data[4] &&
            integer(a, value);
+  }
+  // Rule (remainder candidates of an axis): an axis that no ordinary coordinate captured and no
+  // complete quotient/remainder pair anchors (resolve would then fail), constrained by a one-step
+  // unit-stride remainder relation (a*k + b) mod d = r (a = +-1, scope [lo, hi]) whose actual r is an
+  // integer with bounds inside [0, d), takes one of the values k_j = a*(r - b + j*d) (exactly the
+  // integers with that remainder). Those whose every value lies inside the scope are proposed, at most
+  // max_remainder_candidates (more gives none). Candidates only: resolve re-evaluates every relation
+  // on each and the body proof decides. Returns the axis and the values, or nothing. O(constraints).
+  static constexpr size_t max_remainder_candidates = 8;
+  static std::optional<std::pair<size_t, std::vector<Id>>> remainder_candidates(
+      Arena &a, Arena &patterns, const std::vector<std::pair<Id, Id>> &constraints, const std::vector<Id> &captures) {
+    std::set<std::vector<Q>> quotients;
+    std::set<size_t> paired;
+    for (const auto &[pattern, actual] : constraints) {
+      const auto &data = patterns.nodes[pattern].data;
+      if (valid(data) && data.size() == 7 && data[5] == 0) quotients.insert(pair_key(data));
+    }
+    for (const auto &[pattern, actual] : constraints) {
+      const auto &data = patterns.nodes[pattern].data;
+      if (valid(data) && data.size() == 7 && data[5] == 1 && quotients.contains(pair_key(data)) &&
+          (data[1] == 1 || data[1] == -1))
+        paired.insert(data[0].numerator().convert_to<size_t>());
+    }
+    for (const auto &[pattern, actual] : constraints) {
+      const auto data = patterns.nodes[pattern].data;
+      if (!valid(data) || data.size() != 7 || data[5] != 1 || (data[1] != 1 && data[1] != -1)) continue;
+      const size_t axis = data[0].numerator().convert_to<size_t>();
+      if ((axis < captures.size() && captures[axis] != invalid) || paired.contains(axis)) continue;
+      const auto r = a.nodes[actual].bounds;
+      const Z d = data[6].numerator(), b = data[2].numerator(), lo = data[3].numerator(), hi = data[4].numerator();
+      if (!r || r->first.denominator() != 1 || r->second.denominator() != 1 || r->first < 0 || r->second >= Q(d) ||
+          !integer(a, actual)) continue;
+      const Z rl = r->first.numerator(), rh = r->second.numerator();
+      // a = 1: k_j in [rl - b + j d, rh - b + j d]; a = -1: k_j in [b - rh - j d, b - rl - j d].
+      const auto floordiv = [](Z x, Z y) { Z q = x / y; if ((x % y != 0) && ((x < 0) != (y < 0))) --q; return q; };
+      const auto ceildiv = [&](Z x, Z y) { return -floordiv(-x, y); };
+      Z jmin, jmax;
+      if (data[1] == 1) { jmin = ceildiv(lo - rl + b, d); jmax = floordiv(hi - rh + b, d); }
+      else { jmin = ceildiv(b - rl - hi, d); jmax = floordiv(b - rh - lo, d); }
+      if (jmin > jmax || jmax - jmin + 1 > Z(max_remainder_candidates)) continue;
+      std::vector<Id> values;
+      for (Z j = jmin; j <= jmax; ++j) {
+        const Q sign = data[1];
+        values.push_back(a.add({a.mul({a.constant(sign), actual}), a.constant(sign * Q(j * d - b))}));
+      }
+      return std::pair(axis, std::move(values));
+    }
+    return {};
   }
   static bool resolve(Arena &a, Arena &patterns,
                       const std::vector<std::pair<Id, Id>> &constraints,

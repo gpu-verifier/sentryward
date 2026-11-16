@@ -874,12 +874,26 @@ TmaTransferMapping DecodeTmaTransfer(const nlohmann::json &descriptor,
        Integer(descriptor["transfer_bytes"], "transfer_bytes") != box_bytes))
     Fail("TMA transfer count disagrees with logical tile");
   const auto padding = packed ? packed_alignment / 8 : 1U;
-  if (size > (1ULL << 32) / padding)
+  // Shared row pitch. Box row j (the outer box dimensions flattened) byte b is at
+  // shared_base + j * pitch + b before the swizzle XOR on absolute address bits.
+  // The pitch is the row's own bytes, except that a swizzled row shorter than the
+  // swizzle span occupies a whole span. Confirmed on B200 for 16- to 112-byte
+  // rows under all three swizzle modes, 1/2/4/8-byte elements, ranks 1 to 3,
+  // 128-byte-aligned bases setting each XOR source bit, loads, stores and cluster
+  // multicast. The rest
+  // of such a row is outside the transfer (loads leave it unwritten), and the
+  // completion count stays the box bytes. Packed and gather4 boxes keep the
+  // equal-span rule (not probed); the driver rejects rows wider than the span
+  // or not a multiple of 16 bytes.
+  const std::uint64_t row_bytes = shape[0] * element * padding, span = 16U << bits;
+  const bool short_rows = bits && row_bytes < span && row_bytes % 16 == 0 && !packed && !gather;
+  const std::uint64_t pitch = short_rows ? span : row_bytes, rows = count / shape[0];
+  if (size > (1ULL << 32) / padding || rows > (1ULL << 32) / pitch)
     Fail("TMA padded tile exceeds shared address space");
-  const auto shared_size = size * padding;
+  const auto shared_size = rows * pitch;
   if (o.shared_base % 128 || o.shared_base > (1ULL << 32) - shared_size)
     Fail("TMA shared base must be aligned and tile fit u32");
-  if (bits && shape[0] * element * padding != (16U << bits))
+  if (bits && pitch != span)
     Fail("TMA swizzled inner dimension must equal swizzle span");
   const bool abstract_address=descriptor.value("symbolic_global",false) ||
       (descriptor.contains("base_byte_offset") && descriptor["base_byte_offset"].is_null()) ||
@@ -929,6 +943,7 @@ TmaTransferMapping DecodeTmaTransfer(const nlohmann::json &descriptor,
   payload.reserve(
       static_cast<std::size_t>(std::min<std::uint64_t>(count, 4096)));
   std::array<std::uint64_t, 5> delta{};
+  std::uint64_t box_row = 0;  // linear / box[0]
   for (std::uint64_t linear = 0; linear < count; ++linear) {
     bool oob = false;
     bool unknown_bounds=false;
@@ -981,8 +996,10 @@ TmaTransferMapping DecodeTmaTransfer(const nlohmann::json &descriptor,
       global = offset;
     }
     const auto logical = linear * element;
+    // Unpacked: box_row * pitch + delta[0] * element, which is logical unless the
+    // rows are short swizzled rows. O(1) per element; box_row is kept incrementally.
     const auto physical = packed ? logical / 8 * packed_alignment + logical % 8
-                                 : logical;
+                                 : box_row * pitch + delta[0] * element;
     AppendSegment(payload,
                   {global, SwizzleByteAddress(o.shared_base + physical, bits),
                    element, logical, destinations.front(), !oob && (abstract_address || unknown_bounds),
@@ -991,6 +1008,7 @@ TmaTransferMapping DecodeTmaTransfer(const nlohmann::json &descriptor,
       if (++delta[dim] != box[dim])
         break;
       delta[dim] = 0;
+      if (!dim) ++box_row;
     }
   }
   result.segments.reserve(payload.size() * destinations.size());

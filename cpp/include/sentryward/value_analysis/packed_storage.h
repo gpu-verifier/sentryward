@@ -57,8 +57,9 @@ class PackedStorageDecoder final {
   using Value=value_ir::Value;
   using Fields=std::vector<PackedStorageField>;
   using Known=std::function<std::optional<std::int64_t>(Value)>;
-  explicit PackedStorageDecoder(const value_ir::Graph& graph,Known known={})
-      :graph_(graph),known_(std::move(known)) {}
+  // `max_bits`: the widest scalar decoded (64 by default; 128 for wide packed records).
+  explicit PackedStorageDecoder(const value_ir::Graph& graph,Known known={},unsigned max_bits=64)
+      :graph_(graph),known_(std::move(known)),max_bits_(max_bits) {}
   // Source-mapping clients only need fields different from the original
   // handle. Do not allocate/cache an opaque singleton for every numeric op,
   // Load or numeric conversion; decode() still retains its leaf semantics.
@@ -118,7 +119,7 @@ class PackedStorageDecoder final {
     const auto retained=value;
     value=graph_.resolve(value);
     const auto& type=graph_.type(value);
-    if(!type.isScalar() || !type.element().width() || type.element().width()>64 ||
+    if(!type.isScalar() || !type.element().width() || type.element().width()>max_bits_ ||
        value.threadSelector() || !value.indices().empty() || value.pointer())return {};
     SENTRYWARD_AUDIT(audit->add(AuditCounter::packed_storage_values));
     auto result=inspect(value,depth);
@@ -149,6 +150,7 @@ class PackedStorageDecoder final {
   struct Entry { Value value;std::optional<Fields> fields; };
   const value_ir::Graph& graph_;
   Known known_;
+  unsigned max_bits_ = 64;
   std::unordered_map<Key,Entry,KeyHash> cache_;
   static std::optional<std::span<const PackedStorageField>> view(const Entry& entry) {
     return entry.fields?std::optional<std::span<const PackedStorageField>>(*entry.fields):std::nullopt;

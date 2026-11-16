@@ -478,8 +478,8 @@
    "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/flashinfer/jit/cake_kda_packed_t1.py",
    "https://github.com/flashinfer-ai/flashinfer/blob/b250399302acb2c4925b03416188c6678b762fbd/tests/kda/test_packed_kda_decode.py"
   ],
-  "scope": "Packed T=1 decode, upstream test batch B = 256 (tests/kda/test_packed_kda_decode.py _BATCH_CASES; selector band from flashinfer/jit/cake_kda_packed_t1.py), grid (12, 256) = 12 heads x B = 256, 12 heads, K = V = 128, q/k/v token stride 6144 (test production mixed stride; separate objects as in input.json). State pool 265 slots (test slots = batch + 9); state_indices in [0, 264] and injective (all rows active). Full pool compared; unselected slots unchanged.",
-  "optimized_input_sha256": "6e62cd3728e659ad76efd5418550deddf2d37cb946b603812f6e3cce1fd9a73c",
+  "scope": "Packed T=1 decode, upstream test batch B = 256 (tests/kda/test_packed_kda_decode.py _BATCH_CASES; selector band from flashinfer/jit/cake_kda_packed_t1.py), grid (12, 256) = 12 heads x B = 256, 12 heads, K = V = 128, q/k/v token stride 6144 (test production mixed stride; separate objects as in input.json). State pool 265 slots (test slots = batch + 9); state_indices in [-1, 264] and injective (-1 marks an inactive row: upstream _make_case pads the final row with -1 for B > 1, tests/kda/test_packed_kda_decode.py:104-107). Full pool compared; unselected slots unchanged.",
+  "optimized_input_sha256": "7f78636da42905e4cce6db7602b3e8d9ebb1a88bcd1bc99fa4621dfd37b51820",
   "ptx_sha256": "e34674037a9406ed5df03ad1ab69422f08f7251fe1fc20f67448371d3482f090",
   "scope_branch_choices": [],
   "scope_shape_arrays": []

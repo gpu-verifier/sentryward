@@ -95,6 +95,12 @@ struct UnitLifting {
   // Per representative unit origin: its members in unit order. A
   // representative of a class without members has no entry.
   std::map<Origin, std::vector<Member>> members;
+  // Some member's exact global offsets are not its representative's moved by one δ per allocation
+  // (class mode's table atoms admitted it on the forms of its addresses): no value stage lifts.
+  bool valued_unliftable = false;
+  // The CTAs whose value view was built, when later founders built none (SuspendValues); the
+  // per-unit re-run's estimate then scales from these. Nullopt: every analysed CTA has one.
+  std::optional<std::uint64_t> value_view_ctas;
 };
 inline constexpr std::string_view kUnitCoordinatePrefix = "%unit.ctaid.";
 // "%unit.ctaid.<axis>" or "%unit.ctaid.<axis>+<offset>".

@@ -187,7 +187,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 1494624,
@@ -199,7 +199,7 @@
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
       "arena_nodes": 1309904,
-      "comparison_elapsed_seconds": 9.506768251,
+      "comparison_elapsed_seconds": 9.725064865,
       "context_declaration": {
         "assumptions": [
           {
@@ -274,17 +274,18 @@
         "finite_state_reuse_banks": 1,
         "fp_idiom_power_constructions": 0,
         "fp_idiom_rm_producers": 0,
-        "ideal_additive_compiler_exp_sequences": 0,
-        "ideal_compiler_exp_sequences": 0,
         "ideal_compiler_log2_polynomials": 0,
         "ideal_compiler_lse_sequences": 0,
-        "ideal_single_constant_exp_sequences": 0,
         "imported_context_nodes": 590137,
         "importer_occurrence_binder_hits": 127,
         "importer_scope_banks": 1,
         "importer_scope_binders_created": 1,
         "importer_scope_leaf_lookups": 1,
-        "intern_requests": 22778236,
+        "intern_requests": 22950268,
+        "known_bits_cache_hits": 172097,
+        "known_bits_edges": 0,
+        "known_bits_nodes": 1,
+        "linear_reduction_case_nonfinite_identities": 0,
         "local_pattern_candidates": 172032,
         "masked_sum_prefix_queries": 64,
         "maximum_dominated_operands": 10,
@@ -306,7 +307,7 @@
         "status": "proved"
       },
       "diagnostics": [],
-      "elapsed_s": 7.264636959,
+      "elapsed_s": 7.428622637,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -355,6 +356,13 @@
       },
       "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
       "equivalent_families": 64,
+      "failure_expression_samples": {
+        "failed_families": 0,
+        "omitted_families": 0,
+        "render_byte_limit_per_side": 4096,
+        "sample_limit": 8,
+        "sampled_families": 0
+      },
       "finished_families": 64,
       "idealizations_applied": [],
       "input_contract": [
@@ -410,13 +418,12 @@
           "side": "right"
         }
       ],
-      "legacy_scalar_fallback": false,
       "mapping_input_memory_constraints": {},
       "native_context": null,
       "normalized_reachable_nodes": 99,
       "numerical_result": "verified",
-      "pattern_nodes": 178,
-      "peak_rss_kib": 2775248,
+      "pattern_nodes": 244,
+      "peak_rss_kib": 2894304,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
       "piece_nodes": 344000,
       "piece_union": {
@@ -473,41 +480,40 @@
               "swaps": 0,
               "zero_masks": 0
             },
-            "scalar_engine": "mandatory_exponential_polynomial",
             "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.2902295160000011,
-            "cumulative_elapsed_s": 7.12969433,
-            "left_import_s": 0.0056407529999989575,
-            "left_normalize_s": 0.002799719000000672,
-            "parametric_state_s": 9.487999999993613e-05,
-            "piece_union_record_s": 1.548000000159422e-05,
-            "piece_union_seal_s": 1.3349999997525064e-05,
-            "right_import_s": 4.919404640999998,
-            "right_normalize_s": 1.795272697000002
+            "affine_state_pattern_s": 0.3083363450000002,
+            "cumulative_elapsed_s": 7.294353193,
+            "left_import_s": 0.0062864200000040255,
+            "left_normalize_s": 0.0033016289999989457,
+            "parametric_state_s": 7.421100000457037e-05,
+            "piece_union_record_s": 1.651000000069125e-05,
+            "piece_union_seal_s": 1.7029999999529366e-05,
+            "right_import_s": 5.011334266999999,
+            "right_normalize_s": 1.870100924999999
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 0.2902295160000011,
+        "affine_state_pattern_s": 0.3083363450000002,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.0056407529999989575,
-        "left_normalize_s": 0.002799719000000672,
-        "parametric_state_s": 9.487999999993613e-05,
-        "piece_union_record_s": 1.548000000159422e-05,
+        "left_import_s": 0.0062864200000040255,
+        "left_normalize_s": 0.0033016289999989457,
+        "parametric_state_s": 7.421100000457037e-05,
+        "piece_union_record_s": 1.651000000069125e-05,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 1.3349999997525064e-05,
+        "piece_union_seal_s": 1.7029999999529366e-05,
         "proof_reuse_s": 0.0,
-        "right_import_s": 4.919404640999998,
-        "right_normalize_s": 1.795272697000002,
+        "right_import_s": 5.011334266999999,
+        "right_normalize_s": 1.870100924999999,
         "state_pattern_s": 0.0
       },
       "timings": {
-        "load_and_scope_analysis": 0.113918945
+        "load_and_scope_analysis": 0.092035665
       },
       "total_output_families": 64,
       "transport": "in_memory_cpp_objects",
@@ -794,19 +800,19 @@
         "access_families": 14628,
         "affine_member_rows": 310,
         "candidate_relations": 7989,
-        "hb_frontier_pieces": 658,
+        "hb_frontier_pieces": 600,
         "hb_member_enumerations": 0,
         "logical_accesses": 203984
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 72,
+      "hb_batches": 24,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 1003130,
+      "hb_edge_visits": 983834,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 98255,
-      "hb_query_seconds": 0.16318251099999992,
+      "hb_query_seconds": 0.20909668800000003,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -814,7 +820,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 2621.38671875,
+    "peak_footprint_mib": 2736.62890625,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -928,6 +934,7 @@
       "scalar_fold": {
         "construction_collections": 1,
         "diagnostics": [],
+        "narrowing_slice_projections": 248,
         "output_count": 64,
         "output_families_merged": 0,
         "output_family_count": 64,
@@ -961,16 +968,16 @@
         "action_patterns": 58492,
         "binding_patterns": 58492,
         "domain_refinements": 3264696,
-        "elapsed_seconds": 2.490007426,
+        "elapsed_seconds": 2.564572045,
         "event_families": 451864,
         "expanded_event_records": 0,
         "largest_batch_members": 47,
         "logical_actions": 151360,
         "logical_events": 6761796,
-        "peak_rss_mib_at_completion": 2349.42578125,
+        "peak_rss_mib_at_completion": 2276.89453125,
         "reachability_queries": 0,
         "relations": 2261000,
-        "rss_mib_at_completion": 1555.77734375,
+        "rss_mib_at_completion": 1439.71484375,
         "scheduled_batches": 451864,
         "singleton_batches": 128016,
         "value_families": 154540
@@ -982,13 +989,13 @@
     "value_ir_instance_count": 2491128,
     "value_ir_node_count": 137492,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 2.407146359,
+    "verification_elapsed_seconds": 2.525969345,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 2710.203125,
-  "pipeline_elapsed_seconds": 37.433739384,
+  "peak_rss_mib": 2826.46875,
+  "pipeline_elapsed_seconds": 37.918925334,
   "result": "verified",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -997,6 +1004,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.553
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.528
 }

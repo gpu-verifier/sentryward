@@ -52,6 +52,8 @@ public:
   // map, or nullopt, writing nothing, when one of those interns would have thrown
   // alias_scope_conflict here. O(local bindings x lookup).
   [[nodiscard]] std::optional<std::vector<AddressId>> Absorb(const AddressTable &local);
+  // Every binding, indexed by AddressId value (read only).
+  [[nodiscard]] const std::vector<ConstantAddressBinding> &Bindings() const noexcept { return bindings; }
 
 private:
   friend class UnitInterner;
@@ -85,6 +87,8 @@ public:
   std::tuple<std::string, Coordinates, std::string> Location(BarrierLifetimeId) const;
   // Every lifetime's owner CTA (class mode's unit-closure check); O(lifetimes).
   [[nodiscard]] std::vector<Coordinates> Owners() const;
+  // Every lifetime with its owner CTA (distributed shared memory lifetimes); O(lifetimes).
+  [[nodiscard]] std::vector<std::pair<BarrierLifetimeId, Coordinates>> OwnedLifetimes() const;
   // The effect on this table of the interns that built `local`, in their order (local id order):
   // the local -> own id map. O(local lifetimes x lookup).
   [[nodiscard]] std::vector<BarrierLifetimeId> Absorb(const BarrierTable &local);
@@ -163,6 +167,9 @@ struct TmaAccesses {
   // A read of a runtime-written tensor map (RecoverTensorMaps): its 128 bytes, keyed as the
   // tensormap.cp_fenceproxy lane writes are.
   std::optional<Fragment> descriptor;
+  // ResolvedTma::region_valued: per abstract region, its exact first byte in its global allocation
+  // in this CTA when class admission compares it up to δ (table-atom coordinates); else empty.
+  std::vector<std::optional<std::int64_t>> region_valued;
 };
 // ---- the slot interface -----------------------------------------------------
 // The address bridge: (active lane, record, operand text) -> address JSON.
@@ -240,6 +247,9 @@ struct ResolvedFootprint {
   std::uint64_t bytes;
   // A bounded-pointer footprint: `expression` serializes this offset (class mode compares it).
   std::optional<AbstractAffine> affine = std::nullopt;
+  // A table-atom footprint (class mode): its exact offset in its allocation in this CTA, the
+  // form's value at the CTA's own table elements (value lifting compares it up to δ).
+  std::optional<std::int64_t> valued = std::nullopt;
 };
 // Tma's terminal: per segment [global steps][shared step], then the
 // completions' BarrierSteps; pairs and completions name steps by index. An
@@ -262,6 +272,9 @@ struct ResolvedTma {
   // functions): the region's first byte in its global allocation, base + sum of coordinate x
   // stride (bytes); one form per gather row (a tile::gather4), else one. Empty otherwise.
   std::vector<AbstractAffine> region_affine;
+  // Per region_affine form: its exact value in this CTA when every symbolic coordinate is a table
+  // atom (class mode; value lifting compares it up to δ), else nullopt.
+  std::vector<std::optional<std::int64_t>> region_valued;
 };
 // The recorder's query of one slot (a SlotMemory or SlotTma event); built only while recording.
 // `active_lane`: the Resources' lane at the call (Definition and local owners read it).
@@ -503,7 +516,7 @@ private:
   using Event = std::variant<ValueRead, query::ValueAtRead, LegacyUniform, query::UniformBinding, SpecialRead,
                              query::SlotBegin, query::SlotEnd, std::unique_ptr<const Slot>, query::MemoFill,
                              query::MemoHit, UniformBodySkip, query::BindingRead, AbsoluteCheck, PartitionRead,
-                             ReportBearing>;
+                             ReportBearing, query::RegisterTouch>;
   struct Entry {
     ConsumerTag consumer;
     bool in_slot, in_partition;

@@ -139,30 +139,13 @@
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "unsupported_async_copy",
-            "details": {
-              "cta": 0,
-              "instruction": "cp.async.cg.shared.global [%r33], [%rd87], 16, %r337;",
-              "instruction_index": 521,
-              "location": {
-                "file": "corpus/flash_attention__fwd_mla_sparse_bf16__sm_100a.ptx",
-                "line": 736
-              },
-              "occurrence": 0,
-              "thread": 385
-            },
-            "message": "cp.async source size or ignore-source is data-dependent; its zero-filled destination is not modeled in the value analysis",
-            "stage": "value_lowering"
-          }
-        ],
-        "first_unavailable_reason": "memory occurrence has no value node",
+        "diagnostics": [],
+        "first_unavailable_reason": "",
         "queries": 17408,
-        "resolved": 0,
+        "resolved": 17408,
         "source": "value_lowering",
-        "unavailable": 17408,
-        "value_view_complete": false
+        "unavailable": 0,
+        "value_view_complete": true
       },
       "cluster_completion_joins": 1,
       "cta_count": 2,
@@ -305,7 +288,7 @@
           "source": "declaration"
         }
       ],
-      "lowered_instruction_count": 291421,
+      "lowered_instruction_count": 292447,
       "mma_refinement": {
         "blocked": [],
         "discharged": 52
@@ -423,13 +406,13 @@
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
-        "logical_instructions": 291421,
-        "stored_bindings": 24676
+        "logical_instructions": 292447,
+        "stored_bindings": 25702
       },
       "source_edge_storage": {
-        "binding_templates": 1189,
-        "logical_edges": 290397,
-        "stored_bindings": 1190
+        "binding_templates": 1226,
+        "logical_edges": 291423,
+        "stored_bindings": 1227
       },
       "tcgen_history_refinement": {
         "blocked": [],
@@ -445,7 +428,7 @@
     },
     "implementation": "cpp",
     "memory_analysis_complete": false,
-    "peak_footprint_mib": 341.37109375,
+    "peak_footprint_mib": 499.20703125,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
@@ -456,31 +439,20 @@
       "representative_election": true
     },
     "semantic_program": {
-      "binding_diagnostic_count": 1,
-      "binding_diagnostics": [
-        {
-          "code": "incomplete_value_semantics",
-          "message": "unsupported_async_copy: cp.async source size or ignore-source is data-dependent; its zero-filled destination is not modeled in the value analysis"
-        }
-      ],
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
       "execution_cohorts": 66,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
-      "memory_linking_templates_used": false,
-      "synchronization_groups": 4583,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 244157,
+      "memory_binding_templates": 19704,
+      "memory_bindings": 636204,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 4617,
       "synchronization_groups_materialized": true,
-      "synthetic_synchronization_nodes": 83,
-      "thread_prefix_groups": 13829,
-      "value_diagnostic_count": 1,
-      "value_diagnostics": [
-        {
-          "code": "unsupported_async_copy",
-          "line": 736,
-          "message": "cp.async source size or ignore-source is data-dependent; its zero-filled destination is not modeled in the value analysis"
-        }
-      ]
+      "synthetic_synchronization_nodes": 85,
+      "thread_prefix_groups": 133303,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
     "stage": "cluster_barrier_check",
     "template_execution": {
@@ -564,18 +536,18 @@
         ]
       }
     },
-    "value_ir_instance_count": 118415,
-    "value_ir_node_count": 10140,
-    "value_view_complete": false,
+    "value_ir_instance_count": 2563017,
+    "value_ir_node_count": 114382,
+    "value_view_complete": true,
     "verification_performed": false
   },
-  "peak_rss_mib": 347.66796875,
-  "pipeline_elapsed_seconds": 1.432266785,
+  "peak_rss_mib": 500.39453125,
+  "pipeline_elapsed_seconds": 2.467246027,
   "result": "invalid_lifecycle",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "scope": {
     "operation": "kernel_verification"
   },
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.493
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.482
 }

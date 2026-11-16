@@ -163,7 +163,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 927200,
@@ -390,8 +390,8 @@
       },
       "required_orders": {
         "algorithm": "member-relations",
-        "batches": 3,
-        "edge_visits": 2162280,
+        "batches": 1,
+        "edge_visits": 1520078,
         "member_enumerations": 0,
         "request_construction": {
           "concrete_pair_materializations": 0,
@@ -405,7 +405,7 @@
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 181776,
+      "address_candidates": 181968,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -424,21 +424,21 @@
       "family_analysis": {
         "access_families": 169244,
         "affine_member_rows": 8274227,
-        "candidate_relations": 14133,
-        "hb_frontier_pieces": 1769,
+        "candidate_relations": 14325,
+        "hb_frontier_pieces": 1777,
         "hb_member_enumerations": 0,
         "logical_accesses": 251297
       },
-      "first_race_seconds": 0.389389191,
+      "first_race_seconds": 0.393910789,
       "hb_algorithm": "member-relations",
-      "hb_batches": 12,
+      "hb_batches": 9,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 54700,
+      "hb_edge_visits": 54881,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
-      "hb_queries": 181776,
-      "hb_query_seconds": 0.010504277000000001,
+      "hb_queries": 181968,
+      "hb_query_seconds": 0.027137506999999998,
       "overlap_queries": 261,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 261
@@ -446,7 +446,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 1043.6484375,
+    "peak_footprint_mib": 1072.46484375,
     "required_order_domains": 650,
     "required_orders": 8400,
     "search_complete": false,
@@ -547,10 +547,10 @@
     "value_ir_node_count": 210665,
     "value_view_complete": true
   },
-  "peak_rss_mib": 1043.6484375,
-  "pipeline_elapsed_seconds": 7.297869178,
+  "peak_rss_mib": 1072.46484375,
+  "pipeline_elapsed_seconds": 7.29155223,
   "result": "potential_race",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -559,6 +559,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.564
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.558
 }

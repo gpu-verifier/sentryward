@@ -2,7 +2,9 @@
 
 #include "sentryward/frontend/ptx/unit_facts.h"
 
+#include <algorithm>
 #include <cstring>
+#include <unordered_map>
 #include <type_traits>
 #include <utility>
 
@@ -315,5 +317,195 @@ StructureKey ComputeStructureKey(const CtaFacts &facts) {
   if (i < key.bytes.size()) std::memcpy(&tail, key.bytes.data() + i, key.bytes.size() - i);
   key.hash = Mix(h ^ Mix(tail ^ key.bytes.size()));
   return key;
+}
+
+// ---- containment profiles ---------------------------------------------------
+namespace {
+std::uint64_t HashBytes(const std::string &bytes) noexcept {
+  std::uint64_t h = 0x243f6a8885a308d3ULL;
+  std::size_t i = 0;
+  for (; i + 8 <= bytes.size(); i += 8) {
+    std::uint64_t word;
+    std::memcpy(&word, bytes.data() + i, 8);
+    h = Mix(h ^ Mix(word));
+  }
+  std::uint64_t tail = 0;
+  if (i < bytes.size()) std::memcpy(&tail, bytes.data() + i, bytes.size() - i);
+  return Mix(h ^ Mix(tail ^ bytes.size()));
+}
+template <class T> bool Present(const T &x) {
+  if constexpr (std::is_same_v<T, bool>) return x;
+  else if constexpr (IsOptional<T>::value) return x.has_value();
+  else if constexpr (requires { x.empty(); }) return !x.empty();
+  else return true;
+}
+// The instruction's containment kind (before its record's metadata).
+ContainmentKind KindOf(const Instruction &i) {
+  static const std::initializer_list<std::string_view> compute = {
+      "add", "sub", "mul", "mad", "fma", "div", "rem", "abs", "neg", "min", "max", "and", "or", "xor", "not",
+      "cnot", "shl", "shr", "mov", "setp", "selp", "set", "cvt", "cvta", "prmt", "bfe", "bfi", "popc", "clz",
+      "brev", "lop3", "shf", "ex2", "lg2", "rcp", "sqrt", "rsqrt", "sin", "cos", "tanh", "mul24", "mad24", "sad",
+      "testp", "copysign", "slct", "bfind", "dp4a", "dp2a", "addc", "subc", "madc", "szext", "bmsk"};
+  if (i.opcode == "bra") return i.indirect_targets.empty() ? ContainmentKind::kBranch : ContainmentKind::kFixed;
+  if (In(i.opcode, compute)) return ContainmentKind::kCompute;
+  if (i.opcode != "ld" && i.opcode != "st") return ContainmentKind::kFixed;
+  bool global = false;
+  for (const auto &m : i.modifiers) {
+    if (m == "global") global = true;
+    else if (m == "async" || m == "bulk" || m == "volatile" || m == "mmio" || m == "relaxed" || m == "acquire" ||
+             m == "release" || m == "weak" || m == "cta" || m == "cluster" || m == "gpu" || m == "sys" ||
+             m.starts_with("shared") || m == "local" || m == "param" || m == "const" || m == "tensormap")
+      return ContainmentKind::kFixed;
+  }
+  return global ? ContainmentKind::kAccess : ContainmentKind::kFixed;
+}
+} // namespace
+
+ContainmentProfile ComputeContainmentProfile(const CtaFacts &facts) {
+  ContainmentProfile profile;
+  // Runtime-written tensor maps are read through frontend dependencies on their global copies: a
+  // CTA with such reads gets no profile (no containment admission).
+  if (const auto &reads = facts.TensorMapReads(); reads && !reads->empty()) return profile;
+  const auto &instructions = facts.function().instructions;
+  std::vector<ContainmentKind> kinds(instructions.size());
+  for (std::size_t k = 0; k < instructions.size(); ++k) kinds[k] = KindOf(instructions[k]);
+  // Where lowering reads origins (lowering.cpp: MBarrier's state-token wait, Copy's cp.async source
+  // size, Mma's descriptors through Resources::FixedBits); conservatively every such instruction.
+  std::vector<std::uint8_t> chases(instructions.size());
+  for (std::size_t k = 0; k < instructions.size(); ++k) {
+    const auto &i = instructions[k];
+    const auto has = [&](std::string_view m) { return std::find(i.modifiers.begin(), i.modifiers.end(), m) != i.modifiers.end(); };
+    if (i.opcode == "mbarrier" && (has("test_wait") || has("try_wait"))) chases[k] = 1;
+    if ((i.opcode == "cp" && has("async") && !has("bulk")) || (i.opcode == "tcgen05" && has("mma"))) chases[k] = 2;
+  }
+  // Register ids by name (the executor's register names are the instruction text's), in the
+  // function's instruction order.
+  std::unordered_map<std::string_view, std::uint32_t> register_ids;
+  const auto intern = [&](std::string_view name) { register_ids.try_emplace(name, register_ids.size()); };
+  for (const auto &i : instructions) {
+    for (const auto &r : i.registers) intern(r);
+    for (const auto &r : i.destinations) intern(r);
+    if (i.predicate) intern(*i.predicate);
+  }
+  const auto id_of = [&](std::string_view name) {
+    const auto found = register_ids.find(name);
+    return found == register_ids.end() ? kUnknownRegister : found->second;
+  };
+  // Per instruction: its register reads (every operand register but its destinations) and writes.
+  std::vector<std::vector<std::uint32_t>> instruction_reads(instructions.size()), instruction_writes(instructions.size());
+  std::vector<bool> clears(instructions.size());
+  for (std::size_t k = 0; k < instructions.size(); ++k) {
+    const auto &i = instructions[k];
+    for (const auto &r : i.destinations) instruction_writes[k].push_back(id_of(r));
+    for (const auto &r : i.registers)
+      if (std::find(i.destinations.begin(), i.destinations.end(), r) == i.destinations.end())
+        instruction_reads[k].push_back(id_of(r));
+    clears[k] = i.opcode == "tcgen05" && i.semantics.operation == "wait_load";
+  }
+  std::string scratch;
+  const auto sequence = [&](LaneRef lane) {
+    std::vector<ContainmentRecord> records(facts.Size(lane));
+    auto &origins = profile.origins.emplace_back();
+    auto &registers = profile.registers.emplace_back();
+    for (std::size_t pos = 0; pos < records.size(); ++pos) {
+      const auto r = facts.Meta({lane, pos});
+      auto &out = records[pos];
+      out.instruction = static_cast<std::uint32_t>(r.instruction_id());
+      out.occurrence = static_cast<std::uint32_t>(r.occurrence());
+      out.predicate = !r.predicate_value() ? 0 : *r.predicate_value() ? 1 : 2;
+      out.kind = out.instruction < kinds.size() ? kinds[out.instruction] : ContainmentKind::kFixed;
+      out.chases = out.instruction < chases.size() ? chases[out.instruction] : 2;
+      out.origin_begin = static_cast<std::uint32_t>(origins.size());
+      for (const auto &[reg, key] : r.register_origins())
+        origins.emplace_back(key.instruction, static_cast<std::uint32_t>(key.occurrence));
+      out.origin_count = static_cast<std::uint32_t>(origins.size()) - out.origin_begin;
+      if (out.instruction < instructions.size()) {
+        out.clears = clears[out.instruction];
+        out.async_load = instructions[out.instruction].opcode == "tcgen05" &&
+                         instructions[out.instruction].semantics.operation == "load";
+        const bool opaque = !r.opaque_compute_diamond_indices().empty();
+        out.reads_begin = static_cast<std::uint32_t>(registers.size());
+        if (opaque)
+          for (const auto &name : r.opaque_compute_register_reads()) registers.push_back(id_of(name));
+        else registers.insert(registers.end(), instruction_reads[out.instruction].begin(),
+                              instruction_reads[out.instruction].end());
+        out.reads_count = static_cast<std::uint32_t>(registers.size()) - out.reads_begin;
+        out.writes_begin = static_cast<std::uint32_t>(registers.size());
+        if (opaque)
+          for (const auto &name : r.opaque_compute_register_writes()) registers.push_back(id_of(name));
+        else registers.insert(registers.end(), instruction_writes[out.instruction].begin(),
+                              instruction_writes[out.instruction].end());
+        out.writes_count = static_cast<std::uint32_t>(registers.size()) - out.writes_begin;
+      }
+      scratch.clear();
+      KeyWriter w(scratch);
+      w.Put(r.branch_scope_decision()); w.Put(r.collapsed_wait_loop()); w.Put(r.normalized_wait_result());
+      w.Put(r.normalized_clc_result()); w.Put(r.canonical_wait_probe()); w.Put(r.wait_exit_label());
+      w.Put(r.schedule_seed_outcome()); w.Put(r.probe_fallback_key()); w.Put(r.opaque_compute_diamond_indices());
+      w.Put(r.collapsed_wait_indices()); w.Put(r.opaque_compute_join_label()); w.Put(r.assumed_equality());
+      w.Put(r.opaque_compute_register_reads()); w.Put(r.opaque_compute_register_writes());
+      w.Put(r.merged_arm_join());
+      out.meta = HashBytes(scratch);
+      scratch.clear();
+      w.Put(r.register_origins());
+      out.origins = HashBytes(scratch);
+      if (Present(r.branch_scope_decision()) || Present(r.collapsed_wait_loop()) ||
+          Present(r.normalized_wait_result()) || Present(r.normalized_clc_result()) ||
+          Present(r.canonical_wait_probe()) || Present(r.wait_exit_label()) || Present(r.schedule_seed_outcome()) ||
+          Present(r.probe_fallback_key()) || Present(r.collapsed_wait_indices()) || Present(r.assumed_equality()) ||
+          Present(r.merged_arm_join()))
+        out.kind = ContainmentKind::kFixed;
+      else if (Present(r.opaque_compute_diamond_indices()) || Present(r.opaque_compute_join_label()) ||
+               Present(r.opaque_compute_register_reads()) || Present(r.opaque_compute_register_writes()))
+        out.kind = out.kind == ContainmentKind::kBranch ? ContainmentKind::kOpaque : ContainmentKind::kFixed;
+    }
+    return records;
+  };
+  const auto lanes = facts.LaneCount();
+  profile.lane_path.assign(lanes, UINT32_MAX);
+  if (facts.TemplateExecution()) {
+    const auto groups = facts.TemplateGroups();
+    for (const auto &group : groups) {
+      if (group.empty()) continue;
+      const auto path = static_cast<std::uint32_t>(profile.paths.size());
+      profile.paths.push_back(sequence(facts.Lane(group.front())));
+      for (const auto lane : group) profile.lane_path.at(lane) = path;
+    }
+  }
+  for (std::size_t lane = 0; lane < lanes; ++lane)
+    if (profile.lane_path[lane] == UINT32_MAX) {
+      profile.lane_path[lane] = static_cast<std::uint32_t>(profile.paths.size());
+      profile.paths.push_back(sequence(facts.Lane(lane)));
+    }
+  // The key: per lane its warp, lane id and its path's kFixed records.
+  std::vector<std::uint64_t> fixed(profile.paths.size());
+  for (std::size_t p = 0; p < profile.paths.size(); ++p) {
+    scratch.clear();
+    KeyWriter w(scratch);
+    for (const auto &r : profile.paths[p])
+      if (r.kind == ContainmentKind::kFixed) {
+        w.U64(r.instruction); w.U64(r.occurrence); w.U64(r.predicate); w.U64(r.meta);
+      }
+    fixed[p] = HashBytes(scratch);
+  }
+  std::string bytes;
+  KeyWriter w(bytes);
+  w.Put(facts.TemplateExecution());
+  w.U64(lanes);
+  for (std::size_t index = 0; index < lanes; ++index) {
+    const auto lane = facts.Lane(index);
+    w.U64(facts.Warp(lane));
+    w.U64(facts.LaneId(lane));
+    w.U64(fixed[profile.lane_path[index]]);
+  }
+  const auto sites = facts.SharedSitesRelative();
+  w.U64(sites.size());
+  for (const auto &site : sites) {
+    w.Put(site.owner ? std::optional<std::uint32_t>(site.owner->value) : std::nullopt);
+    w.U64(site.thread);
+    w.Put(site.instruction);
+  }
+  profile.key = HashBytes(bytes);
+  return profile;
 }
 } // namespace sentryward::frontend::ptx

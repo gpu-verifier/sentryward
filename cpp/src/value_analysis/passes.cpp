@@ -120,19 +120,82 @@ bool f32(const RuleGraph& g, v::Value x) {
   const auto& type = g.type(x);
   return type.isScalar() && type.element().kind() == v::ElementKind::Floating && type.bitSize() == 32;
 }
-bool literal(const RuleGraph& g, v::Value x, std::string_view expected) {
+// The `bits`-bit word a literal spells: a PTX binary32 hex literal 0fXXXXXXXX (32 bits only) or, for a
+// constant of an integer or bit type (`integral`), a 0x hexadecimal or a decimal integer (with an
+// optional '-') that fits the word as an unsigned or a signed value. A decimal literal of a floating
+// type denotes a number, not a word: none. None for any other spelling.
+std::optional<std::uint64_t> literalWord(std::string_view text, unsigned bits, bool integral) {
+  int base = 10;
+  bool negative = false;
+  if (bits == 32 && text.size() == 10 && (text.starts_with("0f") || text.starts_with("0F"))) {
+    text.remove_prefix(2); base = 16;
+  } else if (!integral) {
+    return {};
+  } else if (text.starts_with("0x") || text.starts_with("0X")) {
+    text.remove_prefix(2); base = 16;
+  } else if (text.starts_with('-')) {
+    text.remove_prefix(1); negative = true;
+  }
+  std::uint64_t value;
+  auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value, base);
+  if (text.empty() || error != std::errc{} || end != text.data() + text.size()) return {};
+  const std::uint64_t all = full(bits);
+  if (!negative) return value <= all ? std::optional(value) : std::nullopt;
+  const std::uint64_t magnitude = std::uint64_t{1} << (bits - 1);  // -2^(bits-1) is the least signed value
+  if (value > magnitude) return {};
+  return (~value + 1) & all;
+}
+// The 32-bit word of a constant operand: a 32-bit Constant (seen through same-width bitcasts), or one
+// half of a 64-bit Constant as the frontend spells a lane of a packed .f32x2 operand given as a 64-bit
+// immediate: Convert to u32 of the constant (low half) or of the constant shifted right by 32 (high
+// half). None for anything else. O(1).
+std::optional<std::uint32_t> word32(const RuleGraph& g, v::Value x) {
   x = uncast(g, x);
-  if (!width(g, x, 32)) return false;
-  const auto* c = dynamic_cast<const v::ConstantOp*>(&g.definingNode(x).operation());
-  if (!c) return false;
-  std::string text = c->literal();
-  std::transform(text.begin(), text.end(), text.begin(), [](unsigned char ch) { return std::tolower(ch); });
-  return text == expected;
+  if (!scalar(g, x)) return {};
+  const auto* constant = dynamic_cast<const v::ConstantOp*>(&g.definingNode(x).operation());
+  if (constant) {
+    if (g.type(x).bitSize() != 32 || constant->pointer()) return {};
+    const auto word = literalWord(constant->literal(), 32, g.type(x).element().isBitLike());
+    return word ? std::optional(std::uint32_t(*word)) : std::nullopt;
+  }
+  const auto* convert = dynamic_cast<const v::ConvertOp*>(&g.definingNode(x).operation());
+  if (!convert || !width(g, x, 32) || g.type(x).element().kind() != v::ElementKind::UnsignedInteger ||
+      !(convert->attributes() == v::ConversionAttributes{})) return {};
+  auto source = uncast(g, g.instance(x).operands.at(0));
+  unsigned shift = 0;
+  if (const auto* right = binary(g, source, B::ShiftRight)) {
+    if (!plain(right->attributes()) || !width(g, source, 64) ||
+        integer(g, g.instance(source).operands.at(1)) != 32) return {};
+    shift = 32;
+    source = uncast(g, g.instance(source).operands.at(0));
+  }
+  if (!width(g, source, 64)) return {};
+  const auto* wide = dynamic_cast<const v::ConstantOp*>(&g.definingNode(source).operation());
+  if (!wide || wide->pointer()) return {};
+  const auto word = literalWord(wide->literal(), 64, g.type(source).element().isBitLike());
+  return word ? std::optional(std::uint32_t(*word >> shift)) : std::nullopt;
 }
-bool floatBinary(const RuleGraph& g, v::Value x, B opcode, R round) {
+bool literal(const RuleGraph& g, v::Value x, std::uint32_t expected) {
+  return word32(g, x) == expected;
+}
+// An f32 operation `opcode` with this rounding and flush-to-zero flag, otherwise plain.
+bool floatBinary(const RuleGraph& g, v::Value x, B opcode, R round, bool ftz = false) {
   auto* b = binary(g, x, opcode);
-  return f32(g, x) && b && plain(b->attributes(), round);
+  if (!f32(g, x) || !b) return false;
+  auto attributes = b->attributes();
+  if (attributes.flush_to_zero != ftz) return false;
+  attributes.flush_to_zero = false;
+  return plain(attributes, round);
 }
+// The software exp2 routine (FlashAttention-4's exp2 emulation), lane by lane:
+//   x' = max(x, -127); t = add.rm(x', 1.5*2^23); j = t - 1.5*2^23; f = x' - j;
+//   p = ((c3*f + c2)*f + c1)*f + 1 (RN FMAs; c3 = 0f3D9DF09D, c2 = 0f3E6906A4, c1 = 0f3F31F519);
+//   result = bitcast_f32((bits(t) << 23) + bits(p)).
+// Constants are matched by their binary32 words: hex literals, integer literals of the same word, or
+// halves of a 64-bit immediate (word32). The rounding add, both subtractions and the three FMAs carry
+// .ftz all together or not at all; the clamp is a plain max. Returns x: the pass replaces the result
+// by ideal Exp2(x), so the polynomial error and the clamp region x < -127 are the abstraction the pass
+// report names ("matched approximation and clamp replaced by ideal Exp2"). Fixed-size pattern.
 std::optional<v::Value> exp2Input(const RuleGraph& g, v::Value result) {
   if (!f32(g, result)) return {};
   auto sum = uncast(g, result);
@@ -145,18 +208,24 @@ std::optional<v::Value> exp2Input(const RuleGraph& g, v::Value result) {
   const auto& shiftArgs = g.instance(shifted).operands;
   if (integer(g, shiftArgs[1]) != 23) return {};
   auto rounded = uncast(g, shiftArgs[0]);
-  if (!floatBinary(g, rounded, B::Add, R::TowardNegative)) return {};
+  auto* rounding = binary(g, rounded, B::Add);
+  if (!rounding) return {};
+  const bool ftz = rounding->attributes().flush_to_zero;
+  if (!floatBinary(g, rounded, B::Add, R::TowardNegative, ftz)) return {};
   const auto& roundArgs = g.instance(rounded).operands;
   auto clamped = uncast(g, roundArgs[0]);
-  if (!literal(g, roundArgs[1], "0f4b400000") ||
+  if (!literal(g, roundArgs[1], 0x4b400000u) ||
       !floatBinary(g, clamped, B::Maximum, R::None)) return {};
   const auto& clampArgs = g.instance(clamped).operands;
-  if (!literal(g, clampArgs[1], "0fc2fe0000") || !f32(g, clampArgs[0])) return {};
+  if (!literal(g, clampArgs[1], 0xc2fe0000u) || !f32(g, clampArgs[0])) return {};
   std::optional<v::Value> fraction;
   // Horner polynomial: ((c3*f + c2)*f + c1)*f + 1.
-  for (const auto coefficient : {"0f3f800000", "0f3f31f519", "0f3e6906a4"}) {
+  for (const auto coefficient : {0x3f800000u, 0x3f31f519u, 0x3e6906a4u}) {
     const auto* fma = dynamic_cast<const v::FmaOp*>(&g.definingNode(polynomial).operation());
-    if (!f32(g, polynomial) || !fma || !plain(fma->attributes(), R::NearestEven)) return {};
+    if (!f32(g, polynomial) || !fma || fma->attributes().flush_to_zero != ftz) return {};
+    auto attributes = fma->attributes();
+    attributes.flush_to_zero = false;
+    if (!plain(attributes, R::NearestEven)) return {};
     const auto& args = g.instance(polynomial).operands;
     if (!literal(g, args[2], coefficient)) return {};
     const auto f = uncast(g, args[1]);
@@ -164,14 +233,14 @@ std::optional<v::Value> exp2Input(const RuleGraph& g, v::Value result) {
     fraction = f;
     polynomial = uncast(g, args[0]);
   }
-  if (!literal(g, polynomial, "0f3d9df09d") || !fraction ||
-      !floatBinary(g, *fraction, B::Subtract, R::NearestEven)) return {};
+  if (!literal(g, polynomial, 0x3d9df09du) || !fraction ||
+      !floatBinary(g, *fraction, B::Subtract, R::NearestEven, ftz)) return {};
   const auto& fractionArgs = g.instance(*fraction).operands;
   if (uncast(g, fractionArgs[0]) != clamped) return {};
   auto integral = uncast(g, fractionArgs[1]);
-  if (!floatBinary(g, integral, B::Subtract, R::NearestEven)) return {};
+  if (!floatBinary(g, integral, B::Subtract, R::NearestEven, ftz)) return {};
   const auto& integralArgs = g.instance(integral).operands;
-  if (uncast(g, integralArgs[0]) != rounded || !literal(g, integralArgs[1], "0f4b400000")) return {};
+  if (uncast(g, integralArgs[0]) != rounded || !literal(g, integralArgs[1], 0x4b400000u)) return {};
   return clampArgs[0];
 }
 bool rewrite(v::Graph& graph,std::size_t id,std::unique_ptr<const v::Operation> operation,

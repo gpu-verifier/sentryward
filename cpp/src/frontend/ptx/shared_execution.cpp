@@ -16,11 +16,26 @@ void SharedConstants::Invalidate(std::uint64_t address,std::uint64_t width) {
   auto end=width>UINT64_MAX-address?bytes_.end():bytes_.lower_bound(address+width);
   bytes_.erase(begin,end);
 }
-SharedConstantRead SharedConstants::Read(std::uint64_t address,unsigned width) const {
+namespace {
+// Whether every value of `v` is unchanged by keeping its low-order `bytes` bytes and reading
+// them back as a `bytes`-byte integer, signed when `sign` (FitsType in execution.cpp).
+bool FitsLoad(const BoundedInteger &v,unsigned bytes,bool sign) {
+  const Integer low=sign?-(Integer(1)<<(8*bytes-1)):Integer(0);
+  const Integer high=(Integer(1)<<(8*bytes-unsigned(sign)))-1;
+  return low<=v->lower && v->upper<=high;
+}
+// The same bounded value: one identity (the same value in every execution), range, exact
+// value and named sources.
+bool SameBounded(const BoundedInteger &a,const BoundedInteger &b) {
+  return a.value==b.value || (a==b && a->sources==b->sources);
+}
+} // namespace
+SharedConstantRead SharedConstants::Read(std::uint64_t address,unsigned width,bool sign) const {
   if (!width || width>UINT64_MAX-address) return {};
   Integer value=0;
   std::optional<PointerBits> pointer;
   std::optional<DescriptorFragment> descriptor;
+  const BoundedFragment *bounded=nullptr;
   SharedConstantRead result;
   for (unsigned k=0;k<width;++k) {
     const auto it=bytes_.find(address+k);
@@ -28,14 +43,19 @@ SharedConstantRead SharedConstants::Read(std::uint64_t address,unsigned width) c
     const auto &byte=*it->second.value;
     if (const auto *fragment=std::get_if<DescriptorFragment>(&byte)) {
       if (k==0) descriptor=*fragment;
-      if (!descriptor || pointer || fragment->descriptor!=descriptor->descriptor ||
+      if (!descriptor || pointer || bounded || fragment->descriptor!=descriptor->descriptor ||
           fragment->offset!=descriptor->offset+k) return {};
     } else if (const auto *bits=std::get_if<PointerBits>(&byte)) {
       if (k==0) pointer=*bits;
-      if (!pointer || descriptor || *bits->pointer!=*pointer->pointer ||
+      if (!pointer || descriptor || bounded || *bits->pointer!=*pointer->pointer ||
           bits->source_bit!=pointer->source_bit+8*k) return {};
+    } else if (const auto *part=std::get_if<BoundedFragment>(&byte)) {
+      // Only the whole value as one store wrote it: byte k at address + k, same width.
+      if (k==0) bounded=part;
+      if (!bounded || pointer || descriptor || !SameBounded(part->value,bounded->value) ||
+          part->offset!=k || part->bytes!=width) return {};
     } else {
-      if (pointer || descriptor) return {};
+      if (pointer || descriptor || bounded) return {};
       value |= Integer(std::get<std::uint8_t>(byte)) << (8*k);
     }
     if (std::find(result.sources.begin(),result.sources.end(),it->second.source)==result.sources.end())
@@ -43,6 +63,10 @@ SharedConstantRead SharedConstants::Read(std::uint64_t address,unsigned width) c
   }
   if (pointer) { pointer->width=width*8; result.value=RestorePointer(*pointer); }
   else if (descriptor) { descriptor->bytes=width; result.value=*descriptor; }
+  else if (bounded) {
+    if (!bounded->value.value || !FitsLoad(bounded->value,width,sign)) return {};
+    result.value=bounded->value;
+  }
   else result.value=std::move(value);
   if (std::holds_alternative<std::monostate>(result.value)) result.sources.clear();
   return result;
@@ -52,6 +76,9 @@ void SharedExecution::Write(const SharedWrite &write) {
   constants.Write(write.source,write.address,write.bytes);
   if (std::any_of(write.bytes.begin(),write.bytes.end(),[](const auto &byte){return byte.has_value();}))
     writes_[write.source.cta].insert(write.source);
+  if (std::any_of(write.bytes.begin(),write.bytes.end(),
+                  [](const auto &byte){return byte && std::holds_alternative<BoundedFragment>(*byte);}))
+    bounded_writes_[write.source.cta].insert(write.source);
 }
 void SharedExecution::Invalidate(std::uint64_t address,std::uint64_t width) {
   constants.Invalidate(address,width);
@@ -65,9 +92,11 @@ void SharedExecution::Invalidate(std::uint64_t address,std::uint64_t width) {
 void SharedExecution::Clear() {
   constants.Clear();tensor_fields.clear();tensor_templates.clear();
 }
-Scalar SharedExecution::Read(const SharedValueSite &site,std::uint64_t address,unsigned width) {
-  auto result=constants.Read(address,width);
+Scalar SharedExecution::Read(const SharedValueSite &site,std::uint64_t address,unsigned width,bool sign) {
+  auto result=constants.Read(address,width,sign);
   for (const auto &source:result.sources) dependencies_[site.cta].insert({source,site});
+  if (std::holds_alternative<BoundedInteger>(result.value))
+    for (const auto &source:result.sources) bounded_dependencies_[site.cta].insert({source,site});
   return std::move(result.value);
 }
 void SharedExecution::Export(ExecutionProgram &program) const {
@@ -76,6 +105,10 @@ void SharedExecution::Export(ExecutionProgram &program) const {
     program.shared_constant_writes.assign(found->second.begin(),found->second.end());
   if (const auto found=dependencies_.find(cta);found!=dependencies_.end())
     program.shared_value_dependencies.assign(found->second.begin(),found->second.end());
+  if (const auto found=bounded_writes_.find(cta);found!=bounded_writes_.end())
+    program.shared_bounded_writes=found->second.size();
+  if (const auto found=bounded_dependencies_.find(cta);found!=bounded_dependencies_.end())
+    program.shared_bounded_reads=found->second.size();
 }
 void SharedPhase::Update(std::int64_t arrivals,std::int64_t amount) {
   pending-=arrivals; tx+=amount;
@@ -135,11 +168,15 @@ void SharedExecution::Progress() {
 }
 std::vector<SharedByte> SharedBytes(const Scalar &value,unsigned width) {
   std::vector<SharedByte> result(width);
+  // A table atom stores its exact value (ScalarInteger), as before.
   if (auto number=ScalarInteger(value))
     for (unsigned k=0;k<width;++k) result[k]=((*number>>(8*k))&255).convert_to<std::uint8_t>();
   else if (auto fragment=std::get_if<DescriptorFragment>(&value)) {
     if (width<=fragment->bytes)
       for (unsigned k=0;k<width;++k) result[k]=DescriptorFragment{fragment->descriptor,fragment->offset+k,1};
+  } else if (const auto *bounded=std::get_if<BoundedInteger>(&value)) {
+    if (bounded->value)
+      for (unsigned k=0;k<width;++k) result[k]=BoundedFragment{*bounded,k,width};
   } else for (unsigned k=0;k<width;++k)
     if (auto bits=PointerFragment(value,8*k,8)) result[k]=*bits;
   return result;

@@ -13,8 +13,8 @@
 
 namespace sentryward::algorithm {
 struct MemoryAccessFamily {
-  // The MemoryAccessCodec binding fields (MemoryAccessCodec::split) of the instruction and actor.
-  static constexpr std::size_t kInstructionField=2,kActorField=3;
+  // The MemoryAccessCodec binding fields (MemoryAccessCodec::split) of the event, instruction and actor.
+  static constexpr std::size_t kEventField=1,kInstructionField=2,kActorField=3;
   MemoryAccess first;
   MemoryAccessCodec::Delta delta;
   std::size_t count=0, event_family=0, first_member=0, extent=0;
@@ -31,7 +31,43 @@ struct MemoryAccessFamily {
     const auto steps=std::int64_t(member)-std::int64_t(first_member);
     return ActorId(static_cast<std::uint32_t>(std::int64_t(first.actor.value())+delta[kActorField]*steps));
   }
+  // The event of a member (at(member).event), affine in it, without reconstructing the access.
+  EventId event(std::size_t member) const {
+    const auto steps=std::int64_t(member)-std::int64_t(first_member);
+    return EventId(static_cast<std::uint32_t>(std::int64_t(first.event.value())+delta[kEventField]*steps));
+  }
   MemberSet members() const { return MemberRange(extent,first_member,first_member+count); }
+};
+// The families of a family memory check, by index: each one a supplied family, referenced, or a
+// part of one (split at copy-class or footprint boundaries), stored. O(1) access; a referenced
+// family takes 8 bytes instead of a copy. The supplied families must outlive the table.
+class FamilyTable final {
+ public:
+  explicit FamilyTable(std::span<const MemoryAccessFamily> supplied) : supplied_(supplied) {}
+  std::size_t size() const noexcept { return entries_.size(); }
+  const MemoryAccessFamily& operator[](std::size_t i) const {
+    const auto entry=entries_[i];
+    return entry&kStored?stored_[entry&~kStored]:supplied_[entry];
+  }
+  // Appends supplied family `index`.
+  void pushSupplied(std::size_t index) {
+    if(index>=supplied_.size())throw std::out_of_range("supplied access family");
+    entries_.push_back(index);
+  }
+  // Appends a part of a supplied family.
+  void pushPart(MemoryAccessFamily part) {
+    entries_.push_back(stored_.size()|kStored);
+    stored_.push_back(std::move(part));
+  }
+  // Removes the families from `size` on.
+  void truncate(std::size_t size) {
+    for(;entries_.size()>size;entries_.pop_back())if(entries_.back()&kStored)stored_.pop_back();
+  }
+ private:
+  static constexpr std::uint64_t kStored=std::uint64_t(1)<<63;
+  std::span<const MemoryAccessFamily> supplied_;
+  std::vector<std::uint64_t> entries_;
+  std::vector<MemoryAccessFamily> stored_;
 };
 // The CTA of each actor of a source program, by actor id (kNoCta for an unknown actor). O(actors).
 // `contiguous`: no actor id of one CTA lies between two actor ids of another, so the members of an

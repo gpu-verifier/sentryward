@@ -106,7 +106,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 1792,
@@ -117,8 +117,8 @@
     },
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
-      "arena_nodes": 7943,
-      "comparison_elapsed_seconds": 0.073182811,
+      "arena_nodes": 7163,
+      "comparison_elapsed_seconds": 0.066874363,
       "context_declaration": {
         "assumptions": [],
         "fixed_inputs": [],
@@ -127,7 +127,7 @@
       },
       "context_policy": "explicit native caller premises; no implied provenance certification",
       "counters": {
-        "add_term_visits": 67889,
+        "add_term_visits": 55743,
         "affine_state_banks": 1,
         "canonical_node_visits": 2810,
         "constant_binary32_bitcasts": 33,
@@ -139,23 +139,21 @@
         "finite_state_reuse_banks": 1,
         "fp_idiom_power_constructions": 0,
         "fp_idiom_rm_producers": 0,
-        "ideal_additive_compiler_exp_sequences": 0,
-        "ideal_compiler_exp_sequences": 0,
         "ideal_compiler_log2_polynomials": 0,
         "ideal_compiler_lse_sequences": 0,
-        "ideal_single_constant_exp_sequences": 0,
-        "imported_context_nodes": 9737,
-        "intern_requests": 251301,
-        "known_bits_cache_hits": 960,
+        "imported_context_nodes": 10249,
+        "intern_requests": 202017,
+        "known_bits_cache_hits": 5785,
         "known_bits_edges": 0,
-        "known_bits_nodes": 640,
+        "known_bits_nodes": 321,
+        "linear_reduction_case_nonfinite_identities": 0,
         "maximum_dominated_operands": 0,
         "normalization_node_visits": 15258,
+        "offset_multiple_quotients": 154,
         "parametric_state_attempts": 0,
         "proved_select_arms_imported": 1280,
         "select_max_probe_ancestor_nodes": 0,
         "select_max_probe_temporary_nodes": 0,
-        "signed_input_transport_reads": 128,
         "symbolic_byte_reads_without_extent_proof": 0
       },
       "definedness": {
@@ -164,7 +162,7 @@
         "status": "proved"
       },
       "diagnostics": [],
-      "elapsed_s": 0.055292137,
+      "elapsed_s": 0.048482222,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -213,16 +211,22 @@
       },
       "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
       "equivalent_families": 640,
+      "failure_expression_samples": {
+        "failed_families": 0,
+        "omitted_families": 0,
+        "render_byte_limit_per_side": 4096,
+        "sample_limit": 8,
+        "sampled_families": 0
+      },
       "finished_families": 640,
       "idealizations_applied": [],
       "input_contract_applied_reads": [],
-      "legacy_scalar_fallback": false,
       "mapping_input_memory_constraints": {},
       "native_context": null,
       "normalized_reachable_nodes": 2810,
       "numerical_result": "verified",
       "pattern_nodes": 2,
-      "peak_rss_kib": 131228,
+      "peak_rss_kib": 356260,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
       "piece_nodes": 0,
       "piece_union": {
@@ -240,7 +244,7 @@
       "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
       "raw_nodes": [
         103,
-        5317
+        5829
       ],
       "reference_term_patterns": 0,
       "row_groups": [
@@ -254,41 +258,40 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00010078999999999167,
-            "cumulative_elapsed_s": 0.054210304,
-            "left_import_s": 0.01825947099999988,
-            "left_normalize_s": 0.006564113000000059,
-            "parametric_state_s": 0.00034411200000002617,
-            "piece_union_record_s": 0.0009270249999999956,
-            "piece_union_seal_s": 1.8330000000017343e-05,
-            "right_import_s": 0.023591866999999968,
-            "right_normalize_s": 0.001597616000000035
+            "affine_state_pattern_s": 0.00010531100000003325,
+            "cumulative_elapsed_s": 0.047318133,
+            "left_import_s": 0.019401751999999932,
+            "left_normalize_s": 0.006536578999999945,
+            "parametric_state_s": 0.0003686510000000167,
+            "piece_union_record_s": 0.0008884970000000772,
+            "piece_union_seal_s": 1.5699999999980053e-05,
+            "right_import_s": 0.015416665000000017,
+            "right_normalize_s": 0.0015970510000000097
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 0.00010078999999999167,
+        "affine_state_pattern_s": 0.00010531100000003325,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.01825947099999988,
-        "left_normalize_s": 0.006564113000000059,
-        "parametric_state_s": 0.00034411200000002617,
-        "piece_union_record_s": 0.0009270249999999956,
+        "left_import_s": 0.019401751999999932,
+        "left_normalize_s": 0.006536578999999945,
+        "parametric_state_s": 0.0003686510000000167,
+        "piece_union_record_s": 0.0008884970000000772,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 1.8330000000017343e-05,
+        "piece_union_seal_s": 1.5699999999980053e-05,
         "proof_reuse_s": 0.0,
-        "right_import_s": 0.023591866999999968,
-        "right_normalize_s": 0.001597616000000035,
+        "right_import_s": 0.015416665000000017,
+        "right_normalize_s": 0.0015970510000000097,
         "state_pattern_s": 0.0
       },
       "timings": {
-        "load_and_scope_analysis": 0.000535462
+        "load_and_scope_analysis": 0.000626094
       },
       "total_output_families": 640,
       "transport": "in_memory_cpp_objects",
@@ -491,7 +494,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 256,
-      "hb_query_seconds": 1.835e-05,
+      "hb_query_seconds": 1.81e-05,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -499,7 +502,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 129.00390625,
+    "peak_footprint_mib": 136.1015625,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -613,32 +616,33 @@
       "scalar_fold": {
         "construction_collections": 0,
         "diagnostics": [],
+        "narrowing_slice_projections": 2032,
         "output_count": 2560,
         "output_families_merged": 0,
         "output_family_count": 320,
         "output_root_count": 320,
-        "peak_construction_nodes": 5001,
+        "peak_construction_nodes": 5512,
         "shared_view_projection_hits": 0,
         "source_outputs": 1024,
         "spatial_families_projected": 36,
         "spatial_outputs_projected": 1024,
         "spatial_template_operations": 0,
         "statistics": {
-          "constants": 277,
-          "edges": 9492,
+          "constants": 532,
+          "edges": 9684,
           "folds": 0,
           "indices": 1,
-          "initial_cells": 328,
+          "initial_cells": 648,
           "logical_iterations": 0,
           "logical_iterations_overflow": false,
           "max_fold_nesting": 0,
-          "nodes": 4997,
-          "nodes_before_final_collection": 5001,
+          "nodes": 5508,
+          "nodes_before_final_collection": 5512,
           "nodes_reclaimed": 4,
-          "operations": 4391,
+          "operations": 4327,
           "parameters": 0,
           "range_descriptions": 0,
-          "storage_nodes": 4997,
+          "storage_nodes": 5508,
           "unique_fold_bodies": 0
         }
       },
@@ -646,16 +650,16 @@
         "action_patterns": 416,
         "binding_patterns": 416,
         "domain_refinements": 2844,
-        "elapsed_seconds": 0.0032791,
+        "elapsed_seconds": 0.003362396,
         "event_families": 989,
         "expanded_event_records": 0,
         "largest_batch_members": 128,
         "logical_actions": 3328,
         "logical_events": 126592,
-        "peak_rss_mib_at_completion": 77.80078125,
+        "peak_rss_mib_at_completion": 347.91015625,
         "reachability_queries": 0,
         "relations": 2707,
-        "rss_mib_at_completion": 39.953125,
+        "rss_mib_at_completion": 40.55078125,
         "scheduled_batches": 989,
         "singleton_batches": 0,
         "value_families": 953
@@ -667,13 +671,13 @@
     "value_ir_instance_count": 82561,
     "value_ir_node_count": 646,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 0.027415632,
+    "verification_elapsed_seconds": 0.028335037,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 128.15234375,
-  "pipeline_elapsed_seconds": 0.570636609,
+  "peak_rss_mib": 347.91015625,
+  "pipeline_elapsed_seconds": 0.502291594,
   "result": "verified",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -682,6 +686,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.502
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.509
 }

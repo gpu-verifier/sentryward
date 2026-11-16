@@ -171,7 +171,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 86528,
@@ -182,8 +182,8 @@
     },
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
-      "arena_nodes": 721249,
-      "comparison_elapsed_seconds": 10.30610265,
+      "arena_nodes": 798499,
+      "comparison_elapsed_seconds": 33.641270934,
       "context_declaration": {
         "assumptions": [
           {
@@ -224,13 +224,13 @@
       },
       "context_policy": "explicit native caller premises; no implied provenance certification",
       "counters": {
-        "add_term_visits": 3058037,
+        "add_term_visits": 3070916,
         "affine_state_banks": 1,
         "affine_state_certified_updates": 0,
         "affine_state_collect_work": 154929,
         "affine_state_segments": 0,
         "bounded_unsigned_stride_recoveries": 64,
-        "call_definition_node_visits": 1556,
+        "call_definition_node_visits": 1568,
         "canonical_factor_visits": 23050,
         "canonical_node_visits": 124100,
         "canonical_sum_factor_pulls": 257,
@@ -243,60 +243,71 @@
         "coverage_polynomial_peak": 2,
         "coverage_polynomial_visits": 562052,
         "coverage_stored_piece_visits": 8704,
-        "ep_body_anchor_edges": 30880973,
+        "ep_body_anchor_edges": 30880979,
         "ep_body_anchor_limited": 59787,
-        "ep_body_anchor_nodes": 11247043,
-        "ep_body_bound_read_exact_hits": 389696,
-        "ep_body_bound_read_matcher_fallbacks": 679888,
+        "ep_body_anchor_nodes": 11247052,
+        "ep_body_bound_read_exact_hits": 590400,
+        "ep_body_bound_read_index_hits": 531800,
+        "ep_body_bound_read_matcher_fallbacks": 699051,
         "ep_body_call_rebuilds": 2,
-        "ep_body_candidate_budget": 131,
+        "ep_body_call_respelling_attempts": 8,
+        "ep_body_candidate_budget": 8581,
+        "ep_body_deferred_anchor_retries": 249353,
         "ep_body_deferred_call_anchors": 2894,
         "ep_body_deferred_unmatched_anchors": 2894,
-        "ep_body_instance_cache_entries": 148384,
-        "ep_body_instance_cache_hits": 1195823,
-        "ep_body_obligations": 274625,
-        "ep_body_pattern_anchor_cache_hits": 419280,
-        "ep_body_payload_summary_nodes": 301120,
-        "ep_body_predicate_rebuilds": 32768,
+        "ep_body_instance_cache_entries": 197680,
+        "ep_body_instance_cache_hits": 2508772,
+        "ep_body_missing_opaque_read": 248256,
+        "ep_body_obligations": 452179,
+        "ep_body_pattern_anchor_cache_hits": 453325,
+        "ep_body_payload_summary_nodes": 345140,
+        "ep_body_predicate_rebuilds": 36864,
         "ep_body_proofs": 33536,
-        "ep_body_read_anchor_rejections": 808524,
-        "ep_body_read_match_cache_entries": 275143,
-        "ep_body_read_match_cache_hits": 1150230,
-        "ep_body_select_rebuilds": 32768,
-        "ep_body_target_anchor_cache_hits": 225987,
+        "ep_body_read_anchor_rejections": 1028203,
+        "ep_body_read_match_cache_entries": 337805,
+        "ep_body_read_match_cache_hits": 2029192,
+        "ep_body_select_rebuilds": 36864,
+        "ep_body_target_anchor_cache_hits": 260035,
+        "ep_body_target_call_index_builds": 2,
+        "ep_body_target_call_index_nodes": 4125,
+        "ep_body_target_read_index_builds": 59787,
+        "ep_body_target_read_index_nodes": 42442616,
         "ep_identity_proofs": 37632,
         "ep_polynomial_proofs": 4160,
         "ep_reduction_outer_obligations": 4224,
-        "ep_scalar_attempts": 291201,
+        "ep_scalar_attempts": 468947,
         "ep_scalar_proofs": 41792,
+        "exact_exponential_base_changes": 321,
         "exact_proof_reuse_certificates": 4160,
         "finite_bilinear_banks": 1,
         "finite_state_reuse_banks": 1,
         "fixed_input_reads_substituted": 2,
-        "fold_alpha_root_cache_hits": 838350,
+        "fold_alpha_root_cache_hits": 2172208,
         "fold_alpha_signature_edges": 302897,
         "fold_alpha_signatures": 81523,
         "fold_alpha_states": 81523,
         "fp_idiom_power_constructions": 0,
         "fp_idiom_rm_producers": 0,
-        "ideal_additive_compiler_exp_sequences": 0,
-        "ideal_compiler_exp_sequences": 0,
         "ideal_compiler_log1p_polynomials": 160,
         "ideal_compiler_log2_polynomials": 0,
         "ideal_compiler_lse_sequences": 0,
-        "ideal_single_constant_exp_sequences": 321,
-        "imported_context_nodes": 218001,
+        "ideal_rounded_constants": 321,
+        "imported_context_nodes": 232257,
         "importer_occurrence_binder_hits": 4,
         "importer_scope_banks": 1,
         "importer_scope_binder_hits": 1,
         "importer_scope_binders_created": 1,
         "importer_scope_leaf_lookups": 2,
         "importer_scope_nested_body_fallbacks": 514,
-        "intern_requests": 22816865,
-        "known_bits_cache_hits": 8204,
+        "intern_requests": 28123282,
+        "known_bits_cache_hits": 108099,
         "known_bits_edges": 0,
-        "known_bits_nodes": 2,
+        "known_bits_nodes": 2052,
+        "linear_reduction_case_nonfinite_identities": 0,
+        "linear_reduction_case_split_cases": 192,
         "linear_reduction_case_split_closures": 128,
+        "linear_reduction_case_split_declines": 192,
+        "linear_reduction_chain_output_declines": 64,
         "linear_reduction_closed_groups": 4160,
         "linear_reduction_closed_rewrite_proofs": 64,
         "linear_reduction_decline_distribution_budget": 4288,
@@ -319,15 +330,16 @@
         "masked_sum_prefix_queries": 516,
         "normalization_cache_context_changes": 4,
         "normalization_node_visits": 316742,
+        "offset_multiple_quotients": 65799,
         "parametric_state_attempts": 0,
         "pattern_build_peak_nodes": 17,
         "pattern_build_unique_nodes": 80448,
-        "pattern_node_visits": 5609478,
+        "pattern_node_visits": 5879710,
         "predicate_integer_affine_normalizations": 2,
         "proved_select_arms_imported": 66,
         "select_complementary_polarities": 160,
         "select_max_probe_ancestor_nodes": 0,
-        "select_max_probe_calls": 71200,
+        "select_max_probe_calls": 75296,
         "select_max_probe_temporary_nodes": 0,
         "summary_bind_nodes": 64,
         "summary_concat_nodes": 570484,
@@ -344,7 +356,7 @@
         "status": "proved"
       },
       "diagnostics": [],
-      "elapsed_s": 9.05910118,
+      "elapsed_s": 32.141606319,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -358,7 +370,7 @@
           "previously_completed": 0,
           "repeated_across_queries": 0,
           "requests": 0,
-          "shared_hits": 1328485,
+          "shared_hits": 2996197,
           "unique_query_nodes": 0
         },
         "fraction_witness_s": 0.0,
@@ -368,7 +380,7 @@
           "previously_completed": 0,
           "repeated_across_queries": 0,
           "requests": 0,
-          "shared_hits": 626688,
+          "shared_hits": 1844359,
           "unique_query_nodes": 0
         },
         "ordinary_polynomial_s": 0.0,
@@ -377,13 +389,13 @@
           "previously_completed": 0,
           "repeated_across_queries": 0,
           "requests": 0,
-          "shared_hits": 733889,
+          "shared_hits": 1182741,
           "unique_query_nodes": 0
         },
-        "query_count": 291201,
+        "query_count": 468947,
         "reset_s": 0.0,
         "reuse_cache": true,
-        "shared_evictions": 41
+        "shared_evictions": 80
       },
       "equivalence_context": {
         "applied_predicates": 0,
@@ -393,6 +405,13 @@
       },
       "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
       "equivalent_families": 4160,
+      "failure_expression_samples": {
+        "failed_families": 0,
+        "omitted_families": 0,
+        "render_byte_limit_per_side": 4096,
+        "sample_limit": 8,
+        "sampled_families": 0
+      },
       "finished_families": 4160,
       "fixed_input_context": {
         "applied": [
@@ -441,8 +460,8 @@
         "configured_elements": 2
       },
       "idealizations_applied": [
-        "compiler Exp2 with binary32 log2(e) multiplier is ideal Exp",
-        "complete typed RN-FMA binary32 log1pf polynomial with exponent-field reduction and exceptional guards is ideal Log(1+u) on proved finite nonnegative input"
+        "complete typed RN-FMA binary32 log1pf polynomial with exponent-field reduction and exceptional guards is ideal Log(1+u) on proved finite nonnegative input",
+        "a binary32/binary64 literal equal to the rounded ln(2) or log2(e) of its operation's format is that exact constant in floating Add/Subtract/Multiply/Fma/Divide/Reciprocal"
       ],
       "input_contract": [
         {
@@ -466,7 +485,6 @@
           "side": "right"
         }
       ],
-      "legacy_scalar_fallback": false,
       "mapping_input_memory_constraints": {},
       "native_context": {
         "elements": 2,
@@ -476,8 +494,8 @@
       },
       "normalized_reachable_nodes": 90163,
       "numerical_result": "verified",
-      "pattern_nodes": 240,
-      "peak_rss_kib": 905272,
+      "pattern_nodes": 243,
+      "peak_rss_kib": 1169740,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
       "piece_nodes": 1145588,
       "piece_union": {
@@ -495,7 +513,7 @@
       "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
       "raw_nodes": [
         376,
-        181060
+        195316
       ],
       "reference_term_patterns": 8,
       "row_groups": [
@@ -509,7 +527,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -541,17 +558,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.0979999999993773e-05,
-            "cumulative_elapsed_s": 0.06275676,
-            "left_import_s": 0.0005810020000000041,
-            "left_normalize_s": 0.00017973000000000294,
-            "parametric_state_s": 8.700000000000374e-07,
-            "piece_union_record_s": 1.8000000000240046e-07,
-            "piece_union_seal_s": 5.199999999969118e-07,
-            "right_import_s": 0.011821082000000004,
-            "right_normalize_s": 0.009471693999999996,
-            "state_pattern_s": 0.003269651999999991,
-            "unary_reduction_s": 2.679999999997962e-06
+            "affine_state_pattern_s": 2.1281000000004935e-05,
+            "cumulative_elapsed_s": 0.075784392,
+            "left_import_s": 0.0006227959999999949,
+            "left_normalize_s": 0.00017785100000000664,
+            "parametric_state_s": 1.0500000000024379e-06,
+            "piece_union_record_s": 2.0000000000575113e-07,
+            "piece_union_seal_s": 4.799999999971494e-07,
+            "right_import_s": 0.012203776,
+            "right_normalize_s": 0.014876460000000001,
+            "state_pattern_s": 0.005915901000000001,
+            "unary_reduction_s": 3.130000000003963e-06
           }
         },
         {
@@ -564,7 +581,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -596,17 +612,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 7.619999999999849e-06,
-            "cumulative_elapsed_s": 0.064356795,
-            "left_import_s": 0.00013770999999999922,
-            "left_normalize_s": 7.083099999999343e-05,
-            "parametric_state_s": 2.6000000000192536e-07,
-            "piece_union_record_s": 1.6999999999378623e-07,
-            "piece_union_seal_s": 1.6000000001292758e-07,
-            "right_import_s": 3.258000000000427e-05,
-            "right_normalize_s": 0.0005967620000000007,
-            "state_pattern_s": 0.0007162419999999919,
-            "unary_reduction_s": 1.599999999990498e-06
+            "affine_state_pattern_s": 6.149999999996436e-06,
+            "cumulative_elapsed_s": 0.081082379,
+            "left_import_s": 0.00014590099999998996,
+            "left_normalize_s": 7.273099999999255e-05,
+            "parametric_state_s": 4.900000000057636e-07,
+            "piece_union_record_s": 4.9999999987559995e-08,
+            "piece_union_seal_s": 2.8000000000527603e-07,
+            "right_import_s": 3.6490000000000133e-05,
+            "right_normalize_s": 0.002915174999999992,
+            "state_pattern_s": 0.0020845389999999964,
+            "unary_reduction_s": 1.7100000000019877e-06
           }
         },
         {
@@ -619,7 +635,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -651,17 +666,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 4.5799999999901475e-06,
-            "cumulative_elapsed_s": 0.066140622,
-            "left_import_s": 0.00012607100000000537,
-            "left_normalize_s": 6.628999999999663e-05,
-            "parametric_state_s": 2.8000000000527603e-07,
-            "piece_union_record_s": 5.000000000143778e-08,
-            "piece_union_seal_s": 1.3999999999569912e-07,
-            "right_import_s": 0.0003681410000000024,
-            "right_normalize_s": 0.0005622420000000045,
-            "state_pattern_s": 0.0006211730000000026,
-            "unary_reduction_s": 1.1499999999914357e-06
+            "affine_state_pattern_s": 4.009999999998737e-06,
+            "cumulative_elapsed_s": 0.087102641,
+            "left_import_s": 0.00013772099999999343,
+            "left_normalize_s": 7.078100000000587e-05,
+            "parametric_state_s": 3.4000000000145025e-07,
+            "piece_union_record_s": 5.999999999617422e-08,
+            "piece_union_seal_s": 5.999999999617422e-08,
+            "right_import_s": 0.00037278299999998765,
+            "right_normalize_s": 0.0030581670000000005,
+            "state_pattern_s": 0.002342700000000003,
+            "unary_reduction_s": 1.550000000002938e-06
           }
         },
         {
@@ -674,7 +689,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -706,17 +720,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.890000000006388e-06,
-            "cumulative_elapsed_s": 0.067514976,
-            "left_import_s": 0.000107289999999996,
-            "left_normalize_s": 6.225999999999454e-05,
-            "parametric_state_s": 2.3000000000383825e-07,
+            "affine_state_pattern_s": 3.770000000000162e-06,
+            "cumulative_elapsed_s": 0.09269089,
+            "left_import_s": 0.00012352100000000144,
+            "left_normalize_s": 6.391000000000036e-05,
+            "parametric_state_s": 3.4000000000145025e-07,
             "piece_union_record_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 1.4999999999043556e-07,
-            "right_import_s": 2.922000000001035e-05,
-            "right_normalize_s": 0.0004972320000000002,
-            "state_pattern_s": 0.0006193020000000021,
-            "unary_reduction_s": 8.900000000033881e-07
+            "piece_union_seal_s": 5.999999999617422e-08,
+            "right_import_s": 3.439099999999473e-05,
+            "right_normalize_s": 0.002969265999999998,
+            "state_pattern_s": 0.002334050000000004,
+            "unary_reduction_s": 1.4100000000072388e-06
           }
         },
         {
@@ -729,7 +743,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -761,17 +774,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 4.439999999994448e-06,
-            "cumulative_elapsed_s": 0.069129212,
-            "left_import_s": 0.00011384100000000341,
-            "left_normalize_s": 6.533000000000233e-05,
-            "parametric_state_s": 2.4999999999331113e-07,
-            "piece_union_record_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.0003569110000000014,
-            "right_normalize_s": 0.00045276199999999545,
-            "state_pattern_s": 0.0005891920000000023,
-            "unary_reduction_s": 1.0100000000096143e-06
+            "affine_state_pattern_s": 3.9699999999920355e-06,
+            "cumulative_elapsed_s": 0.098762413,
+            "left_import_s": 0.00012885099999999927,
+            "left_normalize_s": 6.977100000001013e-05,
+            "parametric_state_s": 3.7000000001341515e-07,
+            "piece_union_record_s": 6.000000001005201e-08,
+            "piece_union_seal_s": 5.999999999617422e-08,
+            "right_import_s": 0.0004118639999999979,
+            "right_normalize_s": 0.003066275999999993,
+            "state_pattern_s": 0.002355301000000004,
+            "unary_reduction_s": 1.4599999999947988e-06
           }
         },
         {
@@ -784,7 +797,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -816,17 +828,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 5.399999999988747e-06,
-            "cumulative_elapsed_s": 0.070386606,
-            "left_import_s": 0.00010529999999998874,
-            "left_normalize_s": 9.687999999999364e-05,
-            "parametric_state_s": 2.1999999999522402e-07,
-            "piece_union_record_s": 6.000000001005201e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 2.789100000000211e-05,
-            "right_normalize_s": 0.00041423099999998714,
-            "state_pattern_s": 0.0005777720000000042,
-            "unary_reduction_s": 7.699999999971618e-07
+            "affine_state_pattern_s": 5.721000000000198e-06,
+            "cumulative_elapsed_s": 0.104404012,
+            "left_import_s": 0.00011776100000000789,
+            "left_normalize_s": 6.309000000000176e-05,
+            "parametric_state_s": 2.200000000091018e-07,
+            "piece_union_record_s": 5.999999999617422e-08,
+            "piece_union_seal_s": 5.000000000143778e-08,
+            "right_import_s": 3.211000000000186e-05,
+            "right_normalize_s": 0.0030495769999999978,
+            "state_pattern_s": 0.0023413600000000007,
+            "unary_reduction_s": 1.1399999999966992e-06
           }
         },
         {
@@ -839,7 +851,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -871,17 +882,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.679999999992023e-06,
-            "cumulative_elapsed_s": 0.071914552,
-            "left_import_s": 0.00011303999999999481,
-            "left_normalize_s": 6.306000000000367e-05,
+            "affine_state_pattern_s": 4.309999999993486e-06,
+            "cumulative_elapsed_s": 0.110562676,
+            "left_import_s": 0.00013545200000000812,
+            "left_normalize_s": 7.514100000000079e-05,
             "parametric_state_s": 2.3000000000383825e-07,
             "piece_union_record_s": 5.000000000143778e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.0003353509999999976,
-            "right_normalize_s": 0.0004128820000000033,
-            "state_pattern_s": 0.0005700520000000014,
-            "unary_reduction_s": 8.400000000019503e-07
+            "piece_union_seal_s": 5.999999999617422e-08,
+            "right_import_s": 0.00038107299999999567,
+            "right_normalize_s": 0.0030979270000000003,
+            "state_pattern_s": 0.0024310209999999915,
+            "unary_reduction_s": 1.0299999999990872e-06
           }
         },
         {
@@ -894,7 +905,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -926,17 +936,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.3400000000044505e-06,
-            "cumulative_elapsed_s": 0.073122366,
-            "left_import_s": 0.0001004699999999914,
-            "left_normalize_s": 6.810100000000097e-05,
-            "parametric_state_s": 2.7999999999139824e-07,
-            "piece_union_record_s": 5.000000000143778e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 2.722000000000835e-05,
-            "right_normalize_s": 0.00039714100000000363,
-            "state_pattern_s": 0.0005792220000000042,
-            "unary_reduction_s": 5.800000000000249e-07
+            "affine_state_pattern_s": 3.5499999999910603e-06,
+            "cumulative_elapsed_s": 0.116374547,
+            "left_import_s": 0.00011290099999999859,
+            "left_normalize_s": 6.521000000000998e-05,
+            "parametric_state_s": 1.8000000000240046e-07,
+            "piece_union_record_s": 5.999999999617422e-08,
+            "piece_union_seal_s": 3.9999999992823554e-08,
+            "right_import_s": 3.2790999999990356e-05,
+            "right_normalize_s": 0.003156458000000001,
+            "state_pattern_s": 0.0024082809999999982,
+            "unary_reduction_s": 1.0200000000043508e-06
           }
         },
         {
@@ -949,7 +959,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -981,17 +990,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.240000000001575e-06,
-            "cumulative_elapsed_s": 0.074648351,
-            "left_import_s": 0.00011216099999999951,
-            "left_normalize_s": 6.16400000000017e-05,
-            "parametric_state_s": 2.2999999998996046e-07,
+            "affine_state_pattern_s": 4.340000000005451e-06,
+            "cumulative_elapsed_s": 0.122694502,
+            "left_import_s": 0.000130471000000007,
+            "left_normalize_s": 7.710099999999609e-05,
+            "parametric_state_s": 3.000000000086267e-07,
             "piece_union_record_s": 5.000000000143778e-08,
-            "piece_union_seal_s": 1.9999999989472883e-08,
-            "right_import_s": 0.00035707100000000047,
-            "right_normalize_s": 0.00038936099999999085,
-            "state_pattern_s": 0.0005729520000000016,
-            "unary_reduction_s": 6.800000000029005e-07
+            "piece_union_seal_s": 5.999999999617422e-08,
+            "right_import_s": 0.00042319400000000174,
+            "right_normalize_s": 0.0031839469999999925,
+            "state_pattern_s": 0.002469421999999999,
+            "unary_reduction_s": 1.0299999999990872e-06
           }
         },
         {
@@ -1004,7 +1013,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1036,17 +1044,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.2800000000082763e-06,
-            "cumulative_elapsed_s": 0.075855626,
-            "left_import_s": 0.00010335100000000152,
-            "left_normalize_s": 6.119999999999737e-05,
-            "parametric_state_s": 2.1000000000048757e-07,
-            "piece_union_record_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 2.000000000335067e-08,
-            "right_import_s": 2.7149999999989682e-05,
-            "right_normalize_s": 0.0004180919999999949,
-            "state_pattern_s": 0.000565841999999997,
-            "unary_reduction_s": 6.600000000134276e-07
+            "affine_state_pattern_s": 3.5700000000082888e-06,
+            "cumulative_elapsed_s": 0.128697084,
+            "left_import_s": 0.00011406099999999864,
+            "left_normalize_s": 6.871999999999434e-05,
+            "parametric_state_s": 2.399999999985747e-07,
+            "piece_union_record_s": 2.9999999984209325e-08,
+            "piece_union_seal_s": 4.000000000670134e-08,
+            "right_import_s": 3.14610000000104e-05,
+            "right_normalize_s": 0.003298509000000005,
+            "state_pattern_s": 0.002453551000000026,
+            "unary_reduction_s": 9.900000000062636e-07
           }
         },
         {
@@ -1059,7 +1067,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1091,17 +1098,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.6100000000011123e-06,
-            "cumulative_elapsed_s": 0.077550082,
-            "left_import_s": 0.0001139299999999982,
-            "left_normalize_s": 6.417100000000175e-05,
-            "parametric_state_s": 3.1000000000336314e-07,
-            "piece_union_record_s": 4.9999999987559995e-08,
-            "piece_union_seal_s": 3.00000000119649e-08,
-            "right_import_s": 0.0003418409999999955,
-            "right_normalize_s": 0.00045814099999999525,
-            "state_pattern_s": 0.0006804730000000009,
-            "unary_reduction_s": 6.800000000029005e-07
+            "affine_state_pattern_s": 4.580000000004025e-06,
+            "cumulative_elapsed_s": 0.13500877,
+            "left_import_s": 0.00012389100000001485,
+            "left_normalize_s": 7.040099999999772e-05,
+            "parametric_state_s": 2.1999999999522402e-07,
+            "piece_union_record_s": 5.000000000143778e-08,
+            "piece_union_seal_s": 5.999999999617422e-08,
+            "right_import_s": 0.0004002029999999879,
+            "right_normalize_s": 0.003224987999999984,
+            "state_pattern_s": 0.0024573320000000065,
+            "unary_reduction_s": 9.09999999992861e-07
           }
         },
         {
@@ -1114,7 +1121,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1146,17 +1152,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.8099999999929857e-06,
-            "cumulative_elapsed_s": 0.078915326,
-            "left_import_s": 9.974000000000094e-05,
-            "left_normalize_s": 5.913000000000446e-05,
-            "parametric_state_s": 2.5999999998804757e-07,
-            "piece_union_record_s": 7.99999999995249e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 2.763000000000071e-05,
-            "right_normalize_s": 0.00047386200000000545,
-            "state_pattern_s": 0.0006707620000000053,
-            "unary_reduction_s": 6.40000000010077e-07
+            "affine_state_pattern_s": 3.8599999999944234e-06,
+            "cumulative_elapsed_s": 0.141063413,
+            "left_import_s": 0.00010957100000000275,
+            "left_normalize_s": 6.667100000001813e-05,
+            "parametric_state_s": 1.900000000110147e-07,
+            "piece_union_record_s": 5.000000000143778e-08,
+            "piece_union_seal_s": 5.000000000143778e-08,
+            "right_import_s": 3.2269999999973153e-05,
+            "right_normalize_s": 0.0032672080000000214,
+            "state_pattern_s": 0.002542813000000005,
+            "unary_reduction_s": 9.599999999942987e-07
           }
         },
         {
@@ -1169,7 +1175,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1201,17 +1206,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 8.350000000004187e-06,
-            "cumulative_elapsed_s": 0.080779313,
-            "left_import_s": 0.00011101100000000808,
-            "left_normalize_s": 6.514999999999993e-05,
-            "parametric_state_s": 2.999999999947489e-07,
-            "piece_union_record_s": 3.9999999992823554e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.0003684610000000005,
-            "right_normalize_s": 0.000538801999999991,
-            "state_pattern_s": 0.000740873000000003,
-            "unary_reduction_s": 6.300000000014627e-07
+            "affine_state_pattern_s": 1.050999999999136e-05,
+            "cumulative_elapsed_s": 0.147494039,
+            "left_import_s": 0.00012075100000000227,
+            "left_normalize_s": 7.149100000000685e-05,
+            "parametric_state_s": 3.000000000086267e-07,
+            "piece_union_record_s": 5.000000000143778e-08,
+            "piece_union_seal_s": 3.00000000119649e-08,
+            "right_import_s": 0.000454484000000005,
+            "right_normalize_s": 0.003255838000000011,
+            "state_pattern_s": 0.0024832219999999794,
+            "unary_reduction_s": 9.800000000115272e-07
           }
         },
         {
@@ -1224,7 +1229,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1256,17 +1260,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.6399999999991994e-06,
-            "cumulative_elapsed_s": 0.082202268,
-            "left_import_s": 9.880000000000999e-05,
-            "left_normalize_s": 6.60110000000047e-05,
-            "parametric_state_s": 2.3000000000383825e-07,
+            "affine_state_pattern_s": 3.7900000000035128e-06,
+            "cumulative_elapsed_s": 0.153469001,
+            "left_import_s": 0.00011019100000000948,
+            "left_normalize_s": 6.874100000001104e-05,
+            "parametric_state_s": 2.399999999846969e-07,
             "piece_union_record_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 2.000000000335067e-08,
-            "right_import_s": 2.7909999999992108e-05,
-            "right_normalize_s": 0.0005272409999999977,
-            "state_pattern_s": 0.0006656619999999974,
-            "unary_reduction_s": 6.609999999990235e-07
+            "piece_union_seal_s": 4.000000000670134e-08,
+            "right_import_s": 3.227000000000091e-05,
+            "right_normalize_s": 0.003260648000000005,
+            "state_pattern_s": 0.0024634319999999876,
+            "unary_reduction_s": 8.699999999861596e-07
           }
         },
         {
@@ -1279,7 +1283,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1311,17 +1314,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.379999999997274e-06,
-            "cumulative_elapsed_s": 0.084042354,
-            "left_import_s": 0.00011382000000000059,
-            "left_normalize_s": 6.131000000000886e-05,
-            "parametric_state_s": 2.6000000000192536e-07,
-            "piece_union_record_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.0003347120000000009,
-            "right_normalize_s": 0.0006175419999999987,
-            "state_pattern_s": 0.0006786419999999932,
-            "unary_reduction_s": 6.499999999909356e-07
+            "affine_state_pattern_s": 3.7300000000073386e-06,
+            "cumulative_elapsed_s": 0.159907097,
+            "left_import_s": 0.00012235099999999277,
+            "left_normalize_s": 7.129999999999637e-05,
+            "parametric_state_s": 2.399999999846969e-07,
+            "piece_union_record_s": 5.000000000143778e-08,
+            "piece_union_seal_s": 4.000000000670134e-08,
+            "right_import_s": 0.00040805399999999104,
+            "right_normalize_s": 0.0033020990000000028,
+            "state_pattern_s": 0.0024880919999999973,
+            "unary_reduction_s": 8.999999999981245e-07
           }
         },
         {
@@ -1334,7 +1337,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1366,17 +1368,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.0000000000030003e-06,
-            "cumulative_elapsed_s": 0.0855917,
-            "left_import_s": 0.00010911099999999507,
-            "left_normalize_s": 6.375999999999604e-05,
-            "parametric_state_s": 2.500000000071889e-07,
-            "piece_union_record_s": 5.000000000143778e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 2.7520000000003098e-05,
-            "right_normalize_s": 0.0005558320000000061,
-            "state_pattern_s": 0.0007594429999999985,
-            "unary_reduction_s": 6.799999999890227e-07
+            "affine_state_pattern_s": 3.4509999999876584e-06,
+            "cumulative_elapsed_s": 0.16596396,
+            "left_import_s": 0.00011314100000001104,
+            "left_normalize_s": 6.761999999999047e-05,
+            "parametric_state_s": 2.0000000000575113e-07,
+            "piece_union_record_s": 6.00000000239298e-08,
+            "piece_union_seal_s": 4.000000000670134e-08,
+            "right_import_s": 3.129999999998412e-05,
+            "right_normalize_s": 0.0033116989999999735,
+            "state_pattern_s": 0.0024965720000000025,
+            "unary_reduction_s": 8.800000000086516e-07
           }
         },
         {
@@ -1389,7 +1391,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1421,17 +1422,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.4000000000006247e-06,
-            "cumulative_elapsed_s": 0.087493226,
-            "left_import_s": 0.00011018999999999612,
-            "left_normalize_s": 0.00010852000000000084,
-            "parametric_state_s": 2.4999999999331113e-07,
-            "piece_union_record_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 2.000000000335067e-08,
-            "right_import_s": 0.00038645200000000934,
-            "right_normalize_s": 0.0005529820000000074,
-            "state_pattern_s": 0.000699911999999997,
-            "unary_reduction_s": 6.500000000048134e-07
+            "affine_state_pattern_s": 4.230000000021716e-06,
+            "cumulative_elapsed_s": 0.172496247,
+            "left_import_s": 0.00012202099999999994,
+            "left_normalize_s": 0.00013040200000000168,
+            "parametric_state_s": 2.500000000071889e-07,
+            "piece_union_record_s": 6.999999999091067e-08,
+            "piece_union_seal_s": 2.9999999984209325e-08,
+            "right_import_s": 0.00046788400000000174,
+            "right_normalize_s": 0.0032909680000000052,
+            "state_pattern_s": 0.002480811999999999,
+            "unary_reduction_s": 9.800000000115272e-07
           }
         },
         {
@@ -1444,7 +1445,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1476,17 +1476,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.1699999999967865e-06,
-            "cumulative_elapsed_s": 0.088967132,
-            "left_import_s": 9.815100000000465e-05,
-            "left_normalize_s": 6.472000000000422e-05,
-            "parametric_state_s": 1.900000000110147e-07,
-            "piece_union_record_s": 4.9999999987559995e-08,
-            "piece_union_seal_s": 1.9999999989472883e-08,
-            "right_import_s": 2.794999999999881e-05,
-            "right_normalize_s": 0.0005381620000000087,
-            "state_pattern_s": 0.0007079230000000131,
-            "unary_reduction_s": 6.399999999961992e-07
+            "affine_state_pattern_s": 3.5499999999910603e-06,
+            "cumulative_elapsed_s": 0.17857252,
+            "left_import_s": 0.00011024100000001091,
+            "left_normalize_s": 6.24300000000022e-05,
+            "parametric_state_s": 2.0000000000575113e-07,
+            "piece_union_record_s": 5.999999999617422e-08,
+            "piece_union_seal_s": 5.999999999617422e-08,
+            "right_import_s": 3.249099999999561e-05,
+            "right_normalize_s": 0.003318198999999994,
+            "state_pattern_s": 0.002513851999999983,
+            "unary_reduction_s": 8.099999999899854e-07
           }
         },
         {
@@ -1499,7 +1499,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1531,17 +1530,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.360000000007801e-06,
-            "cumulative_elapsed_s": 0.090806358,
-            "left_import_s": 0.00011204000000000769,
-            "left_normalize_s": 6.758099999999712e-05,
-            "parametric_state_s": 2.8000000000527603e-07,
+            "affine_state_pattern_s": 3.940000000007826e-06,
+            "cumulative_elapsed_s": 0.185046437,
+            "left_import_s": 0.00012393100000002155,
+            "left_normalize_s": 6.994000000001832e-05,
+            "parametric_state_s": 2.699999999966618e-07,
             "piece_union_record_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 2.000000000335067e-08,
-            "right_import_s": 0.00036195099999999925,
-            "right_normalize_s": 0.0005292309999999911,
-            "state_pattern_s": 0.0007344229999999979,
-            "unary_reduction_s": 6.599999999995498e-07
+            "piece_union_seal_s": 5.999999999617422e-08,
+            "right_import_s": 0.0003929940000000076,
+            "right_normalize_s": 0.0033610100000000254,
+            "state_pattern_s": 0.0024891220000000103,
+            "unary_reduction_s": 1.000000000001e-06
           }
         },
         {
@@ -1554,7 +1553,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1586,17 +1584,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 2.989999999994386e-06,
-            "cumulative_elapsed_s": 0.092309443,
-            "left_import_s": 0.00010509000000000213,
-            "left_normalize_s": 6.834000000000007e-05,
-            "parametric_state_s": 2.399999999985747e-07,
+            "affine_state_pattern_s": 3.940000000007826e-06,
+            "cumulative_elapsed_s": 0.191071539,
+            "left_import_s": 0.00011128099999999086,
+            "left_normalize_s": 6.966099999999864e-05,
+            "parametric_state_s": 2.2999999998996046e-07,
             "piece_union_record_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 4.000000000670134e-08,
-            "right_import_s": 2.786100000000402e-05,
-            "right_normalize_s": 0.0005459419999999937,
-            "state_pattern_s": 0.0007221619999999984,
-            "unary_reduction_s": 6.500000000048134e-07
+            "piece_union_seal_s": 5.000000000143778e-08,
+            "right_import_s": 3.117999999999177e-05,
+            "right_normalize_s": 0.003295028999999977,
+            "state_pattern_s": 0.0024809709999999985,
+            "unary_reduction_s": 8.000000000230045e-07
           }
         },
         {
@@ -1609,7 +1607,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1641,17 +1638,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.98000000000065e-06,
-            "cumulative_elapsed_s": 0.0941236,
-            "left_import_s": 0.00011368100000000436,
-            "left_normalize_s": 6.673000000000096e-05,
-            "parametric_state_s": 2.9000000000001247e-07,
-            "piece_union_record_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.00035828100000000196,
-            "right_normalize_s": 0.0005355819999999928,
-            "state_pattern_s": 0.0007067330000000011,
-            "unary_reduction_s": 7.699999999971618e-07
+            "affine_state_pattern_s": 4.2999999999848715e-06,
+            "cumulative_elapsed_s": 0.197493765,
+            "left_import_s": 0.00012023099999999842,
+            "left_normalize_s": 7.014100000002355e-05,
+            "parametric_state_s": 2.1000000000048757e-07,
+            "piece_union_record_s": 5.000000000143778e-08,
+            "piece_union_seal_s": 3.00000000119649e-08,
+            "right_import_s": 0.00041311400000001997,
+            "right_normalize_s": 0.003284868000000024,
+            "state_pattern_s": 0.0024974209999999997,
+            "unary_reduction_s": 9.199999999875974e-07
           }
         },
         {
@@ -1664,7 +1661,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1696,17 +1692,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.9200000000044755e-06,
-            "cumulative_elapsed_s": 0.095607525,
-            "left_import_s": 9.847000000000328e-05,
-            "left_normalize_s": 6.406000000000467e-05,
-            "parametric_state_s": 2.1999999999522402e-07,
-            "piece_union_record_s": 5.000000000143778e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 2.8959999999994546e-05,
-            "right_normalize_s": 0.0005431020000000036,
-            "state_pattern_s": 0.0007142229999999999,
-            "unary_reduction_s": 6.700000000081641e-07
+            "affine_state_pattern_s": 3.7699999999862843e-06,
+            "cumulative_elapsed_s": 0.203579389,
+            "left_import_s": 0.00011079099999999897,
+            "left_normalize_s": 6.806000000000867e-05,
+            "parametric_state_s": 2.1000000000048757e-07,
+            "piece_union_record_s": 3.9999999978945766e-08,
+            "piece_union_seal_s": 4.000000000670134e-08,
+            "right_import_s": 3.144999999998843e-05,
+            "right_normalize_s": 0.0033139789999999947,
+            "state_pattern_s": 0.0025237320000000008,
+            "unary_reduction_s": 7.699999999832841e-07
           }
         },
         {
@@ -1719,7 +1715,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1751,17 +1746,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 4.130000000004963e-06,
-            "cumulative_elapsed_s": 0.097559502,
-            "left_import_s": 0.00011177000000001103,
-            "left_normalize_s": 7.858099999999424e-05,
-            "parametric_state_s": 2.6000000000192536e-07,
+            "affine_state_pattern_s": 4.300000000012627e-06,
+            "cumulative_elapsed_s": 0.210022595,
+            "left_import_s": 0.00012026100000001039,
+            "left_normalize_s": 7.241099999999445e-05,
+            "parametric_state_s": 3.1000000000336314e-07,
             "piece_union_record_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.00035367099999999985,
-            "right_normalize_s": 0.0005562020000000056,
-            "state_pattern_s": 0.00081667299999999,
-            "unary_reduction_s": 7.199999999957241e-07
+            "piece_union_seal_s": 6.00000000239298e-08,
+            "right_import_s": 0.0003986930000000055,
+            "right_normalize_s": 0.0033253390000000105,
+            "state_pattern_s": 0.0024892420000000026,
+            "unary_reduction_s": 8.200000000124774e-07
           }
         },
         {
@@ -1774,7 +1769,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1806,17 +1800,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.3400000000044505e-06,
-            "cumulative_elapsed_s": 0.099188097,
-            "left_import_s": 9.954000000000907e-05,
-            "left_normalize_s": 6.256000000000317e-05,
-            "parametric_state_s": 2.699999999966618e-07,
-            "piece_union_record_s": 6.000000001005201e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 2.7680000000002147e-05,
-            "right_normalize_s": 0.0006330230000000103,
-            "state_pattern_s": 0.0007727919999999944,
-            "unary_reduction_s": 6.299999999875849e-07
+            "affine_state_pattern_s": 3.7999999999982492e-06,
+            "cumulative_elapsed_s": 0.216259999,
+            "left_import_s": 0.00011248099999999761,
+            "left_normalize_s": 6.841099999999045e-05,
+            "parametric_state_s": 2.1000000000048757e-07,
+            "piece_union_record_s": 5.000000000143778e-08,
+            "piece_union_seal_s": 2.9999999984209325e-08,
+            "right_import_s": 3.174000000000232e-05,
+            "right_normalize_s": 0.0034207099999999935,
+            "state_pattern_s": 0.002565472000000013,
+            "unary_reduction_s": 8.999999999981245e-07
           }
         },
         {
@@ -1829,7 +1823,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1861,17 +1854,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.98000000000065e-06,
-            "cumulative_elapsed_s": 0.101066614,
-            "left_import_s": 0.0001190510000000089,
-            "left_normalize_s": 6.815000000000293e-05,
-            "parametric_state_s": 2.699999999966618e-07,
-            "piece_union_record_s": 5.000000000143778e-08,
-            "piece_union_seal_s": 3.9999999992823554e-08,
-            "right_import_s": 0.00037655100000000274,
-            "right_normalize_s": 0.000573582000000003,
-            "state_pattern_s": 0.0007071020000000011,
-            "unary_reduction_s": 7.399999999990747e-07
+            "affine_state_pattern_s": 4.300000000012627e-06,
+            "cumulative_elapsed_s": 0.222725366,
+            "left_import_s": 0.00012514099999999528,
+            "left_normalize_s": 7.088099999999486e-05,
+            "parametric_state_s": 2.1999999999522402e-07,
+            "piece_union_record_s": 5.999999999617422e-08,
+            "piece_union_seal_s": 5.000000000143778e-08,
+            "right_import_s": 0.00043231299999998973,
+            "right_normalize_s": 0.0033139289999999932,
+            "state_pattern_s": 0.002485621999999993,
+            "unary_reduction_s": 9.799999999837716e-07
           }
         },
         {
@@ -1884,7 +1877,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1916,17 +1908,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 4.009999999998737e-06,
-            "cumulative_elapsed_s": 0.102536699,
-            "left_import_s": 0.00010813999999999269,
-            "left_normalize_s": 6.798000000000914e-05,
-            "parametric_state_s": 2.4999999999331113e-07,
-            "piece_union_record_s": 5.000000000143778e-08,
-            "piece_union_seal_s": 1.9999999989472883e-08,
-            "right_import_s": 2.7260999999986768e-05,
-            "right_normalize_s": 0.0005437519999999946,
-            "state_pattern_s": 0.0006888820000000018,
-            "unary_reduction_s": 6.40000000010077e-07
+            "affine_state_pattern_s": 4.000000000004e-06,
+            "cumulative_elapsed_s": 0.228785739,
+            "left_import_s": 0.00011112099999999181,
+            "left_normalize_s": 6.931100000001633e-05,
+            "parametric_state_s": 2.3000000001771603e-07,
+            "piece_union_record_s": 5.999999999617422e-08,
+            "piece_union_seal_s": 5.000000000143778e-08,
+            "right_import_s": 3.105999999999942e-05,
+            "right_normalize_s": 0.003328808999999988,
+            "state_pattern_s": 0.002482572000000016,
+            "unary_reduction_s": 8.700000000139152e-07
           }
         },
         {
@@ -1939,7 +1931,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -1971,17 +1962,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.870000000003038e-06,
-            "cumulative_elapsed_s": 0.104478446,
-            "left_import_s": 0.00011472099999999819,
-            "left_normalize_s": 6.517999999999802e-05,
-            "parametric_state_s": 2.699999999966618e-07,
-            "piece_union_record_s": 4.000000000670134e-08,
-            "piece_union_seal_s": 2.000000000335067e-08,
-            "right_import_s": 0.00037005099999999624,
-            "right_normalize_s": 0.0006462319999999966,
-            "state_pattern_s": 0.0007096919999999979,
-            "unary_reduction_s": 6.910000000109884e-07
+            "affine_state_pattern_s": 4.161000000002524e-06,
+            "cumulative_elapsed_s": 0.235331186,
+            "left_import_s": 0.00012038100000000274,
+            "left_normalize_s": 6.987999999999439e-05,
+            "parametric_state_s": 2.1999999999522402e-07,
+            "piece_union_record_s": 5.000000000143778e-08,
+            "piece_union_seal_s": 5.999999999617422e-08,
+            "right_import_s": 0.0004015629999999937,
+            "right_normalize_s": 0.003418019999999994,
+            "state_pattern_s": 0.002497171999999992,
+            "unary_reduction_s": 9.699999999890352e-07
           }
         },
         {
@@ -1994,7 +1985,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -2026,17 +2016,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.710000000003988e-06,
-            "cumulative_elapsed_s": 0.105939021,
-            "left_import_s": 9.433000000000358e-05,
-            "left_normalize_s": 6.52509999999884e-05,
-            "parametric_state_s": 2.3000000000383825e-07,
-            "piece_union_record_s": 5.000000000143778e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 2.7389999999988257e-05,
-            "right_normalize_s": 0.0005533220000000089,
-            "state_pattern_s": 0.0006872419999999907,
-            "unary_reduction_s": 6.200000000067263e-07
+            "affine_state_pattern_s": 4.360000000008801e-06,
+            "cumulative_elapsed_s": 0.2414814,
+            "left_import_s": 0.00011060099999998796,
+            "left_normalize_s": 6.911999999997809e-05,
+            "parametric_state_s": 2.4999999997943334e-07,
+            "piece_union_record_s": 5.999999999617422e-08,
+            "piece_union_seal_s": 2.9999999984209325e-08,
+            "right_import_s": 4.208099999999937e-05,
+            "right_normalize_s": 0.0033281289999999852,
+            "state_pattern_s": 0.002562232999999997,
+            "unary_reduction_s": 8.900000000033881e-07
           }
         },
         {
@@ -2049,7 +2039,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -2081,17 +2070,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.8699999999996497e-05,
-            "cumulative_elapsed_s": 0.107735537,
-            "left_import_s": 0.00011364099999999766,
-            "left_normalize_s": 6.599999999999662e-05,
-            "parametric_state_s": 2.6000000000192536e-07,
-            "piece_union_record_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.00039162100000000866,
-            "right_normalize_s": 0.0005550019999999989,
-            "state_pattern_s": 0.0006128819999999952,
-            "unary_reduction_s": 6.599999999995498e-07
+            "affine_state_pattern_s": 1.9681000000021376e-05,
+            "cumulative_elapsed_s": 0.247950126,
+            "left_import_s": 0.00012033099999997354,
+            "left_normalize_s": 7.023999999999919e-05,
+            "parametric_state_s": 2.2999999998996046e-07,
+            "piece_union_record_s": 5.000000000143778e-08,
+            "piece_union_seal_s": 5.999999999617422e-08,
+            "right_import_s": 0.0004018229999999956,
+            "right_normalize_s": 0.0033219790000000027,
+            "state_pattern_s": 0.002494681999999998,
+            "unary_reduction_s": 9.900000000062636e-07
           }
         },
         {
@@ -2104,7 +2093,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -2136,17 +2124,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 4.040000000010702e-06,
-            "cumulative_elapsed_s": 0.109170732,
-            "left_import_s": 9.760100000000271e-05,
-            "left_normalize_s": 6.252000000001035e-05,
-            "parametric_state_s": 2.399999999985747e-07,
-            "piece_union_record_s": 4.000000000670134e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 2.794999999999881e-05,
-            "right_normalize_s": 0.0005394420000000011,
-            "state_pattern_s": 0.0006739419999999968,
-            "unary_reduction_s": 6.599999999995498e-07
+            "affine_state_pattern_s": 4.190000000015015e-06,
+            "cumulative_elapsed_s": 0.25407154,
+            "left_import_s": 0.00010990099999999559,
+            "left_normalize_s": 6.725000000001868e-05,
+            "parametric_state_s": 1.9999999997799556e-07,
+            "piece_union_record_s": 5.000000002919336e-08,
+            "piece_union_seal_s": 6.00000000239298e-08,
+            "right_import_s": 3.2770999999987005e-05,
+            "right_normalize_s": 0.003329238999999984,
+            "state_pattern_s": 0.0025417030000000063,
+            "unary_reduction_s": 9.699999999890352e-07
           }
         },
         {
@@ -2159,7 +2147,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -2191,17 +2178,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.740000000002075e-06,
-            "cumulative_elapsed_s": 0.111019289,
-            "left_import_s": 0.00011790100000000359,
-            "left_normalize_s": 6.479100000000848e-05,
-            "parametric_state_s": 1.899999999971369e-07,
-            "piece_union_record_s": 4.9999999987559995e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.00039419100000000207,
-            "right_normalize_s": 0.0005634109999999998,
-            "state_pattern_s": 0.0006749919999999993,
-            "unary_reduction_s": 6.599999999995498e-07
+            "affine_state_pattern_s": 4.339999999991573e-06,
+            "cumulative_elapsed_s": 0.260544626,
+            "left_import_s": 0.00012130100000001809,
+            "left_normalize_s": 7.135999999996478e-05,
+            "parametric_state_s": 2.699999999689062e-07,
+            "piece_union_record_s": 5.999999996841865e-08,
+            "piece_union_seal_s": 6.00000000239298e-08,
+            "right_import_s": 0.00040766299999994704,
+            "right_normalize_s": 0.003361208999999976,
+            "state_pattern_s": 0.0024749109999999686,
+            "unary_reduction_s": 1.0000000000287557e-06
           }
         },
         {
@@ -2214,7 +2201,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -2246,17 +2232,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 3.2600000000049256e-06,
-            "cumulative_elapsed_s": 0.112551774,
-            "left_import_s": 0.00010804000000000369,
-            "left_normalize_s": 6.792099999999857e-05,
+            "affine_state_pattern_s": 3.880000000011652e-06,
+            "cumulative_elapsed_s": 0.266607909,
+            "left_import_s": 0.00011102100000004445,
+            "left_normalize_s": 6.969000000001113e-05,
             "parametric_state_s": 2.2999999998996046e-07,
-            "piece_union_record_s": 5.000000000143778e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 3.186000000000855e-05,
-            "right_normalize_s": 0.0005754520000000041,
-            "state_pattern_s": 0.0007164419999999977,
-            "unary_reduction_s": 5.699999999914107e-07
+            "piece_union_record_s": 6.00000000239298e-08,
+            "piece_union_seal_s": 4.999999997368221e-08,
+            "right_import_s": 3.150099999998934e-05,
+            "right_normalize_s": 0.0033152390000000254,
+            "state_pattern_s": 0.0024977519999999642,
+            "unary_reduction_s": 9.20000000015353e-07
           }
         },
         {
@@ -2773,7 +2759,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -2805,17 +2790,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.002089798000002377,
-            "cumulative_elapsed_s": 6.67670234,
-            "left_import_s": 0.021068527000003417,
-            "left_normalize_s": 0.010594765000001352,
-            "parametric_state_s": 3.2489999997359353e-05,
-            "piece_union_record_s": 7.280000001469444e-06,
-            "piece_union_seal_s": 3.940000003019306e-06,
-            "right_import_s": 0.365117316000003,
-            "right_normalize_s": 0.6676401999999959,
-            "state_pattern_s": 0.38609651699999303,
-            "unary_reduction_s": 0.00011205999999827632
+            "affine_state_pattern_s": 0.0021503559999961896,
+            "cumulative_elapsed_s": 24.288800712,
+            "left_import_s": 0.023420912000002347,
+            "left_normalize_s": 0.011379448000015169,
+            "parametric_state_s": 3.3840000014384586e-05,
+            "piece_union_record_s": 6.941000007587572e-06,
+            "piece_union_seal_s": 5.980000005234576e-06,
+            "right_import_s": 0.38166950599999,
+            "right_normalize_s": 1.2354802380000058,
+            "state_pattern_s": 0.8472423839999976,
+            "unary_reduction_s": 0.00013351100001773863
           }
         },
         {
@@ -3332,7 +3317,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -3364,17 +3348,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00044066999999478607,
-            "cumulative_elapsed_s": 6.677915074,
-            "left_import_s": 0.008472226000000582,
-            "left_normalize_s": 0.007698131000000025,
-            "parametric_state_s": 3.262000000092691e-05,
-            "piece_union_record_s": 6.020000002326942e-06,
-            "piece_union_seal_s": 4.289999995799043e-06,
-            "right_import_s": 0.0034602790000010375,
-            "right_normalize_s": 0.049037593000003876,
-            "state_pattern_s": 0.08373507600000074,
-            "unary_reduction_s": 7.896099999904482e-05
+            "affine_state_pattern_s": 0.00043630600000005293,
+            "cumulative_elapsed_s": 24.29493816,
+            "left_import_s": 0.009253028999993418,
+            "left_normalize_s": 0.008227029999999524,
+            "parametric_state_s": 3.0150000016493372e-05,
+            "piece_union_record_s": 6.540000010102354e-06,
+            "piece_union_seal_s": 5.8300000057576185e-06,
+            "right_import_s": 0.003959967999983827,
+            "right_normalize_s": 0.3844923600000195,
+            "state_pattern_s": 0.28108563199999703,
+            "unary_reduction_s": 0.000111581000008798
           }
         },
         {
@@ -3891,7 +3875,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -3923,17 +3906,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00042213200000104645,
-            "cumulative_elapsed_s": 6.679311079,
-            "left_import_s": 0.008555737999997703,
-            "left_normalize_s": 0.007379293999997455,
-            "parametric_state_s": 3.0179999996382545e-05,
-            "piece_union_record_s": 6.37000000250354e-06,
-            "piece_union_seal_s": 3.880000002620676e-06,
-            "right_import_s": 0.02798468100000237,
-            "right_normalize_s": 0.04530063200000228,
-            "state_pattern_s": 0.08661929800000101,
-            "unary_reduction_s": 7.841999999680382e-05
+            "affine_state_pattern_s": 0.0004452849999847519,
+            "cumulative_elapsed_s": 24.301212917,
+            "left_import_s": 0.009722952999997259,
+            "left_normalize_s": 0.008033057000006727,
+            "parametric_state_s": 3.051999999514887e-05,
+            "piece_union_record_s": 6.77999999848522e-06,
+            "piece_union_seal_s": 5.329999997749635e-06,
+            "right_import_s": 0.02886866200000049,
+            "right_normalize_s": 0.3931650399999745,
+            "state_pattern_s": 0.27929943199997775,
+            "unary_reduction_s": 0.00010890000001084754
           }
         },
         {
@@ -4450,7 +4433,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -4482,17 +4464,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00039360200000146395,
-            "cumulative_elapsed_s": 6.680487583,
-            "left_import_s": 0.007575550999999597,
-            "left_normalize_s": 0.0072384490000018675,
-            "parametric_state_s": 2.849000000101909e-05,
-            "piece_union_record_s": 6.060000003998978e-06,
-            "piece_union_seal_s": 3.769999999486684e-06,
-            "right_import_s": 0.0034008769999969157,
-            "right_normalize_s": 0.043838501000002,
-            "state_pattern_s": 0.0812087779999971,
-            "unary_reduction_s": 7.685999999451631e-05
+            "affine_state_pattern_s": 0.0004085519999858511,
+            "cumulative_elapsed_s": 24.307196063,
+            "left_import_s": 0.008768443000011394,
+            "left_normalize_s": 0.007912371000011631,
+            "parametric_state_s": 2.7680000003416083e-05,
+            "piece_union_record_s": 6.600000014622687e-06,
+            "piece_union_seal_s": 5.0699999916692384e-06,
+            "right_import_s": 0.0038832020000063028,
+            "right_normalize_s": 0.37041742399999467,
+            "state_pattern_s": 0.2941557030000136,
+            "unary_reduction_s": 0.00010588200001981907
           }
         },
         {
@@ -5009,7 +4991,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -5041,17 +5022,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00037865099999673246,
-            "cumulative_elapsed_s": 6.681854448,
-            "left_import_s": 0.008311170000001145,
-            "left_normalize_s": 0.007923121000000616,
-            "parametric_state_s": 2.953999999999457e-05,
-            "piece_union_record_s": 6.139999999987822e-06,
-            "piece_union_seal_s": 3.5899999996091836e-06,
-            "right_import_s": 0.0278114140000032,
-            "right_normalize_s": 0.045822918000002266,
-            "state_pattern_s": 0.08012967100000432,
-            "unary_reduction_s": 7.831999999763362e-05
+            "affine_state_pattern_s": 0.0004555039999967758,
+            "cumulative_elapsed_s": 24.31328734,
+            "left_import_s": 0.009675242000009965,
+            "left_normalize_s": 0.008086883999989969,
+            "parametric_state_s": 3.007999999449229e-05,
+            "piece_union_record_s": 6.499999993414551e-06,
+            "piece_union_seal_s": 5.359999994736242e-06,
+            "right_import_s": 0.030250442000001987,
+            "right_normalize_s": 0.37256343900001204,
+            "state_pattern_s": 0.2777420299999889,
+            "unary_reduction_s": 0.00010812100002793867
           }
         },
         {
@@ -5568,7 +5549,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -5600,17 +5580,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00037722099999962233,
-            "cumulative_elapsed_s": 6.683029912,
-            "left_import_s": 0.007369312999999905,
-            "left_normalize_s": 0.00710247600000094,
-            "parametric_state_s": 2.744000000340363e-05,
-            "piece_union_record_s": 1.4200000001990398e-05,
-            "piece_union_seal_s": 3.689999998446325e-06,
-            "right_import_s": 0.0033199829999996933,
-            "right_normalize_s": 0.04306750800000045,
-            "state_pattern_s": 0.07965730800000001,
-            "unary_reduction_s": 8.51600000044972e-05
+            "affine_state_pattern_s": 0.0004181010000155472,
+            "cumulative_elapsed_s": 24.318976553,
+            "left_import_s": 0.008743421999996337,
+            "left_normalize_s": 0.008006752000005224,
+            "parametric_state_s": 2.739999998752074e-05,
+            "piece_union_record_s": 6.589999982264949e-06,
+            "piece_union_seal_s": 4.780000001647355e-06,
+            "right_import_s": 0.003986559000003498,
+            "right_normalize_s": 0.3825475320000162,
+            "state_pattern_s": 0.2772750770000079,
+            "unary_reduction_s": 0.00011346999999328755
           }
         },
         {
@@ -6127,7 +6107,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -6159,17 +6138,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.0004233610000020094,
-            "cumulative_elapsed_s": 6.684397697,
-            "left_import_s": 0.008520022999993881,
-            "left_normalize_s": 0.007387293000001904,
-            "parametric_state_s": 2.9999999997643023e-05,
-            "piece_union_record_s": 6.159999996507848e-06,
-            "piece_union_seal_s": 4.330000001717682e-06,
-            "right_import_s": 0.02679457300000304,
-            "right_normalize_s": 0.043814170999997654,
-            "state_pattern_s": 0.09087872799999697,
-            "unary_reduction_s": 7.853000000387911e-05
+            "affine_state_pattern_s": 0.000453566000013339,
+            "cumulative_elapsed_s": 24.32505823,
+            "left_import_s": 0.009542052000008017,
+            "left_normalize_s": 0.008079000000002556,
+            "parametric_state_s": 3.086000000590561e-05,
+            "piece_union_record_s": 6.600000017065177e-06,
+            "piece_union_seal_s": 5.280000007101826e-06,
+            "right_import_s": 0.029027370999988922,
+            "right_normalize_s": 0.3691776820000036,
+            "state_pattern_s": 0.29124757600000445,
+            "unary_reduction_s": 0.00010827999999130089
           }
         },
         {
@@ -6686,7 +6665,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -6718,17 +6696,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00038371200000400507,
-            "cumulative_elapsed_s": 6.685553011,
-            "left_import_s": 0.0078027470000013865,
-            "left_normalize_s": 0.007186674000000753,
-            "parametric_state_s": 2.857999999775207e-05,
-            "piece_union_record_s": 6.110000000975058e-06,
-            "piece_union_seal_s": 3.999999998866022e-06,
-            "right_import_s": 0.0033657849999962075,
-            "right_normalize_s": 0.043377012999999714,
-            "state_pattern_s": 0.07919919200000011,
-            "unary_reduction_s": 7.671100000342101e-05
+            "affine_state_pattern_s": 0.000429053999986162,
+            "cumulative_elapsed_s": 24.330744934,
+            "left_import_s": 0.00910571399999488,
+            "left_normalize_s": 0.007864400000023142,
+            "parametric_state_s": 2.789099999767064e-05,
+            "piece_union_record_s": 6.520000009835325e-06,
+            "piece_union_seal_s": 4.990000016191765e-06,
+            "right_import_s": 0.0038618160000026824,
+            "right_normalize_s": 0.36861715600000067,
+            "state_pattern_s": 0.27723521000000745,
+            "unary_reduction_s": 0.00010497999998787533
           }
         },
         {
@@ -7245,7 +7223,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -7277,17 +7254,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.0011006730000000242,
-            "cumulative_elapsed_s": 6.686933366,
-            "left_import_s": 0.00839737200000154,
-            "left_normalize_s": 0.007501086000000601,
-            "parametric_state_s": 2.9529999999944323e-05,
-            "piece_union_record_s": 1.6839999999629374e-05,
-            "piece_union_seal_s": 1.3080000002052561e-05,
-            "right_import_s": 0.0296609980000003,
-            "right_normalize_s": 0.043085854000000035,
-            "state_pattern_s": 0.0793541300000053,
-            "unary_reduction_s": 7.865000000120692e-05
+            "affine_state_pattern_s": 0.001155450999989871,
+            "cumulative_elapsed_s": 24.336466157,
+            "left_import_s": 0.009677981999988372,
+            "left_normalize_s": 0.008374781999992365,
+            "parametric_state_s": 3.070000002164397e-05,
+            "piece_union_record_s": 6.619999992130143e-06,
+            "piece_union_seal_s": 5.3800000074377685e-06,
+            "right_import_s": 0.032416781999999145,
+            "right_normalize_s": 0.368596153000006,
+            "state_pattern_s": 0.2971872390000178,
+            "unary_reduction_s": 0.00010838999998874499
           }
         },
         {
@@ -7804,7 +7781,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -7836,17 +7812,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.0003810429999991649,
-            "cumulative_elapsed_s": 6.68809205,
-            "left_import_s": 0.007337526000003203,
-            "left_normalize_s": 0.007086483000002641,
-            "parametric_state_s": 2.7809999999767188e-05,
-            "piece_union_record_s": 5.790000000172046e-06,
-            "piece_union_seal_s": 3.6899999961703678e-06,
-            "right_import_s": 0.0033018109999981005,
-            "right_normalize_s": 0.04230803200000133,
-            "state_pattern_s": 0.078767145000008,
-            "unary_reduction_s": 7.491999999945098e-05
+            "affine_state_pattern_s": 0.0004199599999964443,
+            "cumulative_elapsed_s": 24.34206061,
+            "left_import_s": 0.00879225099999481,
+            "left_normalize_s": 0.008007099000006568,
+            "parametric_state_s": 2.7679999992924476e-05,
+            "piece_union_record_s": 6.5000000074033615e-06,
+            "piece_union_seal_s": 4.699999983093228e-06,
+            "right_import_s": 0.003871692999988352,
+            "right_normalize_s": 0.3682562409999768,
+            "state_pattern_s": 0.2782646109999964,
+            "unary_reduction_s": 0.00010648100000254512
           }
         },
         {
@@ -8363,7 +8339,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -8395,17 +8370,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00041802300000201575,
-            "cumulative_elapsed_s": 6.689434315,
-            "left_import_s": 0.008231177000005169,
-            "left_normalize_s": 0.007326808999996631,
-            "parametric_state_s": 2.906999999627291e-05,
-            "piece_union_record_s": 6.080000001518204e-06,
-            "piece_union_seal_s": 3.889999998452076e-06,
-            "right_import_s": 0.02627129599999864,
-            "right_normalize_s": 0.10887952600000075,
-            "state_pattern_s": 0.07987913900000354,
-            "unary_reduction_s": 7.807999999495663e-05
+            "affine_state_pattern_s": 0.000536611999983283,
+            "cumulative_elapsed_s": 24.347706894,
+            "left_import_s": 0.009611435999981766,
+            "left_normalize_s": 0.008105708999984973,
+            "parametric_state_s": 3.060200000992719e-05,
+            "piece_union_record_s": 6.560000020972012e-06,
+            "piece_union_seal_s": 5.290000008095763e-06,
+            "right_import_s": 0.028958954000004367,
+            "right_normalize_s": 0.3903164419999953,
+            "state_pattern_s": 0.27859056200000804,
+            "unary_reduction_s": 0.00010800100001068236
           }
         },
         {
@@ -8922,7 +8897,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -8954,17 +8928,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.0003987009999970592,
-            "cumulative_elapsed_s": 6.690695559,
-            "left_import_s": 0.007462853999997299,
-            "left_normalize_s": 0.016531665999998696,
-            "parametric_state_s": 2.7669999998647388e-05,
-            "piece_union_record_s": 5.7800000014540664e-06,
-            "piece_union_seal_s": 3.7399999986698074e-06,
-            "right_import_s": 0.003346194000001551,
-            "right_normalize_s": 0.04390231100000058,
-            "state_pattern_s": 0.07966584099999871,
-            "unary_reduction_s": 7.479000000057412e-05
+            "affine_state_pattern_s": 0.00042853500001099887,
+            "cumulative_elapsed_s": 24.353117915,
+            "left_import_s": 0.008799404999989546,
+            "left_normalize_s": 0.018435783999989352,
+            "parametric_state_s": 2.8129999995463173e-05,
+            "piece_union_record_s": 6.489999994696571e-06,
+            "piece_union_seal_s": 4.909999996027814e-06,
+            "right_import_s": 0.003877697000004676,
+            "right_normalize_s": 0.36855113600001227,
+            "state_pattern_s": 0.2946919879999797,
+            "unary_reduction_s": 0.00010558200000737594
           }
         },
         {
@@ -9481,7 +9455,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -9513,17 +9486,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00037164200000164294,
-            "cumulative_elapsed_s": 6.692181274,
-            "left_import_s": 0.00813044799999682,
-            "left_normalize_s": 0.007213759999999431,
-            "parametric_state_s": 2.92799999997706e-05,
-            "piece_union_record_s": 6.149999998955602e-06,
-            "piece_union_seal_s": 3.829999999011013e-06,
-            "right_import_s": 0.02773087599999849,
-            "right_normalize_s": 0.043569758000001874,
-            "state_pattern_s": 0.08002096499999947,
-            "unary_reduction_s": 7.586999999628641e-05
+            "affine_state_pattern_s": 0.00044570300000323915,
+            "cumulative_elapsed_s": 24.358742528,
+            "left_import_s": 0.009543695000002517,
+            "left_normalize_s": 0.008045000000010294,
+            "parametric_state_s": 3.098999999623375e-05,
+            "piece_union_record_s": 6.669999993880182e-06,
+            "piece_union_seal_s": 5.499999991942506e-06,
+            "right_import_s": 0.030349107999997738,
+            "right_normalize_s": 0.3695414579999903,
+            "state_pattern_s": 0.27813726200001093,
+            "unary_reduction_s": 0.00010795000000185517
           }
         },
         {
@@ -10040,7 +10013,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -10072,17 +10044,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00038589300000269056,
-            "cumulative_elapsed_s": 6.693375299,
-            "left_import_s": 0.007294105999999911,
-            "left_normalize_s": 0.007102548000001541,
-            "parametric_state_s": 2.6930999999785765e-05,
-            "piece_union_record_s": 5.990000001510065e-06,
-            "piece_union_seal_s": 3.8000000022742064e-06,
-            "right_import_s": 0.00327473899999714,
-            "right_normalize_s": 0.043179328999997046,
-            "state_pattern_s": 0.07978648099999824,
-            "unary_reduction_s": 7.432100000601127e-05
+            "affine_state_pattern_s": 0.00041204399999317243,
+            "cumulative_elapsed_s": 24.364114039,
+            "left_import_s": 0.008736362000004771,
+            "left_normalize_s": 0.007954420000014895,
+            "parametric_state_s": 2.7539999993386743e-05,
+            "piece_union_record_s": 6.669999995267961e-06,
+            "piece_union_seal_s": 4.780000012749586e-06,
+            "right_import_s": 0.003847685000010592,
+            "right_normalize_s": 0.3815289529999948,
+            "state_pattern_s": 0.2787491749999875,
+            "unary_reduction_s": 0.0001062710000158118
           }
         },
         {
@@ -10599,7 +10571,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -10631,17 +10602,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00037420099999843637,
-            "cumulative_elapsed_s": 6.694821584,
-            "left_import_s": 0.008174528999997849,
-            "left_normalize_s": 0.00728911600000115,
-            "parametric_state_s": 2.8841000009077744e-05,
-            "piece_union_record_s": 6.550000003879841e-06,
-            "piece_union_seal_s": 3.6199999974007024e-06,
-            "right_import_s": 0.026368180999997187,
-            "right_normalize_s": 0.043296187000003566,
-            "state_pattern_s": 0.08202552100000257,
-            "unary_reduction_s": 7.571000000272665e-05
+            "affine_state_pattern_s": 0.0004545350000096926,
+            "cumulative_elapsed_s": 24.369739742,
+            "left_import_s": 0.009596118000000764,
+            "left_normalize_s": 0.008077280999988667,
+            "parametric_state_s": 3.0320000010852777e-05,
+            "piece_union_record_s": 6.71999999363182e-06,
+            "piece_union_seal_s": 5.100000005309191e-06,
+            "right_import_s": 0.029048931000007494,
+            "right_normalize_s": 0.3706075260000114,
+            "state_pattern_s": 0.29230879600000764,
+            "unary_reduction_s": 0.00010748000001120639
           }
         },
         {
@@ -11158,7 +11129,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -11190,17 +11160,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00037966199999930894,
-            "cumulative_elapsed_s": 6.696049598,
-            "left_import_s": 0.007489392000000511,
-            "left_normalize_s": 0.007153500000009361,
-            "parametric_state_s": 2.835000000239729e-05,
-            "piece_union_record_s": 6.04999999503919e-06,
-            "piece_union_seal_s": 4.200000001758353e-06,
-            "right_import_s": 0.0033462160000000407,
-            "right_normalize_s": 0.04359045800000272,
-            "state_pattern_s": 0.08062619300000243,
-            "unary_reduction_s": 7.619100000177959e-05
+            "affine_state_pattern_s": 0.00041756500000106334,
+            "cumulative_elapsed_s": 24.375072383,
+            "left_import_s": 0.008751167000005222,
+            "left_normalize_s": 0.007883215999995308,
+            "parametric_state_s": 2.7850000000551045e-05,
+            "piece_union_record_s": 6.490000009518049e-06,
+            "piece_union_seal_s": 4.9000000095777985e-06,
+            "right_import_s": 0.003836783000001842,
+            "right_normalize_s": 0.36967597599998336,
+            "state_pattern_s": 0.2787570529999835,
+            "unary_reduction_s": 0.00010676000000325869
           }
         },
         {
@@ -11717,7 +11687,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -11749,17 +11718,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.0003797199999956702,
-            "cumulative_elapsed_s": 6.697432163,
-            "left_import_s": 0.008183684999993973,
-            "left_normalize_s": 0.007343972000000171,
-            "parametric_state_s": 2.8779999996980665e-05,
-            "piece_union_record_s": 6.1100000018354805e-06,
-            "piece_union_seal_s": 3.860000003047537e-06,
-            "right_import_s": 0.03169441299999867,
-            "right_normalize_s": 0.04314300700000226,
-            "state_pattern_s": 0.07996561899999735,
-            "unary_reduction_s": 7.647999999740862e-05
+            "affine_state_pattern_s": 0.0004176039999889136,
+            "cumulative_elapsed_s": 24.380673316,
+            "left_import_s": 0.009577910000002632,
+            "left_normalize_s": 0.008141827000002433,
+            "parametric_state_s": 3.0640000014625635e-05,
+            "piece_union_record_s": 6.599999986478533e-06,
+            "piece_union_seal_s": 5.03999999462712e-06,
+            "right_import_s": 0.03442783700000834,
+            "right_normalize_s": 0.36925590800000485,
+            "state_pattern_s": 0.2965930720000131,
+            "unary_reduction_s": 0.0001083929999904365
           }
         },
         {
@@ -12276,7 +12245,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -12308,17 +12276,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00037063300000073074,
-            "cumulative_elapsed_s": 6.698562447,
-            "left_import_s": 0.007309937000001987,
-            "left_normalize_s": 0.007154909999999043,
-            "parametric_state_s": 2.722000000213165e-05,
-            "piece_union_record_s": 5.7300000043392085e-06,
-            "piece_union_seal_s": 3.6200000033403956e-06,
-            "right_import_s": 0.00328353999999495,
-            "right_normalize_s": 0.042340426000006204,
-            "state_pattern_s": 0.08418367300000373,
-            "unary_reduction_s": 7.371000000153116e-05
+            "affine_state_pattern_s": 0.000408842999989778,
+            "cumulative_elapsed_s": 24.385960296,
+            "left_import_s": 0.008744802000015095,
+            "left_normalize_s": 0.007948429000009749,
+            "parametric_state_s": 2.759100000571113e-05,
+            "piece_union_record_s": 6.660000007763234e-06,
+            "piece_union_seal_s": 5.180000013038644e-06,
+            "right_import_s": 0.0038511000000175377,
+            "right_normalize_s": 0.36882252600001575,
+            "state_pattern_s": 0.28379927000001265,
+            "unary_reduction_s": 0.00010615099999483624
           }
         },
         {
@@ -12835,7 +12803,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -12867,17 +12834,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00036123999999781997,
-            "cumulative_elapsed_s": 6.699897572,
-            "left_import_s": 0.008173158000003983,
-            "left_normalize_s": 0.007302174999995831,
-            "parametric_state_s": 2.8710999994574493e-05,
-            "piece_union_record_s": 6.359999995653176e-06,
-            "piece_union_seal_s": 3.629999997062372e-06,
-            "right_import_s": 0.02691242699999874,
-            "right_normalize_s": 0.0435217360000032,
-            "state_pattern_s": 0.08070496499999977,
-            "unary_reduction_s": 7.68610000015102e-05
+            "affine_state_pattern_s": 0.0004372020000120158,
+            "cumulative_elapsed_s": 24.391505809,
+            "left_import_s": 0.009618913999993428,
+            "left_normalize_s": 0.00819909400000246,
+            "parametric_state_s": 3.0390000002156192e-05,
+            "piece_union_record_s": 6.64000000821785e-06,
+            "piece_union_seal_s": 5.2499999813604425e-06,
+            "right_import_s": 0.029614264000014323,
+            "right_normalize_s": 0.38849928399999994,
+            "state_pattern_s": 0.2787870699999826,
+            "unary_reduction_s": 0.000106250999996782
           }
         },
         {
@@ -13394,7 +13361,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -13426,17 +13392,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.0003800410000003862,
-            "cumulative_elapsed_s": 6.701018425,
-            "left_import_s": 0.007477025999997278,
-            "left_normalize_s": 0.007280632000000037,
-            "parametric_state_s": 2.751000000283943e-05,
-            "piece_union_record_s": 5.789999998784268e-06,
-            "piece_union_seal_s": 3.739999995755472e-06,
-            "right_import_s": 0.003349541000003259,
-            "right_normalize_s": 0.04261805100000304,
-            "state_pattern_s": 0.08005239699999739,
-            "unary_reduction_s": 7.42800000020083e-05
+            "affine_state_pattern_s": 0.0004047130000130461,
+            "cumulative_elapsed_s": 24.396805649,
+            "left_import_s": 0.008889389000020842,
+            "left_normalize_s": 0.007983996999986864,
+            "parametric_state_s": 2.741000001427185e-05,
+            "piece_union_record_s": 6.469999998204301e-06,
+            "piece_union_seal_s": 4.710000012841942e-06,
+            "right_import_s": 0.0038450229999869023,
+            "right_normalize_s": 0.36779200299998965,
+            "state_pattern_s": 0.292216326000005,
+            "unary_reduction_s": 0.0001124510000045098
           }
         },
         {
@@ -13953,7 +13919,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -13985,17 +13950,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00034563299999657016,
-            "cumulative_elapsed_s": 6.70232785,
-            "left_import_s": 0.008267374999997246,
-            "left_normalize_s": 0.0073336469999992215,
-            "parametric_state_s": 2.92700000044388e-05,
-            "piece_union_record_s": 6.25999999853688e-06,
-            "piece_union_seal_s": 3.880000005146433e-06,
-            "right_import_s": 0.028054833000003637,
-            "right_normalize_s": 0.04294009900000201,
-            "state_pattern_s": 0.07958510000000107,
-            "unary_reduction_s": 7.627999999917923e-05
+            "affine_state_pattern_s": 0.00042238399998240084,
+            "cumulative_elapsed_s": 24.402371332,
+            "left_import_s": 0.009596394999991431,
+            "left_normalize_s": 0.008186042999998755,
+            "parametric_state_s": 4.0192000000549566e-05,
+            "piece_union_record_s": 7.020000006963123e-06,
+            "piece_union_seal_s": 5.1100000056925055e-06,
+            "right_import_s": 0.030399506000000465,
+            "right_normalize_s": 0.3692602210000015,
+            "state_pattern_s": 0.27872556700002543,
+            "unary_reduction_s": 0.00010712000000101529
           }
         },
         {
@@ -14512,7 +14477,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -14544,17 +14508,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.0008152119999988439,
-            "cumulative_elapsed_s": 6.703501324,
-            "left_import_s": 0.00726275200000065,
-            "left_normalize_s": 0.007210939000000499,
-            "parametric_state_s": 2.67799999991436e-05,
-            "piece_union_record_s": 6.060000010299493e-06,
-            "piece_union_seal_s": 3.6800000050019044e-06,
-            "right_import_s": 0.003314129000002497,
-            "right_normalize_s": 0.11634945799999555,
-            "state_pattern_s": 0.08087905599999923,
-            "unary_reduction_s": 7.438000000037359e-05
+            "affine_state_pattern_s": 0.0008557470000120082,
+            "cumulative_elapsed_s": 24.407753323,
+            "left_import_s": 0.008702125999994148,
+            "left_normalize_s": 0.008114812000004412,
+            "parametric_state_s": 3.704000001331087e-05,
+            "piece_union_record_s": 6.5700000106416745e-06,
+            "piece_union_seal_s": 4.8200000001275e-06,
+            "right_import_s": 0.003973308000009224,
+            "right_normalize_s": 0.389485583999989,
+            "state_pattern_s": 0.2787464789999878,
+            "unary_reduction_s": 0.00010632099999180467
           }
         },
         {
@@ -15071,7 +15035,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -15103,17 +15066,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.0003500899999978879,
-            "cumulative_elapsed_s": 6.704954289,
-            "left_import_s": 0.00835608700000079,
-            "left_normalize_s": 0.007347185000000811,
-            "parametric_state_s": 3.769000000022893e-05,
-            "piece_union_record_s": 6.4300000003070235e-06,
-            "piece_union_seal_s": 3.72999999767587e-06,
-            "right_import_s": 0.026386853000000293,
-            "right_normalize_s": 0.04414219700000299,
-            "state_pattern_s": 0.08052620799999721,
-            "unary_reduction_s": 7.587099999900593e-05
+            "affine_state_pattern_s": 0.0004273440000124862,
+            "cumulative_elapsed_s": 24.413436707,
+            "left_import_s": 0.009636208999997009,
+            "left_normalize_s": 0.008100679999997529,
+            "parametric_state_s": 2.952000001021915e-05,
+            "piece_union_record_s": 7.079999985282193e-06,
+            "piece_union_seal_s": 4.990000003035622e-06,
+            "right_import_s": 0.028975775000000703,
+            "right_normalize_s": 0.369864858999996,
+            "state_pattern_s": 0.2917284919999877,
+            "unary_reduction_s": 0.00010655999999775734
           }
         },
         {
@@ -15630,7 +15593,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -15662,17 +15624,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00034879000000079263,
-            "cumulative_elapsed_s": 6.706177494,
-            "left_import_s": 0.007312337000004693,
-            "left_normalize_s": 0.007119646000001034,
-            "parametric_state_s": 2.7130999994601224e-05,
-            "piece_union_record_s": 5.890000004171725e-06,
-            "piece_union_seal_s": 3.649999998939224e-06,
-            "right_import_s": 0.003338383999994504,
-            "right_normalize_s": 0.04345450300000969,
-            "state_pattern_s": 0.07993057300000092,
-            "unary_reduction_s": 8.308999999315225e-05
+            "affine_state_pattern_s": 0.00040981200000772544,
+            "cumulative_elapsed_s": 24.418847198,
+            "left_import_s": 0.008726690000005644,
+            "left_normalize_s": 0.008028690000009109,
+            "parametric_state_s": 2.701099998347889e-05,
+            "piece_union_record_s": 6.669999984443287e-06,
+            "piece_union_seal_s": 4.7500000256994745e-06,
+            "right_import_s": 0.0038561750000204453,
+            "right_normalize_s": 0.36889400199998984,
+            "state_pattern_s": 0.27824081200001055,
+            "unary_reduction_s": 0.00010548999999343556
           }
         },
         {
@@ -16189,7 +16151,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -16221,17 +16182,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00037730199999824743,
-            "cumulative_elapsed_s": 6.707674889,
-            "left_import_s": 0.00813857499999987,
-            "left_normalize_s": 0.0072831620000002595,
-            "parametric_state_s": 2.8349999994542463e-05,
-            "piece_union_record_s": 6.149999998539268e-06,
-            "piece_union_seal_s": 3.6599999995723387e-06,
-            "right_import_s": 0.029427017999998722,
-            "right_normalize_s": 0.04324254200000735,
-            "state_pattern_s": 0.07956827799999894,
-            "unary_reduction_s": 7.475000000042864e-05
+            "affine_state_pattern_s": 0.0004332829999983967,
+            "cumulative_elapsed_s": 24.42425589,
+            "left_import_s": 0.009635954999995644,
+            "left_normalize_s": 0.00819735699999724,
+            "parametric_state_s": 3.013000002816124e-05,
+            "piece_union_record_s": 6.680000009695597e-06,
+            "piece_union_seal_s": 4.840000001837819e-06,
+            "right_import_s": 0.03209557499999788,
+            "right_normalize_s": 0.36882688100000915,
+            "state_pattern_s": 0.2948771199999948,
+            "unary_reduction_s": 0.00010666000000675302
           }
         },
         {
@@ -16748,7 +16709,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -16780,17 +16740,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00036314199999951113,
-            "cumulative_elapsed_s": 6.708972873,
-            "left_import_s": 0.007309481999994677,
-            "left_normalize_s": 0.00716705599999759,
-            "parametric_state_s": 2.659999999304885e-05,
-            "piece_union_record_s": 5.820000002876302e-06,
-            "piece_union_seal_s": 3.5699999970661977e-06,
-            "right_import_s": 0.003299920999997069,
-            "right_normalize_s": 0.04411590800000281,
-            "state_pattern_s": 0.07899710500000434,
-            "unary_reduction_s": 7.306000000104063e-05
+            "affine_state_pattern_s": 0.00042045299999371455,
+            "cumulative_elapsed_s": 24.429365039,
+            "left_import_s": 0.00871399799999012,
+            "left_normalize_s": 0.007948046000008924,
+            "parametric_state_s": 2.721000000216467e-05,
+            "piece_union_record_s": 6.599999986867111e-06,
+            "piece_union_seal_s": 4.999999971999625e-06,
+            "right_import_s": 0.003843830000021642,
+            "right_normalize_s": 0.3680332100000033,
+            "state_pattern_s": 0.2767655120000028,
+            "unary_reduction_s": 0.0001060600000108991
           }
         },
         {
@@ -17307,7 +17267,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -17339,17 +17298,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00036951999999645935,
-            "cumulative_elapsed_s": 6.710464778,
-            "left_import_s": 0.008155146999999474,
-            "left_normalize_s": 0.007197085999992553,
-            "parametric_state_s": 2.8770000001787643e-05,
-            "piece_union_record_s": 6.129999998660818e-06,
-            "piece_union_seal_s": 3.59000000402232e-06,
-            "right_import_s": 0.026410983999999665,
-            "right_normalize_s": 0.04320215300000424,
-            "state_pattern_s": 0.07943616800000139,
-            "unary_reduction_s": 7.485000000662101e-05
+            "affine_state_pattern_s": 0.00044705199999461875,
+            "cumulative_elapsed_s": 24.434654759,
+            "left_import_s": 0.009574459000013802,
+            "left_normalize_s": 0.008128229999996905,
+            "parametric_state_s": 2.980000000712968e-05,
+            "piece_union_record_s": 6.730000003063452e-06,
+            "piece_union_seal_s": 4.789999987708793e-06,
+            "right_import_s": 0.028986452999979262,
+            "right_normalize_s": 0.3863171119999967,
+            "state_pattern_s": 0.2779339789999937,
+            "unary_reduction_s": 0.00010778999999183636
           }
         },
         {
@@ -17866,7 +17825,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -17898,17 +17856,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00037224099999533244,
-            "cumulative_elapsed_s": 6.711651423,
-            "left_import_s": 0.007249466000000926,
-            "left_normalize_s": 0.007232037999997831,
-            "parametric_state_s": 2.6681000001221866e-05,
-            "piece_union_record_s": 5.929999997988933e-06,
-            "piece_union_seal_s": 3.819999999599144e-06,
-            "right_import_s": 0.003303128000000516,
-            "right_normalize_s": 0.04269848400000273,
-            "state_pattern_s": 0.08985796799999815,
-            "unary_reduction_s": 7.28710000020838e-05
+            "affine_state_pattern_s": 0.0004479249999788104,
+            "cumulative_elapsed_s": 24.439676858,
+            "left_import_s": 0.008751493000012267,
+            "left_normalize_s": 0.008102236999997181,
+            "parametric_state_s": 2.7270999990391953e-05,
+            "piece_union_record_s": 6.649999999108758e-06,
+            "piece_union_seal_s": 4.909999993196745e-06,
+            "right_import_s": 0.0038956459999987536,
+            "right_normalize_s": 0.3663362130000042,
+            "state_pattern_s": 0.30840095599999245,
+            "unary_reduction_s": 0.00010634099998285684
           }
         },
         {
@@ -18425,7 +18383,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -18457,17 +18414,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.0003738309999958278,
-            "cumulative_elapsed_s": 6.712934847,
-            "left_import_s": 0.00814760000000092,
-            "left_normalize_s": 0.007219823000001541,
-            "parametric_state_s": 2.9220000004992475e-05,
-            "piece_union_record_s": 6.429999999224556e-06,
-            "piece_union_seal_s": 4.250000002342658e-06,
-            "right_import_s": 0.028069619000000656,
-            "right_normalize_s": 0.04303494199999852,
-            "state_pattern_s": 0.0795183389999995,
-            "unary_reduction_s": 7.68600000013997e-05
+            "affine_state_pattern_s": 0.00045950299999908406,
+            "cumulative_elapsed_s": 24.444924758,
+            "left_import_s": 0.00956351399997385,
+            "left_normalize_s": 0.008201001999990076,
+            "parametric_state_s": 2.9709999992799663e-05,
+            "piece_union_record_s": 6.629999994733904e-06,
+            "piece_union_seal_s": 4.929999998293244e-06,
+            "right_import_s": 0.030390275000013456,
+            "right_normalize_s": 0.3681748539999861,
+            "state_pattern_s": 0.2779715379999938,
+            "unary_reduction_s": 0.0001072510000019733
           }
         },
         {
@@ -18984,7 +18941,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -19016,17 +18972,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.002925940999999349,
-            "cumulative_elapsed_s": 6.713995351,
-            "left_import_s": 0.007272206000000503,
-            "left_normalize_s": 0.00722418400000438,
-            "parametric_state_s": 2.6170000002739835e-05,
-            "piece_union_record_s": 5.969999996413566e-06,
-            "piece_union_seal_s": 3.6499999985784015e-06,
-            "right_import_s": 0.0032708529999952995,
-            "right_normalize_s": 0.0430722440000004,
-            "state_pattern_s": 0.07932088800000017,
-            "unary_reduction_s": 7.498000000194516e-05
+            "affine_state_pattern_s": 0.0031621140000111514,
+            "cumulative_elapsed_s": 24.449964946,
+            "left_import_s": 0.008790075999994762,
+            "left_normalize_s": 0.0079302529999844,
+            "parametric_state_s": 2.748999996965429e-05,
+            "piece_union_record_s": 6.539999983179445e-06,
+            "piece_union_seal_s": 4.830000003230861e-06,
+            "right_import_s": 0.0038951819999986093,
+            "right_normalize_s": 0.38142574500001836,
+            "state_pattern_s": 0.2780450870000077,
+            "unary_reduction_s": 0.00010589999999499611
           }
         },
         {
@@ -19543,7 +19499,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -19575,17 +19530,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00036760200000254817,
-            "cumulative_elapsed_s": 6.715338426,
-            "left_import_s": 0.00832067900000058,
-            "left_normalize_s": 0.007278811999998608,
-            "parametric_state_s": 2.8320000005466195e-05,
-            "piece_union_record_s": 6.149999995930244e-06,
-            "piece_union_seal_s": 3.7899999985047117e-06,
-            "right_import_s": 0.026518695999999203,
-            "right_normalize_s": 0.042658169000003604,
-            "state_pattern_s": 0.07903017499999687,
-            "unary_reduction_s": 7.463100000190681e-05
+            "affine_state_pattern_s": 0.0004610419999909743,
+            "cumulative_elapsed_s": 24.455198227,
+            "left_import_s": 0.009634588999986371,
+            "left_normalize_s": 0.008198096000013644,
+            "parametric_state_s": 2.959000001045986e-05,
+            "piece_union_record_s": 6.670000001596232e-06,
+            "piece_union_seal_s": 5.380000014543196e-06,
+            "right_import_s": 0.029078136999991788,
+            "right_normalize_s": 0.36955964299999655,
+            "state_pattern_s": 0.29125366299999905,
+            "unary_reduction_s": 0.00010619100000358594
           }
         },
         {
@@ -20102,7 +20057,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "coverage": "same_predicate_nodes_equal_arms",
               "first_reduction_arm": {
@@ -20134,17 +20088,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00035293100000202693,
-            "cumulative_elapsed_s": 6.71649719,
-            "left_import_s": 0.007359380000001775,
-            "left_normalize_s": 0.007183066000001154,
-            "parametric_state_s": 2.713000000142962e-05,
-            "piece_union_record_s": 6.280000001301911e-06,
-            "piece_union_seal_s": 3.7400000004184086e-06,
-            "right_import_s": 0.0033492660000001284,
-            "right_normalize_s": 0.042486922000000926,
-            "state_pattern_s": 0.07860698700000118,
-            "unary_reduction_s": 8.253299999955166e-05
+            "affine_state_pattern_s": 0.00042548500000755274,
+            "cumulative_elapsed_s": 24.460222895,
+            "left_import_s": 0.008771214999990673,
+            "left_normalize_s": 0.007880766000027406,
+            "parametric_state_s": 2.713999999715e-05,
+            "piece_union_record_s": 6.590000003081631e-06,
+            "piece_union_seal_s": 5.0300000191683125e-06,
+            "right_import_s": 0.0038459180000186555,
+            "right_normalize_s": 0.36871905500000235,
+            "state_pattern_s": 0.2796253540000043,
+            "unary_reduction_s": 0.00010485000000476363
           }
         },
         {
@@ -20157,7 +20111,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "closures": [
                 {
@@ -20183,38 +20136,38 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00014484199999476033,
-            "cumulative_elapsed_s": 9.004319238,
-            "left_import_s": 0.013025838999992878,
-            "left_normalize_s": 0.007915056000001641,
-            "parametric_state_s": 9.494000000032088e-05,
-            "piece_union_record_s": 0.00035169199999796064,
-            "piece_union_seal_s": 4.019999999549384e-06,
-            "right_import_s": 0.2692288439999997,
-            "right_normalize_s": 0.7690986969999996,
-            "state_pattern_s": 1.220389272000003,
-            "unary_reduction_s": 0.004573517000001637
+            "affine_state_pattern_s": 0.00017795199998715816,
+            "cumulative_elapsed_s": 32.086686407,
+            "left_import_s": 0.014588274000008283,
+            "left_normalize_s": 0.009036011000020494,
+            "parametric_state_s": 0.0001223600000201941,
+            "piece_union_record_s": 0.00048176399998567376,
+            "piece_union_seal_s": 7.820000007541239e-06,
+            "right_import_s": 0.2931938120000126,
+            "right_normalize_s": 4.1138682359999805,
+            "state_pattern_s": 3.1871488250000084,
+            "unary_reduction_s": 0.00495945100000128
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 0.017867535999975162,
+        "affine_state_pattern_s": 0.019856921999946327,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.28148243499999215,
-        "left_normalize_s": 0.2557922990000072,
-        "parametric_state_s": 0.0010247050000005975,
-        "piece_union_record_s": 0.0005687320000146989,
+        "left_import_s": 0.32758655899996747,
+        "left_normalize_s": 0.283187521000084,
+        "parametric_state_s": 0.0010816180000984,
+        "piece_union_record_s": 0.0006962549999958434,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 0.0001369700000009369,
+        "piece_union_seal_s": 0.0001727900000682847,
         "proof_reuse_s": 0.0,
-        "right_import_s": 1.1214980399999848,
-        "right_normalize_s": 2.9515977690000565,
-        "state_pattern_s": 4.1424260270000115
+        "right_import_s": 1.2087818100000827,
+        "right_normalize_s": 17.062290988999983,
+        "state_pattern_s": 12.934973712000007
       },
       "timings": {
-        "load_and_scope_analysis": 0.029873244
+        "load_and_scope_analysis": 0.033814146
       },
       "total_output_families": 4160,
       "transport": "in_memory_cpp_objects",
@@ -20528,14 +20481,14 @@
         "logical_accesses": 12576
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 5,
+      "hb_batches": 2,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 22746,
+      "hb_edge_visits": 21914,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 3987,
-      "hb_query_seconds": 0.003403733,
+      "hb_query_seconds": 0.003878113,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -20543,7 +20496,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 885.05859375,
+    "peak_footprint_mib": 1142.82421875,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -20668,21 +20621,21 @@
         "spatial_outputs_projected": 0,
         "spatial_template_operations": 0,
         "statistics": {
-          "constants": 8285,
-          "edges": 327763,
+          "constants": 16413,
+          "edges": 340019,
           "folds": 0,
           "indices": 1,
           "initial_cells": 29731,
           "logical_iterations": 0,
           "logical_iterations_overflow": false,
           "max_fold_nesting": 0,
-          "nodes": 168378,
-          "nodes_before_final_collection": 291768,
+          "nodes": 182634,
+          "nodes_before_final_collection": 299896,
           "nodes_reclaimed": 137623,
-          "operations": 130361,
+          "operations": 136489,
           "parameters": 0,
           "range_descriptions": 0,
-          "storage_nodes": 168378,
+          "storage_nodes": 182634,
           "unique_fold_bodies": 0
         }
       },
@@ -20690,16 +20643,16 @@
         "action_patterns": 2286,
         "binding_patterns": 2286,
         "domain_refinements": 39902,
-        "elapsed_seconds": 0.171612144,
+        "elapsed_seconds": 0.178058245,
         "event_families": 52306,
         "expanded_event_records": 0,
         "largest_batch_members": 30,
         "logical_actions": 2560,
         "logical_events": 127121,
-        "peak_rss_mib_at_completion": 202.609375,
+        "peak_rss_mib_at_completion": 200.078125,
         "reachability_queries": 0,
         "relations": 96562,
-        "rss_mib_at_completion": 176.1484375,
+        "rss_mib_at_completion": 173.5390625,
         "scheduled_batches": 52306,
         "singleton_batches": 39155,
         "value_families": 46048
@@ -20711,13 +20664,13 @@
     "value_ir_instance_count": 64759,
     "value_ir_node_count": 37337,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 0.2896517,
+    "verification_elapsed_seconds": 0.295045968,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 885.05859375,
-  "pipeline_elapsed_seconds": 12.247842681,
+  "peak_rss_mib": 1142.82421875,
+  "pipeline_elapsed_seconds": 35.486886085,
   "result": "verified",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -20726,6 +20679,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.372
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.423
 }

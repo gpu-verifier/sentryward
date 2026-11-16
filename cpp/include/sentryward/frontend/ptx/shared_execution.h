@@ -9,7 +9,16 @@
 namespace sentryward::frontend::ptx {
 struct SharedBlocked {};
 using SharedActor = std::uint64_t;
-using SharedByte=std::optional<std::variant<std::uint8_t,PointerBits,DescriptorFragment>>;
+// Byte `offset` of a bounded integer (not a table atom) that one store wrote with `bytes`
+// bytes: the store keeps the value's low-order bytes, little-endian.
+struct BoundedFragment {
+  BoundedInteger value;
+  unsigned offset{}, bytes{};
+  bool operator==(const BoundedFragment &other) const {
+    return value == other.value && offset == other.offset && bytes == other.bytes;
+  }
+};
+using SharedByte=std::optional<std::variant<std::uint8_t,PointerBits,DescriptorFragment,BoundedFragment>>;
 struct SharedConstantRead {
   Scalar value;
   std::vector<SharedValueSite> sources;
@@ -19,7 +28,11 @@ public:
   void Write(const SharedValueSite &, std::uint64_t, const std::vector<SharedByte> &);
   void Invalidate(std::uint64_t, std::uint64_t);
   void Clear() { bytes_.clear(); }
-  [[nodiscard]] SharedConstantRead Read(std::uint64_t, unsigned) const;
+  // The value a load of `width` bytes reads (signed when `sign`): an integer, pointer or
+  // descriptor fragment reassembled from its bytes, or a bounded integer when every byte is
+  // its byte k at address + k from a store of exactly `width` bytes and its range fits the
+  // loaded type (as a .local slot: LocalLoaded); otherwise UNKNOWN with no sources.
+  [[nodiscard]] SharedConstantRead Read(std::uint64_t, unsigned, bool sign = false) const;
   [[nodiscard]] std::size_t size() const { return bytes_.size(); }
 private:
   struct Byte { SharedByte value; SharedValueSite source; };
@@ -50,7 +63,7 @@ public:
   void Write(const SharedWrite &);
   void Invalidate(std::uint64_t, std::uint64_t);
   void Clear();
-  Scalar Read(const SharedValueSite &, std::uint64_t, unsigned);
+  Scalar Read(const SharedValueSite &, std::uint64_t, unsigned, bool sign = false);
   void Export(ExecutionProgram &) const;
   void Init(std::uint64_t, std::int64_t);
   std::int64_t Update(std::uint64_t, std::int64_t, std::int64_t, SharedActor);
@@ -64,6 +77,10 @@ private:
   std::vector<Completion> completions_;
   std::map<Coordinates,std::set<SharedValueSite>> writes_;
   std::map<Coordinates,std::set<SharedValueDependency>> dependencies_;
+  // Statistics only: the write sites that stored a bounded fragment, and the dependencies
+  // whose read reassembled a bounded integer (a subset of dependencies_).
+  std::map<Coordinates,std::set<SharedValueSite>> bounded_writes_;
+  std::map<Coordinates,std::set<SharedValueDependency>> bounded_dependencies_;
 };
 std::vector<SharedByte> SharedBytes(const Scalar &, unsigned);
 } // namespace sentryward::frontend::ptx

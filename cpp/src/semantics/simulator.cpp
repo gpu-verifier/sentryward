@@ -194,6 +194,9 @@ struct SimulatorState final {
   std::map<InstId, EventId> unindexed_wait_issues;
   std::set<EventId> normal_ready;
   std::set<EventId> urgent_ready;
+  // Whether markExecuted keeps normal_ready (ReplayPrefix orders by the requested positions and
+  // never reads it after seeding, so it stops keeping it).
+  bool track_normal_ready = true;
   std::map<PhaseKey, std::vector<EventId>> parked_phase_waits;
   std::map<SyncId, std::vector<EventId>> parked_collective_waits;
   std::map<PhaseKey, std::vector<TemplateSchedule::Batch>> parked_family_waits;
@@ -214,14 +217,20 @@ struct SimulatorState final {
         options.statistics->event_families = schedule->familyCount();
         options.statistics->dependency_relations = schedule->relationCount();
       }
-    } else for (const Event& event : input.graph().events()) {
-      remaining_predecessors[event.id.value()] =
-          input.graph().predecessors(event.id).size();
-      if (remaining_predecessors[event.id.value()] == 0) {
-        if (event.scheduling_class == EventSchedulingClass::kNormal) {
-          normal_ready.insert(event.id);
-        } else if (event.isUrgentDerived()) {
-          urgent_ready.insert(event.id);
+    } else {
+      // By id (the graph's event ids are its indexes), each scheduling class read from the record's
+      // prototype (EventRecords::header): no record is materialized.
+      const auto& events = input.graph().events();
+      for (std::size_t index = 0; index < events.size(); ++index) {
+        const EventId id(static_cast<std::uint32_t>(index));
+        remaining_predecessors[index] = input.graph().predecessors(id).size();
+        if (remaining_predecessors[index] != 0) continue;
+        const auto scheduling_class =
+            events.header(index, [](const Event& prototype, auto&&...) { return prototype.scheduling_class; });
+        if (scheduling_class == EventSchedulingClass::kNormal) {
+          normal_ready.insert(id);
+        } else if (scheduling_class == EventSchedulingClass::kUrgentDerived) {
+          urgent_ready.insert(id);
         }
       }
     }
@@ -774,14 +783,18 @@ void markExecuted(SimulatorState& state, EventId event) {
   }
   state.executed[event.value()] = true;
   ++state.executed_count;
-  state.normal_ready.erase(event);
+  if (state.track_normal_ready) state.normal_ready.erase(event);
   state.urgent_ready.erase(event);
+  // A successor's scheduling class is a field of its record's prototype: read it without
+  // materializing the record (EventRecords::header). O(successors).
+  const auto& events = state.program.graph().events();
   for (EventId successor : state.program.graph().successors(event)) {
     if (--state.remaining_predecessors[successor.value()] == 0) {
-      const Event& next = state.program.graph().event(successor);
-      if (next.scheduling_class == EventSchedulingClass::kNormal) {
-        state.normal_ready.insert(successor);
-      } else if (next.isUrgentDerived()) {
+      const auto scheduling_class = events.header(successor.value(),
+          [](const Event& prototype, auto&&...) { return prototype.scheduling_class; });
+      if (scheduling_class == EventSchedulingClass::kNormal) {
+        if (state.track_normal_ready) state.normal_ready.insert(successor);
+      } else if (scheduling_class == EventSchedulingClass::kUrgentDerived) {
         state.urgent_ready.insert(successor);
       }
     }
@@ -1164,7 +1177,7 @@ Result<ReplayResult, SimulationError> ReferenceSimulator::ReplayPrefix(
   for (std::size_t position = 0; position < requested_order.size(); ++position) {
     const EventId event = requested_order[position];
     if (!program.graph().contains(event) || positions[event.value()] != absent ||
-        program.graph().event(event).isUrgentDerived()) {
+        IsUrgentDerived(program.graph().events(), event.value())) {
       return Result<ReplayResult, SimulationError>::Failure(semanticError(
           SimulationErrorCode::kMalformedProgram,
           "candidate replay requires unique normal events", event));
@@ -1174,19 +1187,30 @@ Result<ReplayResult, SimulationError> ReferenceSimulator::ReplayPrefix(
 
   SimulatorState state(program, options);
   ReportSimulatorMemory(state, "sync.replay.state_initialized");
-  std::set<std::size_t> requested_ready;
+  // The requested events whose predecessors have executed, by requested position, each with its
+  // event record, read once when it becomes ready (the scan below re-reads ready events at every
+  // step, and the records do not change during a replay).
+  std::map<std::size_t, Event> requested_ready;
+  const auto make_ready = [&](std::size_t position) {
+    if (!requested_ready.contains(position))
+      requested_ready.emplace(position, program.graph().event(requested_order[position]));
+  };
   for (EventId event : state.normal_ready) {
     if (positions[event.value()] != absent) {
-      requested_ready.insert(positions[event.value()]);
+      make_ready(positions[event.value()]);
     }
   }
+  // From here the replay orders normal events by requested position only (requested_ready); nothing
+  // below reads normal_ready (no waiter is parked in a replay), so it is no longer kept.
+  state.track_normal_ready = false;
+  state.normal_ready.clear();
   auto mark_replayed = [&](EventId event) {
     markExecuted(state, event);
     requested_ready.erase(positions[event.value()]);
     for (EventId successor : program.graph().successors(event)) {
       if (state.remaining_predecessors[successor.value()] == 0 &&
           positions[successor.value()] != absent) {
-        requested_ready.insert(positions[successor.value()]);
+        make_ready(positions[successor.value()]);
       }
     }
   };
@@ -1215,20 +1239,21 @@ Result<ReplayResult, SimulationError> ReferenceSimulator::ReplayPrefix(
     }
 
     std::optional<EventId> next;
-    for (std::size_t position : requested_ready) {
-      const EventId candidate = requested_order[position];
-      const Event& event = program.graph().event(candidate);
-      if (!normalSemanticallyReady(state, event)) {
+    const Event* ready_event = nullptr;
+    for (const auto& [position, candidate] : requested_ready) {
+      if (!normalSemanticallyReady(state, candidate)) {
         continue;
       }
-      next = candidate;
+      next = requested_order[position];
+      ready_event = &candidate;
       break;
     }
     if (!next.has_value()) {
       break;
     }
 
-    const Event& event = program.graph().event(*next);
+    // mark_replayed erases the ready entry: execute from a copy.
+    const Event event = *ready_event;
     if (auto error = executeNormal(state, event); error.has_value()) {
       ReferenceTraceRecorder::DiscardLastNormal(state.trace, *next);
       ReportSimulationError(*error, "sync.replay.normal_error");

@@ -212,7 +212,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 260369,
@@ -569,7 +569,7 @@
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 482,
+      "address_candidates": 553,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -588,21 +588,21 @@
       "family_analysis": {
         "access_families": 21813,
         "affine_member_rows": 0,
-        "candidate_relations": 360,
-        "hb_frontier_pieces": 11361,
+        "candidate_relations": 431,
+        "hb_frontier_pieces": 11393,
         "hb_member_enumerations": 0,
         "logical_accesses": 54352
       },
-      "first_race_seconds": 0.05339517,
+      "first_race_seconds": 0.056316282,
       "hb_algorithm": "member-relations",
-      "hb_batches": 4,
+      "hb_batches": 2,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 101874,
+      "hb_edge_visits": 102316,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
-      "hb_queries": 482,
-      "hb_query_seconds": 0.010160193000000001,
+      "hb_queries": 553,
+      "hb_query_seconds": 0.014601912,
       "overlap_queries": 1,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 1
@@ -610,7 +610,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 831.5078125,
+    "peak_footprint_mib": 797.15625,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": false,
@@ -711,10 +711,10 @@
     "value_ir_node_count": 433225,
     "value_view_complete": true
   },
-  "peak_rss_mib": 831.5078125,
-  "pipeline_elapsed_seconds": 1.935841869,
+  "peak_rss_mib": 803.33984375,
+  "pipeline_elapsed_seconds": 1.936349729,
   "result": "potential_race",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -723,6 +723,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.509
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.487
 }

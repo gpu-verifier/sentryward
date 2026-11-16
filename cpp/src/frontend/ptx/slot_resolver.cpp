@@ -188,7 +188,7 @@ ConstantStep SlotResolver::MemoryResource(std::string id, std::uint64_t offset,
     // may use a distinct resource handle. Resolve that alias once, retaining
     // the original resource's extent validation. Never choose ambiguously or
     // reinterpret a nonzero suballocation pointer as the allocation base.
-    std::optional<std::string> alias;
+    std::vector<std::string> aliases;
     for(const auto& pointer:facts.launch().pointer_parameters()) {
       const auto candidate=records.find(pointer.resource);
       if(candidate==records.end() || !candidate->second.contains("allocation"))continue;
@@ -196,14 +196,23 @@ ConstantStep SlotResolver::MemoryResource(std::string id, std::uint64_t offset,
       if(allocation.value("resolution",std::string{})!="concrete" ||
           allocation.value("object",std::string{})!=id ||
           allocation.value("base_byte_offset",Json(0))!=Json(0))continue;
-      if(alias && *alias!=pointer.resource)
-        throw SemanticError("ambiguous_memory_resource","Multiple pointer resources name allocation "+id);
-      alias=pointer.resource;
+      if(std::find(aliases.begin(),aliases.end(),pointer.resource)==aliases.end())
+        aliases.push_back(pointer.resource);
     }
-    if(alias) {
-      auto result=MemoryResource(*alias,offset,bytes);
-      memory_resources_.emplace(id,memory_resources_.at(*alias));
-      return result;
+    if(!aliases.empty()) {
+      // Several pointers may name one allocation at its base (a tensor and a view of it, such as V and its
+      // transpose Vt). They denote the same bytes: require one space, object and base, and check accesses
+      // against the smallest captured extent. Different spaces or bases stay ambiguous.
+      for(const auto& alias:aliases)(void)MemoryResource(alias,0,0);
+      auto info=memory_resources_.at(aliases.front());
+      for(const auto& alias:aliases) {
+        const auto& other=memory_resources_.at(alias);
+        if(other.space!=info.space || other.object!=info.object || other.base!=info.base)
+          throw SemanticError("ambiguous_memory_resource","Multiple pointer resources name allocation "+id);
+        if(other.extent)info.extent=info.extent?std::min(*info.extent,*other.extent):*other.extent;
+      }
+      memory_resources_.emplace(id,std::move(info));
+      return MemoryResource(id,offset,bytes);
     }
   }
   if (it == records.end() || it->second.value("kind", "") != "memory")
@@ -307,7 +316,46 @@ SlotTerminal<ResolvedFootprint> SlotResolver::MemoryBody(const RecordView &e, co
     }
     return constant(std::move(step), size);
   };
+  // A bounded pointer (tensor_properties) is an abstract footprint in its allocation when its
+  // whole offset range lies inside the captured extent.
+  const auto abstract_footprint = [&](const BoundedPointerValue &bounded)
+      -> std::optional<SlotTerminal<ResolvedFootprint>> {
+    if (!id.empty() && id != bounded.resource)
+      throw SemanticError("pointer_resource_mismatch",
+                          "contract disagrees with pointer provenance");
+    const Integer lower = bounded.lower + displacement, upper = bounded.upper + displacement;
+    // A non-affine offset (offset_identity) has an abstract footprint only by its form in
+    // element functions; without one, the fallback below.
+    const auto *form = bounded.offset_identity.empty() ? &bounded.offset
+                       : bounded.abstract                ? &*bounded.abstract
+                                                         : nullptr;
+    const bool inside = lower >= 0 && form &&
+        (!bounded.extent_bytes || upper + Integer(bytes) <= Integer(*bounded.extent_bytes));
+    if (auto affine = inside ? AffineOffset(*form, displacement) : std::nullopt) {
+      auto placement = MemoryResource(bounded.resource, 0, 0);
+      if (placement.offset == 0) {
+        const auto binding = frame.Format(placement.key);
+        prefix.push_back({std::move(placement)});
+        auto step = core_.BindStep(binding.space, binding.allocation, 0, bytes, {});
+        const auto stored = frame.Format(step.key);
+        auto expression = Resources::AbstractExpression(stored.space, stored.allocation, stored.alias,
+                                                        AffineOffsetJson(*affine), bytes);
+        // A table atom's exact offset (the form's value at this CTA's own elements).
+        const auto valued = bounded.exact ? Int64(*bounded.exact + displacement) : std::nullopt;
+        return Footprint(FootprintKind::Abstract, std::move(step), std::move(expression), bytes,
+                         std::move(*affine), valued);
+      }
+    }
+    return std::nullopt;
+  };
   if (!region.contains("byte_offset")) {
+    // A table-atom pointer (class mode) is the abstract footprint of its form when that one is
+    // placeable, so that class admission compares the form up to δ; else its plain pointer.
+    if (const auto *pinned = std::get_if<BoundedAllocationPointer>(&v);
+        pinned && TableAtom(v) && (space.empty() || space == "global" || space == "generic")) {
+      if (auto footprint = abstract_footprint(*pinned->value)) return std::move(*footprint);
+      v = PlainValue(v);
+    } else if (TableAtom(v)) v = PlainValue(v);
     if (auto p = std::get_if<AllocationPointer>(&v)) {
       if (!id.empty() && id != p->resource)
         throw SemanticError("pointer_resource_mismatch",
@@ -318,36 +366,9 @@ SlotTerminal<ResolvedFootprint> SlotResolver::MemoryBody(const RecordView &e, co
         throw SemanticError("pointer_extent", "access beyond captured extent");
       return checked(MemoryResource(p->resource, offset, bytes), bytes);
     }
-    // A bounded pointer (tensor_properties) is an abstract footprint in its allocation
-    // when its whole offset range lies inside the captured extent.
     if (const auto *pointer = std::get_if<BoundedAllocationPointer>(&v);
-        pointer && (space.empty() || space == "global" || space == "generic")) {
-      const auto &bounded = *pointer->value;
-      if (!id.empty() && id != bounded.resource)
-        throw SemanticError("pointer_resource_mismatch",
-                            "contract disagrees with pointer provenance");
-      const Integer lower = bounded.lower + displacement, upper = bounded.upper + displacement;
-      // A non-affine offset (offset_identity) has an abstract footprint only by its form in
-      // element functions; without one, the fallback below.
-      const auto *form = bounded.offset_identity.empty() ? &bounded.offset
-                         : bounded.abstract                ? &*bounded.abstract
-                                                           : nullptr;
-      const bool inside = lower >= 0 && form &&
-          (!bounded.extent_bytes || upper + Integer(bytes) <= Integer(*bounded.extent_bytes));
-      if (auto affine = inside ? AffineOffset(*form, displacement) : std::nullopt) {
-        auto placement = MemoryResource(bounded.resource, 0, 0);
-        if (placement.offset == 0) {
-          const auto binding = frame.Format(placement.key);
-          prefix.push_back({std::move(placement)});
-          auto step = core_.BindStep(binding.space, binding.allocation, 0, bytes, {});
-          const auto stored = frame.Format(step.key);
-          auto expression = Resources::AbstractExpression(stored.space, stored.allocation, stored.alias,
-                                                          AffineOffsetJson(*affine), bytes);
-          return Footprint(FootprintKind::Abstract, std::move(step), std::move(expression), bytes,
-                           std::move(*affine));
-        }
-      }
-    }
+        pointer && (space.empty() || space == "global" || space == "generic"))
+      if (auto footprint = abstract_footprint(*pointer->value)) return std::move(*footprint);
     if (auto n = std::get_if<Integer>(&v); n && !ParseInteger(base)) {
       auto offset = Unsigned(*n + displacement, "numeric memory address");
       std::vector<std::pair<std::string, std::uint64_t>> matches;
@@ -494,7 +515,7 @@ const Json &SlotResolver::TensorMap(const RecordView &e,
   Integer displacement = split ? split->second : Integer(0);
   Scalar value = facts.launch().parameter_regions().contains(base)
                      ? Scalar(ParameterPointer{base, 0})
-                     : core_.Value(e, base);
+                     : PlainValue(core_.Value(e, base));
   const Json *match = nullptr;
   std::string matched;
   auto explicit_name = contract.value("descriptor", "");
@@ -643,6 +664,8 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
   std::vector<bool> symbolic_coordinates;
   // Per coordinate, its affine form in tensor-property elements (bounded coordinates).
   std::vector<std::optional<AbstractAffine>> affine_coordinates;
+  // Per coordinate: a table atom's exact value (class mode), else nullopt.
+  std::vector<std::optional<Integer>> exact_coordinates;
   // Per symbolic coordinate that is a bounded integer (tensor_properties), its exact range.
   std::vector<std::optional<std::pair<Integer, Integer>>> ranges;
   bool opaque_coordinate = false;
@@ -651,17 +674,41 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
     throw SemanticError("tma_opcode_rank", "tensor operand has no coordinates");
   std::istringstream values(tensor.substr(a + 1, b - a - 1));
   std::string coordinate;
+  // Whether coordinate `k` (its exact value `c`) keeps the box inside the tensor along its dimension
+  // (a gather row: dimension 1 with a one-row box), the global extent known.
+  const auto descriptor_global = descriptor.value("global_shape", Json());
+  const auto descriptor_box = descriptor.value("box_shape", Json());
+  const auto inside_exactly = [&](std::size_t k, const Integer &c) {
+    const std::size_t dim = gather ? (k == 0 ? 0 : 1) : k;
+    if (!descriptor_global.is_array() || !descriptor_box.is_array() || dim >= descriptor_global.size() ||
+        dim >= descriptor_box.size() || !descriptor_global[dim].is_number_integer() ||
+        !descriptor_box[dim].is_number_integer())
+      return false;
+    const Integer extent = gather && dim == 1 ? Integer(1) : JsonInteger(descriptor_box[dim]);
+    return c >= 0 && c + extent <= JsonInteger(descriptor_global[dim]);
+  };
   while (std::getline(values, coordinate, ',')) {
     const auto token = Trim(coordinate);
     const auto value = core_.Value(e, token);
-    const auto known = ScalarInteger(value);
+    // A table atom (class mode) in the s32 range with a form whose box lies inside the tensor is a
+    // bounded coordinate (its form, for class admission up to δ); any other one is its plain value
+    // (a box partly outside the tensor is decoded exactly, with its zero-fill segments).
+    const auto *atom = TableAtom(value) ? std::get_if<BoundedInteger>(&value) : nullptr;
+    const bool atom_coordinate = atom && ((*atom)->affine || (*atom)->abstract) && (*atom)->lower >= INT32_MIN &&
+        (*atom)->upper <= INT32_MAX && AffineOffset((*atom)->affine ? *(*atom)->affine : *(*atom)->abstract, 0) &&
+        inside_exactly(symbolic_coordinates.size(), *(*atom)->exact);
+    const auto known = atom_coordinate ? std::nullopt : ScalarInteger(value);
     symbolic_coordinates.push_back(!known);
     origins.push_back(known ? Signed(*known, "tensor coordinate") : 0);
+    exact_coordinates.push_back(atom_coordinate ? std::optional<Integer>(*(*atom)->exact) : std::nullopt);
     affine_coordinates.emplace_back();
     ranges.emplace_back();
     if (known) { coordinate_expressions.push_back(origins.back()); continue; }
+    // A table atom's range is its exact value: the region is in bounds exactly in this CTA, and class
+    // admission compares that (PutTmaTail), so every member of a class is in bounds alike.
     if (const auto *bounded = std::get_if<BoundedInteger>(&value))
-      ranges.back() = std::pair{(*bounded)->lower, (*bounded)->upper};
+      ranges.back() = atom_coordinate ? std::pair{*(*bounded)->exact, *(*bounded)->exact}
+                                      : std::pair{(*bounded)->lower, (*bounded)->upper};
     // A bounded coordinate (tensor_properties) in the s32 range is its exact affine form in
     // element lookups and element functions (the address model's gathers): no extraction.
     if (const auto *bounded = std::get_if<BoundedInteger>(&value);
@@ -791,6 +838,17 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
       if (!fitted) return std::nullopt;
       return AbstractAffine{*fitted, std::move(terms)};
     };
+    // The same region's exact first byte when its symbolic coordinates are all table atoms.
+    const auto valued = [&](const std::vector<std::size_t> &index) -> std::optional<std::int64_t> {
+      Integer value = JsonInteger(base);
+      for (std::size_t dim = 0; dim < dims; ++dim) {
+        const auto k = index[dim];
+        if (!symbolic_coordinates[k]) value += Integer(origins[k]) * JsonInteger(strides[dim]);
+        else if (exact_coordinates[k]) value += *exact_coordinates[k] * JsonInteger(strides[dim]);
+        else return std::nullopt;
+      }
+      return Int64(value);
+    };
     if (strides.is_array() && strides.size() == dims && base.is_number_integer()) {
       std::vector<std::vector<std::size_t>> regions;
       if (gather) regions = {{0, 1}, {0, 2}, {0, 3}, {0, 4}};
@@ -800,8 +858,9 @@ ResolvedTma SlotResolver::TmaBody(const RecordView &e, const TmaRequest &request
       }
       for (const auto &index : regions) {
         auto form = region(index);
-        if (!form) { result.region_affine.clear(); break; }
+        if (!form) { result.region_affine.clear(); result.region_valued.clear(); break; }
         result.region_affine.push_back(std::move(*form));
+        result.region_valued.push_back(valued(index));
       }
     }
   }

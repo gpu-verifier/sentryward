@@ -178,12 +178,12 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
-      "edges": 10434424,
-      "events": 4366664,
-      "instructions": 816178,
+      "edges": 10446792,
+      "events": 4374920,
+      "instructions": 820290,
       "memory_accesses": 2851760,
       "threads": 4096
     },
@@ -463,7 +463,7 @@
       },
       "implementation": "cpp",
       "input_objects": [],
-      "lowered_instruction_count": 816178,
+      "lowered_instruction_count": 820290,
       "mma_refinement": {
         "blocked": [],
         "discharged": 32
@@ -570,13 +570,13 @@
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
-        "logical_instructions": 816178,
-        "stored_bindings": 66345
+        "logical_instructions": 820290,
+        "stored_bindings": 70457
       },
       "source_edge_storage": {
-        "binding_templates": 4641,
-        "logical_edges": 812082,
-        "stored_bindings": 4642
+        "binding_templates": 4818,
+        "logical_edges": 816194,
+        "stored_bindings": 4819
       },
       "tcgen_copy_refinement": {
         "blocked": [],
@@ -604,16 +604,16 @@
       },
       "required_orders": {
         "algorithm": "member-relations",
-        "batches": 9,
-        "edge_visits": 606028,
+        "batches": 4,
+        "edge_visits": 825951,
         "member_enumerations": 0,
         "request_construction": {
           "concrete_pair_materializations": 0,
-          "endpoint_reads": 30640,
-          "family_requests": 1760,
-          "logical_orders": 275968,
-          "owner_bindings": 17248,
-          "stored_orders": 8624
+          "endpoint_reads": 49579,
+          "family_requests": 14738,
+          "logical_orders": 279214,
+          "owner_bindings": 32941,
+          "stored_orders": 11870
         }
       }
     },
@@ -639,19 +639,19 @@
         "access_families": 394063,
         "affine_member_rows": 0,
         "candidate_relations": 1125291,
-        "hb_frontier_pieces": 1600,
+        "hb_frontier_pieces": 971,
         "hb_member_enumerations": 0,
         "logical_accesses": 2851760
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 834,
+      "hb_batches": 331,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 1769869,
+      "hb_edge_visits": 1256362,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 13050080,
-      "hb_query_seconds": 0.37162186200000014,
+      "hb_query_seconds": 0.41818210899999975,
       "overlap_queries": 698368,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 698368
@@ -659,9 +659,9 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 4627.21484375,
-    "required_order_domains": 8624,
-    "required_orders": 275968,
+    "peak_footprint_mib": 4414.75390625,
+    "required_order_domains": 11870,
+    "required_orders": 279214,
     "search_complete": true,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
@@ -681,9 +681,9 @@
       "memory_binding_templates": 45443,
       "memory_bindings": 1942320,
       "memory_linking_templates_used": true,
-      "synchronization_groups": 33534,
+      "synchronization_groups": 33759,
       "synchronization_groups_materialized": true,
-      "synthetic_synchronization_nodes": 273,
+      "synthetic_synchronization_nodes": 289,
       "thread_prefix_groups": 674806,
       "value_diagnostic_count": 0,
       "value_diagnostics": []
@@ -755,14 +755,14 @@
           "elements": 0,
           "identities": 307,
           "layouts": 160,
-          "mapping_blocks": 99696,
+          "mapping_blocks": 98736,
           "name": "view_normalization",
-          "original_pieces": 570112,
+          "original_pieces": 577792,
           "reused_initial_reads": 4144,
-          "reused_views": 22636,
+          "reused_views": 22708,
           "segmented": 45120,
           "slices": 8208,
-          "stored_mapping_blocks": 54532,
+          "stored_mapping_blocks": 53356,
           "typed_output_pieces": 0,
           "typed_output_regions": 0
         }
@@ -871,18 +871,18 @@
         "action_patterns": 1261171,
         "binding_patterns": 585331,
         "domain_refinements": 2514552,
-        "elapsed_seconds": 5.95664206,
-        "event_families": 925570,
+        "elapsed_seconds": 6.306991376,
+        "event_families": 933826,
         "expanded_event_records": 0,
         "largest_batch_members": 62,
         "logical_actions": 1942320,
-        "logical_events": 13629701,
-        "peak_rss_mib_at_completion": 4803.171875,
+        "logical_events": 13637957,
+        "peak_rss_mib_at_completion": 4595.15234375,
         "reachability_queries": 0,
-        "relations": 3242248,
-        "rss_mib_at_completion": 3051.20703125,
-        "scheduled_batches": 925570,
-        "singleton_batches": 487140,
+        "relations": 3254616,
+        "rss_mib_at_completion": 2837.7734375,
+        "scheduled_batches": 933826,
+        "singleton_batches": 495396,
         "value_families": 452270
       },
       "shared_read_families": 22706,
@@ -892,13 +892,13 @@
     "value_ir_instance_count": 5739047,
     "value_ir_node_count": 363917,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 16.855380529,
+    "verification_elapsed_seconds": 17.356116378,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 4803.171875,
-  "pipeline_elapsed_seconds": 39.870177138,
+  "peak_rss_mib": 4595.15234375,
+  "pipeline_elapsed_seconds": 37.304369277,
   "result": "undefined_behavior",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -1660,6 +1660,6 @@
       }
     }
   ],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.33
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.328
 }

@@ -119,7 +119,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 1891520,
@@ -130,8 +130,8 @@
     },
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
-      "arena_nodes": 712970,
-      "comparison_elapsed_seconds": 3.722793817,
+      "arena_nodes": 101287,
+      "comparison_elapsed_seconds": 0.483927703,
       "context_declaration": {
         "assumptions": [],
         "fixed_inputs": [
@@ -150,108 +150,91 @@
       },
       "context_policy": "explicit native caller premises; no implied provenance certification",
       "counters": {
-        "add_term_visits": 1350455,
-        "affine_coordinate_captures": 8256,
+        "add_term_visits": 226680,
+        "affine_coordinate_captures": 998,
         "affine_state_banks": 1,
-        "call_definition_node_visits": 114337,
-        "canonical_domain_invariant_reuse": 32322,
-        "canonical_domain_rebind_nodes": 81600,
-        "canonical_factor_visits": 261248,
-        "canonical_node_visits": 378945,
-        "canonical_sum_initials": 8128,
-        "canonical_sum_trimmed_domains": 23009,
-        "canonical_sum_zero_domains": 14849,
-        "certified_state_pattern_cache_hits": 16375,
-        "certified_state_pattern_decline_no_certified_state": 5,
+        "call_definition_node_visits": 13407,
+        "canonical_domain_invariant_reuse": 3783,
+        "canonical_domain_rebind_nodes": 9580,
+        "canonical_factor_visits": 30328,
+        "canonical_node_visits": 48107,
+        "canonical_sum_initials": 928,
+        "canonical_sum_trimmed_domains": 2783,
+        "canonical_sum_zero_domains": 1825,
+        "certified_state_pattern_cache_hits": 1910,
+        "certified_state_pattern_decline_no_certified_state": 6,
         "certified_state_pattern_decline_nonplain_pattern": 4,
-        "certified_state_pattern_work": 161,
-        "coefficient_normalizations": 33,
-        "completed_reductions": 16320,
-        "constant_binary32_bitcasts": 8192,
+        "certified_state_pattern_work": 186,
+        "coefficient_normalizations": 1,
+        "completed_reductions": 1920,
+        "constant_binary32_bitcasts": 960,
         "coverage_polynomial_peak": 4,
-        "coverage_polynomial_visits": 65408,
-        "coverage_stored_piece_visits": 16384,
-        "ep_body_anchor_edges": 546022,
-        "ep_body_anchor_nodes": 637266,
-        "ep_body_bound_read_exact_hits": 2096,
-        "ep_body_bound_read_matcher_fallbacks": 870,
-        "ep_body_instance_cache_entries": 16801,
-        "ep_body_instance_cache_hits": 3057,
+        "coverage_polynomial_visits": 7696,
+        "coverage_stored_piece_visits": 1936,
+        "ep_body_anchor_edges": 64002,
+        "ep_body_anchor_nodes": 75370,
+        "ep_body_bound_read_exact_hits": 4,
+        "ep_body_bound_read_matcher_fallbacks": 41,
+        "ep_body_instance_cache_entries": 2005,
+        "ep_body_instance_cache_hits": 4,
         "ep_body_missing_opaque_read": 4,
-        "ep_body_obligations": 16800,
-        "ep_body_pattern_anchor_cache_hits": 183727,
-        "ep_body_payload_summary_nodes": 2210,
-        "ep_body_proofs": 16384,
-        "ep_body_read_anchor_rejections": 183448,
-        "ep_body_read_match_cache_entries": 770,
-        "ep_body_read_match_cache_hits": 3542,
-        "ep_body_target_anchor_cache_hits": 83509,
-        "ep_cross_products": 288,
-        "ep_identity_proofs": 24544,
-        "ep_polynomial_proofs": 32,
-        "ep_reduction_outer_obligations": 64,
-        "ep_scalar_attempts": 25056,
-        "ep_scalar_proofs": 24576,
-        "exact_proof_reuse_certificates": 64,
+        "ep_body_obligations": 1936,
+        "ep_body_pattern_anchor_cache_hits": 24376,
+        "ep_body_proofs": 1936,
+        "ep_body_read_anchor_rejections": 24392,
+        "ep_body_read_match_cache_entries": 108,
+        "ep_body_read_match_cache_hits": 150,
+        "ep_body_target_anchor_cache_hits": 12080,
+        "ep_identity_proofs": 2896,
+        "ep_scalar_attempts": 2896,
+        "ep_scalar_proofs": 2896,
+        "exact_exponential_base_changes": 1471,
         "finite_bilinear_banks": 1,
         "finite_state_reuse_banks": 1,
-        "fold_alpha_root_cache_hits": 2079,
-        "fold_alpha_signature_edges": 1292,
-        "fold_alpha_signatures": 813,
-        "fold_alpha_states": 813,
         "fp_idiom_power_constructions": 0,
         "fp_idiom_rm_producers": 0,
-        "ideal_additive_compiler_exp_sequences": 0,
-        "ideal_compiler_exp_sequences": 0,
         "ideal_compiler_log2_polynomials": 0,
         "ideal_compiler_lse_sequences": 0,
-        "ideal_single_constant_exp_sequences": 8705,
-        "imported_context_nodes": 470366,
-        "importer_occurrence_binder_hits": 94847,
+        "ideal_rounded_constants": 1473,
+        "imported_context_nodes": 70883,
+        "importer_occurrence_binder_hits": 11007,
         "importer_scope_banks": 2,
         "importer_scope_binders_created": 257,
         "importer_scope_leaf_lookups": 257,
-        "importer_scope_nested_body_fallbacks": 20480,
-        "intern_requests": 6092465,
-        "known_bits_cache_hits": 509,
+        "importer_scope_nested_body_fallbacks": 3072,
+        "intern_requests": 860064,
+        "known_bits_cache_hits": 10600,
         "known_bits_edges": 0,
-        "known_bits_nodes": 1,
-        "linear_reduction_closed_groups": 0,
-        "linear_reduction_distributed_products": 64,
-        "linear_reduction_existing_scalar_calls": 64,
-        "linear_reduction_instantiated_targets": 64,
-        "linear_reduction_pattern_attempts": 64,
-        "linear_reduction_pattern_proofs": 64,
-        "linear_reduction_preserved_partial_groups": 32,
-        "linear_reduction_weighted_add_edges": 224,
-        "linear_reduction_weighted_states": 736,
-        "local_pattern_candidates": 198572,
-        "masked_sum_predicate_nodes": 16320,
-        "masked_sum_prefix_queries": 51119,
+        "known_bits_nodes": 740,
+        "linear_reduction_case_nonfinite_identities": 0,
+        "local_pattern_candidates": 26026,
+        "masked_sum_predicate_nodes": 1916,
+        "masked_sum_prefix_queries": 6317,
         "maximum_dominated_operands": 0,
-        "normalization_cache_context_changes": 318,
-        "normalization_node_visits": 470174,
+        "missing_scale_factor_candidates": 32,
+        "normalization_cache_context_changes": 259,
+        "normalization_node_visits": 59104,
+        "offset_multiple_quotients": 448,
         "parametric_state_attempts": 0,
         "pattern_build_peak_nodes": 8,
-        "pattern_build_unique_nodes": 90112,
-        "pattern_node_visits": 369053,
+        "pattern_build_unique_nodes": 10560,
+        "pattern_node_visits": 45920,
         "proved_select_arms_imported": 1,
         "select_max_probe_ancestor_nodes": 0,
-        "select_max_probe_calls": 8702,
-        "select_max_probe_hits": 8192,
+        "select_max_probe_calls": 1470,
+        "select_max_probe_hits": 960,
         "select_max_probe_temporary_nodes": 0,
-        "summary_bind_nodes": 24512,
-        "symbolic_byte_reads_without_extent_proof": 0,
-        "unary_reduction_composition_attempts": 64,
-        "unary_reduction_composition_context_changes": 5
+        "summary_bind_nodes": 2848,
+        "summary_concat_nodes": 16,
+        "symbolic_byte_reads_without_extent_proof": 0
       },
       "definedness": {
         "partial_equivalence_families": 0,
-        "proved_families": 8192,
+        "proved_families": 960,
         "status": "proved"
       },
       "diagnostics": [],
-      "elapsed_s": 2.587246368,
+      "elapsed_s": 0.344497754,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -265,7 +248,7 @@
           "previously_completed": 0,
           "repeated_across_queries": 0,
           "requests": 0,
-          "shared_hits": 2484,
+          "shared_hits": 0,
           "unique_query_nodes": 0
         },
         "fraction_witness_s": 0.0,
@@ -275,7 +258,7 @@
           "previously_completed": 0,
           "repeated_across_queries": 0,
           "requests": 0,
-          "shared_hits": 829,
+          "shared_hits": 0,
           "unique_query_nodes": 0
         },
         "ordinary_polynomial_s": 0.0,
@@ -284,10 +267,10 @@
           "previously_completed": 0,
           "repeated_across_queries": 0,
           "requests": 0,
-          "shared_hits": 3357,
+          "shared_hits": 0,
           "unique_query_nodes": 0
         },
-        "query_count": 25056,
+        "query_count": 2896,
         "reset_s": 0.0,
         "reuse_cache": true,
         "shared_evictions": 0
@@ -299,8 +282,15 @@
         "scoped_predicates": 0
       },
       "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
-      "equivalent_families": 8192,
-      "finished_families": 8192,
+      "equivalent_families": 960,
+      "failure_expression_samples": {
+        "failed_families": 0,
+        "omitted_families": 0,
+        "render_byte_limit_per_side": 4096,
+        "sample_limit": 8,
+        "sampled_families": 0
+      },
+      "finished_families": 960,
       "fixed_input_context": {
         "applied": [],
         "applied_elements": 0,
@@ -318,10 +308,9 @@
         "configured_elements": 1
       },
       "idealizations_applied": [
-        "compiler Exp2 with binary32 log2(e) multiplier is ideal Exp"
+        "a binary32/binary64 literal equal to the rounded ln(2) or log2(e) of its operation's format is that exact constant in floating Add/Subtract/Multiply/Fma/Divide/Reciprocal"
       ],
       "input_contract_applied_reads": [],
-      "legacy_scalar_fallback": false,
       "mapping_input_memory_constraints": {},
       "native_context": {
         "elements": 1,
@@ -329,12 +318,12 @@
         "kind": "verified_current_fixed_input",
         "provenance_sha256": "12f77dac803d8c0c8ec3b9ff4042d6d97cdb775d99dec45bf98505d8bcf0e7e8"
       },
-      "normalized_reachable_nodes": 107497,
+      "normalized_reachable_nodes": 13262,
       "numerical_result": "verified",
-      "pattern_nodes": 616,
-      "peak_rss_kib": 4650304,
+      "pattern_nodes": 605,
+      "peak_rss_kib": 4467940,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
-      "piece_nodes": 40896,
+      "piece_nodes": 4800,
       "piece_union": {
         "abstract_optimized_replacements": 0,
         "abstract_reference_replacements": 0,
@@ -349,340 +338,57 @@
       },
       "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
       "raw_nodes": [
-        638,
-        210097
+        625,
+        30329
       ],
-      "reference_term_patterns": 292,
+      "reference_term_patterns": 262,
       "row_groups": [
         {
-          "count": 1,
+          "count": 960,
           "families": [
             [
               0,
-              0
+              959
             ]
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "state_pattern_proof": {
-              "closures": [],
-              "contribution_pieces": 0,
-              "coverage": "exact_multiplicity_one_per_closed_group",
-              "factor_choices": 5,
-              "instantiated_targets": [
-                {
-                  "count": "1",
-                  "spec": 1
-                }
-              ],
-              "method": "linear_reduction_combination_certificate",
-              "output_polynomial_terms": 0,
-              "polynomial_work": 0,
-              "preserved_partial_groups": 0,
-              "visited_nodes": 131,
-              "weighted_add_edges": 3,
-              "witness_nodes": 12
-            },
             "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.3399999999996748e-05,
-            "cumulative_elapsed_s": 0.068300273,
-            "left_import_s": 0.0004204810000000003,
-            "left_normalize_s": 0.00022196099999999275,
-            "parametric_state_s": 1.0099999999957365e-06,
-            "piece_union_record_s": 3.199999999980996e-07,
-            "piece_union_seal_s": 4.2000000000097515e-07,
-            "right_import_s": 0.011765248999999998,
-            "right_normalize_s": 0.0002780510000000014,
-            "state_pattern_s": 0.00012033000000000182,
-            "unary_reduction_s": 5.3200000000031e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              1,
-              1
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "state_pattern_proof": {
-              "closures": [],
-              "contribution_pieces": 0,
-              "coverage": "exact_multiplicity_one_per_closed_group",
-              "factor_choices": 5,
-              "instantiated_targets": [
-                {
-                  "count": "1",
-                  "spec": 3
-                }
-              ],
-              "method": "linear_reduction_combination_certificate",
-              "output_polynomial_terms": 0,
-              "polynomial_work": 0,
-              "preserved_partial_groups": 0,
-              "visited_nodes": 131,
-              "weighted_add_edges": 3,
-              "witness_nodes": 12
-            },
-            "status": "equivalent",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 9.100000000067388e-07,
-            "cumulative_elapsed_s": 0.068768715,
-            "left_import_s": 9.184099999999529e-05,
-            "left_normalize_s": 8.136000000000254e-05,
-            "parametric_state_s": 2.6000000000192536e-07,
-            "piece_union_record_s": 7.000000000478845e-08,
-            "piece_union_seal_s": 6.000000001005201e-08,
-            "right_import_s": 9.149999999999436e-06,
-            "right_normalize_s": 0.00015297100000000174,
-            "state_pattern_s": 7.722000000000284e-05,
-            "unary_reduction_s": 2.6699999999962865e-06
-          }
-        },
-        {
-          "count": 30,
-          "families": [
-            [
-              2,
-              31
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "state_pattern_proof": {
-              "closures": [],
-              "contribution_pieces": 0,
-              "coverage": "exact_multiplicity_one_per_closed_group",
-              "factor_choices": 5,
-              "instantiated_targets": [
-                {
-                  "count": "1",
-                  "spec": 3
-                }
-              ],
-              "method": "linear_reduction_combination_certificate",
-              "output_polynomial_terms": 0,
-              "polynomial_work": 0,
-              "preserved_partial_groups": 0,
-              "visited_nodes": 133,
-              "weighted_add_edges": 3,
-              "witness_nodes": 12
-            },
-            "status": "equivalent",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 2.2219999999961715e-05,
-            "cumulative_elapsed_s": 0.086358238,
-            "left_import_s": 0.001920263999999991,
-            "left_normalize_s": 0.002264035999999997,
-            "parametric_state_s": 6.7700000000586735e-06,
-            "piece_union_record_s": 1.4599999999947988e-06,
-            "piece_union_seal_s": 7.509999999655292e-07,
-            "right_import_s": 0.004738109000000032,
-            "right_normalize_s": 0.004788050999999974,
-            "state_pattern_s": 0.002359086999999996,
-            "unary_reduction_s": 5.9700000000009745e-05
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              32,
-              32
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "state_pattern_proof": {
-              "closures": [],
-              "contribution_pieces": 1,
-              "coverage": "exact_multiplicity_one_per_closed_group",
-              "factor_choices": 20,
-              "instantiated_targets": [
-                {
-                  "count": "2",
-                  "spec": 5
-                }
-              ],
-              "method": "linear_reduction_combination_certificate",
-              "output_polynomial_terms": 0,
-              "polynomial_work": 0,
-              "preserved_partial_groups": 1,
-              "visited_nodes": 168,
-              "weighted_add_edges": 4,
-              "witness_nodes": 12
-            },
-            "status": "equivalent",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 8.900000000033881e-07,
-            "cumulative_elapsed_s": 0.087392652,
-            "left_import_s": 9.660000000000224e-05,
-            "left_normalize_s": 9.212999999999583e-05,
-            "parametric_state_s": 1.7999999998852267e-07,
-            "piece_union_record_s": 6.999999999091067e-08,
-            "piece_union_seal_s": 2.999999999808711e-08,
-            "right_import_s": 0.0003271720000000006,
-            "right_normalize_s": 0.0002575609999999895,
-            "state_pattern_s": 0.0001949309999999954,
-            "unary_reduction_s": 2.3200000000000998e-06
-          }
-        },
-        {
-          "count": 1,
-          "families": [
-            [
-              33,
-              33
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "state_pattern_proof": {
-              "closures": [],
-              "contribution_pieces": 1,
-              "coverage": "exact_multiplicity_one_per_closed_group",
-              "factor_choices": 20,
-              "instantiated_targets": [
-                {
-                  "count": "2",
-                  "spec": 7
-                }
-              ],
-              "method": "linear_reduction_combination_certificate",
-              "output_polynomial_terms": 0,
-              "polynomial_work": 0,
-              "preserved_partial_groups": 1,
-              "visited_nodes": 168,
-              "weighted_add_edges": 4,
-              "witness_nodes": 12
-            },
-            "status": "equivalent",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 7.699999999971618e-07,
-            "cumulative_elapsed_s": 0.087945944,
-            "left_import_s": 4.255000000000231e-05,
-            "left_normalize_s": 7.948099999999236e-05,
-            "parametric_state_s": 2.0999999998660979e-07,
-            "piece_union_record_s": 5.999999999617422e-08,
-            "piece_union_seal_s": 2.000000000335067e-08,
-            "right_import_s": 7.220000000002225e-06,
-            "right_normalize_s": 0.00020334099999999578,
-            "state_pattern_s": 0.00016854000000000868,
-            "unary_reduction_s": 2.080000000001525e-06
-          }
-        },
-        {
-          "count": 30,
-          "families": [
-            [
-              34,
-              63
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "state_pattern_proof": {
-              "closures": [],
-              "contribution_pieces": 1,
-              "coverage": "exact_multiplicity_one_per_closed_group",
-              "factor_choices": 20,
-              "instantiated_targets": [
-                {
-                  "count": "2",
-                  "spec": 5
-                }
-              ],
-              "method": "linear_reduction_combination_certificate",
-              "output_polynomial_terms": 0,
-              "polynomial_work": 0,
-              "preserved_partial_groups": 1,
-              "visited_nodes": 170,
-              "weighted_add_edges": 4,
-              "witness_nodes": 12
-            },
-            "status": "equivalent",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 2.614099999999342e-05,
-            "cumulative_elapsed_s": 0.108865371,
-            "left_import_s": 0.0013341859999999595,
-            "left_normalize_s": 0.0023306880000000113,
-            "parametric_state_s": 5.799999999986372e-06,
-            "piece_union_record_s": 1.530000000013465e-06,
-            "piece_union_seal_s": 7.799999999780205e-07,
-            "right_import_s": 0.004466309999999987,
-            "right_normalize_s": 0.005950883999999948,
-            "state_pattern_s": 0.005241021999999998,
-            "unary_reduction_s": 5.8180000000060406e-05
-          }
-        },
-        {
-          "count": 8128,
-          "families": [
-            [
-              64,
-              8191
-            ]
-          ],
-          "record": {
-            "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
-            "status": "equivalent",
-            "total_definedness": "proved"
-          },
-          "timing_s": {
-            "affine_state_pattern_s": 0.006677444000004723,
-            "cumulative_elapsed_s": 2.494753907,
-            "left_import_s": 0.3017104519999933,
-            "left_normalize_s": 0.49213422799999756,
-            "parametric_state_s": 0.0006709030000049548,
-            "piece_union_record_s": 0.00021198099999719666,
-            "piece_union_seal_s": 0.0002046000000008319,
-            "right_import_s": 0.9824727999999865,
-            "right_normalize_s": 0.5397346380000101
+            "affine_state_pattern_s": 0.0005240629999988967,
+            "cumulative_elapsed_s": 0.334247669,
+            "left_import_s": 0.053101751999999655,
+            "left_normalize_s": 0.05303225099999964,
+            "parametric_state_s": 0.00012931099999940847,
+            "piece_union_record_s": 3.221000000034474e-05,
+            "piece_union_seal_s": 2.6769999999868774e-05,
+            "right_import_s": 0.1407880439999991,
+            "right_normalize_s": 0.07231609500000004
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 0.006741775000004682,
+        "affine_state_pattern_s": 0.0005240629999988967,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.30561637399999325,
-        "left_normalize_s": 0.49720388399999754,
-        "parametric_state_s": 0.0006851330000049727,
-        "piece_union_record_s": 0.0002154909999971949,
+        "left_import_s": 0.053101751999999655,
+        "left_normalize_s": 0.05303225099999964,
+        "parametric_state_s": 0.00012931099999940847,
+        "piece_union_record_s": 3.221000000034474e-05,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 0.0002066610000007879,
+        "piece_union_seal_s": 2.6769999999868774e-05,
         "proof_reuse_s": 0.0,
-        "right_import_s": 1.0037860099999865,
-        "right_normalize_s": 0.55136549700001,
-        "state_pattern_s": 0.008161130000000003
+        "right_import_s": 0.1407880439999991,
+        "right_normalize_s": 0.07231609500000004,
+        "state_pattern_s": 0.0
       },
       "timings": {
-        "load_and_scope_analysis": 0.038256119
+        "load_and_scope_analysis": 0.005941871
       },
-      "total_output_families": 8192,
+      "total_output_families": 960,
       "transport": "in_memory_cpp_objects",
       "unmatched_reasons": {}
     },
@@ -938,19 +644,19 @@
         "access_families": 154814,
         "affine_member_rows": 839796,
         "candidate_relations": 357296,
-        "hb_frontier_pieces": 15078,
+        "hb_frontier_pieces": 15539,
         "hb_member_enumerations": 0,
         "logical_accesses": 437248
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 62,
+      "hb_batches": 16,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 473147,
+      "hb_edge_visits": 459529,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 553472,
-      "hb_query_seconds": 0.134875521,
+      "hb_query_seconds": 0.19423265700000003,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -958,7 +664,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 4543.2890625,
+    "peak_footprint_mib": 4365.03125,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -1073,48 +779,48 @@
         "construction_collections": 5,
         "diagnostics": [],
         "output_count": 4096,
-        "output_families_merged": 0,
-        "output_family_count": 4096,
-        "output_root_count": 4096,
-        "peak_construction_nodes": 995978,
-        "shared_view_projection_hits": 1195648,
+        "output_families_merged": 3616,
+        "output_family_count": 480,
+        "output_root_count": 480,
+        "peak_construction_nodes": 989032,
+        "shared_view_projection_hits": 1192672,
         "source_outputs": 4096,
-        "spatial_families_projected": 128,
-        "spatial_outputs_projected": 4096,
+        "spatial_families_projected": 4,
+        "spatial_outputs_projected": 128,
         "spatial_template_operations": 0,
         "statistics": {
-          "constants": 16182,
-          "edges": 354850,
-          "folds": 39488,
-          "indices": 2,
-          "initial_cells": 24262,
-          "logical_iterations": 1415584,
+          "constants": 2659,
+          "edges": 50172,
+          "folds": 4744,
+          "indices": 3,
+          "initial_cells": 3682,
+          "logical_iterations": 151728,
           "logical_iterations_overflow": false,
           "max_fold_nesting": 2,
-          "nodes": 205998,
-          "nodes_before_final_collection": 932383,
-          "nodes_reclaimed": 2639861,
-          "operations": 126064,
+          "nodes": 29847,
+          "nodes_before_final_collection": 931037,
+          "nodes_reclaimed": 2816361,
+          "operations": 18759,
           "parameters": 0,
-          "range_descriptions": 39488,
-          "storage_nodes": 205998,
-          "unique_fold_bodies": 31680
+          "range_descriptions": 4744,
+          "storage_nodes": 29847,
+          "unique_fold_bodies": 3872
         }
       },
       "serialization": {
         "action_patterns": 315830,
         "binding_patterns": 315830,
         "domain_refinements": 1585894,
-        "elapsed_seconds": 3.072514699,
+        "elapsed_seconds": 3.126357988,
         "event_families": 278484,
         "expanded_event_records": 0,
         "largest_batch_members": 96,
         "logical_actions": 374784,
         "logical_events": 8198948,
-        "peak_rss_mib_at_completion": 1954.15234375,
+        "peak_rss_mib_at_completion": 1926.23046875,
         "reachability_queries": 0,
         "relations": 2102822,
-        "rss_mib_at_completion": 1153.82421875,
+        "rss_mib_at_completion": 1125.70703125,
         "scheduled_batches": 278484,
         "singleton_batches": 38692,
         "value_families": 253784
@@ -1126,13 +832,13 @@
     "value_ir_instance_count": 5815937,
     "value_ir_node_count": 228893,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 3.537112533,
+    "verification_elapsed_seconds": 3.666427018,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 4543.2890625,
-  "pipeline_elapsed_seconds": 48.290497345,
+  "peak_rss_mib": 4365.03125,
+  "pipeline_elapsed_seconds": 43.893943516,
   "result": "verified",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -1141,6 +847,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.505
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.482
 }

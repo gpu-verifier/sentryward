@@ -40,7 +40,7 @@ class IndexedSourceIdentity final {
       if(node.binding) {
         const auto& b=*node.binding;
         field(value_key_(b.leaf));number(b.base);number(b.stride);number(b.fixed);
-        number(b.producer_uses_bindings);number(b.period);number(b.outer_stride);
+        number(b.producer_uses_bindings);number(b.period);number(b.outer_stride);number(b.region_fragment);number(b.addend);
         number(bool(b.producer));if(b.producer)field(value_key_(*b.producer));
         number(bool(b.numerical_field));if(b.numerical_field)field(b.numerical_field->toString());
         number(bool(b.initial));

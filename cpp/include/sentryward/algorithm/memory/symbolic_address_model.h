@@ -39,8 +39,11 @@ inline std::string TensorPropertyFunctionSymbol(std::string_view object, std::st
 }
 
 struct SymbolicSolverOptions final {
-  // Budget per pair across its environment and overlap checks; must be positive.
-  unsigned timeout_ms = 100;
+  // Budget per pair across its environment and overlap checks, in z3 resource units (the solver
+  // parameter "rlimit"); must be positive. A step count, not a time limit, so the answer does not
+  // depend on machine load. The default is above the 73,049 units of the largest pair the
+  // examples resolved when this budget was calibrated.
+  unsigned rlimit = 100000;
 
   friend bool operator==(const SymbolicSolverOptions&, const SymbolicSolverOptions&) = default;
 };
@@ -86,7 +89,8 @@ class SymbolicAddressModel final : public MemoryModel {
                                 std::string_view address_invariants = "[]",
                                 SymbolicSolverOptions solver = {},
                                 std::size_t cache_capacity = 4096,
-                                std::string_view tensor_properties = "[]");
+                                std::string_view tensor_properties = "[]",
+                                std::string_view table_atoms = "[]");
   ~SymbolicAddressModel() override;
   SymbolicAddressModel(SymbolicAddressModel&&) noexcept;
   SymbolicAddressModel& operator=(SymbolicAddressModel&&) noexcept;
@@ -118,6 +122,9 @@ class SymbolicAddressModel final : public MemoryModel {
   // bindings. Unknown when either footprint has another suffix or is not affine.
   [[nodiscard]] OverlapResult translatedFamilyOverlap(const MemoryAccessFamily& a, const FamilyFootprint& x,
                                                       const MemoryAccessFamily& b, const FamilyFootprint& y) override;
+  // A table lookup's exact value at `arg` (class mode's fixed tables, `table_atoms`).
+  [[nodiscard]] std::optional<address_solver::Int> lookupValue(const GatherTerm& term,
+                                                               address_solver::Int arg) override;
   [[nodiscard]] SymbolicAddressStats stats() const noexcept;
   // Whether this build links an SMT backend, and its name ("z3" or "unavailable").
   [[nodiscard]] static bool SolverAvailable() noexcept;

@@ -65,6 +65,11 @@ struct IndexedSourceDomain final {
   std::size_t count = 1;
   std::shared_ptr<const IndexedSource> source;
   std::size_t result_stride = 1;
+  // A two-axis domain (PureSourceTemplates grid families; only on request): outer_count rows
+  // of `count` records. Record (o, i) is the record at begin + o*outer_stride + i*result_stride,
+  // with (count-1)*result_stride < outer_stride, and is source member o*count + i.
+  // outer_count 1 is the one-axis domain above.
+  std::size_t outer_count = 1, outer_stride = 0;
 };
 // A byte slice of an existing operand. Used for native register fragments;
 // no temporary Value nodes or per-output scalar expressions are constructed.
@@ -99,6 +104,14 @@ std::shared_ptr<const IndexedSourceUse> bindSourceUse(
 std::vector<IndexedSourceDomain> mapSourceTemplates(
     const value_ir::Graph&, std::span<const value_ir::Value>, bool interleaved = false,
     std::span<const std::uint64_t> payload_offsets = {});
+// A hash key of the fields that value_ir::Value's operator== compares by value: node, member and
+// result, and its annotations (component indices, conversion kind / target element kind / source,
+// pointer presence, thread selector), recursively to a bounded depth (deeper annotations are left
+// out, which only merges keys). Equal Values have equal keys. The matcher's selector-domain fact
+// tables use it to bucket their entries, so differently annotated uses of one node member (lane
+// selections of a vote, their conversions) are not scanned linearly on every lookup; each entry is
+// still compared with ==. O(annotation size up to that depth).
+std::size_t annotatedValueKey(const value_ir::Value&, unsigned depth = 0);
 // One normalization pass owns one matcher. Raw read substitutions and the
 // Value graph must remain immutable; normalized views may be added separately.
 // Source interval indices and resolved slices are reused across prefix matches.

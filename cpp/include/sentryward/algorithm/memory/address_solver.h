@@ -56,10 +56,11 @@ struct Answer final {
 class Solver {
  public:
   virtual ~Solver() = default;
-  // Both checks share the budget. Implementations never throw.
-  [[nodiscard]] virtual Answer solve(const Query& query, unsigned timeout_ms) = 0;
+  // Both checks share the budget, a positive number of solver resource units (z3's "rlimit"):
+  // deterministic, unlike a time limit. Implementations never throw.
+  [[nodiscard]] virtual Answer solve(const Query& query, unsigned rlimit) = 0;
   // Environment-only satisfiability, used to reject inconsistent invariants.
-  [[nodiscard]] virtual Verdict consistent(const Query& query, unsigned timeout_ms) = 0;
+  [[nodiscard]] virtual Verdict consistent(const Query& query, unsigned rlimit) = 0;
 };
 
 // Null when the build has no SMT backend; callers then return Unknown.

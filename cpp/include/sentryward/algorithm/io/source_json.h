@@ -56,10 +56,12 @@ struct SourceArtifact final {
   std::string frontend_assumptions_json = "{}";
   std::string mma_operand_ordering_json = "{}";
   // Address-invariant environment Gamma (JSON array) and per-pair SMT budget
-  // for the symbolic address model.
+  // (z3 resource units) for the symbolic address model.
   std::string address_invariants_json = "[]";
   // Normalized tensor_properties records (frontend fixed_input.tensor_property_inputs).
   std::string tensor_properties_json = "[]";
+  // Class mode's fixed tables whose table atoms the program's lookups name (TableValuation).
+  std::string table_atoms_json = "[]";
   SymbolicSolverOptions address_solver;
 };
 

@@ -226,7 +226,7 @@
             50248,
             50983
           ],
-          "total": 5352,
+          "total": 13576,
           "truncated": true
         },
         "executed": {
@@ -275,7 +275,7 @@
         "truncated": false
       }
     },
-    "provenance_events_total": 1458176,
+    "provenance_events_total": 1466400,
     "rejection": {
       "blocked": {
         "events": [
@@ -312,7 +312,7 @@
           50248,
           50983
         ],
-        "total": 5352,
+        "total": 13576,
         "truncated": true
       },
       "executed": {
@@ -922,12 +922,12 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
-      "edges": 4716112,
-      "events": 1458176,
-      "instructions": 255656,
+      "edges": 4728440,
+      "events": 1466400,
+      "instructions": 259760,
       "threads": 4096
     },
     "equivalence": {
@@ -955,30 +955,13 @@
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "unsupported_async_copy",
-            "details": {
-              "cta": 0,
-              "instruction": "cp.async.ca.shared.global.L2::128B [%r190], [%rd34], 8, %r191;",
-              "instruction_index": 3181,
-              "location": {
-                "file": "corpus/flashmla__flashmla_sm100_sparse_decode_v41_h128_no_split__sm_100a.ptx",
-                "line": 14728
-              },
-              "occurrence": 0,
-              "thread": 353
-            },
-            "message": "cp.async source size or ignore-source is data-dependent; its zero-filled destination is not modeled in the value analysis",
-            "stage": "value_lowering"
-          }
-        ],
-        "first_unavailable_reason": "memory occurrence has no value node",
+        "diagnostics": [],
+        "first_unavailable_reason": "",
         "queries": 256,
-        "resolved": 0,
+        "resolved": 256,
         "source": "value_lowering",
-        "unavailable": 256,
-        "value_view_complete": false
+        "unavailable": 0,
+        "value_view_complete": true
       },
       "cluster_completion_joins": 12,
       "cta_count": 8,
@@ -1172,7 +1155,7 @@
           "source": "declaration"
         }
       ],
-      "lowered_instruction_count": 255656,
+      "lowered_instruction_count": 259760,
       "mma_refinement": {
         "blocked": [],
         "discharged": 96
@@ -1335,13 +1318,13 @@
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
-        "logical_instructions": 255656,
-        "stored_bindings": 32960
+        "logical_instructions": 259760,
+        "stored_bindings": 37064
       },
       "source_edge_storage": {
-        "binding_templates": 4497,
-        "logical_edges": 251560,
-        "stored_bindings": 4520
+        "binding_templates": 4769,
+        "logical_edges": 255664,
+        "stored_bindings": 4792
       },
       "tcgen_copy_refinement": {
         "blocked": [],
@@ -1371,9 +1354,9 @@
     "memory_analysis_complete": false,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 789.7734375,
-    "required_order_domains": 11912,
-    "required_orders": 577952,
+    "peak_footprint_mib": 1431.828125,
+    "required_order_domains": 15448,
+    "required_orders": 581488,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
       "clc_always_fails": true,
@@ -1384,31 +1367,20 @@
       "representative_election": true
     },
     "semantic_program": {
-      "binding_diagnostic_count": 1,
-      "binding_diagnostics": [
-        {
-          "code": "incomplete_value_semantics",
-          "message": "unsupported_async_copy: cp.async source size or ignore-source is data-dependent; its zero-filled destination is not modeled in the value analysis"
-        }
-      ],
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
       "execution_cohorts": 304,
-      "mapping_complete": false,
-      "memory_binding_stored_rows": 0,
-      "memory_binding_templates": 0,
-      "memory_bindings": 0,
-      "memory_linking_templates_used": false,
-      "synchronization_groups": 7352,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 638860,
+      "memory_binding_templates": 28992,
+      "memory_bindings": 815720,
+      "memory_linking_templates_used": true,
+      "synchronization_groups": 7508,
       "synchronization_groups_materialized": true,
-      "synthetic_synchronization_nodes": 212,
-      "thread_prefix_groups": 5452,
-      "value_diagnostic_count": 1,
-      "value_diagnostics": [
-        {
-          "code": "unsupported_async_copy",
-          "line": 14728,
-          "message": "cp.async source size or ignore-source is data-dependent; its zero-filled destination is not modeled in the value analysis"
-        }
-      ]
+      "synthetic_synchronization_nodes": 220,
+      "thread_prefix_groups": 583036,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": []
     },
     "source_violations": [],
     "stage": "synchronization_check",
@@ -1473,20 +1445,20 @@
         ]
       }
     },
-    "value_ir_instance_count": 85018,
-    "value_ir_node_count": 3141,
-    "value_view_complete": false
+    "value_ir_instance_count": 7937608,
+    "value_ir_node_count": 495212,
+    "value_view_complete": true
   },
-  "peak_rss_mib": 789.7734375,
-  "pipeline_elapsed_seconds": 4.326134143,
+  "peak_rss_mib": 1431.828125,
+  "pipeline_elapsed_seconds": 6.965206025,
   "result": "not_wellsynced",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
   "verification_limitations": [],
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.465
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.454
 }

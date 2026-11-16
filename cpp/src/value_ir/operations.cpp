@@ -59,6 +59,8 @@ void validateArithmetic(const ArithmeticAttributes& attributes, const ValueType&
   require(!attributes.saturate || permits_saturation, "saturation is invalid on this operation");
   require(!attributes.propagate_nan || (permits_nan && type.element().kind()==ElementKind::Floating),
           "NaN propagation requires floating Minimum or Maximum");
+  require(!attributes.lane_own || type.element().kind() == ElementKind::Predicate,
+          "a lane's own term requires a predicate BitOr or BitAnd");
 }
 void printArithmetic(std::ostream& output, const ArithmeticAttributes& attributes) {
   if (attributes.rounding != RoundingMode::None) output << "rounding=" << roundingName(attributes.rounding) << ' ';
@@ -66,6 +68,7 @@ void printArithmetic(std::ostream& output, const ArithmeticAttributes& attribute
   if (attributes.saturate) output << "saturate ";
   if (attributes.flush_to_zero) output << "flush_to_zero ";
   if (attributes.propagate_nan) output << "propagate_nan ";
+  if (attributes.lane_own) output << "lane_own ";
 }
 void validatePermutation(std::span<const std::uint32_t> axes, std::size_t rank) {
   require(axes.size() == rank, "permutation must match matrix rank");
@@ -150,6 +153,7 @@ void printMemory(std::ostream& output, const MemoryAttributes& attributes) {
   for (const auto& modifier : attributes.native_modifiers) output << '.' << modifier;
   if (attributes.guarded) output << " guarded";
   if (attributes.region_offset) output << " region_offset=" << *attributes.region_offset;
+  if (attributes.region_exact) output << " region_exact";
   if (attributes.reduction)
     output << " reduction=" << attributes.reduction->operation << '.' << attributes.reduction->element.toString();
   if (attributes.layout) {
@@ -270,6 +274,8 @@ BinaryOp::BinaryOp(BinaryOpcode opcode, ValueType type, ArithmeticAttributes att
                      opcode == BinaryOpcode::Add || opcode == BinaryOpcode::Subtract ||
                      opcode == BinaryOpcode::Multiply,
                      opcode == BinaryOpcode::Minimum || opcode == BinaryOpcode::Maximum);
+  require(!attributes.lane_own || opcode == BinaryOpcode::BitOr || opcode == BinaryOpcode::BitAnd,
+          "a lane's own term requires a predicate BitOr or BitAnd");
 }
 std::string_view BinaryOp::name() const noexcept {
   switch (opcode_) {

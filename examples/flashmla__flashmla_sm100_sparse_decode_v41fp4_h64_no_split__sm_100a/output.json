@@ -56,20 +56,27 @@
       "key": "floating_values_in_range",
       "label": "Floating values stay in range",
       "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
-      "triggered": null
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "incomplete",
+    "equivalence": "passed",
     "synchronization": "passed"
   },
   "diagnostics": [
     {
-      "code": "expression_node_limit_exceeded",
+      "code": "total_definedness_not_proven",
       "details": {
-        "internal_stage": "value_analysis.scalar_fold"
+        "access_validity": "no_unresolved_symbolic_byte_reads",
+        "definedness": {
+          "nonfinite_identity_families": 4,
+          "partial_equivalence_families": 0,
+          "proved_families": 32,
+          "status": "not_proven"
+        },
+        "equivalent_families": 36,
+        "internal_stage": "equivalence_check"
       },
-      "message": "scalar graph node limit exceeded",
       "stage": "equivalence"
     }
   ],
@@ -210,61 +217,2094 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
-      "edges": 4640876,
-      "events": 1516680,
-      "instructions": 202196,
-      "memory_accesses": 1210532,
-      "threads": 1536
+      "edges": 1160219,
+      "events": 379170,
+      "instructions": 50549,
+      "memory_accesses": 302633,
+      "threads": 384
     },
     "equivalence": {
-      "diagnostics": [
-        {
-          "code": "expression_node_limit_exceeded",
-          "message": "scalar graph node limit exceeded",
-          "stage": "value_analysis.scalar_fold"
-        }
-      ],
-      "expression_diagnostic": {
-        "construction_collections": 35,
-        "diagnostic": {
-          "code": "expression_node_limit_exceeded",
-          "instance": 0,
-          "instruction": "st.weak.shared::cta.b128 [%r2810], %rq65;",
-          "line": 19361,
-          "message": "scalar graph node limit exceeded",
-          "value_node": 126944
-        },
-        "diagnostics": [
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 2360642,
+      "comparison_elapsed_seconds": 136.921865091,
+      "context_declaration": {
+        "assumptions": [
           {
-            "code": "expression_node_limit_exceeded",
-            "details": {
-              "instance": 0,
-              "instruction": "st.weak.shared::cta.b128 [%r2810], %rq65;",
-              "line": 19361,
-              "resource": {
-                "kind": "expression_node_limit_exceeded",
-                "origin": "algorithm_budget"
-              },
-              "value_node": 126944
+            "finite": true,
+            "input": "KV",
+            "interpretation": "e8m0",
+            "kind": "input_elements",
+            "reason": "Additional decoded finite-scale premise (analysis scope); exact e8m0 interpretation, not generic uint8 finiteness. The 16 ue8m0 scale bytes of every 528-byte V4.1 fp8 token (bytes 512..527: 512 e4m3 data bytes, then the scales) are not NaN; the data bytes are not covered.",
+            "region": {
+              "byte_count": 16,
+              "first_byte": 512,
+              "kind": "record_bytes",
+              "offset_bytes": 0,
+              "record_stride_bytes": 528
+            }
+          },
+          {
+            "input": "extra_indices",
+            "interpretation": "s32",
+            "interval": {
+              "lower": "-1",
+              "lower_inclusive": true,
+              "upper": "2159",
+              "upper_inclusive": true
             },
-            "message": "scalar graph node limit exceeded",
-            "stage": "pipeline"
+            "kind": "input_elements",
+            "reason": "tensor_properties"
+          },
+          {
+            "input": "indices",
+            "interpretation": "s32",
+            "interval": {
+              "lower": "-1",
+              "lower_inclusive": true,
+              "upper": "3119",
+              "upper_inclusive": true
+            },
+            "kind": "input_elements",
+            "reason": "tensor_properties"
+          },
+          {
+            "input": "topk_length",
+            "interpretation": "s32",
+            "interval": {
+              "lower": "0",
+              "lower_inclusive": true,
+              "upper": "64",
+              "upper_inclusive": true
+            },
+            "kind": "input_elements",
+            "reason": "tensor_properties"
           }
         ],
-        "partial_node_count": 1999972,
-        "partial_output_count": 592,
-        "peak_construction_nodes": 2000001,
-        "resource": {
-          "kind": "expression_node_limit_exceeded",
-          "origin": "algorithm_budget"
-        },
-        "shared_view_projection_hits": 2132519,
-        "source_outputs": 11264
+        "fixed_inputs": [],
+        "inputs": [],
+        "predicate_nodes": []
       },
-      "stage": "value_analysis.scalar_fold"
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 77403443,
+        "affine_output_decline_dispatcher_predicate": 2,
+        "affine_state_banks": 1,
+        "bit_slice_local_compositions": 16,
+        "byte_case_equalities": 8704,
+        "call_definition_node_visits": 1429,
+        "canonical_domain_invariant_reuse": 125852,
+        "canonical_domain_rebind_cache_hits": 56614,
+        "canonical_domain_rebind_nodes": 186607,
+        "canonical_factor_visits": 449944,
+        "canonical_node_visits": 228512,
+        "canonical_sum_factor_pulls": 8192,
+        "canonical_sum_initials": 15360,
+        "case_restricted_bodies": 6144,
+        "certified_state_pattern_cache_hits": 114,
+        "certified_state_pattern_decline_nonplain_pattern": 3,
+        "certified_state_pattern_decline_slot_domain": 19,
+        "certified_state_pattern_work": 64,
+        "coefficient_normalizations": 16,
+        "condition_decided_select_comparisons": 256,
+        "constant_binary32_bitcasts": 1304,
+        "constant_bit_extracts": 16,
+        "constant_bit_mask_folds": 128,
+        "coordinate_sum_constraints_checked": 20480,
+        "coverage_polynomial_peak": 2,
+        "coverage_polynomial_visits": 196968,
+        "derived_coordinate_constraints_checked": 62400,
+        "disjoint_integer_or_fields": 10144,
+        "disjoint_sum_field_slices": 24576,
+        "dynamic_record_lanes": 9216,
+        "ep_body_anchor_edges": 45398400,
+        "ep_body_anchor_limited": 40640,
+        "ep_body_anchor_nodes": 19849414,
+        "ep_body_bound_plain_read_hits": 32768,
+        "ep_body_bound_read_exact_hits": 109760,
+        "ep_body_bound_read_index_hits": 136432,
+        "ep_body_bound_read_matcher_fallbacks": 32768,
+        "ep_body_call_rebuilds": 35384,
+        "ep_body_candidate_budget": 25,
+        "ep_body_constant_ratios": 10240,
+        "ep_body_coordinate_rebuilds": 2161614,
+        "ep_body_decided_select_arms": 138568,
+        "ep_body_deferred_anchor_retries": 496832,
+        "ep_body_deferred_call_anchors": 1598557,
+        "ep_body_deferred_unmatched_anchors": 1450869,
+        "ep_body_excluded_arm_anchors": 863178,
+        "ep_body_fold_scope_boundaries": 4526536,
+        "ep_body_instance_cache_entries": 158240,
+        "ep_body_instance_cache_hits": 4252534,
+        "ep_body_instantiation_declines": 27184,
+        "ep_body_missing_opaque_read": 55856,
+        "ep_body_missing_opaque_readbits": 632496,
+        "ep_body_obligations": 48696,
+        "ep_body_pattern_anchor_cache_hits": 2439334,
+        "ep_body_payload_summary_nodes": 237868,
+        "ep_body_predicate_rebuilds": 606788,
+        "ep_body_proofs": 27648,
+        "ep_body_read_anchor_rejections": 2902806,
+        "ep_body_read_match_cache_entries": 73984,
+        "ep_body_read_match_cache_hits": 584444,
+        "ep_body_select_rebuilds": 116936,
+        "ep_body_target_anchor_cache_hits": 2184218,
+        "ep_body_target_read_index_builds": 17596,
+        "ep_body_target_read_index_nodes": 194350856,
+        "ep_body_twin_bodies": 27184,
+        "ep_body_twin_reads": 27184,
+        "ep_cross_products": 224,
+        "ep_decline_cached_terms": 172,
+        "ep_decline_nonfinite_or_undefined": 12,
+        "ep_fraction_proofs": 32,
+        "ep_polynomial_proofs": 4,
+        "ep_reduction_outer_obligations": 32,
+        "ep_scalar_attempts": 74904,
+        "ep_scalar_proofs": 36,
+        "exact_e2m1_decodes": 36864,
+        "exact_exponential_base_changes": 12,
+        "exact_natural_log2_factor_rewrites": 36,
+        "exact_proof_reuse_certificates": 32,
+        "exact_proof_reuse_orientation_declines": 4,
+        "finite_bilinear_banks": 1,
+        "finite_e8m0_nan_branches_eliminated": 72,
+        "finite_state_reuse_banks": 1,
+        "floating_lane_transport_visits": 19712,
+        "fold_alpha_root_cache_hits": 870589,
+        "fold_alpha_signature_edges": 1105938,
+        "fold_alpha_signatures": 542213,
+        "fold_alpha_states": 549484,
+        "fp_idiom_power_constructions": 0,
+        "fp_idiom_rm_producers": 0,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_rounded_constants": 16,
+        "imported_context_nodes": 523572,
+        "importer_occurrence_binder_hits": 65612,
+        "importer_scope_banks": 2,
+        "importer_scope_binder_hits": 1,
+        "importer_scope_binders_created": 3,
+        "importer_scope_leaf_lookups": 4,
+        "importer_scope_nested_body_fallbacks": 80,
+        "infinity_constant_comparisons": 64,
+        "input_contract_region_covered_reads": 1168,
+        "input_index_radix_followups": 64,
+        "input_index_radix_quotients": 208,
+        "intern_requests": 757775399,
+        "known_bits_cache_hits": 5331518,
+        "known_bits_edges": 555470,
+        "known_bits_nodes": 444940,
+        "linear_reduction_atom_proofs": 4,
+        "linear_reduction_atoms_with_residual": 32,
+        "linear_reduction_case_alias_truths": 304,
+        "linear_reduction_case_aliased_comparisons": 772,
+        "linear_reduction_case_aliased_logarithms": 8,
+        "linear_reduction_case_finite_logarithm_comparisons": 4,
+        "linear_reduction_case_inherited_fact_declines": 96,
+        "linear_reduction_case_logarithm_products": 4,
+        "linear_reduction_case_nonfinite_identities": 4,
+        "linear_reduction_case_nonnegative_zero_tests": 32,
+        "linear_reduction_case_split_cases": 496,
+        "linear_reduction_case_split_declines": 104,
+        "linear_reduction_case_split_merges": 16,
+        "linear_reduction_case_split_outputs": 32,
+        "linear_reduction_chain_implication_cases": 752,
+        "linear_reduction_chain_lemma_declines": 144,
+        "linear_reduction_chain_output_declines": 36,
+        "linear_reduction_closed_groups": 32,
+        "linear_reduction_decline_distribution_budget": 32,
+        "linear_reduction_distributed_products": 9776,
+        "linear_reduction_distribution_budget_declines": 32,
+        "linear_reduction_factored_weight_retries": 32,
+        "linear_reduction_factored_weighted_sums": 64,
+        "linear_reduction_flat_maxima_outputs": 16,
+        "linear_reduction_light_case_proofs": 36,
+        "linear_reduction_local_form_merges": 16,
+        "linear_reduction_pattern_attempts": 64,
+        "linear_reduction_pattern_proofs": 32,
+        "linear_reduction_preserved_partial_groups": 0,
+        "linear_reduction_reduction_atoms": 104,
+        "linear_reduction_target_closures": 5312,
+        "linear_reduction_vote_zero_one_readings": 16384,
+        "linear_reduction_weighted_add_edges": 37408,
+        "linear_reduction_weighted_states": 671064,
+        "local_coordinate_matches": 35376,
+        "local_index_bound_comparisons": 1,
+        "local_index_cuts": 3,
+        "local_index_flat_maxima": 12,
+        "local_index_offset_quotients": 6144,
+        "local_index_recombinations": 3584,
+        "local_index_sorted_extended_sums": 1116,
+        "local_pattern_candidates": 8209412,
+        "local_read_twin_hits": 27184,
+        "logarithm_product_splits": 4,
+        "mask_resolved_matches": 2048,
+        "mask_resolved_products": 224800,
+        "masked_boolean_condition_canonicalizations": 22660,
+        "masked_exponent_closure_nodes": 5164672,
+        "masked_exponent_closure_queries": 7680,
+        "masked_exponent_closure_reuses": 5632,
+        "masked_exponent_closures": 7168,
+        "masked_exponent_mask_resolutions": 7168,
+        "masked_exponential_coefficient_proofs": 7168,
+        "masked_exponential_finite_offsets": 2560,
+        "masked_exponential_normalizations": 1280,
+        "masked_exponential_scaled_sums": 1280,
+        "masked_exponential_unmatched_score_terms": 6144,
+        "masked_residual_mask_resolutions": 6144,
+        "masked_sum_prefix_queries": 49272,
+        "match_coordinate_cases": 2048,
+        "maximum_dominated_operands": 128,
+        "neginf_max_condition_scans": 8,
+        "neginf_max_guard_resolutions": 12,
+        "neginf_max_zero_selects": 16,
+        "neginf_sum_conditions": 4,
+        "nested_remainder_terms": 1192,
+        "normalization_cache_context_changes": 34,
+        "normalization_node_visits": 3806476,
+        "offset_multiple_quotients": 97532,
+        "packed_disjoint_sum_bits": 928,
+        "packed_predicate_bits": 144,
+        "packed_predicate_masks": 224,
+        "packed_radix_probes": 1148,
+        "packed_radix_rewrites": 208,
+        "packed_transport_visits": 61440,
+        "parameterized_affine_coordinate_captures": 30720,
+        "parameterized_bit_extracts": 9216,
+        "parametric_state_attempts": 0,
+        "pattern_branch_states": 152016,
+        "pattern_build_peak_nodes": 66,
+        "pattern_build_unique_nodes": 5972,
+        "pattern_node_visits": 7261494,
+        "positive_mask_scale_normalizations": 1284,
+        "predicate_boolean_complements": 31444,
+        "predicate_integer_affine_normalizations": 52311,
+        "predicate_scaled_boolean_zero": 96,
+        "premise_e8m0_byte_bitcasts": 36864,
+        "premise_e8m0_constant_bytes": 4,
+        "premise_e8m0_selected_bytes": 2304,
+        "premise_e8m0_storage_bytes": 1024,
+        "proved_select_arms_imported": 4096,
+        "record_lane_interleaved_templates": 2560,
+        "record_lane_templates_verified": 5120,
+        "remainder_axis_candidate_forks": 24544,
+        "replicated_copy_slices": 9984,
+        "select_complementary_polarities": 58860,
+        "select_equal_arm_declines": 10384,
+        "select_floating_bitcasts": 3072,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_calls": 1742052,
+        "select_max_probe_temporary_nodes": 0,
+        "sentinel_clamp_selects": 144,
+        "shifted_byte_view_slices": 4096,
+        "signed_word_select_arms": 384,
+        "signed_word_sign_queries": 32,
+        "sliced_selection_bitcasts": 36864,
+        "sliced_shifted_selections": 4096,
+        "sum_witness_coordinate_nodes": 32,
+        "summary_bind_nodes": 175104,
+        "summary_concat_nodes": 190808,
+        "symbolic_byte_permutes": 512,
+        "symbolic_byte_reads_without_extent_proof": 0,
+        "typed_e2m1_decode_cache_hits": 16384,
+        "typed_e8m0_initial_decodes": 1024,
+        "typed_word_high_half_predicates": 128,
+        "typed_word_predicates": 128,
+        "unary_reduction_composition_attempts": 36,
+        "unary_reduction_composition_context_changes": 34,
+        "word_shift_range_transfers": 14336,
+        "zero_extensions": 40
+      },
+      "definedness": {
+        "nonfinite_identity_families": 4,
+        "partial_equivalence_families": 0,
+        "proved_families": 32,
+        "status": "not_proven"
+      },
+      "diagnostics": [
+        {
+          "code": "total_definedness_not_proven",
+          "details": {
+            "access_validity": "no_unresolved_symbolic_byte_reads",
+            "definedness": {
+              "nonfinite_identity_families": 4,
+              "partial_equivalence_families": 0,
+              "proved_families": 32,
+              "status": "not_proven"
+            },
+            "equivalent_families": 36
+          },
+          "stage": "equivalence_check"
+        }
+      ],
+      "elapsed_s": 132.793460549,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 289542,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 11429,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 179318,
+          "unique_query_nodes": 0
+        },
+        "query_count": 74904,
+        "reset_s": 0.0,
+        "reuse_cache": true,
+        "shared_evictions": 187
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 4,
+        "fixed_input_elements": 0,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 36,
+      "failure_expression_samples": {
+        "failed_families": 0,
+        "omitted_families": 0,
+        "render_byte_limit_per_side": 4096,
+        "sample_limit": 8,
+        "sampled_families": 0
+      },
+      "finished_families": 36,
+      "idealizations_applied": [
+        "a binary32/binary64 literal equal to the rounded ln(2) or log2(e) of its operation's format is that exact constant in floating Add/Subtract/Multiply/Fma/Divide/Reciprocal"
+      ],
+      "input_contract": [
+        {
+          "element_type": "e8m0",
+          "finite": true,
+          "object": "KV",
+          "region": {
+            "byte_count": 16,
+            "first_byte": 512,
+            "kind": "record_bytes",
+            "offset_bytes": 0,
+            "record_stride_bytes": 528
+          },
+          "source": "Additional decoded finite-scale premise (analysis scope); exact e8m0 interpretation, not generic uint8 finiteness. The 16 ue8m0 scale bytes of every 528-byte V4.1 fp8 token (bytes 512..527: 512 e4m3 data bytes, then the scales) are not NaN; the data bytes are not covered."
+        },
+        {
+          "element_type": "s32",
+          "max_inclusive": 2159,
+          "min_inclusive": -1,
+          "object": "extra_indices",
+          "region": "whole_object",
+          "source": "tensor_properties"
+        },
+        {
+          "element_type": "s32",
+          "max_inclusive": 3119,
+          "min_inclusive": -1,
+          "object": "indices",
+          "region": "whole_object",
+          "source": "tensor_properties"
+        },
+        {
+          "element_type": "s32",
+          "max_inclusive": 64,
+          "min_inclusive": 0,
+          "object": "topk_length",
+          "region": "whole_object",
+          "source": "tensor_properties"
+        }
+      ],
+      "input_contract_applied_reads": [
+        {
+          "element_type": "e8m0",
+          "object": "KV",
+          "side": "left"
+        },
+        {
+          "element_type": "s32",
+          "object": "extra_indices",
+          "side": "left"
+        },
+        {
+          "element_type": "s32",
+          "object": "indices",
+          "side": "left"
+        },
+        {
+          "element_type": "s32",
+          "object": "topk_length",
+          "side": "left"
+        },
+        {
+          "element_type": "e8m0",
+          "object": "KV",
+          "side": "right"
+        },
+        {
+          "element_type": "s32",
+          "object": "extra_indices",
+          "side": "right"
+        },
+        {
+          "element_type": "s32",
+          "object": "indices",
+          "side": "right"
+        },
+        {
+          "element_type": "s32",
+          "object": "topk_length",
+          "side": "right"
+        }
+      ],
+      "mapping_input_memory_constraints": {},
+      "native_context": null,
+      "normalized_reachable_nodes": 174206,
+      "numerical_result": "verified",
+      "pattern_nodes": 1300,
+      "peak_rss_kib": 3539388,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 563208,
+      "piece_union": {
+        "abstract_optimized_replacements": 0,
+        "abstract_reference_replacements": 0,
+        "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+        "collected_pieces": 0,
+        "late_certificates": "accepted_until_each_schema_is_complete",
+        "method": "complete_output_equalities_with_finite_piece_union",
+        "replacements": 0,
+        "schemas": [],
+        "stored_dag_work": 0,
+        "work_limit": 2000000
+      },
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        725,
+        513828
+      ],
+      "reference_term_patterns": 44,
+      "row_groups": [
+        {
+          "count": 1,
+          "families": [
+            [
+              0,
+              0
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#986137,mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),),),exp2[](mul[,-1](max[](max#991061,max#991081,),),),)",
+                  "count": "128",
+                  "spec": 6
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.3151000000165567e-05,
+            "cumulative_elapsed_s": 27.745484798,
+            "left_import_s": 0.0022651880000000013,
+            "left_normalize_s": 0.0008612260000000482,
+            "parametric_state_s": 1.160000000055561e-06,
+            "piece_union_record_s": 6.399999996631323e-07,
+            "piece_union_seal_s": 4.0000000023354687e-07,
+            "right_import_s": 3.657482837,
+            "right_normalize_s": 1.6555077100000002,
+            "state_pattern_s": 22.10120712,
+            "unary_reduction_s": 6.860000000052935e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              1,
+              1
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#986137,mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),),),exp2[](mul[,-1](max[](max#991061,max#991081,),),),)",
+                  "count": "128",
+                  "spec": 8
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 4.920000002073266e-06,
+            "cumulative_elapsed_s": 29.823724407,
+            "left_import_s": 0.0012879599999990887,
+            "left_normalize_s": 0.0008321670000022152,
+            "parametric_state_s": 8.30000001172948e-07,
+            "piece_union_record_s": 4.599999989807202e-07,
+            "piece_union_seal_s": 3.900000002943216e-07,
+            "right_import_s": 0.12201970099999926,
+            "right_normalize_s": 0.5017256710000026,
+            "state_pattern_s": 1.440059354999999,
+            "unary_reduction_s": 5.7899999994504014e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              2,
+              2
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#986137,mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),),),exp2[](mul[,-1](max[](max#991061,max#991081,),),),)",
+                  "count": "128",
+                  "spec": 10
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 4.050000001143417e-06,
+            "cumulative_elapsed_s": 32.053921181,
+            "left_import_s": 0.0012673499999991122,
+            "left_normalize_s": 0.0008142959999979382,
+            "parametric_state_s": 9.100000006867504e-07,
+            "piece_union_record_s": 4.100000055018427e-07,
+            "piece_union_seal_s": 3.900000002943216e-07,
+            "right_import_s": 0.10186566400000174,
+            "right_normalize_s": 0.44641022000000063,
+            "state_pattern_s": 1.6673122169999992,
+            "unary_reduction_s": 5.0499999986186594e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              3,
+              3
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#986137,mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),),),exp2[](mul[,-1](max[](max#991061,max#991081,),),),)",
+                  "count": "128",
+                  "spec": 12
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 5.009999995309045e-06,
+            "cumulative_elapsed_s": 34.256251527,
+            "left_import_s": 0.0012952699999999595,
+            "left_normalize_s": 0.0008367659999990451,
+            "parametric_state_s": 9.70000002098459e-07,
+            "piece_union_record_s": 5.499999957692125e-07,
+            "piece_union_seal_s": 3.899999967416079e-07,
+            "right_import_s": 0.10310586399999977,
+            "right_normalize_s": 0.45046484099999873,
+            "state_pattern_s": 1.6339811560000044,
+            "unary_reduction_s": 5.109999996477654e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              4,
+              4
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#986137,mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),),),exp2[](mul[,-1](max[](max#991061,max#991081,),),),)",
+                  "count": "128",
+                  "spec": 14
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 4.6509999975796745e-06,
+            "cumulative_elapsed_s": 36.043248446,
+            "left_import_s": 0.0012726499999970997,
+            "left_normalize_s": 0.0008290359999989505,
+            "parametric_state_s": 8.499999992750418e-07,
+            "piece_union_record_s": 7.400000043844557e-07,
+            "piece_union_seal_s": 3.899999967416079e-07,
+            "right_import_s": 0.10318716399999772,
+            "right_normalize_s": 0.45328881299999324,
+            "state_pattern_s": 1.2158995479999959,
+            "unary_reduction_s": 5.710000003489313e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              5,
+              5
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#986137,mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),),),exp2[](mul[,-1](max[](max#991061,max#991081,),),),)",
+                  "count": "128",
+                  "spec": 16
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 5.610000002320703e-06,
+            "cumulative_elapsed_s": 37.827680995,
+            "left_import_s": 0.0012819600000000264,
+            "left_normalize_s": 0.0008665769999964823,
+            "parametric_state_s": 8.800000017572529e-07,
+            "piece_union_record_s": 4.099999983964153e-07,
+            "piece_union_seal_s": 2.700000010236181e-07,
+            "right_import_s": 0.11206175399999552,
+            "right_normalize_s": 0.451293696999997,
+            "state_pattern_s": 1.2066012449999945,
+            "unary_reduction_s": 5.070000000273467e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              6,
+              6
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#986137,mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),),),exp2[](mul[,-1](max[](max#991061,max#991081,),),),)",
+                  "count": "128",
+                  "spec": 18
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.6599999972963815e-06,
+            "cumulative_elapsed_s": 39.647447619,
+            "left_import_s": 0.0012405399999977362,
+            "left_normalize_s": 0.0007900969999994345,
+            "parametric_state_s": 7.49999998106432e-07,
+            "piece_union_record_s": 2.700000010236181e-07,
+            "piece_union_seal_s": 4.5000000170603016e-07,
+            "right_import_s": 0.10191431399999828,
+            "right_normalize_s": 0.4534183339999984,
+            "state_pattern_s": 1.2497253709999967,
+            "unary_reduction_s": 4.769999996767638e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              7,
+              7
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#986137,mul#987326,mul#987365,mul#987404,mul#987443,mul#987482,mul#987521,mul#987560,mul#987599,mul#987638,mul#987677,mul#987716,mul#987755,mul#987794,mul#987833,mul#987872,mul#987911,mul#987950,mul#987989,mul#988028,mul#988067,mul#988106,mul#988145,mul#988184,mul#988223,mul#988262,mul#988301,mul#988340,mul#988379,mul#988418,mul#988457,mul#988496,mul#988535,mul#988574,mul#989760,mul#989799,mul#989838,mul#989877,mul#989916,mul#989955,mul#989994,mul#990033,mul#990072,mul#990111,mul#990150,mul#990189,mul#990228,mul#990267,mul#990306,mul#990345,mul#990384,mul#990423,mul#990462,mul#990501,mul#990540,mul#990579,mul#990618,mul#990657,mul#990696,mul#990735,mul#990774,mul#990813,mul#990852,mul#990891,mul#990930,mul#990969,mul#991008,),),),exp2[](mul[,-1](max[](max#991061,max#991081,),),),)",
+                  "count": "128",
+                  "spec": 20
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.620000001092194e-06,
+            "cumulative_elapsed_s": 41.47311219,
+            "left_import_s": 0.001279839999995147,
+            "left_normalize_s": 0.0008199560000008432,
+            "parametric_state_s": 1.1700000044356784e-06,
+            "piece_union_record_s": 2.900000026784255e-07,
+            "piece_union_seal_s": 3.9000000384703526e-07,
+            "right_import_s": 0.10198503500000555,
+            "right_normalize_s": 0.4660028220000001,
+            "state_pattern_s": 1.2430255089999989,
+            "unary_reduction_s": 5.030000004069279e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              8,
+              8
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#1740979,max#1745012,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1745016,mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),),),)",
+                  "count": "128",
+                  "spec": 26
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.669999998123785e-06,
+            "cumulative_elapsed_s": 64.362689784,
+            "left_import_s": 0.0018064839999993865,
+            "left_normalize_s": 0.0008903370000012956,
+            "parametric_state_s": 9.300000058942715e-07,
+            "piece_union_record_s": 3.4999999343199306e-07,
+            "piece_union_seal_s": 3.0000000350582923e-07,
+            "right_import_s": 0.033323989999999526,
+            "right_normalize_s": 0.9221403680000009,
+            "state_pattern_s": 21.895859967999996,
+            "unary_reduction_s": 5.931000004011366e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              9,
+              9
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#1740979,max#1745012,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1745016,mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),),),)",
+                  "count": "128",
+                  "spec": 28
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.399999997100167e-06,
+            "cumulative_elapsed_s": 67.405635114,
+            "left_import_s": 0.0013511999999877844,
+            "left_normalize_s": 0.0007847159999982978,
+            "parametric_state_s": 1.0899999978164487e-06,
+            "piece_union_record_s": 4.3000000005122274e-07,
+            "piece_union_seal_s": 3.900000109524626e-07,
+            "right_import_s": 0.0016822439999941707,
+            "right_normalize_s": 0.45321378500000264,
+            "state_pattern_s": 2.573870572000004,
+            "unary_reduction_s": 5.369999996673869e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              10,
+              10
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#1740979,max#1745012,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1745016,mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),),),)",
+                  "count": "128",
+                  "spec": 30
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.9300000079501842e-06,
+            "cumulative_elapsed_s": 68.463866896,
+            "left_import_s": 0.0012810899999919911,
+            "left_normalize_s": 0.0007777059999938274,
+            "parametric_state_s": 9.099999971340367e-07,
+            "piece_union_record_s": 3.8000000301963155e-07,
+            "piece_union_seal_s": 3.8000000301963155e-07,
+            "right_import_s": 0.00161775200000136,
+            "right_normalize_s": 0.439774890999999,
+            "state_pattern_s": 0.6041121189999927,
+            "unary_reduction_s": 5.3800000046067e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              11,
+              11
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#1740979,max#1745012,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1745016,mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),),),)",
+                  "count": "128",
+                  "spec": 32
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.3199999904809374e-06,
+            "cumulative_elapsed_s": 69.52489494,
+            "left_import_s": 0.001280079999986583,
+            "left_normalize_s": 0.0007897069999955875,
+            "parametric_state_s": 1.2499999968440534e-06,
+            "piece_union_record_s": 6.399999961104186e-07,
+            "piece_union_seal_s": 3.900000109524626e-07,
+            "right_import_s": 0.0015552720000044928,
+            "right_normalize_s": 0.4405009360000065,
+            "state_pattern_s": 0.606048494999996,
+            "unary_reduction_s": 5.659999999352294e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              12,
+              12
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#1740979,max#1745012,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1745016,mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),),),)",
+                  "count": "128",
+                  "spec": 34
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.5500000049305527e-06,
+            "cumulative_elapsed_s": 70.795966537,
+            "left_import_s": 0.001283260000008113,
+            "left_normalize_s": 0.0007530459999998129,
+            "parametric_state_s": 8.899999954792293e-07,
+            "piece_union_record_s": 2.700000010236181e-07,
+            "piece_union_seal_s": 3.7999998880877683e-07,
+            "right_import_s": 0.0015491920000130222,
+            "right_normalize_s": 0.43984383099999036,
+            "state_pattern_s": 0.8158967769999919,
+            "unary_reduction_s": 5.029999996963852e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              13,
+              13
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#1740979,max#1745012,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1745016,mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),),),)",
+                  "count": "128",
+                  "spec": 36
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 5.430000001638291e-06,
+            "cumulative_elapsed_s": 72.034453101,
+            "left_import_s": 0.001378281000000925,
+            "left_normalize_s": 0.0008058960000028037,
+            "parametric_state_s": 1.150000002780871e-06,
+            "piece_union_record_s": 4.700000033608376e-07,
+            "piece_union_seal_s": 4.1000001260727004e-07,
+            "right_import_s": 0.0016048229999938712,
+            "right_normalize_s": 0.44410723500000415,
+            "state_pattern_s": 0.7792293309999963,
+            "unary_reduction_s": 4.811000010818134e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              14,
+              14
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#1740979,max#1745012,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1745016,mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),),),)",
+                  "count": "128",
+                  "spec": 38
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.610000009894975e-06,
+            "cumulative_elapsed_s": 73.10128875,
+            "left_import_s": 0.0013262810000043146,
+            "left_normalize_s": 0.0008201370000051611,
+            "parametric_state_s": 8.699999938244218e-07,
+            "piece_union_record_s": 2.700000010236181e-07,
+            "piece_union_seal_s": 3.900000109524626e-07,
+            "right_import_s": 0.0015893620000042574,
+            "right_normalize_s": 0.4443482359999962,
+            "state_pattern_s": 0.6078628189999904,
+            "unary_reduction_s": 5.080000008206298e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              15,
+              15
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#1740979,max#1745012,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1745016,mul#1746205,mul#1747391,mul#1747430,mul#1747469,mul#1747508,mul#1747547,mul#1747586,mul#1747625,mul#1747664,mul#1747703,mul#1747742,mul#1747781,mul#1747820,mul#1747859,mul#1747898,mul#1747937,mul#1747976,mul#1748015,mul#1748054,mul#1748093,mul#1748132,mul#1748171,mul#1748210,mul#1748249,mul#1748288,mul#1748327,mul#1748366,mul#1748405,mul#1748444,mul#1748483,mul#1748522,mul#1748561,mul#1748600,mul#1748639,mul#1748678,mul#1748717,mul#1748756,mul#1748795,mul#1748834,mul#1748873,mul#1748912,mul#1748951,mul#1748990,mul#1749029,mul#1749068,mul#1749107,mul#1749146,mul#1749185,mul#1749224,mul#1749263,mul#1749302,mul#1749341,mul#1749380,mul#1749419,mul#1749458,mul#1749497,mul#1749536,mul#1749575,mul#1749614,mul#1749653,mul#1749692,mul#1749731,mul#1749770,mul#1749809,mul#1749848,mul#1749887,),),),)",
+                  "count": "128",
+                  "spec": 40
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.960000003326968e-06,
+            "cumulative_elapsed_s": 74.165540068,
+            "left_import_s": 0.0012676799999979949,
+            "left_normalize_s": 0.0007674259999959077,
+            "parametric_state_s": 1.2200000014672696e-06,
+            "piece_union_record_s": 2.900000026784255e-07,
+            "piece_union_seal_s": 4.200000063292464e-07,
+            "right_import_s": 0.0015470120000031784,
+            "right_normalize_s": 0.441145431999999,
+            "state_pattern_s": 0.6087153750000027,
+            "unary_reduction_s": 5.0600000065514905e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              16,
+              16
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1960569,mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),),),exp2[](mul[,-1](max[](max#1965487,max#1965507,),),),)",
+                  "count": "128",
+                  "spec": 26
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.0700000053229815e-06,
+            "cumulative_elapsed_s": 94.673194232,
+            "left_import_s": 0.0018102540000057843,
+            "left_normalize_s": 0.0008995470000030537,
+            "parametric_state_s": 9.000000034120603e-07,
+            "piece_union_record_s": 4.0000000467443897e-07,
+            "piece_union_seal_s": 2.7999999474559445e-07,
+            "right_import_s": 0.034745890000010604,
+            "right_normalize_s": 0.581459627000001,
+            "state_pattern_s": 19.854032755000006,
+            "unary_reduction_s": 1.1589999999728207e-05
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              17,
+              17
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1960569,mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),),),exp2[](mul[,-1](max[](max#1965487,max#1965507,),),),)",
+                  "count": "128",
+                  "spec": 28
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.7800000001197986e-06,
+            "cumulative_elapsed_s": 95.625131835,
+            "left_import_s": 0.0013243410000001177,
+            "left_normalize_s": 0.0007629460000089239,
+            "parametric_state_s": 1.1299999869152089e-06,
+            "piece_union_record_s": 2.9999999640040187e-07,
+            "piece_union_seal_s": 3.899999967416079e-07,
+            "right_import_s": 0.0016377919999968071,
+            "right_normalize_s": 0.2985867460000122,
+            "state_pattern_s": 0.6373351629999888,
+            "unary_reduction_s": 5.330000007575109e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              18,
+              18
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1960569,mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),),),exp2[](mul[,-1](max[](max#1965487,max#1965507,),),),)",
+                  "count": "128",
+                  "spec": 30
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.199999997287705e-06,
+            "cumulative_elapsed_s": 96.686057703,
+            "left_import_s": 0.001279379999999719,
+            "left_normalize_s": 0.0007964570000069671,
+            "parametric_state_s": 1.1099999994712562e-06,
+            "piece_union_record_s": 5.400000020472362e-07,
+            "piece_union_seal_s": 4.0000000467443897e-07,
+            "right_import_s": 0.0016036820000095986,
+            "right_normalize_s": 0.29090595600000313,
+            "state_pattern_s": 0.7562664659999996,
+            "unary_reduction_s": 4.549999999881038e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              19,
+              19
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1960569,mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),),),exp2[](mul[,-1](max[](max#1965487,max#1965507,),),),)",
+                  "count": "128",
+                  "spec": 32
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.3400000063465995e-06,
+            "cumulative_elapsed_s": 97.638163287,
+            "left_import_s": 0.0013341900000085616,
+            "left_normalize_s": 0.0008067260000075294,
+            "parametric_state_s": 9.599999941656279e-07,
+            "piece_union_record_s": 2.7999999474559445e-07,
+            "piece_union_seal_s": 4.0000000467443897e-07,
+            "right_import_s": 0.0015020519999922044,
+            "right_normalize_s": 0.2904271929999993,
+            "state_pattern_s": 0.6481120770000075,
+            "unary_reduction_s": 5.119999997305058e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              20,
+              20
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1960569,mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),),),exp2[](mul[,-1](max[](max#1965487,max#1965507,),),),)",
+                  "count": "128",
+                  "spec": 34
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.3400000063465995e-06,
+            "cumulative_elapsed_s": 98.556308957,
+            "left_import_s": 0.001269260000000827,
+            "left_normalize_s": 0.0007698559999909094,
+            "parametric_state_s": 1.060000002439665e-06,
+            "piece_union_record_s": 4.0000000467443897e-07,
+            "piece_union_seal_s": 2.7999999474559445e-07,
+            "right_import_s": 0.0015078119999998307,
+            "right_normalize_s": 0.2899218579999996,
+            "state_pattern_s": 0.6144185950000036,
+            "unary_reduction_s": 5.020000003241876e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              21,
+              21
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1960569,mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),),),exp2[](mul[,-1](max[](max#1965487,max#1965507,),),),)",
+                  "count": "128",
+                  "spec": 36
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.379999997970117e-06,
+            "cumulative_elapsed_s": 99.474161226,
+            "left_import_s": 0.0012627499999950942,
+            "left_normalize_s": 0.0007729759999932639,
+            "parametric_state_s": 9.000000034120603e-07,
+            "piece_union_record_s": 4.1000001260727004e-07,
+            "piece_union_seal_s": 3.7999998880877683e-07,
+            "right_import_s": 0.001517222000003926,
+            "right_normalize_s": 0.28918418300000326,
+            "state_pattern_s": 0.6153849729999905,
+            "unary_reduction_s": 4.910000001245862e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              22,
+              22
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1960569,mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),),),exp2[](mul[,-1](max[](max#1965487,max#1965507,),),),)",
+                  "count": "128",
+                  "spec": 38
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.78100000628001e-06,
+            "cumulative_elapsed_s": 100.422142098,
+            "left_import_s": 0.0012775300000100742,
+            "left_normalize_s": 0.000777405999997427,
+            "parametric_state_s": 8.399999984476381e-07,
+            "piece_union_record_s": 3.000000106112566e-07,
+            "piece_union_seal_s": 4.0000000467443897e-07,
+            "right_import_s": 0.001510901000003173,
+            "right_normalize_s": 0.28888833999999974,
+            "state_pattern_s": 0.6456244379999987,
+            "unary_reduction_s": 5.000000001587068e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              23,
+              23
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#1960569,mul#1961758,mul#1961797,mul#1961836,mul#1961875,mul#1961914,mul#1961953,mul#1961992,mul#1962031,mul#1962070,mul#1962109,mul#1962148,mul#1962187,mul#1962226,mul#1962265,mul#1962304,mul#1962343,mul#1962382,mul#1962421,mul#1962460,mul#1962499,mul#1962538,mul#1962577,mul#1962616,mul#1962655,mul#1962694,mul#1962733,mul#1962772,mul#1962811,mul#1962850,mul#1962889,mul#1962928,mul#1962967,mul#1963006,mul#1964192,mul#1964231,mul#1964270,mul#1964309,mul#1964348,mul#1964387,mul#1964426,mul#1964465,mul#1964504,mul#1964543,mul#1964582,mul#1964621,mul#1964660,mul#1964699,mul#1964738,mul#1964777,mul#1964816,mul#1964855,mul#1964894,mul#1964933,mul#1964972,mul#1965011,mul#1965050,mul#1965089,mul#1965128,mul#1965167,mul#1965206,mul#1965245,mul#1965284,mul#1965323,mul#1965362,mul#1965401,mul#1965440,),),),exp2[](mul[,-1](max[](max#1965487,max#1965507,),),),)",
+                  "count": "128",
+                  "spec": 40
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91769,
+              "weighted_add_edges": 0,
+              "witness_nodes": 258
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.4499999966565156e-06,
+            "cumulative_elapsed_s": 101.371717012,
+            "left_import_s": 0.0012754300000068497,
+            "left_normalize_s": 0.0007796559999917463,
+            "parametric_state_s": 8.899999954792293e-07,
+            "piece_union_record_s": 4.5000000170603016e-07,
+            "piece_union_seal_s": 4.399999937731991e-07,
+            "right_import_s": 0.0015034019999973225,
+            "right_normalize_s": 0.28974427699999694,
+            "state_pattern_s": 0.6463835730000085,
+            "unary_reduction_s": 5.779999995070284e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              24,
+              24
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#2160022,max#2164055,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2164059,mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),),),)",
+                  "count": "128",
+                  "spec": 26
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.5099999990961805e-06,
+            "cumulative_elapsed_s": 122.490991915,
+            "left_import_s": 0.0018323139999978366,
+            "left_normalize_s": 0.0008742269999970631,
+            "parametric_state_s": 1.3100000018084756e-06,
+            "piece_union_record_s": 2.9999999640040187e-07,
+            "piece_union_seal_s": 2.700000010236181e-07,
+            "right_import_s": 0.033514389999993455,
+            "right_normalize_s": 0.5656245469999988,
+            "state_pattern_s": 20.476264406,
+            "unary_reduction_s": 4.719999992630619e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              25,
+              25
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#2160022,max#2164055,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2164059,mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),),),)",
+                  "count": "128",
+                  "spec": 28
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.5699999923745054e-06,
+            "cumulative_elapsed_s": 123.59804856,
+            "left_import_s": 0.0013175710000012941,
+            "left_normalize_s": 0.0007903069999883883,
+            "parametric_state_s": 9.099999971340367e-07,
+            "piece_union_record_s": 4.800000112936686e-07,
+            "piece_union_seal_s": 3.899999967416079e-07,
+            "right_import_s": 0.001628352000011546,
+            "right_normalize_s": 0.294708705000005,
+            "state_pattern_s": 0.7952258960000052,
+            "unary_reduction_s": 4.799999999249849e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              26,
+              26
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#2160022,max#2164055,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2164059,mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),),),)",
+                  "count": "128",
+                  "spec": 30
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.4100000075577555e-06,
+            "cumulative_elapsed_s": 124.512021617,
+            "left_import_s": 0.001300679999999943,
+            "left_normalize_s": 0.0007933560000026318,
+            "parametric_state_s": 1.070000010372496e-06,
+            "piece_union_record_s": 2.9999999640040187e-07,
+            "piece_union_seal_s": 4.0000000467443897e-07,
+            "right_import_s": 0.0016551829999968959,
+            "right_normalize_s": 0.2877427649999902,
+            "state_pattern_s": 0.6120433230000089,
+            "unary_reduction_s": 5.039999990685828e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              27,
+              27
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#2160022,max#2164055,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2164059,mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),),),)",
+                  "count": "128",
+                  "spec": 32
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.4600000045893466e-06,
+            "cumulative_elapsed_s": 125.418177973,
+            "left_import_s": 0.0012938100000070563,
+            "left_normalize_s": 0.0007809660000077656,
+            "parametric_state_s": 1.0799999898836177e-06,
+            "piece_union_record_s": 2.900000026784255e-07,
+            "piece_union_seal_s": 4.0000000467443897e-07,
+            "right_import_s": 0.001558221999999887,
+            "right_normalize_s": 0.283602762000001,
+            "state_pattern_s": 0.6082963039999925,
+            "unary_reduction_s": 5.459999997015075e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              28,
+              28
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#2160022,max#2164055,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2164059,mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),),),)",
+                  "count": "128",
+                  "spec": 34
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.089999992766934e-06,
+            "cumulative_elapsed_s": 126.496674777,
+            "left_import_s": 0.0012864799999903198,
+            "left_normalize_s": 0.0007854659999964042,
+            "parametric_state_s": 1.1599999965028474e-06,
+            "piece_union_record_s": 3.2999999177718564e-07,
+            "piece_union_seal_s": 3.899999967416079e-07,
+            "right_import_s": 0.0015650920000069846,
+            "right_normalize_s": 0.2829223269999943,
+            "state_pattern_s": 0.7806034210000092,
+            "unary_reduction_s": 4.450000005817856e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              29,
+              29
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#2160022,max#2164055,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2164059,mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),),),)",
+                  "count": "128",
+                  "spec": 36
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 9.849999997868508e-06,
+            "cumulative_elapsed_s": 127.578553157,
+            "left_import_s": 0.0013574609999977838,
+            "left_normalize_s": 0.000792215999993573,
+            "parametric_state_s": 1.160000010713702e-06,
+            "piece_union_record_s": 3.899999967416079e-07,
+            "piece_union_seal_s": 3.7999998880877683e-07,
+            "right_import_s": 0.0015956019999947557,
+            "right_normalize_s": 0.28461417000001177,
+            "state_pattern_s": 0.7820485320000046,
+            "unary_reduction_s": 5.189999995991457e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              30,
+              30
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#2160022,max#2164055,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2164059,mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),),),)",
+                  "count": "128",
+                  "spec": 38
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.080000001569715e-06,
+            "cumulative_elapsed_s": 128.491763048,
+            "left_import_s": 0.0012645790000078705,
+            "left_normalize_s": 0.0007754960000028177,
+            "parametric_state_s": 8.899999954792293e-07,
+            "piece_union_record_s": 3.1000001854408765e-07,
+            "piece_union_seal_s": 2.9999999640040187e-07,
+            "right_import_s": 0.0015799829999991744,
+            "right_normalize_s": 0.28567336799999055,
+            "state_pattern_s": 0.6130903600000011,
+            "unary_reduction_s": 5.2199999913682404e-06
+          }
+        },
+        {
+          "count": 1,
+          "families": [
+            [
+              31,
+              31
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "state_pattern_proof": {
+              "closures": [
+                {
+                  "coefficient": "mul[,1](exp2[](mul[,-1](max[](max#2160022,max#2164055,),),),select[](compare[eq](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),0,),0,recip[](add[,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1](mul#2164059,mul#2165248,mul#2166434,mul#2166473,mul#2166512,mul#2166551,mul#2166590,mul#2166629,mul#2166668,mul#2166707,mul#2166746,mul#2166785,mul#2166824,mul#2166863,mul#2166902,mul#2166941,mul#2166980,mul#2167019,mul#2167058,mul#2167097,mul#2167136,mul#2167175,mul#2167214,mul#2167253,mul#2167292,mul#2167331,mul#2167370,mul#2167409,mul#2167448,mul#2167487,mul#2167526,mul#2167565,mul#2167604,mul#2167643,mul#2167682,mul#2167721,mul#2167760,mul#2167799,mul#2167838,mul#2167877,mul#2167916,mul#2167955,mul#2167994,mul#2168033,mul#2168072,mul#2168111,mul#2168150,mul#2168189,mul#2168228,mul#2168267,mul#2168306,mul#2168345,mul#2168384,mul#2168423,mul#2168462,mul#2168501,mul#2168540,mul#2168579,mul#2168618,mul#2168657,mul#2168696,mul#2168735,mul#2168774,mul#2168813,mul#2168852,mul#2168891,mul#2168930,),),),)",
+                  "count": "128",
+                  "spec": 40
+                }
+              ],
+              "contribution_pieces": 1275,
+              "coverage": "exact_multiplicity_one_per_closed_group",
+              "factor_choices": 576,
+              "factored_weighted_sums": 2,
+              "method": "linear_reduction_combination_certificate",
+              "output_polynomial_terms": 0,
+              "polynomial_work": 0,
+              "preserved_partial_groups": 0,
+              "visited_nodes": 91666,
+              "weighted_add_edges": 0,
+              "witness_nodes": 257
+            },
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 2.43999997451283e-06,
+            "cumulative_elapsed_s": 129.403374056,
+            "left_import_s": 0.001279749999980595,
+            "left_normalize_s": 0.000778156999984958,
+            "parametric_state_s": 8.399999842367833e-07,
+            "piece_union_record_s": 4.099999841855606e-07,
+            "piece_union_seal_s": 3.899999967416079e-07,
+            "right_import_s": 0.001568232000010994,
+            "right_normalize_s": 0.28453752900000495,
+            "state_pattern_s": 0.612809287999994,
+            "unary_reduction_s": 5.490000006602713e-06
+          }
+        },
+        {
+          "count": 2,
+          "families": [
+            [
+              32,
+              32
+            ],
+            [
+              34,
+              34
+            ]
+          ],
+          "record": {
+            "affine_state_decline": "dispatcher_predicate",
+            "equivalence_contract": "same_value_in_every_case_with_identical_nonfinite_values",
+            "state_pattern_proof": {
+              "equality": "exact EP equality or exact case analysis of the substituted value",
+              "method": "complete_reductions_under_nonlinear_operators"
+            },
+            "status": "equivalent",
+            "total_definedness": "not_proven"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 3.312000001187698e-05,
+            "cumulative_elapsed_s": 132.267778428,
+            "left_import_s": 0.0015529620000052091,
+            "left_normalize_s": 0.0008116459999882863,
+            "parametric_state_s": 1.4700000292577897e-06,
+            "piece_union_record_s": 4.3000000005122274e-07,
+            "piece_union_seal_s": 7.999999809271685e-07,
+            "right_import_s": 1.1115981420000196,
+            "right_normalize_s": 0.5083782069999927,
+            "state_pattern_s": 0.6536283449999587,
+            "unary_reduction_s": 6.579999990208307e-06
+          }
+        },
+        {
+          "count": 2,
+          "families": [
+            [
+              33,
+              33
+            ],
+            [
+              35,
+              35
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "same_value_in_every_case_with_identical_nonfinite_values",
+            "state_pattern_proof": {
+              "equality": "exact EP equality or exact case analysis of the substituted value",
+              "method": "complete_reductions_under_nonlinear_operators"
+            },
+            "status": "equivalent",
+            "total_definedness": "not_proven"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 4.510000024993133e-06,
+            "cumulative_elapsed_s": 132.681385189,
+            "left_import_s": 0.0015316420000033304,
+            "left_normalize_s": 0.0007695759999819529,
+            "parametric_state_s": 1.7210000180511997e-06,
+            "piece_union_record_s": 5.499999815583578e-07,
+            "piece_union_seal_s": 5.900000132896821e-07,
+            "right_import_s": 0.05926130000000285,
+            "right_normalize_s": 0.28663437500003397,
+            "state_pattern_s": 0.6535771639999837,
+            "unary_reduction_s": 6.810000002133165e-06
+          }
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 0.00017092300003396232,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.04701549799998353,
+        "left_normalize_s": 0.027356074999931312,
+        "parametric_state_s": 3.523100001601165e-05,
+        "piece_union_record_s": 1.3740000014195175e-05,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 1.341000001087167e-05,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 5.709145231000061,
+        "right_normalize_s": 14.886743757000028,
+        "state_pattern_s": 111.25455205599992
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.133553446
+      },
+      "total_output_families": 36,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
     },
     "frontend": {
       "address_value_bridge": {
@@ -280,27 +2320,27 @@
       "cta_count": 4,
       "dependency_compression": {
         "bulk_read_wait": {
-          "consumers": 512,
+          "consumers": 128,
           "emitted_references": 0,
           "original_references": 0,
           "prefix_effects": 0
         },
         "tcgen_commit": {
-          "consumers": 20,
-          "emitted_references": 292,
-          "original_references": 832,
-          "prefix_effects": 20
+          "consumers": 5,
+          "emitted_references": 73,
+          "original_references": 208,
+          "prefix_effects": 5
         },
         "tcgen_load_wait": {
-          "consumers": 5120,
-          "emitted_references": 6144,
-          "original_references": 37888,
+          "consumers": 1280,
+          "emitted_references": 1536,
+          "original_references": 9472,
           "prefix_effects": 0
         },
         "tcgen_store_wait": {
-          "consumers": 2048,
-          "emitted_references": 2048,
-          "original_references": 5120,
+          "consumers": 512,
+          "emitted_references": 512,
+          "original_references": 1280,
           "prefix_effects": 0
         }
       },
@@ -501,10 +2541,10 @@
           "source": "declaration"
         }
       ],
-      "lowered_instruction_count": 202196,
+      "lowered_instruction_count": 50549,
       "mma_refinement": {
         "blocked": [],
-        "discharged": 192
+        "discharged": 48
       },
       "reached_opcodes": {
         "add.f32x2": 32768,
@@ -649,26 +2689,26 @@
         "validation": "pending_backend"
       },
       "source_binding_storage": {
-        "binding_templates": 56,
+        "binding_templates": 14,
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
-        "logical_instructions": 202196,
-        "stored_bindings": 47196
+        "logical_instructions": 50549,
+        "stored_bindings": 11799
       },
       "source_edge_storage": {
-        "binding_templates": 2056,
-        "logical_edges": 200660,
-        "stored_bindings": 2056
+        "binding_templates": 514,
+        "logical_edges": 50165,
+        "stored_bindings": 514
       },
       "tcgen_copy_refinement": {
         "blocked": [],
-        "discharged": 64
+        "discharged": 16
       },
       "tcgen_history_refinement": {
         "blocked": [],
-        "notifications": 20,
-        "operations": 256
+        "notifications": 5,
+        "operations": 64
       },
       "thread_count": 1536,
       "unsupported_occurrence_counts": {},
@@ -698,22 +2738,22 @@
       },
       "required_orders": {
         "algorithm": "member-relations",
-        "batches": 8,
-        "edge_visits": 3056821,
+        "batches": 1,
+        "edge_visits": 672535,
         "member_enumerations": 0,
         "request_construction": {
           "concrete_pair_materializations": 0,
-          "endpoint_reads": 27584,
-          "family_requests": 1408,
-          "logical_orders": 211200,
-          "owner_bindings": 13312,
-          "stored_orders": 6848
+          "endpoint_reads": 6896,
+          "family_requests": 352,
+          "logical_orders": 52800,
+          "owner_bindings": 3328,
+          "stored_orders": 1712
         }
       }
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 1551144,
+      "address_candidates": 387786,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -730,22 +2770,22 @@
       "candidate_generation_fallback": false,
       "exhaustive": false,
       "family_analysis": {
-        "access_families": 457072,
-        "affine_member_rows": 30048,
-        "candidate_relations": 1114212,
-        "hb_frontier_pieces": 955533,
+        "access_families": 114268,
+        "affine_member_rows": 7512,
+        "candidate_relations": 278553,
+        "hb_frontier_pieces": 163815,
         "hb_member_enumerations": 0,
-        "logical_accesses": 1210532
+        "logical_accesses": 302633
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 1087,
+      "hb_batches": 74,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 14043751,
+      "hb_edge_visits": 2128805,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
-      "hb_queries": 1551144,
-      "hb_query_seconds": 1.5878609850000027,
+      "hb_queries": 387786,
+      "hb_query_seconds": 0.3836198070000002,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -753,9 +2793,9 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 8814.12109375,
-    "required_order_domains": 6848,
-    "required_orders": 211200,
+    "peak_footprint_mib": 3458.6015625,
+    "required_order_domains": 1712,
+    "required_orders": 52800,
     "search_complete": true,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
@@ -769,16 +2809,16 @@
     "semantic_program": {
       "binding_diagnostic_count": 0,
       "binding_diagnostics": [],
-      "execution_cohorts": 100,
+      "execution_cohorts": 25,
       "mapping_complete": true,
-      "memory_binding_stored_rows": 800012,
-      "memory_binding_templates": 63876,
-      "memory_bindings": 1099972,
+      "memory_binding_stored_rows": 200003,
+      "memory_binding_templates": 15969,
+      "memory_bindings": 274993,
       "memory_linking_templates_used": true,
-      "synchronization_groups": 5100,
+      "synchronization_groups": 1275,
       "synchronization_groups_materialized": true,
-      "synthetic_synchronization_nodes": 260,
-      "thread_prefix_groups": 365320,
+      "synthetic_synchronization_nodes": 65,
+      "thread_prefix_groups": 91350,
       "value_diagnostic_count": 0,
       "value_diagnostics": []
     },
@@ -814,20 +2854,20 @@
     "value_analysis": {
       "diagnostics": [],
       "duplicate_write_value_checks": 0,
-      "equivalence_check": "analysis_budget_exceeded",
-      "initial_memory_regions": 11588,
-      "initial_read_families": 11248,
+      "equivalence_check": "equivalent",
+      "initial_memory_regions": 2945,
+      "initial_read_families": 2812,
       "memory_action_storage": {
-        "logical_actions": 1099972,
-        "stored_runs": 800012
+        "logical_actions": 274993,
+        "stored_runs": 200003
       },
       "output_region_families": 0,
-      "output_regions": 11264,
+      "output_regions": 2816,
       "passes": [
         {
           "name": "packing",
-          "rewritten_instances": 557504,
-          "rewritten_nodes": 9920,
+          "rewritten_instances": 139376,
+          "rewritten_nodes": 2480,
           "semantics": "exact_fixed_width"
         },
         {
@@ -838,101 +2878,97 @@
           "semantics": "ideal_exp2"
         },
         {
-          "converted_instances": 4346004,
+          "converted_instances": 1086501,
           "name": "type_edges",
-          "removed_nodes": 100076
+          "removed_nodes": 25019
         },
         {
           "name": "memory_elimination"
         },
         {
           "elements": 0,
-          "identities": 2736,
-          "layouts": 11048,
-          "mapping_blocks": 111144,
+          "identities": 684,
+          "layouts": 2794,
+          "mapping_blocks": 21134,
           "name": "view_normalization",
-          "original_pieces": 889920,
-          "reused_initial_reads": 12084,
-          "reused_views": 120,
-          "segmented": 456,
-          "slices": 58368,
-          "stored_mapping_blocks": 97552,
+          "original_pieces": 222480,
+          "reused_initial_reads": 3021,
+          "reused_views": 30,
+          "segmented": 82,
+          "slices": 14592,
+          "stored_mapping_blocks": 20936,
           "typed_output_pieces": 0,
           "typed_output_regions": 0
         }
       ],
-      "processed_memory_actions": 1099972,
+      "processed_memory_actions": 274993,
       "processed_memory_families": 0,
-      "read_substitutions": 108784,
+      "read_substitutions": 27196,
       "scalar_fold": {
-        "construction_collections": 35,
-        "diagnostic": {
-          "code": "expression_node_limit_exceeded",
-          "instance": 0,
-          "instruction": "st.weak.shared::cta.b128 [%r2810], %rq65;",
-          "line": 19361,
-          "message": "scalar graph node limit exceeded",
-          "value_node": 126944
-        },
-        "diagnostics": [
-          {
-            "code": "expression_node_limit_exceeded",
-            "details": {
-              "instance": 0,
-              "instruction": "st.weak.shared::cta.b128 [%r2810], %rq65;",
-              "line": 19361,
-              "resource": {
-                "kind": "expression_node_limit_exceeded",
-                "origin": "algorithm_budget"
-              },
-              "value_node": 126944
-            },
-            "message": "scalar graph node limit exceeded",
-            "stage": "pipeline"
-          }
-        ],
-        "partial_node_count": 1999972,
-        "partial_output_count": 592,
-        "peak_construction_nodes": 2000001,
-        "resource": {
-          "kind": "expression_node_limit_exceeded",
-          "origin": "algorithm_budget"
-        },
-        "shared_view_projection_hits": 2132519,
-        "source_outputs": 11264
+        "construction_collections": 2,
+        "diagnostics": [],
+        "narrowing_slice_projections": 466526,
+        "output_count": 131328,
+        "output_families_merged": 0,
+        "output_family_count": 36,
+        "output_root_count": 36,
+        "peak_construction_nodes": 1531113,
+        "shared_view_projection_hits": 175607,
+        "source_outputs": 2816,
+        "spatial_families_projected": 6,
+        "spatial_outputs_projected": 32830,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 606,
+          "edges": 1037685,
+          "folds": 32768,
+          "indices": 5,
+          "initial_cells": 56709,
+          "logical_iterations": 524288,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 1,
+          "nodes": 513828,
+          "nodes_before_final_collection": 1531113,
+          "nodes_reclaimed": 1062337,
+          "operations": 423740,
+          "parameters": 0,
+          "range_descriptions": 32768,
+          "storage_nodes": 513828,
+          "unique_fold_bodies": 32768
+        }
       },
       "serialization": {
-        "action_patterns": 800012,
-        "binding_patterns": 800012,
-        "domain_refinements": 1935400,
-        "elapsed_seconds": 4.020970689,
-        "event_families": 607780,
+        "action_patterns": 200003,
+        "binding_patterns": 200003,
+        "domain_refinements": 483850,
+        "elapsed_seconds": 1.002512901,
+        "event_families": 151945,
         "expanded_event_records": 0,
         "largest_batch_members": 128,
-        "logical_actions": 1099972,
-        "logical_events": 10320832,
-        "peak_rss_mib_at_completion": 3254.91015625,
+        "logical_actions": 274993,
+        "logical_events": 2580208,
+        "peak_rss_mib_at_completion": 900.15234375,
         "reachability_queries": 0,
-        "relations": 2612764,
-        "rss_mib_at_completion": 2016.60546875,
-        "scheduled_batches": 607780,
-        "singleton_batches": 439912,
-        "value_families": 299432
+        "relations": 653191,
+        "rss_mib_at_completion": 670.28125,
+        "scheduled_batches": 151945,
+        "singleton_batches": 109978,
+        "value_families": 74858
       },
-      "shared_read_families": 3136,
-      "shared_read_instances": 24092,
-      "stored_read_substitutions": 84692
+      "shared_read_families": 784,
+      "shared_read_instances": 6023,
+      "stored_read_substitutions": 21173
     },
-    "value_ir_instance_count": 4326226,
-    "value_ir_node_count": 209726,
+    "value_ir_instance_count": 1082070,
+    "value_ir_node_count": 52453,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 10.328064884,
+    "verification_elapsed_seconds": 2.772774853,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 8816.06640625,
-  "pipeline_elapsed_seconds": 255.605665048,
-  "result": "analysis_budget_exceeded",
-  "rss_limit_mib": null,
+  "peak_rss_mib": 3458.6015625,
+  "pipeline_elapsed_seconds": 173.739863505,
+  "result": "verified",
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -941,6 +2977,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.397
+  "wellsync_timeout_seconds": 2000.0,
+  "whole_pipeline_timeout_seconds": 1998.38
 }

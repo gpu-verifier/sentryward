@@ -290,6 +290,32 @@ class Lowering:
         if op == "aten.unsqueeze.default":
             axis = int(args[1]) % len(shape)
             return (yield (args[0], indices[:axis]+indices[axis+1:], depth))
+        if op in {"aten.squeeze.dim", "aten.squeeze.dims", "aten.squeeze.default"}:
+            # A pure shape operation (PyTorch semantics): each named dimension of
+            # size 1 is removed, a named dimension of another size is kept, and
+            # squeeze.default names every dimension. A removed axis has the only
+            # source index 0, as select.int(axis, 0); nothing is materialized.
+            source_shape = self.shape(args[0])
+            rank = len(source_shape)
+            if op == "aten.squeeze.default":
+                named = set(range(rank))
+            else:
+                dim = args[1] if len(args) > 1 else node.kwargs.get("dim")
+                if dim is None:
+                    raise Unsupported(f"{op} requires its dimension argument")
+                dims = list(dim) if isinstance(dim, (list, tuple)) else [dim]
+                if any(type(d) is not int for d in dims):
+                    raise Unsupported(f"{op} requires specialized integer dimensions")
+                # A 0-d tensor accepts dimension 0 or -1 and is unchanged.
+                if any(not -max(rank, 1) <= d < max(rank, 1) for d in dims):
+                    raise Unsupported(f"{op} dimension out of range")
+                named = {d % rank for d in dims} if rank else set()
+            removed = {axis for axis in named if source_shape[axis] == 1}
+            if tuple(n for axis, n in enumerate(source_shape) if axis not in removed) != shape:
+                raise Unsupported(f"{op} result shape does not match the removed size-1 dimensions")
+            kept = iter(indices)
+            source_indices = [g.constant(0) if axis in removed else next(kept) for axis in range(rank)]
+            return (yield (args[0], source_indices, depth))
         if op == "aten.gather.default":
             axis = int(args[1]) % len(shape)
             coordinates = list(indices)

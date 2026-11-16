@@ -3,12 +3,16 @@
 Source (FlashMLA 15f13e5030374295491c5ce31b02d7e63a7772c6):
   csrc/sm100/decode/head64/config.h:33-41 (D_Q=576, D_NOPE=512, D_ROPE=64, D_V=512, 128-wide quant tiles,
     656-byte tokens: 512 e4m3 NoPE | 4 f32 scales | 64 bf16 RoPE);
-  csrc/sm100/decode/head64/kernel.cuh:683-711 (index -> token, -1 = invalid, f32 scale -> ue8m0 round-to-zero),
+  csrc/sm100/decode/head64/kernel.cuh:683-711 (index -> token, -1 = invalid),
     :781-806 (NoPE dequant e4m3 * scale), :210-260 (masked exp2 softmax with sm_scale_div_log2),
     :301-325 (empty row: li = 0, LSE = +inf; no-split LSE = mi*ln2 + ln(li)), :335-385 (O = acc / li, bf16);
   tests/ref.py:55-103 (ref_sparse_attn_decode), tests/quant.py:81-104 (dequantize_k_cache, V32 layout).
-The kernel reads only the exponent of each f32 scale (cvt.rz.ue8m0); this is decoded explicitly below and
-equals the upstream f32 dequantization for the power-of-two scales produced by quantize_k_cache.
+Each NoPE tile is the e4m3 value times its f32 scale factor, used as an f32 value
+(flash_mla/flash_mla_interface.py:97, tests/quant.py:97, 101-104). The kernel reads only the exponent field
+of the f32 word (cvt.rz.ue8m0x2.f32, kernel.cuh:708-709). The two agree only on power-of-two scales, which
+are the values upstream's quantizer produces (tests/quant.py:17-18, 44-46); that is an input premise, not
+part of this reference. Exponent field 255 (an inf or NaN scale) needs no special case: the f32 value
+propagates as in upstream's dequantization.
 """
 import torch
 
@@ -24,8 +28,7 @@ def reference(Q, KV_nope, KV_scale, KV_rope, indices, scheduler_metadata, num_sp
     tokens = num_blocks * block_size
     topk = indices.shape[-1]
     nope = KV_nope.reshape(tokens, token_bytes)[:, :512].float()
-    bits = KV_scale.reshape(tokens, token_bytes // 4)[:, 128:132].view(torch.int32)
-    scale = torch.exp2(((bits >> 23) & 255).float() - 127.0)  # ue8m0 (round toward zero) of the f32 scale
+    scale = KV_scale.reshape(tokens, token_bytes // 4)[:, 128:132].float()  # f32 scale factor per 128-wide tile
     nope = (nope.reshape(tokens, 4, 128) * scale.unsqueeze(-1)).reshape(tokens, 512)
     rope = KV_rope.reshape(tokens, token_bytes // 2)[:, 264:328].float()
     key = torch.cat((nope, rope), dim=-1)  # [tokens, 576]; V = key[:, :512]

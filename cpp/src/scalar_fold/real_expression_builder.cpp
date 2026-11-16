@@ -79,6 +79,12 @@ struct TermCanonicalizer {
   Graph& graph;
   bool sums;
   std::unordered_map<Id,std::size_t> shapes;
+  // Dense marks over the IDs present when run() starts (reachable, needed, and how a needed
+  // node was rebuilt): the membership answers of node sets without a heap node per entry.
+  // A node rebuilt as itself keeps no entry; `rebuilt` holds the others. O(graph) bytes.
+  enum : std::uint8_t {kReached=1,kNeeded=2,kSame=4,kRebuilt=8};
+  std::vector<std::uint8_t> marks;
+  std::uint64_t owner=0;
   std::unordered_map<Id,Ref> rebuilt;
   // A structural hash that ignores literal values (their types count): shifted copies agree.
   std::size_t shape(Id root) {
@@ -172,42 +178,73 @@ struct TermCanonicalizer {
     else return std::nullopt;
     auto offset=cell.operands.at(0);const auto allocation=cell.name;
     if(byte) {
+      const auto literal=[&](const Ref& r)->std::optional<std::uint64_t> {
+        const auto& at=graph.node(r);
+        std::uint64_t base=0;
+        const auto parsed=std::from_chars(at.name.data(),at.name.data()+at.name.size(),base);
+        if(!clean(r) || at.kind!=Kind::Constant || at.type!="u64" || parsed.ec!=std::errc{} ||
+           parsed.ptr!=at.name.data()+at.name.size() || base>UINT64_MAX-byte)return std::nullopt;
+        return base;
+      };
       const auto& at=graph.node(offset);
-      std::uint64_t base=0;
-      const auto parsed=std::from_chars(at.name.data(),at.name.data()+at.name.size(),base);
-      if(at.kind==Kind::Constant && at.type=="u64" && parsed.ec==std::errc{} &&
-         parsed.ptr==at.name.data()+at.name.size() && base<=UINT64_MAX-byte)
-        offset=graph.constant("u64",std::to_string(base+byte));
-      else offset=graph.operation("Add","u64",{offset,graph.constant("u64",std::to_string(byte))});
+      if(const auto base=literal(offset))offset=graph.constant("u64",std::to_string(*base+byte));
+      // A positioned or moved address is Add(literal, rest) (the fold's displacement-first shape):
+      // the field's displacement joins that literal, so the high field of the next element has the
+      // same shape as the low field of this one and consolidation can merge them. Exact: u64 Add
+      // is associative modulo 2^64, and the literal has room for the byte.
+      else {
+        std::optional<std::uint64_t> displaced;
+        if(at.kind==Kind::Operation && at.name=="Add" && at.type=="u64" && at.attributes.empty() &&
+           at.operands.size()==2 && clean(at.operands[1]))displaced=literal(at.operands[0]);
+        if(displaced) {
+          const auto rest=at.operands[1]; // a copy: the constant below may append nodes
+          offset=graph.operation("Add","u64",{graph.constant("u64",std::to_string(*displaced+byte)),rest});
+        }
+        else offset=graph.operation("Add","u64",{offset,graph.constant("u64",std::to_string(byte))});
+      }
     }
     return graph.convert(graph.initialCell(allocation,offset,"bf16"),"f32","Convert ");
   }
-  Ref use(const Ref& old) {
-    if(auto field=bf16Field(old))return *field;
+  // The rebuilt use: the rebuilt node with this use's conversion and provenance. A node not
+  // (yet) rebuilt throws, as a missing table entry does.
+  Ref rebuiltUse(const Ref& old) const {
+    if(old.node<marks.size() && (marks[old.node]&kSame))
+      return Ref{old.node,old.conversion,old.converted_type,owner,old.pointer_provenance};
+    if(old.node>=marks.size() || !(marks[old.node]&kRebuilt))throw std::out_of_range("canonical form of an unvisited node");
     auto value=rebuilt.at(old.node);
     value.conversion=old.conversion;value.converted_type=old.converted_type;value.pointer_provenance=old.pointer_provenance;
     return value;
+  }
+  // bf16Field's first test, without a copy: only these uses can be typed fields.
+  static bool fieldCandidate(const Ref& old) {
+    return old.pointer_provenance.empty() && old.converted_type=="f32";
+  }
+  Ref use(const Ref& old) {
+    if(auto field=bf16Field(old))return *field;
+    return rebuiltUse(old);
   }
   void run(std::span<Ref> roots) {
     // Reachable nodes, rebuilt in ascending order (IDs are topological), so that operands come
     // first; hash-consing returns a node itself when nothing below it changed. A node is
     // rebuilt when some use of it does not flatten into a canonical sum (a root, a non-Add or
     // decorated consumer); without `sums`, every reachable node is.
-    std::vector<Id> order;std::unordered_set<Id> reached;std::unordered_set<Id> needed;
-    std::vector<Id> work;
-    for(const auto& root:roots){needed.insert(root.node);if(reached.insert(root.node).second)work.push_back(root.node);}
-    while(!work.empty()) {
-      const auto id=work.back();work.pop_back();order.push_back(id);
+    // O(graph) for the marks, plus O(reachable edges) for the traversal and the unchanged
+    // checks below; only changed nodes copy uses or intern.
+    const auto size=graph.size();
+    marks.assign(size,0);rebuilt.clear();owner=size?graph.ref(0).owner:0;
+    for(const auto& root:roots){graph.node(root.node);marks[root.node]|=kReached|kNeeded;}
+    // IDs are topological: a descending sweep visits every reached node after all its
+    // users, so it marks the same reached and needed sets as a traversal from the roots.
+    for(Id id=size;id-->0;)if(marks[id]&kReached) {
       const auto& n=graph.node(id);
       const bool flattening=sum(n);
       for(const auto& operand:n.operands) {
-        if(!flattening || !flattens(graph,operand,n.type))needed.insert(operand.node);
-        if(reached.insert(operand.node).second)work.push_back(operand.node);
+        marks[operand.node]|=kReached;
+        if(!flattening || !flattens(graph,operand,n.type))marks[operand.node]|=kNeeded;
       }
     }
-    std::sort(order.begin(),order.end());
-    for(const auto id:order) {
-      if(!needed.contains(id))continue;
+    for(Id id=0;id<size;++id) {
+      if(!(marks[id]&kNeeded))continue;
       if(sum(graph.node(id))) {
         const auto n=graph.node(id); // a copy: rebuilding appends nodes
         std::vector<Ref> terms;bool bounded=true;
@@ -220,7 +257,7 @@ struct TermCanonicalizer {
           } else terms.push_back(use(r));
           bounded=terms.size()+pending.size()<=kMaxSumTerms;
         }
-        if(!bounded){rebuilt.emplace(id,graph.ref(id));continue;} // the original sum, unchanged below
+        if(!bounded){marks[id]|=kSame;continue;} // the original sum, unchanged below
         std::stable_sort(terms.begin(),terms.end(),[&](const Ref& x,const Ref& y){return before(x,y);});
         // Two terms are the original add on its operands, in either order (IEEE addition commutes):
         // it keeps the original's modes. A longer sum rebuilt as itself keeps its nodes and modes.
@@ -234,20 +271,38 @@ struct TermCanonicalizer {
         }
         if(terms.size()==2)graph.markInstruction(total,graph.instructionModes(id));
         else if(total.node!=id)graph.markInstruction(total,instruction_mode::synthesized);
-        rebuilt.emplace(id,total);continue;
+        // A sum rebuilt as itself is a node that stays (its uses are unchanged).
+        if(total==graph.ref(id))marks[id]|=kSame;
+        else {rebuilt.emplace(id,total);marks[id]|=kRebuilt;}
+        continue;
       }
       // A node whose operands all stay is itself: interning it again would return its own ID
       // (every node's fields are exactly those its constructor below sets), so it is neither
-      // copied nor interned.
+      // copied nor interned. The first changed use is found without copying uses: a use stays
+      // when its node stays and it is no typed bf16 field (bf16Field appends nodes only when it
+      // returns a field, so the uses before the first change leave the graph as it was, and the
+      // nodes appended are those, in the order, that rebuilding every use creates).
       const auto arity=graph.node(id).operands.size();
+      std::size_t first=arity;std::optional<Ref> first_value;
+      for(std::size_t i=0;i<arity && first==arity;++i) {
+        const auto& old=graph.node(id).operands[i];
+        if(fieldCandidate(old)) {
+          const auto copy=old; // bf16Field may append nodes
+          if(auto field=bf16Field(copy)){first=i;first_value=std::move(field);break;}
+        }
+        if(!(marks[old.node]&kSame)){first=i;first_value=rebuiltUse(old);}
+      }
+      if(first==arity){marks[id]|=kSame;continue;}
       std::vector<Ref> operands;operands.reserve(arity);
-      bool changed=false;
-      for(std::size_t i=0;i<arity;++i) {
+      for(std::size_t i=0;i<first;++i) {
+        const auto& old=graph.node(id).operands[i];
+        operands.push_back(Ref{old.node,old.conversion,old.converted_type,owner,old.pointer_provenance});
+      }
+      operands.push_back(std::move(*first_value));
+      for(std::size_t i=first+1;i<arity;++i) {
         auto old=graph.node(id).operands[i]; // a copy: use() may append nodes
         operands.push_back(use(old));
-        changed=changed || !(operands.back()==old);
       }
-      if(!changed){rebuilt.emplace(id,graph.ref(id));continue;}
       const auto n=graph.node(id); // a copy: rebuilding appends nodes
       Ref value;
       switch(n.kind) {
@@ -261,7 +316,7 @@ struct TermCanonicalizer {
           break;
         case Kind::Fold:value=graph.fold(n.fold->reducer,operands.at(0),operands.at(1),n.fold->binder_level,n.fold->count,n.type);break;
       }
-      rebuilt.emplace(id,value);
+      rebuilt.emplace(id,value);marks[id]|=kRebuilt;
     }
     for(auto& root:roots)root=use(root);
   }
@@ -272,6 +327,7 @@ struct RealExpressionBuilder::Impl {
   Graph& graph;
   ReductionBuilder& reductions;
   std::function<void()> poll;
+  std::function<bool(const std::string&)> opaque_initial;
   Statistics stats;
   struct Facts {
     bool finite=false,positive=false,nonnegative=false;
@@ -324,8 +380,10 @@ struct RealExpressionBuilder::Impl {
       const auto& n=graph.node(facts.size());Facts f;
       if(realType(n.type)) {
         // InitialCell is the legacy alias of InputValue. This fact covers
-        // typed numerical input reads, not their exact address operands.
-        if(n.kind==Kind::Parameter || n.kind==Kind::InputValue)f.finite=true;
+        // typed numerical input reads, not their exact address operands, and
+        // not the opaque bytes of an intermediate allocation (opaque_initial).
+        if(n.kind==Kind::Parameter ||
+           (n.kind==Kind::InputValue && !(opaque_initial && opaque_initial(n.name))))f.finite=true;
         else if(n.kind==Kind::Constant) {
           // A raw PTX literal is not a decimal string. Reuse exact decoding;
           // NaN/infinity deliberately do not acquire a finite fact.
@@ -599,10 +657,11 @@ struct RealExpressionBuilder::Impl {
     if(reducer)return reductions.append(*reducer,operands[0],operands[1],std::move(type),level);
     return raw(std::move(name),type,std::move(operands));
   }
+  // In place: the mapping keeps live order, so a survivor's new ID is its rank among the
+  // survivors, never above its old ID. O(facts).
   void remap(std::span<const Id> mapping,std::uint64_t next_owner) {
-    std::vector<Facts> retained;
+    std::size_t kept=0;
     for(Id id=0;id<facts.size();++id)if(mapping[id]!=std::numeric_limits<Id>::max()) {
-      if(retained.size()<=mapping[id])retained.resize(mapping[id]+1);
       auto f=std::move(facts[id]);
       const auto remapRef=[&](Ref& r) {
         if(r.node>=mapping.size() || mapping[r.node]==std::numeric_limits<Id>::max())return false;
@@ -619,13 +678,14 @@ struct RealExpressionBuilder::Impl {
         for(auto& r:p.weights)ok=remapRef(r) && ok;
         p.powers=std::move(powers);f.factor=ok?std::make_shared<Factor>(std::move(p)):nullptr;
       }
-      retained[mapping[id]]=std::move(f);UPDATE_STAT(++stats.summary_remaps);
+      facts[mapping[id]]=std::move(f);kept=mapping[id]+1;UPDATE_STAT(++stats.summary_remaps);
     }
-    facts=std::move(retained);owner=next_owner;
+    facts.resize(kept);owner=next_owner;
   }
 };
-RealExpressionBuilder::RealExpressionBuilder(Graph& graph,ReductionBuilder& reductions,std::function<void()> poll)
-  :impl_(std::make_unique<Impl>(Impl{graph,reductions,std::move(poll),{}, {},0,{}})){}
+RealExpressionBuilder::RealExpressionBuilder(Graph& graph,ReductionBuilder& reductions,std::function<void()> poll,
+    std::function<bool(const std::string&)> opaque_initial)
+  :impl_(std::make_unique<Impl>(Impl{graph,reductions,std::move(poll),std::move(opaque_initial),{}, {},0,{}})){}
 RealExpressionBuilder::~RealExpressionBuilder()=default;
 Ref RealExpressionBuilder::constant(std::string type,std::string literal) {
   return impl_->normalizedConstant(impl_->constant(type,std::move(literal)),type);
@@ -643,6 +703,9 @@ std::size_t RealExpressionBuilder::collect(std::span<Ref> roots,std::span<const 
     std::span<std::optional<Id>> weak) {
   impl_->refresh();
   return impl_->reductions.collect(roots,extendable,weak,[this](auto map,auto owner){impl_->remap(map,owner);});
+}
+Graph::RemapObserver RealExpressionBuilder::summaryObserver() {
+  return [impl=impl_.get()](std::span<const Id> mapping,std::uint64_t owner){impl->remap(mapping,owner);};
 }
 const RealExpressionBuilder::Statistics& RealExpressionBuilder::statistics() const{return impl_->stats;}
 }

@@ -106,7 +106,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 95776,
@@ -117,8 +117,8 @@
     },
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
-      "arena_nodes": 46601,
-      "comparison_elapsed_seconds": 0.220733791,
+      "arena_nodes": 43385,
+      "comparison_elapsed_seconds": 0.262712353,
       "context_declaration": {
         "assumptions": [],
         "fixed_inputs": [],
@@ -127,7 +127,7 @@
       },
       "context_policy": "explicit native caller premises; no implied provenance certification",
       "counters": {
-        "add_term_visits": 98491,
+        "add_term_visits": 90171,
         "affine_state_banks": 1,
         "argmax_gathers": 32,
         "argmax_point_selections": 512,
@@ -147,6 +147,7 @@
         "ep_body_anchor_limited": 32,
         "ep_body_anchor_nodes": 21521,
         "ep_body_call_rebuilds": 6624,
+        "ep_body_call_respelling_attempts": 1280,
         "ep_body_deferred_call_anchors": 4687,
         "ep_body_deferred_unmatched_anchors": 1423,
         "ep_body_instance_cache_entries": 768,
@@ -163,6 +164,7 @@
         "ep_identity_proofs": 1960,
         "ep_scalar_attempts": 7432,
         "ep_scalar_proofs": 1960,
+        "exact_exponential_base_changes": 640,
         "finite_bilinear_banks": 1,
         "finite_state_reuse_banks": 1,
         "first_argmax_folds": 48,
@@ -176,22 +178,22 @@
         "fp_idiom_power_instances": 640,
         "fp_idiom_rm_producers": 640,
         "fp_idiom_rounding_instances": 640,
-        "ideal_additive_compiler_exp_sequences": 0,
-        "ideal_compiler_exp_sequences": 640,
         "ideal_compiler_log2_polynomials": 0,
         "ideal_compiler_lse_sequences": 0,
-        "ideal_single_constant_exp_sequences": 0,
-        "imported_context_nodes": 42868,
+        "ideal_rounded_constants": 640,
+        "ideal_split_constant_pairs": 640,
+        "imported_context_nodes": 42874,
         "importer_occurrence_binder_hits": 615,
         "importer_scope_banks": 2,
         "importer_scope_binder_hits": 7,
         "importer_scope_binders_created": 2,
         "importer_scope_leaf_lookups": 9,
         "importer_scope_nested_body_fallbacks": 584,
-        "intern_requests": 433460,
-        "known_bits_cache_hits": 8888,
+        "intern_requests": 452950,
+        "known_bits_cache_hits": 10335,
         "known_bits_edges": 32,
-        "known_bits_nodes": 312,
+        "known_bits_nodes": 547,
+        "linear_reduction_case_nonfinite_identities": 0,
         "local_pattern_candidates": 11347,
         "masked_max_prefix_queries": 448,
         "masked_sum_prefix_queries": 288,
@@ -226,7 +228,7 @@
         "status": "proved"
       },
       "diagnostics": [],
-      "elapsed_s": 0.17283996,
+      "elapsed_s": 0.207921244,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -275,18 +277,25 @@
       },
       "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
       "equivalent_families": 40,
+      "failure_expression_samples": {
+        "failed_families": 0,
+        "omitted_families": 0,
+        "render_byte_limit_per_side": 4096,
+        "sample_limit": 8,
+        "sampled_families": 0
+      },
       "finished_families": 40,
       "idealizations_applied": [
-        "recognized fma.rm exponent encoding with split log2(e) is ideal Exp"
+        "a binary32/binary64 literal equal to the rounded ln(2) or log2(e) of its operation's format is that exact constant in floating Add/Subtract/Multiply/Fma/Divide/Reciprocal",
+        "a high/low split constant Fma(x, RN(c - RN(c)), Fma(x, RN(c), z)) for c = ln(2) or log2(e) is x*c + z"
       ],
       "input_contract_applied_reads": [],
-      "legacy_scalar_fallback": false,
       "mapping_input_memory_constraints": {},
       "native_context": null,
       "normalized_reachable_nodes": 3233,
       "numerical_result": "verified",
       "pattern_nodes": 26,
-      "peak_rss_kib": 152200,
+      "peak_rss_kib": 356260,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
       "piece_nodes": 5080,
       "piece_union": {
@@ -303,7 +312,7 @@
       },
       "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
       "raw_nodes": [
-        175,
+        181,
         24239
       ],
       "reference_term_patterns": 3,
@@ -318,41 +327,40 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 1.7309999999957915e-05,
-            "cumulative_elapsed_s": 0.168587895,
-            "left_import_s": 0.04037092500000003,
-            "left_normalize_s": 0.01108009999999995,
-            "parametric_state_s": 9.510000000094443e-06,
-            "piece_union_record_s": 8.430999999930328e-06,
-            "piece_union_seal_s": 2.1800000000737896e-06,
-            "right_import_s": 0.07248621599999985,
-            "right_normalize_s": 0.04127829799999994
+            "affine_state_pattern_s": 2.284999999995277e-05,
+            "cumulative_elapsed_s": 0.203086126,
+            "left_import_s": 0.04144816100000004,
+            "left_normalize_s": 0.011748500999999942,
+            "parametric_state_s": 1.0030000000001149e-05,
+            "piece_union_record_s": 8.680000000035187e-06,
+            "piece_union_seal_s": 1.7699999999253035e-06,
+            "right_import_s": 0.07430071100000016,
+            "right_normalize_s": 0.07182314199999995
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 1.7309999999957915e-05,
+        "affine_state_pattern_s": 2.284999999995277e-05,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.04037092500000003,
-        "left_normalize_s": 0.01108009999999995,
-        "parametric_state_s": 9.510000000094443e-06,
-        "piece_union_record_s": 8.430999999930328e-06,
+        "left_import_s": 0.04144816100000004,
+        "left_normalize_s": 0.011748500999999942,
+        "parametric_state_s": 1.0030000000001149e-05,
+        "piece_union_record_s": 8.680000000035187e-06,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 2.1800000000737896e-06,
+        "piece_union_seal_s": 1.7699999999253035e-06,
         "proof_reuse_s": 0.0,
-        "right_import_s": 0.07248621599999985,
-        "right_normalize_s": 0.04127829799999994,
+        "right_import_s": 0.07430071100000016,
+        "right_normalize_s": 0.07182314199999995,
         "state_pattern_s": 0.0
       },
       "timings": {
-        "load_and_scope_analysis": 0.002913371
+        "load_and_scope_analysis": 0.003308706
       },
       "total_output_families": 40,
       "transport": "in_memory_cpp_objects",
@@ -557,14 +565,14 @@
         "logical_accesses": 13136
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 6,
+      "hb_batches": 2,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 15307,
+      "hb_edge_visits": 12661,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 4128,
-      "hb_query_seconds": 0.003107271,
+      "hb_query_seconds": 0.003363126,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -572,7 +580,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 149.68359375,
+    "peak_footprint_mib": 165.06640625,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -690,11 +698,11 @@
         "output_families_merged": 0,
         "output_family_count": 40,
         "output_root_count": 40,
-        "peak_construction_nodes": 24618,
-        "shared_view_projection_hits": 1616,
+        "peak_construction_nodes": 24578,
+        "shared_view_projection_hits": 1600,
         "source_outputs": 48,
-        "spatial_families_projected": 6,
-        "spatial_outputs_projected": 48,
+        "spatial_families_projected": 4,
+        "spatial_outputs_projected": 32,
         "spatial_template_operations": 0,
         "statistics": {
           "constants": 574,
@@ -706,8 +714,8 @@
           "logical_iterations_overflow": false,
           "max_fold_nesting": 2,
           "nodes": 24238,
-          "nodes_before_final_collection": 24618,
-          "nodes_reclaimed": 380,
+          "nodes_before_final_collection": 24578,
+          "nodes_reclaimed": 340,
           "operations": 22381,
           "parameters": 0,
           "range_descriptions": 384,
@@ -719,16 +727,16 @@
         "action_patterns": 2736,
         "binding_patterns": 2736,
         "domain_refinements": 77650,
-        "elapsed_seconds": 0.036058819,
+        "elapsed_seconds": 0.037380802,
         "event_families": 6336,
         "expanded_event_records": 0,
         "largest_batch_members": 120,
         "logical_actions": 3152,
         "logical_events": 154320,
-        "peak_rss_mib_at_completion": 129.27734375,
+        "peak_rss_mib_at_completion": 347.91015625,
         "reachability_queries": 0,
         "relations": 48189,
-        "rss_mib_at_completion": 76.953125,
+        "rss_mib_at_completion": 73.6875,
         "scheduled_batches": 6336,
         "singleton_batches": 128,
         "value_families": 1508
@@ -740,13 +748,13 @@
     "value_ir_instance_count": 87376,
     "value_ir_node_count": 1430,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 0.11156079,
+    "verification_elapsed_seconds": 0.110787436,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 149.23828125,
-  "pipeline_elapsed_seconds": 0.769211838,
+  "peak_rss_mib": 347.91015625,
+  "pipeline_elapsed_seconds": 0.795697946,
   "result": "verified",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -755,6 +763,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.502
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.443
 }

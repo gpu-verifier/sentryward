@@ -8,7 +8,9 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <map>
+#include <mutex>
 #include <new>
 #include <optional>
 #include <queue>
@@ -16,6 +18,7 @@
 #include <span>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -54,45 +57,49 @@ template <typename Error>
       InvalidInput{std::move(error), std::move(message)});
 }
 
-template <typename Witness>
-[[nodiscard]] CheckResult RejectedFrom(Witness witness,
-                                       RejectionContext context) {
-  return CheckResult::Rejected(RejectionWitness{std::move(witness)},
-                               std::move(context));
-}
+// A rejection context whose provenance is not resolved yet: the report names only events of the
+// witness and of the counterexample (ForEachReportedEvent), so RejectedFrom, which has both, reads
+// those events' records from `events` (the rejected graph's, alive at every call of RejectedFrom).
+struct PendingRejection final {
+  RejectionContext context;
+  const SourceProgram* source = nullptr;
+  const EventRecords* events = nullptr;
+};
 
+// The provenance of the events the report names: an event's origin instruction when the checked
+// program has it (the report reads that instruction's location from the program, RejectionReport),
+// else synthetic. The graph's event ids are its event indexes, so each named event is one record
+// read. Whether the program has an instruction id: its record at that index when the program's ids
+// are their indexes (the usual case); otherwise one pass over the program's instruction ids (ids
+// only, no records), made at most once.
+// Before: one pass over every event record and every instruction record, O(events + instructions),
+// one word per event. Now: O(named events x log segments), plus O(instructions) id reads only if a
+// named origin is not at its own index.
 [[nodiscard]] RejectionProvenance BuildProvenance(
-    const SourceProgram& source, const LoweredProgram& lowered,
-    const HappensBeforeGraph* proof = nullptr) {
+    const SourceProgram& source, const EventRecords& events, const RejectionWitness& witness,
+    const CounterexampleExecution* execution) {
   MemoryCheckpoint("sync.provenance.begin");
-  std::map<InstId, SourceLocation> locations;
-  for (const SourceInstruction& instruction : source.instructions) {
-    locations.emplace(instruction.id, instruction.location);
-  }
-
-  if (MemoryProfileEnabled()) {
-    MemoryReport memory("sync.provenance.locations", "source_location_index", &locations);
-    memory.Object("map_header", sizeof(locations));
-    memory.Tree("locations", locations);
-    for (const auto& [id, location] : locations) {
-      (void)id;
-      memory.String("location.file", location.file);
-    }
-    memory.Emit();
-  }
   RejectionProvenance provenance;
-  const EventRecords& events =
-      proof == nullptr ? lowered.graph().events() : proof->events();
-  for (const Event& event : events) {
-    if (event.origin.has_value()) {
-      const auto location = locations.find(*event.origin);
-      if (location != locations.end()) {
-        provenance.events.emplace(
-            event.id, SourceEventProvenance{*event.origin, location->second});
-        continue;
-      }
+  provenance.total = events.size();
+  const auto instructions = source.instructions.size();
+  std::optional<std::vector<std::uint32_t>> ids; // every instruction id, sorted: built on demand
+  const auto known = [&](InstId id) {
+    if (id.value() < instructions && source.instructions.id(id.value()) == id) return true;
+    if (!ids) {
+      ids.emplace();
+      ids->reserve(instructions);
+      for (std::size_t i = 0; i < instructions; ++i) ids->push_back(source.instructions.id(i).value());
+      std::sort(ids->begin(), ids->end());
     }
-
+    return std::binary_search(ids->begin(), ids->end(), id.value());
+  };
+  ForEachReportedEvent(witness, execution, [&](EventId named) {
+    if (named.value() >= events.size() || provenance.resolved(named)) return;
+    const Event event = events.at(named.value());
+    if (event.origin.has_value() && known(*event.origin)) {
+      provenance.addSource(event.id, *event.origin);
+      return;
+    }
     SyntheticEventProvenance synthetic;
     if (const auto* completion =
             std::get_if<CollectiveCompleteEvent>(&event.payload)) {
@@ -103,9 +110,20 @@ template <typename Witness>
       synthetic.kind = SyntheticEventKind::kMBarrierPhaseCompletion;
       synthetic.phase = PhaseKey{completion->barrier, completion->phase};
     }
-    provenance.events.emplace(event.id, std::move(synthetic));
-  }
+    provenance.addSynthetic(event.id, std::move(synthetic));
+  });
   return provenance;
+}
+
+template <typename Witness>
+[[nodiscard]] CheckResult RejectedFrom(Witness witness,
+                                       PendingRejection pending) {
+  RejectionWitness rejection{std::move(witness)};
+  pending.context.provenance = BuildProvenance(
+      *pending.source, *pending.events, rejection,
+      pending.context.counterexample ? &*pending.context.counterexample : nullptr);
+  return CheckResult::Rejected(std::move(rejection),
+                               std::move(pending.context));
 }
 
 [[nodiscard]] bool CandidateProjectionPreserved(
@@ -137,9 +155,11 @@ template <typename Witness>
     bool reject_negative_tx) {
   CounterexampleExecution execution;
   execution.candidate_order.assign(candidate.begin(), candidate.end());
+  // (The scheduling class is read from the stored record: no event record is rebuilt.)
+  const EventRecords& events = lowered.graph().events();
   for (EventId event : candidate) {
     if (lowered.graph().contains(event) &&
-        !lowered.graph().event(event).isUrgentDerived()) {
+        !IsUrgentDerived(events, event.value())) {
       execution.replayed_candidate_order.push_back(event);
     }
   }
@@ -174,24 +194,25 @@ template <typename Witness>
   return execution;
 }
 
-[[nodiscard]] RejectionContext BuildRejectionContext(
+[[nodiscard]] PendingRejection BuildRejectionContext(
     const SourceProgram& source, const LoweredProgram& lowered,
     const HappensBeforeGraph* proof = nullptr,
     std::span<const EventId> candidate = {}, bool reject_negative_tx = false) {
-  RejectionContext context{BuildProvenance(source, lowered, proof),
-                           std::nullopt};
+  PendingRejection pending{RejectionContext{{}, std::nullopt}, &source,
+                           proof == nullptr ? &lowered.graph().events() : &proof->events()};
   if (!candidate.empty()) {
-    context.counterexample = ReplayCandidate(lowered, candidate,
-                                             reject_negative_tx);
+    pending.context.counterexample = ReplayCandidate(lowered, candidate,
+                                                     reject_negative_tx);
   }
-  return context;
+  return pending;
 }
 
-[[nodiscard]] RejectionContext BuildSimulationContext(
+[[nodiscard]] PendingRejection BuildSimulationContext(
     const SourceProgram& source, const LoweredProgram& lowered,
     const SimulationError& error, bool build_counterexample) {
+  const EventRecords* events = &lowered.graph().events();
   if (!build_counterexample) {
-    return RejectionContext{BuildProvenance(source, lowered), std::nullopt};
+    return PendingRejection{RejectionContext{{}, std::nullopt}, &source, events};
   }
   CounterexampleExecution execution;
   MemoryCheckpoint("sync.failure.before_trace_copy");
@@ -209,8 +230,7 @@ template <typename Witness>
     execution.replayed_candidate_order.push_back(*violation->event);
     execution.unexecuted_candidate.push_back(*violation->event);
   }
-  return RejectionContext{BuildProvenance(source, lowered),
-                          std::move(execution)};
+  return PendingRejection{RejectionContext{{}, std::move(execution)}, &source, events};
 }
 
 [[nodiscard]] bool SimulationErrorIsInvalid(SimulationErrorCode code) {
@@ -315,16 +335,45 @@ template <typename Witness>
 
 using ExtraEdge = std::pair<EventId, EventId>;
 
+// A topological order of the graph plus `requested_edges`, the smallest ready event id first (Kahn).
+// The graph's event ids are its event indexes 0 .. eventCount() - 1 (HappensBeforeGraph::contains), so
+// events are visited by id without materializing their records. O((events + edges) log events) time;
+// one 32-bit in-degree per event (an event's predecessors fit the 32-bit event id domain) and the
+// extra edges indexed by their source, so an event visits only its own extra edges.
 [[nodiscard]] std::vector<EventId> ScheduleWithExtraEdges(
     const HappensBeforeGraph& graph, std::vector<ExtraEdge> requested_edges,
-    bool build_schedule) {
+    bool build_schedule, std::size_t threads = 1) {
   if (!build_schedule) {
     return {};
   }
 
-  std::vector<std::size_t> indegree(graph.eventCount(), 0);
-  for (const Event& event : graph.events()) {
-    indegree[event.id.value()] = graph.predecessors(event.id).size();
+  // The in-degrees are independent reads of the unchanging graph: with threads, each counts one
+  // contiguous id range.
+  const auto count = graph.eventCount();
+  std::vector<std::uint32_t> indegree(count, 0);
+  const auto count_range = [&](std::size_t begin, std::size_t end) {
+    for (std::size_t id = begin; id < end; ++id)
+      indegree[id] = static_cast<std::uint32_t>(graph.predecessors(EventId(static_cast<std::uint32_t>(id))).size());
+  };
+  threads = std::max<std::size_t>(1, std::min<std::size_t>(threads, count / 65536));
+  if (threads <= 1) {
+    count_range(0, count);
+  } else {
+    std::vector<std::thread> pool;
+    std::exception_ptr error;
+    std::mutex error_mutex;
+    const auto chunk = (count + threads - 1) / threads;
+    for (std::size_t t = 0; t < threads; ++t)
+      pool.emplace_back([&, t] {
+        try {
+          count_range(std::min(count, t * chunk), std::min(count, (t + 1) * chunk));
+        } catch (...) {
+          std::lock_guard lock(error_mutex);
+          if (!error) error = std::current_exception();
+        }
+      });
+    for (auto& thread : pool) thread.join();
+    if (error) std::rethrow_exception(error);
   }
   std::set<ExtraEdge> extra_edges;
   for (const auto& [before, after] : requested_edges) {
@@ -339,15 +388,18 @@ using ExtraEdge = std::pair<EventId, EventId>;
       ++indegree[after.value()];
     }
   }
+  // The extra edges by source, in the set's order (the order the loop below visited them in).
+  std::map<EventId, std::vector<EventId>> extra_successors;
+  for (const auto& [before, after] : extra_edges) extra_successors[before].push_back(after);
 
   auto greater_id = [](EventId left, EventId right) {
     return left.value() > right.value();
   };
   std::priority_queue<EventId, std::vector<EventId>, decltype(greater_id)>
       ready(greater_id);
-  for (const Event& event : graph.events()) {
-    if (indegree[event.id.value()] == 0) {
-      ready.push(event.id);
+  for (std::size_t id = 0; id < count; ++id) {
+    if (indegree[id] == 0) {
+      ready.push(EventId(static_cast<std::uint32_t>(id)));
     }
   }
 
@@ -362,9 +414,11 @@ using ExtraEdge = std::pair<EventId, EventId>;
         ready.push(successor);
       }
     }
-    for (const auto& [before, after] : extra_edges) {
-      if (event == before && --indegree[after.value()] == 0) {
-        ready.push(after);
+    if (const auto extra = extra_successors.find(event); extra != extra_successors.end()) {
+      for (const EventId after : extra->second) {
+        if (--indegree[after.value()] == 0) {
+          ready.push(after);
+        }
       }
     }
   }
@@ -376,7 +430,7 @@ using ExtraEdge = std::pair<EventId, EventId>;
 
 [[nodiscard]] std::vector<EventId> WaitCounterexampleSchedule(
     const WaitCheckError& error, const HappensBeforeGraph& proof,
-    ReachabilityOracle& reachability, bool build_schedule) {
+    ReachabilityOracle& reachability, bool build_schedule, std::size_t threads) {
   std::vector<ExtraEdge> edges;
   if (const auto* witness =
           std::get_if<WaitReachabilityWitness>(&error.witness)) {
@@ -415,12 +469,12 @@ using ExtraEdge = std::pair<EventId, EventId>;
   if (edges.empty()) {
     return {};
   }
-  return ScheduleWithExtraEdges(proof, std::move(edges), build_schedule);
+  return ScheduleWithExtraEdges(proof, std::move(edges), build_schedule, threads);
 }
 
 [[nodiscard]] std::vector<EventId> LifecycleCounterexampleSchedule(
     const LifecycleCheckError& error, const HappensBeforeGraph& proof,
-    ReachabilityOracle& reachability, bool build_schedule) {
+    ReachabilityOracle& reachability, bool build_schedule, std::size_t threads) {
   std::vector<ExtraEdge> edges;
   if (error.code == LifecycleCheckErrorCode::kMissingSuccessfulWaitHandoff) {
     for (EventId wait_done : error.witness.candidate_waits) {
@@ -432,7 +486,7 @@ using ExtraEdge = std::pair<EventId, EventId>;
   if (edges.empty()) {
     return {};
   }
-  return ScheduleWithExtraEdges(proof, std::move(edges), build_schedule);
+  return ScheduleWithExtraEdges(proof, std::move(edges), build_schedule, threads);
 }
 
 [[nodiscard]] std::optional<TraceIndex> TracePosition(
@@ -906,7 +960,7 @@ CheckResult WellSyncChecker::RunExecutionOrder(const SourceProgram& source,
     if (SimulationErrorIsInvalid(error.code)) {
       return InvalidFrom(std::move(error), "reference simulation failed");
     }
-    RejectionContext context = BuildSimulationContext(
+    PendingRejection context = BuildSimulationContext(
         source, lowered, error, options.build_counterexample_schedule);
     return std::visit(
         [context = std::move(context)](auto witness) mutable {
@@ -1005,7 +1059,7 @@ CheckResult WellSyncChecker::RunExecutionOrder(const SourceProgram& source,
           ideal->topological_schedule.clear();
         }
       }
-      RejectionContext context = BuildRejectionContext(
+      PendingRejection context = BuildRejectionContext(
           source, lowered, &proof.happensBeforeGraph(), candidate,
           options.reject_negative_tx);
       return RejectedFrom(std::move(error), std::move(context));
@@ -1066,7 +1120,7 @@ CheckResult WellSyncChecker::RunExecutionOrder(const SourceProgram& source,
           ideal->topological_schedule.clear();
         }
       }
-      RejectionContext context = BuildRejectionContext(
+      PendingRejection context = BuildRejectionContext(
           source, lowered, &proof.happensBeforeGraph(), candidate,
           options.reject_negative_tx);
       return RejectedFrom(std::move(error), std::move(context));
@@ -1083,7 +1137,8 @@ CheckResult WellSyncChecker::RunExecutionOrder(const SourceProgram& source,
         return wait_checker.CheckAll(
             lowered, trace, phases, proof, reachability, &parallel,
             WaitReachabilityBatchOptions{
-                .certified_phase_ordering = options.use_batched_wait_reachability});
+                .certified_phase_ordering = options.use_batched_wait_reachability,
+                .threads = options.reachability.worker_threads});
       });
   if (!wait_result) {
     WaitCheckError error = std::move(wait_result).error();
@@ -1092,7 +1147,7 @@ CheckResult WellSyncChecker::RunExecutionOrder(const SourceProgram& source,
     }
     const std::vector<EventId> candidate = WaitCounterexampleSchedule(
         error, proof.happensBeforeGraph(), reachability,
-        options.build_counterexample_schedule);
+        options.build_counterexample_schedule, options.reachability.worker_threads);
     return RejectedFrom(
         std::move(error),
         BuildRejectionContext(source, lowered, &proof.happensBeforeGraph(),
@@ -1112,7 +1167,7 @@ CheckResult WellSyncChecker::RunExecutionOrder(const SourceProgram& source,
     }
     const std::vector<EventId> candidate = LifecycleCounterexampleSchedule(
         error, proof.happensBeforeGraph(), reachability,
-        options.build_counterexample_schedule);
+        options.build_counterexample_schedule, options.reachability.worker_threads);
     return RejectedFrom(
         std::move(error),
         BuildRejectionContext(source, lowered, &proof.happensBeforeGraph(),

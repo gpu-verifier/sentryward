@@ -13,6 +13,7 @@ Scalar Operand(const ExecutionProgram &program,const ExecutedInstruction &event,
   if (auto known=detail::ExecutionStorage::Value(program,event,split->first)) value=*known;
   else if (program.config.parameters.contains(split->first)) value=program.config.parameters.at(split->first);
   else if (auto number=ParseInteger(split->first)) value=*number;
+  value=PlainValue(value); // a table atom (class mode) as the integer or pointer it stands for
   if (auto pointer=std::get_if<AllocationPointer>(&value)) { pointer->offset+=split->second; return value; }
   if (auto number=ScalarInteger(value)) return Integer(*number+split->second);
   return {};

@@ -56,23 +56,14 @@
       "key": "floating_values_in_range",
       "label": "Floating values stay in range",
       "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
-      "triggered": null
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "incomplete",
+    "equivalence": "passed",
     "synchronization": "passed"
   },
-  "diagnostics": [
-    {
-      "code": "unit_restart_limit_exceeded",
-      "details": {
-        "internal_stage": "value_lifting"
-      },
-      "message": "The class-mode value analysis refused lifting at partial_memory_overlap_unsupported (Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented.); the per-unit re-run would build about 136691712 value instances (1024 units from 1 analysed), above the limit 67108864.",
-      "stage": "equivalence"
-    }
-  ],
+  "diagnostics": [],
   "evidence": {
     "race_count": 0,
     "race_samples_truncated": false,
@@ -170,7 +161,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 63656,
@@ -180,64 +171,273 @@
       "threads": 160
     },
     "equivalence": {
-      "diagnostics": [
-        {
-          "code": "unit_restart_limit_exceeded",
-          "message": "The class-mode value analysis refused lifting at partial_memory_overlap_unsupported (Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented.); the per-unit re-run would build about 136691712 value instances (1024 units from 1 analysed), above the limit 67108864.",
-          "stage": "value_lifting"
-        }
-      ],
-      "expression_diagnostic": {
-        "class_mode_diagnostic": {
-          "code": "partial_memory_overlap_unsupported",
-          "message": "Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented."
-        },
-        "diagnostic": {
-          "code": "unit_restart_limit_exceeded",
-          "message": "The class-mode value analysis refused lifting at partial_memory_overlap_unsupported (Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented.); the per-unit re-run would build about 136691712 value instances (1024 units from 1 analysed), above the limit 67108864."
-        },
-        "diagnostics": [
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 34314,
+      "comparison_elapsed_seconds": 0.196385255,
+      "context_declaration": {
+        "assumptions": [
           {
-            "code": "unit_restart_limit_exceeded",
-            "details": {
-              "resource": {
-                "estimate": 136691712,
-                "kind": "per_unit_value_instances",
-                "limit": 67108864,
-                "origin": "algorithm_budget"
-              }
+            "input": "state_batch_indices",
+            "interpretation": "s64",
+            "interval": {
+              "lower": "0",
+              "lower_inclusive": true,
+              "upper": "31",
+              "upper_inclusive": true
             },
-            "message": "The class-mode value analysis refused lifting at partial_memory_overlap_unsupported (Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented.); the per-unit re-run would build about 136691712 value instances (1024 units from 1 analysed), above the limit 67108864.",
-            "stage": "value_lifting"
+            "kind": "input_elements",
+            "reason": "tensor_properties"
           }
         ],
-        "resource": {
-          "estimate": 136691712,
-          "kind": "per_unit_value_instances",
-          "limit": 67108864,
-          "origin": "algorithm_budget"
-        },
-        "serialization": {
-          "action_patterns": 4111,
-          "binding_patterns": 4111,
-          "domain_refinements": 110664,
-          "elapsed_seconds": 0.089236698,
-          "event_families": 21973,
-          "expanded_event_records": 0,
-          "largest_batch_members": 84,
-          "logical_actions": 12055,
-          "logical_events": 281307,
-          "peak_rss_mib_at_completion": 209.66015625,
-          "reachability_queries": 0,
-          "relations": 86337,
-          "rss_mib_at_completion": 147.515625,
-          "scheduled_batches": 21973,
-          "singleton_batches": 5179,
-          "value_families": 12933
-        },
-        "stage": "value_lifting"
+        "fixed_inputs": [],
+        "inputs": [],
+        "predicate_nodes": []
       },
-      "stage": "value_lifting"
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 210247,
+        "affine_state_banks": 1,
+        "affine_state_certified_updates": 0,
+        "affine_state_collect_work": 3065,
+        "affine_state_segments": 0,
+        "call_definition_node_visits": 367,
+        "canonical_factor_visits": 64,
+        "canonical_node_visits": 11267,
+        "certified_state_pattern_cache_hits": 14,
+        "certified_state_pattern_decline_no_certified_state": 2,
+        "certified_state_pattern_work": 100,
+        "coefficient_normalizations": 1,
+        "completed_reductions": 16,
+        "constant_binary32_bitcasts": 82,
+        "coverage_polynomial_peak": 2,
+        "coverage_polynomial_visits": 2064,
+        "coverage_stored_piece_visits": 2048,
+        "ep_body_anchor_edges": 77998,
+        "ep_body_anchor_nodes": 82147,
+        "ep_body_call_rebuilds": 32,
+        "ep_body_deferred_call_anchors": 16460,
+        "ep_body_deferred_unmatched_anchors": 16460,
+        "ep_body_instance_cache_entries": 2048,
+        "ep_body_obligations": 2080,
+        "ep_body_pattern_anchor_cache_hits": 22686,
+        "ep_body_payload_summary_nodes": 96,
+        "ep_body_proofs": 2048,
+        "ep_body_read_anchor_rejections": 6198,
+        "ep_body_target_anchor_cache_hits": 14447,
+        "ep_body_target_call_index_builds": 16,
+        "ep_body_target_call_index_nodes": 80,
+        "ep_identity_proofs": 2065,
+        "ep_scalar_attempts": 2097,
+        "ep_scalar_proofs": 2065,
+        "exact_exponential_base_changes": 33,
+        "finite_bilinear_banks": 1,
+        "finite_state_reuse_banks": 1,
+        "fold_alpha_signature_edges": 153,
+        "fold_alpha_signatures": 55,
+        "fold_alpha_states": 55,
+        "fp_idiom_numeric_replacements": 33,
+        "fp_idiom_power_constructions": 33,
+        "fp_idiom_power_instances": 33,
+        "fp_idiom_rm_producers": 33,
+        "fp_idiom_rounding_instances": 33,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_rounded_constants": 33,
+        "ideal_split_constant_pairs": 33,
+        "imported_context_nodes": 26735,
+        "importer_occurrence_binder_hits": 31,
+        "importer_scope_banks": 1,
+        "importer_scope_binders_created": 1,
+        "importer_scope_leaf_lookups": 1,
+        "input_index_radix_quotients": 575,
+        "intern_requests": 531801,
+        "known_bits_cache_hits": 3487,
+        "known_bits_edges": 0,
+        "known_bits_nodes": 34,
+        "linear_reduction_case_nonfinite_identities": 0,
+        "local_pattern_candidates": 24738,
+        "masked_sum_prefix_queries": 16,
+        "maximum_dominated_operands": 96,
+        "normalization_cache_context_changes": 3,
+        "normalization_node_visits": 12496,
+        "packed_radix_probes": 575,
+        "packed_radix_rewrites": 575,
+        "parametric_state_attempts": 0,
+        "pattern_build_peak_nodes": 14,
+        "pattern_build_unique_nodes": 224,
+        "pattern_node_visits": 98627,
+        "predicate_integer_affine_normalizations": 64,
+        "proved_select_arms_imported": 48,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_calls": 160,
+        "select_max_probe_temporary_nodes": 0,
+        "summary_concat_nodes": 2032,
+        "symbolic_byte_reads_without_extent_proof": 0
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 17,
+        "status": "proved"
+      },
+      "diagnostics": [],
+      "elapsed_s": 0.152237415,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 47,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 47,
+          "unique_query_nodes": 0
+        },
+        "query_count": 2097,
+        "reset_s": 0.0,
+        "reuse_cache": true,
+        "shared_evictions": 0
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 1,
+        "fixed_input_elements": 0,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 17,
+      "failure_expression_samples": {
+        "failed_families": 0,
+        "omitted_families": 0,
+        "render_byte_limit_per_side": 4096,
+        "sample_limit": 8,
+        "sampled_families": 0
+      },
+      "finished_families": 17,
+      "idealizations_applied": [
+        "a binary32/binary64 literal equal to the rounded ln(2) or log2(e) of its operation's format is that exact constant in floating Add/Subtract/Multiply/Fma/Divide/Reciprocal",
+        "a high/low split constant Fma(x, RN(c - RN(c)), Fma(x, RN(c), z)) for c = ln(2) or log2(e) is x*c + z"
+      ],
+      "input_contract": [
+        {
+          "element_type": "s64",
+          "max_inclusive": 31,
+          "min_inclusive": 0,
+          "object": "state_batch_indices",
+          "region": "whole_object",
+          "source": "tensor_properties"
+        }
+      ],
+      "input_contract_applied_reads": [
+        {
+          "element_type": "s64",
+          "object": "state_batch_indices",
+          "side": "left"
+        },
+        {
+          "element_type": "s64",
+          "object": "state_batch_indices",
+          "side": "right"
+        }
+      ],
+      "mapping_input_memory_constraints": {},
+      "native_context": null,
+      "normalized_reachable_nodes": 572,
+      "numerical_result": "verified",
+      "pattern_nodes": 107,
+      "peak_rss_kib": 354928,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 4080,
+      "piece_union": {
+        "abstract_optimized_replacements": 0,
+        "abstract_reference_replacements": 0,
+        "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+        "collected_pieces": 0,
+        "late_certificates": "accepted_until_each_schema_is_complete",
+        "method": "complete_output_equalities_with_finite_piece_union",
+        "replacements": 0,
+        "schemas": [],
+        "stored_dag_work": 0,
+        "work_limit": 2000000
+      },
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        4882,
+        19371
+      ],
+      "reference_term_patterns": 6,
+      "row_groups": [
+        {
+          "count": 17,
+          "families": [
+            [
+              0,
+              16
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 0.00010769999999998142,
+            "cumulative_elapsed_s": 0.149727427,
+            "left_import_s": 0.013583332999999972,
+            "left_normalize_s": 0.0012452219999999903,
+            "parametric_state_s": 2.042999999994806e-05,
+            "piece_union_record_s": 0.00010816999999997516,
+            "piece_union_seal_s": 1.930000000000681e-06,
+            "right_import_s": 0.08478662199999998,
+            "right_normalize_s": 0.046027456999999966
+          }
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 0.00010769999999998142,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.013583332999999972,
+        "left_normalize_s": 0.0012452219999999903,
+        "parametric_state_s": 2.042999999994806e-05,
+        "piece_union_record_s": 0.00010816999999997516,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 1.930000000000681e-06,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 0.08478662199999998,
+        "right_normalize_s": 0.046027456999999966,
+        "state_pattern_s": 0.0
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.003649512
+      },
+      "total_output_families": 17,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
     },
     "frontend": {
       "address_value_bridge": {
@@ -568,7 +768,7 @@
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 10906400,
       "hb_queries": 5146,
-      "hb_query_seconds": 8.3031e-05,
+      "hb_query_seconds": 8.0611e-05,
       "overlap_queries": 12,
       "strategy": "conflict-first",
       "unordered_candidates_examined": 12
@@ -576,7 +776,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 196.05859375,
+    "peak_footprint_mib": 347.8515625,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -635,74 +835,123 @@
     },
     "unresolved_count": 0,
     "value_analysis": {
-      "class_mode_diagnostic": {
-        "code": "partial_memory_overlap_unsupported",
-        "message": "Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented."
+      "diagnostics": [],
+      "duplicate_write_value_checks": 0,
+      "equivalence_check": "equivalent",
+      "initial_memory_regions": 198,
+      "initial_read_families": 699,
+      "memory_action_storage": {
+        "logical_actions": 12055,
+        "stored_runs": 4111
       },
-      "diagnostic": {
-        "code": "unit_restart_limit_exceeded",
-        "message": "The class-mode value analysis refused lifting at partial_memory_overlap_unsupported (Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented.); the per-unit re-run would build about 136691712 value instances (1024 units from 1 analysed), above the limit 67108864."
-      },
-      "diagnostics": [
+      "output_region_families": 0,
+      "output_regions": 68,
+      "passes": [
         {
-          "code": "unit_restart_limit_exceeded",
-          "details": {
-            "resource": {
-              "estimate": 136691712,
-              "kind": "per_unit_value_instances",
-              "limit": 67108864,
-              "origin": "algorithm_budget"
-            }
-          },
-          "message": "The class-mode value analysis refused lifting at partial_memory_overlap_unsupported (Load region [17416,17424) partially overlaps stored region [17416,17420); fragmented-byte assembly is not implemented.); the per-unit re-run would build about 136691712 value instances (1024 units from 1 analysed), above the limit 67108864.",
-          "stage": "value_lifting"
+          "name": "packing",
+          "rewritten_instances": 8192,
+          "rewritten_nodes": 448,
+          "semantics": "exact_fixed_width"
+        },
+        {
+          "abstraction": "matched approximation and clamp replaced by ideal Exp2",
+          "name": "software_exp2",
+          "rewritten_instances": 0,
+          "rewritten_nodes": 0,
+          "semantics": "ideal_exp2"
+        },
+        {
+          "converted_instances": 100159,
+          "name": "type_edges",
+          "removed_nodes": 5720
+        },
+        {
+          "name": "memory_elimination"
+        },
+        {
+          "elements": 0,
+          "identities": 4,
+          "layouts": 0,
+          "mapping_blocks": 5680,
+          "name": "view_normalization",
+          "original_pieces": 4208,
+          "reused_initial_reads": 2015,
+          "reused_views": 0,
+          "segmented": 60,
+          "slices": 4096,
+          "stored_mapping_blocks": 5680,
+          "typed_output_pieces": 0,
+          "typed_output_regions": 0
         }
       ],
-      "equivalence_check": "analysis_budget_exceeded",
-      "resource": {
-        "estimate": 136691712,
-        "kind": "per_unit_value_instances",
-        "limit": 67108864,
-        "origin": "algorithm_budget"
-      },
+      "processed_memory_actions": 12055,
+      "processed_memory_families": 0,
+      "read_substitutions": 7884,
       "scalar_fold": {
-        "diagnostics": [
-          {
-            "code": "memory_elimination_not_completed",
-            "stage": "pipeline"
-          }
-        ]
+        "construction_collections": 0,
+        "diagnostics": [],
+        "narrowing_slice_projections": 984,
+        "output_count": 8454144,
+        "output_families_merged": 0,
+        "output_family_count": 48,
+        "output_root_count": 48,
+        "peak_construction_nodes": 136666,
+        "shared_view_projection_hits": 7950,
+        "source_outputs": 68,
+        "spatial_families_projected": 8212,
+        "spatial_outputs_projected": 8248,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 2111,
+          "edges": 36157,
+          "folds": 0,
+          "indices": 4,
+          "initial_cells": 2487,
+          "logical_iterations": 0,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 0,
+          "nodes": 19332,
+          "nodes_before_final_collection": 136666,
+          "nodes_reclaimed": 117334,
+          "operations": 14730,
+          "parameters": 0,
+          "range_descriptions": 0,
+          "storage_nodes": 19332,
+          "unique_fold_bodies": 0
+        }
       },
       "serialization": {
         "action_patterns": 4111,
         "binding_patterns": 4111,
         "domain_refinements": 110664,
-        "elapsed_seconds": 0.089236698,
+        "elapsed_seconds": 0.088362981,
         "event_families": 21973,
         "expanded_event_records": 0,
         "largest_batch_members": 84,
         "logical_actions": 12055,
         "logical_events": 281307,
-        "peak_rss_mib_at_completion": 209.66015625,
+        "peak_rss_mib_at_completion": 210.07421875,
         "reachability_queries": 0,
         "relations": 86337,
-        "rss_mib_at_completion": 147.515625,
+        "rss_mib_at_completion": 120.0703125,
         "scheduled_batches": 21973,
         "singleton_batches": 5179,
         "value_families": 12933
       },
-      "stage": "value_lifting"
+      "shared_read_families": 159,
+      "shared_read_instances": 1709,
+      "stored_read_substitutions": 6175
     },
     "value_ir_instance_count": 133488,
     "value_ir_node_count": 7619,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 7.538052508,
+    "verification_elapsed_seconds": 7.843219559,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 209.66015625,
-  "pipeline_elapsed_seconds": 7.658352701,
-  "result": "analysis_budget_exceeded",
-  "rss_limit_mib": null,
+  "peak_rss_mib": 347.8515625,
+  "pipeline_elapsed_seconds": 9.645968646,
+  "result": "verified",
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -711,6 +960,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.16
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.089
 }

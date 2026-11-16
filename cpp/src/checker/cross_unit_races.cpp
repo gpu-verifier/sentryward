@@ -181,6 +181,19 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
   std::map<std::string, bool> alias_write, alias_shared;
   bool unplaced = false, unplaced_write = false, unplaced_shared = false, any_shared_global = false,
        any_global_write = false;
+  // Placed global writes by storage, (space, allocation) and (space, alias): whether one of them is
+  // in a shared class.
+  std::map<std::pair<std::string, std::string>, bool> placed_writes, placed_write_aliases;
+  const auto note_write = [](auto &table, std::pair<std::string, std::string> key, bool shared) {
+    const auto [found, added] = table.try_emplace(std::move(key), shared);
+    if (!added) found->second = found->second || shared;
+  };
+  // Unplaceable reads on known storage (MemoryModel::familyStorage) and their class's sharing.
+  struct StoredRead {
+    FamilyStorage storage;
+    bool shared = false;
+  };
+  std::vector<StoredRead> stored_reads;
   // The allocations some placeable global part writes: a pair on any other one holds no write.
   std::set<std::string> written;
   for (const auto &part : parts)
@@ -196,7 +209,19 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
     const bool shared = shared_class(klass);
     const bool lookup = !fp.symbolic.empty() && !fp.gathers.empty();
     if (fp.space != "global" || fp.allocation.empty() || (!fp.symbolic.empty() && !lookup) || !fp.affine) {
-      // Not placeable against a translated copy: it may meet any other unit's global access.
+      // Not placeable against a translated copy. A read whose storage is known (every member's
+      // binding names its space, allocation and alias; its offsets may be data, as an opaque TMA
+      // region's) meets only accesses on that storage: the address models separate two allocations
+      // of a known space without a shared alias scope (Layer 0; the family checker drops such reads
+      // alike). It is checked against the placed writes below. Any other part may meet any other
+      // unit's global access.
+      if (!part.write)
+        if (auto storage = model.familyStorage(part.family); storage && KnownSpace(storage->space)) {
+          if (UnitPrivateSpace(storage->space)) continue;
+          any_shared_global |= shared;
+          stored_reads.push_back({std::move(*storage), shared});
+          continue;
+        }
       unplaced = true;
       unplaced_write |= part.write;
       unplaced_shared |= shared;
@@ -204,6 +229,10 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
     }
     any_shared_global |= shared;
     any_global_write |= part.write;
+    if (part.write) {
+      note_write(placed_writes, {fp.space, fp.allocation}, shared);
+      if (!fp.alias.empty()) note_write(placed_write_aliases, {fp.space, fp.alias}, shared);
+    }
     if (!fp.alias.empty()) {
       alias_allocations[fp.alias].insert(fp.allocation);
       alias_write[fp.alias] = alias_write[fp.alias] || part.write;
@@ -230,7 +259,19 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
     entry.all.spans.push_back(Span(part));
     if (part.write) entry.writes.push_back(k);
   }
-  // An unplaceable global access paired with a member unit's access, one of them a write (an
+  // An unplaceable read on known storage paired with a member unit's placed write on that storage
+  // (its allocation, or its alias scope), or a member unit's read with such a write: Unknown. Its
+  // other pairs are on other storage, or reads.
+  for (const auto &read : stored_reads) {
+    const auto &storage = read.storage;
+    const auto meets = [&](const auto &table, const std::string &name) {
+      const auto found = table.find(std::pair{storage.space, name});
+      return found != table.end() && (read.shared || found->second);
+    };
+    if (meets(placed_writes, storage.allocation) || (!storage.alias.empty() && meets(placed_write_aliases, storage.alias)))
+      return unknown("unplaced_read_written:" + storage.allocation);
+  }
+  // Any other unplaceable global access paired with a member unit's access, one of them a write (an
   // Unknown involving a member restarts per unit).
   if (unplaced && (unplaced_shared || any_shared_global) && (unplaced_write || any_global_write))
     return unknown("unplaced_global_access");
@@ -408,11 +449,170 @@ CrossUnitOutcome CheckCrossUnit(std::span<const CrossUnitPart> parts, const Unit
     }
   }
 
+  // Lookup parts whose every lookup is a fixed table's element (table atoms, MemoryModel::lookupValue):
+  // each part placed exactly in each unit of its class, by its unit's δ of the allocation and its
+  // lookups' values at their arguments shifted by the unit's δ of their objects (one value per lookup
+  // and unit), with the allocation's constant parts placed by δ. One sort of all placed spans per
+  // allocation finds every pair whose spans meet; each such pair with a write and a lookup part:
+  //  - in two units (not two representatives): decided exactly (ClassifyFamilyOverlap); an overlap is
+  //    a race (units are never ordered);
+  //  - in one member unit: the representative's own check decided the same pair at the
+  //    representative's relative placement; at another relative placement any overlap is Unknown
+  //    (this pass does not know the order inside a unit).
+  // A containment member holds only the parts it performs some access of (CrossUnitPart::absent).
+  // Cost: O(E log E + M) for E = sum over classes of units x parts on the allocation and M pairs of
+  // meeting spans, plus one lookupValue per lookup and unit.
+  std::set<std::string> exact_lookups;
+  for (const auto &[allocation, lookup_classes] : lookups) {
+    bool valued = true;
+    // The classes whose representative checked its own pairs on the allocation with some lookup at
+    // its exact value (the family checker values every lookup it can).
+    std::vector<std::uint32_t> valued_classes;
+    for (const auto &[klass, list] : lookup_classes) {
+      bool some = false;
+      for (const auto k : list)
+        for (const auto &g : parts[k].footprint.gathers) {
+          const bool known = model.lookupValue(g, g.arg).has_value();
+          valued = valued && known;
+          some = some || known;
+        }
+      if (some) valued_classes.push_back(klass);
+    }
+    if (const auto found = by_allocation.find(allocation); found != by_allocation.end())
+      for (const auto &[group, entry] : found->second) valued = valued && group.piece == kWhole;
+    if (!valued) {
+      // Without this pass, a pair inside one member unit is left to the representative's own check
+      // (the pass below skips it). That check carries over only to a member whose exact offsets are
+      // the representative's moved by one δ per allocation (Class::valued_delta); a member admitted
+      // on its form alone reads other table elements, so its own pairs are unchecked: Unknown.
+      for (const auto klass : valued_classes) {
+        const auto &c = quotient.classes.at(klass);
+        for (std::size_t i = 1; i < c.units.size(); ++i)
+          if (i >= c.valued_delta.size() || !c.valued_delta[i]) return unknown("member_lookup_pairs:" + allocation);
+      }
+      continue;
+    }
+    exact_lookups.insert(allocation);
+    struct Placed {
+      I lo, hi, shift;
+      std::size_t part;
+      std::uint32_t klass, index; // unit index in the class (0: the representative)
+      bool lookup, write;
+    };
+    std::vector<Placed> placed;
+    std::map<std::uint32_t, std::vector<std::pair<std::size_t, bool>>> class_parts; // (part, lookup)
+    for (const auto &[klass, list] : lookup_classes)
+      for (const auto k : list) class_parts[klass].emplace_back(k, true);
+    if (const auto found = by_allocation.find(allocation); found != by_allocation.end())
+      for (const auto &[group, entry] : found->second)
+        for (const auto k : entry.all.parts) class_parts[group.klass].emplace_back(k, false);
+    std::map<std::size_t, I> representative_shift;
+    for (const auto &[klass, list] : class_parts) {
+      const auto &c = quotient.classes.at(klass);
+      for (std::uint32_t i = 0; i < c.units.size(); ++i) {
+        const auto delta_of = [&](const std::string &object) -> std::optional<I> {
+          if (i == 0) return I(0);
+          if (i >= c.delta.size()) return std::nullopt;
+          const auto found = c.delta[i].find(object);
+          if (found == c.delta[i].end()) return std::nullopt;
+          return I(found->second);
+        };
+        const auto base = delta_of(allocation);
+        if (!base) return unknown("delta_missing:" + allocation);
+        for (const auto &[k, lookup] : list) {
+          const auto &part = parts[k];
+          // A containment member that performs none of the part's accesses holds no copy of it.
+          if (i != 0 && std::binary_search(part.absent.begin(), part.absent.end(), i)) continue;
+          I shift = *base;
+          for (const auto &g : part.footprint.gathers) {
+            const auto delta = delta_of(g.object);
+            if (!delta) return unknown("delta_missing:" + g.object);
+            const auto value = model.lookupValue(g, g.arg + *delta);
+            if (!value) return unknown("lookup_value:" + allocation);
+            I product, sum;
+            if (__builtin_mul_overflow(g.coefficient, *value, &product) || __builtin_add_overflow(shift, product, &sum))
+              return unknown("delta_overflow:" + allocation);
+            shift = sum;
+          }
+          if (i == 0) representative_shift[k] = shift;
+          const auto span = Span(part);
+          placed.push_back({span.lo + shift, span.hi + shift, shift, k, klass, i, lookup, part.write});
+          if (placed.size() > limits.refinements * 16) return cap("lookup_entries");
+        }
+      }
+    }
+    std::sort(placed.begin(), placed.end(), [](const Placed &x, const Placed &y) { return x.lo < y.lo; });
+    // The footprint of a placed part, ground (its lookups are in the shift).
+    const auto ground = [&](const Placed &e) {
+      auto footprint = parts[e.part].footprint;
+      footprint.offset += e.shift;
+      footprint.symbolic.clear();
+      footprint.gathers.clear();
+      return footprint;
+    };
+    std::vector<std::size_t> active; // indexes into `placed` whose span may still meet a later one
+    for (std::size_t j = 0; j < placed.size(); ++j) {
+      const auto &f = placed[j];
+      std::erase_if(active, [&](std::size_t a) { return placed[a].hi <= f.lo; });
+      for (const auto a : active) {
+        const auto &e = placed[a];
+        if (++unit_pairs > limits.unit_pairs) return cap("unit_pairs");
+        if ((!e.write && !f.write) || (!e.lookup && !f.lookup)) continue;
+        const bool same_unit = e.klass == f.klass && e.index == f.index;
+        if (same_unit && e.index == 0) continue;           // the representative's own pair
+        if (!same_unit && e.index == 0 && f.index == 0) continue; // two representatives: the normal checker's
+        if (same_unit && e.shift - f.shift == representative_shift.at(e.part) - representative_shift.at(f.part))
+          continue; // the representative's pair at its own relative placement
+        if (++refinements > limits.refinements) return cap("refinements");
+        const auto &w = e.write ? e : f, &o = e.write ? f : e;
+        const auto &p = parts[w.part], &q = parts[o.part];
+        const auto x = ground(w), y = ground(o);
+        // A strided region (a TMA box) is exact only in the model (its spans are bounding intervals).
+        if (!x.region_axes.empty() || !y.region_axes.empty()) {
+          if (model.translatedFamilyOverlap(p.family, x, q.family, y).status == OverlapStatus::kDisjoint) continue;
+          return unknown("lookup_region_overlap:" + allocation);
+        }
+        const auto relation = ClassifyFamilyOverlap(p.family, x, q.family, y);
+        if (!relation.unknown.empty()) return unknown("lookup_overlap_unknown:" + allocation);
+        if (relation.overlap.empty()) continue;
+        if (same_unit) return unknown("member_lookup_overlap:" + allocation);
+        for (const auto &r : relation.overlap)
+          if (const auto witness = r.witness()) {
+            CrossUnitOutcome race;
+            race.status = Status::kRace;
+            race.first_part = w.part;
+            race.second_part = o.part;
+            race.first_member = witness->first;
+            race.second_member = witness->second;
+            race.first_unit = quotient.classes.at(w.klass).units.at(w.index);
+            race.second_unit = quotient.classes.at(o.klass).units.at(o.index);
+            const auto delta_in = [&](const Placed &u) -> std::int64_t {
+              if (u.index == 0) return 0;
+              const auto &d = quotient.classes.at(u.klass).delta.at(u.index);
+              const auto found = d.find(allocation);
+              return found == d.end() ? 0 : found->second;
+            };
+            race.first_delta = delta_in(w);
+            race.second_delta = delta_in(o);
+            race.allocation = allocation;
+            const I xa = x.offset + x.step * I(witness->first), ya = y.offset + y.step * I(witness->second);
+            const I begin = std::max(xa, ya), end = std::min(xa + I(x.bytes), ya + I(y.bytes));
+            race.region_offset = begin > 0 ? static_cast<std::uint64_t>(begin) : 0;
+            race.region_bytes = end > begin ? static_cast<std::uint64_t>(end - begin) : 0;
+            return race;
+          }
+        return unknown("lookup_overlap_unknown:" + allocation);
+      }
+      active.push_back(j);
+    }
+  }
+
   // Lookup parts: every pair with at least one lookup part, over pairs of unit groups. The parts of a
   // class are bucketed by their lookup terms (constant parts: the bucket without terms). Two buckets
   // whose translated terms are equal cancel them: their residual spans are compared exactly, as in
   // the constant pass. Other bucket pairs are decided once on their residual hulls, then pair by pair.
   for (const auto &[allocation, lookup_classes] : lookups) {
+    if (exact_lookups.contains(allocation)) continue;
     struct Group {
       std::vector<std::int64_t> delta; // over On::objects
       std::vector<std::uint32_t> units; // indexes into the class's units

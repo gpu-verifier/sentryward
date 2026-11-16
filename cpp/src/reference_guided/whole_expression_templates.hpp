@@ -19,6 +19,10 @@ struct WholeTemplateLimits {
 // certificate must seal before a caller may use rewrite_optimized().
 class WholeExpressionTemplates {
   Arena &a;
+  Checker &owner;
+  // Opt-in (allow_reference_calls): a reference Call is rebuilt through
+  // Checker::call, and its arguments are coordinate positions. Off by default.
+  bool reference_calls = false;
   std::vector<Id> axes_;
   uint64_t context_;
   uint64_t bank_id;
@@ -174,6 +178,8 @@ class WholeExpressionTemplates {
       unsigned width=n.data[0].numerator().convert_to<unsigned>();bool sign=n.data[1]!=0;
       return a.word_shr(args[0],args[1],width,sign);
     }
+    if (op == "word_shl" && args.size()==2 && n.data.size()==1)
+      return a.word_shl(args[0],args[1],n.data[0].numerator().convert_to<unsigned>());
     if (op == "floor" && args.size() == 1) return a.floor_value(args[0]);
     if ((op == "exp" || op == "exp2") && args.size() == 1) return a.exponential(args[0], op == "exp2");
     if (op == "recip" && args.size() == 1) return a.recip(args[0]);
@@ -194,6 +200,14 @@ class WholeExpressionTemplates {
     if ((op == "decode_fp4" || op == "decode_s4") && args.size() == 1)
       return a.intern(op, args, n.data, n.tag, {true, false, false},
                       op == "decode_fp4" ? Bounds(std::pair(Q(-6), Q(6))) : Bounds(std::pair(Q(-8), Q(7))));
+    // A Call denotes its spec's sum at the given arguments; Checker::call is
+    // the one constructor of every Call node (definition identity, Facts).
+    if (op == "call" && reference_calls && n.data.size() == 1 && n.data[0].denominator() == 1 &&
+        n.data[0] >= 0 && n.data[0] < Q(owner.specs.size())) {
+      const Id sid = n.data[0].numerator().convert_to<Id>();
+      if (args.size() + 1 != owner.specs[sid].slots) throw Decline{"call_arity"};
+      return owner.call(sid, args);
+    }
     throw Decline{"unsupported_rebuild"};
   }
 
@@ -340,7 +354,8 @@ class WholeExpressionTemplates {
     else {
       const auto &n = a.nodes[id]; hash = std::hash<std::string>{}(n.op); mix(hash, std::hash<std::string>{}(n.tag));
       charge_edges(n.args.size());
-      bool child_coordinate = n.op == "read" || n.op == "readbits" || n.op == "packedbits";
+      bool child_coordinate = n.op == "read" || n.op == "readbits" || n.op == "packedbits" ||
+                              (reference_calls && n.op == "call");
       std::vector<size_t> children;
       for (size_t i = 0; i < n.args.size(); ++i) {
         size_t h = signature(n.args[i], child_coordinate, depth + 1);
@@ -383,7 +398,8 @@ class WholeExpressionTemplates {
       if (s && coefficients[s] != coefficients[0]) throw Decline{"template_coefficients"};
     }
     std::vector<Id> args;
-    bool child_coordinate = coordinate || first.op == "read" || first.op == "readbits" || first.op == "packedbits";
+    bool child_coordinate = coordinate || first.op == "read" || first.op == "readbits" || first.op == "packedbits" ||
+                            (reference_calls && first.op == "call");
     for (size_t i = 0; i < first.args.size(); ++i) {
       std::vector<Id> sample; for (const auto &v : children) sample.push_back(v[i]);
       args.push_back(unify(sample, child_coordinate, depth + 1));
@@ -449,8 +465,13 @@ public:
   Id failed_expected = invalid, failed_actual = invalid;
   WholeExpressionTemplates(Checker &checker, std::vector<Id> formal_axes, uint64_t context,
                            WholeTemplateLimits budget = {})
-      : a(checker.a), axes_(std::move(formal_axes)), context_(context),
+      : a(checker.a), owner(checker), axes_(std::move(formal_axes)), context_(context),
         bank_id(++a.stats["whole_template_banks"]), limits(budget), first_private_id(Id(a.nodes.size())) {}
+  // Templates whose rows hold closed inner reductions: Calls may vary with
+  // the formal axes (their arguments are fitted like read coordinates and
+  // rebuilt through Checker::call). Instances are still checked by full
+  // instantiation and node identity; nothing else changes.
+  void allow_reference_calls() { reference_calls = true; }
   Id left_template() const { return left_; }
   Id right_template() const { return right_; }
   const std::vector<Id> &axes() const { return axes_; }
@@ -512,6 +533,27 @@ public:
   }
   bool matches_optimized(Id target, const std::vector<Id> &coordinates) {
     return matches_side(target, coordinates, false);
+  }
+  // matches_reference's verdict without its alpha pass over the target when
+  // the reference template holds no Fold: an instance of a Fold-free
+  // template is Fold-free, alpha leaves a Fold-free node unchanged, and a
+  // target with a Fold differs from every Fold-free node. So the instance
+  // and the target are equal exactly when their (hash-consed) Ids are.
+  bool matches_reference_identity(Id target, const std::vector<Id> &coordinates) {
+    begin_attempt();
+    try {
+      if (left_ == invalid || right_ == invalid || !whole_coordinates(coordinates))
+        throw Decline{"target_coordinates"};
+      if (contains_fold(left_)) return matches_reference(target, coordinates);
+      const Id expected = instantiate(left_, coordinates);
+      if (expected != target) {
+        failed_expected = expected; failed_actual = target;
+        throw Decline{"whole_target_instance"};
+      }
+      finish_attempt("reference_match", true); return true;
+    } catch (const Decline &miss) { last_failure = miss.why; }
+      catch (const Unsupported &) { last_failure = "unsupported"; }
+    finish_attempt("reference_match", false); return false;
   }
   std::optional<Id> rewrite_optimized(Id target, const std::vector<Id> &coordinates) {
     begin_attempt();

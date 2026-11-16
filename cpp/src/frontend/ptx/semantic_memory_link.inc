@@ -378,6 +378,27 @@ bool LinkMemoryDomains(SemanticProgram& result) {
           else totals[value.access.mode]+=*value.access.bytes;
         }
         for(auto [mode,i]:endpoints)if(totals[mode]!=sources[i].access.bytes)contiguous=false;
+        if(!ordered && !contiguous)
+          if(const auto parts=TmaRunAssignment(sources.size(),values.size(),
+                [&](std::size_t i)->const SourceAccess&{return sources[i].access;},
+                [&](std::size_t j)->const ValueAccess&{return values[j].access;})) {
+            for(const auto& part:*parts) {
+              const auto& source=sources[part.source];const auto& value=values[part.value];
+              auto address=*source.column->address;address.address=source.access.address;
+              address.offset=advance(source.column->address_offset,source.column->offset_step,source.begin);
+              auto piece=value.access;piece.bytes=source.access.bytes;
+              auto binding=BindMemoryValue(source.access,piece,occurrence,0,&address);
+              binding.value_byte_offset=part.value_byte_offset;
+              SemanticMemoryBindingCodec::Delta delta{};
+              delta[0]=source.column->instruction_step*std::int64_t(source.step);
+              delta[3]=domain.step;delta[7]=value.column->instance_step*value.step;
+              delta[8]=source.column->address_step*std::int64_t(source.step);
+              delta[9]=source.column->offset_step*std::int64_t(source.step);
+              if(domain.count==1)result.memory_bindings.push_back(std::move(binding));
+              else result.memory_bindings.appendAffineColumns({binding},{delta},domain.count);
+            }
+            continue;
+          }
         if(!ordered && !contiguous) {
           a::ProfileScope native("frontend.semantic_program.memory_link.native_payload");
           native.nodes=sources.size();native.edges=values.size();

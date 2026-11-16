@@ -82,6 +82,11 @@ struct ArithmeticAttributes final {
   bool saturate = false;
   bool flush_to_zero = false;
   bool propagate_nan = false;
+  // On a predicate BitOr / BitAnd only: operand 0 is one of the terms of operand 1's chain of the
+  // same operator (the issuing lane's own term of a vote over its warp's lanes), so the value is
+  // operand 1's. A fact of the extractor that built the node; a pass that does not read the flag
+  // sees the plain operator.
+  bool lane_own = false;
 };
 struct ConversionAttributes final {
   bool operator==(const ConversionAttributes&) const = default;
@@ -226,6 +231,11 @@ struct MemoryAttributes final {
   // first byte. The address operand is then the fragment's allocation-relative byte
   // offset (a pointer naming its allocation), and a guard is the region's zero fill.
   std::optional<std::uint64_t> region_offset = std::nullopt;
+  // With region_offset: the address operand's origin is a literal, the region's exact first byte
+  // in this CTA (class mode's table-atom coordinates, ResolvedTma::region_valued). Class admission
+  // compares that byte of every member with the representative's up to one δ per allocation, so
+  // the fragment is the allocation's cell at this literal offset, moved by δ(allocation) in a member.
+  bool region_exact = false;
 };
 
 class LoadOp final : public TypedOperation {

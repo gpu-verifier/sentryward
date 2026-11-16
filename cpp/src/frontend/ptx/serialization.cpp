@@ -4,6 +4,7 @@
 #include "sentryward/algorithm/semantics/affine_template_schedule.h"
 #include "sentryward/algorithm/diagnostics/performance_profile.h"
 #include "sentryward/algorithm/memory/symbolic_address_model.h"
+#include "sentryward/algorithm/memory/table_valuation.h"
 #include "sentryward/value_ir/operations.h"
 #include <nlohmann/json.hpp>
 #include <deque>
@@ -235,8 +236,17 @@ class AddressIndex {
     });
   }
  public:
-  explicit AddressIndex(const std::vector<a::ConstantAddressBinding>& addresses) {
-    for(const auto& value:addresses) {
+  // `tables`: class mode's fixed tables; a table-lookup footprint is its exact (representative's)
+  // address, as the value binding made it (semantic_program.cpp BindMemoryValue). O(addresses +
+  // table-lookup expression text).
+  AddressIndex(const std::vector<a::ConstantAddressBinding>& addresses,const a::TableValuation& tables) {
+    for(const auto& original:addresses) {
+      std::optional<a::ConstantAddressBinding> valued;
+      if(!original.expression.empty() && !tables.empty())
+        if(const auto exact=tables.FootprintOffset(original.expression,original.address_space,original.allocation)) {
+          valued=original;valued->expression.clear();valued->offset=*exact;
+        }
+      const auto& value=valued?*valued:original;
       if(!runs_.empty()) {
         auto& run=runs_.back();const auto& x=run.first;
         if(value.address.value()==std::uint64_t(x.address.value())+run.count &&
@@ -440,7 +450,7 @@ class Serializer {
   void bindMemory() {
     a::ProfileScope profile("value_analysis.serialization.bind_templates");
     for(auto& [key,index]:access_index_){(void)key;index.seal();}
-    AddressIndex address_index(checked_.addresses);
+    AddressIndex address_index(checked_.addresses,a::TableValuation(checked_.table_atoms_json));
     // Source metadata is independent of memory effects; use the exact source
     // column partition to validate occurrence identities in bulk.
     struct SourceColumn {
@@ -504,6 +514,16 @@ class Serializer {
           target[binding.value.node].push_back({instances,endpoints});
           va::OrderedMemoryAction action{binding.value,binding.region,binding.unsupported_reason,binding.value_byte_offset,{}};
           action.symbolic_region=symbolic_region;
+          // A fragment of a TMA source-row Load (value_ir.cpp ResolvedTma: one Load per row of a
+          // tile region, bound per fragment at its value byte offset): the fragment lies at its
+          // value byte offset from the Load's address, which is the row's place in its region.
+          const auto* run_load=binding.value_byte_offset?
+              dynamic_cast<const v::LoadOp*>(&program_.values.node(binding.value.node).operation()):nullptr;
+          const bool run_fragment=run_load && run_load->attributes().region_offset.has_value();
+          if(action.symbolic_region && run_fragment) {
+            action.symbolic_region->offset=*binding.value_byte_offset;
+            action.symbolic_region->bytes=binding.bytes;
+          }
           if(action.symbolic_region && !binding.value_byte_offset) {
             const auto& node=program_.values.node(binding.value.node);
             if(dynamic_cast<const v::LoadOp*>(&node.operation())) {
@@ -528,6 +548,10 @@ class Serializer {
           std::uint64_t payload=0;
           // A TMA region fragment lies at its place in the region (MemoryAttributes::region_offset).
           std::uint64_t region_offset=0;
+          if(!symbolic_pieces.empty() && run_fragment) {
+            payload=binding.bytes;
+            region_offset=*run_load->attributes().region_offset+*binding.value_byte_offset;
+          }
           if(!symbolic_pieces.empty() && !binding.value_byte_offset) {
             const auto& node=program_.values.node(binding.value.node);
             const auto* load=dynamic_cast<const v::LoadOp*>(&node.operation());

@@ -72,12 +72,78 @@ public:
     return {};
   }
 
-  // The two restricted pairs of (left, right) for the first root coordinate guard of either side.
+  // The output coordinates of a root Select whose condition compares a sum c_1 v_1 + ... + c_k v_k
+  // (k >= 2, integer c_j, each v_j a distinct output coordinate with an integer domain) with a
+  // constant, when the product of their domain sizes is at most max_points; else nothing.
+  std::vector<Id> point_axes(Id root) const {
+    const auto &n = a.nodes[root];
+    if (n.op != "select" || n.args.size() != 3) return {};
+    const auto &c = a.nodes[n.args[0]];
+    if (c.op != "compare" || c.args.size() != 2 || !c.data.empty()) return {};
+    for (unsigned side = 0; side != 2; ++side) {
+      if (!a.value(c.args[1 - side])) continue;
+      const auto &sum = a.nodes[c.args[side]];
+      if (sum.op != "add" || sum.args.size() < 2 || sum.data.size() != sum.args.size()) continue;
+      std::vector<Id> axes; Z points = 1; bool ok = true;
+      for (size_t j = 0; j < sum.args.size() && ok; ++j) {
+        const auto &v = a.nodes[sum.args[j]];
+        ok = sum.data[j].denominator() == 1 && v.op == "var" && v.tag.starts_with("output:") && v.bounds &&
+             v.bounds->first.denominator() == 1 && v.bounds->second.denominator() == 1 &&
+             v.bounds->first <= v.bounds->second &&
+             std::find(axes.begin(), axes.end(), sum.args[j]) == axes.end();
+        if (!ok) break;
+        points *= v.bounds->second.numerator() - v.bounds->first.numerator() + 1;
+        ok = points <= Z(max_points);
+        axes.push_back(sum.args[j]);
+      }
+      if (ok) return axes;
+    }
+    return {};
+  }
+  // The restricted pairs of (left, right) at every point of the coordinates of point_axes(root):
+  // the points partition the product of their domains, and each restriction substitutes a
+  // constant for every coordinate (restrict_axis). Exact. At most max_points parts.
+  std::optional<std::vector<Part>> split_points(Id left, Id right, const std::vector<Id> &axes) {
+    std::vector<Z> lo, hi, at;
+    for (Id v : axes) {
+      lo.push_back(a.nodes[v].bounds->first.numerator());
+      hi.push_back(a.nodes[v].bounds->second.numerator());
+    }
+    at = lo;
+    std::vector<Part> parts;
+    try {
+      for (Z index = 0;; ++index) {
+        Id l = left, r = right;
+        for (size_t j = 0; j < axes.size(); ++j) {
+          const Id value = a.constant(Q(at[j]));
+          l = checker.restrict_axis(l, axes[j], value);
+          r = checker.restrict_axis(r, axes[j], value);
+        }
+        parts.push_back({l, r, index, index});
+        size_t j = 0;
+        while (j < axes.size() && at[j] == hi[j]) { at[j] = lo[j]; ++j; }
+        if (j == axes.size()) break;
+        ++at[j];
+      }
+    } catch (const Unsupported &) {
+      last_failure = "restriction";
+      return {};
+    }
+    ++a.stats["output_guard_point_splits"];
+    return parts;
+  }
+  // The two restricted pairs of (left, right) for the first root coordinate guard of either side;
+  // else the points of a guard on a sum of output coordinates (point_axes).
   std::optional<std::vector<Part>> split(Id left, Id right) {
     last_failure.clear();
     std::optional<Guard> g = guard(left);
     if (!g) g = guard(right);
-    if (!g) return {};
+    if (!g) {
+      std::vector<Id> axes = point_axes(left);
+      if (axes.empty()) axes = point_axes(right);
+      if (axes.empty()) return {};
+      return split_points(left, right, axes);
+    }
     const auto &bounds = *a.nodes[g->axis].bounds;
     const Z lo = bounds.first.numerator(), hi = bounds.second.numerator();
     std::vector<std::pair<Z, Z>> intervals;

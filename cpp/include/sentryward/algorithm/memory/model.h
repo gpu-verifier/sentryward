@@ -49,6 +49,12 @@ class MemoryModel {
                                   "translated_family_unsupported");
   }
 
+  // Class mode's cross-unit pass: the exact value of lookup `term` at byte offset `arg` when its
+  // object is a fixed table (a table atom), else nullopt.
+  [[nodiscard]] virtual std::optional<address_solver::Int> lookupValue(const GatherTerm&, address_solver::Int) {
+    return std::nullopt;
+  }
+
   [[nodiscard]] virtual std::optional<MemoryAnalysisError> validate() const {
     return std::nullopt;
   }

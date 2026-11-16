@@ -126,6 +126,8 @@ class Graph {
     Id id;
   };
   Ref intern(Node);
+  void validateRootsByWalk(std::span<const Ref>, std::uint32_t outer_binders,
+                           std::span<const std::uint32_t> root_binders) const;
   void validateRef(const Ref&) const;
   Id findNode(std::size_t hash, const Node&) const;
   void reserveIndex(std::size_t nodes);

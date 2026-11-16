@@ -6,6 +6,7 @@
 #include <utility>
 #include <optional>
 #include <set>
+#include <unordered_map>
 #include <span>
 #include <string>
 #include <vector>
@@ -355,6 +356,56 @@ static std::vector<CrossUnitPart> SplitBySite(std::vector<CrossUnitPart> parts, 
   return result;
 }
 
+// Cross-CTA class mode with containment members (UnitQuotient::Class::removed): per part on a written
+// global allocation, the members of its class that perform none of its accesses
+// (CrossUnitPart::absent). A member's access is its representative's at the same lane, PTX
+// instruction and occurrence (the source instruction's PTX origin; a CTA's actors are contiguous, in
+// lane order). A part with a member without a PTX origin is left present everywhere, and a unit that
+// performs only some of a part's accesses keeps the whole part: both over-approximate.
+// O(members of those parts x containment members of their class x log removed accesses of a lane).
+static void MarkAbsent(std::vector<CrossUnitPart>& parts, const SourceProgram& source,
+                       const UnitQuotient& quotient) {
+  std::unordered_map<std::uint32_t, std::uint32_t> first_actor; // per CTA
+  for (const auto& actor : source.actors) {
+    const auto [at, added] = first_actor.try_emplace(actor.cta.value(), actor.id.value());
+    if (!added) at->second = std::min(at->second, actor.id.value());
+  }
+  std::set<std::string> written;
+  for (const auto& part : parts)
+    if (part.write && part.footprint.space == "global") written.insert(part.footprint.allocation);
+  struct Key {
+    std::uint32_t lane, instruction, occurrence;
+  };
+  std::vector<Key> keys;
+  for (auto& part : parts) {
+    if (part.footprint.space != "global" || !written.contains(part.footprint.allocation)) continue;
+    const auto klass = quotient.units.at(quotient.UnitOf(part.cta)).klass;
+    const auto& c = quotient.classes.at(klass);
+    if (std::find(c.contained.begin(), c.contained.end(), true) == c.contained.end()) continue;
+    const auto first = first_actor.find(part.cta);
+    if (first == first_actor.end()) continue;
+    const auto& family = part.family;
+    const auto rank = quotient.RankOf(part.cta);
+    const auto step = family.delta[MemoryAccessFamily::kInstructionField];
+    keys.clear();
+    bool known = true;
+    for (auto member = family.first_member; known && member < family.first_member + family.count; ++member) {
+      const auto instruction = std::int64_t(family.first.instruction.value()) +
+                               step * (std::int64_t(member) - std::int64_t(family.first_member));
+      const auto origin = HeaderOf(source.instructions, std::size_t(instruction)).origin;
+      const auto actor = family.actor(member).value();
+      known = origin && actor >= first->second;
+      if (known) keys.push_back({actor - first->second, origin->first, origin->second});
+    }
+    if (!known || keys.empty()) continue;
+    for (std::uint32_t i = 1; i < c.units.size() && i < c.contained.size(); ++i)
+      if (c.contained[i] && std::all_of(keys.begin(), keys.end(), [&](const Key& k) {
+            return quotient.Removed(klass, i, rank, k.lane, k.instruction, k.occurrence);
+          }))
+        part.absent.push_back(i);
+  }
+}
+
 // Cross-CTA class mode: after the quotient search ended without a race, every global pair with an
 // access in a member unit (cross_unit_races.h). A race found there is reported as the first race; an
 // Unknown, a work cap, a race behind an unresolved quotient search (whose first finding on the
@@ -368,8 +419,21 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
     std::optional<std::span<const MemoryAccessFamily>> supplied_families = std::nullopt) {
   auto output = RunQuotientMemoryCheck(source, certificate, memory, options, shared_hb, supplied_accesses,
                                        supplied_families);
-  if (!options.units || !output || output.value().status == MemoryRaceStatus::kRaceFound) return output;
+  if (!options.units || !output) return output;
+  // Containment members (UnitQuotient::Class::contained): a race among the founders stands; an
+  // unresolved pair, a same-value obligation, or a clean search restarts the launch per unit
+  // (ContainmentRestartReason states why; with kContainmentReportsClean on, a clean search restarts
+  // only over a class with a marked member). Duplicate TMA store warnings (and their write groups)
+  // stand: they pair TMA stores, which no member removes, so each member has exactly its
+  // representative's.
+  if (const auto reason = ContainmentRestartReason(
+          *options.units, output.value().status == MemoryRaceStatus::kRaceFound,
+          output.value().status == MemoryRaceStatus::kUnresolved, !output.value().same_value_write_groups.empty());
+      !reason.empty())
+    throw UnitClassRestart{std::string(reason)};
+  if (output.value().status == MemoryRaceStatus::kRaceFound) return output;
   ProfileScope profile("memory.cross_unit");
+  // The analysed program's access families: for the relaxed-read rule below, and the cross-unit pass.
   std::vector<MemoryAccessFamily> extracted;
   if (!supplied_families) {
     auto families = ExtractMemoryAccessFamilies(certificate.happensBeforeGraph, source);
@@ -377,6 +441,20 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
     extracted = std::move(families).value();
   }
   const auto families = supplied_families.value_or(std::span<const MemoryAccessFamily>(extracted));
+  // Containment members' relaxed loads (UnitQuotient::Class::relaxed_reads) read allocations that no
+  // unit may write. Every unit's writes are its representative's (moved by δ, or a subset), so the
+  // analysed program's write families decide it: one on such an allocation, on an alias scope, or on
+  // storage the model cannot name in a space that may be global restarts per unit (a member's
+  // relaxed load could otherwise meet a write its representative's load does not). O(write families).
+  if (const auto relaxed = options.units->RelaxedReads(); !relaxed.empty())
+    for (const auto& family : families) {
+      if (!family.count || family.first.mode != AccessMode::kWrite) continue;
+      if (std::holds_alternative<RegisterAddress>(family.first.address)) continue;
+      const auto storage = memory.familyStorage(family);
+      if (storage && KnownSpace(storage->space) && storage->space != "global") continue;
+      if (!storage || storage->space != "global" || !storage->alias.empty() || relaxed.contains(storage->allocation))
+        throw UnitClassRestart{"containment_relaxed_read_written"};
+    }
   // Representative family parts, split at CTA boundaries (a family's actor is affine in its member
   // and the actor ids of one CTA are contiguous, so each CTA holds one member range).
   const ActorCtas ctas(source.actors);
@@ -418,11 +496,15 @@ static Result<MemoryRaceResult, MemoryAnalysisError> RunMemoryCheck(
     }
   }
   if (options.units->Piecewise()) parts = SplitBySite(std::move(parts), source, *options.units);
+  if (options.units->Contained()) MarkAbsent(parts, source, *options.units);
   const auto outcome = CheckCrossUnit(parts, *options.units, memory);
   using Status = CrossUnitOutcome::Status;
   if (outcome.status == Status::kNone) return output;
   if (outcome.status == Status::kUnknown) throw UnitClassRestart{"cross_unit_unknown:" + outcome.reason};
   if (outcome.status == Status::kCap) throw UnitClassRestart{"cross_unit_cap:" + outcome.reason};
+  // A containment member's parts over-approximate its accesses: its pair may be one it does not have.
+  if (options.units->ContainedUnit(outcome.first_unit) || options.units->ContainedUnit(outcome.second_unit))
+    throw UnitClassRestart{"cross_unit_containment"};
   auto& result = output.value();
   if (result.status == MemoryRaceStatus::kUnresolved) throw UnitClassRestart{"cross_unit_tie_break"};
   const auto& a = parts.at(outcome.first_part);

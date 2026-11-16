@@ -155,7 +155,9 @@ std::optional<Integer> Known(const FactSource &facts,
   if (auto integer = ParseInteger(token))
     return integer;
   if (const auto *value = facts.Value(execution, token)) {
-    if (const auto *integer = std::get_if<Integer>(value))
+    // A table atom (class mode) is its plain value: a TMEM address is CTA-local.
+    const auto plain = PlainValue(*value);
+    if (const auto *integer = std::get_if<Integer>(&plain))
       return *integer;
   }
   const auto &parameters = facts.launch().parameters();
@@ -326,7 +328,9 @@ void AllocationRecords(const FactSource &facts, const Atoms &atoms,
       std::string object;
       bool outside = !atom.lanes.empty();
       for (const auto &[_, execution] : atom.lanes) {
-        const auto *value = facts.Value(execution, Trim(token));
+        const auto *found = facts.Value(execution, Trim(token));
+        const auto plain = found ? std::optional<Scalar>(PlainValue(*found)) : std::nullopt;
+        const auto *value = plain ? &*plain : nullptr;
         if (const auto *global = value ? std::get_if<AllocationPointer>(value) : nullptr) object = global->resource;
         else if (value && std::holds_alternative<ParameterPointer>(*value)) object = "kernel parameter space";
         else { outside = false; break; }

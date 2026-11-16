@@ -261,7 +261,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 7250857,
@@ -760,8 +760,8 @@
       },
       "required_orders": {
         "algorithm": "member-relations",
-        "batches": 23,
-        "edge_visits": 39852598,
+        "batches": 6,
+        "edge_visits": 45876805,
         "member_enumerations": 0,
         "request_construction": {
           "concrete_pair_materializations": 0,
@@ -775,7 +775,7 @@
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 404471,
+      "address_candidates": 404855,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -794,21 +794,21 @@
       "family_analysis": {
         "access_families": 423576,
         "affine_member_rows": 0,
-        "candidate_relations": 188111,
-        "hb_frontier_pieces": 241503,
+        "candidate_relations": 188495,
+        "hb_frontier_pieces": 172523,
         "hb_member_enumerations": 0,
         "logical_accesses": 1679577
       },
-      "first_race_seconds": 3.33867469,
+      "first_race_seconds": 3.184136026,
       "hb_algorithm": "member-relations",
-      "hb_batches": 628,
+      "hb_batches": 191,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 14567253,
+      "hb_edge_visits": 8445430,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
-      "hb_queries": 404471,
-      "hb_query_seconds": 2.3719041109999996,
+      "hb_queries": 404855,
+      "hb_query_seconds": 2.2643808319999996,
       "overlap_queries": 1,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 1
@@ -816,7 +816,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 5107.12890625,
+    "peak_footprint_mib": 4633.125,
     "required_order_domains": 30820,
     "required_orders": 480928,
     "search_complete": false,
@@ -921,10 +921,10 @@
     "value_ir_node_count": 2021625,
     "value_view_complete": true
   },
-  "peak_rss_mib": 5107.12890625,
-  "pipeline_elapsed_seconds": 49.103747862,
+  "peak_rss_mib": 4788.96484375,
+  "pipeline_elapsed_seconds": 49.691400154,
   "result": "potential_race",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -933,6 +933,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.392
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.383
 }

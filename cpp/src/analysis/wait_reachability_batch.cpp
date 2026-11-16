@@ -1,12 +1,17 @@
 #include "sentryward/algorithm/analysis/wait_reachability_batch.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
+#include <exception>
+#include <functional>
 #include <limits>
 #include <map>
+#include <mutex>
 #include <set>
 #include <numeric>
 #include <string>
+#include <thread>
 #include <tuple>
 #include <utility>
 
@@ -87,12 +92,14 @@ bool Full(const std::uint64_t* bits, std::size_t count) {
 // Whether every effect of a completed phase happens before each target. Every
 // effect has a certified edge to the phase's completion, so the targets the
 // completion reaches need one propagation from it; only the others are
-// queried over the effects.
-std::vector<std::uint8_t> LowerAnswers(FamilyHbReachability& forward,
+// queried over the effects. `all_reach`: the index's allReachMany or its
+// concurrent form (equal answers).
+using AllReach = std::function<std::vector<std::uint8_t>(std::span<const EventId>, std::span<const EventId>)>;
+std::vector<std::uint8_t> LowerAnswers(const AllReach& all_reach,
                                        std::optional<EventId> completion,
                                        std::span<const EventId> effects,
                                        std::span<const EventId> targets) {
-  auto lower = completion ? forward.allReachMany(std::span(&*completion, 1), targets)
+  auto lower = completion ? all_reach(std::span(&*completion, 1), targets)
                           : std::vector<std::uint8_t>(targets.size(), 0);
   std::vector<EventId> undecided;
   std::vector<std::size_t> positions;
@@ -102,9 +109,40 @@ std::vector<std::uint8_t> LowerAnswers(FamilyHbReachability& forward,
     positions.push_back(i);
   }
   if (undecided.empty()) return lower;
-  const auto queried = forward.allReachMany(effects, undecided);
+  const auto queried = all_reach(effects, undecided);
   for (std::size_t i = 0; i < positions.size(); ++i) lower[positions[i]] = queried[i];
   return lower;
+}
+
+// task(i) for every i < count, on up to `threads` threads (the calling one among them); the first
+// exception is rethrown after every thread has stopped. Tasks must write disjoint results.
+void ParallelFor(std::size_t count, std::size_t threads, const std::function<void(std::size_t)>& task) {
+  threads = std::min(threads, count);
+  if (threads <= 1) {
+    for (std::size_t i = 0; i < count; ++i) task(i);
+    return;
+  }
+  std::atomic<std::size_t> next = 0;
+  std::atomic<bool> failed = false;
+  std::exception_ptr error;
+  std::mutex error_mutex;
+  const auto work = [&] {
+    for (std::size_t i; !failed && (i = next.fetch_add(1)) < count;) {
+      try {
+        task(i);
+      } catch (...) {
+        std::lock_guard lock(error_mutex);
+        if (!error) error = std::current_exception();
+        failed = true;
+      }
+    }
+  };
+  std::vector<std::thread> pool;
+  pool.reserve(threads - 1);
+  for (std::size_t t = 1; t < threads; ++t) pool.emplace_back(work);
+  work();
+  for (auto& thread : pool) thread.join();
+  if (error) std::rethrow_exception(error);
 }
 
 }  // namespace
@@ -175,49 +213,109 @@ WaitReachabilityBatch WaitReachabilityBatch::Build(
         if (graph.contains(q.issue) && graph.contains(q.initialization))
           groups[{q.barrier, q.initialization, q.previous_phase, q.next_phase}].push_back(i);
       }
-      // Initialization targets that no lower answer decides, per initialization.
-      std::map<EventId, std::vector<std::size_t>> uninitialized;
+      // The groups' relations are independent read-only queries of an unchanging graph: with
+      // threads they are answered concurrently (the indexes' concurrent forms, equal answers),
+      // then applied in group order, as one thread would.
+      const bool concurrent = options.threads > 1 && groups.size() > 1;
+      if (concurrent) {
+        forward->PrepareConcurrentQueries();
+        reverse->PrepareConcurrentQueries();
+      }
+      std::atomic<std::size_t> forward_calls = 0, forward_visits = 0, reverse_calls = 0, reverse_visits = 0;
+      const auto all_reach = [&](std::span<const EventId> sources, std::span<const EventId> targets) {
+        if (!concurrent) return forward->allReachMany(sources, targets);
+        std::size_t visits = 0;
+        auto answers = forward->allReachManyConcurrent(sources, targets, visits);
+        ++forward_calls;
+        forward_visits += visits;
+        return answers;
+      };
+      const auto find_ancestors = [&](std::span<const EventId> sources, std::span<const EventId> targets) {
+        if (!concurrent) return reverse->findAncestors(sources, targets);
+        std::size_t visits = 0;
+        auto answers = reverse->findAncestorsConcurrent(sources, targets, visits);
+        ++reverse_calls;
+        reverse_visits += visits;
+        return answers;
+      };
+      struct GroupWork {
+        const std::vector<std::size_t>* indices;
+        std::vector<EventId> targets;
+        const PhaseInfo* previous = nullptr; // a completed previous phase
+        std::optional<EventId> previous_completion;
+        std::optional<EventId> next;         // a completed next phase's completion
+        std::vector<std::uint8_t> lower;
+        std::vector<std::optional<EventId>> upper;
+      };
+      std::vector<GroupWork> work;
+      work.reserve(groups.size());
       for (const auto& [key, indices] : groups) {
         const auto& [barrier, init, previous, next] = key;
-        std::vector<EventId> targets;
-        targets.reserve(indices.size());
-        for (auto i : indices) targets.push_back(queries[i].issue);
+        auto& item = work.emplace_back();
+        item.indices = &indices;
+        item.targets.reserve(indices.size());
+        for (auto i : indices) item.targets.push_back(queries[i].issue);
         if (previous) {
           const auto phase = phase_map.find({barrier, *previous});
           if (phase != phase_map.end() && phase->second->completed) {
-            const auto& info = *phase->second;
-            const auto lower = LowerAnswers(*forward, graph.phaseCompletion(info.key()), info.effects, targets);
-            for (std::size_t i = 0; i < indices.size(); ++i) {
-              auto& answer = result.answers_[indices[i]];
-              answer.lower = bool(lower[i]);
-              // The initialization happens before every effect of a non-named
-              // phase, and every effect of this one (never empty here)
-              // happens before the issue.
-              if (lower[i] && !info.named) answer.initialization = true;
-            }
+            item.previous = phase->second;
+            item.previous_completion = graph.phaseCompletion(phase->second->key());
+          }
+        }
+        if (next) {
+          const auto phase = phase_map.find({barrier, *next});
+          const auto completion = graph.phaseCompletion({barrier, *next});
+          if (phase != phase_map.end() && phase->second->completed && completion) item.next = completion;
+        }
+      }
+      ParallelFor(work.size(), concurrent ? options.threads : 1, [&](std::size_t g) {
+        auto& item = work[g];
+        if (item.previous)
+          item.lower = LowerAnswers(all_reach, item.previous_completion, item.previous->effects, item.targets);
+        // The completion's only predecessors are the phase's effects: an
+        // issue reaches it iff the issue reaches one of them.
+        if (item.next) item.upper = find_ancestors(std::span(&*item.next, 1), item.targets);
+      });
+      // Initialization targets that no lower answer decides, per initialization.
+      std::map<EventId, std::vector<std::size_t>> uninitialized;
+      std::size_t g = 0;
+      for (const auto& [key, indices] : groups) {
+        const auto& init = std::get<1>(key);
+        const auto& item = work[g++];
+        if (item.previous) {
+          for (std::size_t i = 0; i < indices.size(); ++i) {
+            auto& answer = result.answers_[indices[i]];
+            answer.lower = bool(item.lower[i]);
+            // The initialization happens before every effect of a non-named
+            // phase, and every effect of this one (never empty here)
+            // happens before the issue.
+            if (item.lower[i] && !item.previous->named) answer.initialization = true;
           }
         }
         for (auto i : indices)
           if (!result.answers_[i].initialization) uninitialized[init].push_back(i);
-        if (next) {
-          const auto phase = phase_map.find({barrier, *next});
-          const auto completion = graph.phaseCompletion({barrier, *next});
-          if (phase != phase_map.end() && phase->second->completed && completion) {
-            // The completion's only predecessors are the phase's effects: an
-            // issue reaches it iff the issue reaches one of them.
-            const auto upper = reverse->findAncestors(std::span(&*completion, 1), targets);
-            for (std::size_t i = 0; i < indices.size(); ++i)
-              result.answers_[indices[i]].upper = upper[i].has_value();
-          }
-        }
+        if (item.next)
+          for (std::size_t i = 0; i < indices.size(); ++i)
+            result.answers_[indices[i]].upper = item.upper[i].has_value();
       }
-      for (const auto& [init, indices] : uninitialized) {
+      std::vector<std::pair<EventId, const std::vector<std::size_t>*>> initializations;
+      for (const auto& [init, indices] : uninitialized) initializations.emplace_back(init, &indices);
+      std::vector<std::vector<std::uint8_t>> initialized(initializations.size());
+      ParallelFor(initializations.size(), concurrent ? options.threads : 1, [&](std::size_t k) {
+        const auto& [init, indices] = initializations[k];
         std::vector<EventId> targets;
-        targets.reserve(indices.size());
-        for (auto i : indices) targets.push_back(queries[i].issue);
-        const auto initialized = forward->allReachMany(std::span(&init, 1), targets);
+        targets.reserve(indices->size());
+        for (auto i : *indices) targets.push_back(queries[i].issue);
+        initialized[k] = all_reach(std::span(&init, 1), targets);
+      });
+      for (std::size_t k = 0; k < initializations.size(); ++k) {
+        const auto& indices = *initializations[k].second;
         for (std::size_t i = 0; i < indices.size(); ++i)
-          result.answers_[indices[i]].initialization = bool(initialized[i]);
+          result.answers_[indices[i]].initialization = bool(initialized[k][i]);
+      }
+      if (concurrent) {
+        forward->RecordConcurrentQueries(forward_calls, forward_visits);
+        reverse->RecordConcurrentQueries(reverse_calls, reverse_visits);
       }
       std::sort(result.answers_.begin(), result.answers_.end(), [](const auto& a, const auto& b) { return a.issue < b.issue; });
       return result;

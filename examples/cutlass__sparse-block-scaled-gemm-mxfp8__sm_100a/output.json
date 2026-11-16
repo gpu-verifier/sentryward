@@ -178,12 +178,12 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
-      "edges": 10721016,
-      "events": 4448504,
-      "instructions": 819698,
+      "edges": 10733384,
+      "events": 4456760,
+      "instructions": 823810,
       "memory_accesses": 2924288,
       "threads": 4096
     },
@@ -463,7 +463,7 @@
       },
       "implementation": "cpp",
       "input_objects": [],
-      "lowered_instruction_count": 819698,
+      "lowered_instruction_count": 823810,
       "mma_refinement": {
         "blocked": [],
         "discharged": 64
@@ -570,13 +570,13 @@
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
-        "logical_instructions": 819698,
-        "stored_bindings": 66505
+        "logical_instructions": 823810,
+        "stored_bindings": 70617
       },
       "source_edge_storage": {
-        "binding_templates": 4641,
-        "logical_edges": 815602,
-        "stored_bindings": 4642
+        "binding_templates": 4818,
+        "logical_edges": 819714,
+        "stored_bindings": 4819
       },
       "tcgen_copy_refinement": {
         "blocked": [],
@@ -604,16 +604,16 @@
       },
       "required_orders": {
         "algorithm": "member-relations",
-        "batches": 10,
-        "edge_visits": 793202,
+        "batches": 4,
+        "edge_visits": 1059827,
         "member_enumerations": 0,
         "request_construction": {
           "concrete_pair_materializations": 0,
-          "endpoint_reads": 31168,
-          "family_requests": 1792,
-          "logical_orders": 276480,
-          "owner_bindings": 17280,
-          "stored_orders": 8640
+          "endpoint_reads": 62683,
+          "family_requests": 27298,
+          "logical_orders": 279774,
+          "owner_bindings": 45501,
+          "stored_orders": 11934
         }
       }
     },
@@ -639,19 +639,19 @@
         "access_families": 463711,
         "affine_member_rows": 0,
         "candidate_relations": 1189931,
-        "hb_frontier_pieces": 1607,
+        "hb_frontier_pieces": 979,
         "hb_member_enumerations": 0,
         "logical_accesses": 2924288
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 1064,
+      "hb_batches": 392,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 2213631,
+      "hb_edge_visits": 1558970,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 13116640,
-      "hb_query_seconds": 0.4996991729999988,
+      "hb_query_seconds": 0.5942340159999996,
       "overlap_queries": 698368,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 698368
@@ -659,9 +659,9 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 5200.72265625,
-    "required_order_domains": 8640,
-    "required_orders": 276480,
+    "peak_footprint_mib": 4970.87890625,
+    "required_order_domains": 11934,
+    "required_orders": 279774,
     "search_complete": true,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
@@ -681,9 +681,9 @@
       "memory_binding_templates": 45443,
       "memory_bindings": 2021488,
       "memory_linking_templates_used": true,
-      "synchronization_groups": 33694,
+      "synchronization_groups": 33919,
       "synchronization_groups_materialized": true,
-      "synthetic_synchronization_nodes": 273,
+      "synthetic_synchronization_nodes": 289,
       "thread_prefix_groups": 719978,
       "value_diagnostic_count": 0,
       "value_diagnostics": []
@@ -755,14 +755,14 @@
           "elements": 0,
           "identities": 339,
           "layouts": 224,
-          "mapping_blocks": 100608,
+          "mapping_blocks": 99072,
           "name": "view_normalization",
-          "original_pieces": 614912,
+          "original_pieces": 621056,
           "reused_initial_reads": 8304,
-          "reused_views": 22672,
+          "reused_views": 22816,
           "segmented": 45184,
           "slices": 8224,
-          "stored_mapping_blocks": 55408,
+          "stored_mapping_blocks": 53440,
           "typed_output_pieces": 0,
           "typed_output_regions": 0
         }
@@ -871,18 +871,18 @@
         "action_patterns": 1340339,
         "binding_patterns": 664499,
         "domain_refinements": 2521272,
-        "elapsed_seconds": 6.646275705,
-        "event_families": 1061970,
+        "elapsed_seconds": 6.790167467,
+        "event_families": 1070226,
         "expanded_event_records": 0,
         "largest_batch_members": 62,
         "logical_actions": 2021488,
-        "logical_events": 13777621,
-        "peak_rss_mib_at_completion": 5344.62109375,
+        "logical_events": 13785877,
+        "peak_rss_mib_at_completion": 5119.4765625,
         "reachability_queries": 0,
-        "relations": 3710824,
-        "rss_mib_at_completion": 3394.56640625,
-        "scheduled_batches": 1061970,
-        "singleton_batches": 623156,
+        "relations": 3723192,
+        "rss_mib_at_completion": 3180.3828125,
+        "scheduled_batches": 1070226,
+        "singleton_batches": 631412,
         "value_families": 495326
       },
       "shared_read_families": 22706,
@@ -892,13 +892,13 @@
     "value_ir_instance_count": 5782247,
     "value_ir_node_count": 407117,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 18.681096188,
+    "verification_elapsed_seconds": 19.18392907,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 5344.62109375,
-  "pipeline_elapsed_seconds": 42.681970746,
+  "peak_rss_mib": 5119.4765625,
+  "pipeline_elapsed_seconds": 39.849832223,
   "result": "undefined_behavior",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -1660,6 +1660,6 @@
       }
     }
   ],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.41
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.414
 }

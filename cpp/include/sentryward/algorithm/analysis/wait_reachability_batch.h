@@ -40,6 +40,9 @@ struct WaitReachabilityBatchOptions final {
   // the phase's effects. Metadata alone is not a proof of that ordering.
   bool certified_phase_ordering = false;
   std::size_t scratch_limit_bytes = std::size_t{512} * 1024 * 1024;
+  // Threads answering the family relations' groups concurrently (0 or 1: the calling thread only).
+  // The answers do not depend on it.
+  std::size_t threads = 0;
 };
 
 // Immutable answers concerning original events. Current WellSync wait-edge

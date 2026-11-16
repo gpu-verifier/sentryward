@@ -159,6 +159,7 @@ struct TemplateArena {
           const auto integer=[](const Scalar& value)->std::optional<Integer> {
             if(auto n=std::get_if<Integer>(&value))return *n;
             if(auto b=std::get_if<bool>(&value))return Integer(*b);
+            if(TableAtom(value))return ScalarInteger(value); // a table atom or data predicate: its exact value
             return {};
           };
           auto raw_mask=integer(inputs.at(1));
@@ -211,7 +212,8 @@ struct TemplateArena {
               node.vote->mode=="any"?bits!=0:bits==0 || bits==mask;
           }
         } else if(node.exchange) {
-          const auto* selected=std::get_if<Integer>(&inputs.at(0));
+          const auto plain_selection=PlainValue(inputs.at(0));
+          const auto* selected=std::get_if<Integer>(&plain_selection);
           if(!selected)cache[current]=Scalar{};
           else {
             if(*selected<0 || *selected>=caches.size())throw std::out_of_range("template exchange member");

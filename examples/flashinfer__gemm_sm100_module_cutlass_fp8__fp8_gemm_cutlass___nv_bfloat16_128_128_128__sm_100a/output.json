@@ -106,7 +106,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 741350,
@@ -118,7 +118,7 @@
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
       "arena_nodes": 3916,
-      "comparison_elapsed_seconds": 0.018504136,
+      "comparison_elapsed_seconds": 0.01958452,
       "context_declaration": {
         "assumptions": [],
         "fixed_inputs": [],
@@ -152,6 +152,8 @@
         "ep_body_proofs": 256,
         "ep_body_read_anchor_rejections": 322,
         "ep_body_target_anchor_cache_hits": 193,
+        "ep_body_target_call_index_builds": 192,
+        "ep_body_target_call_index_nodes": 480,
         "ep_identity_proofs": 416,
         "ep_scalar_attempts": 512,
         "ep_scalar_proofs": 416,
@@ -162,18 +164,19 @@
         "fold_alpha_states": 196,
         "fp_idiom_power_constructions": 0,
         "fp_idiom_rm_producers": 0,
-        "ideal_additive_compiler_exp_sequences": 0,
-        "ideal_compiler_exp_sequences": 0,
         "ideal_compiler_log2_polynomials": 0,
         "ideal_compiler_lse_sequences": 0,
-        "ideal_single_constant_exp_sequences": 0,
-        "imported_context_nodes": 3924,
+        "imported_context_nodes": 3947,
         "importer_occurrence_binder_hits": 638,
         "importer_scope_banks": 2,
         "importer_scope_binders_created": 2,
         "importer_scope_leaf_lookups": 2,
         "importer_scope_nested_body_fallbacks": 320,
-        "intern_requests": 26983,
+        "intern_requests": 27143,
+        "known_bits_cache_hits": 353,
+        "known_bits_edges": 0,
+        "known_bits_nodes": 4,
+        "linear_reduction_case_nonfinite_identities": 0,
         "local_pattern_candidates": 881,
         "masked_sum_prefix_queries": 480,
         "normalization_cache_context_changes": 34,
@@ -193,7 +196,7 @@
         "status": "proved"
       },
       "diagnostics": [],
-      "elapsed_s": 0.012531248,
+      "elapsed_s": 0.013418873,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -242,16 +245,22 @@
       },
       "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
       "equivalent_families": 160,
+      "failure_expression_samples": {
+        "failed_families": 0,
+        "omitted_families": 0,
+        "render_byte_limit_per_side": 4096,
+        "sample_limit": 8,
+        "sampled_families": 0
+      },
       "finished_families": 160,
       "idealizations_applied": [],
       "input_contract_applied_reads": [],
-      "legacy_scalar_fallback": false,
       "mapping_input_memory_constraints": {},
       "native_context": null,
       "normalized_reachable_nodes": 453,
       "numerical_result": "verified",
-      "pattern_nodes": 433,
-      "peak_rss_kib": 567852,
+      "pattern_nodes": 563,
+      "peak_rss_kib": 541616,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
       "piece_nodes": 576,
       "piece_union": {
@@ -269,7 +278,7 @@
       "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
       "raw_nodes": [
         282,
-        1333
+        1329
       ],
       "reference_term_patterns": 4,
       "row_groups": [
@@ -283,41 +292,40 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 2.910999999998097e-05,
-            "cumulative_elapsed_s": 0.012220017,
-            "left_import_s": 0.0023588070000000036,
-            "left_normalize_s": 0.001404875999999992,
-            "parametric_state_s": 1.2110000000004734e-05,
-            "piece_union_record_s": 4.059999999996055e-06,
-            "piece_union_seal_s": 6.380000000012851e-06,
-            "right_import_s": 0.004374003999999987,
-            "right_normalize_s": 0.0028954650000000016
+            "affine_state_pattern_s": 3.665099999999757e-05,
+            "cumulative_elapsed_s": 0.013113991,
+            "left_import_s": 0.0025320499999999984,
+            "left_normalize_s": 0.0016188520000000005,
+            "parametric_state_s": 1.3120000000003181e-05,
+            "piece_union_record_s": 4.08999999999837e-06,
+            "piece_union_seal_s": 4.070000000001416e-06,
+            "right_import_s": 0.004530413000000018,
+            "right_normalize_s": 0.003265756000000003
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 2.910999999998097e-05,
+        "affine_state_pattern_s": 3.665099999999757e-05,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.0023588070000000036,
-        "left_normalize_s": 0.001404875999999992,
-        "parametric_state_s": 1.2110000000004734e-05,
-        "piece_union_record_s": 4.059999999996055e-06,
+        "left_import_s": 0.0025320499999999984,
+        "left_normalize_s": 0.0016188520000000005,
+        "parametric_state_s": 1.3120000000003181e-05,
+        "piece_union_record_s": 4.08999999999837e-06,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 6.380000000012851e-06,
+        "piece_union_seal_s": 4.070000000001416e-06,
         "proof_reuse_s": 0.0,
-        "right_import_s": 0.004374003999999987,
-        "right_normalize_s": 0.0028954650000000016,
+        "right_import_s": 0.004530413000000018,
+        "right_normalize_s": 0.003265756000000003,
         "state_pattern_s": 0.0
       },
       "timings": {
-        "load_and_scope_analysis": 0.000400112
+        "load_and_scope_analysis": 0.000380443
       },
       "total_output_families": 160,
       "transport": "in_memory_cpp_objects",
@@ -564,19 +572,19 @@
         "access_families": 26470,
         "affine_member_rows": 0,
         "candidate_relations": 84734,
-        "hb_frontier_pieces": 874,
+        "hb_frontier_pieces": 659,
         "hb_member_enumerations": 0,
         "logical_accesses": 198340
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 60,
+      "hb_batches": 24,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 213966,
+      "hb_edge_visits": 138701,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 1256168,
-      "hb_query_seconds": 0.035918824999999974,
+      "hb_query_seconds": 0.03069219500000001,
       "overlap_queries": 42656,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 42656
@@ -584,7 +592,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 555.55078125,
+    "peak_footprint_mib": 529.69140625,
     "required_order_domains": 1064,
     "required_orders": 34048,
     "search_complete": true,
@@ -698,32 +706,33 @@
       "scalar_fold": {
         "construction_collections": 0,
         "diagnostics": [],
+        "narrowing_slice_projections": 2100,
         "output_count": 16384,
-        "output_families_merged": 5088,
+        "output_families_merged": 2400,
         "output_family_count": 160,
         "output_root_count": 160,
-        "peak_construction_nodes": 92282,
-        "shared_view_projection_hits": 41848,
+        "peak_construction_nodes": 46024,
+        "shared_view_projection_hits": 20792,
         "source_outputs": 1376,
         "spatial_families_projected": 2560,
         "spatial_outputs_projected": 16384,
         "spatial_template_operations": 0,
         "statistics": {
           "constants": 130,
-          "edges": 2264,
+          "edges": 2257,
           "folds": 320,
           "indices": 3,
-          "initial_cells": 134,
+          "initial_cells": 133,
           "logical_iterations": 5760,
           "logical_iterations_overflow": false,
           "max_fold_nesting": 2,
-          "nodes": 1332,
-          "nodes_before_final_collection": 92282,
-          "nodes_reclaimed": 90950,
-          "operations": 745,
+          "nodes": 1328,
+          "nodes_before_final_collection": 46024,
+          "nodes_reclaimed": 44696,
+          "operations": 742,
           "parameters": 0,
           "range_descriptions": 320,
-          "storage_nodes": 1332,
+          "storage_nodes": 1328,
           "unique_fold_bodies": 320
         }
       },
@@ -731,16 +740,16 @@
         "action_patterns": 87552,
         "binding_patterns": 49018,
         "domain_refinements": 220670,
-        "elapsed_seconds": 0.498701726,
+        "elapsed_seconds": 0.512147904,
         "event_families": 98198,
         "expanded_event_records": 0,
         "largest_batch_members": 62,
         "logical_actions": 126914,
         "logical_events": 912342,
-        "peak_rss_mib_at_completion": 541.921875,
+        "peak_rss_mib_at_completion": 498.7421875,
         "reachability_queries": 0,
         "relations": 262382,
-        "rss_mib_at_completion": 447.77734375,
+        "rss_mib_at_completion": 404.609375,
         "scheduled_batches": 98198,
         "singleton_batches": 38101,
         "value_families": 63520
@@ -752,13 +761,13 @@
     "value_ir_instance_count": 442180,
     "value_ir_node_count": 56272,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 1.012973878,
+    "verification_elapsed_seconds": 1.025475917,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 555.55078125,
-  "pipeline_elapsed_seconds": 3.143299199,
+  "peak_rss_mib": 529.69140625,
+  "pipeline_elapsed_seconds": 2.8534628,
   "result": "verified",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -1520,6 +1529,6 @@
       }
     }
   ],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.548
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.54
 }

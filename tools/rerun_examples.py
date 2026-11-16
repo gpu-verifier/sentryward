@@ -568,6 +568,9 @@ def write_index(examples: Path, records: list[dict]) -> None:
                 row["Correctness Check"] += " (total definedness: `" + str(defined.get("status", "not_proven")) + "`)"
                 if defined.get("partial_equivalence_families", 0):
                     row["Correctness Check"] += " [same-domain partial-function equivalence]"
+                if defined.get("nonfinite_identity_families", 0):
+                    row["Correctness Check"] += (" [" + str(defined["nonfinite_identity_families"]) +
+                                                 " families equal with identical non-finite values]")
         output.append("| " + " | ".join(row.get(c, "—") for c in header) + " |")
     index.write_text("\n".join(output) + "\n")
 

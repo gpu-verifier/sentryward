@@ -259,6 +259,7 @@ TmaAccesses UnitInterner::Commit(SlotOutcome<ResolvedTma> &&outcome) {
   }
   for (const auto &[step, bytes] : resolved.completions)
     result.completions.emplace_back(BarrierLifetimeId(ids[step]), bytes);
+  result.region_valued = std::move(resolved.region_valued);
   return result;
 }
 Resources::Resources(const FactSource &f, const UnitFrame &u, AddressTable &a,
@@ -303,6 +304,12 @@ std::vector<Coordinates> BarrierTable::Owners() const {
   owners.reserve(ids_.size());
   for (const auto &[key, id] : ids_) owners.push_back(std::get<1>(key));
   return owners;
+}
+std::vector<std::pair<BarrierLifetimeId, Coordinates>> BarrierTable::OwnedLifetimes() const {
+  std::vector<std::pair<BarrierLifetimeId, Coordinates>> owned;
+  owned.reserve(ids_.size());
+  for (const auto &[key, id] : ids_) owned.emplace_back(id, std::get<1>(key));
+  return owned;
 }
 std::tuple<std::string, Coordinates, std::string> BarrierTable::Location(BarrierLifetimeId id) const {
   for (const auto &[key,value] : ids_) if (value==id) return key;
@@ -507,7 +514,8 @@ std::optional<SharedAddress> Resources::Shared(const RecordView &e,
       return {};
     token = split->first;
     displacement = split->second;
-    value = Value(e, token);
+    // A table atom (class mode) addresses shared memory as its plain value.
+    value = PlainValue(Value(e, token));
   }
   if (std::holds_alternative<std::monostate>(value)) {
     std::set<Integer> placements;

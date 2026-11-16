@@ -63,7 +63,7 @@ struct PackedDecodePass {
     if(n.op=="const")return n.data[0].denominator()==1;
     // floatbits is the integer storage encoding, not the floating value.
     // Its integral nature must survive exact pack/unpack arithmetic.
-    if(n.op=="readbits" || n.op=="extractbits" || n.op=="packedbits" || n.op=="floatbits" || n.op=="idiv" || n.op=="word" || n.op=="signed" || n.op=="word_shr" || n.op=="word_or")return true;
+    if(n.op=="readbits" || n.op=="extractbits" || n.op=="packedbits" || n.op=="floatbits" || n.op=="idiv" || n.op=="word" || n.op=="signed" || n.op=="word_shr" || n.op=="word_shl" || n.op=="word_or")return true;
     if(n.op=="imod")return integer_impl(n.args[0],budget,depth+1) && n.data[0].denominator()==1;
     if((n.op=="add" || n.op=="mul") && n.args.size()<=4) {
       for(const auto &q:n.data)if(q.denominator()!=1)return false;

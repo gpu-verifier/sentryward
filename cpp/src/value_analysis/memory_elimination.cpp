@@ -710,10 +710,18 @@ const v::MemoryAttributes& memoryAttributes(const v::Node& node) {
 // allocation no action writes: kept as an original Load leaf. A TMA region
 // fragment's guard is its zero fill (MemoryAttributes::region_offset), which
 // the leaf keeps: a disabled Load yields zero.
+// A fragment of a TMA source-row Load (frontend ResolvedTma): a region fragment Load bound per
+// fragment, each at its value byte offset from the Load's address (serialization).
+bool tmaRowFragment(const v::Node& node,const OrderedMemoryAction& action) {
+  const auto* load=dynamic_cast<const v::LoadOp*>(&node.operation());
+  return load && load->attributes().region_offset && action.value_byte_offset && !action.region &&
+      action.symbolic_region && action.symbolic_region->offset==*action.value_byte_offset;
+}
 bool symbolicInitialRead(const v::Node& node,const OrderedMemoryAction& action,
     const std::map<std::string,AllocationInfo>& allocations,
     const std::set<std::string>& written_allocations,bool unknown_write_allocation) {
-  if(!dynamic_cast<const v::LoadOp*>(&node.operation()) || !action.symbolic_region || action.value_byte_offset ||
+  if(!dynamic_cast<const v::LoadOp*>(&node.operation()) || !action.symbolic_region ||
+     (action.value_byte_offset && !tmaRowFragment(node,action)) ||
      unknown_write_allocation || written_allocations.contains(action.symbolic_region->allocation))return false;
   const auto allocation=allocations.find(action.symbolic_region->allocation);
   const auto& attributes=memoryAttributes(node);
@@ -906,8 +914,8 @@ std::optional<MemoryEliminationDiagnostic> leastDynamicAddressFailure(const v::G
   for(const auto& action:actions) {
     if(action.region)continue;
     const auto& node=graph.node(action.operation.node);
-    if(!action.value_byte_offset && (memoryAttributes(node).guarded || positionedAccess(node,action) ||
-        symbolicInitialRead(node,action,allocations,written_allocations,unknown_write_allocation)))continue;
+    if((!action.value_byte_offset && (memoryAttributes(node).guarded || positionedAccess(node,action))) ||
+        symbolicInitialRead(node,action,allocations,written_allocations,unknown_write_allocation))continue;
     const auto origin=node.instanceOrigin(action.operation.instance);
     complete_keys=complete_keys && origin.instruction_index && origin.occurrence && origin.lowering_index;
     Key key{origin.instruction_index,origin.occurrence,origin.lowering_index,
@@ -998,6 +1006,8 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
     if (action.value_byte_offset) {
       if (whole_actions.contains(action.operation))
         return fail("duplicate_memory_action", "Whole and fragmented actions refer to the same memory instance.", action.operation);
+      // A TMA source-row fragment is checked when processed (an initial read of its whole Load).
+      if (!action.region && tmaRowFragment(action_node,action)) {supplied.insert(action.operation);continue;}
       if (!action.region)
         return fail("dynamic_address_unsupported", action.unsupported_reason, action.operation);
       if (!action.region->bytes || *action.value_byte_offset > UINT64_MAX-action.region->bytes)
@@ -1076,8 +1086,21 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
     const bool positioned=!action.region && !initial_read && positionedAccess(node,action);
     if (!action.region && !positioned) {
       if(initial_read) {
-        const auto& region=*action.symbolic_region;
+        auto region=*action.symbolic_region;
         const auto value=node.result(0,action.operation.instance);
+        // A TMA source-row fragment stands for its whole Load: an initial read of all its bytes
+        // at the Load's own address (the fragment lies at its value byte offset from it).
+        std::optional<SymbolicPosition> position=action.symbolic_position;
+        if(action.value_byte_offset) {
+          const auto bits=graph.type(value).bitSize();
+          if(!bits || bits%8)return fail("memory_type_unsupported","A TMA row Load has no byte payload.",action.operation);
+          region.offset=0;region.bytes=bits/8;
+          if(position) {
+            if(position->constant.offset<*action.value_byte_offset)
+              return fail("invalid_memory_fragment","A TMA row fragment lies before its Load.",action.operation);
+            position->constant.offset-=*action.value_byte_offset;position->constant.bytes=bits/8;
+          }
+        }
         if(const auto error=footprintError(graph.type(value),region))
           return fail("memory_type_unsupported",*error,action.operation);
         std::string missing;
@@ -1086,8 +1109,8 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
         result.symbolic_initial_reads.emplace(action.operation,region);
         // An unguarded TMA region fragment (MemoryAttributes::region_offset) is read at its
         // exact position when it has one; otherwise at its allocation-relative address.
-        if(attributes.region_offset && !attributes.guarded && action.symbolic_position)
-          result.symbolic_read_positions.emplace(action.operation,*action.symbolic_position);
+        if(attributes.region_offset && !attributes.guarded && position)
+          result.symbolic_read_positions.emplace(action.operation,*position);
         result.reads.emplace(action.operation,value);
         completed_reads.insert(action.operation);
         ++result.processed_actions;
@@ -1327,20 +1350,46 @@ MemoryEliminationResult eliminateMemory(const v::Graph& graph,
         continue;
       }
       if (load) {
+        // Pieces in byte order. Bytes of an intermediate allocation (no initial contents) that no
+        // store covered are its opaque initial contents, as for a wholly unwritten read below:
+        // one initial symbol per gap, and the scalar fold refuses any output that still depends
+        // on them (refuseUnwrittenOutputs), so a v2.b64 read whose unwritten upper half is
+        // discarded exactly (not multiplied by zero) passes. Gaps in allocations with initial
+        // contents, and in positioned reads, stay refused. O(cells overlapping the read).
+        const bool gaps_allowed = !positioned && !allocation->second.has_initial_contents;
         AssembledRead assembled{value_type, {}};
         auto cursor = region.offset;
         auto cell = existing;
         const auto end = region.offset + region.bytes;
-        while (cursor < end && cell != cells.end() && cell->second.region.offset <= cursor) {
-          const auto& piece = cell->second;
-          const auto piece_end = std::min(end, piece.region.offset + piece.region.bytes);
-          if (piece_end <= cursor) break;
-          assembled.pieces.push_back({piece.value,
-              v::ValueType::matrix(v::ElementType::bit(8), {piece_end-cursor}), piece.value_byte_offset + cursor-piece.region.offset});
-          cursor = piece_end;
-          ++cell;
+        bool gap = false;
+        while (cursor < end) {
+          if (cell != cells.end() && cell->second.region.offset <= cursor) {
+            const auto& piece = cell->second;
+            const auto piece_end = std::min(end, piece.region.offset + piece.region.bytes);
+            if (piece_end > cursor) {
+              assembled.pieces.push_back({piece.value, v::ValueType::matrix(v::ElementType::bit(8), {piece_end-cursor}),
+                  piece.value_byte_offset + cursor-piece.region.offset});
+              cursor = piece_end;
+            }
+            ++cell;
+            continue;
+          }
+          if (!gaps_allowed) break;
+          const auto gap_end = cell != cells.end() ? std::min(end, cell->second.region.offset) : end;
+          const ConstantRegion uncovered{region.allocation, cursor, gap_end - cursor};
+          const auto bytes_type = v::ValueType::matrix(v::ElementType::bit(8), {gap_end - cursor});
+          auto initial = initial_symbols.find(uncovered);
+          if (initial == initial_symbols.end()) {
+            const auto id = result.initial_memory.size();
+            result.initial_memory.push_back({id, uncovered, bytes_type});
+            initial = initial_symbols.emplace(uncovered, id).first;
+          }
+          assembled.pieces.push_back({result.initial_memory.at(initial->second), bytes_type, 0});
+          gap = true;
+          cursor = gap_end;
         }
         if (cursor == end) {
+          if (gap) result.unwritten_read_allocations.insert(region.allocation);
           finishRead(std::move(assembled));
           ++result.processed_actions;
           continue;

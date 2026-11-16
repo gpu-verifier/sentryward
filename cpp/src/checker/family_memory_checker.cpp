@@ -92,7 +92,7 @@ struct ObligationGroups {
   struct ConnectedDomain {MemberSet members;AccessId anchor;};
   std::unordered_map<std::size_t,std::vector<ConnectedDomain>> connected;
   // `members` of `family` join the group of `anchor`, each paired with `partner`.
-  void connect(const std::vector<MemoryAccessFamily>& families,std::size_t family,const MemberSet& members,
+  void connect(const FamilyTable& families,std::size_t family,const MemberSet& members,
       AccessId anchor,AccessId partner) {
     auto& domains=connected[family];MemberSet covered(members.extent());
     for(auto& domain:domains) {
@@ -108,7 +108,7 @@ struct ObligationGroups {
   }
   // Every pair of `relation` between families i and j; `anchor` is one of its accesses. Each
   // member of a rectangle is paired with the other side's first member.
-  void add(const std::vector<MemoryAccessFamily>& families,std::size_t i,std::size_t j,
+  void add(const FamilyTable& families,std::size_t i,std::size_t j,
       const MemberRelation& relation,AccessId anchor) {
     if(relation.diagonal)relation.left.forEach([&](auto x) {
       accesses.pair(families[i].at(x).id,families[j].at(std::size_t(std::int64_t(x)+relation.shift)).id);
@@ -190,22 +190,29 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
     extracted_families=std::move(extracted).value();
   }
   const auto source_families=supplied_families.value_or(std::span<const MemoryAccessFamily>(extracted_families));
-  std::vector<MemoryAccessFamily> families;
+  // The checked families: the supplied ones, referenced, and the parts that split them.
+  FamilyTable families(source_families);
   std::vector<FamilyFootprint> footprints;
   std::vector<std::optional<std::size_t>> copy_classes;
   // Families whose storage FamilyConflictOrder leaves unreduced: duplicate-store exemptions.
   std::vector<std::uint8_t> blocked_families;
   bool declined=false;std::size_t logical_accesses=0;
   ProfileCall("memory.family.accesses",[&] {
-    const auto append=[&](MemoryAccessFamily family,FamilyFootprint footprint) {
+    // `supplied`: the index of `family` among the supplied families when it is one of them, unsplit.
+    const auto append=[&](const MemoryAccessFamily& family,FamilyFootprint footprint,std::optional<std::size_t> supplied) {
       const auto safe=[](I value){return value>-(I(1)<<90) && value<(I(1)<<90);};
       if(!safe(footprint.offset) || !safe(footprint.step)) {declined=true;return;}
-      const auto emit=[&](MemoryAccessFamily part,std::optional<std::size_t> copy) {
-        families.push_back(std::move(part));footprints.push_back(footprint);
+      // A part, or (null) the supplied family itself, referenced rather than copied.
+      const auto emit=[&](MemoryAccessFamily* part,std::optional<std::size_t> copy) {
+        if(part)families.pushPart(std::move(*part));else families.pushSupplied(*supplied);
+        footprints.push_back(footprint);
         copy_classes.push_back(copy);blocked_families.push_back(copy.has_value());
       };
       if(!options.warn_duplicate_tma_stores || family.first.mode!=AccessMode::kWrite ||
-          family.first.operand!=AccessOperand::kEffect) {emit(std::move(family),{});return;}
+          family.first.operand!=AccessOperand::kEffect) {
+        if(supplied) {emit(nullptr,{});return;}
+        auto part=family;emit(&part,{});return;
+      }
       // Validate provenance once per eligible member, not once per pair.
       // Split only at actual copy-class/address boundaries, retaining coordinates.
       auto first=family.first_member;
@@ -217,20 +224,23 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
         if(!next_copy && duplicate.mayContain(next)) {declined=true;return;}
         if(next_copy==copy && (!copy || next.address==access.address))continue;
         auto part=family;part.first=access;part.first_member=first;part.count=member-first;
-        emit(std::move(part),copy);first=member;access=next;copy=next_copy;
+        emit(&part,copy);first=member;access=next;copy=next_copy;
       }
+      // Unsplit: the family itself.
+      if(supplied && first==family.first_member) {emit(nullptr,copy);return;}
       auto part=family;part.first=access;part.first_member=first;
-      part.count=family.first_member+family.count-first;emit(std::move(part),copy);
+      part.count=family.first_member+family.count-first;emit(&part,copy);
     };
     // Reads with a member that has no footprint: dropped below when no write can reach their storage.
     std::vector<const MemoryAccessFamily*> unplaced_reads;
-    for(const auto& family:source_families) {
+    for(std::size_t index=0;index<source_families.size();++index) {
+        const auto& family=source_families[index];
         logical_accesses+=family.count;
         if(family.first.atomic_scope) {
           declined=true;return;
         }
         auto footprint=memory.familyFootprint(family);
-        if(footprint) {append(family,std::move(*footprint));if(declined)return;continue;}
+        if(footprint) {append(family,std::move(*footprint),index);if(declined)return;continue;}
         // Partition a flat address table once; no guessed affine interpolation.
         const auto mark=families.size();
         std::optional<MemoryAccessFamily> run;FamilyFootprint previous;
@@ -238,7 +248,7 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
           auto single=family;single.first=family.at(member);single.first_member=member;single.count=1;
           auto current=memory.familyFootprint(single);
           if(!current && family.first.mode==AccessMode::kRead) {
-            families.resize(mark);footprints.resize(mark);copy_classes.resize(mark);blocked_families.resize(mark);
+            families.truncate(mark);footprints.resize(mark);copy_classes.resize(mark);blocked_families.resize(mark);
             unplaced_reads.push_back(&family);run.reset();break;
           }
           if(!current) {declined=true;return;}
@@ -253,11 +263,11 @@ std::optional<Result<MemoryRaceResult,MemoryAnalysisError>> TryFamilyMemoryCheck
             previous.offset-=previous.step*I(run->first_member);
           }
           if(compatible && current->offset==previous.offset+previous.step*I(member)) {++run->count;continue;}
-          if(run)append(*run,previous);
+          if(run)append(*run,previous,std::nullopt);
           if(declined)return;
           run=single;previous=*current;
         }
-        if(run)append(*run,previous);
+        if(run)append(*run,previous,std::nullopt);
         if(declined)return;
     }
     // A race needs a write. Every write family has footprints (else declined above); a read is

@@ -163,7 +163,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 311936,
@@ -329,7 +329,7 @@
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 23680,
+      "address_candidates": 63616,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -347,22 +347,22 @@
       "exhaustive": false,
       "family_analysis": {
         "access_families": 16042,
-        "affine_member_rows": 29504,
-        "candidate_relations": 11377,
-        "hb_frontier_pieces": 96,
+        "affine_member_rows": 59472,
+        "candidate_relations": 24312,
+        "hb_frontier_pieces": 192,
         "hb_member_enumerations": 0,
         "logical_accesses": 69632
       },
-      "first_race_seconds": 0.020768284,
+      "first_race_seconds": 0.025980361,
       "hb_algorithm": "member-relations",
       "hb_batches": 1,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 7588,
+      "hb_edge_visits": 15718,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
-      "hb_queries": 23680,
-      "hb_query_seconds": 0.003159893,
+      "hb_queries": 63616,
+      "hb_query_seconds": 0.007804378,
       "overlap_queries": 1,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 1
@@ -370,7 +370,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 217.37890625,
+    "peak_footprint_mib": 206.87109375,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": false,
@@ -471,10 +471,10 @@
     "value_ir_node_count": 69975,
     "value_view_complete": true
   },
-  "peak_rss_mib": 248.73046875,
-  "pipeline_elapsed_seconds": 0.452446583,
+  "peak_rss_mib": 233.48828125,
+  "pipeline_elapsed_seconds": 0.450319301,
   "result": "potential_race",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -483,6 +483,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.575
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.567
 }

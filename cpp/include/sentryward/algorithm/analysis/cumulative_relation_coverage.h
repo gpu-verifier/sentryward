@@ -6,6 +6,7 @@
 #include <tuple>
 #include <unordered_map>
 #include "sentryward/algorithm/analysis/member_relation.h"
+#include "sentryward/algorithm/analysis/relation_labels.h"
 
 namespace sentryward::algorithm {
 // Indexed cumulative coverage. Products partition the source coordinate into
@@ -23,19 +24,19 @@ class CumulativeRelationCoverage {
     std::size_t state_normalizations=0,drain_groupings=0;
     std::size_t last_arrival_hits=0,last_arrival_misses=0;
   };
-  struct Work {std::size_t position,end;MemberRelation relation;std::uint64_t labels=1;};
+  struct Work {std::size_t position,end;MemberRelation relation;RelationLabels labels=1;};
  private:
   struct State {
     struct Group {
-      std::size_t known,sent;std::uint64_t labels;
+      std::size_t known,sent;RelationLabels labels;
       bool operator==(const Group&) const = default;
     };
     std::vector<Group> groups;
     bool operator==(const State&) const = default;
-    std::uint64_t pending() const {
-      std::uint64_t mask=0;for(const auto& g:groups)if(g.known<g.sent)mask|=g.labels;return mask;
+    RelationLabels pending() const {
+      RelationLabels mask=0;for(const auto& g:groups)if(g.known<g.sent)mask|=g.labels;return mask;
     }
-    bool useful(std::size_t position,std::uint64_t labels,Counters& stats) const {
+    bool useful(std::size_t position,RelationLabels labels,Counters& stats) const {
       for(const auto& g:groups){++stats.state_groups;if(g.known<=position)labels&=~g.labels;if(!labels)return false;}
       return labels!=0;
     }
@@ -50,7 +51,7 @@ class CumulativeRelationCoverage {
         else groups.push_back(g);
       }
     }
-    bool advance(std::size_t position,std::uint64_t labels,Counters& stats) {
+    bool advance(std::size_t position,RelationLabels labels,Counters& stats) {
       // The common one-history state needs neither a temporary group array nor
       // sorting. New labels / partially advanced histories still use the same
       // general state transition below; they must not borrow another label's
@@ -69,7 +70,7 @@ class CumulativeRelationCoverage {
           g.labels|=labels;return true;
         }
       }
-      std::array<Group,128> next;std::size_t n=0;bool changed=false;
+      std::array<Group,2*kRelationLabelBits+1> next;std::size_t n=0;bool changed=false;
       auto missing=labels;
       for(const auto& g:groups) {
         ++stats.state_groups;const auto selected=g.labels&labels;missing&=~g.labels;
@@ -81,7 +82,7 @@ class CumulativeRelationCoverage {
       if(changed)normalize(std::span(next.data(),n),stats);
       stats.peak_groups=std::max(stats.peak_groups,groups.size());return changed;
     }
-    template<class Visit> void drain(std::uint64_t active,Counters& stats,Visit visit) {
+    template<class Visit> void drain(RelationLabels active,Counters& stats,Visit visit) {
       if(groups.size()==1) {
         auto& g=groups.front();const auto selected=g.labels&active;
         if(!selected || g.known>=g.sent)return;
@@ -89,7 +90,7 @@ class CumulativeRelationCoverage {
           visit(g.known,g.sent,selected);g.sent=g.known;return;
         }
       }
-      std::array<Group,128> next;std::size_t n=0;
+      std::array<Group,2*kRelationLabelBits+1> next;std::size_t n=0;
       for(const auto& g:groups) {
         const auto selected=g.labels&active;
         if(!selected || g.known>=g.sent){next[n++]=g;continue;}
@@ -99,7 +100,7 @@ class CumulativeRelationCoverage {
       }
       normalize(std::span(next.data(),n),stats);
     }
-    bool covers(std::uint64_t selector) const {
+    bool covers(RelationLabels selector) const {
       for(const auto& g:groups)selector&=~g.labels;return selector==0;
     }
   };
@@ -107,8 +108,8 @@ class CumulativeRelationCoverage {
     std::map<std::size_t,State> values{{0,{}}};
     std::set<std::size_t> dirty;
     mutable std::optional<MemberSet> covered_cache;
-    mutable std::uint64_t cache_selector=0;
-    bool useful(std::size_t position,const MemberSet& mask,Counters& stats,std::uint64_t labels) const {
+    mutable RelationLabels cache_selector=0;
+    bool useful(std::size_t position,const MemberSet& mask,Counters& stats,RelationLabels labels) const {
       bool result=false;
       mask.forEachRun([&](auto a,auto b) {
         if(result)return;
@@ -128,7 +129,7 @@ class CumulativeRelationCoverage {
       if(it->second.pending())dirty.insert(x);
       return it;
     }
-    bool advance(std::size_t position,const MemberSet& mask,Counters& stats,std::uint64_t labels) {
+    bool advance(std::size_t position,const MemberSet& mask,Counters& stats,RelationLabels labels) {
       bool changed=false;
       mask.forEachRun([&](auto a,auto b) {
         // Do not split unchanged coverage on redundant arrivals.
@@ -154,7 +155,7 @@ class CumulativeRelationCoverage {
       stats.peak_columns=std::max(stats.peak_columns,values.size());
       return changed;
     }
-    template<class Visit> void drain(std::size_t extent,std::uint64_t active,Counters& stats,Visit visit) {
+    template<class Visit> void drain(std::size_t extent,RelationLabels active,Counters& stats,Visit visit) {
       for(auto ticket=dirty.begin();ticket!=dirty.end();) {
         const auto a=*ticket;
         auto it=values.find(a);if(it==values.end()){ticket=dirty.erase(ticket);continue;}
@@ -164,7 +165,7 @@ class CumulativeRelationCoverage {
         if(!state.pending())ticket=dirty.erase(ticket);else ++ticket;
       }
     }
-    MemberSet covered(std::size_t extent,std::uint64_t selector) const {
+    MemberSet covered(std::size_t extent,RelationLabels selector) const {
       if(covered_cache && cache_selector==selector)return *covered_cache;
       MemberSet result(extent);
       for(auto it=values.begin();it!=values.end();++it)if(it->second.covers(selector)) {
@@ -181,7 +182,7 @@ class CumulativeRelationCoverage {
   std::set<std::size_t> dirty_rows_;
   std::set<std::int64_t> dirty_diagonals_;
   mutable std::shared_ptr<CumulativeRelationCoverage> transpose_;
-  struct Arrival {MemberRelation relation;std::size_t position;std::uint64_t labels;};
+  struct Arrival {MemberRelation relation;std::size_t position;RelationLabels labels;};
   std::optional<Arrival> last_arrival_;
   auto splitRow(std::size_t x,Counters& stats) {
     if(x==left_extent_)return rows_.end();
@@ -200,8 +201,8 @@ class CumulativeRelationCoverage {
   std::size_t leftExtent() const {return left_extent_;}
   bool initialized() const {return initialized_;}
   bool pending() const {return !dirty_rows_.empty() || !dirty_diagonals_.empty();}
-  bool advance(std::size_t position,const MemberRelation& r,Counters& stats,std::uint64_t labels=1) {
-    ++stats.arrivals;stats.requested_labels+=std::popcount(labels);
+  bool advance(std::size_t position,const MemberRelation& r,Counters& stats,RelationLabels labels=1) {
+    ++stats.arrivals;stats.requested_labels+=labels.count();
     if(r.empty() || !labels)return false;initialize(r);
     if(r.left.count()==1)++stats.singleton_arrivals;
     // An advance certifies this exact relation at its incoming position.
@@ -306,9 +307,9 @@ class CumulativeRelationCoverage {
     stats.peak_rows=std::max(stats.peak_rows,rows_.size()+diagonals_.size());
     return changed;
   }
-  void drain(Counters& stats,std::uint64_t active,std::vector<Work>& out) {
+  void drain(Counters& stats,RelationLabels active,std::vector<Work>& out) {
     out.clear();
-    struct Piece {std::size_t a,b,position,end;std::uint64_t labels;};
+    struct Piece {std::size_t a,b,position,end;RelationLabels labels;};
     if(dirty_rows_.size()==1) {
       auto it=rows_.find(*dirty_rows_.begin());
       if(it!=rows_.end()) {
@@ -340,7 +341,7 @@ class CumulativeRelationCoverage {
     for(bool by_right:{true,false}) {
       if(out.size()<2)break;
       ++stats.drain_groupings;
-      std::map<std::tuple<std::size_t,std::size_t,bool,std::int64_t,std::size_t,std::uint64_t>,std::vector<std::size_t>> groups;
+      std::map<std::tuple<std::size_t,std::size_t,bool,std::int64_t,std::size_t,RelationLabels>,std::vector<std::size_t>> groups;
       std::vector<Work> combined;
       for(auto& w:out) {
         const auto& key=by_right?w.relation.right:w.relation.left;
@@ -359,12 +360,12 @@ class CumulativeRelationCoverage {
     stats.emitted+=out.size();for(const auto& w:out)if(w.relation.left.count()==1)++stats.singleton_emissions;
   }
   // Convenience for isolated callers. Traversal reuses a query-owned buffer.
-  std::vector<Work> drain(Counters& stats,std::uint64_t active=UINT64_MAX) {
+  std::vector<Work> drain(Counters& stats,RelationLabels active=RelationLabels::All()) {
     std::vector<Work> out;drain(stats,active,out);return out;
   }
   // Visit the current union, not historical insertions. Used by the lazy
   // transpose index and the deliberately separate legacy A002 adapter.
-  template<class Visit> void visit(Visit fn,std::uint64_t selector=1) const {
+  template<class Visit> void visit(Visit fn,RelationLabels selector=1) const {
     for(auto it=rows_.begin();it!=rows_.end();++it) {
       auto next=std::next(it);auto right=it->second->covered(right_extent_,selector);
       if(!right.empty())fn(MemberRelation::Rectangle(MemberRange(left_extent_,it->first,
@@ -383,13 +384,13 @@ class CumulativeRelationCoverage {
       auto nr=std::next(row);const auto end=nr==rows_.end()?left_extent_:nr->first;
       for(auto col=row->second->values.begin();col!=row->second->values.end();++col) {
         auto nc=std::next(col);const auto right_end=nc==row->second->values.end()?right_extent_:nc->first;
-        std::uint64_t labels=0;for(const auto& g:col->second.groups)labels|=g.labels;
+        RelationLabels labels=0;for(const auto& g:col->second.groups)labels|=g.labels;
         if(labels)result->advance(0,MemberRelation::Rectangle(MemberRange(right_extent_,col->first,right_end),
             MemberRange(left_extent_,row->first,end)),stats,labels);
       }
     }
     for(const auto& [shift,row]:diagonals_)for(auto it=row.values.begin();it!=row.values.end();++it) {
-      auto next=std::next(it);std::uint64_t labels=0;for(const auto& g:it->second.groups)labels|=g.labels;
+      auto next=std::next(it);RelationLabels labels=0;for(const auto& g:it->second.groups)labels|=g.labels;
       if(labels)result->advance(0,MemberRelation::Diagonal(MemberRange(left_extent_,it->first,
           next==row.values.end()?left_extent_:next->first),right_extent_,shift).transpose(),stats,labels);
     }
@@ -400,7 +401,7 @@ class CumulativeRelationCoverage {
     for(const auto& [shift,row]:diagonals_)n+=row.values.size();return n;
   }
   std::optional<std::pair<std::size_t,std::size_t>> uncovered(
-      const MemberRelation& query,Counters* stats=nullptr,MemberSet* complete_rows=nullptr,std::uint64_t selector=1) const {
+      const MemberRelation& query,Counters* stats=nullptr,MemberSet* complete_rows=nullptr,RelationLabels selector=1) const {
     if(query.empty())return {};
     // A query may use an unpadded public source extent after batch completion.
     auto q=query;

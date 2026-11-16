@@ -57,6 +57,15 @@ struct ExecutionError : std::runtime_error {
   std::uint32_t line;
   nlohmann::json required_parameters;
   bool shared_control = false;
+  // Shared-memory routing: the plain run (no shared-memory model) stopped at an undecided branch
+  // whose predicate may be computed from a shared-memory load, although it could have skipped
+  // the branch as an opaque compute region or a merged arm. The caller re-runs the CTA (or its
+  // cluster) with the shared-memory model. When that run fails with an ExecutionError, the run is
+  // repeated without routing: for a single-CTA launch the same pass of SpecializeFunction (a later
+  // pass routes again), for a cluster launch SpecializeFunctionUnrouted in run_pipeline.hpp, and the
+  // whole cluster's run when that CTA meets shared control. Either way the CTA gets the result or
+  // error it had before routing existed.
+  bool shared_routed = false;
   ExecutionError(std::string code, std::uint32_t line, std::string message,
                  nlohmann::json required = nlohmann::json::array())
       : std::runtime_error(std::move(message)), code(std::move(code)), line(line),
@@ -138,13 +147,20 @@ struct BoundedValue {
   std::optional<AffineForm> affine;
   std::optional<BoundedTable> table = std::nullopt;
   std::optional<AffineForm> abstract = std::nullopt;
+  // A table atom (class mode, fixed shape-array inputs): this execution's exact value, which
+  // every consumer reads (ScalarInteger, ScalarJson); `affine`/`abstract` give it in element
+  // atoms of the read-only tables, for the slot forms that class admission compares up to δ.
+  // Its atoms range over the whole table ([lower, upper]); `sources` is empty (no trusted
+  // property decided anything).
+  std::optional<Integer> exact = std::nullopt;
 };
 struct BoundedInteger {
   std::shared_ptr<const BoundedValue> value;
   const BoundedValue *operator->() const noexcept { return value.get(); }
   bool operator==(const BoundedInteger &other) const {
     return value && other.value && value->identity == other.value->identity &&
-        value->lower == other.value->lower && value->upper == other.value->upper;
+        value->lower == other.value->lower && value->upper == other.value->upper &&
+        value->exact == other.value->exact;
   }
 };
 // A pointer into `resource` at a byte offset affine in element atoms, with the offset's
@@ -160,13 +176,15 @@ struct BoundedPointerValue {
   std::string offset_identity = {};
   std::optional<BoundedTable> table = std::nullopt;
   std::optional<AffineForm> abstract = std::nullopt;
+  // A table-atom pointer (BoundedValue::exact): this execution's exact byte offset.
+  std::optional<Integer> exact = std::nullopt;
 };
 struct BoundedAllocationPointer {
   std::shared_ptr<const BoundedPointerValue> value;
   const BoundedPointerValue *operator->() const noexcept { return value.get(); }
   bool operator==(const BoundedAllocationPointer &other) const {
     return value && other.value && value->resource == other.value->resource && value->offset == other.value->offset &&
-        value->offset_identity == other.value->offset_identity;
+        value->offset_identity == other.value->offset_identity && value->exact == other.value->exact;
   }
 };
 // monostate is UNKNOWN. Integer has exact unbounded Python integer semantics.
@@ -424,6 +442,9 @@ struct ExecutionProgram {
   std::vector<std::uint64_t> static_execution_counts;
   std::vector<SharedValueSite> shared_constant_writes;
   std::vector<SharedValueDependency> shared_value_dependencies;
+  // Statistics only: this CTA's write sites that stored a bounded integer in shared memory, and
+  // its shared_value_dependencies whose read restored one (shared_execution.h).
+  std::uint64_t shared_bounded_writes = 0, shared_bounded_reads = 0;
   // RecoverTensorMaps (verification only): every TMA read of a runtime-written tensor map,
   // by (warp * 32 + lane, instruction occurrence). Absent when the maps were not recovered.
   std::optional<std::map<std::pair<std::uint32_t, DynamicKey>, TensorMapRead>> tensor_map_reads;
@@ -491,11 +512,37 @@ enum class SpecializationPurpose { Verification, ValueExtraction, BranchScopeCap
 SpecializeFunction(const Module &, const Function &, const FrontendConfig &,
                    std::function<void()> poll = {},
                    SpecializationPurpose purpose = SpecializationPurpose::Verification);
+// Shared-memory routing: while one is alive, a run with the shared-memory model stops with
+// ExecutionError("shared_routing_undecided") as soon as it reaches the branch the routing error named
+// (ExecutionError::line) and cannot decide it either (it would skip it as an opaque region or a merged
+// arm). The caller then falls back to the unrouted run without first paying for a shared-model run that
+// gains nothing at the branch it was started for. Inert for an error that is not shared_routed.
+class SharedRoutingAttempt {
+public:
+  explicit SharedRoutingAttempt(const ExecutionError &routed);
+  ~SharedRoutingAttempt();
+  SharedRoutingAttempt(const SharedRoutingAttempt &) = delete;
+  SharedRoutingAttempt &operator=(const SharedRoutingAttempt &) = delete;
+private:
+  std::optional<std::uint32_t> previous_;
+};
+// SpecializeFunction without shared-memory routing (ExecutionError::shared_routed): undecided
+// branches over pure computation are skipped as before. The fallback after a routed run failed.
+[[nodiscard]] ExecutionProgram
+SpecializeFunctionUnrouted(const Module &, const Function &, const FrontendConfig &,
+                           std::function<void()> poll = {},
+                           SpecializationPurpose purpose = SpecializationPurpose::Verification);
 [[nodiscard]] std::vector<ExecutionProgram>
 SpecializeCluster(const Module &, const Function &, const std::vector<FrontendConfig> &,
                   std::function<void()> poll = {},
                   SpecializationPurpose purpose = SpecializationPurpose::Verification);
+// An Integer, a bool (0/1) or a table atom's exact value (BoundedValue::exact).
 [[nodiscard]] std::optional<Integer> ScalarInteger(const Scalar &value);
+// Whether `value` is a table atom (an integer or pointer with an exact value, BoundedValue::exact).
+[[nodiscard]] bool TableAtom(const Scalar &value) noexcept;
+// A table atom as the plain value it stands for (an Integer, or an AllocationPointer at the exact
+// offset); any other value unchanged.
+[[nodiscard]] Scalar PlainValue(const Scalar &value);
 // isspacep.<space> of a generic address from its provenance: a pointer into a global object
 // lies in the global window, outside the shared, local and const windows. Otherwise unknown.
 [[nodiscard]] std::optional<bool> GenericAddressInSpace(std::string_view space, const Scalar &address,

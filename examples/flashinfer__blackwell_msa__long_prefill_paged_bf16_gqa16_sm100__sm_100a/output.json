@@ -1,105 +1,293 @@
 {
+  "assumption_dependent": true,
+  "assumption_reporting": "triggered=null means applicability was not measured or analysis was not reached",
+  "assumptions": [
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "duplicate_tma_store_benign",
+      "label": "Duplicate TMA stores",
+      "text": "Matching same-warp duplicate TMA stores are races in the model, but are reported as warnings under the assumption that their stored values agree.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "representative_election",
+      "label": "Representative election",
+      "text": "Election selects lane zero when participating, otherwise the lowest participating lane.",
+      "triggered": true
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "clc_always_fails",
+      "label": "Failed launch cancellation",
+      "text": "Every cluster launch cancellation request fails.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "representative_branches",
+      "label": "Representative branches",
+      "text": "Choose fallthrough for an unresolved structured if/else; unknown ordinary instruction guards execute. Terminal control uses CFG classification. Known control and explicit choices take precedence.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "bounded_computation_loops",
+      "label": "Bounded computation loops",
+      "text": "Execute a configured number of body iterations for unresolved recognized computation loops, counted separately per invocation. Polling and unclassified loops are never forced to complete.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": false,
+      "key": "order_independent_atomics",
+      "label": "Order-independent atomics",
+      "text": "The kernel is correct for every order in which concurrent atomics (atom, red) on the same element take effect. Each atomic is one indivisible access; two atomics on the same element whose scopes include both threads do not race.",
+      "triggered": false
+    },
+    {
+      "category": "analysis assumption",
+      "enabled": true,
+      "key": "floating_values_in_range",
+      "label": "Floating values stay in range",
+      "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
+      "triggered": null
+    }
+  ],
   "checks": {
-    "equivalence": "not_run",
-    "synchronization": "not_run"
+    "equivalence": "incomplete",
+    "synchronization": "passed"
   },
   "diagnostics": [
     {
-      "code": "timeout",
+      "code": "unit_restart_limit_exceeded",
       "details": {
-        "internal_stage": "verification",
-        "resource": {
-          "kind": "time",
-          "limit": 498.359,
-          "origin": "configured_budget",
-          "unit": "seconds"
-        }
+        "internal_stage": "value_lifting"
       },
-      "stage": "synchronization"
+      "message": "The class-mode value analysis refused lifting at table_lookup_lifting (a class member reads or writes, through fixed shape-array table elements, addresses that are not its representative's moved by one offset per allocation); the per-unit re-run would build about 31388189318 value instances (586 units from 38 analysed, scaled from the 1 with a value view), above the limit 67108864.",
+      "stage": "equivalence"
     }
   ],
-  "elapsed_seconds": 498.436331947,
+  "evidence": {
+    "race_count": 0,
+    "race_samples_truncated": false,
+    "races": []
+  },
+  "frontend_assumptions": {
+    "assertion_failure_forms": [
+      "trap",
+      "__assertfail"
+    ],
+    "assertion_uses": 0,
+    "atomic_uses": 0,
+    "bounded_loop_uses": 0,
+    "clc_failure": true,
+    "clc_uses": 0,
+    "data_branch_decisions": [],
+    "election_policy": {
+      "fallback": "lowest_member",
+      "preferred_lane": 0,
+      "strategy": "preferred_member"
+    },
+    "election_uses": 5841728,
+    "fixed_election": true,
+    "isolated_launch": true,
+    "noalias_unbounded": false,
+    "opaque_compute_regions": [
+      {
+        "lanes": 1052640,
+        "line": 376
+      },
+      {
+        "lanes": 1044512,
+        "line": 3331
+      }
+    ],
+    "pointer_contract": {
+      "aliasing": "distinct_objects_noalias",
+      "extent_bytes": "unbounded"
+    },
+    "representative_branch_uses": 0,
+    "shape_input_contract": {
+      "kind": "fixed_read_only",
+      "origin": "shape_arrays",
+      "regions": [
+        {
+          "allocation": "scheduler_metadata",
+          "byte_offset": 0,
+          "bytes": 14064,
+          "resource": "input.arg3.0"
+        },
+        {
+          "allocation": "k2q_row_ptr",
+          "byte_offset": 0,
+          "bytes": 516,
+          "resource": "input.arg4.0"
+        },
+        {
+          "allocation": "k2q_qsplit_indices",
+          "byte_offset": 0,
+          "bytes": 524288,
+          "resource": "input.arg5.0"
+        },
+        {
+          "allocation": "cu_seqlens_q",
+          "byte_offset": 0,
+          "bytes": 8,
+          "resource": "input.arg11.0"
+        },
+        {
+          "allocation": "cu_seqlens_k",
+          "byte_offset": 0,
+          "bytes": 8,
+          "resource": "input.arg12.0"
+        },
+        {
+          "allocation": "q_offsets",
+          "byte_offset": 0,
+          "bytes": 8,
+          "resource": "input.arg13.0"
+        },
+        {
+          "allocation": "kv_lens",
+          "byte_offset": 0,
+          "bytes": 4,
+          "resource": "input.arg14.0"
+        }
+      ],
+      "text": "Configured shape bytes retain their supplied values and are not written during the analyzed execution."
+    },
+    "tensor_properties": {
+      "kind": "fixed_read_only",
+      "origin": "tensor_properties",
+      "properties": [
+        {
+          "element_type": "s32",
+          "object": "page_table",
+          "property": "lower_bound",
+          "value": 0
+        },
+        {
+          "element_type": "s32",
+          "object": "page_table",
+          "property": "upper_bound",
+          "value": 127
+        }
+      ],
+      "regions": [
+        {
+          "allocation": "page_table",
+          "byte_offset": 0,
+          "bytes": "whole_object",
+          "resource": "input.arg15.0"
+        }
+      ],
+      "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
+    },
+    "tensor_property_decisions": [],
+    "trap_only_equality_assertions_hold": true
+  },
   "internal": {
-    "active_stage": "verification",
+    "address_model": {
+      "address_invariants": [],
+      "kind": "symbolic",
+      "layers": [
+        0,
+        2
+      ],
+      "solver": "z3",
+      "solver_rlimit": 100000
+    },
+    "counts": {
+      "edges": 301026016,
+      "events": 125141108,
+      "instructions": 30147325,
+      "memory_accesses": 117238513,
+      "threads": 19456
+    },
     "equivalence": {
       "diagnostics": [
         {
-          "code": "prerequisite_check_not_passed",
-          "details": {
-            "prerequisite_checks": {
-              "equivalence": "not_run",
-              "memory": "not_run",
-              "synchronization": "not_run"
-            },
-            "prerequisite_diagnostics": [
-              {
-                "code": "timeout",
-                "details": {
-                  "resource": {
-                    "kind": "time",
-                    "limit": 498.359,
-                    "origin": "configured_budget",
-                    "unit": "seconds"
-                  }
-                },
-                "stage": "verification"
-              }
-            ],
-            "prerequisite_result": "timeout",
-            "prerequisite_status": "timeout"
-          },
-          "stage": "verification"
+          "code": "unit_restart_limit_exceeded",
+          "message": "The class-mode value analysis refused lifting at table_lookup_lifting (a class member reads or writes, through fixed shape-array table elements, addresses that are not its representative's moved by one offset per allocation); the per-unit re-run would build about 31388189318 value instances (586 units from 38 analysed, scaled from the 1 with a value view), above the limit 67108864.",
+          "stage": "value_lifting"
         }
       ],
-      "prerequisite_status": "timeout",
-      "stage": "verification"
+      "expression_diagnostic": {
+        "class_mode_diagnostic": {
+          "code": "table_lookup_lifting",
+          "message": "a class member reads or writes, through fixed shape-array table elements, addresses that are not its representative's moved by one offset per allocation"
+        },
+        "diagnostic": {
+          "code": "unit_restart_limit_exceeded",
+          "message": "The class-mode value analysis refused lifting at table_lookup_lifting (a class member reads or writes, through fixed shape-array table elements, addresses that are not its representative's moved by one offset per allocation); the per-unit re-run would build about 31388189318 value instances (586 units from 38 analysed, scaled from the 1 with a value view), above the limit 67108864."
+        },
+        "diagnostics": [
+          {
+            "code": "unit_restart_limit_exceeded",
+            "details": {
+              "resource": {
+                "estimate": 31388189318,
+                "kind": "per_unit_value_instances",
+                "limit": 67108864,
+                "origin": "algorithm_budget"
+              }
+            },
+            "message": "The class-mode value analysis refused lifting at table_lookup_lifting (a class member reads or writes, through fixed shape-array table elements, addresses that are not its representative's moved by one offset per allocation); the per-unit re-run would build about 31388189318 value instances (586 units from 38 analysed, scaled from the 1 with a value view), above the limit 67108864.",
+            "stage": "value_lifting"
+          }
+        ],
+        "resource": {
+          "estimate": 31388189318,
+          "kind": "per_unit_value_instances",
+          "limit": 67108864,
+          "origin": "algorithm_budget"
+        },
+        "stage": "value_lifting"
+      },
+      "stage": "value_lifting"
     },
     "frontend": {
       "address_value_bridge": {
-        "diagnostics": [
-          {
-            "code": "tma_data_dependent_coordinate",
-            "details": {
-              "cta": 0,
-              "instruction": "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes [%r1009], [%rd334, {%r1010, %r1011, %r1010, %r1012}], [%r1007];",
-              "instruction_index": 3374,
-              "location": {
-                "file": "corpus/flashinfer__blackwell_msa__long_prefill_paged_bf16_gqa16_sm100__sm_100a.ptx",
-                "line": 6245
-              },
-              "occurrence": 0,
-              "thread": 288
-            },
-            "message": "TMA tile coordinate %r1012 is data-dependent (not a constant of the execution) and its range is not proven to keep the tile inside the tensor (0 <= c, c + box <= global), or a fragment is not contiguous in the tensor; the values of its tile region are not modeled",
-            "stage": "value_lowering"
-          }
-        ],
+        "diagnostics": [],
         "first_unavailable_reason": "",
         "queries": 0,
         "resolved": 0,
         "source": "value_lowering",
         "unavailable": 0,
-        "value_view_complete": false
+        "value_view_complete": false,
+        "values_suspended": {
+          "deferred_ctas": 37,
+          "value_view_ctas": 1
+        }
+      },
+      "class_table_atoms": {
+        "attempt": "restart"
       },
       "cluster_completion_joins": 0,
       "cta_count": 586,
       "dependency_compression": {
         "tcgen_commit": {
-          "consumers": 2676,
-          "emitted_references": 15990,
-          "original_references": 776688,
-          "prefix_effects": 2676
+          "consumers": 1616,
+          "emitted_references": 9658,
+          "original_references": 429120,
+          "prefix_effects": 1616
         },
         "tcgen_load_wait": {
-          "consumers": 171264,
-          "emitted_references": 685056,
-          "original_references": 12606976,
+          "consumers": 103424,
+          "emitted_references": 413696,
+          "original_references": 6973440,
           "prefix_effects": 0
         },
         "tcgen_store_wait": {
-          "consumers": 171264,
-          "emitted_references": 256896,
-          "original_references": 4770432,
+          "consumers": 103424,
+          "emitted_references": 155136,
+          "original_references": 2640896,
           "prefix_effects": 0
         }
       },
@@ -109,7 +297,7 @@
         "tcgen_pipeline_effect_refinement",
         "tcgen_commit_notification_order_refinement"
       ],
-      "executed_records": 3570590730,
+      "executed_records": 3566186634,
       "frontend_assumptions": {
         "assertion_failure_forms": [
           "trap",
@@ -132,11 +320,11 @@
         "noalias_unbounded": false,
         "opaque_compute_regions": [
           {
-            "lanes": 327872,
+            "lanes": 1052640,
             "line": 376
           },
           {
-            "lanes": 323616,
+            "lanes": 1044512,
             "line": 3331
           }
         ],
@@ -160,6 +348,12 @@
               "byte_offset": 0,
               "bytes": 516,
               "resource": "input.arg4.0"
+            },
+            {
+              "allocation": "k2q_qsplit_indices",
+              "byte_offset": 0,
+              "bytes": 524288,
+              "resource": "input.arg5.0"
             },
             {
               "allocation": "cu_seqlens_q",
@@ -194,18 +388,6 @@
           "properties": [
             {
               "element_type": "s32",
-              "object": "k2q_qsplit_indices",
-              "property": "lower_bound",
-              "value": 0
-            },
-            {
-              "element_type": "s32",
-              "object": "k2q_qsplit_indices",
-              "property": "upper_bound",
-              "value": 520101887
-            },
-            {
-              "element_type": "s32",
               "object": "page_table",
               "property": "lower_bound",
               "value": 0
@@ -219,12 +401,6 @@
           ],
           "regions": [
             {
-              "allocation": "k2q_qsplit_indices",
-              "byte_offset": 0,
-              "bytes": "whole_object",
-              "resource": "input.arg5.0"
-            },
-            {
               "allocation": "page_table",
               "byte_offset": 0,
               "bytes": "whole_object",
@@ -233,17 +409,7 @@
           ],
           "text": "Elements of these objects satisfy the stated bounds and injectivity (trusted, not checked); the objects are not written during the analyzed execution."
         },
-        "tensor_property_decisions": [
-          {
-            "lines": [
-              1198,
-              2780,
-              4153,
-              5735
-            ],
-            "object": "k2q_qsplit_indices"
-          }
-        ],
+        "tensor_property_decisions": [],
         "trap_only_equality_assertions_hold": true
       },
       "implementation": "cpp",
@@ -340,10 +506,10 @@
           "source": "declaration"
         }
       ],
-      "lowered_instruction_count": 57120727,
+      "lowered_instruction_count": 30147325,
       "mma_refinement": {
         "blocked": [],
-        "discharged": 10704
+        "discharged": 6464
       },
       "reached_opcodes": {
         "add.f32": 2103808,
@@ -355,7 +521,7 @@
         "and.b32": 26938912,
         "bar.sync": 300032,
         "bar.warp.sync": 300032,
-        "bra": 33226130,
+        "bra": 34694162,
         "bra.uni": 1264160,
         "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes": 262976,
         "cp.async.bulk.tensor.4d.shared::cta.global.mbarrier::complete_tx::bytes.L2::cache_hint": 4688,
@@ -392,12 +558,12 @@
         "mov.pred": 4200960,
         "mov.s32": 67502,
         "mov.u32": 562560,
-        "mul.f32": 5662336,
+        "mul.f32": 4194304,
         "mul.lo.s32": 243776,
         "mul.rn.ftz.f32x2": 134217728,
         "mul.wide.s32": 666078,
         "mul.wide.u32": 243776,
-        "neg.f32": 9883264,
+        "neg.f32": 8415232,
         "neg.s32": 14560,
         "not.b32": 2103808,
         "not.pred": 8388608,
@@ -406,11 +572,10 @@
         "rcp.approx.ftz.f32": 2097152,
         "ret": 300032,
         "selp.b32": 4733120,
-        "selp.f32": 6514304,
+        "selp.f32": 5046272,
         "setmaxnreg.dec.sync.aligned.u32": 150016,
         "setmaxnreg.inc.sync.aligned.u32": 150016,
         "setp.eq.b32": 11086720,
-        "setp.eq.f32": 1468032,
         "setp.ge.s32": 6304768,
         "setp.ge.u32": 487552,
         "setp.gt.f32": 4194304,
@@ -448,46 +613,213 @@
         "validation": "pending_backend"
       },
       "source_binding_storage": {
-        "binding_templates": 1031,
+        "binding_templates": 606,
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
-        "logical_instructions": 57120727,
-        "stored_bindings": 1887057
+        "logical_instructions": 30147325,
+        "stored_bindings": 1049486
       },
       "source_edge_storage": {
-        "binding_templates": 87444,
-        "logical_edges": 57086935,
-        "stored_bindings": 87444
+        "binding_templates": 51852,
+        "logical_edges": 30127869,
+        "stored_bindings": 51852
       },
       "tcgen_history_refinement": {
         "blocked": [],
-        "notifications": 2676,
-        "operations": 10704
+        "notifications": 1616,
+        "operations": 6464
       },
       "thread_count": 300032,
       "unsupported_occurrence_counts": {},
       "user_branch_decisions": []
     },
-    "frontend_source_violations": [],
+    "hb_queries": {
+      "memory": {
+        "algorithm": "not-built",
+        "batches": 0,
+        "cache_hits": 0,
+        "dfs_queries": 0,
+        "edge_visits": 0,
+        "filtered_queries": 0,
+        "queries": 0,
+        "shared_peak_index_bytes": 0
+      },
+      "required_orders": {
+        "algorithm": "member-relations",
+        "batches": 203,
+        "edge_visits": 356806329,
+        "member_enumerations": 0,
+        "request_construction": {
+          "concrete_pair_materializations": 0,
+          "endpoint_reads": 1897052,
+          "family_requests": 158403,
+          "logical_orders": 18932928,
+          "owner_bindings": 1205163,
+          "stored_orders": 597916
+        }
+      }
+    },
     "implementation": "cpp",
-    "memory_analysis_complete": false,
-    "peak_footprint_mib": 35774.1015625
+    "memory_analysis": {
+      "address_candidates": 128857029,
+      "address_model": {
+        "cache_hits": 0,
+        "congruence_disjoint": 0,
+        "ground_disjoint": 0,
+        "ground_overlap": 0,
+        "injective_disjoint": 0,
+        "layer0_disjoint": 0,
+        "refined_pairs": 0,
+        "solver_queries": 0,
+        "solver_sat": 0,
+        "solver_unknown": 0,
+        "solver_unsat": 0
+      },
+      "candidate_generation_fallback": false,
+      "exhaustive": false,
+      "family_analysis": {
+        "access_families": 12069687,
+        "affine_member_rows": 0,
+        "candidate_relations": 43173623,
+        "hb_frontier_pieces": 18993321,
+        "hb_member_enumerations": 0,
+        "logical_accesses": 117238513
+      },
+      "hb_algorithm": "member-relations",
+      "hb_batches": 21028,
+      "hb_cache_hits": 0,
+      "hb_dfs_queries": 0,
+      "hb_edge_visits": 1042901907,
+      "hb_filtered_queries": 0,
+      "hb_peak_index_bytes": 0,
+      "hb_queries": 128857029,
+      "hb_query_seconds": 328.8406624120022,
+      "overlap_queries": 0,
+      "strategy": "conflict-family",
+      "unordered_candidates_examined": 0
+    },
+    "memory_analysis_complete": true,
+    "mma_operand_ordering": {},
+    "mode": "verify",
+    "peak_footprint_mib": 48903.5390625,
+    "required_order_domains": 597916,
+    "required_orders": 18932928,
+    "search_complete": true,
+    "semantic_assumptions": {
+      "bounded_computation_loops": false,
+      "clc_always_fails": true,
+      "duplicate_tma_store_benign": true,
+      "floating_values_in_range": true,
+      "order_independent_atomics": false,
+      "representative_branches": false,
+      "representative_election": true
+    },
+    "semantic_program": {
+      "binding_diagnostic_count": 0,
+      "binding_diagnostics": [],
+      "execution_cohorts": 1098,
+      "mapping_complete": true,
+      "memory_binding_stored_rows": 0,
+      "memory_binding_templates": 0,
+      "memory_bindings": 0,
+      "memory_linking_templates_used": false,
+      "synchronization_groups": 875414,
+      "synchronization_groups_materialized": true,
+      "synthetic_synchronization_nodes": 17814,
+      "thread_prefix_groups": 3321550,
+      "value_diagnostic_count": 0,
+      "value_diagnostics": [],
+      "value_view_released_before_verification": true
+    },
+    "source_violations": [],
+    "synchronization_input": {
+      "compute_access_binding": "after_happens_before",
+      "kind": "ordering_endpoints",
+      "memory_address_payloads": false
+    },
+    "template_execution": {
+      "completed_ctas": 586,
+      "coordinate_bindings": 0,
+      "logical_thread_steps": 3602060218,
+      "path_entries": 101234203,
+      "record_bindings": 141387197,
+      "record_nodes": 100248038,
+      "splits": 7666,
+      "template_steps": 101268366,
+      "thread_memberships": 300032,
+      "value_nodes": 64007782
+    },
+    "thread_record_compression": {
+      "completed_ctas": 586,
+      "enabled": true,
+      "estimated_pool_bytes_sum": 0,
+      "intern_calls": 0,
+      "logical_records": 3566186634,
+      "record_handle_bytes": 32,
+      "templates": 0,
+      "unique_bindings": 0
+    },
+    "unresolved_count": 0,
+    "value_analysis": {
+      "class_mode_diagnostic": {
+        "code": "table_lookup_lifting",
+        "message": "a class member reads or writes, through fixed shape-array table elements, addresses that are not its representative's moved by one offset per allocation"
+      },
+      "diagnostic": {
+        "code": "unit_restart_limit_exceeded",
+        "message": "The class-mode value analysis refused lifting at table_lookup_lifting (a class member reads or writes, through fixed shape-array table elements, addresses that are not its representative's moved by one offset per allocation); the per-unit re-run would build about 31388189318 value instances (586 units from 38 analysed, scaled from the 1 with a value view), above the limit 67108864."
+      },
+      "diagnostics": [
+        {
+          "code": "unit_restart_limit_exceeded",
+          "details": {
+            "resource": {
+              "estimate": 31388189318,
+              "kind": "per_unit_value_instances",
+              "limit": 67108864,
+              "origin": "algorithm_budget"
+            }
+          },
+          "message": "The class-mode value analysis refused lifting at table_lookup_lifting (a class member reads or writes, through fixed shape-array table elements, addresses that are not its representative's moved by one offset per allocation); the per-unit re-run would build about 31388189318 value instances (586 units from 38 analysed, scaled from the 1 with a value view), above the limit 67108864.",
+          "stage": "value_lifting"
+        }
+      ],
+      "equivalence_check": "analysis_budget_exceeded",
+      "resource": {
+        "estimate": 31388189318,
+        "kind": "per_unit_value_instances",
+        "limit": 67108864,
+        "origin": "algorithm_budget"
+      },
+      "scalar_fold": {
+        "diagnostics": [
+          {
+            "code": "memory_elimination_not_completed",
+            "stage": "pipeline"
+          }
+        ]
+      },
+      "stage": "value_lifting"
+    },
+    "value_ir_instance_count": 53563463,
+    "value_ir_node_count": 2659860,
+    "value_view_complete": true,
+    "verification_elapsed_seconds": 1207.541838189,
+    "verification_result": "race_free"
   },
-  "peak_rss_mib": 35774.0859375,
-  "resource": {
-    "kind": "time",
-    "limit": 498.359,
-    "origin": "configured_budget",
-    "unit": "seconds"
-  },
-  "result": "timeout",
-  "rss_limit_mib": null,
-  "schema": "spverify.native-ptx-run/v1",
+  "peak_rss_mib": 49247.95703125,
+  "pipeline_elapsed_seconds": 1212.055894405,
+  "result": "analysis_budget_exceeded",
+  "rss_limit_mib": 85274,
+  "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
-  "timeout_scope": "whole_pipeline",
   "verification_limitations": [],
-  "warnings_complete": false
+  "warning_count": 0,
+  "warning_samples_truncated": false,
+  "warnings": [],
+  "wellsync_timeout_seconds": 2000.0,
+  "whole_pipeline_timeout_seconds": 1998.34
 }

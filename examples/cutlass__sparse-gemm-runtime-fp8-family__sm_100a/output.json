@@ -178,12 +178,12 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
-      "edges": 9446296,
-      "events": 3847160,
-      "instructions": 664370,
+      "edges": 9458664,
+      "events": 3855416,
+      "instructions": 668482,
       "memory_accesses": 2574608,
       "threads": 4096
     },
@@ -463,7 +463,7 @@
       },
       "implementation": "cpp",
       "input_objects": [],
-      "lowered_instruction_count": 664370,
+      "lowered_instruction_count": 668482,
       "mma_refinement": {
         "blocked": [],
         "discharged": 32
@@ -565,13 +565,13 @@
         "generated_address_rows": 0,
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
-        "logical_instructions": 664370,
-        "stored_bindings": 55769
+        "logical_instructions": 668482,
+        "stored_bindings": 59881
       },
       "source_edge_storage": {
-        "binding_templates": 4385,
-        "logical_edges": 660274,
-        "stored_bindings": 4386
+        "binding_templates": 4562,
+        "logical_edges": 664386,
+        "stored_bindings": 4563
       },
       "tcgen_copy_refinement": {
         "blocked": [],
@@ -599,16 +599,16 @@
       },
       "required_orders": {
         "algorithm": "member-relations",
-        "batches": 5,
-        "edge_visits": 280595,
+        "batches": 3,
+        "edge_visits": 508541,
         "member_enumerations": 0,
         "request_construction": {
           "concrete_pair_materializations": 0,
-          "endpoint_reads": 16112,
-          "family_requests": 928,
-          "logical_orders": 138752,
-          "owner_bindings": 8672,
-          "stored_orders": 4336
+          "endpoint_reads": 34763,
+          "family_requests": 13714,
+          "logical_orders": 141902,
+          "owner_bindings": 24173,
+          "stored_orders": 7486
         }
       }
     },
@@ -634,19 +634,19 @@
         "access_families": 329807,
         "affine_member_rows": 0,
         "candidate_relations": 1064939,
-        "hb_frontier_pieces": 641,
+        "hb_frontier_pieces": 565,
         "hb_member_enumerations": 0,
         "logical_accesses": 2574608
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 567,
+      "hb_batches": 224,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 1238436,
+      "hb_edge_visits": 1094704,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 12690656,
-      "hb_query_seconds": 0.29030865700000047,
+      "hb_query_seconds": 0.36525364199999993,
       "overlap_queries": 682496,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 682496
@@ -654,9 +654,9 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 3886.140625,
-    "required_order_domains": 4336,
-    "required_orders": 138752,
+    "peak_footprint_mib": 3813.51953125,
+    "required_order_domains": 7486,
+    "required_orders": 141902,
     "search_complete": true,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
@@ -676,9 +676,9 @@
       "memory_binding_templates": 44387,
       "memory_bindings": 1860240,
       "memory_linking_templates_used": true,
-      "synchronization_groups": 26302,
+      "synchronization_groups": 26527,
       "synchronization_groups_materialized": true,
-      "synthetic_synchronization_nodes": 145,
+      "synthetic_synchronization_nodes": 161,
       "thread_prefix_groups": 474356,
       "value_diagnostic_count": 0,
       "value_diagnostics": []
@@ -752,12 +752,12 @@
           "layouts": 44128,
           "mapping_blocks": 48240,
           "name": "view_normalization",
-          "original_pieces": 535296,
+          "original_pieces": 536832,
           "reused_initial_reads": 4112,
-          "reused_views": 22076,
+          "reused_views": 22100,
           "segmented": 0,
           "slices": 4112,
-          "stored_mapping_blocks": 26164,
+          "stored_mapping_blocks": 26140,
           "typed_output_pieces": 0,
           "typed_output_regions": 0
         }
@@ -866,18 +866,18 @@
         "action_patterns": 1194451,
         "binding_patterns": 533971,
         "domain_refinements": 2185208,
-        "elapsed_seconds": 5.066421549,
-        "event_families": 746578,
+        "elapsed_seconds": 5.360078499,
+        "event_families": 754834,
         "expanded_event_records": 0,
         "largest_batch_members": 62,
         "logical_actions": 1860240,
-        "logical_events": 11165973,
-        "peak_rss_mib_at_completion": 4068.6328125,
+        "logical_events": 11174229,
+        "peak_rss_mib_at_completion": 3908.11328125,
         "reachability_queries": 0,
-        "relations": 2633848,
-        "rss_mib_at_completion": 2581.09375,
-        "scheduled_batches": 746578,
-        "singleton_batches": 386660,
+        "relations": 2646216,
+        "rss_mib_at_completion": 2415.53125,
+        "scheduled_batches": 754834,
+        "singleton_batches": 394916,
         "value_families": 359982
       },
       "shared_read_families": 22194,
@@ -887,13 +887,13 @@
     "value_ir_instance_count": 4843799,
     "value_ir_node_count": 318455,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 12.943380239,
+    "verification_elapsed_seconds": 13.453381364,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 4068.6328125,
-  "pipeline_elapsed_seconds": 26.266599317,
+  "peak_rss_mib": 3908.11328125,
+  "pipeline_elapsed_seconds": 27.290572815,
   "result": "undefined_behavior",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -1655,6 +1655,6 @@
       }
     }
   ],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.493
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.471
 }

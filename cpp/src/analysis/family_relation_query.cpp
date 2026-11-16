@@ -104,7 +104,7 @@ std::vector<std::uint8_t> FamilyRelationQuery::allReachGroups(
 }
 void FamilyRelationQuery::checkOrderBatch(std::vector<FamilyRelationBatch>& batch,bool forward_only,bool strict) {
   if(batch.empty())return;
-  if(batch.size()>kMaxRelationBatchSources)throw std::invalid_argument("family HB source-label chunk exceeds 64");
+  if(batch.size()>kMaxRelationBatchSources)throw std::invalid_argument("family HB source-label chunk exceeds the label width");
   if(visit_census_ && ++batch_serial_==0) {
     for(auto& visits:last_visit_batch_)std::fill(visits.begin(),visits.end(),0);
     ++batch_serial_;
@@ -126,10 +126,10 @@ void FamilyRelationQuery::checkOrderBatch(std::vector<FamilyRelationBatch>& batc
   // One proof bucket per target family in this batch. Source labels are
   // selectors, not independent copies of the same proof relation storage.
   std::unordered_map<std::size_t,std::shared_ptr<CumulativeRelationCoverage>> proof_buckets;
-  std::set<std::tuple<const CumulativeRelationCoverage*,std::uint64_t,std::uint64_t,std::size_t>> imported;
+  std::set<std::tuple<const CumulativeRelationCoverage*,RelationLabels,RelationLabels,std::size_t>> imported;
   for(std::size_t s=0;s<batch.size();++s)for(auto& request:batch[s].requests) {
     auto& bucket=proof_buckets[request.target];if(!bucket)bucket=std::make_shared<CumulativeRelationCoverage>();
-    const auto label=std::uint64_t(1)<<s;
+    const auto label=RelationLabels::Bit(s);
     if(request.coverage && imported.emplace(request.coverage.get(),request.source_label,label,request.target).second) {
       CumulativeRelationCoverage::Counters counts;
       request.visitProofs([&](const auto& relation) {
@@ -204,8 +204,8 @@ void FamilyRelationQuery::propagate(std::vector<FamilyRelationBatch>& batch,bool
   ProfileScope pruning("memory.family.hb_demand_pruning");
   resetScratch();
   const auto initial_enumerations=stats_.member_enumerations;
-  std::array<std::size_t,64> remaining_by_source{};
-  std::uint64_t active_labels=0;
+  std::array<std::size_t,kRelationLabelBits> remaining_by_source{};
+  RelationLabels active_labels=0;
   struct Demand {
     std::size_t lo=SIZE_MAX,hi=0,lo2=SIZE_MAX,hi2=0;
     MemberSet members;
@@ -227,7 +227,7 @@ void FamilyRelationQuery::propagate(std::vector<FamilyRelationBatch>& batch,bool
       if(!before(bounds_[source],bounds_[family]) ||
          (alternate_ && !before(alternate_->familyBounds(source),alternate_->familyBounds(family))))continue;
       scratch(chains_.chainOf(family)).targets.push_back({chains_.chainPosition(family,reverse),s,i});++remaining;
-      ++remaining_by_source[s];active_labels|=std::uint64_t(1)<<s;
+      ++remaining_by_source[s];active_labels|=RelationLabels::Bit(s);
       auto& d=demand[s];
       d.lo=std::min(d.lo,bounds_[family].first);d.hi=std::max(d.hi,bounds_[family].second);
       if(alternate_) {const auto b=alternate_->familyBounds(family);d.lo2=std::min(d.lo2,b.first);d.hi2=std::max(d.hi2,b.second);}
@@ -239,12 +239,12 @@ void FamilyRelationQuery::propagate(std::vector<FamilyRelationBatch>& batch,bool
   if(!remaining)return;
   // Compile the <=64 horizons to sorted threshold/mask tables. Each lookup
   // takes O(log labels), not a loop over labels for every graph edge.
-  using Horizon=std::vector<std::pair<std::size_t,std::uint64_t>>;
+  using Horizon=std::vector<std::pair<std::size_t,RelationLabels>>;
   const auto horizons=[&](bool second) {
     Horizon out;
-    for(std::size_t s=0;s<batch.size();++s)if(active_labels&(std::uint64_t(1)<<s)) {
+    for(std::size_t s=0;s<batch.size();++s)if(active_labels.test(s)) {
       const auto& d=demand[s];
-      out.emplace_back(second?(reverse?d.lo2:d.hi2):(reverse?d.lo:d.hi),std::uint64_t(1)<<s);
+      out.emplace_back(second?(reverse?d.lo2:d.hi2):(reverse?d.lo:d.hi),RelationLabels::Bit(s));
     }
     std::sort(out.begin(),out.end());
     if(reverse)for(std::size_t i=1;i<out.size();++i)out[i].second|=out[i-1].second;
@@ -252,7 +252,7 @@ void FamilyRelationQuery::propagate(std::vector<FamilyRelationBatch>& batch,bool
     return out;
   };
   const auto horizon=horizons(false),horizon2=horizons(true);
-  const auto allowed=[&](const Horizon& h,std::pair<std::size_t,std::size_t> b) -> std::uint64_t {
+  const auto allowed=[&](const Horizon& h,std::pair<std::size_t,std::size_t> b) -> RelationLabels {
     if(reverse) {
       const auto it=std::upper_bound(h.begin(),h.end(),b.second,[](auto rank,const auto& entry){return rank<entry.first;});
       return it==h.begin()?0:std::prev(it)->second;
@@ -261,14 +261,14 @@ void FamilyRelationQuery::propagate(std::vector<FamilyRelationBatch>& batch,bool
     return it==h.end()?0:it->second;
   };
   // Necessary conditions only; rank order never establishes reachability.
-  const auto admit=[&](std::size_t family,std::uint64_t labels) {
+  const auto admit=[&](std::size_t family,RelationLabels labels) {
     const auto original=labels;
     labels&=active_labels&allowed(horizon,bounds_[family]);
     if(labels && alternate_)labels&=allowed(horizon2,alternate_->familyBounds(family));
-    const auto removed=std::popcount(original)-std::popcount(labels);
+    const auto removed=original.count()-labels.count();
     stats_.demand_pruned_labels+=removed;pruning.pruned+=removed;
-    if(!labels || bounds_[family].second<lo || bounds_[family].first>hi)return std::uint64_t(0);
-    if(alternate_) {const auto b=alternate_->familyBounds(family);if(b.second<lo2 || b.first>hi2)return std::uint64_t(0);}
+    if(!labels || bounds_[family].second<lo || bounds_[family].first>hi)return RelationLabels(0);
+    if(alternate_) {const auto b=alternate_->familyBounds(family);if(b.second<lo2 || b.first>hi2)return RelationLabels(0);}
     return labels;
   };
   for(std::size_t i=0;i<used_scratch_;++i) {
@@ -317,7 +317,7 @@ void FamilyRelationQuery::propagate(std::vector<FamilyRelationBatch>& batch,bool
     state_repacking.nodes=c.state_normalizations;state_repacking.edges=c.drain_groupings;
     arrival_cache.nodes=c.last_arrival_hits;arrival_cache.edges=c.last_arrival_misses;
   };
-  const auto add=[&](std::size_t family,MemberRelation relation,std::uint64_t labels) {
+  const auto add=[&](std::size_t family,MemberRelation relation,RelationLabels labels) {
     // Seeds and edges use the same admission above exactly once. No target
     // completion/label retirement occurs between admission and this enqueue.
     if(!labels || relation.empty())return;
@@ -330,7 +330,7 @@ void FamilyRelationQuery::propagate(std::vector<FamilyRelationBatch>& batch,bool
   };
   for(std::size_t s=0;s<batch.size();++s) {
     const auto source=batch[s].source,count=families().families()[source].count;
-    const auto labels=admit(source,std::uint64_t(1)<<s);
+    const auto labels=admit(source,RelationLabels::Bit(s));
     if(labels)add(source,MemberRelation::Diagonal(demand[s].members,count),labels);
   }
   // Keep ownership outside scratch_: add() may resize/move its chain slots.
@@ -348,9 +348,9 @@ void FamilyRelationQuery::propagate(std::vector<FamilyRelationBatch>& batch,bool
       for(auto target=std::lower_bound(targets.begin(),targets.end(),item.position,
           [](const auto& t,auto p){return t.position<p;});
           target!=targets.end() && target->position<item.end;) {
-        auto end=target;std::uint64_t labels=0;
+        auto end=target;RelationLabels labels=0;
         while(end!=targets.end() && end->position==target->position) {
-          const auto bit=std::uint64_t(1)<<end->source;
+          const auto bit=RelationLabels::Bit(end->source);
           if((item.labels&bit) && batch[end->source].requests[end->index].pending())labels|=bit;
           ++end;
         }
@@ -359,13 +359,13 @@ void FamilyRelationQuery::propagate(std::vector<FamilyRelationBatch>& batch,bool
         auto& bucket=batch[target->source].requests[target->index].coverage;
         const bool changed=labels && bucket->advance(0,item.relation,target_update_counts,labels);
         for(auto owner=target;owner!=end;++owner) {
-          if(!(labels&(std::uint64_t(1)<<owner->source)))continue;
+          if(!labels.test(owner->source))continue;
           auto& request=batch[owner->source].requests[owner->index];
           if(!request.pending())continue;
           if(changed)request.proofChanged(&target_stats);
           if(request.complete) {
             --remaining;
-            if(!--remaining_by_source[owner->source])active_labels&=~(std::uint64_t(1)<<owner->source);
+            if(!--remaining_by_source[owner->source])active_labels&=~RelationLabels::Bit(owner->source);
           }
         }
         target=end;

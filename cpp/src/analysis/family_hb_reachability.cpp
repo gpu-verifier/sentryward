@@ -107,7 +107,44 @@ class FamilyIndex final : public FamilyHbReachability {
     return answers;
   }
   std::vector<std::uint8_t> allReachMany(std::span<const EventId> sources,std::span<const EventId> targets) override {
-    unchanged();++stats_.batches;std::vector<std::uint8_t> result(targets.size());
+    unchanged();++stats_.batches;
+    return allReach<false>(sources,targets,stats_.edge_visits);
+  }
+  std::vector<std::optional<EventId>> findAncestors(std::span<const EventId> sources,std::span<const EventId> targets) override {
+    unchanged();++stats_.batches;
+    return ancestors<false>(sources,targets,stats_.edge_visits);
+  }
+  // Every family's trace-order rank bounds (the chain filter's), so that queries only read them.
+  // O(families).
+  void PrepareConcurrentQueries() override {
+    unchanged();
+    if(const auto* order=graph_.traceOrder()) {
+      const auto& families=topology_.layout()->families();
+      if(rank_bounds_.size()<families.size())rank_bounds_.resize(families.size(),{SIZE_MAX,0});
+      for(std::size_t f=0;f<families.size();++f)
+        if(rank_bounds_[f].first==SIZE_MAX)rank_bounds_[f]=order->rankBounds(families[f].first,families[f].stride,families[f].count);
+    }
+    prepared_version_=version_;
+  }
+  std::vector<std::uint8_t> allReachManyConcurrent(std::span<const EventId> sources,std::span<const EventId> targets,
+      std::size_t& edge_visits) const override {
+    concurrentReady();
+    return const_cast<FamilyIndex*>(this)->allReach<true>(sources,targets,edge_visits);
+  }
+  std::vector<std::optional<EventId>> findAncestorsConcurrent(std::span<const EventId> sources,std::span<const EventId> targets,
+      std::size_t& edge_visits) const override {
+    concurrentReady();
+    return const_cast<FamilyIndex*>(this)->ancestors<true>(sources,targets,edge_visits);
+  }
+  void RecordConcurrentQueries(std::size_t calls,std::size_t edge_visits) override {
+    stats_.batches+=calls;stats_.edge_visits+=edge_visits;
+  }
+ private:
+  // allReachMany's and findAncestors's answers; Concurrent: without the pair cache and the
+  // statistics, reading only the prepared rank bounds (shared state is then only read).
+  template<bool Concurrent>
+  std::vector<std::uint8_t> allReach(std::span<const EventId> sources,std::span<const EventId> targets,std::size_t& edge_visits) {
+    std::vector<std::uint8_t> result(targets.size());
     for(auto source:sources)if(!graph_.contains(source))return result;
     for(std::size_t i=0;i<targets.size();++i)result[i]=graph_.contains(targets[i]);
     const auto seeds=unique(sources);
@@ -123,7 +160,7 @@ class FamilyIndex final : public FamilyHbReachability {
         std::vector<ChainQueryIndex::Request> requests;
         requests.reserve(seeds.size());
         for(auto source:seeds)requests.push_back({source,full,true});
-        const auto answers=query(targets.subspan(begin,count),requests,true);
+        const auto answers=queryWith<Concurrent>(targets.subspan(begin,count),requests,true,false,edge_visits);
         auto common=full;
         for(auto answer:answers)common&=answer;
         for(std::size_t i=0;i<count;++i)result[begin+i]=result[begin+i] && ((common>>i)&1);
@@ -134,12 +171,13 @@ class FamilyIndex final : public FamilyHbReachability {
     if(targets.size()==1 && result[0]) {
       std::vector<ChainQueryIndex::Request> requests;
       for(auto source:seeds) {
-        if(auto answer=known(source,targets[0])) { if(!*answer)result[0]=false; }
+        if(auto answer=Concurrent?filtered(source,targets[0]):known(source,targets[0])) { if(!*answer)result[0]=false; }
         else requests.push_back({source,1,true});
       }
       if(!result[0])return result;
-      const auto answers=query(targets,requests,true);
-      for(std::size_t i=0;i<answers.size();++i)remember(requests[i].target,targets[0],answers[i]!=0);
+      const auto answers=queryWith<Concurrent>(targets,requests,true,false,edge_visits);
+      if constexpr(!Concurrent)
+        for(std::size_t i=0;i<answers.size();++i)remember(requests[i].target,targets[0],answers[i]!=0);
       result[0]=std::all_of(answers.begin(),answers.end(),[](auto value){return value==1;});return result;
     }
     for(std::size_t begin=0;begin<seeds.size();begin+=64) {
@@ -147,17 +185,18 @@ class FamilyIndex final : public FamilyHbReachability {
       const auto full=count==64?UINT64_MAX:(std::uint64_t(1)<<count)-1;
       std::vector<ChainQueryIndex::Request> requests;std::vector<std::size_t> indexes;
       for(std::size_t i=0;i<targets.size();++i)if(result[i]) { requests.push_back({targets[i],full,true});indexes.push_back(i); }
-      const auto answers=query(std::span(seeds).subspan(begin,count),requests);
+      const auto answers=queryWith<Concurrent>(std::span(seeds).subspan(begin,count),requests,false,false,edge_visits);
       for(std::size_t i=0;i<answers.size();++i)result[indexes[i]]=answers[i]==full;
     }
     return result;
   }
-  std::vector<std::optional<EventId>> findAncestors(std::span<const EventId> sources,std::span<const EventId> targets) override {
-    unchanged();++stats_.batches;std::vector<std::optional<EventId>> result(targets.size());const auto seeds=unique(sources);
+  template<bool Concurrent>
+  std::vector<std::optional<EventId>> ancestors(std::span<const EventId> sources,std::span<const EventId> targets,std::size_t& edge_visits) {
+    std::vector<std::optional<EventId>> result(targets.size());const auto seeds=unique(sources);
     if(targets.size()==1 && graph_.contains(targets[0])) {
       std::vector<ChainQueryIndex::Request> requests;
       for(auto source:seeds)requests.push_back({source,1,true});
-      const auto answers=query(targets,requests,true,true);
+      const auto answers=queryWith<Concurrent>(targets,requests,true,true,edge_visits);
       for(std::size_t i=0;i<answers.size();++i)if(answers[i]) { result[0]=seeds[i];break; }
       return result;
     }
@@ -166,12 +205,11 @@ class FamilyIndex final : public FamilyHbReachability {
       const auto full=count==64?UINT64_MAX:(std::uint64_t(1)<<count)-1;
       std::vector<ChainQueryIndex::Request> requests;std::vector<std::size_t> indexes;
       for(std::size_t i=0;i<targets.size();++i)if(!result[i] && graph_.contains(targets[i])) { requests.push_back({targets[i],full,false});indexes.push_back(i); }
-      const auto answers=query(std::span(seeds).subspan(begin,count),requests);
+      const auto answers=queryWith<Concurrent>(std::span(seeds).subspan(begin,count),requests,false,false,edge_visits);
       for(std::size_t i=0;i<answers.size();++i)if(answers[i])result[indexes[i]]=seeds[begin+std::countr_zero(answers[i])];
     }
     return result;
   }
- private:
   void unchanged() const { if(graph_.version()!=version_)throw std::logic_error("graph changed during family HB query"); }
   void validate(EventId event) const { if(!graph_.contains(event))throw std::invalid_argument("HB query references an unknown event"); }
   std::vector<EventId> unique(std::span<const EventId> values) const {
@@ -179,13 +217,22 @@ class FamilyIndex final : public FamilyHbReachability {
     std::sort(result.begin(),result.end());result.erase(std::unique(result.begin(),result.end()),result.end());return result;
   }
   static std::uint64_t key(EventId from,EventId to) { return (std::uint64_t(from.value())<<32)|to.value(); }
-  std::optional<bool> known(EventId from,EventId to) {
-    if(auto answer=chains_.sameChain(reverse_?to:from,reverse_?from:to)) { ++stats_.filtered_queries;return answer; }
+  // The answers decided by the chains and the topological orders alone (no cache). Const.
+  std::optional<bool> filtered(EventId from,EventId to) const {
+    if(auto answer=chains_.sameChain(reverse_?to:from,reverse_?from:to))return answer;
     const auto a=reverse_?to:from,b=reverse_?from:to;
     if((graph_.traceOrder() && graph_.traceOrder()->rank(a)>=graph_.traceOrder()->rank(b)) ||
-        (alternate_ && alternate_->rank(a)>=alternate_->rank(b))) { ++stats_.filtered_queries;return false; }
+        (alternate_ && alternate_->rank(a)>=alternate_->rank(b)))return false;
+    return {};
+  }
+  std::optional<bool> known(EventId from,EventId to) {
+    if(auto answer=filtered(from,to)) { ++stats_.filtered_queries;return answer; }
     if(auto it=cache_.find(key(from,to));it!=cache_.end() && (it->second.answer || it->second.version==version_)) { ++stats_.cache_hits;return it->second.answer; }
     return {};
+  }
+  void concurrentReady() const {
+    unchanged();
+    if(prepared_version_!=version_)throw std::logic_error("concurrent family HB query without PrepareConcurrentQueries");
   }
   void remember(EventId from,EventId to,bool answer) {
     const auto limit=std::min(options_.cached_pairs,options_.index_budget_bytes/64);if(!limit)return;
@@ -197,6 +244,12 @@ class FamilyIndex final : public FamilyHbReachability {
   }
   std::vector<std::uint64_t> query(std::span<const EventId> seeds,std::span<const ChainQueryIndex::Request> requests,
       bool transpose=false,bool stop_on_any=false) {
+    return queryWith<false>(seeds,requests,transpose,stop_on_any,stats_.edge_visits);
+  }
+  // Concurrent: the rank bounds are prepared (PrepareConcurrentQueries), so this only reads them.
+  template<bool Concurrent>
+  std::vector<std::uint64_t> queryWith(std::span<const EventId> seeds,std::span<const ChainQueryIndex::Request> requests,
+      bool transpose,bool stop_on_any,std::size_t& edge_visits) {
     if(requests.empty())return {};
     std::size_t lo1=SIZE_MAX,hi1=0,lo2=SIZE_MAX,hi2=0;
     const auto endpoint=[&](EventId event) {
@@ -204,16 +257,18 @@ class FamilyIndex final : public FamilyHbReachability {
       if(alternate_) { const auto r=alternate_->rank(event);lo2=std::min(lo2,r);hi2=std::max(hi2,r); }
     };
     for(auto seed:seeds)endpoint(seed);for(const auto& request:requests)endpoint(request.target);
-    if(rank_bounds_.size()<topology_.layout()->families().size())rank_bounds_.resize(topology_.layout()->families().size(),{SIZE_MAX,0});
+    if constexpr(!Concurrent)
+      if(rank_bounds_.size()<topology_.layout()->families().size())rank_bounds_.resize(topology_.layout()->families().size(),{SIZE_MAX,0});
     return chains_.query(seeds,requests,[&](std::size_t family) {
       if(const auto* order=graph_.traceOrder()) {
-        auto& bounds=rank_bounds_[family];
-        if(bounds.first==SIZE_MAX) { const auto& group=topology_.layout()->families()[family];bounds=order->rankBounds(group.first,group.stride,group.count); }
+        auto bounds=rank_bounds_[family];
+        if constexpr(!Concurrent)
+          if(bounds.first==SIZE_MAX) { const auto& group=topology_.layout()->families()[family];rank_bounds_[family]=bounds=order->rankBounds(group.first,group.stride,group.count); }
         if(bounds.second<lo1 || bounds.first>hi1)return false;
       }
       if(alternate_) { const auto bounds=alternate_->familyBounds(family);if(bounds.second<lo2 || bounds.first>hi2)return false; }
       return true;
-    },stats_.edge_visits,transpose!=reverse_,stop_on_any);
+    },edge_visits,transpose!=reverse_,stop_on_any);
   }
   const HappensBeforeGraph& graph_;std::size_t version_;HbReachabilityOptions options_;bool reverse_;
   std::shared_ptr<EventRelations> topology_owner_;EventRelations& topology_;ChainQueryIndex chains_;
@@ -221,6 +276,7 @@ class FamilyIndex final : public FamilyHbReachability {
   struct CacheEntry { bool answer;std::size_t version; };
   std::unordered_map<std::uint64_t,CacheEntry> cache_;std::deque<std::uint64_t> cache_fifo_;
   std::vector<std::pair<std::size_t,std::size_t>> rank_bounds_;HbReachabilityStats stats_;
+  std::size_t prepared_version_=SIZE_MAX; // version_ at the last PrepareConcurrentQueries
 };
 }
 bool FamilyHbReachabilityApplies(const HappensBeforeGraph& graph,const HbReachabilityOptions& options) {

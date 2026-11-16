@@ -170,6 +170,9 @@ struct SemanticProgramOptions final {
   bool values_on_demand = false;
   // --sync-threads: the lowering's lane workers (ModelLowerer); at most one lowers on the calling thread.
   std::size_t threads = 0;
+  // Class mode's fixed shape-array tables (SourceArtifact::table_atoms_json): memory linking binds a
+  // table-lookup footprint at the analysed program's exact address.
+  std::string table_atoms = "[]";
 };
 
 // Both views consume the same specialized instruction occurrences.
@@ -182,6 +185,14 @@ class SemanticProgramBuilder final {
   SemanticProgramBuilder& operator=(const SemanticProgramBuilder&) = delete;
   // The CTA id is facts.Linear(); the coordinates are facts.frame().SelfCoordinates().
   void AddCta(const CtaFacts& facts);
+  // Class mode, once no value stage can lift (UnitClasses::ValuedUnliftable): later CTAs build their
+  // value view only at their first address-bridge query, and Finish links no memory. The value
+  // stage then refuses lifting before reading the views; valueViewCtas() counts the views built.
+  void SuspendValues() noexcept;
+  // Called in AddCta right after a CTA's value view is built, before the CTA is lowered (empty: none).
+  // It may throw to abandon the attempt (run.cpp: the table-atom restart).
+  void SetValueViewHook(std::function<void()> hook);
+  [[nodiscard]] std::size_t valueViewCtas() const noexcept;
   // Cross-CTA class mode, before the first AddCta (ModelLowerer::TrackUnits).
   void TrackUnits(algorithm::UnitQuotient* quotient) noexcept;
   [[nodiscard]] const value_ir::Graph& graph() const noexcept;

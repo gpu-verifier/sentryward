@@ -109,7 +109,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "analysis_target": "recovered_program",
     "counts": {
@@ -362,7 +362,7 @@
     "memory_analysis_complete": false,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 10567.15625,
+    "peak_footprint_mib": 10566.65625,
     "recovery_policy": "last_ordered_init",
     "required_order_domains": 54920,
     "required_orders": 1753472,
@@ -506,10 +506,10 @@
     "value_ir_node_count": 5053517,
     "value_view_complete": true
   },
-  "peak_rss_mib": 10567.15625,
-  "pipeline_elapsed_seconds": 37.5365671,
+  "peak_rss_mib": 10566.65625,
+  "pipeline_elapsed_seconds": 37.577933129,
   "result": "invalid_lifecycle",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -952,6 +952,6 @@
       }
     }
   ],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.398
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.392
 }

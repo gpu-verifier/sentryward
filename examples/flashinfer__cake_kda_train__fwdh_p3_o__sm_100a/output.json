@@ -131,19 +131,19 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
-      "edges": 15614818,
-      "events": 5036914,
-      "instructions": 997902,
-      "memory_accesses": 3257860,
-      "threads": 23680
+      "edges": 1321025,
+      "events": 387337,
+      "instructions": 58753,
+      "memory_accesses": 280864,
+      "threads": 960
     },
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
-      "arena_nodes": 40999,
-      "comparison_elapsed_seconds": 0.166498687,
+      "arena_nodes": 41269,
+      "comparison_elapsed_seconds": 0.187270721,
       "context_declaration": {
         "assumptions": [],
         "fixed_inputs": [
@@ -936,10 +936,10 @@
       },
       "context_policy": "explicit native caller premises; no implied provenance certification",
       "counters": {
-        "add_term_visits": 127400,
+        "add_term_visits": 127910,
         "affine_coordinate_captures": 640,
         "affine_state_banks": 1,
-        "call_definition_node_visits": 10618,
+        "call_definition_node_visits": 13588,
         "canonical_factor_visits": 7680,
         "canonical_node_visits": 12371,
         "canonical_sum_initials": 256,
@@ -958,21 +958,26 @@
         "ep_body_anchor_nodes": 13757,
         "ep_body_bound_read_exact_hits": 256,
         "ep_body_bound_read_matcher_fallbacks": 3,
-        "ep_body_call_rebuilds": 1792,
-        "ep_body_deferred_call_anchors": 2312,
-        "ep_body_deferred_unmatched_anchors": 2312,
+        "ep_body_call_rebuilds": 2048,
+        "ep_body_call_respelling_attempts": 576,
+        "ep_body_constant_ratios": 256,
+        "ep_body_deferred_anchor_retries": 7168,
+        "ep_body_deferred_call_anchors": 4232,
+        "ep_body_deferred_unmatched_anchors": 4232,
         "ep_body_fold_scope_boundaries": 1664,
         "ep_body_instance_cache_entries": 1024,
-        "ep_body_instance_cache_hits": 512,
+        "ep_body_instance_cache_hits": 768,
         "ep_body_missing_opaque_read": 3,
         "ep_body_obligations": 3072,
         "ep_body_pattern_anchor_cache_hits": 14222,
         "ep_body_payload_summary_nodes": 3072,
-        "ep_body_proofs": 2048,
-        "ep_body_read_anchor_rejections": 10903,
+        "ep_body_proofs": 2304,
+        "ep_body_read_anchor_rejections": 18071,
         "ep_body_read_match_cache_entries": 955,
         "ep_body_read_match_cache_hits": 124,
         "ep_body_target_anchor_cache_hits": 9756,
+        "ep_body_target_call_index_builds": 1152,
+        "ep_body_target_call_index_nodes": 3456,
         "ep_identity_proofs": 2304,
         "ep_reduction_outer_obligations": 128,
         "ep_scalar_attempts": 3456,
@@ -985,11 +990,8 @@
         "fold_alpha_states": 6673,
         "fp_idiom_power_constructions": 0,
         "fp_idiom_rm_producers": 0,
-        "ideal_additive_compiler_exp_sequences": 0,
-        "ideal_compiler_exp_sequences": 0,
         "ideal_compiler_log2_polynomials": 0,
         "ideal_compiler_lse_sequences": 0,
-        "ideal_single_constant_exp_sequences": 0,
         "imported_context_nodes": 33744,
         "importer_occurrence_binder_hits": 2554,
         "importer_scope_banks": 2,
@@ -997,7 +999,11 @@
         "importer_scope_leaf_lookups": 6,
         "importer_scope_nested_body_fallbacks": 3072,
         "input_index_radix_quotients": 127,
-        "intern_requests": 375028,
+        "intern_requests": 380593,
+        "known_bits_cache_hits": 2927,
+        "known_bits_edges": 0,
+        "known_bits_nodes": 513,
+        "linear_reduction_case_nonfinite_identities": 0,
         "linear_reduction_closed_groups": 256,
         "linear_reduction_pattern_attempts": 128,
         "linear_reduction_pattern_proofs": 128,
@@ -1007,6 +1013,7 @@
         "masked_sum_prefix_queries": 3712,
         "normalization_cache_context_changes": 16,
         "normalization_node_visits": 14649,
+        "offset_multiple_quotients": 1,
         "packed_radix_probes": 127,
         "packed_radix_rewrites": 127,
         "parametric_state_attempts": 0,
@@ -1029,7 +1036,7 @@
         "status": "proved"
       },
       "diagnostics": [],
-      "elapsed_s": 0.145741154,
+      "elapsed_s": 0.165173022,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -1078,6 +1085,13 @@
       },
       "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
       "equivalent_families": 256,
+      "failure_expression_samples": {
+        "failed_families": 0,
+        "omitted_families": 0,
+        "render_byte_limit_per_side": 4096,
+        "sample_limit": 8,
+        "sampled_families": 0
+      },
       "finished_families": 256,
       "fixed_input_context": {
         "applied": [],
@@ -1871,7 +1885,6 @@
       },
       "idealizations_applied": [],
       "input_contract_applied_reads": [],
-      "legacy_scalar_fallback": false,
       "mapping_input_memory_constraints": {},
       "native_context": {
         "elements": 87,
@@ -1881,8 +1894,8 @@
       },
       "normalized_reachable_nodes": 4423,
       "numerical_result": "verified",
-      "pattern_nodes": 2489,
-      "peak_rss_kib": 6684836,
+      "pattern_nodes": 3430,
+      "peak_rss_kib": 5977252,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
       "piece_nodes": 5120,
       "piece_union": {
@@ -1918,7 +1931,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "closures": [
                 {
@@ -1947,17 +1959,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 5.039999999993921e-06,
-            "cumulative_elapsed_s": 0.065065008,
-            "left_import_s": 0.0004454509999999904,
-            "left_normalize_s": 0.00014009099999999497,
-            "parametric_state_s": 2.5299999999962505e-06,
-            "piece_union_record_s": 6.530000000005455e-06,
-            "piece_union_seal_s": 3.5000000000659504e-07,
-            "right_import_s": 0.000646662000000004,
-            "right_normalize_s": 0.0004859809999999908,
-            "state_pattern_s": 0.0001766809999999919,
-            "unary_reduction_s": 3.219999999999959e-06
+            "affine_state_pattern_s": 5.880999999989707e-06,
+            "cumulative_elapsed_s": 0.072593679,
+            "left_import_s": 0.00048204200000000587,
+            "left_normalize_s": 0.00015065000000000434,
+            "parametric_state_s": 2.2599999999948182e-06,
+            "piece_union_record_s": 6.02000000000328e-06,
+            "piece_union_seal_s": 4.000000000102012e-07,
+            "right_import_s": 0.0006626909999999989,
+            "right_normalize_s": 0.0005808520000000045,
+            "state_pattern_s": 0.0002364200000000002,
+            "unary_reduction_s": 3.4499999999951236e-06
           }
         },
         {
@@ -1974,7 +1986,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "closures": [
                 {
@@ -2003,17 +2014,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 4.0440000000019176e-05,
-            "cumulative_elapsed_s": 0.064551487,
-            "left_import_s": 0.007765296000000001,
-            "left_normalize_s": 0.0024552149999999785,
-            "parametric_state_s": 3.0419999999998885e-05,
-            "piece_union_record_s": 0.00012003999999999834,
-            "piece_union_seal_s": 2.6599999999846365e-06,
-            "right_import_s": 0.034175890999999986,
-            "right_normalize_s": 0.009164940999999972,
-            "state_pattern_s": 0.004358594000000007,
-            "unary_reduction_s": 5.297100000001102e-05
+            "affine_state_pattern_s": 4.758999999998018e-05,
+            "cumulative_elapsed_s": 0.071972678,
+            "left_import_s": 0.008752820000000015,
+            "left_normalize_s": 0.0027872789999999663,
+            "parametric_state_s": 2.927999999997443e-05,
+            "piece_union_record_s": 0.00014571000000002544,
+            "piece_union_seal_s": 2.4799999999826697e-06,
+            "right_import_s": 0.036193634,
+            "right_normalize_s": 0.010936746000000011,
+            "state_pattern_s": 0.006306896999999985,
+            "unary_reduction_s": 5.733000000002946e-05
           }
         },
         {
@@ -2026,7 +2037,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "closures": [
                 {
@@ -2055,17 +2065,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 5.900000000017003e-07,
-            "cumulative_elapsed_s": 0.037494904,
-            "left_import_s": 0.00012660999999999922,
-            "left_normalize_s": 4.933000000000021e-05,
+            "affine_state_pattern_s": 6.400000000031381e-07,
+            "cumulative_elapsed_s": 0.041695032,
+            "left_import_s": 0.0001408300000000015,
+            "left_normalize_s": 5.171000000000342e-05,
             "parametric_state_s": 4.2000000000097515e-07,
-            "piece_union_record_s": 2.189999999999137e-06,
+            "piece_union_record_s": 2.7500000000027502e-06,
             "piece_union_seal_s": 3.999999999976245e-08,
-            "right_import_s": 0.0005462919999999968,
-            "right_normalize_s": 0.00031321100000000074,
-            "state_pattern_s": 7.367999999999958e-05,
-            "unary_reduction_s": 1.109999999998612e-06
+            "right_import_s": 0.0005728519999999987,
+            "right_normalize_s": 0.0003445310000000021,
+            "state_pattern_s": 0.00010242099999999837,
+            "unary_reduction_s": 1.1700000000017252e-06
           }
         },
         {
@@ -2082,7 +2092,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "closures": [
                 {
@@ -2111,17 +2120,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 2.683000000000546e-05,
-            "cumulative_elapsed_s": 0.0887001,
-            "left_import_s": 0.0049244629999999345,
-            "left_normalize_s": 0.0022157959999999366,
-            "parametric_state_s": 1.7110000000014614e-05,
-            "piece_union_record_s": 8.754999999990853e-05,
-            "piece_union_seal_s": 1.95999999992591e-06,
-            "right_import_s": 0.0003903319999998822,
-            "right_normalize_s": 0.009090211000000015,
-            "state_pattern_s": 0.003866509999999948,
-            "unary_reduction_s": 4.6560000000001045e-05
+            "affine_state_pattern_s": 3.4780999999969864e-05,
+            "cumulative_elapsed_s": 0.10117532,
+            "left_import_s": 0.005575840999999984,
+            "left_normalize_s": 0.0025818670000000987,
+            "parametric_state_s": 1.7260000000032805e-05,
+            "piece_union_record_s": 0.00011744100000002367,
+            "piece_union_seal_s": 2.2000000000077513e-06,
+            "right_import_s": 0.00048433100000003226,
+            "right_normalize_s": 0.010858751999999985,
+            "state_pattern_s": 0.00566098799999995,
+            "unary_reduction_s": 4.531999999998759e-05
           }
         },
         {
@@ -2134,7 +2143,6 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "state_pattern_proof": {
               "closures": [
                 {
@@ -2163,17 +2171,17 @@
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 2.999999999947489e-07,
-            "cumulative_elapsed_s": 0.078390039,
-            "left_import_s": 7.65300000000052e-05,
-            "left_normalize_s": 4.0600000000001746e-05,
-            "parametric_state_s": 2.400000000124525e-07,
-            "piece_union_record_s": 1.8900000000043882e-06,
+            "affine_state_pattern_s": 5.000000000005e-07,
+            "cumulative_elapsed_s": 0.08875581,
+            "left_import_s": 0.00010058999999999763,
+            "left_normalize_s": 4.645000000000343e-05,
+            "parametric_state_s": 3.1000000000336314e-07,
+            "piece_union_record_s": 2.2299999999919606e-06,
             "piece_union_seal_s": 1.9999999989472883e-08,
-            "right_import_s": 5.959999999999299e-06,
-            "right_normalize_s": 0.00028475099999999975,
-            "state_pattern_s": 6.62909999999961e-05,
-            "unary_reduction_s": 8.199999999985996e-07
+            "right_import_s": 7.569999999998411e-06,
+            "right_normalize_s": 0.00030096100000000237,
+            "state_pattern_s": 9.671999999999459e-05,
+            "unary_reduction_s": 9.600000000081765e-07
           }
         },
         {
@@ -2186,41 +2194,40 @@
           ],
           "record": {
             "equivalence_contract": "existing_total_value_proof",
-            "scalar_engine": "mandatory_exponential_polynomial",
             "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 4.2401000000136246e-05,
-            "cumulative_elapsed_s": 0.144771081,
-            "left_import_s": 0.01889443299999992,
-            "left_normalize_s": 0.004457649999999938,
-            "parametric_state_s": 3.1900999999820434e-05,
-            "piece_union_record_s": 0.00013026999999997402,
-            "piece_union_seal_s": 3.1699999999967865e-06,
-            "right_import_s": 0.01958229400000011,
-            "right_normalize_s": 0.012119509000000167
+            "affine_state_pattern_s": 5.288000000011617e-05,
+            "cumulative_elapsed_s": 0.164139879,
+            "left_import_s": 0.020981404999999856,
+            "left_normalize_s": 0.005084534999999904,
+            "parametric_state_s": 3.931999999993996e-05,
+            "piece_union_record_s": 0.00017293199999982023,
+            "piece_union_seal_s": 3.3500000000408203e-06,
+            "right_import_s": 0.02057242800000003,
+            "right_normalize_s": 0.015165658999999831
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 0.00011560100000015125,
+        "affine_state_pattern_s": 0.00014227200000005956,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.03223278299999985,
-        "left_normalize_s": 0.009358681999999851,
-        "parametric_state_s": 8.262099999984361e-05,
-        "piece_union_record_s": 0.0003484699999998899,
+        "left_import_s": 0.036033527999999856,
+        "left_normalize_s": 0.01070249099999998,
+        "parametric_state_s": 8.884999999994635e-05,
+        "piece_union_record_s": 0.0004470829999998673,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 8.199999999903163e-06,
+        "piece_union_seal_s": 8.490000000030678e-06,
         "proof_reuse_s": 0.0,
-        "right_import_s": 0.05534743099999998,
-        "right_normalize_s": 0.03145860400000015,
-        "state_pattern_s": 0.008541755999999942
+        "right_import_s": 0.05849350600000006,
+        "right_normalize_s": 0.03818750099999984,
+        "state_pattern_s": 0.01240344599999993
       },
       "timings": {
-        "load_and_scope_analysis": 0.000805433
+        "load_and_scope_analysis": 0.000810693
       },
       "total_output_families": 256,
       "transport": "in_memory_cpp_objects",
@@ -2498,6 +2505,10 @@
         "operations": 48
       },
       "thread_count": 23680,
+      "unit_restart": {
+        "kept_synchronization_verdict": true,
+        "reason": "value_lifting"
+      },
       "unsupported_occurrence_counts": {},
       "user_branch_decisions": []
     },
@@ -2514,22 +2525,22 @@
       },
       "required_orders": {
         "algorithm": "member-relations",
-        "batches": 13,
-        "edge_visits": 285869,
+        "batches": 1,
+        "edge_visits": 151506,
         "member_enumerations": 0,
         "request_construction": {
           "concrete_pair_materializations": 0,
-          "endpoint_reads": 221538,
-          "family_requests": 4326,
-          "logical_orders": 2177136,
-          "owner_bindings": 133558,
-          "stored_orders": 68082
+          "endpoint_reads": 21519,
+          "family_requests": 429,
+          "logical_orders": 217080,
+          "owner_bindings": 13365,
+          "stored_orders": 6807
         }
       }
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 470624,
+      "address_candidates": 193968,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -2546,22 +2557,22 @@
       "candidate_generation_fallback": false,
       "exhaustive": false,
       "family_analysis": {
-        "access_families": 97350,
+        "access_families": 16613,
         "affine_member_rows": 0,
-        "candidate_relations": 110816,
-        "hb_frontier_pieces": 28516,
+        "candidate_relations": 49968,
+        "hb_frontier_pieces": 10148,
         "hb_member_enumerations": 0,
-        "logical_accesses": 3257860
+        "logical_accesses": 280864
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 210,
+      "hb_batches": 22,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 1059341,
+      "hb_edge_visits": 324319,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
-      "hb_queries": 470624,
-      "hb_query_seconds": 0.15585079900000004,
+      "hb_queries": 193968,
+      "hb_query_seconds": 0.056743216000000006,
       "overlap_queries": 0,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 0
@@ -2569,9 +2580,9 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 6243.0546875,
-    "required_order_domains": 68082,
-    "required_orders": 2177136,
+    "peak_footprint_mib": 5704.88671875,
+    "required_order_domains": 6807,
+    "required_orders": 217080,
     "search_complete": true,
     "semantic_assumptions": {
       "bounded_computation_loops": false,
@@ -2665,14 +2676,14 @@
           "elements": 0,
           "identities": 780,
           "layouts": 80,
-          "mapping_blocks": 41298,
+          "mapping_blocks": 9040,
           "name": "view_normalization",
           "original_pieces": 187008,
           "reused_initial_reads": 1227460,
           "reused_views": 2072,
           "segmented": 18,
           "slices": 7168,
-          "stored_mapping_blocks": 38466,
+          "stored_mapping_blocks": 6208,
           "typed_output_pieces": 0,
           "typed_output_regions": 0
         }
@@ -2683,6 +2694,7 @@
       "scalar_fold": {
         "construction_collections": 0,
         "diagnostics": [],
+        "narrowing_slice_projections": 20,
         "output_count": 8192,
         "output_families_merged": 0,
         "output_family_count": 2,
@@ -2716,16 +2728,16 @@
         "action_patterns": 2651678,
         "binding_patterns": 2651678,
         "domain_refinements": 9711772,
-        "elapsed_seconds": 8.859333266,
+        "elapsed_seconds": 8.985510969,
         "event_families": 448872,
         "expanded_event_records": 0,
         "largest_batch_members": 128,
         "logical_actions": 2846122,
         "logical_events": 16654726,
-        "peak_rss_mib_at_completion": 6528.16015625,
+        "peak_rss_mib_at_completion": 5837.16015625,
         "reachability_queries": 0,
         "relations": 5856410,
-        "rss_mib_at_completion": 3690.77734375,
+        "rss_mib_at_completion": 3000.0,
         "scheduled_batches": 448872,
         "singleton_batches": 191362,
         "value_families": 227734
@@ -2737,13 +2749,13 @@
     "value_ir_instance_count": 9033150,
     "value_ir_node_count": 231098,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 18.71999051,
+    "verification_elapsed_seconds": 1.600699403,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 6528.16015625,
-  "pipeline_elapsed_seconds": 37.879349382,
+  "peak_rss_mib": 5837.16015625,
+  "pipeline_elapsed_seconds": 38.284416021,
   "result": "verified",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -2752,6 +2764,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 497.736
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 997.738
 }

@@ -106,7 +106,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 481979,
@@ -127,7 +127,7 @@
     "equivalence": {
       "access_validity": "no_unresolved_symbolic_byte_reads",
       "arena_nodes": 230,
-      "comparison_elapsed_seconds": 0.002000856,
+      "comparison_elapsed_seconds": 0.002237607,
       "context_declaration": {
         "assumptions": [],
         "fixed_inputs": [],
@@ -161,6 +161,8 @@
         "ep_body_proofs": 14,
         "ep_body_read_anchor_rejections": 13,
         "ep_body_target_anchor_cache_hits": 12,
+        "ep_body_target_call_index_builds": 5,
+        "ep_body_target_call_index_nodes": 5,
         "ep_identity_proofs": 22,
         "ep_scalar_attempts": 22,
         "ep_scalar_proofs": 22,
@@ -173,18 +175,19 @@
         "finite_state_reuse_banks": 1,
         "fp_idiom_power_constructions": 0,
         "fp_idiom_rm_producers": 0,
-        "ideal_additive_compiler_exp_sequences": 0,
-        "ideal_compiler_exp_sequences": 0,
         "ideal_compiler_log2_polynomials": 0,
         "ideal_compiler_lse_sequences": 0,
-        "ideal_single_constant_exp_sequences": 0,
         "imported_context_nodes": 196,
         "importer_occurrence_binder_hits": 30,
         "importer_scope_banks": 2,
         "importer_scope_binders_created": 2,
         "importer_scope_leaf_lookups": 2,
         "importer_scope_nested_body_fallbacks": 16,
-        "intern_requests": 1936,
+        "intern_requests": 1944,
+        "known_bits_cache_hits": 17,
+        "known_bits_edges": 0,
+        "known_bits_nodes": 4,
+        "linear_reduction_case_nonfinite_identities": 0,
         "local_pattern_candidates": 48,
         "masked_sum_prefix_queries": 24,
         "normalization_cache_context_changes": 8,
@@ -204,7 +207,7 @@
         "status": "proved"
       },
       "diagnostics": [],
-      "elapsed_s": 0.001353315,
+      "elapsed_s": 0.001463521,
       "engine": "reference_guided_cpp",
       "ep_profile": {
         "body_instantiation_s": 0.0,
@@ -253,16 +256,22 @@
       },
       "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
       "equivalent_families": 8,
+      "failure_expression_samples": {
+        "failed_families": 0,
+        "omitted_families": 0,
+        "render_byte_limit_per_side": 4096,
+        "sample_limit": 8,
+        "sampled_families": 0
+      },
       "finished_families": 8,
       "idealizations_applied": [],
       "input_contract_applied_reads": [],
-      "legacy_scalar_fallback": false,
       "mapping_input_memory_constraints": {},
       "native_context": null,
       "normalized_reachable_nodes": 15,
       "numerical_result": "verified",
-      "pattern_nodes": 34,
-      "peak_rss_kib": 808888,
+      "pattern_nodes": 42,
+      "peak_rss_kib": 730384,
       "peak_rss_scope": "process_lifetime_not_comparison_delta",
       "piece_nodes": 30,
       "piece_union": {
@@ -319,41 +328,40 @@
               "swaps": 0,
               "zero_masks": 0
             },
-            "scalar_engine": "mandatory_exponential_polynomial",
             "status": "equivalent",
             "total_definedness": "proved"
           },
           "timing_s": {
-            "affine_state_pattern_s": 0.00010506200000000022,
-            "cumulative_elapsed_s": 0.001312065,
-            "left_import_s": 0.00027954999999999994,
-            "left_normalize_s": 0.00013432000000000027,
-            "parametric_state_s": 1.3699999999999411e-06,
-            "piece_union_record_s": 3.499999999999814e-07,
-            "piece_union_seal_s": 4.600000000002497e-07,
-            "right_import_s": 0.0003546410000000001,
-            "right_normalize_s": 0.0001957609999999998
+            "affine_state_pattern_s": 0.00011169000000000001,
+            "cumulative_elapsed_s": 0.001425541,
+            "left_import_s": 0.00031592199999999984,
+            "left_normalize_s": 0.00015062299999999969,
+            "parametric_state_s": 1.8499999999999637e-06,
+            "piece_union_record_s": 5.700000000000843e-07,
+            "piece_union_seal_s": 5.10000000000007e-07,
+            "right_import_s": 0.0003801819999999995,
+            "right_normalize_s": 0.00021604200000000017
           }
         }
       ],
       "scalar_engine": "mandatory_exponential_polynomial",
       "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
       "stages_s": {
-        "affine_state_pattern_s": 0.00010506200000000022,
+        "affine_state_pattern_s": 0.00011169000000000001,
         "exponential_polynomial_s": 0.0,
-        "left_import_s": 0.00027954999999999994,
-        "left_normalize_s": 0.00013432000000000027,
-        "parametric_state_s": 1.3699999999999411e-06,
-        "piece_union_record_s": 3.499999999999814e-07,
+        "left_import_s": 0.00031592199999999984,
+        "left_normalize_s": 0.00015062299999999969,
+        "parametric_state_s": 1.8499999999999637e-06,
+        "piece_union_record_s": 5.700000000000843e-07,
         "piece_union_reuse_s": 0.0,
-        "piece_union_seal_s": 4.600000000002497e-07,
+        "piece_union_seal_s": 5.10000000000007e-07,
         "proof_reuse_s": 0.0,
-        "right_import_s": 0.0003546410000000001,
-        "right_normalize_s": 0.0001957609999999998,
+        "right_import_s": 0.0003801819999999995,
+        "right_normalize_s": 0.00021604200000000017,
         "state_pattern_s": 0.0
       },
       "timings": {
-        "load_and_scope_analysis": 0.000179721
+        "load_and_scope_analysis": 0.000181981
       },
       "total_output_families": 8,
       "transport": "in_memory_cpp_objects",
@@ -587,19 +595,19 @@
         "access_families": 70645,
         "affine_member_rows": 52672,
         "candidate_relations": 118579,
-        "hb_frontier_pieces": 40248,
+        "hb_frontier_pieces": 14710,
         "hb_member_enumerations": 0,
         "logical_accesses": 128457
       },
       "hb_algorithm": "member-relations",
-      "hb_batches": 414,
+      "hb_batches": 114,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 3746375,
+      "hb_edge_visits": 1702932,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
       "hb_queries": 271015,
-      "hb_query_seconds": 0.3555069079999999,
+      "hb_query_seconds": 0.222085165,
       "overlap_queries": 260,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 260
@@ -607,7 +615,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 784.16015625,
+    "peak_footprint_mib": 709.578125,
     "required_order_domains": 724,
     "required_orders": 14209,
     "same_value_writes": {
@@ -761,16 +769,16 @@
         "action_patterns": 118552,
         "binding_patterns": 118306,
         "domain_refinements": 181210,
-        "elapsed_seconds": 0.694236364,
+        "elapsed_seconds": 0.71237662,
         "event_families": 178437,
         "expanded_event_records": 0,
         "largest_batch_members": 96,
         "logical_actions": 233729,
         "logical_events": 589326,
-        "peak_rss_mib_at_completion": 789.9296875,
+        "peak_rss_mib_at_completion": 713.265625,
         "reachability_queries": 0,
         "relations": 483713,
-        "rss_mib_at_completion": 604.828125,
+        "rss_mib_at_completion": 528.28125,
         "scheduled_batches": 178437,
         "singleton_batches": 171461,
         "value_families": 84644
@@ -782,13 +790,13 @@
     "value_ir_instance_count": 219557,
     "value_ir_node_count": 81419,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 1.985905367,
+    "verification_elapsed_seconds": 1.861919468,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 789.9296875,
-  "pipeline_elapsed_seconds": 3.580352474,
+  "peak_rss_mib": 713.265625,
+  "pipeline_elapsed_seconds": 3.495626187,
   "result": "verified",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -845,6 +853,6 @@
       }
     }
   ],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.572
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.576
 }

@@ -528,7 +528,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 966449,
@@ -582,6 +582,9 @@
         "source": "value_lowering",
         "unavailable": 0,
         "value_view_complete": true
+      },
+      "class_table_atoms": {
+        "attempt": "restart"
       },
       "cluster_completion_joins": 0,
       "cta_count": 148,
@@ -763,7 +766,7 @@
         "generated_body_rows": 0,
         "generated_memory_instances": 0,
         "logical_instructions": 87952,
-        "stored_bindings": 1975
+        "stored_bindings": 1978
       },
       "source_edge_storage": {
         "binding_templates": 1284,
@@ -783,7 +786,7 @@
     "memory_analysis_complete": false,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 258.1796875,
+    "peak_footprint_mib": 287.90234375,
     "required_order_domains": 7434,
     "required_orders": 237888,
     "semantic_assumptions": {
@@ -800,14 +803,14 @@
       "binding_diagnostics": [],
       "execution_cohorts": 32,
       "mapping_complete": true,
-      "memory_binding_stored_rows": 75214,
-      "memory_binding_templates": 1720,
+      "memory_binding_stored_rows": 83135,
+      "memory_binding_templates": 1433,
       "memory_bindings": 125288,
       "memory_linking_templates_used": true,
       "synchronization_groups": 589,
       "synchronization_groups_materialized": true,
       "synthetic_synchronization_nodes": 258,
-      "thread_prefix_groups": 22093,
+      "thread_prefix_groups": 16737,
       "value_diagnostic_count": 0,
       "value_diagnostics": []
     },
@@ -828,7 +831,7 @@
       "splits": 1044,
       "template_steps": 56208,
       "thread_memberships": 56832,
-      "value_nodes": 29300
+      "value_nodes": 32372
     },
     "thread_record_compression": {
       "completed_ctas": 148,
@@ -888,20 +891,20 @@
         ]
       }
     },
-    "value_ir_instance_count": 1014736,
-    "value_ir_node_count": 16269,
+    "value_ir_instance_count": 1009380,
+    "value_ir_node_count": 10913,
     "value_view_complete": true
   },
-  "peak_rss_mib": 278.7734375,
-  "pipeline_elapsed_seconds": 1.517446496,
+  "peak_rss_mib": 295.34375,
+  "pipeline_elapsed_seconds": 1.632405019,
   "result": "not_wellsynced",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
   },
   "verification_limitations": [],
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.555
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.551
 }

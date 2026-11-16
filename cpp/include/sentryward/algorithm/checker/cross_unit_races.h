@@ -35,6 +35,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace sentryward::algorithm {
 class MemoryModel;
@@ -49,6 +50,11 @@ struct CrossUnitPart {
   // The slot site of every member, set on a written allocation with a piecewise δ in some class
   // (UnitQuotient::PiecewiseDelta): such a part is placed by its piece's δ.
   std::optional<UnitSite> site = std::nullopt;
+  // The containment members of the part's class that perform none of its accesses
+  // (UnitQuotient::Class::removed), as sorted indexes into the class's units: the exact table-lookup
+  // pass places no copy of the part in them. The other passes ignore it (they keep the copy, an
+  // over-approximation whose pairs the caller restarts per unit).
+  std::vector<std::uint32_t> absent = {};
 };
 // Work caps: exceeding either restarts the launch per unit. unit_pairs counts the unit pairs the
 // window search visits, or the translations decided on progressions, and the member units the

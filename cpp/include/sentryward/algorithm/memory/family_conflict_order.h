@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <span>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -32,7 +33,7 @@ namespace sentryward::algorithm {
 // ordered, and ends the chain.
 class FamilyConflictOrder {
  public:
-  FamilyConflictOrder(const std::vector<MemoryAccessFamily>& families,
+  FamilyConflictOrder(const FamilyTable& families,
       const std::vector<FamilyFootprint>& footprints,const TraceOrder* order,
       std::span<const std::uint8_t> blocked_families = {});
   const std::vector<std::size_t>* candidates(std::size_t family) const;
@@ -50,7 +51,7 @@ class FamilyConflictOrder {
   // O(sum of (p_f + v_f) log p_f) time, and one hash entry per returned pair.
   std::vector<std::pair<std::size_t,std::vector<std::size_t>>> extension(const Overlapping& overlapping);
  private:
-  void reduceMembers(const std::vector<std::size_t>& items,const std::vector<MemoryAccessFamily>& families,
+  void reduceMembers(std::span<const std::size_t> items,const FamilyTable& families,
       const std::vector<FamilyFootprint>& footprints,const TraceOrder& order,std::size_t bucket);
   // The root of a family's obligation group (path halving).
   std::size_t group(std::size_t family);

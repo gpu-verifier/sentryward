@@ -1,5 +1,6 @@
 #pragma once
 #include "checker.hpp"
+#include "linear_reduction_pattern.hpp"
 
 namespace rg {
 
@@ -267,6 +268,7 @@ class OnlineSoftmaxPattern {
       finished.emplace(old, result);
       return result;
     };
+    LinearReductionPattern vote_rules(checker);
     std::vector<std::pair<Id, bool>> todo{{root, false}};
     while (!todo.empty()) {
       if (!tick()) return {};
@@ -278,6 +280,15 @@ class OnlineSoftmaxPattern {
         for (Id child : raw.args)
           if (!memo.contains(child)) todo.emplace_back(child, false);
         continue;
+      }
+      // Prove vote-controlled rescaling before pivot abstraction obscures
+      // the structural maximum order. Reuse the existing exact vote theorem.
+      if (raw.op == "select") {
+        if (Id arm = vote_rules.vote_rescale_arm(old); arm != invalid) {
+          memo.emplace(old, memo.at(arm));
+          ++a.stats["online_softmax_vote_rescale_aliases"];
+          continue;
+        }
       }
       bool is_maximum = raw.op == "max";
       bool is_fold = raw.op == "fold" && raw.tag == "Max";
@@ -432,6 +443,23 @@ class OnlineSoftmaxPattern {
             for (size_t i = 0; i < node.args.size(); ++i)
               if (i != selected) factors.push_back(node.args[i]);
             result = scaled(memo.at(node.args[selected]), a.mul(std::move(factors)));
+          }
+        } else if (!ambiguous && node.op == "select" && node.args.size() == 3) {
+          // A conditional rescale changes the common coefficient, not the
+          // contribution domain. Require the exact same persistent pieces
+          // and rational weights in both arms; cardinality alone is unsafe.
+          const Id predicate = node.args[0];
+          const auto when_true = memo.at(node.args[1]);
+          const auto when_false = memo.at(node.args[2]);
+          if (when_true && when_false) {
+            if (when_true->zero && when_false->zero)
+              result = SumEntry{true, a.zero, {}};
+            else if (!when_true->zero && !when_false->zero &&
+                     when_true->pieces == when_false->pieces) {
+              result = *when_true;
+              result->coefficient = checker.canonical_coefficient(
+                  a.select(predicate, when_true->coefficient, when_false->coefficient));
+            }
           }
         } else if (!ambiguous && node.op == "fold" && node.tag == "Sum" &&
                    node.args.size() == 2 && node.data.size() == 2) {

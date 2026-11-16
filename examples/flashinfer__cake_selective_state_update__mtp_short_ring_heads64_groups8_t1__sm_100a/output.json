@@ -56,23 +56,14 @@
       "key": "floating_values_in_range",
       "label": "Floating values stay in range",
       "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum).",
-      "triggered": null
+      "triggered": false
     }
   ],
   "checks": {
-    "equivalence": "incomplete",
+    "equivalence": "passed",
     "synchronization": "passed"
   },
-  "diagnostics": [
-    {
-      "code": "unit_restart_limit_exceeded",
-      "details": {
-        "internal_stage": "value_analysis.scalar_fold"
-      },
-      "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 799169024 value instances (512 units from 1 analysed), above the limit 67108864.",
-      "stage": "equivalence"
-    }
-  ],
+  "diagnostics": [],
   "evidence": {
     "race_count": 0,
     "race_samples_truncated": false,
@@ -174,7 +165,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 901308,
@@ -184,45 +175,269 @@
       "threads": 288
     },
     "equivalence": {
-      "diagnostics": [
-        {
-          "code": "unit_restart_limit_exceeded",
-          "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 799169024 value instances (512 units from 1 analysed), above the limit 67108864.",
-          "stage": "value_analysis.scalar_fold"
-        }
-      ],
-      "expression_diagnostic": {
-        "class_mode_diagnostic": {
-          "code": "expression_node_limit_exceeded",
-          "message": "lifted member outputs exceed the scalar graph node budget"
-        },
-        "diagnostic": {
-          "code": "unit_restart_limit_exceeded",
-          "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 799169024 value instances (512 units from 1 analysed), above the limit 67108864."
-        },
-        "diagnostics": [
+      "access_validity": "no_unresolved_symbolic_byte_reads",
+      "arena_nodes": 249947,
+      "comparison_elapsed_seconds": 1.967616832,
+      "context_declaration": {
+        "assumptions": [
           {
-            "code": "unit_restart_limit_exceeded",
-            "details": {
-              "resource": {
-                "estimate": 799169024,
-                "kind": "per_unit_value_instances",
-                "limit": 67108864,
-                "origin": "algorithm_budget"
-              }
+            "input": "state_batch_indices",
+            "interpretation": "s64",
+            "interval": {
+              "lower": "0",
+              "lower_inclusive": true,
+              "upper": "63",
+              "upper_inclusive": true
             },
-            "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 799169024 value instances (512 units from 1 analysed), above the limit 67108864.",
-            "stage": "pipeline"
+            "kind": "input_elements",
+            "reason": "tensor_properties"
           }
         ],
-        "resource": {
-          "estimate": 799169024,
-          "kind": "per_unit_value_instances",
-          "limit": 67108864,
-          "origin": "algorithm_budget"
-        }
+        "fixed_inputs": [],
+        "inputs": [],
+        "predicate_nodes": []
       },
-      "stage": "value_analysis.scalar_fold"
+      "context_policy": "explicit native caller premises; no implied provenance certification",
+      "counters": {
+        "add_term_visits": 1697037,
+        "affine_state_banks": 1,
+        "affine_state_certified_updates": 0,
+        "affine_state_collect_work": 33875,
+        "affine_state_segments": 0,
+        "call_definition_node_visits": 3178,
+        "canonical_factor_visits": 512,
+        "canonical_node_visits": 89058,
+        "certified_state_pattern_cache_hits": 124,
+        "certified_state_pattern_decline_slot_domain": 4,
+        "certified_state_pattern_work": 0,
+        "coefficient_normalizations": 1,
+        "completed_reductions": 128,
+        "constant_binary32_bitcasts": 128,
+        "coverage_polynomial_peak": 2,
+        "coverage_polynomial_visits": 16512,
+        "coverage_stored_piece_visits": 16384,
+        "ep_body_anchor_edges": 623549,
+        "ep_body_anchor_nodes": 656624,
+        "ep_body_call_rebuilds": 264,
+        "ep_body_deferred_call_anchors": 135652,
+        "ep_body_deferred_unmatched_anchors": 135652,
+        "ep_body_instance_cache_entries": 16384,
+        "ep_body_obligations": 16648,
+        "ep_body_pattern_anchor_cache_hits": 185410,
+        "ep_body_payload_summary_nodes": 768,
+        "ep_body_proofs": 16384,
+        "ep_body_read_anchor_rejections": 49502,
+        "ep_body_target_anchor_cache_hits": 119579,
+        "ep_body_target_call_index_builds": 128,
+        "ep_body_target_call_index_nodes": 640,
+        "ep_identity_proofs": 16520,
+        "ep_scalar_attempts": 16784,
+        "ep_scalar_proofs": 16520,
+        "exact_exponential_base_changes": 520,
+        "finite_bilinear_banks": 1,
+        "finite_state_reuse_banks": 1,
+        "fold_alpha_signature_edges": 1334,
+        "fold_alpha_signatures": 295,
+        "fold_alpha_states": 295,
+        "fp_idiom_power_constructions": 0,
+        "fp_idiom_rm_producers": 0,
+        "ideal_compiler_log2_polynomials": 0,
+        "ideal_compiler_lse_sequences": 0,
+        "ideal_rounded_constants": 520,
+        "imported_context_nodes": 239982,
+        "importer_occurrence_binder_hits": 255,
+        "importer_scope_banks": 1,
+        "importer_scope_binders_created": 1,
+        "importer_scope_leaf_lookups": 1,
+        "input_index_radix_quotients": 8191,
+        "intern_requests": 4372306,
+        "known_bits_cache_hits": 16602,
+        "known_bits_edges": 0,
+        "known_bits_nodes": 66,
+        "linear_reduction_case_nonfinite_identities": 0,
+        "local_pattern_candidates": 202072,
+        "masked_sum_prefix_queries": 128,
+        "maximum_dominated_operands": 1280,
+        "normalization_cache_context_changes": 17,
+        "normalization_node_visits": 105443,
+        "offset_multiple_quotients": 2019,
+        "packed_radix_probes": 8831,
+        "packed_radix_rewrites": 8191,
+        "parametric_state_attempts": 0,
+        "pattern_build_peak_nodes": 14,
+        "pattern_build_unique_nodes": 1792,
+        "pattern_node_visits": 875395,
+        "predicate_integer_affine_normalizations": 128,
+        "proved_select_arms_imported": 640,
+        "select_max_probe_ancestor_nodes": 0,
+        "select_max_probe_calls": 2560,
+        "select_max_probe_temporary_nodes": 0,
+        "summary_concat_nodes": 16256,
+        "symbolic_byte_reads_without_extent_proof": 0
+      },
+      "definedness": {
+        "partial_equivalence_families": 0,
+        "proved_families": 136,
+        "status": "proved"
+      },
+      "diagnostics": [],
+      "elapsed_s": 1.40162254,
+      "engine": "reference_guided_cpp",
+      "ep_profile": {
+        "body_instantiation_s": 0.0,
+        "body_scalar_s": 0.0,
+        "candidate_discovery_and_bookkeeping_s": 0.0,
+        "cross_product_s": 0.0,
+        "enabled": false,
+        "equal_s": 0.0,
+        "fraction": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 392,
+          "unique_query_nodes": 0
+        },
+        "fraction_witness_s": 0.0,
+        "match_total_s": 0.0,
+        "normal": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 0,
+          "unique_query_nodes": 0
+        },
+        "ordinary_polynomial_s": 0.0,
+        "polynomial": {
+          "computations": 0,
+          "previously_completed": 0,
+          "repeated_across_queries": 0,
+          "requests": 0,
+          "shared_hits": 392,
+          "unique_query_nodes": 0
+        },
+        "query_count": 16784,
+        "reset_s": 0.0,
+        "reuse_cache": true,
+        "shared_evictions": 0
+      },
+      "equivalence_context": {
+        "applied_predicates": 0,
+        "element_assumptions": 1,
+        "fixed_input_elements": 0,
+        "scoped_predicates": 0
+      },
+      "equivalence_contract": "same_domain_and_equal_values; total definedness reported separately",
+      "equivalent_families": 136,
+      "failure_expression_samples": {
+        "failed_families": 0,
+        "omitted_families": 0,
+        "render_byte_limit_per_side": 4096,
+        "sample_limit": 8,
+        "sampled_families": 0
+      },
+      "finished_families": 136,
+      "idealizations_applied": [
+        "a binary32/binary64 literal equal to the rounded ln(2) or log2(e) of its operation's format is that exact constant in floating Add/Subtract/Multiply/Fma/Divide/Reciprocal"
+      ],
+      "input_contract": [
+        {
+          "element_type": "s64",
+          "max_inclusive": 63,
+          "min_inclusive": 0,
+          "object": "state_batch_indices",
+          "region": "whole_object",
+          "source": "tensor_properties"
+        }
+      ],
+      "input_contract_applied_reads": [
+        {
+          "element_type": "s64",
+          "object": "state_batch_indices",
+          "side": "left"
+        },
+        {
+          "element_type": "s64",
+          "object": "state_batch_indices",
+          "side": "right"
+        }
+      ],
+      "mapping_input_memory_constraints": {},
+      "native_context": null,
+      "normalized_reachable_nodes": 6015,
+      "numerical_result": "verified",
+      "pattern_nodes": 486,
+      "peak_rss_kib": 4030244,
+      "peak_rss_scope": "process_lifetime_not_comparison_delta",
+      "piece_nodes": 32640,
+      "piece_union": {
+        "abstract_optimized_replacements": 0,
+        "abstract_reference_replacements": 0,
+        "abstraction": "schema-defined functions from sealed equalities; no additional input assumptions",
+        "collected_pieces": 0,
+        "late_certificates": "accepted_until_each_schema_is_complete",
+        "method": "complete_output_equalities_with_finite_piece_union",
+        "replacements": 0,
+        "schemas": [],
+        "stored_dag_work": 0,
+        "work_limit": 2000000
+      },
+      "prerequisites": "caller must combine numerical proof with synchronization, memory and scope results",
+      "raw_nodes": [
+        10287,
+        144038
+      ],
+      "reference_term_patterns": 14,
+      "row_groups": [
+        {
+          "count": 136,
+          "families": [
+            [
+              0,
+              135
+            ]
+          ],
+          "record": {
+            "equivalence_contract": "existing_total_value_proof",
+            "status": "equivalent",
+            "total_definedness": "proved"
+          },
+          "timing_s": {
+            "affine_state_pattern_s": 0.001982907000000686,
+            "cumulative_elapsed_s": 1.374335743,
+            "left_import_s": 0.1784796259999992,
+            "left_normalize_s": 0.02232262399999929,
+            "parametric_state_s": 0.0001318700000002629,
+            "piece_union_record_s": 0.0007692949999991566,
+            "piece_union_seal_s": 5.480000000307461e-06,
+            "right_import_s": 0.7031819549999995,
+            "right_normalize_s": 0.4257644139999988
+          }
+        }
+      ],
+      "scalar_engine": "mandatory_exponential_polynomial",
+      "semantics": "ideal_real numerical contract; exact word/index import; conditional on reported native premises, fixed input values and any input_contract",
+      "stages_s": {
+        "affine_state_pattern_s": 0.001982907000000686,
+        "exponential_polynomial_s": 0.0,
+        "left_import_s": 0.1784796259999992,
+        "left_normalize_s": 0.02232262399999929,
+        "parametric_state_s": 0.0001318700000002629,
+        "piece_union_record_s": 0.0007692949999991566,
+        "piece_union_reuse_s": 0.0,
+        "piece_union_seal_s": 5.480000000307461e-06,
+        "proof_reuse_s": 0.0,
+        "right_import_s": 0.7031819549999995,
+        "right_normalize_s": 0.4257644139999988,
+        "state_pattern_s": 0.0
+      },
+      "timings": {
+        "load_and_scope_analysis": 0.039609886
+      },
+      "total_output_families": 136,
+      "transport": "in_memory_cpp_objects",
+      "unmatched_reasons": {}
     },
     "frontend": {
       "address_value_bridge": {
@@ -552,7 +767,7 @@
       "hb_filtered_queries": 16720,
       "hb_peak_index_bytes": 16777216,
       "hb_queries": 409188,
-      "hb_query_seconds": 5.4654692990000004,
+      "hb_query_seconds": 5.573760837,
       "overlap_queries": 992,
       "strategy": "conflict-first",
       "unordered_candidates_examined": 992
@@ -560,7 +775,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 3569.74609375,
+    "peak_footprint_mib": 3856.82421875,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": true,
@@ -621,7 +836,7 @@
     "value_analysis": {
       "diagnostics": [],
       "duplicate_write_value_checks": 0,
-      "equivalence_check": "analysis_budget_exceeded",
+      "equivalence_check": "equivalent",
       "initial_memory_regions": 289,
       "initial_read_families": 3780,
       "memory_action_storage": {
@@ -672,50 +887,52 @@
       "processed_memory_families": 0,
       "read_substitutions": 84480,
       "scalar_fold": {
-        "class_mode_diagnostic": {
-          "code": "expression_node_limit_exceeded",
-          "message": "lifted member outputs exceed the scalar graph node budget"
-        },
-        "diagnostic": {
-          "code": "unit_restart_limit_exceeded",
-          "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 799169024 value instances (512 units from 1 analysed), above the limit 67108864."
-        },
-        "diagnostics": [
-          {
-            "code": "unit_restart_limit_exceeded",
-            "details": {
-              "resource": {
-                "estimate": 799169024,
-                "kind": "per_unit_value_instances",
-                "limit": 67108864,
-                "origin": "algorithm_budget"
-              }
-            },
-            "message": "The class-mode lowering refused lifting at expression_node_limit_exceeded (lifted member outputs exceed the scalar graph node budget); the per-unit re-run would build about 799169024 value instances (512 units from 1 analysed), above the limit 67108864.",
-            "stage": "pipeline"
-          }
-        ],
-        "resource": {
-          "estimate": 799169024,
-          "kind": "per_unit_value_instances",
-          "limit": 67108864,
-          "origin": "algorithm_budget"
+        "construction_collections": 1,
+        "diagnostics": [],
+        "narrowing_slice_projections": 2144,
+        "output_count": 67633152,
+        "output_families_merged": 0,
+        "output_family_count": 640,
+        "output_root_count": 640,
+        "peak_construction_nodes": 1947895,
+        "shared_view_projection_hits": 235272,
+        "source_outputs": 1056,
+        "spatial_families_projected": 131456,
+        "spatial_outputs_projected": 131968,
+        "spatial_template_operations": 0,
+        "statistics": {
+          "constants": 17432,
+          "edges": 267459,
+          "folds": 0,
+          "indices": 3,
+          "initial_cells": 18481,
+          "logical_iterations": 0,
+          "logical_iterations_overflow": false,
+          "max_fold_nesting": 0,
+          "nodes": 143961,
+          "nodes_before_final_collection": 1947895,
+          "nodes_reclaimed": 1803936,
+          "operations": 108045,
+          "parameters": 0,
+          "range_descriptions": 0,
+          "storage_nodes": 143961,
+          "unique_fold_bodies": 0
         }
       },
       "serialization": {
         "action_patterns": 71978,
         "binding_patterns": 71978,
         "domain_refinements": 1574922,
-        "elapsed_seconds": 1.843993964,
+        "elapsed_seconds": 1.882374299,
         "event_families": 323049,
         "expanded_event_records": 0,
         "largest_batch_members": 84,
         "logical_actions": 151256,
         "logical_events": 3667688,
-        "peak_rss_mib_at_completion": 2240.5859375,
+        "peak_rss_mib_at_completion": 2241.1171875,
         "reachability_queries": 0,
         "relations": 1252914,
-        "rss_mib_at_completion": 841.86328125,
+        "rss_mib_at_completion": 775.796875,
         "scheduled_batches": 323049,
         "singleton_batches": 66950,
         "value_families": 187128
@@ -727,13 +944,13 @@
     "value_ir_instance_count": 1560877,
     "value_ir_node_count": 100009,
     "value_view_complete": true,
-    "verification_elapsed_seconds": 52.072044065,
+    "verification_elapsed_seconds": 52.046534483,
     "verification_result": "race_free"
   },
-  "peak_rss_mib": 3596.26953125,
-  "pipeline_elapsed_seconds": 78.935369569,
-  "result": "analysis_budget_exceeded",
-  "rss_limit_mib": null,
+  "peak_rss_mib": 3935.78515625,
+  "pipeline_elapsed_seconds": 86.547009144,
+  "result": "verified",
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -742,6 +959,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 497.799
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 997.741
 }

@@ -15,7 +15,7 @@ struct FamilyRelationRequest {
   std::size_t target;
   std::vector<MemberRelation> requested;
   std::shared_ptr<CumulativeRelationCoverage> coverage;
-  std::uint64_t source_label=1;
+  RelationLabels source_label=1;
   bool complete=false,search_disabled=false,strict_self=false;
   std::size_t additions=0,next_check=1;
   bool pending() const {return !complete && !search_disabled;}
@@ -93,8 +93,8 @@ struct FamilyRelationBatch {
   std::vector<FamilyRelationRequest> requests;
 };
 // Most batches (sources) of one FamilyRelationQuery::checkOrderBatch call: each source takes one
-// bit of a 64-bit source label.
-inline constexpr std::size_t kMaxRelationBatchSources=std::numeric_limits<std::uint64_t>::digits;
+// bit of a kRelationLabelBits-bit source label (relation_labels.h).
+inline constexpr std::size_t kMaxRelationBatchSources=kRelationLabelBits;
 struct FamilyRelationQueryStats {
   std::size_t traversals=0,relation_visits=0,member_enumerations=0,frontier_pieces=0;
   std::size_t exact_hits=0,history_candidates=0,subtractions=0,subtraction_pieces=0,pending_hits=0;

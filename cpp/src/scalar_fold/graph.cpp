@@ -22,7 +22,9 @@ std::size_t homeSlot(std::size_t hash, std::size_t mask) {
   return static_cast<std::size_t>(x ^ (x >> 32)) & mask;
 }
 void hashString(std::size_t& h, const std::string& value) {
-  combine(h, std::hash<std::string>{}(value));
+  // Most use strings are empty: their (unchanged) hash without a call per string.
+  static const std::size_t empty = std::hash<std::string>{}(std::string());
+  combine(h, value.empty() ? empty : std::hash<std::string>{}(value));
 }
 std::size_t hashNode(const Node& n) {
   std::size_t h = static_cast<std::size_t>(n.kind);
@@ -144,15 +146,14 @@ std::size_t Graph::collect(std::span<Ref> roots,std::span<std::optional<Id>> wea
     const RemapObserver& observer) {
   for(const auto& id:weak_nodes)if(id)node(*id);
   std::vector<bool> live(nodes_.size(),false);
-  std::vector<Id> work;
   std::size_t live_count=0;
-  for(const auto& root:roots){validateRef(root);work.push_back(root.node);}
-  while(!work.empty()) {
-    auto id=work.back();work.pop_back();
-    if(live[id])continue;
-    live[id]=true;
+  for(const auto& root:roots){validateRef(root);live[root.node]=true;}
+  // IDs are topological (intern appends a node after its operands; collection keeps the
+  // order), so one descending sweep marks every descendant of a root: it reads the live
+  // nodes in storage order instead of chasing them depth first. O(nodes + live edges).
+  for(Id id=nodes_.size();id-->0;)if(live[id]) {
     ++live_count;
-    for(const auto& child:nodes_[id].operands)work.push_back(child.node);
+    for(const auto& child:nodes_[id].operands)live[child.node]=true;
   }
   Graph retained;
   if(live_count==nodes_.size()) {
@@ -167,11 +168,22 @@ std::size_t Graph::collect(std::span<Ref> roots,std::span<std::optional<Id>> wea
     return 0;
   }
   // Allocate first and move nodes only after the observer: any throw still
-  // leaves this graph intact. Retained IDs keep live order.
-  retained.nodes_.reserve(live_count);
-  retained.reserveIndex(live_count);
+  // leaves this graph intact. Retained IDs keep live order. The nodes compact in
+  // place (a live node moves to its rank, never above itself) and the index
+  // storage is reused when it has the capacity a fresh index of the retained
+  // nodes would get, so no second node array or index is allocated.
   std::vector<Id> map(nodes_.size(),kNoNode);
-  for(Id id=0,next=0;id<map.size();++id)if(live[id])map[id]=next++;
+  Id last_marked=kNoNode;
+  for(Id id=0,next=0;id<map.size();++id)if(live[id]) {
+    map[id]=next++;
+    if(id<instructions_.size() && instructions_[id])last_marked=map[id];
+  }
+  // The capacity reserveIndex(live_count) gives an empty graph.
+  std::size_t capacity=0;
+  if(live_count){capacity=16;while(capacity<2*live_count)capacity*=2;}
+  const bool reuse_index=capacity && index_.size()==capacity;
+  if(!reuse_index)retained.reserveIndex(live_count);
+  if(last_marked!=kNoNode)retained.instructions_.resize(last_marked+1);
   const auto removed=nodes_.size()-live_count;
   for(auto& root:roots){root.node=map[root.node];root.owner=retained.owner_;}
   for(auto& id:weak_nodes)if(id) {
@@ -179,17 +191,24 @@ std::size_t Graph::collect(std::span<Ref> roots,std::span<std::optional<Id>> wea
     else id.reset();
   }
   if(observer)observer(map,retained.owner_);
-  // Injective ID remapping preserves structural uniqueness. Moves into the
-  // reserved storage and index cannot throw. Random home slots dominate the
-  // index rebuild: a node is indexed `ahead` moves after its hash is known
-  // and its slot prefetched. Inserts keep new-ID order, so the index is the
-  // one direct insertion builds; the pipeline holds only `ahead` hashes.
+  if(reuse_index) {
+    retained.index_=std::move(index_);
+    std::fill(retained.index_.begin(),retained.index_.end(),IndexSlot{0,kNoNode});
+  }
+  for(Id id=0;id<instructions_.size();++id)if(live[id] && instructions_[id])
+    retained.instructions_[map[id]]=instructions_[id];
+  // Injective ID remapping preserves structural uniqueness. Moves within the
+  // node storage and inserts into the reserved index cannot throw. Random home
+  // slots dominate the index rebuild: a node is indexed `ahead` moves after its
+  // hash is known and its slot prefetched. Inserts keep new-ID order, so the
+  // index is the one direct insertion builds; the pipeline holds only `ahead` hashes.
   constexpr std::size_t ahead=8;
   std::array<std::size_t,ahead> hashes{};
   const auto mask=retained.index_.size()-1;
   std::size_t moved=0;
   for(Id id=0;id<map.size();++id)if(live[id]) {
-    auto& node=retained.nodes_.emplace_back(std::move(nodes_[id]));
+    auto& node=nodes_[moved];
+    if(moved!=id)node=std::move(nodes_[id]);
     for(auto& child:node.operands){child.node=map[child.node];child.owner=retained.owner_;}
     const auto hash=hashNode(node);
     __builtin_prefetch(&retained.index_[homeSlot(hash,mask)]);
@@ -197,10 +216,8 @@ std::size_t Graph::collect(std::span<Ref> roots,std::span<std::optional<Id>> wea
     hashes[moved%ahead]=hash;++moved;
   }
   for(auto next=moved>ahead?moved-ahead:0;next<moved;++next)retained.indexNode({hashes[next%ahead],next});
-  for(Id id=0;id<instructions_.size();++id)if(live[id] && instructions_[id]) {
-    if(retained.instructions_.size()<=map[id])retained.instructions_.resize(map[id]+1);
-    retained.instructions_[map[id]]=instructions_[id];
-  }
+  nodes_.resize(moved);
+  retained.nodes_=std::move(nodes_);
   *this=std::move(retained);
   return removed;
 }
@@ -357,8 +374,9 @@ Ref Graph::withPointer(Ref value, std::string provenance) {
   return value;
 }
 
-void Graph::validateRoots(std::span<const Ref> roots, std::uint32_t outer_binders,
-                          std::span<const std::uint32_t> root_binders) const {
+// The validation walk, depth first from the roots. It names the first violation it meets.
+void Graph::validateRootsByWalk(std::span<const Ref> roots, std::uint32_t outer_binders,
+                                std::span<const std::uint32_t> root_binders) const {
   if(!root_binders.empty() && root_binders.size()!=roots.size())
     throw std::invalid_argument("root binder count mismatch");
   std::vector<Visit> pending;
@@ -388,6 +406,57 @@ void Graph::validateRoots(std::span<const Ref> roots, std::uint32_t outer_binder
         pending.push_back({child.node, v.depth});
     }
   }
+}
+void Graph::validateRoots(std::span<const Ref> roots, std::uint32_t outer_binders,
+                          std::span<const std::uint32_t> root_binders) const {
+  if(!root_binders.empty() && root_binders.size()!=roots.size())
+    throw std::invalid_argument("root binder count mismatch");
+  // The same checks on the same (node, depth) visits as the walk, made by one descending
+  // sweep: IDs are topological, so every visit of a node is known before the sweep reaches
+  // it. A node usually has one depth (`depth`); further depths are kept in `more`. On any
+  // violation the walk runs instead, so the error is the one the walk names. O(nodes +
+  // visited edges), reading nodes in storage order.
+  constexpr std::uint32_t none=std::numeric_limits<std::uint32_t>::max();
+  std::vector<std::uint32_t> depth(nodes_.size(),none);
+  std::unordered_map<Id,std::vector<std::uint32_t>> more;
+  Id high=0;bool any=false;
+  const auto visit=[&](Id id,std::uint32_t d) {
+    if(depth[id]==none){depth[id]=d;}
+    else if(depth[id]!=d) {
+      auto& extra=more[id];
+      if(std::find(extra.begin(),extra.end(),d)==extra.end())extra.push_back(d);
+    }
+    if(!any || id>high){high=id;any=true;}
+  };
+  for (std::size_t i=0;i<roots.size();++i) {
+    validateRef(roots[i]);
+    const auto d=root_binders.empty()?outer_binders:root_binders[i];
+    if(d==none)return validateRootsByWalk(roots,outer_binders,root_binders);
+    visit(roots[i].node,d);
+  }
+  if(!any)return;
+  bool violated=false;
+  const auto check=[&](const Node& n,Id,std::uint32_t d) {
+    if (n.kind == Kind::Index && n.index_level >= d){violated=true;return;}
+    if (n.kind == Kind::Fold) {
+      if (n.fold->binder_level != d || d == none-1){violated=true;return;}
+      visit(n.operands[0].node, d);
+      visit(n.operands[1].node, d + 1);
+    } else {
+      for (const auto& child : n.operands) visit(child.node, d);
+    }
+  };
+  for(Id id=high+1;id-->0 && !violated;) {
+    if(depth[id]==none)continue;
+    const auto& n=nodes_[id];
+    check(n,id,depth[id]);
+    if(!more.empty())if(const auto found=more.find(id);found!=more.end()) {
+      // A reference: visits below insert other keys, which may rehash (element addresses stay).
+      const auto& extra=found->second;
+      for(std::size_t k=0;k<extra.size() && !violated;++k)check(n,id,extra[k]);
+    }
+  }
+  if(violated)validateRootsByWalk(roots,outer_binders,root_binders);
 }
 
 std::string kindName(Kind kind) {

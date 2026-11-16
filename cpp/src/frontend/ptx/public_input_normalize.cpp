@@ -218,7 +218,9 @@ FrontendConfig NormalizeKernelInput(const KernelInput &supplied, const Module &m
     pointers.try_emplace(key, Pointer{8, "", "shape_array"});
     Json values = Json::array();
     for (const auto &shape : s["shapes"]) for (const auto &v : shape) values.push_back(v);
-    shape_inputs.push_back({{"resource", Resource(key)}, {"element_bits", Width(s["element_type"]) * 8}, {"values", values}});
+    // The record width (elements per row of the rectangular table), for the bounds of table atoms.
+    shape_inputs.push_back({{"resource", Resource(key)}, {"element_bits", Width(s["element_type"]) * 8}, {"values", values},
+                            {"row_elements", s["shapes"].at(0).size()}});
   }
   std::vector<std::pair<Key, Json>> pointer_arrays;
   for (std::size_t n = 0; n < input["pointer_arrays"].size(); ++n) {

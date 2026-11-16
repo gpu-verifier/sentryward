@@ -16,9 +16,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <optional>
+#include <set>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -81,9 +84,40 @@ struct UnitQuotient : LaunchUnits {
     std::vector<std::map<std::string, std::int64_t>> delta; // per units[i]: δ per global allocation ({} for units[0])
     // The allocations with a piecewise δ, which no delta[i] holds.
     std::map<std::string, PiecewiseDelta> pieces;
+    // Per units[i]: value lifting's δ, the unit's exact global offsets against the representative's
+    // ({} for units[0]); nullopt when they are not one δ per allocation (a class-mode table atom
+    // read other elements). Without table atoms it agrees with delta[i] on the allocations it names.
+    std::vector<std::optional<std::map<std::string, std::int64_t>>> valued_delta;
+    // Per units[i]: a containment member (its events are the representative's minus some plain
+    // global accesses: frontend/ptx/query_log.h UnitDelta::contained). Its accesses are a subset
+    // of the representative's translated ones, so the cross-unit pass over-approximates them.
+    std::vector<bool> contained;
+    // Per rank: the containment members' executed-record count changes per instruction, summed
+    // (lowering's opcode counts add them to the representative's count times the class size).
+    std::vector<std::map<std::uint32_t, std::int64_t>> occurrence_adjust;
+    // The global allocations some containment member reads only through TMA loads compared without
+    // their global placement (frontend/ptx/query_log.h UnitDelta::relaxed): no unit may write them.
+    std::set<std::string> relaxed_reads;
+    // Per units[i], for a containment member: per rank and lane (the index of the lane's actor in its
+    // CTA), the representative's plain global accesses that the member does not perform, as sorted
+    // (PTX instruction, occurrence) pairs; lanes with equal lists share one. Empty for other units.
+    // Some containment member is marked (frontend/ptx/query_log.h UnitDelta::hazard): it may have
+    // register pairs of one thread (two writes of a register by successive tcgen05.ld, and that
+    // register's later accesses, with no read of it and no tcgen05.wait::ld ordering them) that are
+    // unordered in the member and ordered in its representative. Everything else of the member is its
+    // representative's. A class with such a member never reports a clean memory result
+    // (ContainmentRestartReason).
+    bool hazard = false;
+    using RemovedAccesses = std::vector<std::pair<std::uint32_t, std::uint32_t>>;
+    std::vector<std::vector<std::vector<std::shared_ptr<const RemovedAccesses>>>> removed;
   };
   std::vector<Unit> units;    // unit order (z, y, x over the unit grid)
   std::vector<Class> classes; // creation order
+  // The class loop took planned founders first (frontend/ptx/query_log.h ContainmentPlan): a
+  // representative need not be the lowest unit of its class, a class's members need not be in unit
+  // order, and the analysed program is not numbered as the per-unit one. The driver accepts such an
+  // attempt only when it ends in a clean pass.
+  bool reordered = false;
 
   // Filled by lowering at Finish: how many orders the per-CTA lowering emitted before Finish
   // (lifecycle witness expansion).
@@ -101,11 +135,46 @@ struct UnitQuotient : LaunchUnits {
   [[nodiscard]] bool Piecewise() const noexcept {
     return std::any_of(classes.begin(), classes.end(), [](const Class &c) { return !c.pieces.empty(); });
   }
+  // Whether some class has a containment member. O(units).
+  [[nodiscard]] bool Contained() const noexcept {
+    return std::any_of(classes.begin(), classes.end(), [](const Class &c) {
+      return std::find(c.contained.begin(), c.contained.end(), true) != c.contained.end();
+    });
+  }
+  // The allocations no unit may write (Class::relaxed_reads of every class). O(classes x allocations).
+  [[nodiscard]] std::set<std::string> RelaxedReads() const {
+    std::set<std::string> result;
+    for (const auto &c : classes) result.insert(c.relaxed_reads.begin(), c.relaxed_reads.end());
+    return result;
+  }
+  // Whether Class::units[index] of class `klass`, a containment member, lacks its representative's
+  // plain global access at (rank, lane, PTX instruction, occurrence). False for any other unit and
+  // for an access outside the recorded lists. O(log removed accesses of the lane).
+  [[nodiscard]] bool Removed(std::uint32_t klass, std::size_t index, std::uint32_t rank, std::uint32_t lane,
+                             std::uint32_t instruction, std::uint32_t occurrence) const {
+    const auto &c = classes.at(klass);
+    if (index >= c.removed.size() || rank >= c.removed[index].size() || lane >= c.removed[index][rank].size())
+      return false;
+    const auto &list = c.removed[index][rank][lane];
+    return list && std::binary_search(list->begin(), list->end(), std::pair{instruction, occurrence});
+  }
+  // Whether some class has a marked member (Class::hazard). O(classes).
+  [[nodiscard]] bool Hazard() const noexcept {
+    return std::any_of(classes.begin(), classes.end(), [](const Class &c) { return c.hazard; });
+  }
+  // Whether unit `unit` is a containment member. O(class size).
+  [[nodiscard]] bool ContainedUnit(std::uint32_t unit) const {
+    const auto &c = classes.at(units.at(unit).klass);
+    for (std::size_t i = 0; i < c.units.size() && i < c.contained.size(); ++i)
+      if (c.units[i] == unit) return c.contained[i];
+    return false;
+  }
   // Whether the analysed program numbers the representative CTA `linear` (its instruction, actor and
   // barrier lifetime ids) as the per-unit program does, which consumes every CTA in launch order: it
   // is the launch's first CTA, or units are runs of consecutive CTAs and no member unit precedes its
   // unit. `first_member`: FirstMemberUnit().
   [[nodiscard]] bool NumberedAsPerUnit(std::uint32_t linear, std::uint32_t first_member) const noexcept {
+    if (reordered) return false;
     return linear == 0 || (unit_shape[1] == 1 && unit_shape[2] == 1 && UnitOf(linear) < first_member);
   }
   // The lowest unit analysed through its class's representative; units.size() when none. O(units).
@@ -141,4 +210,40 @@ private:
 struct UnitClassRestart {
   std::string reason;
 };
+
+// Whether a clean memory search of the founders may stand for the containment members of their
+// classes. OFF: containment is race-only until the containment argument (frontend/ptx/query_log.cpp
+// ContainMap; a member's accesses are a subset of its representative's, and only a marked member has
+// pairs its representative lacks) has had an independent review. With it off, the soundness of a
+// class-mode result does not rest on that argument: founders are real units of the launch, checked
+// in full, and nothing is reported for a containment member that its own lowering did not state.
+// Setting it to true enables reporting clean through unmarked containment members (the path below
+// and founder planning in the driver, both kept and unit-tested).
+inline constexpr bool kContainmentReportsClean = false;
+
+// Class mode with containment members: what the founders' memory search means for the launch
+// (checker/memory_race_checker.cpp RunMemoryCheck). The reason of a per-unit restart, or empty when
+// the search's result goes on as it is.
+//  - A race: it stands. Its two accesses are accesses of analysed units, which are real units of the
+//    launch lowered exactly, so it is a race of the launch whichever pair another search order would
+//    name first (class mode reports it likewise for classes of equal units). The driver redoes a
+//    planned-founder attempt in unit order first, so the reported pair comes from launch order.
+//  - An unresolved pair, or a same-value obligation (counted by class size, which a member that
+//    removed one of its writes would overstate): per-unit restart.
+//  - A clean search, with `reports_clean` off (kContainmentReportsClean): per-unit restart whenever
+//    some class holds a containment member, marked or not.
+//  - A clean search, with `reports_clean` on: it covers every containment member (its accesses are a
+//    subset of its representative's, translated), except a marked member's own register pairs
+//    (Class::hazard), which no analysed unit shows: the class must not report clean, so per-unit
+//    restart. The marked member's pair is not reported from here: the member is not lowered, and only
+//    its own lowering states the pair's two events.
+[[nodiscard]] inline std::string_view ContainmentRestartReason(const UnitQuotient &units, bool race, bool unresolved,
+                                                               bool same_value_obligations,
+                                                               bool reports_clean = kContainmentReportsClean) noexcept {
+  if (race || !units.Contained()) return {};
+  if (unresolved || same_value_obligations) return "containment_unclean";
+  if (!reports_clean) return "containment_clean_not_reported";
+  if (units.Hazard()) return "containment_register_hazard";
+  return {};
+}
 } // namespace sentryward::algorithm

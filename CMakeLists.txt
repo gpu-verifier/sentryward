@@ -226,7 +226,9 @@ add_library(sentryward_value_analysis STATIC
  )
 add_library(sentryward::value_analysis ALIAS sentryward_value_analysis)
 add_library(sentryward_reference_guided STATIC
-  cpp/src/reference_guided/comparison.cpp cpp/src/reference_guided/production.cpp)
+  cpp/src/reference_guided/comparison.cpp
+  cpp/src/reference_guided/production.cpp
+  cpp/src/reference_guided/output_alignment.cpp)
 target_include_directories(sentryward_reference_guided PUBLIC cpp/src/reference_guided cpp/include)
 target_include_directories(sentryward_reference_guided SYSTEM PUBLIC vendor/nlohmann_json/single_include)
 target_link_libraries(sentryward_reference_guided PUBLIC sentryward::value_analysis)

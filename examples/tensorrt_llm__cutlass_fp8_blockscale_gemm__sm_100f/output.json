@@ -163,7 +163,7 @@
         2
       ],
       "solver": "z3",
-      "solver_timeout_ms": 100
+      "solver_rlimit": 100000
     },
     "counts": {
       "edges": 261088,
@@ -377,7 +377,7 @@
     },
     "implementation": "cpp",
     "memory_analysis": {
-      "address_candidates": 213888,
+      "address_candidates": 242908,
       "address_model": {
         "cache_hits": 0,
         "congruence_disjoint": 0,
@@ -395,22 +395,22 @@
       "exhaustive": false,
       "family_analysis": {
         "access_families": 13198,
-        "affine_member_rows": 45178,
-        "candidate_relations": 20408,
-        "hb_frontier_pieces": 355,
+        "affine_member_rows": 68103,
+        "candidate_relations": 25881,
+        "hb_frontier_pieces": 2015,
         "hb_member_enumerations": 0,
         "logical_accesses": 56704
       },
-      "first_race_seconds": 0.021916594,
+      "first_race_seconds": 0.025749957,
       "hb_algorithm": "member-relations",
-      "hb_batches": 1,
+      "hb_batches": 2,
       "hb_cache_hits": 0,
       "hb_dfs_queries": 0,
-      "hb_edge_visits": 30415,
+      "hb_edge_visits": 36360,
       "hb_filtered_queries": 0,
       "hb_peak_index_bytes": 0,
-      "hb_queries": 213888,
-      "hb_query_seconds": 0.010342312,
+      "hb_queries": 242908,
+      "hb_query_seconds": 0.013042889,
       "overlap_queries": 549,
       "strategy": "conflict-family",
       "unordered_candidates_examined": 549
@@ -418,7 +418,7 @@
     "memory_analysis_complete": true,
     "mma_operand_ordering": {},
     "mode": "verify",
-    "peak_footprint_mib": 171.26171875,
+    "peak_footprint_mib": 147.34765625,
     "required_order_domains": 0,
     "required_orders": 0,
     "search_complete": false,
@@ -519,10 +519,10 @@
     "value_ir_node_count": 31872,
     "value_view_complete": true
   },
-  "peak_rss_mib": 177.75390625,
-  "pipeline_elapsed_seconds": 0.330766466,
+  "peak_rss_mib": 347.91015625,
+  "pipeline_elapsed_seconds": 0.33640239,
   "result": "potential_race",
-  "rss_limit_mib": null,
+  "rss_limit_mib": 85274,
   "schema": "spverify.native-result/v1",
   "scope": {
     "operation": "kernel_verification"
@@ -531,6 +531,6 @@
   "warning_count": 0,
   "warning_samples_truncated": false,
   "warnings": [],
-  "wellsync_timeout_seconds": 500.0,
-  "whole_pipeline_timeout_seconds": 498.528
+  "wellsync_timeout_seconds": 1000.0,
+  "whole_pipeline_timeout_seconds": 998.532
 }

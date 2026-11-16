@@ -3,6 +3,8 @@
 #include "sentryward/scalar_fold/graph.h"
 #include <array>
 #include <map>
+#include <memory>
+#include <utility>
 
 namespace sentryward::scalar_fold {
 
@@ -55,26 +57,63 @@ class ReductionBuilder {
     std::string type;
   };
   void refreshBounds();
+  // A block's current terms and the prefix (accumulator) before each: the view [begin, end)
+  // of an append-only buffer that consecutive appends share. An append extends the buffer
+  // in place when its view ends at the buffer's end, and otherwise (another append extended
+  // it, or the view lies far into the buffer) moves its view into a fresh buffer, so an
+  // append costs O(1) amortized instead of a copy of the window. The prototype terms
+  // (first, second) never change once made and are shared by the copies of a block.
+  struct Window {
+    std::vector<Ref> terms, prefixes;
+  };
   struct Block {
     Ref initial, body;
-    std::vector<Ref> terms, prefixes, first, second;
+    std::shared_ptr<Window> window;
+    std::size_t begin=0, end=0;
+    std::shared_ptr<std::vector<Ref>> first, second;
     std::uint64_t count=0;
     std::uint32_t level=0;
     std::string type;
+    std::size_t size() const { return end-begin; }
+    const Ref& term(std::size_t i) const { return window->terms[begin+i]; }
+    const Ref& prefix(std::size_t i) const { return window->prefixes[begin+i]; }
+    void push(const Ref& term, const Ref& prefix);
+    void clearTerms() { window.reset(); begin=end=0; }
   };
   std::optional<Ref> appendBlock(Ref accumulator,Ref term,const std::string& type,
                                  std::uint32_t level);
   std::size_t templateId(Ref);
+  // Variable-length integer keys interned in first-insertion order: key i (from 0) is
+  // id i + 1. Open addressing over {stored hash, key index} at load <= 1/2, keys packed in
+  // one word array: no allocation or string per key. clear() keeps the capacity.
+  class KeyTable {
+   public:
+    // The key's id and whether this call inserted it. Expected O(key length).
+    std::pair<std::size_t,bool> intern(std::span<const std::uint64_t> key);
+    std::size_t size() const { return starts_.size(); }
+    void clear();
+   private:
+    void grow();
+    std::vector<std::uint64_t> words_;
+    std::vector<std::size_t> starts_, hashes_;
+    std::vector<std::size_t> slots_;  // key index + 1; 0 marks an empty slot
+  };
+  // An injective numbering of the strings a template key contains (0: the empty string).
+  // The numbering never affects template or parameter ids, which are first-insertion
+  // positions of keys; it persists across graph epochs.
+  std::uint64_t stringId(const std::string&);
+  std::unordered_map<std::string,std::uint64_t> string_ids_;
+  std::vector<std::uint64_t> key_scratch_;
   std::vector<std::array<std::size_t,2>> template_ids_;
   struct ParameterTree {
     std::optional<std::uint64_t> value;
     std::vector<std::size_t> children;
   };
   std::vector<ParameterTree> parameter_trees_{{std::nullopt,{}}};
-  std::unordered_map<std::string,std::size_t> parameter_keys_;
+  KeyTable parameter_keys_;
   std::vector<std::array<std::size_t,2>> parameter_roots_;
   std::map<std::uint32_t,std::unordered_map<Id,Ref>> lifted_by_level_;
-  std::unordered_map<std::string,std::size_t> template_keys_;
+  KeyTable template_keys_;
   std::optional<std::size_t> parameterDifference(std::size_t,std::size_t);
   std::map<std::pair<std::size_t,std::size_t>,std::optional<std::size_t>> parameter_differences_;
   std::unordered_map<std::string,std::size_t> difference_keys_;

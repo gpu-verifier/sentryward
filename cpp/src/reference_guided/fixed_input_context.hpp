@@ -1,6 +1,7 @@
 #pragma once
 #include "equivalence_context.hpp"
 #include "sentryward/value_analysis/memory_actions.h"
+#include <algorithm>
 #include <array>
 #include <filesystem>
 #include <iterator>
@@ -134,6 +135,13 @@ inline std::vector<Z> coordinates(const Layout &view,const Z &byte_offset) {
   if(reconstructed!=relative)reject("fixed input layout coordinate mismatch");
   return result;
 }
+// Whether the native run listed `raw` as a kernel-only fixed input (right_inputs.fixed_only).
+inline bool fixed_only(const J &mapping,const std::string &raw) {
+  const auto side=mapping.find("right_inputs");
+  if(side==mapping.end() || !side->contains("fixed_only"))return false;
+  const auto &list=side->at("fixed_only");
+  return list.is_array() && std::any_of(list.begin(),list.end(),[&](const J &item){return item.is_string() && item.get<std::string>()==raw;});
+}
 inline std::map<std::string,std::string> identities(const J &mapping,const char *side) {
   const auto &table=mapping.at(side).at("allocations");
   if(!table.is_object() || table.size()>4096)reject("invalid input identities");
@@ -196,17 +204,24 @@ inline std::vector<FixedInputElement> decode_verified(const J &input,const J &re
        pointer->second->value("object","")!=object || !recorded.contains({object,offset}))
       reject("pointer identity missing");
     const auto raw=sentryward::value_analysis::AllocationIdentity("global",object);
-    if(!right.contains(raw) || !reference.contains(right.at(raw)))reject("fixed input lacks common identity");
-    const auto &shared=right.at(raw),&left_raw=reference.at(shared);
+    // A kernel-only fixed array (fixed_only_inputs, listed by the native run when the reference
+    // reads it as no tensor and receives its values only as scalars bound to these same
+    // shape_arrays records): its elements are substituted on the kernel side only.
+    const bool kernel_only=!left.contains(raw) && fixed_only(mapping,raw);
+    if(!right.contains(raw) || (!kernel_only && !reference.contains(right.at(raw))))
+      reject("fixed input lacks common identity");
+    const auto &shared=right.at(raw);
     const auto optimized=layout(mapping.at("right_inputs").at("layouts").at(raw));
-    const auto ref=layout(mapping.at("left_inputs").at("layouts").at(left_raw));
-    if(ref.shape!=optimized.shape || ref.bytes!=optimized.bytes ||
-       ref.target_strides!=optimized.target_strides || ref.target_offset!=optimized.target_offset)
-      reject("fixed input canonical layout mismatch");
+    if(!kernel_only) {
+      const auto ref=layout(mapping.at("left_inputs").at("layouts").at(reference.at(shared)));
+      if(ref.shape!=optimized.shape || ref.bytes!=optimized.bytes ||
+         ref.target_strides!=optimized.target_strides || ref.target_offset!=optimized.target_offset)
+        reject("fixed input canonical layout mismatch");
+    }
     const auto type=array.value("element_type",std::string("s32"));
     if(type!="s32" && type!="u32" && type!="s64" && type!="u64")reject("unsupported fixed element type");
     const unsigned bits=type.ends_with("32")?32:64,bytes=bits/8;
-    if(bytes!=ref.bytes)reject("fixed input type/storage mismatch");
+    if(bytes!=optimized.bytes)reject("fixed input type/storage mismatch");
     const auto &rows=array.at("shapes");
     if(!rows.is_array() || rows.empty())reject("invalid fixed element rows");
     Z position=natural(region.at("byte_offset")),first=position;size_t rank=0;
