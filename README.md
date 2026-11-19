@@ -220,8 +220,10 @@ a report from the current output when needed.
 - Atomics (`atom`, `red`) are analyzed only under
   [Order-independent atomics](docs/assumptions.md#order-independent-atomics),
   off by default.
-- Proxy fences (`fence.proxy.async`) are checked between generic and
-  async-proxy accesses ([Proxy fences](docs/assumptions.md#proxy-fences)).
+- Proxy fences (`fence.proxy.async`) between generic and async-proxy accesses
+  are checked only when
+  [Implicit proxy fences](docs/assumptions.md#implicit-proxy-fences) is
+  disabled; it is on by default.
   Other fences and the full PTX memory model are not modeled. The hardware model
   follows our reading of the PTX documentation, which does not specify every
   detail.

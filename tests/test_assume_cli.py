@@ -66,6 +66,10 @@ class ListingTests(unittest.TestCase):
         self.assertTrue(resolved["order_independent_atomics"])
         self.assertFalse(resolved["representative_branches"])
 
+    def test_proxy_fence_check_is_opt_in(self):
+        self.assertTrue(resolve_assumptions()["implicit_proxy_fences"])
+        self.assertFalse(resolve_assumptions(None, {"implicit_proxy_fences": False})["implicit_proxy_fences"])
+
 
 class AssumptionArgumentsTests(unittest.TestCase):
     def test_assume_and_no_assume(self):

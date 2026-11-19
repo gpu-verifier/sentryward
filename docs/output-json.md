@@ -265,10 +265,11 @@ A race reported with diagnostic `proxy_fence_missing` is a pair that is ordered,
 but only without a proxy fence: `first` is a generic-proxy access and `second`
 an async-proxy access (`proxy: "async"`) to the same bytes, and no
 `fence.proxy.async` covering their state space lies between them
-([Proxy fences](assumptions.md#proxy-fences)). Its `details` count the missing
-fences by the modes of the two accesses (`read_after_write`,
-`write_after_write`, `write_after_read`), and `memory_analysis.proxy_fences`
-reports the check's counts on every run that reaches it.
+([Implicit proxy fences](assumptions.md#implicit-proxy-fences), which must be
+disabled for the check to run). Its `details` count the missing fences by the
+modes of the two accesses (`read_after_write`, `write_after_write`,
+`write_after_read`), and `memory_analysis.proxy_fences` reports the check's
+counts on every run that reaches it with the check on.
 
 Clusters that behave alike, or CTAs when the launch has no clusters, may be
 analyzed once for all of them. A race between two such units carries

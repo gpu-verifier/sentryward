@@ -1596,6 +1596,7 @@ std::string Analyze(Input&& source, bool verify, MemoryRaceOptions memory_option
         std::any_of(input.semantic_assumptions.begin(), input.semantic_assumptions.end(),
                     [](const auto& item) { return item.second; });
     memory_options.warn_duplicate_tma_stores = input.semantic_assumptions.at("duplicate_tma_store_benign");
+    memory_options.check_proxy_fences = !input.semantic_assumptions.at("implicit_proxy_fences");
     std::optional<QuotientEvidence> units;
     if (memory_options.units) units.emplace(*memory_options.units, input.program);
     // Repeated entries are reported per launch unit on both paths (RepeatedEntries).

@@ -33,5 +33,10 @@
     "label": "Floating values stay in range",
     "key": "floating_values_in_range",
     "text": "In the numerical (equivalence) model a finite value of an IEEE type lies within that type's finite range, so beside a finite operand the type's most negative (largest) finite value never decides a Maximum (Minimum)."
+  },
+  {
+    "label": "Implicit proxy fences",
+    "key": "implicit_proxy_fences",
+    "text": "Happens-before orders a generic-proxy and an async-proxy access to the same bytes without a fence.proxy.async between them, as if every such pair were separated by a proxy fence; disable to require the fence."
   }
 ]

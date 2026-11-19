@@ -258,6 +258,7 @@ Unknown names and non-Boolean values are rejected with distinct diagnostics.
 | `bounded_computation_loops` | `false` |
 | `order_independent_atomics` | `false` |
 | `floating_values_in_range` | `true` |
+| `implicit_proxy_fences` | `true` |
 
 For example, this fragment opts into representative data-dependent control:
 

@@ -70,8 +70,9 @@ struct MemoryRaceOptions final {
   // mode reads them from `units`): repeated entries are reported per unit (source_json.cpp).
   const LaunchUnits* launch_units = nullptr;
   // After a search without a race, check that each generic/async pair ordered by happens-before
-  // has a proxy fence between them (proxy_fences.h).
-  bool check_proxy_fences = true;
+  // has a proxy fence between them (proxy_fences.h). Off under the implicit_proxy_fences
+  // assumption (the default).
+  bool check_proxy_fences = false;
 };
 
 struct MemoryRaceResult final {
