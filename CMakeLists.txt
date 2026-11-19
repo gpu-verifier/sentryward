@@ -97,6 +97,7 @@ add_library(sentryward_algorithm STATIC
   cpp/src/memory/conflict_order.cpp
   cpp/src/checker/wellsync_checker.cpp
   cpp/src/checker/memory_race_checker.cpp
+  cpp/src/checker/proxy_fences.cpp
   cpp/src/checker/duplicate_tma_stores.cpp
   cpp/src/checker/same_value_writes.cpp
   cpp/src/checker/verifier.cpp

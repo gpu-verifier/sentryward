@@ -196,7 +196,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     return;
   }
   if (s.category == "fence") {
-    Emit(t, e, Await{});
+    Emit(t, e, Await{{}, ProxyFenceSpaces(i)});
     return;
   }
   if (s.category == "tmem_lifetime") {
@@ -333,7 +333,8 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     // complete_tx (load) or its bulk-group completion (store; not its reads, so not wait_group.read).
     std::optional<InstId> descriptor;
     if (transfer.descriptor) {
-      AsyncEffect read{{MemoryEffect{AccessMode::kRead, transfer.descriptor->first, transfer.descriptor->second}}};
+      AsyncEffect read{{MemoryEffect{AccessMode::kRead, transfer.descriptor->first, transfer.descriptor->second,
+                                     std::nullopt, MemoryProxy::kTensorMap}}};
       descriptor = Async(t, e, {std::move(read)});
       shared_value_reads.emplace(SharedValueSite{current_coordinates, t.actor.warp.value() * 32 + t.actor.lane, e.Key()},
                                  Ref(*descriptor, Milestone::kEffect, 0));
@@ -351,7 +352,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
         auto [it, added] =
             reads.try_emplace({a, n, pair.logical_offset}, effects.size());
         if (added)
-          effects.push_back({{MemoryEffect{AccessMode::kRead, a, n}}});
+          effects.push_back({{MemoryEffect{AccessMode::kRead, a, n, std::nullopt, MemoryProxy::kAsync}}});
         refs.push_back(Ref(id, Milestone::kEffect, it->second));
       }
       if (!pair.destination)
@@ -360,7 +361,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
           Ref(id, Milestone::kEffect, effects.size()));
       effects.push_back(
           {{MemoryEffect{AccessMode::kWrite, pair.destination->first,
-                         pair.destination->second}},
+                         pair.destination->second, std::nullopt, MemoryProxy::kAsync}},
            {},
            std::move(refs)});
       UniquePush(ranks, pair.target_rank);
@@ -434,9 +435,10 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     auto id=Next(); std::vector<AsyncEffect> effects;
     for (std::uint64_t offset=0;offset<bytes;offset+=element) {
       const auto index=effects.size();
-      effects.push_back({{MemoryEffect{AccessMode::kRead,fragment(read_base,read.first,offset),element}}});
+      effects.push_back({{MemoryEffect{AccessMode::kRead,fragment(read_base,read.first,offset),element,
+          std::nullopt,MemoryProxy::kAsync}}});
       effects.push_back({{MemoryEffect{AccessMode::kWrite,fragment(write_base,write.first,offset),element,
-          scope=="cta"?AtomicScope::kCta:scope=="gpu"?AtomicScope::kGpu:AtomicScope::kSys}},
+          scope=="cta"?AtomicScope::kCta:scope=="gpu"?AtomicScope::kGpu:AtomicScope::kSys,MemoryProxy::kAsync}},
           {},{Ref(id,Milestone::kEffect,index)}});
     }
     Async(t,e,std::move(effects)); t.bulk.Issue(id); return;
@@ -465,7 +467,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     const auto footprints = BulkCopyFootprints(e, b, contract, size, spaces);
     RequireBulkCopyAlignment(footprints);
     const auto [read, write] = footprints;
-    Copy(t, e, {read}, {write}, CompleteTxEffect{resources->Barrier(e, b[2], contract), size});
+    Copy(t, e, {read}, {write}, CompleteTxEffect{resources->Barrier(e, b[2], contract), size}, MemoryProxy::kAsync);
     return;
   }
   if (operation == "bulk_copy") {
@@ -485,7 +487,7 @@ void ModelLowerer::Impl::Instruction(Thread &t, const RecordView &e) {
     const auto footprints = BulkCopyFootprints(e, b, contract, size, spaces);
     RequireBulkCopyAlignment(footprints);
     const auto [read, write] = footprints;
-    t.bulk.Issue(Copy(t, e, {read}, {write}));
+    t.bulk.Issue(Copy(t, e, {read}, {write}, std::nullopt, MemoryProxy::kAsync));
     return;
   }
   if (operation == "bulk_commit_group") {

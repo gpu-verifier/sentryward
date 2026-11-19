@@ -228,7 +228,8 @@ void ModelLowerer::Impl::Tcgen(Thread &t, const RecordView &e,
     std::vector<AsyncEffect> effects;
     for (const auto &[read, write] : pairs) {
       const auto index = static_cast<std::uint32_t>(effects.size());
-      effects.push_back({{MemoryEffect{AccessMode::kRead, read.first, read.second}}});
+      // tcgen05.cp reads shared memory through the async proxy.
+      effects.push_back({{MemoryEffect{AccessMode::kRead, read.first, read.second, std::nullopt, MemoryProxy::kAsync}}});
       effects.push_back({{MemoryEffect{AccessMode::kWrite, write.first, write.second}},
                          std::nullopt, {Ref(id, Milestone::kEffect, index)}});
     }

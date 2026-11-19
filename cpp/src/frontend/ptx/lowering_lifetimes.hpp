@@ -132,7 +132,8 @@ void ModelLowerer::Impl::LifetimeOrders() {
 InstId ModelLowerer::Impl::Copy(Thread &t, const RecordView &e,
                                 std::vector<Fragment> reads,
                                 std::vector<Fragment> writes,
-                                std::optional<CompletionAction> completion) {
+                                std::optional<CompletionAction> completion,
+                                MemoryProxy proxy) {
   auto id = Next();
   std::vector<AsyncEffect> effects;
   std::vector<std::tuple<std::uint64_t, std::uint64_t, std::uint32_t>> ranges;
@@ -145,7 +146,7 @@ InstId ModelLowerer::Impl::Copy(Thread &t, const RecordView &e,
   for (auto [a, n] : reads) {
     if (!n) throw SemanticError("copy_fragment_mapping", "copy byte extent is unknown");
     ranges.emplace_back(cursor, cursor + *n, effects.size());
-    effects.push_back({{MemoryEffect{AccessMode::kRead, a, n}}});
+    effects.push_back({{MemoryEffect{AccessMode::kRead, a, n, std::nullopt, proxy}}});
     cursor += *n;
   }
   if (cursor > total)
@@ -182,7 +183,7 @@ InstId ModelLowerer::Impl::Copy(Thread &t, const RecordView &e,
                                                                        binding.alias_scope, binding.allocation));
       }
       effects.push_back(
-          {{MemoryEffect{AccessMode::kWrite, shifted, *next - *it}},
+          {{MemoryEffect{AccessMode::kWrite, shifted, *next - *it, std::nullopt, proxy}},
            {},
            std::move(refs)});
     }

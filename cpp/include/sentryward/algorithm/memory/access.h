@@ -30,6 +30,7 @@ struct MemoryAccess final {
   std::uint32_t effect_index = 0;
   std::uint32_t access_index = 0;
   std::optional<AtomicScope> atomic_scope = std::nullopt;
+  MemoryProxy proxy = MemoryProxy::kGeneric;
 
   friend bool operator==(const MemoryAccess&, const MemoryAccess&) = default;
 };

@@ -275,6 +275,39 @@ value sets of the [numerical model](reference-binding-json.md#equivalence-contra
 - **Disabled:** keep them. An equality that depends on the premise is then not
   proven.
 
+## Implicit proxy fences
+
+Configuration key: `implicit_proxy_fences` (default `true`).
+
+Generic-proxy and async-proxy accesses to the same shared or global bytes are
+ordered only through a proxy fence (PTX ISA, "Proxies"). With this assumption
+enabled, happens-before orders such a pair as if a `fence.proxy.async` always
+lay between them, so a missing fence is never reported. Disabling it turns on
+the proxy-fence check described here.
+
+The async proxy covers TMA (`cp.async.bulk.tensor`), bulk copies and
+reductions, and the shared-memory operands of `tcgen05.mma` and `tcgen05.cp`.
+When happens-before orders a generic access before an async access to the same
+bytes, and one of them writes, the check requires a `fence.proxy.async`
+covering the state space (`.shared::cta`, `.shared::cluster`, `.global`, or
+none for every space) between them: one that the generic access happens before
+and that happens before the async access, in any thread: the writing thread,
+the thread that issues the async operation, or a thread between them such as
+one elected to signal a barrier after all threads fence. In the other
+direction no explicit fence is required:
+the observed completion of a bulk copy, TMA or reduction is followed by an
+implicit generic-async proxy fence (PTX ISA, "Async Proxy"), and the same is
+assumed for `tcgen05.mma` and `tcgen05.cp` completion observed through
+`tcgen05.commit`. A `.shared::cta` fence is taken to cover all shared memory,
+including a peer CTA's. Other fences (`fence.sc`, `fence.acq_rel`, `membar`,
+`tcgen05.fence`, `fence.mbarrier_init`) add no ordering.
+
+- **Enabled:** no proxy-fence check; `memory_analysis.proxy_fences` is absent.
+  In the result's `assumptions` entry, `triggered` is `null`: whether a pair
+  lacks a fence is not measured.
+- **Disabled:** check proxy fences after a memory search without a race; a
+  missing fence is a `potential_race` with diagnostic `proxy_fence_missing`.
+
 ## Duplicate TMA stores
 
 Configuration key: `duplicate_tma_store_benign`.
